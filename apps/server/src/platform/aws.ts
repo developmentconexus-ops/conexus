@@ -49,8 +49,11 @@ export type LakeStacks = {
   firstFailure(at: Where, stack: StackId): Promise<AwsAnswer<FirstFailure | null>>
   /** A stack AWS no longer has counts as removed. */
   remove(at: Where, stack: StackId): Promise<AwsAnswer<void>>
-  /** The lake's table bucket a failed creation left, its namespaces first (decision E). */
-  leftover(at: Where, lake: LakeId): Promise<AwsAnswer<'NONE' | 'DELETED'>>
+  /**
+   * The lake's table bucket a failed creation left, its namespaces first (decision E). The stack's
+   * events decide whether to look: S3 Tables refuses the Hub a bucket that is not there.
+   */
+  leftover(at: Where, lake: { id: LakeId; stack: StackId }): Promise<AwsAnswer<'NONE' | 'DELETED'>>
 }
 
 // The names infra/aws/lib/names.ts owns on the platform's side (C26); aws.test.ts checks them
@@ -60,6 +63,7 @@ const BUCKET_PREFIX = 'conexus-'
 const TAG_COMPANY = 'conexus-empresa'
 const TAG_TEMPLATE = 'conexus-modelo'
 const TEMPLATE_PREFIX = 'lago/'
+export const BUCKET_TYPE = 'AWS::S3Tables::TableBucket'
 
 export function stackName(lake: LakeId): string {
   return `${STACK_PREFIX}${lake}`
@@ -217,7 +221,8 @@ async function stackStatus({ clients, abortSignal }: Session, stack: StackId) {
   return status
 }
 
-async function firstFailed({ clients, abortSignal }: Session, stack: StackId) {
+/** The stack's events, newest first, read by its id: a deleted stack keeps them. */
+async function stackEvents({ clients, abortSignal }: Session, stack: StackId) {
   const events: StackEvent[] = []
   let next: string | undefined
   for (let page = 0; page < EVENT_PAGES; page += 1) {
@@ -229,6 +234,11 @@ async function firstFailed({ clients, abortSignal }: Session, stack: StackId) {
     next = read.NextToken
     if (next === undefined) break
   }
+  return events
+}
+
+async function firstFailed(session: Session, stack: StackId) {
+  const events = await stackEvents(session, stack)
   // Newest first: the earliest failure is the cause, the later ones its cancellations.
   const failed = events.findLast((event) => event.ResourceStatus?.endsWith('_FAILED'))
   if (failed === undefined) return null
@@ -247,19 +257,32 @@ async function removeStack({ clients, abortSignal }: Session, stack: StackId) {
   }
 }
 
-/** AWS saying a bucket or namespace is not there: already gone, as a leftover should be. */
-function absent(error: unknown): 'ABSENT' {
-  if (error instanceof Error && error.name === 'NotFoundException') return 'ABSENT'
+/** AWS saying a namespace is not there: already gone, as a leftover's should be. */
+function absent(error: unknown): void {
+  if (error instanceof Error && error.name === 'NotFoundException') return
   throw error
 }
 
-async function clearLeftover({ clients, abortSignal }: Session, at: Where, lake: LakeId) {
+/**
+ * Whether CloudFormation may have left the bucket. No event: its creation never began. Gone only when
+ * CloudFormation created it and then deleted it: a CREATE_COMPLETE, and DELETE_COMPLETE the newest.
+ * After a CREATE_FAILED its DELETE_COMPLETE speaks of a bucket it did not create (the held name of lab
+ * run 45081093044), as the handler that owned one on 20/11 probably did.
+ */
+function bucketMayBeLeft(events: readonly StackEvent[]): boolean {
+  const bucket = events.filter((event) => event.ResourceType === BUCKET_TYPE)
+  if (bucket.length === 0) return false
+  const created = bucket.some((event) => event.ResourceStatus === 'CREATE_COMPLETE')
+  return !(created && bucket[0]?.ResourceStatus === 'DELETE_COMPLETE')
+}
+
+async function clearLeftover(session: Session, at: Where, lake: { id: LakeId; stack: StackId }) {
+  if (!bucketMayBeLeft(await stackEvents(session, lake.stack))) return 'NONE'
+  const { clients, abortSignal } = session
   const { tables } = clients
-  const tableBucketARN = `arn:aws:s3tables:${at.region}:${at.account}:bucket/${bucketName(lake)}`
-  const found = await tables
-    .send(new GetTableBucketCommand({ tableBucketARN }), { abortSignal })
-    .catch(absent)
-  if (found === 'ABSENT') return 'NONE'
+  const tableBucketARN = `arn:aws:s3tables:${at.region}:${at.account}:bucket/${bucketName(lake.id)}`
+  // The Hub's session reads and deletes only its company's tagged bucket: one not there is refused.
+  await tables.send(new GetTableBucketCommand({ tableBucketARN }), { abortSignal })
   const listed = await tables.send(new ListNamespacesCommand({ tableBucketARN }), { abortSignal })
   for (const { namespace } of listed.namespaces ?? []) {
     await tables
@@ -268,7 +291,7 @@ async function clearLeftover({ clients, abortSignal }: Session, at: Where, lake:
       })
       .catch(absent)
   }
-  await tables.send(new DeleteTableBucketCommand({ tableBucketARN }), { abortSignal }).catch(absent)
+  await tables.send(new DeleteTableBucketCommand({ tableBucketARN }), { abortSignal })
   return 'DELETED'
 }
 

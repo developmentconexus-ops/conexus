@@ -11,15 +11,16 @@ import {
   templateBucket,
   templateUrlPattern,
 } from '../../../../infra/aws/lib/names.ts'
-import { bucketName, createLakeStacks, LakeId, StackId, stackName, templateUrl } from './aws.ts'
 import {
-  awsRecording,
-  awsServer,
-  TEST_AWS_ACCOUNT,
-  TEST_AWS_REGION,
-  testAws,
-  testAwsCredentials,
-} from './test-aws.ts'
+  BUCKET_TYPE,
+  bucketName,
+  createLakeStacks,
+  LakeId,
+  StackId,
+  stackName,
+  templateUrl,
+} from './aws.ts'
+import { awsRecording, awsServer, TEST_AWS_ACCOUNT, TEST_AWS_REGION, testAws } from './test-aws.ts'
 import { awsAt, recorded, session } from './test-aws-wire.ts'
 import { silent, testConfig, unreachableDatabaseUrl } from './test-database.ts'
 
@@ -30,7 +31,6 @@ const AT = { company: COMPANY, account: TEST_AWS_ACCOUNT, region: TEST_AWS_REGIO
 const RECORDED_STACK = StackId.parse(
   /<StackId>([^<]+)<\/StackId>/.exec(awsRecording('create-stack-mesma-chave').body)?.[1],
 )
-
 const version = testAws().templateVersion
 
 test('aws: criar manda o pedido inteiro e lê o id', async (t) => {
@@ -65,6 +65,9 @@ test('aws: criar manda o pedido inteiro e lê o id', async (t) => {
 test('aws: os nomes batem com a receita e com o padrão da política do Hub', () => {
   const template = JSON.parse(readFileSync(LAKE_TEMPLATE, 'utf8'))
   const bucket = template.Resources.Bucket.Properties
+  assert.equal(template.Resources.Bucket.Type, BUCKET_TYPE)
+  const types = Object.values<{ Type: string }>(template.Resources).map((resource) => resource.Type)
+  assert.equal(types.filter((type) => type === BUCKET_TYPE).length, 1)
   assert.deepEqual(bucket.TableBucketName, { 'Fn::Join': ['', [BUCKET_PREFIX, { Ref: 'LakeId' }]] })
   assert.deepEqual(bucket.Tags, [{ Key: TAG_COMPANY, Value: { Ref: 'CompanyId' } }])
   const allowed = new RegExp(template.Parameters.LakeId.AllowedPattern)
@@ -281,39 +284,15 @@ test('aws: o primeiro evento de falha lê as páginas seguintes', async (t) => {
   )
 })
 
-test('aws: o dublê da QA não responde pelo S3 Tables, como diz, até a gravação do critério 35', async (t) => {
+test('aws: o dublê da QA não responde pelo diário da pilha nem pelo S3 Tables, como diz', async (t) => {
   const served = await awsServer(t)
   const aws = testAws(served.endpoint.origin, served.credentialsFile)
   const config = { ...testConfig(await unreachableDatabaseUrl()), aws }
   const stacks = createLakeStacks({ config, log: silent })
-  assert.deepEqual(await stacks.leftover(AT, LAKE), { kind: 'NO_ANSWER' })
-})
-
-// S3 Tables names its error's class only in x-amzn-errortype (restJson1); the Hub's session never
-// gets a NotFoundException live (finding 1 of PR 1253), so this one is written by hand.
-test('aws: o fio leva o tipo e a classe do erro de uma resposta JSON, sem os quais o SDK lê Unknown', async (t) => {
-  function missing(errorType?: string) {
-    return {
-      status: 404,
-      body: '{"message":"The specified bucket does not exist."}',
-      contentType: 'application/json',
-      ...(errorType === undefined ? {} : { errorType }),
-    }
-  }
-  const named = await awsAt(t, ({ action }) =>
-    action === 'AssumeRole' ? session() : missing('NotFoundException'),
-  )
-  assert.deepEqual(await named.stacks.leftover(AT, LAKE), { kind: 'DONE', value: 'NONE' })
-  const unnamed = await awsAt(t, ({ action }) => (action === 'AssumeRole' ? session() : missing()))
-  assert.notDeepEqual(await unnamed.stacks.leftover(AT, LAKE), { kind: 'DONE', value: 'NONE' })
-})
-
-test('aws: o depósito de outra empresa recusa o resto, com a classe que a AWS gravou', async (t) => {
-  const { stacks } = await awsAt(t, ({ action }) =>
-    action === 'AssumeRole' ? session() : awsRecording('get-table-bucket-outra-empresa'),
-  )
-  assert.deepEqual(await stacks.leftover(AT, LAKE), {
-    kind: 'REFUSED',
-    code: 'AccessDeniedException',
+  const created = await stacks.create(AT, { id: LAKE, template: version })
+  assert.equal(created.kind, 'DONE')
+  if (created.kind !== 'DONE') return
+  assert.deepEqual(await stacks.leftover(AT, { id: LAKE, stack: created.value }), {
+    kind: 'NO_ANSWER',
   })
 })

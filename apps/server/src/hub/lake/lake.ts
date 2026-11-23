@@ -162,7 +162,7 @@ async function sendDelete(deps: LakeDeps, scope: Scope, lake: Lake): Promise<Lak
 async function failure(deps: LakeDeps, scope: Scope, lake: Lake, stack: StackId) {
   const first = await deps.aws.firstFailure(lake.at, stack)
   logged(deps, lake, 'DescribeStackEvents', first)
-  const left = await deps.aws.leftover(lake.at, lake.lakeId)
+  const left = await deps.aws.leftover(lake.at, { id: lake.lakeId, stack })
   logged(deps, lake, 'Leftover', left)
   if (left.kind === 'NO_ANSWER') return lake
   const fields = { companyId: lake.at.company, lakeId: lake.lakeId }

@@ -154,9 +154,9 @@ class MemoryAws implements LakeStacks {
     return answered(next, undefined)
   }
 
-  async leftover(at: Where, lake: LakeId) {
-    const next = this.enter('leftover', at, lake)
-    const name = bucketName(lake)
+  async leftover(at: Where, lake: { id: LakeId }) {
+    const next = this.enter('leftover', at, lake.id)
+    const name = bucketName(lake.id)
     const owner = this.buckets.get(name)
     if (owner !== undefined && owner !== at.company) return REFUSED
     if (next !== undefined && !next.takesEffect) return failed(next)

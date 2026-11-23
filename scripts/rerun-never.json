@@ -993,7 +993,7 @@
       "name": "tipo: a rota handoff só GET"
     },
     {
-      "file": "apps/server/src/platform/aws.test.ts",
+      "file": "apps/server/src/platform/aws-leftover.test.ts",
       "name": "aws: o depósito de outra empresa recusa o resto"
     },
     {
