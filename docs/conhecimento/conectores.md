@@ -83,9 +83,9 @@ cada sistema: Sankhya, Mercado Livre e HubSpot. A cópia em massa está em
 ## Aberto
 
 - **O novo cartão do Lago 2** (PR https://github.com/developmentconexus-ops/conexus/pull/1260), com a
-  etapa O conector no padrão novo entre a parte 0 e a parte 1, à espera da aprovação.
-- **A janela Ligar em quatro passos, a descrição do sistema e o link de 30 minutos** (spec 02): uma
-  etapa própria logo depois do Lago 2, com estudo e cartão.
+  etapa O conector no padrão novo entre a parte 0 e a parte 1, a janela Ligar no fluxo da Nekt e o
+  link de 30 minutos, à espera da aprovação.
+- **O aviso de cópia parada, por ligação**: um cartão próprio, logo depois do Lago 2.
 
 A Nango e o Composio já foram lidos (as linhas de 2026-11-14 a 2026-11-20 abaixo). O firstmate parou
 uma pesquisa nova deles no estudo do ao vivo, que reusou o decidido.

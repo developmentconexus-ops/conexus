@@ -308,7 +308,7 @@ A tela é hipótese, fora do repositório até o estudo do marco. O cartão e o 
 | Empresa: Pessoas e acesso | Registro de dados, só Dono e Administrador | `C6` | Registro e conformidade, U9 | Registro de auditoria com filtros e exportação |
 | Empresa: Pessoas e acesso | Chaves para agentes de fora | sem número (perto de G8) | `docs/steps/trilhas/dados.md` | Chaves de acesso e contas de serviço |
 | Empresa: Modelos | Limites por provedor | G4, A1 | etapa 20, decisão 0058 | Limites de gasto por provedor |
-| Empresa: Avisos e uso | Avisos (os e-mails da empresa) | `C1`, `C7` | a etapa 2 do lago | a lista de e-mails da empresa que recebe a falha de qualquer fonte |
+| Integrações: a ligação | Os e-mails do aviso de cópia parada, por ligação (2026-11-23, "Por ligação, na janela") | `C1`, `C7` | o cartão do aviso, depois da etapa 2 do lago | o e-mail de falha no passo da agenda, por pipeline, do Databricks |
 | Empresa: Avisos e uso | Uso | sem número | `D6` | Página de plano e uso |
 | Empresa: Avisos e uso | Atividade | G9 | 21.1 | Registro de auditoria |
 | Empresa: Avisos e uso | Plano e cobrança | sem número | etapa 23 | Página de plano e uso |

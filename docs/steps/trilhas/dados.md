@@ -29,8 +29,9 @@ cartão da etapa seguinte entrar.
 
 A etapa seguinte é a 2 do lago, A primeira cópia chega ao lago: o cartão dela está em
 [a-primeira-copia-chega-ao-lago.md](../a-primeira-copia-chega-ao-lago.md), à espera da aprovação do
-fundador. Ele vem em cinco partes: a parte 0, em que o legado sai do banco da empresa; a etapa O
-conector no padrão novo; e as partes 1 a 3 da cópia.
+fundador. Ele vem em três partes: a parte 0, em que o legado sai do banco da empresa; a etapa O
+conector no padrão novo; e a parte 1, em que a pessoa liga um sistema numa janela só e a cópia chega.
+O aviso de cópia parada vem num cartão próprio, logo depois.
 
 As etapas anteriores fecharam: a pergunta respondida com a origem, em 2026-11-16
 ([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md)); cada papel lê só o seu, com
@@ -69,20 +70,21 @@ novo é a exceção: ela é uma seção do cartão da etapa 2, porque fica entre
   conector, sem o Assistente perder as leituras ao vivo.
 - **Uma tabela por ligação** no lago (`conexus-n5-duas-ligacoes`).
 
-A janela Ligar em quatro passos, a descrição do sistema e o link de 30 minutos (spec 02) vêm numa
-etapa própria logo depois da etapa 2. O passo "o que copiar" dessa janela é a seção Tabelas no lago,
-que a etapa 2 cria.
+A janela Ligar, com o fluxo da Nekt, e o link de 30 minutos (spec 02) entram na etapa 2. O
+fundador, 2026-11-23: "Sim, é esse" e "Já no Lago 2". A descrição do sistema (spec 02, `C1`) fica
+para a etapa que a pedir.
 
 | Etapa | A pergunta que o fundador responde na tela | Prova com |
 | --- | --- | --- |
 | 1. O lago da empresa nasce e some | O Conexus cria e apaga sozinho o lago isolado de uma empresa, sem ninguém abrir o console da AWS? | Nenhum conector |
-| 2. A primeira cópia chega ao lago | Uma tabela de um sistema ligado chega inteira, a mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados? | Uma tabela do Sankhya; o dublê do HubSpot na mesma bateria, para o adaptador não aprender um sistema só |
+| 2. A primeira cópia chega ao lago | Eu ligo o Sankhya numa janela só, escolho as tabelas e quando copiar, elas chegam inteiras ao lago, a mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados? | O Sankhya completo, núcleo, fiscal e contábil, e o XML da NF-e; o dublê do HubSpot na mesma bateria, para o adaptador não aprender um sistema só |
 | O conector no padrão novo, entre a parte 0 e a parte 1 da etapa 2 | O Assistente continua lendo o Sankhya e o Mercado Livre enquanto cada conector é refeito, e cada um nasce de uma definição só, com a sua skill e a classe da credencial? | O Sankhya e o Mercado Livre, um pull request por conector |
 | 3. O agente responde pelo lago | Pergunto ao Assistente e ele responde do lago, diz de quando é, e recusa o que o meu papel não lê? É o `D2` | Qualquer tabela copiada |
+| O XML lido em linhas, depois da 3 | Pergunto ao Assistente se a nota que lançamos bate com o XML do fornecedor, e ele responde item por item, com as duas origens? | O XML da NF-e do Sankhya, guardado na etapa 2, lido em `nfe_notas` e `nfe_itens`; o dublê do conector NF-e |
 | 4. O app lê o que foi publicado | Um app publicado mostra o dado do lago sem nunca ver uma tabela pela metade? | Qualquer tabela copiada |
 | 5. A segunda classe pelo mesmo caminho | Uma lista de um sistema de outro tipo entra pelo mesmo caminho, sem código novo no adaptador? | O Mercado Livre, a lista de vendas. O estudo usa o conector dele numa plataforma de referência e o que já rodamos |
-| 6. Escolher o que copiar | Eu marco o que quero copiar de cada sistema, com as tabelas e os campos da minha empresa, e nada vem marcado? | O Sankhya pelo dicionário, o Mercado Livre pela lista declarada |
-| 7. A tabela grande e sem coluna de alteração | As fiscais e as contábeis entram, a primeira carga termina numa tarde, e o que sumiu da fonte some do lago? | As fiscais e contábeis do Sankhya; as listas do Mercado Livre sem filtro de alteração |
+| 6. Escolher o que copiar | Eu acho no dicionário uma tabela que o kit não declara e escolho os campos de cada tabela, e nada vem marcado? A escolha das tabelas do kit, na janela, entra na etapa 2 | O Sankhya pelo dicionário, o Mercado Livre pela lista declarada |
+| 7. A tabela grande e sem coluna de alteração | A primeira carga termina numa tarde, e o que sumiu da fonte some do lago? As fiscais e as contábeis já entram na etapa 2 | As fiscais e contábeis do Sankhya; as listas do Mercado Livre sem filtro de alteração |
 
 Antes da etapa 1 entrou a mudança de método que dá ao
 repositório regra, teste e conferência para Python, para a infraestrutura da AWS e para testar o
@@ -117,12 +119,14 @@ Depois da etapa 7 vêm duas frentes, cada etapa com estudo e cartão próprios:
 
 A ordem entre as duas frentes é decidida quando a etapa 7 fechar.
 
-O cartão da etapa 2 leva o aviso de cópia parada, que saiu do Registro e conformidade (2026-11-21,
-"R1 a R2 a"): o aviso vai a quem pode consertar a cópia e à lista de e-mails da empresa; a unidade é
-a parada, e não a rodada, com um aviso quando a cópia para e um lembrete por dia enquanto ela
-continuar parada; o botão Seguir só entra se alguém pedir. O estudo da etapa decide se a parada é da
-conexão ou da tabela, com a rodada do lago na mão, e se usa as tabelas `copy_follower`,
-`alert_recipient` e `copy_notice`, que estão no `main` sem uso.
+O aviso de cópia parada, que saiu do Registro e conformidade (2026-11-21, "R1 a R2 a"), tem cartão
+próprio, logo depois do da etapa 2, pelo tamanho dela. A unidade é a parada, e não a rodada, com um
+aviso quando a cópia para e um lembrete por dia enquanto ela continuar parada; o botão Seguir só entra
+se alguém pedir. O fundador, 2026-11-23, na entrevista do Lago 2: "Por ligação, na janela". Os
+e-mails do aviso são da ligação, no passo Quando copiar da janela, já com quem liga, e mudam depois na
+página da ligação. Isso substitui a lista de e-mails da empresa em Configurações (a I (a) de
+2026-11-21 e de 2026-11-23). As tabelas `copy_follower` e `copy_notice` saem na parte 0 da etapa 2;
+`alert_recipient` fica sem uso até o cartão do aviso.
 
 O motor de cópias de hoje sai inteiro na parte 0 da etapa 2, antes de o padrão novo entrar, porque o
 lago é a única fonte e nenhuma tabela mora em dois lugares. O fundador, 2026-11-23: "nao e pra ter
@@ -142,7 +146,12 @@ No lago, o nome de uma tabela é de negócio, em português, declarado no kit: `
 rótulo "Notas e pedidos" e a `TGFCAB` ao lado, como origem. Uma tabela que o kit não declara fica com
 o código. Duas ligações do mesmo sistema dão duas tabelas. O fundador respondeu em 2026-11-23, ao
 estudo `conexus-conector-estilo-novo-estudo`, com "okay" às duas primeiras letras e "sim" às duas
-seguintes.
+seguintes. No mesmo dia, na entrevista do Lago 2, ele aprovou ("Aprovo") que o nome do kit é
+sugestão, e não regra: a janela sugere o nome do kit com um prefixo para todas, a pessoa troca ao
+ligar, e o nome fica fixo depois de criado, como na Nekt. Cada tabela guarda no catálogo a origem e o
+rótulo do kit, para os agentes acharem a tabela pela origem; a parte gerada da skill usa os nomes
+reais; a segunda ligação do mesmo sistema vem sugerida com o nome dela, e um nome repetido é
+recusado.
 
 Ficam para depois do lago implementado, por palavra do fundador em 2026-11-20: o tratamento e a
 qualidade dos dados, a camada Negócio no lago e o agente de dados. Por decisões anteriores: o
@@ -153,17 +162,54 @@ documentos do Drive, do SharePoint e do Gmail não viram tabela: a planilha vai 
 documento guarda o original, com uma linha por arquivo no catálogo do lago, e o texto vai para o
 Knowledge, na etapa das fontes de conhecimento do Brain (2026-11-21: "g3 a").
 
+O lago guarda também arquivos. O fundador, 2026-11-23: "Pra mim e totalmente errado lakehouse nao e
+so dados [...] ter o XML e crucial ( nao so ele)". Da regra de 2026-11-19 ("Anexos, índices, logs e
+cópias de backup datadas ficam fora") sai a parte dos anexos: anexos e colunas de arquivo entram no
+lago; índices, logs e cópias de backup datadas continuam fora (`conexus-arquivos-no-lago`). O XML da
+NF-e entra na etapa 2 como texto numa tabela própria ("Já no Lago 2, como a Nekt"), com o histórico
+ligado nela ("Okay"), e é lido em `nfe_notas` e `nfe_itens` numa etapa própria depois da 3 ("Etapa
+própria, depois da 3"). O depósito de arquivos para binário grande vem com a primeira fonte que
+trouxer um.
+
 As decisões do fundador que chegam com a etapa delas, e não antes:
 
 | A decisão | Chega em |
 | --- | --- |
-| Por quanto tempo a camada bruta guarda o histórico (a decisão de 2026-11-18: histórico desligado por padrão, ligado por tabela) | O cartão da etapa 2 |
+| Por quanto tempo a camada bruta guarda o histórico (a decisão de 2026-11-18: histórico desligado por padrão, ligado por tabela) | O cartão da etapa 2: só até entrar na atual (A a), e ligado na tabela do XML ("Okay", 2026-11-23) |
 | Por onde a tarefa pede ao Hub a credencial exclusiva ([0077](../../decisions/0077-how-a-credential-reaches-the-copy-task.md)) | O estudo da etapa 5 |
 | A fila justa de consultas no Hub, peça nossa sem referência (delivery L28) | Quando a segunda empresa entrar |
 | A ligação por pessoa: cada funcionário liga o próprio Gmail ao agente | O estudo da etapa do Google |
 | Qual TOTVS, Protheus ou RM, e de qual empresa | O estudo da etapa do TOTVS |
 | Com a permissão de quem o agente lê quando roda sozinho | O marco `D5` |
 | A coluna por leitor e a linha por pessoa no lago | A etapa que pedir, com prova ou estudo antes |
+
+## As palavras do fundador sobre o Lago 2, em 2026-11-23
+
+Ao cartão refeito no commit `6c159a4d`: "isso você tá se baseado em decisões antigas, em estrutura
+antiga e me trazendo para eu decidir baseado nisso. O que a gente tinha combinado é que a gente tá
+reformulando tudo para seguir conforme a gente fez todo o estudo da Next [...] a gente utilizou de
+Databricks". E: "Se você tiver dúvidas, me entreviste pra gente alinhar perfeitamente o que deve ser
+implementado". Regra daqui em diante: antes de um cartão de etapa grande, o firstmate monta o mapa do
+desenho e entrevista o fundador; o cartão só é escrito depois do alinhamento.
+
+As respostas da entrevista, que o cartão da etapa 2 segue:
+
+- o fluxo de ligar numa janela só, como a Nekt: "Sim, é esse";
+- a máquina: "2 vCPU na primeira carga", e 1 vCPU e 2 GB nas rodadas seguintes;
+- o Sankhya: "So as que o kit declara, mas nao quero que declara somente a TGFCAB nao se ja estamos
+  fazendo o conector do sankhya vamos fazer ele completo" e "Sim, núcleo+fiscal+contábil";
+- o intervalo: "24 h, como a Nekt";
+- o nome da tabela: "Aprovo" (acima);
+- o link de 30 minutos: "Já no Lago 2";
+- o aviso de cópia parada: "Por ligação, na janela" (acima);
+- o desenho, na página https://claude.ai/artifact/NPjMLzXJeMDM62E1ATqGkA: "Não, eu confirmo o
+  desenho";
+- o relógio das cópias: "(a) Hub, só o 'quando'" (o disparo e o **Rodar agora** pela mesma chamada,
+  a poda do rastro do Mastra, o intervalo contado da hora de ligar, uma partida por vez), sem
+  framework agora;
+- a primeira carga: "Na hora, com prova antes" (uma sonda num dia útil de guarda);
+- o usuário de integração do Sankhya: "Seguir como está";
+- o XML: "Já no Lago 2, como a Nekt", "Etapa própria, depois da 3" e, ao histórico, "Okay" (acima).
 
 ## O que a trilha possui
 
