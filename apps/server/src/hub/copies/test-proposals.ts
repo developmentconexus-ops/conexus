@@ -38,7 +38,7 @@ export function proposeAs(
     connections?: readonly ConnectionId[]
   } = {},
 ) {
-  return on.hub.connectors.builder.propose(
+  return on.hub.copies.propose(
     { companyId: on.companyId, projectId: on.projectId },
     {
       connections: options.connections ?? [on.connectionId],

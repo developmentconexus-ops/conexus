@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ConnectionId, PersonId, RunId } from '@conexus/hub-api'
-import { RequestContext } from '@mastra/core/request-context'
+import { PersonId, RunId } from '@conexus/hub-api'
 import type { BuilderConnectors } from './public.ts'
 import { builderAccess, connectorTools } from './public.ts'
 import { accessOver, granted, LOJA, QUIET, runOn, SANKHYA } from './test-access.ts'
@@ -13,7 +12,6 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
   const port: BuilderConnectors = {
     granted: async () => [],
     provePage: async () => ({ kind: 'NOT_GRANTED' }),
-    propose: async () => ({ kind: 'NOT_GRANTED' }),
     read: async (_ids, call) => {
       seen.push(call)
       return { kind: 'NOT_GRANTED' }
@@ -66,7 +64,6 @@ test('uma ferramenta chamada fora de uma corrida do Builder lança CONNECTOR_TOO
   const port: BuilderConnectors = {
     granted: async () => [],
     provePage: async () => ({ kind: 'NOT_GRANTED' }),
-    propose: async () => ({ kind: 'NOT_GRANTED' }),
     read: async (...args) => {
       calls.push(args)
       return { kind: 'NOT_GRANTED' }

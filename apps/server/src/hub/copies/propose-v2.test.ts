@@ -251,7 +251,7 @@ test('várias contas: um conector sem conta lê uma conexão só', async (t) => 
     name: 'Pedidos',
   })
   const projectId = ProjectId.parse(Object(made.json()).project.id)
-  const answer = await on.hub.connectors.builder.propose(
+  const answer = await on.hub.copies.propose(
     { companyId: CompanyId.parse(on.companyId), projectId },
     {
       connections: ids.map((id) => ConnectionId.parse(id)),

@@ -11,7 +11,7 @@ import { Failure } from '../../platform/failure.ts'
 import { dataContext } from '../app-data/public.ts'
 import type { CompanyToolDeps } from '../company-tools/public.ts'
 import { companyConnections, companyToolScope, companyTools } from '../company-tools/public.ts'
-import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
+import type { BuilderConnectors } from '../connectors/public.ts'
 import { builderAccess } from '../connectors/public.ts'
 import type { DataBinding, RunScope } from '../controller-kit/public.ts'
 import {
@@ -46,16 +46,12 @@ function idsOf(run: RunScope): Ids {
   return { ...run.owner, projectId: run.place.projectId }
 }
 
-/**
- * The Builder's company tools: its Projeto's granted connections through its door, each call
- * counted by the run Mastra runs, its notebook's write and `copy_propose` where a connector copies.
- */
 function companyDeps(deps: {
   connectors: BuilderConnectors
   runs: Runs
   companyData: (principal: Principal, context: DataBinding) => CompanyData
   log: FailureLog
-}): CompanyToolDeps<GrantedConnection> {
+}): CompanyToolDeps {
   function doorOf(run: RunScope) {
     const who = { ...idsOf(run), runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
     return builderAccess(deps.connectors, [], who, deps.log)
@@ -67,10 +63,6 @@ function companyDeps(deps: {
       read: (run, call, requestContext) => doorOf(run).access.read(call, requestContext),
       notes: (run, connectionId) => doorOf(run).access.notes(connectionId),
       saveNote: (run, call, requestContext) => doorOf(run).save(call, requestContext),
-      propose: {
-        call: (run, call, requestContext) => doorOf(run).propose(call, requestContext),
-        copying: (listed) => listed.filter((each) => each.copies),
-      },
     },
   }
 }

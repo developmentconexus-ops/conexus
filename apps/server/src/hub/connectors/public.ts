@@ -14,7 +14,6 @@ import type { AppDoorPort } from './app-calls.ts'
 import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
-import type { Propose } from './builder-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
 import { createCopyPort } from './copy-port.ts'
 import { createExecutor } from './executor.ts'
@@ -91,8 +90,6 @@ export function createConnectors(deps: {
   log: FailureLog
   /** The apps' door: who an app's call is, the version its session gets and its manifest. */
   door: AppDoorPort
-  /** `hub/copies`' proposing, handed on to the Builder (Capacidade 3): it is made after the connectors. */
-  propose: () => Propose
   /** What Desligar asks of `hub/copies` (O Sync de qualquer conector), made after the connectors too. */
   copies: () => ConnectionCopies
   /** The Registro's one writer, which every live read leaves its line through. */

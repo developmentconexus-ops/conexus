@@ -6,7 +6,7 @@ const TYPED_READS = 'typed_reads'
 
 export type CompanyToolName =
   | (typeof DATA_TOOL)[keyof typeof DATA_TOOL]
-  | (typeof BUILDER_TOOL)['connectorRead' | 'connectorNotes' | 'connectorNoteSave' | 'copyPropose']
+  | (typeof BUILDER_TOOL)['connectorRead' | 'connectorNotes' | 'connectorNoteSave']
   | (typeof APP_DATA_TOOL)[keyof typeof APP_DATA_TOOL]
   | (typeof ASSISTANT_TOOL)['overview' | 'copyRuns']
   | typeof TYPED_READS
@@ -30,7 +30,6 @@ export const TOOLS_OF = {
     BUILDER_TOOL.connectorRead,
     BUILDER_TOOL.connectorNotes,
     BUILDER_TOOL.connectorNoteSave,
-    BUILDER_TOOL.copyPropose,
     APP_DATA_TOOL.read,
     APP_DATA_TOOL.check,
     DATA_TOOL.describe,

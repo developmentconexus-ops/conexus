@@ -34,8 +34,6 @@ const READ = new Set<string>([
   BUILDER_TOOL.appDataCheck,
   BUILDER_TOOL.dataDescribe,
   BUILDER_TOOL.dataQuery,
-  // It writes a proposal row and never turns a copy on: a person does (decision 0053).
-  BUILDER_TOOL.copyPropose,
   ...SKILL_TOOLS,
 ])
 // The controller's tools that talk to the person: the questions, the plan and the task list.

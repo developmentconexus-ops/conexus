@@ -49,8 +49,6 @@ export type GrantedConnection = Readonly<{
   /** The writes the connector declares (step 24.5): an agent's tool may be one, never a read of the Builder or the Assistant. */
   writes: readonly Readonly<{ operation: string; label: string; summary: string }>[]
   notes: readonly string[]
-  /** The connector copies through its free read door (version 1) or declares a read that lists rows (version 2): `copy_propose` is offered. */
-  copies: boolean
 }>
 
 /** How a read lists rows, as the model is told: its paging, the row's field it filters changes by, and its ceiling. */
@@ -93,8 +91,6 @@ export type Proposal = Readonly<{
   signal: AbortSignal
 }>
 
-/** `hub/copies` proposes; `main.ts` hands it here, since the Builder never imports `hub/copies` (C4). */
-export type Propose = (ids: OfProject, a: Proposal) => Promise<ProposeAnswer>
 type Of = Readonly<{ connectionId: ConnectionId; personId: PersonId; runId: RunId }>
 type Asking = OfProject & Readonly<{ personId: PersonId }>
 
@@ -114,8 +110,6 @@ export type BuilderConnectors = {
     ids: OfProject,
     a: Of & Readonly<{ definition: CopyDefinition; signal: AbortSignal }>,
   ): Promise<Proved | ListProved | ListMisfit | BuilderReadRefusal>
-  /** A copy proposed in the Projeto's conversation, proved by one page; `hub/copies` owns it. */
-  propose: Propose
 }
 
 /** The call counts by key (a run, a turn), the oldest forgotten past `TURNS_KEPT`; false once a key has spent its 50. */
@@ -240,18 +234,13 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         reads: reads.filter((operation) => operation.class === 'read').map(readOfKit),
         writes: (connector.writes ?? []).map(listedOf),
         notes: Object.keys(Notes.parse(row.notes)),
-        copies:
-          (connector.copy !== undefined && connector.readDoor !== undefined) ||
-          connector.operations.some((operation) => operation.list !== undefined),
       },
     ]
   })
 }
 
 /** The Builder's door to the Projeto's granted connections (step 20, U3): read, notebook, and what the next turn is given. */
-export function createBuilderConnectors(
-  deps: Deps & { propose: () => Propose },
-): BuilderConnectors {
+export function createBuilderConnectors(deps: Deps): BuilderConnectors {
   const spend = createSpending()
   return {
     async granted(ids) {
@@ -311,7 +300,5 @@ export function createBuilderConnectors(
         ? provedPage(deps, { ...proving, definition })
         : provedList(deps, { ...proving, definition })
     },
-
-    propose: (ids, a) => deps.propose()(ids, a),
   }
 }

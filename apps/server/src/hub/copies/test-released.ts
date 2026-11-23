@@ -1,16 +1,14 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import type { CopyId } from '@conexus/hub-api'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
-import { until } from '../../platform/test-until.ts'
-import { CopyName } from '../connectors/public.ts'
 import { linkSankhya, testOf } from '../connectors/test-connections.ts'
 import { sankhyaFake } from '../connectors/test-sales.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import { createCopies } from './public.ts'
+import { doubleRows, plantCopy, plantedModel } from './test-planted.ts'
 
 /** The Sankhya double, served; `change` is the Hub's config pointing the connector at it (`conversing`'s third argument). */
 export async function sankhyaServed(t: TestContext) {
@@ -41,11 +39,6 @@ async function linked(
   return connectionId
 }
 
-/**
- * The company's Sankhya linked and, for each name, its copy turned on, run once and released to the
- * Projeto, through the Hub's own copies; the company's database is a test server. Returns the
- * company's database owner and the copies' ids.
- */
 export async function releasing(
   t: TestContext,
   on: { hub: Hub; ana: Person; companyId: string; projectId: string },
@@ -62,27 +55,17 @@ export async function releasing(
   const companyId = CompanyId.parse(on.companyId)
   const personId = PersonId.parse(on.ana.id)
   const ids = new Map<string, CopyId>()
-  for (const name of names) {
-    const copy = await hub.copies.enable({
-      ...{ companyId, personId },
-      source: { kind: 'MODEL', connectionId, model: CopyName.parse(name) },
-      interval: '30m',
-      attemptKey: randomUUID(),
-    })
-    ids.set(name, copy)
-    // The Hub's own clock starts the first run on turning on; a run the test asks for waits for its lease.
-    let ended = await hub.copies.run({ companyId, copyId: copy }, AbortSignal.timeout(60_000))
-    await until(
-      async () => {
-        if (ended.kind === 'RUNNING')
-          ended = await hub.copies.run({ companyId, copyId: copy }, AbortSignal.timeout(60_000))
-        return ended.kind !== 'RUNNING'
-      },
-      `the first run of ${name} ended`,
-      20_000,
+  for (const model of names) {
+    const { label, definition } = plantedModel(model)
+    const copy = await plantCopy(
+      { hub, companyId: on.companyId, anaId: on.ana.id, owner },
+      `sankhya_${model}`,
+      definition,
+      { connector: 'sankhya', connection: connectionId },
+      { label, rows: doubleRows(model), runs: [{ outcome: 'COMPLETE', whole: true }] },
     )
-    assert.equal(ended.kind, 'ENDED')
-    if (release.includes(name))
+    ids.set(model, copy)
+    if (release.includes(model))
       await hub.copies.grant({
         ...{ companyId, personId, copyId: copy },
         projectId: ProjectId.parse(on.projectId),

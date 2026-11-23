@@ -5,21 +5,12 @@ import { idOrNotFound, readOrNotFound } from '../../platform/hub.ts'
 import { copiesQuery, copyRunsQuery } from './queries.ts'
 
 export { CopyDetail } from './copy-detail.tsx'
-export { ProposalDialog, QueryBlock } from './copy-proposal.tsx'
+export { QueryBlock } from './copy-proposal.tsx'
 export { DataPage, DataReadFailure } from './data-page.tsx'
 export { DataTree } from './data-tree.tsx'
-export { copiesQuery, copyReadersQuery, proposalsQuery, sendRoleCopies } from './queries.ts'
+export { copiesQuery, copyReadersQuery, sendRoleCopies } from './queries.ts'
 export { DataLayer, DataSearch, TableSearch } from './search.ts'
-export { useSourceText, withAccounts } from './source.ts'
-export {
-  callsText,
-  MANAGERS_ENABLE,
-  modeText,
-  PROPOSAL_GONE,
-  PROPOSAL_STATE,
-  provedText,
-  systemText,
-} from './text.ts'
+export { systemText } from './text.ts'
 
 /** The `$copyId` of the detail route: an id the contract would never issue is the not-found page. */
 export const copyParams = {

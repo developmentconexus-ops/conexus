@@ -1,4 +1,4 @@
-import type { CompanyId, CopyId, CopyProposalId, CopyRun } from '@conexus/hub-api'
+import type { CompanyId, CopyId, CopyRun } from '@conexus/hub-api'
 import {
   changeCopyInterval,
   deleteCopy,
@@ -57,11 +57,6 @@ export function copiesQuery(companyId: CompanyId, requests: RunRequest[] = []) {
         ? WHILE_RUNNING
         : false,
   })
-}
-
-/** The proposals the conversation's cards name, each in the state it has now, read through the list of copies. */
-export function proposalsQuery(companyId: CompanyId, ids: readonly CopyProposalId[]) {
-  return hubQuery(listCopies, { params: { companyId }, query: { proposalId: ids.join(',') } })
 }
 
 /** The models the company's connectors offer to copy. */

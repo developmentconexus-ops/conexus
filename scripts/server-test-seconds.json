@@ -102,7 +102,6 @@
   "src/builder/connectors/connector-tools-at.test.ts": 0.1,
   "src/builder/connectors/connector-tools-scope.test.ts": 0.1,
   "src/builder/connectors/connector-tools.test.ts": 0.1,
-  "src/builder/connectors/copy-propose.test.ts": 4.2,
   "src/builder/connectors/typed-reads-openai.test.ts": 0.1,
   "src/builder/construtor/app-tables.test.ts": 0.1,
   "src/builder/construtor/code-tool-causa.test.ts": 4.2,

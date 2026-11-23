@@ -41,10 +41,9 @@ transaction open ([data D22](../guides/data.md)), makes the `sync` login and sch
 none (`ensureSync`) and the copy's table. A proposal's release to its Projeto comes next, and the
 clock last, which also asks for the first run. The same attempt key takes up the step a cut left.
 
-A proposal is the Builder's `copy_propose` tool (`hub/copies/propose.ts`). The tool checks the
-definition against the read, with a proof that counts and never returns a row, and writes one
-proposal row. It never turns a copy on ([0053](../decisions/0053-builder-tools-run-without-asking.md)):
-a person who may accepts it in a card, and that call is Ligar with the proposal.
+The Builder no longer proposes a copy: it reads the copies the owner released to its Projeto and
+asks the owner for one it lacks. A proposal row that already exists is still accepted in a card, and
+that call is Ligar with the proposal.
 
 ## How a copy runs
 

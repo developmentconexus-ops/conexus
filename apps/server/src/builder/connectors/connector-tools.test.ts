@@ -23,7 +23,6 @@ function granted(
     reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta', list: null }],
     writes: [],
     notes: [],
-    copies: false,
   }
 }
 
@@ -32,7 +31,6 @@ function tools() {
   const port: BuilderConnectors = {
     granted: async () => [],
     provePage: async () => ({ kind: 'NOT_GRANTED' }),
-    propose: async () => ({ kind: 'NOT_GRANTED' }),
     read: async () => ({ kind: 'NOT_GRANTED' }),
     notes: async (_ids, connectionId) => {
       seen.notes.push(connectionId)

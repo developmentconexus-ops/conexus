@@ -38,7 +38,7 @@ export async function listProposalsOn(t: TestContext, a: Parameters<typeof store
         runId?: RunId
       } = {},
     ) {
-      return on.hub.connectors.builder.propose(
+      return on.hub.copies.propose(
         { companyId: on.companyId, projectId: on.projectId },
         {
           connections: options.connections ?? both,

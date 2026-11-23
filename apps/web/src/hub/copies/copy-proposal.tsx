@@ -87,7 +87,7 @@ function decidedElsewhere(error: unknown) {
  * dialog, which calls `enableCopy` from the proposal; one request per attempt (web W24). A proposal
  * decided elsewhere closes it with the phrase, through `onRefused`; any other refusal stays inside.
  */
-export function ProposalDialog(props: {
+function ProposalDialog(props: {
   companyId: CompanyId
   proposal: CopyProposalSummary
   open: boolean

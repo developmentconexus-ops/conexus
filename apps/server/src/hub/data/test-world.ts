@@ -2,13 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import type { CopyId, DataSources } from '@conexus/hub-api'
-import {
-  ConnectionId,
-  ConversationId,
-  CopyId as CopyIdSchema,
-  OperationId,
-  Role,
-} from '@conexus/hub-api'
+import { ConnectionId, ConversationId, OperationId, Role } from '@conexus/hub-api'
 import type { DataWorld } from '@conexus/hub-api/conformance'
 import { LAWS_AT } from '@conexus/hub-api/conformance'
 import { Failure } from '../../platform/failure.ts'
@@ -23,6 +17,7 @@ import {
   testOf,
 } from '../connectors/test-connections.ts'
 import { asSync, TEST_TUNING } from '../copies/test-copies.ts'
+import { plantCopy } from '../copies/test-planted.ts'
 import type { RolesWorld } from '../copies/test-readers.ts'
 import { copyOf, idsOf, put, rolesWorld, VENDAS } from '../copies/test-readers.ts'
 import { STORE_A, STORE_B } from '../copies/test-sources.ts'
@@ -68,36 +63,6 @@ function planted(operation: string, input: Input) {
     key: ['codigo'],
     changedSince: null,
   })
-}
-
-/** A version 2 copy of a Sankhya read on the Matriz, as Ligar would leave it, with its empty table. */
-async function plantCopy(
-  w: RolesWorld,
-  name: string,
-  definition: CopyDefinitionV2,
-  from: Readonly<{ connector: string; connection: ConnectionId }>,
-) {
-  const { on } = w
-  const copyId = CopyIdSchema.parse(randomUUID())
-  await on.hub.test.asOwner(
-    `insert into copies.copy (id, company_id, connector_id, connection_id, name, label, definition,
-       created_by, created_at, attempt_key, body_hash)
-     values ($1, $2, $8, $3, $4, $4, $5, $6, now(), $7, 'planted')`,
-    [
-      ...[copyId, on.companyId, from.connection, name],
-      ...[JSON.stringify(definition), on.anaId, randomUUID(), from.connector],
-    ],
-  )
-  await on.hub.test.asOwner(
-    `insert into copies.copy_source (company_id, copy_id, connector_id, connection_id, account_ref, created_at)
-     select company_id, $1, connector_id, id, account_ref, now() from connectors.connection where id = $2`,
-    [copyId, from.connection],
-  )
-  const postgres = on.hub.postgres.companyPostgres
-  const sync = await postgres.syncAddress(new URL(on.owner.reveal()).hostname)
-  const table = { name, definition, accounts: true, instants: 'OFFSET' } as const
-  assert.equal((await postgres.ensureCopyTable(sync, table)).kind, 'DONE')
-  return copyId
 }
 
 /** The Filial, a second Sankhya connection no copy reads. */
@@ -171,8 +136,8 @@ async function plantedWorld(t: TestContext, at: Place['kind']) {
   const sankhya = await sankhyaKit(w)
   const pedidos = probeOf(sankhya, 'pedidos')
   const matriz = { connector: 'sankhya', connection: on.connectionId }
-  const kept = await plantCopy(w, 'sankhya_pedidos_alfa', planted('pedidos', pedidos), matriz)
-  const whole = await plantCopy(w, 'sankhya_devolucoes', planted('devolucoes', {}), matriz)
+  const kept = await plantCopy(w.on, 'sankhya_pedidos_alfa', planted('pedidos', pedidos), matriz)
+  const whole = await plantCopy(w.on, 'sankhya_devolucoes', planted('devolucoes', {}), matriz)
   if (at === 'PROJECT') {
     // A Sankhya is the Projeto's alone (project_connection_one_key); a Mercado Livre store is not.
     const [lojaA, lojaB] = await storesOf(w, ml.fake)
@@ -180,7 +145,7 @@ async function plantedWorld(t: TestContext, at: Place['kind']) {
     const store = { connector: 'mercado-livre', connection: lojaA }
     const stores = kitOf('mercado-livre')
     const page = probeOf(stores, 'pedidos')
-    const paged = await plantCopy(w, 'mercado_livre_pedidos', planted('pedidos', page), store)
+    const paged = await plantCopy(w.on, 'mercado_livre_pedidos', planted('pedidos', page), store)
     const marked = await put(w, on.ana, w.vendas.role, [...idsOf(w, VENDAS), paged, whole])
     assert.equal(marked.statusCode, 200, marked.body)
     const released = ['sankhya_vendas', 'sankhya_clientes'].map((name) => copyOf(w.copies, name))

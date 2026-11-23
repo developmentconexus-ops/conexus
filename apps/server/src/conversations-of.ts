@@ -73,10 +73,6 @@ function builderDoorOf(connectors: () => Connectors) {
       ids: Parameters<Connectors['builder']['provePage']>[0],
       a: Parameters<Connectors['builder']['provePage']>[1],
     ) => connectors().builder.provePage(ids, a),
-    propose: (
-      ids: Parameters<Connectors['builder']['propose']>[0],
-      a: Parameters<Connectors['builder']['propose']>[1],
-    ) => connectors().builder.propose(ids, a),
   }
 }
 

@@ -6,20 +6,16 @@ import {
   APP_DATA_TOOL,
   CompanyId,
   ConnectorId,
-  CopyId,
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
 import { z } from 'zod'
 import { CopyName } from '../../hub/connectors/public.ts'
-import { listProposalsOn } from '../../hub/copies/test-list-proposals.ts'
 import {
   copiesWithoutHubDatabase,
   releasing,
   sankhyaServed,
 } from '../../hub/copies/test-released.ts'
-import { firstEnded } from '../../hub/copies/test-routes.ts'
-import { ordersCopy } from '../../hub/copies/test-sources.ts'
 import { conversing } from '../conversation/test-conversation.ts'
 import { stepped } from '../conversation/test-questions.ts'
 import type { AppDataPort } from './public.ts'
@@ -39,7 +35,6 @@ function copy(
     description: null,
     mode,
     accounts: false,
-    proposedHere: false,
     columns: columns.map(([column, type]) => ({
       name: column,
       type,
@@ -49,15 +44,10 @@ function copy(
   }
 }
 
-function viewOf(
-  released: View['released'],
-  unreleased: string[] = [],
-  proposals: View['proposals'] = [],
-): View {
+function viewOf(released: View['released'], unreleased: string[] = []): View {
   return {
     kind: 'COPIES',
     released,
-    proposals,
     unreleased: unreleased.map((name) => CopyName.parse(name)),
   }
 }
@@ -82,7 +72,7 @@ test('o bloco das cópias: nome, colunas entre aspas na caixa da definição, ti
   assert.ok(block.includes('- `sync.vendas` (window of 7 days'))
   assert.ok(block.includes('"CODVEND" bigint, "cliente" text'))
   assert.ok(block.includes('`sync.produtos`'))
-  assert.ok(block.includes('never propose a copy that exists'))
+  assert.ok(block.includes('Ask the owner to release one to this Project.'))
   assert.ok(!/\d{4}-\d\d-\d\d|rows:/.test(block), 'no hour and no row count')
   assert.equal(dataContext(viewOf([], [])), '')
 })
@@ -108,7 +98,7 @@ test('o bloco diz o modo', () => {
 
 test('o bloco traz a regra da fonte', () => {
   const block = dataContext(viewOf([copy('c', [['ID', 'bigint']])]))
-  for (const part of ['through `db`', '`copy_propose`', '`connector_read`', SOURCE_RULE, '`42501`'])
+  for (const part of ['through `db`', '`connector_read`', SOURCE_RULE, '`42501`'])
     assert.ok(block.includes(part), part)
   assert.ok(!block.includes('Mercado Livre'))
 })
@@ -162,8 +152,7 @@ test('o bloco não muda com a rodada, e liberar outra cópia o muda', async (t) 
   assert.ok(!first.includes('- `sync.sankhya_vendedores`'))
   const vendas = ids.get('vendas')
   assert.ok(vendas)
-  const again = await on.hub.copies.run({ companyId, copyId: vendas }, AbortSignal.timeout(60_000))
-  assert.notEqual(again.kind, 'GONE')
+  await on.hub.test.asOwner('update copies.copy set rows = rows + 1 where id = $1', [vendas])
   assert.equal(
     dataContext(await on.hub.copies.projectView({ companyId, personId, projectId })),
     first,
@@ -176,31 +165,31 @@ test('o bloco não muda com a rodada, e liberar outra cópia o muda', async (t) 
   assert.ok(after.includes('- `sync.sankhya_vendedores`'))
 })
 
-test('a origem e as descrições', async (t) => {
-  const on = await listProposalsOn(t)
-  const fixed = ordersCopy(true)
-  const definition = { ...fixed, source: { ...fixed.source, input: { status: 'paid' } } }
-  const proposed = await on.propose({ definition })
-  assert.equal(proposed.kind, 'PROPOSED', JSON.stringify(proposed))
-  const made = await on.enable(on.ana, Object(proposed).proposalId)
-  assert.equal(made.statusCode, 201, made.body)
-  const ids = { companyId: on.companyId, personId: on.anaId, projectId: on.projectId }
-  const first = dataContext(await on.hub.copies.projectView(ids))
+test('a origem e as descrições', () => {
+  const orders: View['released'][number] = {
+    ...copy('mercado_livre_pedidos', [], { kind: 'CHANGES' }),
+    connector: ConnectorId.parse('mercado-livre'),
+    source: {
+      kind: 'OPERATION',
+      operation: 'pedidos',
+      label: 'Pedidos',
+      input: { status: 'paid' },
+    },
+    description: 'Os pedidos de cada loja',
+    accounts: true,
+    columns: [
+      { name: 'id', type: 'bigint', description: 'O número do pedido', inactiveSince: null },
+      { name: 'status', type: 'text', description: 'A situação do pedido', inactiveSince: null },
+    ],
+  }
+  const first = dataContext(viewOf([orders]))
   for (const part of [
-    '- `sync.mercado_livre_pedidos` [your proposal, turned on] (only what changed',
+    '- `sync.mercado_livre_pedidos` (only what changed',
     'from the read `pedidos` (Pedidos) of `mercado-livre`, fixed input {"status":"paid"}.',
     'Os pedidos de cada loja.',
-    `Columns: "_account" text (the account's id in the connector), "_account_name" text (the connection's name in Conexus), "id" bigint (O número do pedido), "status" text (A situação do pedido), "atualizado" timestamp (Quando o pedido mudou pela última vez)`,
+    `Columns: "_account" text (the account's id in the connector), "_account_name" text (the connection's name in Conexus), "id" bigint (O número do pedido), "status" text (A situação do pedido)`,
   ])
     assert.ok(first.includes(part), `${part}\n${first}`)
-  const copyId = CopyId.parse(Object(made.json()).copy.id)
-  await firstEnded(on, copyId)
-  const again = await on.hub.copies.run(
-    { companyId: on.companyId, copyId },
-    AbortSignal.timeout(60_000),
-  )
-  assert.notEqual(again.kind, 'GONE')
-  assert.equal(dataContext(await on.hub.copies.projectView(ids)), first, 'a run changes nothing')
   // A query's copy names no SQL; three copies of 25 described columns fit in the 8 KB.
   function described(at: number) {
     return {
@@ -222,39 +211,13 @@ test('a origem e as descrições', async (t) => {
   for (const at of [1, 2, 3]) assert.ok(block.includes(`- \`sync.c${at}\``), `c${at} listed`)
 })
 
-test('a proposta do Builder: aberta espera o Ligar, ligada vem marcada, e o bloco diz que nada falta ativar', () => {
-  const open = dataContext(
-    viewOf([], [], [{ name: CopyName.parse('ml_pedidos'), label: 'Pedidos das lojas' }]),
-  )
-  assert.ok(open.startsWith('## Data\n'))
-  assert.ok(open.includes('Your proposal `sync.ml_pedidos` (Pedidos das lojas) is open'))
-  assert.ok(open.includes("the card's Ligar"))
-  const on = dataContext(
-    viewOf([{ ...copy('ml_pedidos', [['id', 'bigint']]), proposedHere: true }]),
-  )
-  assert.ok(on.includes('- `sync.ml_pedidos` [your proposal, turned on] ('), on)
-  assert.ok(!on.includes('is open'))
-  assert.ok(on.includes('nothing is left to activate'))
-  assert.ok(on.includes('without looking at this block'))
-})
-
-test('a proposta ligada entre dois turnos: o bloco do turno seguinte a marca, sem pedir ativação', async (t) => {
-  const on = await listProposalsOn(t)
-  const ids = { companyId: on.companyId, personId: on.anaId, projectId: on.projectId }
-  const proposed = await on.propose({ definition: ordersCopy(true) })
-  assert.equal(proposed.kind, 'PROPOSED', JSON.stringify(proposed))
-  const before = dataContext(await on.hub.copies.projectView(ids))
-  assert.ok(
-    before.includes('Your proposal `sync.mercado_livre_pedidos` (Pedidos das lojas) is open'),
-    before,
-  )
-  assert.ok(!before.includes('[your proposal, turned on]'))
-  const made = await on.enable(on.ana, Object(proposed).proposalId)
-  assert.equal(made.statusCode, 201, made.body)
-  await firstEnded(on, Object(made.json()).copy.id)
-  const after = dataContext(await on.hub.copies.projectView(ids))
-  assert.ok(after.includes('- `sync.mercado_livre_pedidos` [your proposal, turned on] ('), after)
-  assert.ok(!after.includes('is open'), after)
+test('sem proposta: o texto do Builder num Projeto não manda propor cópia nem fala de proposta', () => {
+  const block = dataContext(viewOf([copy('c', [['ID', 'bigint']])], ['outra']))
+  for (const text of [block, SOURCE_RULE]) {
+    assert.doesNotMatch(text, /propos|copy_propose|Ligar/i)
+  }
+  assert.ok(block.includes('Ask the owner to release one to this Project.'))
+  assert.ok(block.includes('nothing is left to activate'))
 })
 
 const ID = {

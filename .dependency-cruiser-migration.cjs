@@ -19,7 +19,6 @@ module.exports = [
   'assistant/routes',
   'automations/automations',
   'connectors/connector-tools',
-  'connectors/copy-propose',
   'connectors/typed-reads',
   'construtor/code-tool',
   'construtor/construtor',
