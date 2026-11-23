@@ -15,7 +15,7 @@ e em [agentes e automações](../explanation/agents-and-automations.md); o Build
 - [0068](../decisions/0068-mastra-tracing-in-its-own-database.md), aceito em 2026-11-13: o rastreio nativo do Mastra, no banco do Mastra. Substituiu a [0052](../decisions/0052-one-tracing-path-builder-to-grafana.md).
 - [0054](../decisions/0054-model-defaults-and-served-models.md) e [0059](../decisions/0059-assistant-machine-reaches-package-registries.md): os modelos padrão e a máquina do Assistente que chega aos registros de pacotes.
 - Aprovações: [um-escopo-e-a-fabrica-de-ferramentas](../approvals/um-escopo-e-a-fabrica-de-ferramentas.md),
-  [uma-ficha-por-agente](../approvals/uma-ficha-por-agente.md) (o cartão em construção),
+  [uma-ficha-por-agente](../approvals/uma-ficha-por-agente.md) (fechada: no ar de v0.24.111 a v0.24.116, usada pelo fundador em 2026-11-23, https://github.com/developmentconexus-ops/conexus/pull/1288),
   [e241-supervisor](../approvals/e241-supervisor.md),
   [e243-agentes-do-projeto](../approvals/e243-agentes-do-projeto.md),
   [e245-os-agentes-escrevem](../approvals/e245-os-agentes-escrevem.md),

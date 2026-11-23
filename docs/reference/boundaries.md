@@ -1054,6 +1054,40 @@ changes, reread the line it names.
   the order of events for a slow page and passes with Mastra's own adapter too, so it proves neither.
 - **Revisit when** Mastra lets a stream send a subset of the display state, beyond `displayState: false`.
 
+## Mastra 1.83.0: the turn's place in the queue of model accounts (Uma ficha por agente)
+
+- **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`) has no queue of model accounts and no
+  several accounts for one person. Mastra Code reads one credential per organization and keeps no
+  line (`mastracode/sdk/src/index.ts:1413-1416`, `resolveTenantSessionModel`); neither it nor the
+  Factory has the piece (searched in both).
+- **Hand-made piece.** `turnProcessor` and `sessionTurns` in
+  `apps/server/src/builder/controller-kit/turns.ts`: the one input processor that takes a run's
+  `Turn` for the account queue and puts it on the request context, and the way a session holds that
+  turn until `agent_end`. Each agent's ficha chooses by its `turn` field: `SESSION` (the Assistant,
+  the Construtor, a Project agent's conversation) or `RUN` (the Builder, and the version the
+  Construtor tests, which have no session to hold it). Before the step it was three copies.
+- **Why.** Decisions [0049](../decisions/0049-model-accounts-keys-sign-ins-queues.md) and
+  [0050](../decisions/0050-conversation-on-the-agent-controller.md): a person's accounts, in order,
+  one turn on one account at a time. Proof: the criteria of `model-accounts/` and the requests of
+  each agent, which hold the same bytes before and after the join.
+- **Revisit when** Mastra gains an account queue or several credentials for one person.
+
+## Mastra 1.83.0: the Project's lock as the Builder's `take` (Uma ficha por agente)
+
+- **Library line.** `@mastra/core` 1.83.0 locks by conversation only (`threadLock`,
+  `@mastra/core/dist/agent-controller/types.d.ts:316-325`): two conversations
+  of one Project run at the same time.
+- **Hand-made piece.** `projectTurn` in `apps/server/src/builder/conversation/turn-of.ts`, the
+  Builder ficha's `take` (`turnOf`): the run takes the Project's lock (`Runs.take`) before any model
+  call, or ends `RUN_BUSY` with the name of whose run holds it, and frees it at the run's end
+  (`onEnd`).
+- **Why.** A Builder run moves the app's Git reference, and that is the Project's, not the
+  conversation's (decision [0027](../decisions/0027-mastra-builder-engine.md): the run engine is
+  Conexus code). Proof: `conversation-turns.test.ts`, the case of two conversations at once in one
+  Project: the second ends `RUN_BUSY` without calling the model; it fails when `projectTurn` stops
+  refusing a lock that is taken.
+- **Revisit when** Mastra can lock by a key other than the conversation.
+
 ## Mastra 1.83.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
 
 - **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`): the session's native "never ask" is the `allow`
@@ -1061,9 +1095,11 @@ changes, reread the line it names.
   (`packages/core/src/agent-controller/session.ts:4808-4829`, `:5019-5030` and `:6638-6642`). With `@mastra/pg`
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
   at `packages/core/src/agent/agent.ts:8757`).
-- **Hand-made piece.** `requireApproval: NEVER_ASKS` in `apps/server/src/builder/agents/tools.ts` (the
-  reads) and in `agents/agent.ts` (`neverAsking`, the shared tools, on a copy), and
-  `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
+- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/builder/controller-kit/mount.ts`)
+  in `agents/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
+  regime `THE_WRITE_ASKS` runs over its tools: every tool whose rule is not a function (the shared
+  ones, the web's, the code's) goes on a copy with `NEVER_ASKS`, and the given objects stay as they
+  are; and `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
   Computador). A tool's own rule runs before the session's policy, so the call is never suspended.
 - **Why.** With `allow`, 12 of 200 reads were lost on Postgres; with the rule on each tool, 0 of 200
   (the study of step 24.5; Papéis P1).

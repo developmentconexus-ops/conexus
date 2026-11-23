@@ -42,13 +42,25 @@ As respostas do fundador:
 A Prévia em endereço próprio fechou em 2026-11-23: o fundador a usou na nuvem, na v0.24.111, e a
 linha de fechamento está no [arquivo de aprovação](../../approvals/a-previa-em-endereco-proprio.md).
 A Prévia mora em `<rótulo>--previa`, e o app publicado não abre dentro de outra página. O cartão está
-no histórico do `main`, no commit `eb0d2ea1`, o último que o mudou. A trilha está sem cartão em
-`docs/steps/` até o cartão da etapa seguinte entrar.
+no histórico do `main`, no commit `eb0d2ea1`, o último que o mudou.
 
-A etapa seguinte é `A1`, com o cartão em
-https://github.com/developmentconexus-ops/conexus/pull/1203. O cartão dele cria um terceiro ambiente
-no endereço do app, e por isso relê as linhas que a Prévia trocou, na tabela de referência do cartão
-dela. Antes fecharam Um escopo e a fábrica de ferramentas, em 2026-11-17
+A etapa 1 do harness, "Uma ficha por agente", entrou no `main` e no ar (v0.24.111 a v0.24.116): o
+Builder, o Assistente, o Construtor e o agente publicado nascem cada um de uma ficha e de uma
+montagem só, e o pedido de cada um ao modelo ficou igual, byte a byte. O desenho está na
+[explicação do harness](../../explanation/harness.md), e o que a Plataforma mantém à mão, em
+[boundaries](../../reference/boundaries.md). O cartão foi apagado com o fechamento; está no
+histórico do `main`. A trilha está sem cartão em `docs/steps/` até o cartão da etapa seguinte entrar.
+
+A ordem depois dela é a da decisão A do fundador, de 2026-11-22: `A1`, a etapa 2 do harness ("Uma
+sala e os nomes certos"), `A2` e `A3`. O cartão do `A1` está em
+https://github.com/developmentconexus-ops/conexus/pull/1203 e parte do `main` depois do fechamento da
+etapa 1: ele relê as linhas que a Prévia trocou (um terceiro ambiente no endereço do app) e as que
+a etapa 1 trocou. O juiz de fim de turno do Builder é o campo `judge` da ficha dele, onde a
+conferência nova entra, e as skills dele são o campo `skills`; `B/conversation/processors.ts` não
+mudou. O passo 2 da U3 do `A1` muda a descrição de `conexus_check` e o texto do juiz, que vão no
+pedido ao modelo: os retratos do Builder (`B/conversation/requests/*.snapshot`) ficam vermelhos de
+propósito, e o commit dele os regrava com `--test-update-snapshots`, com o diff mostrando só essas
+duas coisas. Antes fecharam Um escopo e a fábrica de ferramentas, em 2026-11-17
 ([aprovação](../../approvals/um-escopo-e-a-fabrica-de-ferramentas.md)), e a fundação do front-end,
 em 2026-11-22 ([aprovação](../../approvals/fundacao-do-front-end.md)). A ordem dos marcos não muda.
 
@@ -62,7 +74,8 @@ cartão do marco da trilha que a pedir, com a aprovação dele.
 ## O que a trilha possui
 
 - `apps/server/src/builder/controller-kit/`, `conversation/`, `assistant/`, `agents/`,
-  `construtor/` e `automations/`.
+  `construtor/`, `automations/`, `company-tools/`, `data-tools/`, `connectors/`, `app-data/` e
+  `tools/`, como a regra `AGENTS_AND_APPS` do `dependency-cruiser` já diz (`.dependency-cruiser.cjs`).
 - `packages/app/` e `packages/app-contract/`.
 - As telas de conversa.
 
@@ -89,9 +102,9 @@ contrato.
 
 A auditoria de 2026-11-14 deixou seis passos abertos. Cada um entra num marco desta trilha.
 
-- **Passo 3.** A casca única de conversa na web, `<ConversationRoom>` com o registro de cartões por ferramenta, entra antes de `A3`, que põe o plano na conversa.
+- **Passo 3.** A casca única de conversa na web, `<ConversationRoom>` com o registro de cartões por ferramenta, é a etapa 2 do harness, depois de `A1` e antes de `A3`, que põe o plano na conversa.
 - **Passo 4.** As regras de prompt trocadas por mecanismo do Mastra entram em `A3`, onde o juiz de fim de turno roda nos quatro agentes e as frases saem dos prompts.
 - **Passo 5.** O modo de plano nativo é o próprio `A3`, com o teste em que o controlador recusa a escrita antes da aprovação.
 - **Passo 6.** Do dono do conhecimento da empresa, o significado vai para `D4`, na trilha Dados. A memória do Projeto no Knowledge vai com o item 5 da lista do Brain, na página da [trilha Dados](dados.md), e `A3` fica sem ela.
 - **Passo 7.** As correções de stack andam ao lado de `A1`, cada uma num pull request. O convite com senha mexe em segurança e pede cartão.
-- **Passo 8.** O renome para o Estúdio vem por último, depois de `A4`. Desde `A1`, todo arquivo novo nasce na pasta alvo da auditoria, com o que é comum às conversas em `builder/controller-kit/`.
+- **Passo 8.** Os nomes entram na etapa 2 do harness, depois de `A1` e antes de `A3` (decisões A e B do fundador, 2026-11-22, no [arquivo de aprovação](../../approvals/uma-ficha-por-agente.md)): as pastas com nomes que dizem o que cada uma é, e os nomes que a pessoa vê (a área Estúdio, "Construtor de apps" e "Construtor de agentes"), estes com protótipo antes. Nenhum id guardado muda, porque o id de cada agente e as marcas das conversas estão gravados nas conversas. Desde `A1`, todo arquivo novo nasce na pasta alvo da auditoria, com o que é comum às conversas em `builder/controller-kit/`.

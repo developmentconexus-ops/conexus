@@ -386,6 +386,10 @@
     },
     {
       "file": "apps/server/src/builder/construtor/routes.test.ts",
+      "name": "o modelo: a conversa de um Projeto não troca de modelo pela URL de outro Projeto da mesma pessoa"
+    },
+    {
+      "file": "apps/server/src/builder/construtor/routes.test.ts",
       "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND"
     },
     {

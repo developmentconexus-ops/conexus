@@ -126,7 +126,7 @@ const BUILDER_MEMORY = { ...TITLE.app, recall: 'thread' } as const
  * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken
  * from the session and given its account by the queue's processors, its memory, its title and its
  * observation through the same account, in Mastra's own database. It is made from its ficha: Mastra
- * Code's agent (`sdk/src/index.ts:1216-1223`) with no workspace of its own, since the controller
+ * Code's agent (`mastracode/sdk/src/index.ts:1368-1376`) with no workspace of its own, since the controller
  * lends the turn's machine, and the task list's signal with `memory`.
  */
 export function createBuilder(deps: {

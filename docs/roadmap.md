@@ -56,7 +56,7 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 
 `D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b"), mais a 3a, dos
 arquivos, e o XML lido em linhas; depois vêm os conectores por classe e a porta
-de fora. A etapa 1 fechou; segue a 2, com a etapa O conector no padrão novo entre a parte 0 e a parte
+de fora. Segue a 2, com a etapa O conector no padrão novo entre a parte 0 e a parte
 1 dela. As etapas, os onze de `D3` e o
 Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
@@ -71,8 +71,9 @@ Brain estão na [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A Prévia em endereço próprio fechou; segue `A1`
-(https://github.com/developmentconexus-ops/conexus/pull/1203). Mais na
+A etapa 1 do harness fechou; segue `A1`
+(https://github.com/developmentconexus-ops/conexus/pull/1203), depois a etapa 2 ("Uma sala e os nomes
+certos"), `A2` e `A3`. Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
@@ -88,7 +89,7 @@ agente. Tratamento e qualidade dos dados antes do lago implementado (2026-11-20)
 
 ### O que você fornece, e quando
 
-Já fornecido: Cloudflare (Workers Paid, US$ 5 por mês; Workers for Platforms, US$ 25 por mês), o Neon
+Já fornecido: Cloudflare (Workers Paid e Workers for Platforms), o Neon
 grátis, as assinaturas de modelo, o E2B grátis, o R2, o usuário de leitura no Sankhya e a conta de
 laboratório da AWS ([0072](decisions/0072-the-lab-aws-account-is-provisional.md)). O Neon Launch do Hub, uns
 US$ 19,35 por mês, espera (2026-11-01).
