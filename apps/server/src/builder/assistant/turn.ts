@@ -1,6 +1,6 @@
 import type { FailureCode } from '@conexus/hub-api'
 import type { AgentController, Session as ControllerSession } from '@mastra/core/agent-controller'
-import { sessionTurns, takeOfScope, turnKeyOn } from '../controller-kit/public.ts'
+import { takeOfScope, turnKeyOn } from '../controller-kit/public.ts'
 import { failureOf, modelFailure, TurnTally } from '../conversation/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { RunOf } from './context.ts'
@@ -11,20 +11,21 @@ const TURN_PROCESSOR = 'conexus-assistant-turn'
 export const turnKey = turnKeyOn('conexus-assistant-turn-key')
 
 /**
- * The Assistant's turns (step 24.1, U2) on the kit's owner of their end: a run of a conversation
- * takes its owner's turn with a new `TurnKey`, and no Projeto (`Runs`): the controller already
- * sends one message at a time to a conversation. A card (`ask_user`) suspends the run, and an
- * automation's run ends then (`endOf`). The turn's end leaves the conversation's machine running:
- * E2B pauses it on its own timeout, and a later question before then reuses it.
+ * The Assistant's turn on the ficha (step 24.1, U2): a run of a conversation takes its owner's turn
+ * with a new `TurnKey`, and no Projeto (`Runs`): the controller already sends one message at a time
+ * to a conversation. A card (`ask_user`) suspends the run, and an automation's run ends then
+ * (`endOf`). The turn's end leaves the conversation's machine running: E2B pauses it on its own
+ * timeout, and a later question before then reuses it.
  */
-export function assistantTurns(deps: { queue: QueueDeps; scopeOf: RunOf }) {
-  return sessionTurns({
+export function assistantTurn(deps: { queue: QueueDeps; scopeOf: RunOf }) {
+  return {
+    kind: 'SESSION',
     id: TURN_PROCESSOR,
     take: takeOfScope({
       ...{ queue: deps.queue, turnKey },
       scopeOf: async (requestContext) => (await deps.scopeOf(requestContext))?.owner,
     }),
-  })
+  } as const
 }
 
 export type TurnEnd = { kind: 'DONE' } | { kind: 'FAILED'; code: FailureCode }

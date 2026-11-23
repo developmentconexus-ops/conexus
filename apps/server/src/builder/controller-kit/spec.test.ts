@@ -3,6 +3,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ModelId } from '@conexus/hub-api'
 import { Knowledge } from '@mastra/core/knowledge'
+import type { InputProcessor } from '@mastra/core/processors'
 import { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import { createSkill } from '@mastra/core/skills'
@@ -133,6 +134,51 @@ test('as instruções seguem a ordem da ficha, e uma parte do run que não dá n
   assert.deepEqual(await agent.getInstructions({ requestContext: new RequestContext() }), [
     { role: 'system', content: 'Primeiro.' },
     { role: 'system', content: 'Do run.' },
+  ])
+})
+
+test('a ficha com um bloco por modelo o põe depois do texto fixo só quando o modelo da sessão tem um', async (t) => {
+  const { mount } = await mounting(t)
+  const { agent } = mount({
+    prompt: {
+      kind: 'MESSAGES',
+      parts: [
+        { kind: 'TEXT', text: 'Primeiro.' },
+        { kind: 'BY_MODEL', blocks: { 'openai/gpt-6-luna': 'Do Luna.' } },
+        { kind: 'TEXT', text: 'Último.' },
+      ],
+    },
+  })
+  function on(modelId: string) {
+    const requestContext = new RequestContext()
+    requestContext.set('controller', { session: { modelId } })
+    return agent.getInstructions({ requestContext })
+  }
+  assert.deepEqual(await on('openai/gpt-6-luna'), [
+    { role: 'system', content: 'Primeiro.' },
+    { role: 'system', content: 'Do Luna.' },
+    { role: 'system', content: 'Último.' },
+  ])
+  assert.deepEqual(await on('anthropic/claude-test'), [
+    { role: 'system', content: 'Primeiro.' },
+    { role: 'system', content: 'Último.' },
+  ])
+})
+
+test('a ficha sem processors dá o turno e a escolha da conta; com eles, uns antes e outros depois da escolha', async (t) => {
+  const { mount } = await mounting(t)
+  async function idsOf(fields: Partial<ConversationSpec>) {
+    const listed = await mount(fields).agent.listConfiguredInputProcessors(new RequestContext())
+    return listed.map((each) => ('id' in each ? each.id : undefined))
+  }
+  assert.deepEqual(await idsOf({}), ['conexus-spec-turn', 'conexus-account-pick'])
+  const before: InputProcessor = { id: 'antes', processInputStep: () => ({}) }
+  const after: InputProcessor = { id: 'depois', processInputStep: () => ({}) }
+  assert.deepEqual(await idsOf({ processors: { beforePick: [before], afterPick: [after] } }), [
+    'conexus-spec-turn',
+    'antes',
+    'conexus-account-pick',
+    'depois',
   ])
 })
 

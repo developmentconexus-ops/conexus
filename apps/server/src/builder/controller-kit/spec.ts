@@ -1,5 +1,6 @@
 import type { AgentConfig, AgentInstructions, ToolsInput } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
+import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Turn } from '../model-accounts/public.ts'
 import type { controllerOf } from './factories.ts'
@@ -11,6 +12,8 @@ import type { Taken } from './turns.ts'
 export type PromptPart =
   | Readonly<{ kind: 'FIXED'; text: string }>
   | Readonly<{ kind: 'TEXT'; text: string }>
+  /** The block of the turn's model, by its id with its provider; a model without one adds no message. */
+  | Readonly<{ kind: 'BY_MODEL'; blocks: Readonly<Record<string, string>> }>
   | Readonly<{
       kind: 'OF_RUN'
       of: (requestContext: RequestContext) => Promise<string | undefined>
@@ -62,6 +65,12 @@ type RunTurn = Readonly<{
 
 export type TurnSource = SessionTurn | RunTurn
 
+/** The input processors an agent adds around the account's pick (C26): the turn's comes first, always. */
+type Processors = Readonly<{
+  beforePick: readonly InputProcessor[]
+  afterPick: readonly InputProcessor[]
+}>
+
 /** What an agent is made of: Mastra's `Agent` fields, filled by its ficha. */
 export type AgentSpec = Readonly<{
   id: string
@@ -74,6 +83,7 @@ export type AgentSpec = Readonly<{
   approval: Approval
   memory: AgentConfig['memory']
   turn: TurnSource
+  processors?: Processors
   skills?: AgentConfig['skills']
   signals?: AgentConfig['signals']
   scopes?: AgentConfig['scopes']
@@ -94,5 +104,7 @@ export type ConversationSpec = Omit<AgentSpec, 'id' | 'memory' | 'turn'> &
     mode: ControllerInput['mode']
     /** The controller's own tools under native ids (`ask_user`, `submit_plan`). */
     own?: NonNullable<ControllerInput['tools']>
+    /** The helpers the `subagent` tool may start (row 22), and the model of each one's calls. */
+    subagents?: ControllerInput['subagents']
     workspace?: ControllerInput['workspace']
   }>
