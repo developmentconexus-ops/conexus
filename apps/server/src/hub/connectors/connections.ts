@@ -294,6 +294,11 @@ function whereOf(input: OfConnection, connector: Connector) {
   return { connectionId: input.connectionId, connector: connector.id }
 }
 
+/**
+ * Removes a connection and its seal; removing one already gone answers the same (criterion 13).
+ * A connector that declares a revoke is asked to take the authorization back first; the provider
+ * refusing or being down never stops the removal. Then the connection is deleted in one transaction.
+ */
 export async function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId }) {
   await deps.database.command(scopeOf(input), (tx) =>
     admitted(deps, tx, input, 'manageConnections'),

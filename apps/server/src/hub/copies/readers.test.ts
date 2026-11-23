@@ -119,9 +119,9 @@ test('a tabela marcada para um papel não vai para outro', async (t) => {
   assert.deepEqual(await asRole(on, atendente.id, 'sankhya_vendas'), { refused: '42501' })
 })
 
-test('apagar o papel apaga a marca e a rodada seguinte apaga o login', async (t) => {
+test('apagar o papel apaga a marca, e o login fica até outro papel ser mudado', async (t) => {
   const on = await copiesOn(t)
-  const vendas = await roleOn(on, 'Vendas')
+  const [vendas, atendente] = [await roleOn(on, 'Vendas'), await roleOn(on, 'Atendente')]
   const copyId = await on.plant('vendas')
   await mark(on, copyId, vendas.id)
   await reconciled(on)
@@ -131,7 +131,17 @@ test('apagar o papel apaga a marca e a rodada seguinte apaga o login', async (t)
   const gone = await call(on.hub, on.ana, 'DELETE', url)
   assert.ok(gone.statusCode < 300, gone.body)
   assert.deepEqual(await readersOf(on, copyId), [])
-  await reconciled(on)
+  assert.ok((await roleLoginsOf(on)).includes(login), 'nenhuma rodada o apaga mais')
+  const set = await call(
+    on.hub,
+    on.ana,
+    'PUT',
+    `/api/companies/${on.companyId}/roles/${atendente.role}/copies`,
+    {
+      copies: [],
+    },
+  )
+  assert.equal(set.statusCode, 200, set.body)
   assert.equal((await roleLoginsOf(on)).includes(login), false)
 })
 

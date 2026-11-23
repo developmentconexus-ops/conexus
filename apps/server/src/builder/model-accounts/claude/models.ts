@@ -26,7 +26,7 @@ const PROMPT_CACHE_TTL = '1h'
  * whose content changes every call.
  */
 export type PromptCacheScope = 'conversation' | 'system'
-const _PROMPT_CACHE_SCOPES = [
+const PROMPT_CACHE_SCOPES = [
   'conversation',
   'system',
 ] as const satisfies readonly PromptCacheScope[]

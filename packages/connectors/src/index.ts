@@ -22,14 +22,13 @@ export {
   tokenRequest,
 } from './kernel/auth.ts'
 export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance-session.ts'
-export type { CopyColumnType, CopyColumnTypeV2, CopyPage } from './kernel/copy.ts'
+export type { CopyColumnType, CopyColumnTypeV2 } from './kernel/copy.ts'
 export {
   CANONICAL_CELL,
   CopyDefinition,
   CopyDefinitionV1,
   CopyDefinitionV2,
   CopyName,
-  CopyPageSchema,
   CopyPosition,
   copyPrefixOf,
 } from './kernel/copy.ts'

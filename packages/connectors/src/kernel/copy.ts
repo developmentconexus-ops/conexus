@@ -175,10 +175,3 @@ export const CopyPosition = z.discriminatedUnion('kind', [
   }),
 ])
 export type CopyPosition = z.infer<typeof CopyPosition>
-
-/** The rows in the definition's column order, each cell its type's canonical text or null; `more` when another page follows. */
-export const CopyPageSchema = z.object({
-  rows: z.array(z.array(z.string().nullable())),
-  more: z.boolean(),
-})
-export type CopyPage = Readonly<{ rows: readonly (readonly (string | null)[])[]; more: boolean }>

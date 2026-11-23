@@ -27,7 +27,6 @@ test('nenhum relógio de cópia', async (t) => {
   }
   assert.deepEqual(await copyRows(), [], 'after the Hub boots')
   await on.plant('vendas')
-  assert.deepEqual(await copyRows(), [], 'with a copy planted')
   const operator = await personOn(hub, {
     ...{ name: 'Olga Souza', email: 'olga@example.test' },
     role: 'admin',

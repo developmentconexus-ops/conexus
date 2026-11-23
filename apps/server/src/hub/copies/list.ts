@@ -144,6 +144,7 @@ async function seenBy(deps: CopiesDeps, tx: ReadTx, input: InCompany): Promise<'
   return copiesReadBy(deps, tx, { companyId: input.companyId, role: proof.role })
 }
 
+/** The company's copies (or the one) as the contract states them. */
 async function summaries(
   deps: CopiesDeps,
   input: InCompany,
