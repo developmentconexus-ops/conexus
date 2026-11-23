@@ -93,7 +93,8 @@ export function NEVER_ASKS() {
  * (`createTool` sets `false` when none is given, `NM/tool-3X7mHzgh.js:858`) as a copy with
  * `NEVER_ASKS`; a tool whose rule is a function as it is (only a function beats the session,
  * `C/loop/workflows/agentic-execution/tool-approval-verdict.ts:85-93`); the given objects unchanged.
- * The copy keeps the tool's prototype, so the objects the Builder shares (`web_fetch`) keep their rule.
+ * The copy keeps the tool's prototype, so it stays the same kind of tool; the given object is not touched,
+ * so the ones the Builder shares (`web_fetch`) keep their rule.
  */
 function askingOnlyByOwnRule(tools: ToolsInput): ToolsInput {
   return Object.fromEntries(

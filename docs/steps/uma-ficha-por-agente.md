@@ -601,7 +601,6 @@ export type PromptPart =
   | Readonly<{ kind: 'FIXED'; text: string }>          // U3: `fixedSystem(text)`, the 1 h cache mark
   | Readonly<{ kind: 'TEXT'; text: string }>           // U3: a fixed message without the mark
   | Readonly<{ kind: 'OF_RUN'; of: (requestContext: RequestContext) => Promise<string | undefined> }> // U3: none when undefined
-  | Readonly<{ kind: 'DATA_ORDER' }>                   // U4: `dataOrder()`, the data track's text
   | Readonly<{ kind: 'BY_MODEL'; blocks: Readonly<Record<string, string>> }> // U5: the session model's block, or none
 
 /** An agent's instructions (row 5): system messages in order; the run's version's (U4); one string (U6, the Builder's today). */
@@ -613,7 +612,7 @@ export type Prompt =
 /** Whose model a turn runs: the session's (U3), or the run's, as a saved version holds it (U4). */
 export type ModelSource =
   | Readonly<{ kind: 'SESSION' }>
-  | Readonly<{ kind: 'OF_RUN'; of: (requestContext: RequestContext) => Promise<ModelId> }>
+  | Readonly<{ kind: 'OF_RUN'; of: (requestContext: RequestContext) => Promise<ReturnType<typeof routedModel>> }> // `provider/model`, which Mastra's router reads: the ficha calls `routedModel`
 
 /** Who waits for approval (row 10): nothing, `yolo` (U3); or a write by its own rule, every other tool never asking (U4). */
 export type Approval = Readonly<{ kind: 'NOTHING_ASKS' }> | Readonly<{ kind: 'THE_WRITE_ASKS' }>
@@ -690,7 +689,7 @@ a chave que a ficha preenche (critério 9). Nenhum arquivo novo do kit importa d
 
 - **Cada estado.** `PromptPart`, `Prompt`, `ModelSource`, `Approval`, `TurnSource`: uniões
   discriminadas em `kind`; o `switch` de cada uma termina em `satisfies never` (C21).
-- **Cada id.** `ModelId` (marca) em `OF_RUN`; o id do controlador vem de `CONTROLLER_KINDS`.
+- **Cada id.** `ModelId` (marca) em `OF_RUN`, que a ficha passa por `routedModel`; o id do controlador vem de `CONTROLLER_KINDS`.
 - **O dono de cada fato.** O que é de um agente: a ficha dele, no arquivo dele. O que é igual nos
   quatro: `mount.ts`. A marca de cache: `fixedSystem`.
 - **O esquema Zod de cada entrada externa.** Nenhuma: a ficha é código nosso.
@@ -765,7 +764,7 @@ agente de cada versão, e a aprovação é a parte mais delicada da etapa.
 
 ### Os contratos que a unidade cria
 
-As variantes da U4 em `spec.ts` (`DATA_ORDER`, `DELEGATED`, `OF_RUN` do modelo, `THE_WRITE_ASKS`,
+As variantes da U4 em `spec.ts` (`DELEGATED`, `OF_RUN` do modelo, `THE_WRITE_ASKS`,
 `RUN` da vez, `description`, `scopes`). Em `mount.ts`, a regra do regime:
 
 ```ts
@@ -785,7 +784,7 @@ As duas fichas do agente salvo: a da conversa (`kind: 'agents'`, `prompt` `DELEG
 `OF_RUN` pelo plano, `tools` da versão, `approval` `THE_WRITE_ASKS`, `scopes`, `memory` da versão,
 `threads` a memória observacional, `turn` `SESSION` com o `take` de `agentTurns`, `mode` sem lista, o
 `workspace` das máquinas); e a de cada versão, por `agentOfSpec` (`id` `agentKey`, `name`,
-`description`, `prompt` com `FIXED(CONEXUS_PROMPT)`, `DATA_ORDER`, `OF_RUN(bloco)`, `OF_RUN(versão e
+`description`, `prompt` com `FIXED(CONEXUS_PROMPT)`, `TEXT(dataOrder())`, `OF_RUN(bloco)`, `OF_RUN(versão e
 WRITES ou READ_ONLY)`, `OF_RUN(o programa, ou nada)`, `model` `OF_RUN`, `approval` `THE_WRITE_ASKS`,
 `turn` `RUN` com `id: 'conexus-agent-turn'`, `none: 'NO_TURN'` e `resumes: false`).
 
@@ -864,7 +863,7 @@ estica a ficha (os processadores em volta da vez, o ajudante, as skills, o sinal
 ### Os contratos que a unidade cria
 
 As variantes da U5 em `spec.ts`: `BY_MODEL`, `skills`, `signals`, `knowledge`, `processors`,
-`own.perRun` e `subagents`. A ficha do Assistente: `prompt` com `FIXED(FIXED)`, `DATA_ORDER`, `BY_MODEL(MODEL_BLOCKS)`
+`own.perRun` e `subagents`. A ficha do Assistente: `prompt` com `FIXED(FIXED)`, `TEXT(dataOrder())`, `BY_MODEL(MODEL_BLOCKS)`
 e `OF_RUN(o bloco da conversa)`, este com a recusa `PROMPT_WITHOUT_CONVERSATION` de hoje, agora
 antes de ler as ligações escolhidas e o que a pessoa pode (o item 5 da issue 753); `tools` na
 ordem de `assistant.ts:233-247`; `skills`; `signals` com `TaskSignalProvider`; `knowledge` e `scopes`, os dois que `companyScopes` devolve (`B/assistant/company-memory.ts:345-353`); `processors` com `companyReadSearch`, `researchOnly` e `profileReadOnlyInRuns` antes da
@@ -892,8 +891,10 @@ T24.
    - **O que sai:** `assistantAgent` (`:177-260`), o `controllerOf` de `:293-310` e
      `assistantInstructions` (`instructions.ts:49-76`).
    - **Testes:** os de `B/assistant/` e de `B/automations/` e os retratos, sem mudar.
-   - **Mutações à mão:** pôr `machineUploads` antes da escolha da conta deixa vermelho o teste de
-     hoje dos arquivos da pessoa (`B/assistant/files.test.ts`).
+   - **Mutações à mão:** pôr `machineUploads` antes da escolha da conta não deixa vermelho nenhum teste de
+     hoje (nem `B/assistant/files.test.ts`), na base e na ficha: a ordem só muda `processInput`,
+     `processInputStep` e `processLLMRequest`, que nenhum retrato nem teste observa; `spec.test.ts`
+     prova `beforePick` e `afterPick` em volta da conta.
    - **Pronto quando:** o `grep` de `new Agent(` e `controllerOf(` em `assistant.ts` vazio.
 
 ### Como se prova
@@ -1000,7 +1001,7 @@ molde, e cada uma guarda a sua admissão.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `B/controller-kit/routes.ts` | Cria: `serveModelChange` | os três arquivos de rotas |
+| `B/controller-kit/routes.ts` | Cria: `answerModelChange` | os três arquivos de rotas |
 | `B/conversation/routes.ts`, `B/assistant/routes.ts`, `B/construtor/routes.ts` | Muda: a rota `…/model` pelo molde | — |
 
 ### Os contratos que a unidade cria
@@ -1009,26 +1010,29 @@ Em `B/controller-kit/routes.ts`:
 
 ```ts
 /**
- * The route that puts a conversation on a model and effort (`…/model`), the same for the Builder, the
- * Assistant and the Construtor: the agent's own admission finds the conversation and the marks a
- * recovered session carries, else refuses (S10); then `changeModel`; then the agent's log line.
+ * The body of the route that puts a conversation on a model and effort (`…/model`), the same for the
+ * Builder, the Assistant and the Construtor: the agent's own admission (`owned`) finds the
+ * conversation and the marks a recovered session carries, else refuses (S10); then `changeModel`;
+ * then the agent's log line (`logged`). Each agent's route stays concrete and calls this from its
+ * own `serve`: the types `serve` gives a handler depend on the operation and do not resolve inside
+ * a generic function (C24).
  */
-export function serveModelChange<Op extends ModelChange>(
-  app: FastifyInstance,
-  operation: Op,
+export async function answerModelChange(
   deps: {
     kind: ControllerKind
     controller: AgentController
     queue: QueueDeps
-    owned: (input: Served<Op>) => Promise<{ owner: Owner; id: ConversationId; tags?: Record<string, string> }>
-    logged: (input: Served<Op>, about: { companyId: CompanyId; conversationId: ConversationId }) => void
+    owned: () => Promise<{ owner: Owner; id: ConversationId; tags?: Record<string, string> }>
+    logged: (about: { companyId: CompanyId; conversationId: ConversationId }) => void
   },
-): void
+  choice: { model: ModelId; effort: Effort },
+)
 ```
 
-`ModelChange` é a união dos três tipos de operação de `packages/hub-api` que existem hoje
-(`setConversationModel`, `setAssistantModel`, `setConstrutorModel`), e `Served<Op>` é a entrada que
-`serve` (`apps/server/src/platform/http.ts`) dá a cada uma. Nenhuma operação muda.
+Cada rota chama `serve` com a sua operação (`setConversationModel`, `setAssistantModel`,
+`setConstrutorModel`) e passa `owned` e `logged` por fechamento, com a entrada que `serve`
+(`apps/server/src/platform/http.ts`) lhe deu. Nenhuma operação muda. O "Parar se" desta unidade
+disparou, e a saída foi a dele: uma função por rota que chama uma parte comum.
 
 - **Cada estado.** Nenhum novo.
 - **Cada id.** `ConversationId` (marca), achado pela admissão.

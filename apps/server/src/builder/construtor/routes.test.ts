@@ -212,6 +212,20 @@ test('o modelo: depois de um reinício a troca recupera a sessão com as marcas 
   assert.equal(session.getTags().conexusConstrutorProject, on.projectId)
 })
 
+test('o modelo: a conversa de um Projeto não troca de modelo pela URL de outro Projeto da mesma pessoa', async (t) => {
+  const on = await agentsOn(t)
+  const url = await opened(on)
+  const other = await otherProject(on.hub, on.ana, on.company, [on.matriz], 'Outro')
+  const elsewhere = `${on.company}/projects/${other.projectId}/construtor/conversations/${url.slice(url.lastIndexOf('/') + 1)}`
+  const before = await sessionStateOf(on.hub, on.ana, url)
+  const refused = await call(on.hub, on.ana, 'PUT', `${elsewhere}/model`, {
+    model: MODEL,
+    effort: 'off',
+  })
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'CONVERSATION_NOT_FOUND'])
+  assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), before, 'a refusal changes nothing')
+})
+
 test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND', async (t) => {
   const on = await agentsOn(t)
   const base = `${on.company}/projects/${on.projectId}/construtor/conversations`
