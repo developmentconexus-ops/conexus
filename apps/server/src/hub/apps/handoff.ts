@@ -74,7 +74,6 @@ async function createHandoff(
       personId: input.person.id,
       ...found,
       hubSessionId,
-      environment,
       expiresAt: sql`statement_timestamp() + make_interval(secs => ${HANDOFF_SECONDS})`,
     })
   })
@@ -114,7 +113,6 @@ function redeemHandoff(deps: AppDeps, input: { host: AppHost; code: string; bind
       companyId,
       projectId,
       hubSessionId,
-      environment: taken.environment,
     })
     return { session, companyId, projectId }
   })
