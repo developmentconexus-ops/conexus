@@ -15,6 +15,9 @@ cada sistema: Sankhya, Mercado Livre e HubSpot. A cópia em massa está em
 - [0062](../decisions/0062-a-write-declares-its-provider-facts.md), aceito em 2026-11-08: uma escrita declara o que só o fornecedor sabe.
 - [0058](../decisions/0058-provider-limits-and-queues.md): os limites do fornecedor, a espera do 429 e uma chamada por ligação.
 - [0056](../decisions/0056-connectors-kit-and-one-executor.md), proposto em 2026-10-29: o kit de definições e um executor no Hub. Substituiu a [0031](../decisions/0031-connectors-single-executor.md).
+- Os conectores do marco `D3`. O fundador, 2026-11-23: "Conector eu quero: - Sankhya - Mercado Livre - Hubspot - TOTVS - Gmail com Agenda - Outlook email - Outlook Calendar - google drive - Sharepoint - NF-e - Sicoob".
+  São onze, e a lista substitui a recomendada na seção 1.5 de `conexus-ao-vivo-estudo` (a decisão D
+  do estudo).
 - Aprovações: [e19-conectores](../approvals/e19-conectores.md),
   [e191-ligar-por-oauth](../approvals/e191-ligar-por-oauth.md),
   [e20-app-com-dados](../approvals/e20-app-com-dados.md),
@@ -65,7 +68,7 @@ funil de escrita com o cartão e as leituras como ferramentas são a [0056](../d
 etapas 24.3.5 e 24.5. O código diverge do decidido em dez pontos, que saem ou são refeitos: a cópia
 dentro do kit, a classe da credencial, a renovação no Hub, o número exato, a skill escrita à mão, o
 Caderno, a descrição do sistema, a janela Ligar, o Desligar e as pastas do Sankhya e do Mercado Livre
-(`conexus-ao-vivo-estudo`, 2026-11-23). Ficam para o fundador:
+(`conexus-ao-vivo-estudo`, 2026-11-23). A decisão D do estudo já está em Decidido. Ficam para o fundador:
 
 - **A. O alcance do "refeito" de 2026-11-23.** O estudo recomenda refazer do zero as pastas do
   Sankhya e do Mercado Livre e as peças do Hub que divergem; as que já são o decidido ficam.
@@ -75,8 +78,6 @@ Caderno, a descrição do sistema, a janela Ligar, o Desligar e as pastas do San
 - **C. Onde a troca entra no roteiro.** O estudo recomenda uma etapa própria, "O conector no padrão
   novo", entre a parte 0 e a parte 1 do Lago 2, com um pull request por conector, para o Assistente
   não perder as leituras ao vivo.
-- **D. Os dez conectores do marco `D3`.** O estudo recomenda a lista da sua seção 1.5, com a NF-e
-  recebida em décimo; o banco lido direto reabriria a [0071](../decisions/0071-connectors-kit-live-copies-singer.md).
 - **Duas ligações do mesmo sistema** (`conexus-n5-duas-ligacoes`): uma tabela por ligação,
   recomendada; as quatro referências separam pela credencial e juntam só na camada seguinte.
 - **O nome técnico de cada tabela no lago** (`conexus-conector-estilo-novo-estudo`): o nome de
