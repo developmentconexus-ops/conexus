@@ -23,6 +23,7 @@ operar está em [hub-server](../how-to/hub-server.md) e em [ci-health](../how-to
 | O teste de teclado que falhava | corrida de um quadro no próprio teste; 3 linhas levaram a falha de até 37 para 0 em 100 | `conexus-web-teclado-diag` |
 | O erro de migração escondido | o Postgres manda `25P04`, mas o rollback do Drizzle esconde o erro | `conexus-deploy-migrate-deepen` |
 | A porta sem SSH | o executor do GitHub no servidor rodou 8 vezes pelo workflow do laboratório | `conexus-servidor-acesso-estudo` |
+| A leitura do banco do Hub a cada turno | a memória do Builder lê o histórico ainda não observado, sem limite: de 65 a 390 KB por turno; a parcela de cada fonte na saída do banco não foi provada | conexus-hub-egress (2026-11-02) |
 
 ## Lido
 
@@ -33,6 +34,8 @@ operar está em [hub-server](../how-to/hub-server.md) e em [ci-health](../how-to
 
 ## Aberto
 
+- De onde vem a saída de dados do banco do Hub, cerca de 460 MB por dia (o estudo
+  `conexus-hub-egress-source`, na fila).
 - O Hub novo não sobe sem as variáveis da AWS no ambiente do servidor (`conexus-hub-env-aws`, em
   curso).
 - As etapas 16 (atualizar sem cair) e 22 (cópia e restauração do Hub) têm cartão sem aprovação.

@@ -59,6 +59,9 @@ e em [agentes e automações](../explanation/agents-and-automations.md); o Build
 - A etapa 24.6, workflows e automações, está congelada no [roteiro](../roadmap.md): os gatilhos
   (`conexus-triggers-study`, `conexus-t2-study`), o `conexus-e246-card` e a escrita pela ferramenta de
   código (`conexus-code-tool-writes`) esperam por ela.
+- A rodada de uma automação chega ao modelo como se a pessoa tivesse digitado; o Mastra 1.79 tem
+  `session.sendSignal` com a origem da mensagem. Conferir na versão instalada quando a 24.6 descongelar
+  (`conexus-automation-run-study`, 2026-11-02).
 - A etapa 24.7, o agente no Telegram (`conexus-e247-card`).
 - Voltar e Ramificar uma conversa (`conexus-rewind-analysis`): duas perguntas ao fundador.
 - A causa da falha do observador da memória pelo CLIProxy (`conexus-assistant-om-gemini`).

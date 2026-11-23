@@ -51,6 +51,11 @@ cada sistema: Sankhya, Mercado Livre e HubSpot. A cópia em massa está em
   sistema fica ao lado (`conexus-conector-estilo-novo-estudo`). Fivetran, Airbyte, Databricks e Nekt
   separam ligações pela credencial (`conexus-n5-duas-ligacoes`).
 
+- Sankhya: o pedido entra por `POST /v1/vendas/pedidos`, que exige nota modelo e tira dela a TOP, ou
+  por `CACSP.incluirNota`, que recebe a TOP direto. O pedido a confirmar pode já reservar estoque e
+  criar financeiro, conforme a TOP. O cartão de aprovação de uma escrita deve dizer o que a TOP faz
+  (`conexus-e245-write-path-study`, `conexus-e245-live-order-study`, 2026-11-07 e 08).
+
 ## Superado
 
 - Os seis estudos de conectores de 2026-11-14 (catálogo alugado, arquitetura, custo, SDK, ações e
