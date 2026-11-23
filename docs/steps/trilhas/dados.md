@@ -20,7 +20,7 @@ Depois de `D1`, a trilha segue o método leve da fila do molde (delivery L27).
 
 ## O cartão de hoje
 
-O lago da empresa nasce e some, a etapa 1 do lago, fechou em ⟦DATA DO USO⟧: o fundador o usou na
+O lago da empresa nasce e some, a etapa 1 do lago, fechou em 2026-11-23: o fundador o usou na
 nuvem, na v0.24.110, e a linha de fechamento está no
 [arquivo de aprovação](../../approvals/o-lago-da-empresa-nasce-e-some.md). O operador cria e apaga o
 lago de uma empresa pela Central, e apagar o cliente leva o lago. O cartão está no histórico do
