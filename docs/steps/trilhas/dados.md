@@ -20,19 +20,19 @@ Depois de `D1`, a trilha segue o método leve da fila do molde (delivery L27).
 
 ## O cartão de hoje
 
-O Registro e conformidade, a etapa 3 a caminho de `D2`, fechou em 2026-11-22: o fundador o usou na
-nuvem, na v0.24.109, e a linha de fechamento está no
-[arquivo de aprovação](../../approvals/registro-e-conformidade.md). Ele terminou no banco da
-empresa, como está, por palavra do fundador em 2026-11-19. O cartão está no histórico do `main`, no
-commit `07aa2924`, o último que o mudou. A trilha está sem cartão em `docs/steps/` até o cartão da
-etapa seguinte entrar.
+O lago da empresa nasce e some, a etapa 1 do lago, fechou em ⟦DATA DO USO⟧: o fundador o usou na
+nuvem, na v0.24.110, e a linha de fechamento está no
+[arquivo de aprovação](../../approvals/o-lago-da-empresa-nasce-e-some.md). O operador cria e apaga o
+lago de uma empresa pela Central, e apagar o cliente leva o lago. O cartão está no histórico do
+`main`, no commit `0a3e4d1c`, o último que o mudou. A trilha está sem cartão em `docs/steps/` até o
+cartão da etapa seguinte entrar.
 
-A etapa seguinte é a 1 do lago, O lago da empresa nasce e some, com o cartão em rascunho em
-https://github.com/developmentconexus-ops/conexus/pull/1231.
+A etapa seguinte é a 2 do lago, A primeira cópia chega ao lago, ainda sem estudo nem cartão.
 
 As etapas anteriores fecharam: a pergunta respondida com a origem, em 2026-11-16
-([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md)), e cada papel lê só o seu, com
-a porta única, em 2026-11-17 ([aprovação](../../approvals/cada-papel-le-so-o-seu.md)).
+([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md)); cada papel lê só o seu, com
+a porta única, em 2026-11-17 ([aprovação](../../approvals/cada-papel-le-so-o-seu.md)); e o Registro
+e conformidade, em 2026-11-22 ([aprovação](../../approvals/registro-e-conformidade.md)).
 
 As concessões por instância entram quando o primeiro cartão precisar de instância. A conexão MCP
 tem cartão próprio quando a primeira ferramenta de IA entrar.
@@ -65,13 +65,27 @@ estudo e cartão próprios e fecha quando o fundador a usa.
 | 6. Escolher o que copiar | Eu marco o que quero copiar de cada sistema, com as tabelas e os campos da minha empresa, e nada vem marcado? | O Sankhya pelo dicionário, o Mercado Livre pela lista declarada |
 | 7. A tabela grande e sem coluna de alteração | As fiscais e as contábeis entram, a primeira carga termina numa tarde, e o que sumiu da fonte some do lago? | As fiscais e contábeis do Sankhya; as listas do Mercado Livre sem filtro de alteração |
 
-Antes da etapa 1 entra a mudança de método que dá ao
+Antes da etapa 1 entrou a mudança de método que dá ao
 repositório regra, teste e conferência para Python, para a infraestrutura da AWS e para testar o
 Hub sem a AWS (delivery L20); nela a regra D25 é reescrita pelo motivo dela, sem exceção. Antes de
 qualquer outra empresa entra a etapa da conta oficial da AWS, que está no
 [roteiro](../../roadmap.md): até lá o lago roda na conta de laboratório, que é provisória
 ([0072](../../decisions/0072-the-lab-aws-account-is-provisional.md)), só com dado gerado e com o da
 empresa do fundador.
+
+A etapa 1 deixa às seguintes o que o estudo dela achou e o cartão não construiu:
+
+- **Para o cartão da etapa 2.** Apagar uma área do depósito com tabela dentro falha ("namespace not
+  empty"); o apagar do lago e o do que sobrou de uma criação que falha hoje só encontram áreas
+  vazias.
+- **Para o cartão da etapa 3.** A recusa por `DESCRIBE` e a recusa por `SELECT` têm de virar o mesmo
+  "não encontrado" (security S10), como a https://github.com/developmentconexus-ops/conexus/issues/1226
+  pede para o nome e as colunas.
+- **Para a primeira etapa que usar o lago.** A linha em `ready` não relê a AWS: uma pilha mudada ou
+  apagada por fora só aparece quando alguém apaga o lago. Essa etapa decide quando reler: antes de
+  agir na pilha, como o exemplo serverless da AWS, ou por um relógio, como o Crossplane. Uma pilha
+  sem linha, que só nasce de um banco do Hub restaurado de cópia, acha-se pelas etiquetas
+  `conexus-empresa` e `conexus-modelo`; nenhuma etapa constrói esse inventário (0073).
 
 Depois da etapa 7 vêm duas frentes, cada etapa com estudo e cartão próprios:
 
@@ -122,7 +136,7 @@ As decisões do fundador que chegam com a etapa delas, e não antes:
   ([0074](../../decisions/0074-python-for-extraction-in-apps-extraction.md)).
 - `infra/aws/`, a plataforma em CDK e o modelo da pilha de cada empresa
   ([0073](../../decisions/0073-platform-by-cdk-one-stack-per-company.md)).
-- `apps/server/src/hub/connectors/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/ontology/` e `apps/server/src/hub/data/`.
+- `apps/server/src/hub/connectors/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/ontology/`, `apps/server/src/hub/data/` e `apps/server/src/hub/lake/`, o lago de cada empresa.
 - `apps/server/src/builder/copy-clock/` e `apps/server/src/platform/copy-sql.ts`.
 - As telas de Integrações, Dados (que toma o lugar de Cópias, resposta E1a) e Conhecimento.
 - O contrato de acesso, com o teste de conformidade dele.
