@@ -122,7 +122,7 @@ product decision, security boundary or operational prohibition.
   move each remendo row of the reference table into [boundaries](../reference/boundaries.md) with
   its package version; the card leaves with the use line, after the use (L17). Each week, an agent
   that built none of the week's steps runs the [CI health review](../how-to/ci-health.md) and sends
-  its findings to firstmate. [review]
+  firstmate its findings. [review]
 - **L20.** Skills and guides **must** change only in a step's closing, or in the week's one
   documents-only pull request of method changes with the founder's word, between two steps of the track it affects; a
   step in flight keeps the rules it started with. A rule contradicted by an installed library or by a reference at the pinned version is corrected at once in a documents-only pull request, with the founder's word, without waiting for a closing. A new check **must** land in a pull request of its own before the step that needs
@@ -135,7 +135,7 @@ product decision, security boundary or operational prohibition.
 
 - **L21.** The repository **must** keep only what changes what the next agent does: the use line in
   the card's approval file, a proof's criterion and result in its decision record, a learned rule in its
-  guide, the study's reference table in the card and its line in `docs/conhecimento/`. Study reports and proofs stay outside it; what
+  guide, the study's reference table in the card and its line in `docs/conhecimento/`. Study reports and proofs stay in `conexus-estudos`, at `estudos/<folder>/`; what
   only proves a stage was done stays in the pull request. Founder, 2026-10-12. [check-docs]
 - **L23.** What a person uses or decides **should** be in Portuguese: README, roadmap, cards,
   founder's page, operational how-tos and all visible text, accessible names and placeholders,

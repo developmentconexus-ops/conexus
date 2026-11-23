@@ -1,6 +1,6 @@
 # Conhecimento: o que foi decidido, provado e lido, por assunto
 
-Os estudos do Conexus ficam fora do repositório ([delivery L21](../guides/delivery.md)). Por isso,
+Os estudos do Conexus ficam fora deste repositório, em `conexus-estudos` ([delivery L21](../guides/delivery.md)). Por isso,
 uma pesquisa já feita some da vista de quem chega depois, e o próximo estudo a refaz. Esta pasta guarda, por
 assunto, só a conclusão de cada estudo: o registro em que a decisão virou, a prova com o seu número, a
 referência lida com a versão e o nome da pasta do estudo de origem. O relatório, as provas e as
@@ -64,6 +64,7 @@ publicada; um registro posterior manda sobre ela.
 
 ## Como os estudos são citados
 
-Um estudo é citado pelo nome da pasta, como `conexus-extracao-singer`. A pasta fica fora do
-repositório, com o `report.md`, as provas e as capturas. O nome nunca muda. Um estudo sem relatório
+Um estudo é citado pelo nome da pasta, como `conexus-extracao-singer`. A pasta fica fora deste
+repositório, no repositório privado `conexus-estudos`, em `estudos/<pasta>/`, com o `report.md`, as
+provas e as capturas. O nome nunca muda. Um estudo sem relatório
 na pasta aparece como em curso, ou como pedido sem resultado.

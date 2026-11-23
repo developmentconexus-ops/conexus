@@ -131,6 +131,8 @@ Em 2026-11-23, o fundador pediu: "a gente tem que organizar melhor tudo que a ge
 - B. A skill `conexus-study` recebe a página do assunto, reusada antes de pesquisar, e produz a linha dela; o relatório diz o que reusou.
 - E. A L24 dá às páginas de `docs/conhecimento/` o teto de 3.000 palavras, conferido pelo `check-docs`.
 
-Ficam para pull requests seguintes as duas outras respostas: C (b), um repositório privado só de estudos, `conexus-estudos`, onde cada pasta entra ao fechar; e D, aposentar `data/estudos/` e trazer dela só as frases dos 210 estudos perdidos que nenhum registro guarda.
+- C (b). Os relatórios moram no repositório privado `conexus-estudos`, que o fundador criou em 2026-11-23 ("Repositorio agora foi"), cada um em `estudos/<pasta>/`; a L21 o nomeia, e a mudança dos relatórios para lá é de outro pull request.
 
-Para caber nos tetos (L24), saem frases cujo dono é outro: "within the founder's decisions" na abertura do guia de entrega (a última frase da abertura já o diz), "a merge needs both green" na L15 (a L14 o diz) e, na skill `conexus-study`, "Entry sheets, decisions and today's code are input to test" (o passo 5 e a regra do estudo o dizem).
+Fica para um pull request seguinte a D: aposentar `data/estudos/` e trazer dela só as frases dos 210 estudos perdidos que nenhum registro guarda.
+
+Para caber nos tetos (L24), saem frases cujo dono é outro: "within the founder's decisions" na abertura do guia de entrega (a última frase da abertura já o diz), "a merge needs both green" na L15 (a L14 o diz), "sends its findings to firstmate" vira "sends firstmate its findings" na L19 e, na skill `conexus-study`, "Entry sheets, decisions and today's code are input to test" (o passo 5 e a regra do estudo o dizem).
