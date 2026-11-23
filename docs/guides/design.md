@@ -28,7 +28,7 @@ colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts 
   screen). The logo of every connector is the provider's square symbol without the written name,
   and the kit refuses a wide one (`packages/connectors/src/kernel/logo.ts`); founder, 2026-10-29:
   "só a logo mesmo, igual eu te mandei" and "a logo do Mercado Livre é só a logo, sem escrita".
-  [rule to write]
+  [oxlint `shadcn/no-raw-colors` in warning under the ratchet, review]
 - **V5.** Ipê **should** mark only the current place (the tick of the rail and of the list, the
   active tab), the focus, the caret and the mark, not every resting action, hover or heading. Two
   exceptions: the mark of the item the person chose (V57's toggle icon, the chosen Projeto's check)
@@ -55,7 +55,8 @@ colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts 
 ## Layout
 
 - **V16.** Spacing comes from the `spacing` scale, and every height, line height, gap and inset is
-  a multiple of 4px. Founder, 2026-11-01: "Aprovo". [rule to write]
+  a multiple of 4px. Founder, 2026-11-01: "Aprovo". [oxlint `shadcn/no-arbitrary-values` in warning
+  under the ratchet, review]
 - **V17.** Conexus's own web pieces **must not** use an inline `style` attribute, except in
   outbound e-mail HTML. [Biome `nursery.noInlineStyles`]
 
@@ -94,7 +95,8 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   popovers and panels, `card` (12) for Project cards, `composer` (16) for the composer, `pill` for
   chips. Founder, 2026-11-01: "Aprovo".
   Regions and panes take none. One more radius, 36 px, is for the Prévia's drawn phone frame only,
-  as its own token, `rounded.phone`; founder, 2026-10-28: "1. Sim". [rule to write]
+  as its own token, `rounded.phone`; founder, 2026-10-28: "1. Sim". [oxlint
+  `shadcn/no-arbitrary-values` in warning under the ratchet, review]
 
 ## Components
 
@@ -130,6 +132,12 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
 - **V61.** The `eyebrow` **should** label a group or a fact (a day group, an age, a stamp), never
   announce a title, and carries no case change. Founder, 2026-11-01: "Aprovo". Failure: a small
   label above a heading reads as a second title and the heading loses its place. [review]
+- **V62.** Piece before screen: before writing a screen, its author **must** look for the piece in
+  `apps/web/src/ui/` and in the showcase (`/pieces`). A piece of appearance is born only in `ui/`,
+  from a native source (W21), with its showcase entry and its `DESIGN.md` line, in the same commit
+  as the screen that uses it. Founder, 2026-11-17, on both tracks: "A b". Failure: one choice made
+  five times with four pieces in 14 days (the Projeto picker). [oxlint `shadcn/no-restyle` in
+  warning under the ratchet, `showcase.layout.test.ts`, review]
 
 ## Motion
 

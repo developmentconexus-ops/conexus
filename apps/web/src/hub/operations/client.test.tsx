@@ -83,7 +83,7 @@ test('503: a frase da falha, e o botão volta', async () => {
   open()
   fireEvent.click(await screen.findByRole('button', { name: 'Tentar concluir exclusão' }))
   expect((await screen.findByRole('alert')).textContent).toBe(
-    'A exclusão começou, mas o banco da empresa ainda não saiu. Tente concluir a exclusão.',
+    'A exclusão começou, mas o banco ou o lago da empresa ainda não saiu. Tente concluir a exclusão.',
   )
   expect(screen.getByRole('button', { name: 'Tentar concluir exclusão' })).toHaveProperty(
     'disabled',

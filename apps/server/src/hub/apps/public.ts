@@ -96,7 +96,7 @@ export function createApps(
       registerVersionRoutes(app, versions)
       registerDataRoutes(app, data)
     },
-    edgeRoutes: (edge: FastifyInstance) => registerEdgeRoutes(edge, door),
+    edgeRoutes: (edge: FastifyInstance) => registerEdgeRoutes(edge, door, deps.recordRead),
     /** What the connectors' door asks of an app call: who, the version the session gets and its manifest (step 20). */
     connectorCall: door.connectorCall,
     /** One pass over the companies' apps at start (architecture §8). */

@@ -9,12 +9,14 @@ import { CARD_STATES } from './sweep-card-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
 import { COPIES_STATES } from './sweep-copies-states.ts'
 import { COPY_PROPOSAL_STATES } from './sweep-copy-proposal-states.ts'
+import { DATA_READS_STATES } from './sweep-data-reads-states.ts'
 import { DATA_STATES } from './sweep-data-states.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { HOUSE_STATES } from './sweep-house-states.ts'
 import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
+import { LAKE_STATES } from './sweep-lake-states.ts'
 import { PREVIEW_STATES } from './sweep-preview-states.ts'
 import { PROJECT_INTEGRATIONS_STATES } from './sweep-project-integrations-states.ts'
 import { PROJECT_STATES } from './sweep-project-states.ts'
@@ -50,6 +52,7 @@ const NEVER = new Promise<never>(() => undefined)
 export const STATES: State[] = [
   ...RECOVERY_STATES,
   ...PROJECT_STATES,
+  ...LAKE_STATES,
   ...PREVIEW_STATES,
   ...CONVERSATION_STATES,
   ...ASSISTANT_STATES,
@@ -66,6 +69,7 @@ export const STATES: State[] = [
   ...LAYER_STATES,
   ...COPY_PROPOSAL_STATES,
   ...ROLES_STATES,
+  ...DATA_READS_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',

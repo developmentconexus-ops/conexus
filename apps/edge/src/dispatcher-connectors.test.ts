@@ -2,7 +2,15 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { APP_SESSION_HEADER, callAppConnector } from '@conexus/hub-api'
-import { edge, HOST, problem, SESSION, VERSION_CALL } from './test-edge.ts'
+import {
+  edge,
+  HOST,
+  PREVIEW_HOST,
+  PREVIEW_ORIGIN,
+  problem,
+  SESSION,
+  VERSION_CALL,
+} from './test-edge.ts'
 
 const LIVE = { Cookie: `__Host-conexus-app=${SESSION}` }
 const CALL_PATH = '/api/app-connector-calls'
@@ -55,6 +63,28 @@ test('sem segredo: o app recebe só call e connections; nas props não há sess�
   assert.equal(bound?.session, SESSION)
   assert.ok(!JSON.stringify(props).includes(SESSION))
   assert.ok(!JSON.stringify(props).includes('hub'))
+})
+
+test('no host da Prévia, o db e os connectors levam o host da Prévia, e a chamada também', async () => {
+  const { door, connectorCalls } = reading(
+    (connectors) => connectors.call('sankhya', 'empresas', { page: 0 }),
+    () => Response.json(OK),
+  )
+  const opened = await door.fetch(
+    '/',
+    { headers: { 'Sec-Fetch-Dest': 'iframe', ...LIVE } },
+    PREVIEW_ORIGIN,
+  )
+  assert.equal(await opened.text(), 'lido')
+  assert.deepEqual(
+    [
+      door.dbBindings.map((bound) => bound.label),
+      door.connectorBindings.map((bound) => bound.host),
+    ],
+    [[PREVIEW_HOST], [PREVIEW_HOST]],
+  )
+  const [called] = connectorCalls()
+  assert.equal(Object(await called?.json()).host, PREVIEW_HOST)
 })
 
 test('a chamada leva ao Hub a sessão do app no cabeçalho, o Projeto pelo endereço, e passa a resposta', async () => {

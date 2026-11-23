@@ -107,7 +107,7 @@ test('uma CTE e uma subconsulta nomeiam a tabela de baixo', async (t) => {
   )
 })
 
-test('não grava: a escrita é NOT_IN_ROLE, CREATE e mais de uma instrução são 42601', async (t) => {
+test('não grava: a escrita é NOT_IN_ROLE, CREATE nomeia uma tabela fora do catálogo e mais de uma instrução é 42601', async (t) => {
   const { on } = await withCopies(t)
   const before = await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA'])
   const writes = [
@@ -116,11 +116,10 @@ test('não grava: a escrita é NOT_IN_ROLE, CREATE e mais de uma instrução sã
     `update sync.sankhya_vendas set "VLRNOTA" = 0`,
   ]
   for (const sql of writes) assert.deepEqual(await queried(on, sql), { kind: 'NOT_IN_ROLE' }, sql)
-  for (const sql of ['create table sync.x (a int)', 'select 1; select 2']) {
-    const answer = await queried(on, sql)
-    assert.ok(answer.kind === 'QUERY_REFUSED', sql)
-    assert.equal(answer.sqlstate, '42601', sql)
-  }
+  assert.deepEqual(await queried(on, 'create table sync.x (a int)'), { kind: 'NOT_IN_CATALOG' })
+  const answer = await queried(on, 'select 1; select 2')
+  assert.ok(answer.kind === 'QUERY_REFUSED')
+  assert.equal(answer.sqlstate, '42601')
   assert.deepEqual(await syncRows(on.owner, 'sankhya_vendas', ['NUNOTA']), before)
 })
 
@@ -178,7 +177,7 @@ test('a recusa inteira: o SQLSTATE e a mensagem vão ao modelo e o log não tem 
   assert.ok(!logged.includes(answer.message))
 })
 
-test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem a consulta', async (t) => {
+test('num Projeto, a tabela que o papel lê e o Projeto não recebeu dá NOT_IN_CATALOG e o log não tem a consulta', async (t) => {
   const { on, sellers } = await withCopies(t)
   await on.copies.grant({
     ...{ companyId: on.companyId, personId: on.anaId },
@@ -188,7 +187,7 @@ test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem
     thread: null,
   })
   const sql = 'select * from sync.sankhya_vendas'
-  assert.deepEqual(await project.read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_ROLE' })
+  assert.deepEqual(await project.read({ kind: 'QUERY', sql }), { kind: 'NOT_IN_CATALOG' })
   const granted = queryOf(
     await project.read({ kind: 'QUERY', sql: 'select * from sync.sankhya_vendedores limit 1' }),
   )
@@ -196,8 +195,6 @@ test('42501 num Projeto: a tabela não liberada dá NOT_IN_ROLE e o log não tem
     granted.tables.map(({ table }) => table),
     ['sankhya_vendedores'],
   )
-  const line = on.hub.lines.find(({ message }) => message === 'DATA_READ_REFUSED')
-  assert.ok(line)
   assert.ok(!JSON.stringify(on.hub.lines).includes(sql))
 })
 
@@ -209,13 +206,13 @@ test('o prazo dá DEADLINE e registra TIMEOUT', async (t) => {
   assert.equal(failed?.fields.cause, 'TIMEOUT')
 })
 
-test('o membro no Início não lê: NOT_IN_ROLE', async (t) => {
+test('o membro no Início não lê: a tabela fora do catálogo dele é NOT_IN_CATALOG', async (t) => {
   const { on } = await withCopies(t)
   const answer = await inCompany(on, PersonId.parse(on.carla.id)).read({
     ...{ kind: 'QUERY' },
     sql: 'select count(*) from sync.sankhya_vendas',
   })
-  assert.deepEqual(answer, { kind: 'NOT_IN_ROLE' })
+  assert.deepEqual(answer, { kind: 'NOT_IN_CATALOG' })
 })
 
 test('quem não é da empresa é recusado e a consulta não chega ao banco da empresa', async (t) => {

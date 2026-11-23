@@ -6,7 +6,6 @@ export type { ColumnState, Seen } from './column-state.ts'
 export { nextColumnState } from './column-state.ts'
 export { copyModeOf } from './mode.ts'
 export type { ProjectCopiesView } from './project-view.ts'
-export type { ReaderLogin } from './readers.ts'
 export type { CopyService } from './service.ts'
 export type { CopyClock, CopyRunEnd, CopyState, CopyTuning } from './store.ts'
 

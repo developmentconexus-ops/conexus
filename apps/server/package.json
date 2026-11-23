@@ -15,7 +15,10 @@
   "dependencies": {
     "@ai-sdk/anthropic": "3.0.133",
     "@ai-sdk/openai": "3.0.130",
+    "@aws-sdk/client-cloudformation": "3.1175.0",
     "@aws-sdk/client-s3": "3.1146.0",
+    "@aws-sdk/client-s3tables": "3.1175.0",
+    "@aws-sdk/credential-providers": "3.1175.0",
     "@better-auth/core": "1.7.8",
     "@better-auth/drizzle-adapter": "1.7.8",
     "@conexus/app": "*",
@@ -32,6 +35,7 @@
     "@mastra/server": "1.83.0",
     "@neon/sdk": "7.3.0",
     "@neondatabase/serverless": "1.2.0",
+    "@smithy/node-http-handler": "4.14.2",
     "ai": "6.0.309",
     "better-auth": "1.7.8",
     "close-with-grace": "2.5.0",

@@ -11,6 +11,7 @@ COPY packages/app-contract/package.json packages/app-contract/
 COPY packages/connectors/package.json packages/connectors/
 COPY packages/app/package.json packages/app/
 COPY apps/edge/package.json apps/edge/
+COPY infra/aws/package.json infra/aws/
 RUN npm ci --no-audit --no-fund
 COPY tsconfig.base.json ./
 COPY packages packages
@@ -48,6 +49,7 @@ COPY packages/app-contract/package.json packages/app-contract/
 COPY packages/connectors/package.json packages/connectors/
 COPY packages/app/package.json packages/app/
 COPY apps/edge/package.json apps/edge/
+COPY infra/aws/package.json infra/aws/
 # Node refuses .ts files under node_modules, so the workspace packages stay linked to their folders.
 RUN npm ci --omit=dev --omit=optional --no-audit --no-fund -w @conexus/server && npm cache clean --force
 COPY packages/hub-api packages/hub-api
@@ -55,6 +57,8 @@ COPY packages/app-contract packages/app-contract
 COPY packages/connectors packages/connectors
 COPY packages/app packages/app
 COPY apps/server apps/server
+# The lake's template: its sha-256 is the version the Hub asks CloudFormation for. The CDK stays out.
+COPY infra/aws/lake.template.json infra/aws/
 COPY --from=build /app/apps/web/dist apps/web/dist
 COPY --from=cliproxy /opt/cliproxy /opt/cliproxy
 COPY --from=build /app/apps/server/src/hub/identity/invitation-render.mjs apps/server/src/hub/identity/invitation-render.mjs

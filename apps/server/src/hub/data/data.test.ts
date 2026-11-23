@@ -197,9 +197,7 @@ test('o Hub calado dá CATALOG_UNAVAILABLE', async (t) => {
       access: createAccess({ database, identity: on.hub.identity, sources }),
     },
     ...{ copies: () => on.hub.copies.data, log: logOf(on) },
-    ...{ projects: on.hub.projects.ports, companyPostgres: on.hub.postgres.companyPostgres },
-    neon: on.hub.neon.neon,
-    database,
+    ...{ projects: on.hub.projects.ports, database, connectors: () => on.hub.connectors },
   })
   const described = await silent(scopeOf(on, on.anaId, { kind: 'COMPANY' }), {
     thread: null,
@@ -233,7 +231,7 @@ test('a tabela antes da primeira rodada dá TABLE_UNAVAILABLE', async (t) => {
   assert.equal(line?.fields.reason, 'NO_TABLE')
 })
 
-test('ao vivo e ação respondem NOT_GRANTED', async (t) => {
+test('sem turno, ao vivo e ação respondem NOT_GRANTED e não chamam o sistema', async (t) => {
   const on = await copiesOn(t)
   const data = inCompany(on)
   const [system] = (await catalogOf(data)).systems
@@ -250,4 +248,5 @@ test('ao vivo e ação respondem NOT_GRANTED', async (t) => {
     call: { thread: ConversationId.parse(randomUUID()), toolCall: ToolCallId.parse(randomUUID()) },
   })
   assert.deepEqual(acted, { kind: 'NOT_GRANTED' })
+  assert.ok(!on.hub.lines.some(({ message }) => message === 'CONNECTOR_CALLED'))
 })

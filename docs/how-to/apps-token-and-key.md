@@ -3,7 +3,7 @@
 The Hub sends each version of an app as a Worker in the namespace, and the dispatcher opens the
 app's logins in the company's database. Decision:
 [0043](../decisions/0043-app-logins-derived-from-one-key.md). The edge itself is set up by
-[apps-edge](apps-edge.md). A Release publishes the key to the dispatcher before its code, and
+[apps-edge](apps-edge.md). Each publish puts the key in the dispatcher before its code, and its Release
 carries the `recados-*.zip` folders, Recados and its step 10 defects, the versions to send from a
 Projeto's Configurações.
 

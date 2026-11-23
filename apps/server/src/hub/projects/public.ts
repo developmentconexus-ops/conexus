@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify'
 import type { AppsDomain } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { projectAppsOf } from './app-access.ts'
@@ -46,6 +47,20 @@ export type {
 export { projectNameColumn } from './tables.ts'
 export type ProjectPorts = ReturnType<typeof createProjects>['ports']
 
+/** Neon's release as a resource outside the Hub: a deletion still waiting is `PENDING`, not a failure. */
+async function databaseLeft(
+  deps: Parameters<typeof releaseCompanyDatabase>[0],
+  input: Parameters<typeof releaseCompanyDatabase>[1],
+): Promise<'GONE' | 'PENDING'> {
+  try {
+    await releaseCompanyDatabase(deps, input)
+    return 'GONE'
+  } catch (error) {
+    if (error instanceof Failure && error.code === 'CLIENT_DELETION_PENDING') return 'PENDING'
+    throw error
+  }
+}
+
 /**
  * The Projects of a company and its database in Neon. It reaches identity only through its ports
  * (code C4), and Neon only through the port `main.ts` hands it (code C56).
@@ -72,9 +87,11 @@ export function createProjects(deps: {
     nameDatabases: () => nameDatabases(deps),
     // What the Operations Central reaches Projects through when it deletes a company (code C4).
     ports: Object.freeze({
-      hasCompanyDatabase,
-      releaseCompanyDatabase: (input: Parameters<typeof hasCompanyDatabase>[1]) =>
-        releaseCompanyDatabase(deps, input),
+      // The company's database in Neon, a resource outside the Hub that deleting its client frees.
+      companyDatabase: Object.freeze({
+        has: hasCompanyDatabase,
+        release: (input: Parameters<typeof hasCompanyDatabase>[1]) => databaseLeft(deps, input),
+      }),
       deleteCompanyProjects,
       // What the apps' door reaches Projects through: a host's Projeto, and who may open it now.
       projectOfHost: (label: HostLabel) => projectOfHost(deps.database, label),

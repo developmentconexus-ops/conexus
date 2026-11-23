@@ -4,8 +4,9 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
-import type { AppKeys, OAuthFake } from '@conexus/connectors'
+import type { AppKeys, Connector, OAuthFake } from '@conexus/connectors'
 import {
+  connectorOf,
   hubspotFake,
   MERCADO_LIVRE_FACTS,
   mercadoLivreFake,
@@ -110,6 +111,20 @@ export function mercadoLivreOn(t: TestContext, a: OAuthOn = {}) {
 export function hubspotOn(t: TestContext, a: OAuthOn = {}) {
   const fake = hubspotFake({ redirectUri: `${TEST_ORIGIN}${REDIRECT_PATH}` })
   return oauthOn(t, { ...a, id: 'hubspot', fake })
+}
+
+type Earlier = Parameters<Connector['operations'][number]['probe']>[0]
+
+/** A kit connector's input for each read, as its `probe` declares it; a read that chains on another read's answer finds it in `earlier`, and has none without it. */
+export function kitOf(id: string, earlier: Earlier = new Map()) {
+  const connector = connectorOf(id)
+  if (connector === undefined) throw new Error(`No kit connector ${id}`)
+  const probes = new Map<string, unknown>()
+  for (const operation of connector.operations) {
+    const input = operation.class === 'read' ? operation.probe(earlier) : null
+    if (input !== null) probes.set(operation.id, input)
+  }
+  return probes
 }
 
 /** The kit's Mercado Livre double on this machine, and the Hub's configuration that reaches it. */

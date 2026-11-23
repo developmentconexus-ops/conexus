@@ -32,7 +32,8 @@ lista de cortes, "Aceito todos"; à cadência, "Nao precisa por agora".
 
 O Conexus se organiza em quatro partes: dados, ferramentas, agentes e apps. Os agentes e os apps
 chegam ao dado da empresa só pelo contrato de acesso, com três verbos: descrever, ler e agir. Atrás
-do contrato podem estar as nossas cópias, no banco de cada empresa; as ferramentas ao vivo do
+do contrato podem estar as nossas cópias, no lago de cada empresa, na AWS
+([0070](decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md)); as ferramentas ao vivo do
 kit, como o Gmail, que o agente consulta e nunca copia; e, mais tarde, a plataforma de dados ou o
 banco que a empresa já tem, como o seu exemplo do Databricks ou os bancos que o Mitra liga direto.
 Ideia nova entra pelo único estudo aberto de uma
@@ -45,15 +46,17 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 
 | Marco | O que a pessoa vê | Pronto quando |
 | --- | --- | --- |
-| `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Numa empresa de teste, a conexão nasce pelo login do kit. O Construtor lê. Uma escrita mostra o cartão. Sankhya e Mercado Livre seguem funcionando. |
-| `D2`. O dado copiado, visível a todo agente | Pergunta ao Assistente sobre um dado copiado e ele responde dizendo de quando é | Um registro mudado no sistema aparece no banco da empresa dentro do intervalo. Assistente, Builder e um agente salvo respondem pela mesma ferramenta de catálogo, com a hora da última cópia |
+| `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Como a [trilha Dados](steps/trilhas/dados.md) descreve |
+| `D2`. O dado copiado, visível a todo agente | Pergunta ao Assistente sobre um dado copiado e ele responde dizendo de quando é | Um registro mudado no sistema aparece no lago da empresa na rodada seguinte. Assistente, Builder e um agente salvo respondem pela mesma ferramenta de catálogo, com a hora da última cópia |
 | `D3`. Dez sistemas reais com a mesma prova | Uma lista no Hub de sistemas que funcionam, com a data do teste | Dez sistemas passam no mesmo roteiro (ligar, ler, copiar, reconectar, desligar, e escrever com cartão onde houver) em conta real ou de teste |
-| `D4`. A Ontologia sobre o catálogo | Pergunta por um conceito da empresa e o agente lê pelo conceito | `concept_read` devolve linhas de uma cópia ou de uma leitura ao vivo, conforme o conceito diz. O Builder não tem mais a frase "cópia primeiro" no prompt |
-| `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow de automação com chave única |
-| `D6`. A medição por empresa, em paralelo | Uma página com o uso de cada empresa | Horas de máquina, chamadas de conector e tokens por empresa numa tabela, sem preço no repositório |
+| `D4`. A Ontologia sobre o catálogo | Pergunta por um conceito da empresa e o agente lê pelo conceito | `concept_read` devolve linhas do lago ou de uma leitura ao vivo, conforme o conceito diz. O Builder não tem mais a frase "cópia primeiro" no prompt |
+| `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow com chave única |
+| `D6`. A medição por empresa | Uma página com o uso de cada empresa | Tarefas de cópia, consultas ao lago, chamadas de conector e tokens por empresa, sem preço no repositório |
 
-O estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão na
-[trilha Dados](steps/trilhas/dados.md).
+`D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b");
+depois vêm os conectores por classe e a porta de fora. Fechado o Registro, segue a etapa 1
+(https://github.com/developmentconexus-ops/conexus/pull/1231). As etapas, os dez de `D3` e o
+Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
 
@@ -66,8 +69,8 @@ O estado, os dez de `D3` e a ordem do Brain e da Ontologia depois de `D4` estão
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-Antes de `A1` vem a fundação do
-front-end, pela sua resposta "A. A ordem na trilha: a". Mais na
+A fundação do front-end fechou; segue A Prévia
+(https://github.com/developmentconexus-ops/conexus/pull/1229). Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
@@ -78,17 +81,18 @@ copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o
 bonitos e quebrados.
 
 **O que não se faz.** Uma segunda fonte de conectores ([0069](decisions/0069-connectors-one-source-the-kit.md)):
-a Nango fica fora do código. A Fábrica gera declarações do kit, escritas pela IA a partir
-da documentação e conferidas com uma leitura de teste. Mais de um estudo aberto
+a Nango fica fora do código. O kit serve o ao vivo e o login; a cópia é tap Singer
+gerado dele ([0071](decisions/0071-connectors-kit-live-copies-singer.md)). A Fábrica gera
+declarações do kit, conferidas com uma leitura de teste. Mais de um estudo aberto
 por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
-agente. Transformações e histórico de mudanças antes de `D3`.
+agente. Tratamento e qualidade dos dados antes do lago implementado (2026-11-20).
 
 ### O que você fornece, e quando
 
 Já fornecido: Cloudflare (Workers Paid, US$ 5 por mês; Workers for Platforms, US$ 25 por mês), o Neon
-grátis, as assinaturas de modelo, o E2B grátis, o R2 e o usuário de leitura no Sankhya. Na 24.2, o
-Neon Launch no Hub, cerca de US$ 19,35 por mês, fica no plano grátis por agora (2026-11-01). Na 22,
-um lugar de cópia fora do Neon, não lido.
+grátis, as assinaturas de modelo, o E2B grátis, o R2, o usuário de leitura no Sankhya e a conta de
+laboratório da AWS ([0072](decisions/0072-the-lab-aws-account-is-provisional.md)). O Neon Launch do Hub, uns
+US$ 19,35 por mês, espera (2026-11-01).
 
 ### O que fica fora do lançamento
 
@@ -97,13 +101,14 @@ Login social. Arquivos enviados por pessoas para dentro de um app. Segundo idiom
 ### As suas respostas
 
 1. **Código antigo só entra com os consertos médios e grandes feitos.** Em 2026-10-13: "2. A".
-2. **A 16 vai para depois da 21.1, antes da 22.** Em 2026-10-22: "essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim".
+2. **A 16 vai para depois da 21.1, antes da 22** (2026-10-22).
 3. **O roadmap perde o detalhe das etapas fechadas.** Em 2026-10-29: "Roadmap pode ir removendo o que foi de etapas passadas ... se não vamos ter que aumentar ele". O teto de 1.600 palavras não sobe.
 4. **Sua empresa primeiro, as outras depois.** Em 2026-10-30: "eu vou começar na minha empresa ... depois disso ... eu vou jogar para as outras empresas".
 
 ## 2. As etapas depois das trilhas
 
-Cada etapa espera a de cima; a 20.2 espera também os webhooks.
+Cada etapa espera a de cima, menos a conta oficial, que vem antes da 23; a 20.2 espera também os
+webhooks.
 
 | Etapa | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- |
@@ -112,5 +117,6 @@ Cada etapa espera a de cima; a 20.2 espera também os webhooks.
 | 21.1 Ver o que acontece: a Atividade, o painel e o uso por empresa | Grafana no Brasil, provado | O OTel ao lado do rastro do Mastra no banco dele (0068) |
 | 16 Atualizar sem cortar: conversa enquanto o Conexus é atualizado | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral: restaura tudo junto | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13 |
+| A conta oficial da AWS: o lago na sua conta | Região, conta, cotas e certificado | A 0072, linha por linha |
 | 23 As outras empresas usam o Conexus | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 | 20.2 App que se atualiza com um aviso do fornecedor | Nenhuma | S48, num workflow do Mastra |

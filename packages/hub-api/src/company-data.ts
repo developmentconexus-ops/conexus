@@ -28,8 +28,6 @@ export const CatalogSystem = z.object({
   connection: ConnectionId,
   connector: ConnectorId,
   name: z.string(),
-  /** The system is never copied: no table has it as its origin; agents read it live. */
-  liveOnly: z.boolean(),
   reads: z.array(OperationEntry),
   /** An action the provider declares without an effect counts as a write, so it asks before it runs (D1). */
   actions: z.array(OperationEntry.extend({ effect: OperationEffect.exclude(['READ']) })),
@@ -229,8 +227,8 @@ export type DataSources = Readonly<{
   rows(a: Signal & Readonly<{ table: CatalogTable }>): Promise<Page>
   /** One read of a system now, through the executor, whatever logs in beneath it. */
   live(a: Signal & OperationRead): Promise<LiveAnswer>
-  /** The query as the read login of whoever asks, and the names of the sync tables it read. */
-  query(a: Signal & Readonly<{ sql: string }>): Promise<QueryPage>
+  /** The query as the read login of whoever asks, and the names of the sync tables it read; one that names a table outside `tables`, the catalog's, in FROM, JOIN or as a write's target runs nothing and answers NOT_IN_CATALOG; the rows of a table outside the role stay hidden, its name and columns may not. */
+  query(a: Signal & Readonly<{ sql: string; tables: readonly string[] }>): Promise<QueryPage>
   /** One write through the funnel, which records it and asks with the approval card; who approved it is bound here by the card's path, never carried by the request. */
   funnel(a: Signal & ActRequest): Promise<Exclude<ActAnswer, { kind: CatalogOnly }>>
 }>
@@ -295,7 +293,10 @@ async function queried(
   catalog: Catalog,
   request: Signal & Readonly<{ sql: string }>,
 ): Promise<ReadAnswer> {
-  const answered = await sources.query(request)
+  const answered = await sources.query({
+    ...request,
+    tables: catalog.tables.map(({ name }) => name),
+  })
   if (answered.kind !== 'ROWS') return answered
   const tables = answered.used.map((name) => catalog.tables.find((one) => one.name === name))
   // A table read outside the asker's catalog: no row leaves.

@@ -2,7 +2,10 @@ import { parseSync } from 'libpg-query'
 import { z } from 'zod'
 import type { ReadResult } from '../../platform/app-sql.ts'
 
-type Outside = Readonly<{ kind: 'OUTSIDE'; reason: 'SCHEMA' | 'FUNCTION' | 'REG_TYPE' }>
+type Outside = Readonly<{
+  kind: 'OUTSIDE'
+  reason: 'SCHEMA' | 'CATALOG' | 'FUNCTION' | 'REG_TYPE'
+}>
 
 export type PlanVerdict = Readonly<
   { kind: 'READS'; tables: readonly string[] } | Outside | { kind: 'UNREADABLE' }
@@ -42,11 +45,22 @@ const NameNode = z.object({ String: z.object({ sval: z.string() }) })
 const Call = z.object({ funcname: z.array(NameNode).min(1) })
 const Cast = z.object({ typeName: z.object({ names: z.array(NameNode).min(1) }) })
 const Relation = z.object({ schemaname: z.string().optional(), relname: z.string() })
+const With = z.object({ ctename: z.string() })
 
-type Names = { functions: string[]; types: string[]; relations: z.infer<typeof Relation>[] }
+type Names = {
+  functions: string[]
+  types: string[]
+  relations: z.infer<typeof Relation>[]
+  withNames: string[]
+}
 
 function lastName(names: readonly z.infer<typeof NameNode>[]): string {
   return names.at(-1)?.String.sval ?? ''
+}
+
+function takeRelation(value: unknown, found: Names) {
+  const relation = Relation.safeParse(value)
+  if (relation.success) found.relations.push(relation.data)
 }
 
 const TAKERS = {
@@ -58,9 +72,12 @@ const TAKERS = {
     const cast = Cast.safeParse(value)
     if (cast.success) found.types.push(lastName(cast.data.typeName.names))
   },
-  RangeVar: (value: unknown, found: Names) => {
-    const relation = Relation.safeParse(value)
-    if (relation.success) found.relations.push(relation.data)
+  RangeVar: takeRelation,
+  // The table a statement writes or makes: the same RangeVar, held without its node's name.
+  relation: takeRelation,
+  CommonTableExpr: (value: unknown, found: Names) => {
+    const named = With.safeParse(value)
+    if (named.success) found.withNames.push(named.data.ctename)
   },
 } as const
 
@@ -68,7 +85,7 @@ function isTaker(key: string): key is keyof typeof TAKERS {
   return key in TAKERS
 }
 
-/** Every function called, type cast to and relation named, anywhere in the statements' tree. */
+/** Every function called, type cast to, relation and `WITH` query named, anywhere in the statements' tree. */
 function namesIn(tree: unknown, found: Names): void {
   if (typeof tree !== 'object' || tree === null) return
   for (const [key, value] of Object.entries(tree)) {
@@ -81,14 +98,26 @@ function outsideSync({ schemaname, relname }: z.infer<typeof Relation>): boolean
   return schemaname === undefined ? relname.startsWith('pg_') : schemaname !== 'sync'
 }
 
+/** A table of `sync` the catalog does not hold; an unqualified name a `WITH` query gives is not one. */
+function outsideCatalog(found: Names, tables: readonly string[]): boolean {
+  return found.relations.some(
+    ({ schemaname, relname }) =>
+      !tables.includes(relname) && (schemaname !== undefined || !found.withNames.includes(relname)),
+  )
+}
+
 /**
- * What the text names before anything runs: a relation outside `sync`, a function that reads by
- * name or by query text, a cast to a `reg*` type. The login of the role is the wall; this keeps a
- * name, or an error that quotes one, from reaching around it (decision R.3). Text the parser
- * refuses is left clear: PostgreSQL gives that refusal itself, and runs nothing.
+ * What the text names before anything runs: a relation outside `sync`, a table outside the asker's
+ * catalog, a function that reads by name or by query text, a cast to a `reg*` type. The login of the
+ * role is the wall; this keeps a name, or an error that quotes one, from reaching around it
+ * (decision R.3), and answers a table named in FROM, JOIN or as a write's target outside the asker's
+ * catalog as one that does not exist. A table's name and columns can still show through
+ * PostgreSQL's own catalog, `format_type`, a cast to its row type, `nextval` or `SELECT INTO`; only
+ * its rows stay behind the role, until the lake hides the names. Text the parser refuses is left
+ * clear: PostgreSQL gives that refusal itself, and runs nothing.
  */
-export function statementVerdict(sql: string): StatementVerdict {
-  const found: Names = { functions: [], types: [], relations: [] }
+export function statementVerdict(sql: string, tables: readonly string[]): StatementVerdict {
+  const found: Names = { functions: [], types: [], relations: [], withNames: [] }
   try {
     namesIn(parseSync(sql).stmts, found)
   } catch (error) {
@@ -96,6 +125,7 @@ export function statementVerdict(sql: string): StatementVerdict {
     return { kind: 'CLEAR' }
   }
   if (found.relations.some(outsideSync)) return { kind: 'OUTSIDE', reason: 'SCHEMA' }
+  if (outsideCatalog(found, tables)) return { kind: 'OUTSIDE', reason: 'CATALOG' }
   if (found.functions.some((name) => REFUSED_FUNCTIONS.some((one) => one.test(name)))) {
     return { kind: 'OUTSIDE', reason: 'FUNCTION' }
   }

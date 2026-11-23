@@ -14,6 +14,8 @@
     "apps/server/src/hub/access/conformance.test.ts",
     "apps/server/src/hub/access/principal.test.ts",
     "apps/server/src/hub/apps/app-access-journey.test.ts",
+    "apps/server/src/hub/apps/app-read-place.test.ts",
+    "apps/server/src/hub/apps/read-notice.test.ts",
     "apps/server/src/hub/connectors/connections-oauth-logs.test.ts",
     "apps/server/src/hub/connectors/hubspot-door.test.ts",
     "apps/server/src/hub/copies/member-data.test.ts",
@@ -22,7 +24,13 @@
     "apps/server/src/hub/copies/readers-routes.test.ts",
     "apps/server/src/hub/copies/readers.test.ts",
     "apps/server/src/hub/data/catalog-role.test.ts",
+    "apps/server/src/hub/data/conformance-project.test.ts",
+    "apps/server/src/hub/data/conformance.test.ts",
+    "apps/server/src/hub/data/funnel.test.ts",
+    "apps/server/src/hub/data/live.test.ts",
+    "apps/server/src/hub/data/place-role.test.ts",
     "apps/server/src/hub/data/record.test.ts",
+    "apps/server/src/hub/data/reads.test.ts",
     "apps/server/src/hub/projects/app-access.test.ts",
     "apps/server/src/platform/access.test.ts",
     "apps/server/src/platform/copy-role-races.test.ts",
@@ -55,6 +63,14 @@
     {
       "file": "apps/edge/src/db.test.ts",
       "name": "db: query só lê"
+    },
+    {
+      "file": "apps/edge/src/db.test.ts",
+      "name": "a consulta recusada avisa"
+    },
+    {
+      "file": "apps/edge/src/db.test.ts",
+      "name": "o aviso vai depois"
     },
     {
       "file": "apps/edge/src/dispatcher-clone.test.ts",
@@ -977,6 +993,10 @@
       "name": "tipo: a rota handoff só GET"
     },
     {
+      "file": "apps/server/src/platform/aws-leftover.test.ts",
+      "name": "aws: o depósito de outra empresa recusa o resto"
+    },
+    {
       "file": "apps/server/src/platform/cloudflare.test.ts",
       "name": "quem a pediu desiste"
     },
@@ -1202,7 +1222,7 @@
     },
     {
       "file": "packages/hub-api/src/company-data.test.ts",
-      "name": "uma consulta que o banco recusa por permissão responde NOT_IN_ROLE e não devolve linha"
+      "name": "uma consulta que nomeia a tabela que o papel não lê responde NOT_IN_CATALOG e não devolve linha"
     },
     {
       "file": "scripts/deploy.test.ts",

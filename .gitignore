@@ -14,3 +14,4 @@ secrets/
 .stryker-tmp/
 .stryker-report/
 .lab/
+/infra/aws/cdk.out/

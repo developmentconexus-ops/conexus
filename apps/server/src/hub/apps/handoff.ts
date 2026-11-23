@@ -1,12 +1,13 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { Manifest } from '@conexus/app-contract'
-import type { AppCall, AppCaller, HostLabel, Person } from '@conexus/hub-api'
+import type { AppCall, AppCaller, AppEnvironment, AppHost, Person } from '@conexus/hub-api'
 import {
   APP_SESSION_HEADER,
   AppSessionToken,
   AppVersionId,
   appHostOf,
   appLogin,
+  appOfHost,
   appWorkerOf,
   CompanyId,
   HANDOFF_PATH,
@@ -21,7 +22,6 @@ import { Failure } from '../../platform/failure.ts'
 import { COMPANY_DATABASE } from '../../platform/neon.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
-import type { AppEnvironment } from './tables.ts'
 import { app, appSession, appVersion, handoff } from './tables.ts'
 
 export type AppDeps = {
@@ -42,23 +42,18 @@ function hashOf(value: string): string {
 }
 
 /**
- * Gives a person of the company, or one given its app, a pass to the app on the host, bound to the browser by the hash its
- * binding cookie holds. An unknown host, an outsider and a company being deleted get the same
- * not-found (security S10); the Hub session the pass hangs from is the request's own.
+ * Gives a person of the company, or one given its app, a pass to the app on the host, bound to the
+ * browser by the hash its binding cookie holds; the host says the environment. An unknown host, an
+ * outsider and a company being deleted get the same not-found (security S10); the Hub session the
+ * pass hangs from is the request's own.
  */
 async function createHandoff(
   deps: AppDeps,
-  input: {
-    person: Person
-    sessionToken: string
-    host: HostLabel
-    binding: string
-    environment: AppEnvironment
-  },
+  input: { person: Person; sessionToken: string; host: AppHost; binding: string },
 ) {
-  const found = await deps.projects.projectOfHost(input.host)
+  const { label, environment } = appOfHost(input.host)
+  const found = await deps.projects.projectOfHost(label)
   if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_HOST' } })
-  const { environment } = input
   const admitted = await deps.projects.admitToApp({
     personId: input.person.id,
     ...found,
@@ -79,7 +74,7 @@ async function createHandoff(
       personId: input.person.id,
       ...found,
       hubSessionId,
-      environment: input.environment,
+      environment,
       expiresAt: sql`statement_timestamp() + make_interval(secs => ${HANDOFF_SECONDS})`,
     })
   })
@@ -96,7 +91,7 @@ async function createHandoff(
  * another browser, another host or past its 60 s matches no row and stays, so its owner can still
  * use it; two redemptions at once meet on the row, and one of them finds nothing (code C65).
  */
-function redeemHandoff(deps: AppDeps, input: { host: HostLabel; code: string; binding: string }) {
+function redeemHandoff(deps: AppDeps, input: { host: AppHost; code: string; binding: string }) {
   return deps.database.installation(async (tx) => {
     const [taken] = await tx
       .delete(handoff)
@@ -128,8 +123,9 @@ function redeemHandoff(deps: AppDeps, input: { host: HostLabel; code: string; bi
 /**
  * Checks one call to an app: its session on this host, the Hub session it lives in (security S18),
  * then the person's admission and the Projeto, read now, so a removal or a deletion refuses the next
- * call (S8, S13). The app sees only the caller; the dispatcher also learns the version the session
- * gets and the database its run login reaches, or that the Projeto runs the example app.
+ * call (S8, S13). The host says the environment, as it did when the session was made there. The app
+ * sees only the caller; the dispatcher also learns the version the session gets and the database
+ * its run login reaches, or that the Projeto runs the example app.
  */
 type Admitted = Readonly<{
   ids: { companyId: CompanyId; projectId: ProjectId }
@@ -139,7 +135,7 @@ type Admitted = Readonly<{
 
 async function admitCall(
   deps: AppDeps,
-  input: { host: HostLabel; headers: Headers },
+  input: { host: AppHost; headers: Headers },
 ): Promise<Admitted> {
   const token = AppSessionToken.safeParse(input.headers.get(APP_SESSION_HEADER))
   if (!token.success) throw new Failure('APP_SESSION_INVALID', { details: { reason: 'NO_TOKEN' } })
@@ -160,13 +156,14 @@ async function admitCall(
       companyId: CompanyId.parse(row.companyId),
       projectId: ProjectId.parse(row.projectId),
     }
-    return { personId, personName, ids, environment: row.environment }
+    return { personId, personName, ids }
   })
   if (found === undefined) throw new Failure('APP_SESSION_INVALID')
   const { ids } = found
   // The host names its Projeto now: a Projeto deleted and created again under the same name is
   // another app, so the old session goes and the person passes through the Hub again (code C26).
-  const current = await deps.projects.projectOfHost(input.host)
+  const { label, environment } = appOfHost(input.host)
+  const current = await deps.projects.projectOfHost(label)
   if (current === undefined) throw new Failure('APP_NOT_FOUND', { details: ids })
   if (current.projectId !== ids.projectId) {
     await deps.database.installation((tx) =>
@@ -174,7 +171,6 @@ async function admitCall(
     )
     throw new Failure('APP_SESSION_INVALID', { details: { ...ids, reason: 'PROJECT_REPLACED' } })
   }
-  const { environment } = found
   const admitted = await deps.projects.admitToApp({ personId: found.personId, ...ids, environment })
   switch (admitted.kind) {
     case 'REFUSED':
@@ -194,7 +190,7 @@ async function admitCall(
 
 async function checkCall(
   deps: AppDeps,
-  input: { host: HostLabel; headers: Headers },
+  input: { host: AppHost; headers: Headers },
 ): Promise<AppCall> {
   const { ids, caller, environment } = await admitCall(deps, input)
   return callTo(deps, { ...ids, caller, environment })
@@ -209,12 +205,12 @@ export type ConnectorCall = Readonly<{
 }>
 
 /**
- * `checkCall`'s admission, then the version the session gets and its manifest in one read (the
- * published one for a tab, the Prévia's for the frame): the connectors check the grant against it.
+ * `checkCall`'s admission, then the version the host gets and its manifest in one read (the
+ * published one on the app's host, the Prévia's on its own): the connectors check the grant against it.
  */
 async function connectorCall(
   deps: AppDeps,
-  input: { host: HostLabel; headers: Headers },
+  input: { host: AppHost; headers: Headers },
 ): Promise<ConnectorCall> {
   const { ids, caller, environment } = await admitCall(deps, input)
   const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: caller.personId } as const
@@ -241,9 +237,9 @@ async function connectorCall(
 }
 
 /**
- * The Worker of the version the session gets and the run login's database: the published one for a
- * tab, the Prévia's for the frame. A tab before the first Publicar is refused; a frame before the
- * first version gets the example app.
+ * The Worker of the version the host gets and the run login's database: the published one on the
+ * app's host, the Prévia's on its own. The app's host before the first Publicar is refused; the
+ * Prévia's before the first version gets the example app.
  */
 function callTo(
   deps: AppDeps,
@@ -299,9 +295,10 @@ export async function endAppSessions(
   )
 }
 
-/** The door's three acts, each bound to its dependencies. */
+/** The door's acts, each bound to its dependencies. */
 export function createAppDoor(deps: AppDeps) {
   return Object.freeze({
+    admitCall: (input: Parameters<typeof admitCall>[1]) => admitCall(deps, input),
     createHandoff: (input: Parameters<typeof createHandoff>[1]) => createHandoff(deps, input),
     redeemHandoff: (input: Parameters<typeof redeemHandoff>[1]) => redeemHandoff(deps, input),
     checkCall: (input: Parameters<typeof checkCall>[1]) => checkCall(deps, input),

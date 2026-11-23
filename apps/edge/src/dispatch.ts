@@ -1,12 +1,13 @@
 import type { AppProps } from '@conexus/app-contract'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
-import type { AppCall, HostLabel as Label } from '@conexus/hub-api'
+import type { AppCall, AppEnvironment } from '@conexus/hub-api'
 import {
   APP_OPEN_PATH,
+  AppHost,
   AppSessionToken,
+  appOfHost,
   createAppSession,
   HANDOFF_PATH,
-  HostLabel,
 } from '@conexus/hub-api'
 import type { ConnectorsProps } from './connectors.ts'
 import type { DbProps } from './db.ts'
@@ -15,6 +16,7 @@ import { entryPage, entryScript } from './entry.ts'
 import {
   APP_SESSION_COOKIE,
   appPolicyOf,
+  appSessionCookies,
   BINDING_COOKIE,
   cookiesOf,
   headersFromApp,
@@ -22,9 +24,9 @@ import {
   setCookie,
   withSecurityHeaders,
 } from './headers.ts'
-import type { HubPort, NoAnswerReason } from './hub.ts'
+import type { HubPort } from './hub.ts'
 import { hubOf } from './hub.ts'
-import type { PageCode } from './pages.ts'
+import type { PageCode, PageLog } from './pages.ts'
 import { failurePage } from './pages.ts'
 
 /** A Projeto with no version on the air runs the example app of step 8. */
@@ -32,6 +34,9 @@ const EXAMPLE_SCRIPT = 'conexus-example'
 /** The dispatcher's own paths on an app's host, which the app never receives. */
 const DISPATCHER_PATHS = '/__conexus/'
 const ENTRY_SCRIPT = `${DISPATCHER_PATHS}entry.js`
+/** Where a redeemed pass lands, with the hash of the session it set in `SESSION_MARK`. */
+const LANDING_PATH = `${DISPATCHER_PATHS}entrada`
+const SESSION_MARK = 'sessao'
 const SECRET_BYTES = 32
 
 /** What the dispatcher needs of its own exports: a `db` stub bound to one login (decision 0043) and the `connectors` stub. */
@@ -46,7 +51,8 @@ type Visit = {
   exports: Exports
   hub: HubPort
   url: URL
-  label: Label
+  host: AppHost
+  environment: AppEnvironment
   policy: string
 }
 
@@ -56,8 +62,9 @@ function redirect(visit: Visit, location: string, cookies: string[]): Response {
   return new Response(null, { status: 303, headers: withSecurityHeaders(headers, visit.policy) })
 }
 
-function failure(visit: Visit, code: PageCode, reason?: NoAnswerReason) {
-  return failurePage(code, visit.env.HUB_PUBLIC_ORIGIN, reason)
+function failure(visit: Visit, code: PageCode, log?: PageLog) {
+  const { env, environment } = visit
+  return failurePage(code, { hubOrigin: env.HUB_PUBLIC_ORIGIN, environment }, log)
 }
 
 /** A write without this host's exact `Origin`, or that `Sec-Fetch-Site` calls cross-site (S24). */
@@ -69,42 +76,61 @@ function isForeignWrite(request: Request, url: URL): boolean {
 
 /**
  * To the Hub, which knows the person: the browser keeps a secret bound to this host and the Hub
- * sees only its hash, so a pass made for one browser opens nothing in another (security S22). A
- * frame, the Hub's Prévia, gets the entry page, which hands the hash to the Hub's page instead.
+ * sees only its hash, so a pass made for one browser opens nothing in another (security S22). The
+ * published app's host goes by `/apps/open`, framed or not. The Prévia's host is the Hub's frame:
+ * there the entry page hands the hash to the Hub's page instead; anywhere else, a page that sends
+ * to the Hub, with no cookie but `cleared` and no call to it. `Sec-Fetch-Dest` only chooses between
+ * those two pages, never a cookie's form.
  */
 async function toHub(visit: Visit, cleared: string[]): Promise<Response> {
+  if (visit.environment === 'preview' && visit.request.headers.get('Sec-Fetch-Dest') !== 'iframe') {
+    const page = await failure(visit, 'EDGE_PREVIEW_OUTSIDE_HUB', { host: visit.host })
+    for (const cookie of cleared) page.headers.append('Set-Cookie', cookie)
+    return page
+  }
   const kept = createAppSession.input.body.shape.binding.safeParse(
     cookiesOf(visit.request.headers).get(BINDING_COOKIE),
   )
   const binding = kept.data ?? base64Of(crypto.getRandomValues(new Uint8Array(SECRET_BYTES)), 'url')
-  const cookies = kept.success ? cleared : [...cleared, setCookie(BINDING_COOKIE, binding)]
+  const cookies = kept.success
+    ? cleared
+    : [...cleared, setCookie(BINDING_COOKIE, binding, visit.environment)]
   const hash = base64Of(await sha256Of(binding), 'url')
   const hubOrigin = visit.env.HUB_PUBLIC_ORIGIN
-  if (visit.request.headers.get('Sec-Fetch-Dest') === 'iframe') {
+  if (visit.environment === 'preview') {
     return entryPage({
       hubOrigin,
-      host: visit.label,
+      host: visit.host,
       binding: hash,
       script: ENTRY_SCRIPT,
       cookies,
       contentSecurityPolicy: visit.policy,
     })
   }
-  const query = new URLSearchParams({ host: visit.label, binding: hash })
+  const query = new URLSearchParams({ host: visit.host, binding: hash })
   return redirect(visit, `${hubOrigin}${APP_OPEN_PATH}?${query}`, cookies)
 }
 
-/** Trades the Hub's pass for the app's session, on the browser the pass was made for. */
+async function markOf(session: string): Promise<string> {
+  return base64Of(await sha256Of(session), 'url')
+}
+
+/**
+ * Trades the Hub's pass for the app's session, on the browser the pass was made for. It lands on
+ * `LANDING_PATH`, whose address, not a cookie, says a pass was just redeemed and for which session.
+ */
 async function redeem(visit: Visit): Promise<Response> {
   const body = createAppSession.input.body.safeParse({
-    host: visit.label,
+    host: visit.host,
     code: visit.url.searchParams.get('code'),
     binding: cookiesOf(visit.request.headers).get(BINDING_COOKIE),
   })
   if (!body.success) return failure(visit, 'APP_HANDOFF_INVALID')
   const answer = await visit.hub.createAppSession(body.data)
   if (answer.kind === 'DONE') {
-    return redirect(visit, '/', [setCookie(APP_SESSION_COOKIE, answer.value.session)])
+    const { session } = answer.value
+    const landing = `${LANDING_PATH}?${new URLSearchParams({ [SESSION_MARK]: await markOf(session) })}`
+    return redirect(visit, landing, appSessionCookies(session, visit.environment))
   }
   if (answer.kind === 'REFUSED' && answer.code === 'APP_HANDOFF_INVALID') {
     return failure(visit, 'APP_HANDOFF_INVALID')
@@ -112,8 +138,21 @@ async function redeem(visit: Visit): Promise<Response> {
   return failure(
     visit,
     'EDGE_HUB_UNAVAILABLE',
-    answer.kind === 'NO_ANSWER' ? answer.reason : undefined,
+    answer.kind === 'NO_ANSWER' ? { reason: answer.reason } : {},
   )
+}
+
+/**
+ * The browser came back from the pass with the session it set, so on to the app; or without it, and
+ * this second round in a row without a session is a page, not another trip to the Hub that loops
+ * until "too many redirects" (oauth2-proxy's error page, Vouch's count of tries). A stale cookie the
+ * browser keeps sending instead of the new one counts as not kept.
+ */
+async function land(visit: Visit): Promise<Response> {
+  const sent = cookiesOf(visit.request.headers).get(APP_SESSION_COOKIE)
+  const mark = visit.url.searchParams.get(SESSION_MARK)
+  if (sent !== undefined && (await markOf(sent)) === mark) return redirect(visit, '/', [])
+  return failure(visit, 'EDGE_SESSION_NOT_KEPT', { host: visit.host, rounds: 2 })
 }
 
 /**
@@ -154,9 +193,14 @@ async function toApp(visit: Visit, call: AppCall, session: AppSessionToken): Pro
             {
               props: {
                 caller,
-                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),
+                db: visit.exports.Db({
+                  props: {
+                    ...{ ...call.database, endsAt: deadline.endsAt },
+                    ...{ session, label: visit.host },
+                  },
+                }),
                 connectors: visit.exports.Connectors({
-                  props: { host: visit.label, session, endsAt: deadline.endsAt },
+                  props: { host: visit.host, session, endsAt: deadline.endsAt },
                 }),
               } satisfies AppProps,
             },
@@ -186,42 +230,63 @@ const CHECK_REFUSALS: Partial<Record<string, PageCode>> = {
   APP_NOT_PUBLISHED: 'APP_NOT_PUBLISHED',
 }
 
-async function dispatch(request: Request, env: Env, exports: Exports): Promise<Response> {
-  const url = new URL(request.url)
+/** The app's host the browser opened, the published app's or its Prévia's, with its environment. */
+type OnHost = { host: AppHost; environment: AppEnvironment }
+
+function onHostOf(url: URL, env: Env): OnHost | undefined {
   const domain = `.${env.APPS_DOMAIN}`
-  const label = HostLabel.safeParse(
+  const host = AppHost.safeParse(
     url.hostname.endsWith(domain) ? url.hostname.slice(0, -domain.length) : '',
   )
-  if (!label.success) return failurePage('APP_NOT_FOUND', env.HUB_PUBLIC_ORIGIN)
-  if (isForeignWrite(request, url)) {
-    return failurePage('REQUEST_ORIGIN_REFUSED', env.HUB_PUBLIC_ORIGIN)
-  }
-  const policy = appPolicyOf(env)
-  const visit: Visit = { request, env, exports, hub: hubOf(env), url, label: label.data, policy }
+  return host.success
+    ? { host: host.data, environment: appOfHost(host.data).environment }
+    : undefined
+}
+
+async function dispatch(
+  request: Request,
+  env: Env,
+  exports: Exports,
+  at: { url: URL; on: OnHost | undefined },
+): Promise<Response> {
+  const { url, on } = at
+  const page = { hubOrigin: env.HUB_PUBLIC_ORIGIN, environment: on?.environment }
+  if (on === undefined) return failurePage('APP_NOT_FOUND', page)
+  const { host, environment } = on
+  if (isForeignWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED', page)
+  const policy = appPolicyOf(env, environment)
+  const visit: Visit = { request, env, exports, hub: hubOf(env), url, host, environment, policy }
   if (url.pathname === HANDOFF_PATH) return redeem(visit)
+  if (url.pathname === LANDING_PATH) return land(visit)
   if (url.pathname === ENTRY_SCRIPT) return entryScript(policy)
   if (url.pathname.startsWith(DISPATCHER_PATHS)) return failure(visit, 'APP_NOT_FOUND')
 
   const session = AppSessionToken.safeParse(cookiesOf(request.headers).get(APP_SESSION_COOKIE))
   if (!session.success) return toHub(visit, [])
-  const answer = await visit.hub.checkAppCall({ host: visit.label, session: session.data })
+  const answer = await visit.hub.checkAppCall({ host, session: session.data })
   if (answer.kind === 'DONE') return toApp(visit, answer.value, session.data)
   if (answer.kind === 'REFUSED' && answer.code === 'APP_SESSION_INVALID') {
-    return toHub(visit, [setCookie(APP_SESSION_COOKIE, '')])
+    return toHub(visit, appSessionCookies('', environment))
   }
   const refusal = answer.kind === 'REFUSED' ? CHECK_REFUSALS[answer.code] : undefined
   return failure(
     visit,
     refusal ?? 'EDGE_HUB_UNAVAILABLE',
-    answer.kind === 'NO_ANSWER' ? answer.reason : undefined,
+    answer.kind === 'NO_ANSWER' ? { reason: answer.reason } : {},
   )
 }
 
-/** Every request to an app's host, with the dispatcher's own exports; any throw is the 500 page. */
+/**
+ * Every request to an app's host, with the dispatcher's own exports; any throw is the 500 page,
+ * framed as its host is.
+ */
 export async function serveDispatch(request: Request, env: Env, exports: Exports) {
+  const url = new URL(request.url)
+  const on = onHostOf(url, env)
   try {
-    return await dispatch(request, env, exports)
+    return await dispatch(request, env, exports, { url, on })
   } catch {
-    return failurePage('INTERNAL_UNEXPECTED', env.HUB_PUBLIC_ORIGIN)
+    const page = { hubOrigin: env.HUB_PUBLIC_ORIGIN, environment: on?.environment }
+    return failurePage('INTERNAL_UNEXPECTED', page)
   }
 }

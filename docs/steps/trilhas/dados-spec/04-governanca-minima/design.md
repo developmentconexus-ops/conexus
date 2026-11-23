@@ -1,5 +1,7 @@
 # Documento de desenho: parte 4, a governança mínima
 
+> O cartão Registro e conformidade (no histórico do `main`, no commit `07aa2924`) construiu os requisitos 6 e 7, o `C6` e o grupo 9 desta parte, e o que ele decidiu vale sobre este texto (o fechamento dele, 2026-11-21). Só Dono e Administrador veem o Registro de dados, e o requisito 7.2 volta a valer. A leitura deixa uma linha só, gravada depois de ler e antes de devolver. A consulta que nomeia uma tabela fora do catálogo de quem pergunta volta `NOT_IN_CATALOG` sem rodar, como a tabela que não existe ("1. B"). O registro do cartão está em [aprovações](../../../../approvals/registro-e-conformidade.md).
+
 Base: `main` do Conexus em `0d4c5730`. Todo caminho é relativo à raiz do repositório. Depende das partes 1 e 3: o login de leitura, o catálogo e as duas ferramentas. Os rótulos de prova são os do escopo.
 
 ## Visão geral

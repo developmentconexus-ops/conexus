@@ -5,10 +5,12 @@ import { setTimeout } from 'node:timers/promises'
 import { ATTEMPT_KEY_HEADER, CompanyId } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import { createEdgeHub, createHub, subjectsOf } from '../../main.ts'
+import type { LakeStacks } from '../../platform/aws.ts'
 import type { Config } from '../../platform/config.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { closeListeners } from '../../platform/lifecycle.ts'
 import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports.ts'
+import { fakeAws } from '../../platform/test-aws.ts'
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
@@ -41,7 +43,8 @@ export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
-type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'>
+/** `aws` puts the real AWS adapter in the Hub, in place of the AWS of memory. */
+type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'> & { aws?: LakeStacks }
 
 /** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11), and a Testar waiting on another's refresh still sees the double's refresh land. */
 const TEST_CALL_DEADLINE_MS = 1_000
@@ -77,8 +80,9 @@ async function hubServing(
   const identity = testIdentity({ database: test.database, config, sendMail })
   const cloudflare = fakeCloudflare()
   const tools = fakeCloudflare()
+  const aws = { ...fakeAws(), ...(tuning.aws === undefined ? {} : { aws: tuning.aws }) }
   const postgres = heldCompanyPostgres(config)
-  const ports = testAppPorts(config, { neon, cloudflare, postgres, tools })
+  const ports = testAppPorts(config, { neon, cloudflare, postgres, tools, aws })
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log },
@@ -106,8 +110,8 @@ async function hubServing(
     edge,
     test,
     config,
-    neon,
-    cloudflare,
+    // The companies' lakes in AWS are of memory too (card o-lago-da-empresa-nasce-e-some).
+    ...{ neon, aws, cloudflare },
     /** The saved tools' namespace of memory (step 24.4). */
     tools,
     postgres,

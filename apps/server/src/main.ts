@@ -23,15 +23,19 @@ import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './h
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
 import { createConnectors, roleKit } from './hub/connectors/public.ts'
 import { createCopies } from './hub/copies/public.ts'
-import { createCompanyData, recordRead } from './hub/data/public.ts'
+import type { DataDeps } from './hub/data/public.ts'
+import { createCompanyData, createDataReads, recordRead } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity } from './hub/identity/public.ts'
+import { createLakes } from './hub/lake/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
 import { createOperations } from './hub/operations/public.ts'
 import { createProjects } from './hub/projects/public.ts'
 import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
+import type { LakeStacks } from './platform/aws.ts'
+import { createLakeStacks } from './platform/aws.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
 import { createCloudflareApps, createCloudflareTools } from './platform/cloudflare.ts'
 import type { CompanyPostgres } from './platform/company-postgres.ts'
@@ -88,7 +92,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.copies],
+    ...[deps.requests, deps.copies, deps.dataReads, deps.lakes],
   ]) {
     part.routes(app)
   }
@@ -123,6 +127,8 @@ export function subjectsOf(deps: {
   identity: Identity
   sendMail: SendMail
   neon: NeonProjects
+  /** The companies' lakes in AWS (card o-lago-da-empresa-nasce-e-some). */
+  lakeStacks: LakeStacks
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
   /** The saved tools' namespace (step 24.4); the Hub calls their host through `createEdgeTools`. */
@@ -177,8 +183,8 @@ export function subjectsOf(deps: {
     // The requests come below, after the apps they publish through; a Projeto's read comes long after.
     publishRequestOf: (tx, input) => requests.publishRequestOf(tx, input),
   })
-  const operations = createOperations({
-    ...{ database, identity, projects: projects.ports },
+  const { lakes, operations } = centralOf({
+    ...{ database, identity, config, log, aws: deps.lakeStacks, projects: projects.ports },
     ...{ appRemoval, releaseConversations },
   })
   // The connectors come below, after the apps whose door they read; a publish comes long after.
@@ -210,14 +216,28 @@ export function subjectsOf(deps: {
   })
   const sources = { systems: connectors.access.systems, tables: copies.access.tables }
   const access = createAccess({ database, identity, sources })
-  const data = createCompanyData({
-    ...{ database, identity, log, access, copies: () => copies.data },
-    ...{ projects: projects.ports, companyPostgres: deps.companyPostgres, neon },
+  const { data, dataReads } = dataOf({
+    ...{ database, identity, log, access, copies: () => copies.data, projects: projects.ports },
+    connectors: () => connectors,
   })
   return {
-    ...{ runs, projects, operations, apps, modelAccounts, requests, access },
+    ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, copies, data },
   }
+}
+
+/** The Operations Central, and the lakes it frees with a client's database (card L.13). */
+function centralOf(
+  deps: Omit<Parameters<typeof createOperations>[0], 'outside'> & Parameters<typeof createLakes>[0],
+) {
+  const lakes = createLakes(deps)
+  const outside = [deps.projects.companyDatabase, lakes.outside]
+  return { lakes, operations: createOperations({ ...deps, outside }) }
+}
+
+/** The access contract the agents read through, and the Registro de dados its reads leave. */
+function dataOf(deps: DataDeps) {
+  return { data: createCompanyData(deps), dataReads: createDataReads(deps) }
 }
 
 async function runServer(): Promise<void> {
@@ -234,6 +254,7 @@ async function runServer(): Promise<void> {
     const sendMail = createMail({ config, log })
     const identity = createIdentity({ database, config, log, sendMail, kit: roleKit() })
     const neon = createNeonProjects({ config, log })
+    const lakeStacks = createLakeStacks({ config, log })
     const companyPostgres = createCompanyPostgres({
       transport: neonTransport,
       appLoginKey: config.appLoginKey,
@@ -242,7 +263,7 @@ async function runServer(): Promise<void> {
     const cloudflareTools = createCloudflareTools({ config, log })
     const subjects = subjectsOf({
       ...{ database, config, identity, sendMail },
-      ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
+      ...{ neon, lakeStacks, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
     const { projects, apps, conversations, modelAccounts, runs, connectors, copies } = subjects

@@ -144,6 +144,7 @@ function starting(sent: Promise<unknown>): Replies {
         mayPublish: true,
         publishRequest: null,
         address: 'pedidos--empresa-teste.apps.example.test',
+        previewAddress: 'pedidos--empresa-teste--previa.apps.example.test',
         appVersion: null,
         publishedVersion: null,
       },

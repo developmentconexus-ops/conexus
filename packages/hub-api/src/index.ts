@@ -41,6 +41,7 @@ export {
   listAppVersions,
   OfProject,
   publishAppVersion,
+  recordAppRead,
   VersionFileInput,
 } from './apps.ts'
 export * from './assistant.ts'
@@ -141,6 +142,7 @@ export * from './copies.ts'
 export { CopyProposed, PROOF_PAGE_ROWS, ProveCounts } from './copy-proof.ts'
 export * from './copy-readers.ts'
 export * from './copy-shown.ts'
+export * from './data-reads.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'
@@ -158,6 +160,7 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
+export { ClientLake, createClientLake, deleteClientLake, getClientLake } from './lakes.ts'
 export * from './library-ids.ts'
 export * from './machine.ts'
 export { MEMBER_PROFILE_MAX, setMemberProfile } from './member-profile.ts'

@@ -13,6 +13,10 @@ import { serveTool, toolDataOf } from './tools.ts'
 // the namespace that holds the apps' Workers.
 export const HOST = 'pedidos--empresa-a'
 export const APP_ORIGIN = `https://${HOST}.conexusapp.tech`
+/** The Prévia's host of the same app, which only the Hub frames. */
+export const PREVIEW_HOST = `${HOST}--previa`
+export const PREVIEW_ORIGIN = `https://${PREVIEW_HOST}.conexusapp.tech`
+export const HUB_ORIGIN = 'https://hub.conexus.fun'
 export const CODE = 'c'.repeat(43)
 export const SESSION = 's'.repeat(43)
 export const BINDING = 'b'.repeat(43)
@@ -122,7 +126,7 @@ export function edge(
     },
   }
   const env = {
-    HUB_PUBLIC_ORIGIN: 'https://hub.conexus.fun',
+    HUB_PUBLIC_ORIGIN: HUB_ORIGIN,
     APPS_DOMAIN: 'conexusapp.tech',
     TOOLS_ACCESS_AUD: TOOLS_AUD,
     APP_LOGIN_KEY: 'k'.repeat(43),
@@ -163,6 +167,8 @@ export function edge(
       return serveTool(new Request(`${TOOLS_ORIGIN}${path}`, init), env, toolExports, access)
     },
     hubCalls,
+    /** The dispatcher's port to the Hub double, for an entrypoint tested on its own. */
+    hub: hubOf(env),
     appCalls,
     dbBindings,
     connectorBindings,
@@ -170,6 +176,12 @@ export function edge(
       return serveDispatch(new Request(`${origin}${path}`, init), env, exports)
     },
   }
+}
+
+/** The value of the `frame-ancestors` directive, the policy's last. */
+export function frameAncestorsOf(response: Response): string | undefined {
+  const policy = response.headers.get('Content-Security-Policy') ?? ''
+  return /(?:^|; )frame-ancestors ([^;]*)$/.exec(policy)?.[1]
 }
 
 /** What a page of the dispatcher says, without the frame every page shares. */

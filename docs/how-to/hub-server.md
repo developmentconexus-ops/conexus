@@ -68,9 +68,10 @@ Firstmate writes `hub_session_secret` beside those keys, 32 random characters or
 
 ## Publish
 
-Merging into `main` does not publish. Tag a Release `v<n>.<n>.<n>` on a commit of `main`. Publish builds the image, keeps the last ten, builds [the Builder's
-template](builder-template.md) from that commit and runs `infra/deploy.sh` with both on the server.
-A tag on another commit or a failed template ends red; the Hub stays. Keeping ten images needs Admin in the package's Actions access ([apps-edge](apps-edge.md)).
+Merging a release note publishes ([delivery L17](../guides/delivery.md)). Publish tags the merge
+commit, builds the image, keeps the last ten, builds [the Builder's template](builder-template.md)
+from that commit and runs `infra/deploy.sh` with both on the server. A used version or a failed
+template ends red; the Hub stays. Keeping ten images needs Admin in the package's Actions access ([apps-edge](apps-edge.md)).
 
 Before the new image starts, `deploy.sh` runs `migrate` for up to 120 seconds, 3 attempts, only when the image
 carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the

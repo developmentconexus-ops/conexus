@@ -10,6 +10,7 @@ import {
   listAppVersions,
   listCopyRows,
   publishAppVersion,
+  recordAppRead,
 } from '@conexus/hub-api'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { optionalSessionOf } from '../../platform/access.ts'
@@ -17,8 +18,10 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { sendPage } from '../../platform/screens.ts'
 import type { AppData } from './app-data.ts'
+import type { RecordAppRead } from './app-data-record.ts'
 import type { AppVersions } from './app-versions.ts'
 import type { AppDoor } from './handoff.ts'
+import { recordNotice } from './read-notice.ts'
 
 /**
  * The handoff answers a navigation, so a failure is never JSON: a missing session goes to sign-in
@@ -55,11 +58,7 @@ export function registerHandoffRoute(app: FastifyInstance, door: AppDoor): void 
       }
       const session = optionalSessionOf(request)
       if (session === undefined) throw new Failure('SESSION_REQUIRED')
-      const made = await door.createHandoff({
-        ...session,
-        ...query.data,
-        environment: 'published',
-      })
+      const made = await door.createHandoff({ ...session, ...query.data })
       const { companyId, projectId } = made
       request.log.info({ companyId, projectId }, 'APP_HANDOFF_CREATED')
       return reply.redirect(made.location, 303)
@@ -68,10 +67,7 @@ export function registerHandoffRoute(app: FastifyInstance, door: AppDoor): void 
   // The same pass for the Prévia, whose frame cannot reach `/apps/open` with the Hub's cookie: the
   // Hub's own page asks, by its session and the binding hash the frame's entry page sent it.
   serve(app, createAppFrameHandoff, async ({ person, sessionToken, body, log }) => {
-    const made = await door.createHandoff({
-      ...{ person, sessionToken, ...body },
-      environment: 'preview',
-    })
+    const made = await door.createHandoff({ person, sessionToken, ...body })
     log.info({ companyId: made.companyId, projectId: made.projectId }, 'APP_HANDOFF_CREATED')
     return answer({ location: made.location })
   })
@@ -100,8 +96,12 @@ export function registerDataRoutes(app: FastifyInstance, data: AppData): void {
   )
 }
 
-/** The dispatcher's two calls, on the edge listener alone (security S48). */
-export function registerEdgeRoutes(edge: FastifyInstance, door: AppDoor): void {
+/** The dispatcher's calls, on the edge listener alone (security S48). */
+export function registerEdgeRoutes(
+  edge: FastifyInstance,
+  door: AppDoor,
+  recordRead: RecordAppRead,
+): void {
   serve(edge, createAppSession, async ({ body, log }) => {
     const made = await door.redeemHandoff(body)
     log.info({ companyId: made.companyId, projectId: made.projectId }, 'APP_SESSION_CREATED')
@@ -110,4 +110,11 @@ export function registerEdgeRoutes(edge: FastifyInstance, door: AppDoor): void {
   serve(edge, checkAppCall, async ({ query, headers }) =>
     answer(await door.checkCall({ host: query.host, headers })),
   )
+  serve(edge, recordAppRead, async ({ query, headers, body }) => {
+    await recordNotice(
+      { admitCall: door.admitCall, recordRead },
+      { host: query.host, headers, notice: body },
+    )
+    return answer(undefined)
+  })
 }

@@ -35,8 +35,8 @@ The dispatcher's route and the Hub's `HUB_APPS_DOMAIN` name the same apps domain
 ## The runner's gate
 
 `infra/setup-runner-hook.sh` names `infra/runner-job-started.sh` in the runner's `.env`. Before any
-job's first step, the hook refuses all but a Release or a manual run of `main` whose commit is on `main`,
-read from a mirror it fetches first (0035). Voltar atrás checks the version's commit too.
+job's first step, the hook refuses all but a push or a manual run of `main` whose commit is on
+`main`, read from a mirror it fetches first (0081). Voltar atrás checks the version's commit too.
 
 ## The runner's mirror
 
@@ -47,13 +47,13 @@ passes. Step 1 names the hook first: a failed mirror refuses every job.
    prints `mirror of main ready`, then `runner hook ready`. The repository is public, so no key;
    if it turns private, the fetch fails and every job is refused.
 2. `sudo -u runner git --git-dir=/var/lib/conexus/main.git rev-parse main` prints `main`'s head.
-3. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion, bypassed by the Write
-   role, today only the founder's working account (an admin tags anyway); granting Write grants
-   `v*` tags, so review it then.
+3. A tag ruleset on `refs/tags/v*` restricts update and deletion, not creation (0081); the Write
+   role bypasses it, today only the founder's working account; granting Write grants rewriting `v*`
+   tags, so review it then.
 4. The `conexus-hub` package's Actions access: this repository alone, role Admin (not Write),
    branches included; Voltar atrás deploys only recorded digests.
-5. Each kept version's green run of `gh run list --workflow publish.yml --event release`, on a
-   commit of `main`, logged `live: <reference>` (`gh run view <run> --log | grep 'live: '`). The
+5. Each kept version's green run of `gh run list --workflow publish.yml --event push` (before
+   0081, `release`), on a commit of `main`, logged `live: <reference>` (`gh run view <run> --log | grep 'live: '`). The
    live version's equals `docker ps --filter label=com.docker.compose.service=hub --format '{{.Image}}'`.
    `sudo -u runner git clone --quiet --branch main /var/lib/conexus/main.git /tmp/conexus-main`, then
    `sudo -u runner /tmp/conexus-main/infra/releases.sh record <version> <reference>`; its
@@ -63,11 +63,10 @@ passes. Step 1 names the hook first: a failed mirror refuses every job.
 
 ## Publish
 
-A Release publishes the Hub, then the edge from the Release's own commit: the wall
-(`conexus-outbound`), the example into the namespace (`conexus-example`, `--dispatch-namespace
+A note's merge publishes the Hub, then the edge from its commit: the wall (`conexus-outbound`), the example into the namespace (`conexus-example`, `--dispatch-namespace
 conexus-apps`), [its key](apps-token-and-key.md), then the dispatcher (`conexus-dispatcher`).
 Two publishes never overlap (the
-`hub-server` concurrency group). A failed step fails the Release: the Hub stays new, the Workers
+`hub-server` concurrency group). A failed step fails the run: the Hub stays new, the Workers
 already published stay, and the others keep their earlier code. Rerun the failed job once the cause
 is fixed; publishing the same code again changes nothing. The log never has the token.
 

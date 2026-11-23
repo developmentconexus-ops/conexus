@@ -38,7 +38,6 @@ const CATALOG = Catalog.parse({
       connection: MATRIZ,
       connector: 'sankhya',
       name: 'Matriz',
-      liveOnly: false,
       reads: [{ operation: 'consultar', label: 'Consultas', summary: 'Consulta o Sankhya.' }],
       actions: [],
     },

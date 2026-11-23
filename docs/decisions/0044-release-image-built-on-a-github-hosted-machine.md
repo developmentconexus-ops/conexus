@@ -37,4 +37,4 @@ The repository turns private, or hosted minutes cost money.
 ## State
 
 Accepted 2026-10-18. Founder: "A" (the image on GitHub) and "Stop local runner move to github and
-continue"; the warning accepted with the public repository.
+continue"; the warning accepted with the public repository. Amended 2026-11-22 by [0081].

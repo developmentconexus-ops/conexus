@@ -12,6 +12,6 @@ export {
   loadArea,
   loadConstrutorConversation,
 } from './loader.ts'
-export { toolsQuery } from './queries.ts'
+export { agentsQuery, toolsQuery } from './queries.ts'
 export { AgentPending, AgentsReadFailure, AreaPending } from './route-states.tsx'
 export { ToolForm } from './tool-form.tsx'

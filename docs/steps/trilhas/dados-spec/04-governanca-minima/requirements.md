@@ -1,5 +1,7 @@
 # Documento de requisitos: parte 4, a governança mínima
 
+> O cartão Registro e conformidade (no histórico do `main`, no commit `07aa2924`) construiu os requisitos 6 e 7, o `C6` e o grupo 9 desta parte, e o que ele decidiu vale sobre este texto (o fechamento dele, 2026-11-21). Só Dono e Administrador veem o Registro de dados, e o requisito 7.2 volta a valer. A leitura deixa uma linha só, gravada depois de ler e antes de devolver. A consulta que nomeia uma tabela fora do catálogo de quem pergunta volta `NOT_IN_CATALOG` sem rodar, como a tabela que não existe ("1. B"). O registro do cartão está em [aprovações](../../../../approvals/registro-e-conformidade.md).
+
 ## Introdução
 
 No fim desta parte uma pessoa sem o papel pergunta sobre um dado copiado e recebe a recusa com o nome do dado, o dono e o administrador marcam na tela Papéis quais tabelas cada papel lê, o membro vê na página Dados só as tabelas do papel dele, e o dono e o administrador veem no Registro de dados cada leitura que um agente ou um app fez. As decisões vêm do escopo aprovado (seção 6 e tela `p1-11`, decisões `T4`, `T8` e E4a, aprovadas em 2026-11-14) e do `design.md` desta pasta. A parte parte do pressuposto de que as partes 1 e 3 estão construídas: o login `conexus_read`, o catálogo, `rowsOf`, `queryOf` e as ferramentas `data_describe` e `data_query`.

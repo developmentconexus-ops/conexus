@@ -1,11 +1,14 @@
 import type { AgentId, CompanyId, ConversationId, PersonId, ProjectId } from '@conexus/hub-api'
 import type { AppRead, SqlStatement } from '../../platform/company-postgres.ts'
 
-/** What an agent's read of the app's schema hands the Registry's writer: the statement and the outcome, never a row. */
+/**
+ * What a read of the app's schema, by an agent or by the app itself, hands the Registry's writer:
+ * the statement and the outcome, never a row.
+ */
 type AppReadLine = Readonly<{
   companyId: CompanyId
   personId: PersonId
-  by: 'builder' | 'agent'
+  by: 'builder' | 'agent' | 'app'
   projectId: ProjectId
   agentId: AgentId | null
   threadId: ConversationId | null
@@ -17,6 +20,8 @@ type AppReadLine = Readonly<{
   outcome: string
   rows: number | null
   ms: number
+  /** The edge's id of the app's query, so its notice sent again leaves no second row. */
+  id?: string
 }>
 
 export type RecordAppRead = (line: AppReadLine) => Promise<'RECORDED' | 'UNRECORDED'>

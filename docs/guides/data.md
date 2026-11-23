@@ -84,7 +84,11 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   24.3.4: deciding a publish request holds the app, then the asker's membership, then the request,
   or removing the asker deadlocks with the decision. [review]
 - **D25.** There **must not** be a session-level lock, or a session setting outside a transaction,
-  and a single owner **must** be a lease row with an expiry, renewed by activity. The one exception:
+  and a single owner **must** end when its holder dies: a lease row with an expiry, renewed by
+  activity, or the outside system's own guarantee, as a lake copy's one open run closed through its
+  queue [0076] and a company lake's stack, unique by name and created with CloudFormation's
+  `ClientRequestToken` (`@aws-sdk/client-cloudformation@3.1175.0` `models_0.d.ts:2117-2134`).
+  The one exception:
   the `migrate` connection, on the direct address, opens with its limits in `options`, so
   PostgreSQL itself cancels a stuck migration and frees its locks; killing the client does not.
   Founder, 2026-10-22: "1 sim 2 A". [CI search]

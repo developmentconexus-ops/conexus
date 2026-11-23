@@ -128,6 +128,11 @@ jobs:
       - run: npm run deps
       - run: npm run knip
       - run: npm run docs
+      - name: The release note names a new version and comes alone
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npm run release-note -- check --base "origin/$BASE_REF"
       - name: The OpenAPI document emits from the operations
         run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
@@ -356,9 +361,12 @@ jobs:
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       # The check program drives a real Chromium (decision 0055).
       - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
-      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/edge -w @conexus/hub-api
+      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/connectors -w @conexus/edge -w @conexus/hub-api -w @conexus/infra-aws
         env:
           CONEXUS_FLAKY_FILE: ${{ runner.temp }}/flaky.jsonl
+      # The CDK's own validator fails the synthesis on an error (cdk.json), with no AWS account.
+      - name: The lake template is what the synthesis writes
+        run: npm run synth -w @conexus/infra-aws && git diff --exit-code infra/aws
       - run: npm run test:unit -w @conexus/web
         env:
           CONEXUS_FLAKY_FILE: ${{ runner.temp }}/flaky.jsonl
@@ -487,6 +495,21 @@ jobs:
 
       - name: The final image carries the system CA roots the sign-in program reads
         run: docker run --rm --entrypoint test conexus-hub:ci -s /etc/ssl/certs/ca-certificates.crt
+
+      - name: The image has the lake template and not the CDK
+        run: |
+          expected="$(sha256sum infra/aws/lake.template.json | cut -d ' ' -f 1)"
+          actual="$(docker run --rm --entrypoint sha256sum conexus-hub:ci infra/aws/lake.template.json | cut -d ' ' -f 1)"
+          if [ "$actual" != "$expected" ]; then
+            echo "the image's lake template is not the repository's"
+            exit 1
+          fi
+          for folder in node_modules/aws-cdk-lib node_modules/aws-cdk infra/aws/node_modules; do
+            if docker run --rm --entrypoint test conexus-hub:ci -e "$folder"; then
+              echo "the image carries $folder"
+              exit 1
+            fi
+          done
 
       - name: The final image sends rendered HTML and text through the real Hub
         run: npm run test:image

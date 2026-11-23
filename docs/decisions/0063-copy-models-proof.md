@@ -45,6 +45,7 @@ A company's Sankhya runs on SQL Server, or a template table lacks `DTALTER`.
 
 ## State
 
-Accepted 2026-11-10 ("1. Vale").
+Accepted 2026-11-10 ("1. Vale"). Amended by [0080]: pages and modes per table.
 
 [0056]: 0056-connectors-kit-and-one-executor.md
+[0080]: 0080-copy-declared-per-table-raw-appends.md

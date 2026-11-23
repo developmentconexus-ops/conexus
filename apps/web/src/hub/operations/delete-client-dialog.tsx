@@ -2,18 +2,17 @@ import type { Client } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { z } from 'zod'
 import { HubFailure, unconfirmedText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
-import { Form, FormAlert, setServerError, TextField, useSchemaForm } from '../../ui/form.tsx'
-import { undecided } from './client-fields.tsx'
+import { Form, FormAlert, setServerError, TextField } from '../../ui/form.tsx'
+import { undecided, useNameConfirmation } from './client-fields.tsx'
 import { useLeaveClient } from './leave-client.ts'
 import { clientQuery, sendDeletion } from './queries.ts'
 
 const UNCONFIRMED = unconfirmedText('a exclusão', 'Veja a lista antes de tentar de novo.')
 const LOST =
-  'Saem a empresa, os membros, os convites e o cadastro. Os Projetos e o banco da empresa também serão apagados. As pessoas continuam com as contas delas.'
+  'Saem a empresa, os membros, os convites e o cadastro. Os Projetos, o banco e o lago da empresa também serão apagados. As pessoas continuam com as contas delas.'
 
 /** The confirm button: off until the typed name is the client's, so Enter cannot confirm without it. */
 function Confirm({ ready, pending }: { ready: boolean; pending: boolean }) {
@@ -28,8 +27,7 @@ function DeleteForm({ client, onCancel }: { client: Client; onCancel: () => void
   const queryClient = useQueryClient()
   const leave = useLeaveClient(client.companyId)
   const send = useMutation(sendDeletion)
-  const form = useSchemaForm(z.object({ name: z.literal(client.name) }), { name: '' })
-  const ready = form.watch('name') === client.name
+  const { form, ready } = useNameConfirmation(client.name)
 
   async function submit({ name }: { name: string }) {
     const body = { name, revision: client.revision }

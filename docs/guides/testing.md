@@ -55,7 +55,7 @@ choice of test tools.
 ## 4. Doubles and real services
 
 - **T14.** A proof **should** claim only the boundary actually exercised. Real provider, model,
-  E2B, Neon and Cloudflare claims need authorized evidence from that service; serving, bundling
+  E2B, Neon, Cloudflare and AWS claims need authorized evidence from that service; serving, bundling
   and integration claims run on the Hub. Read files, modes and users the setup/deploy script
   actually creates, not values planted by the test. A Builder claim needs a real authorized turn,
   model and E2B machine; a generated-app gate needs a Portuguese request, generated source, check,
@@ -82,7 +82,13 @@ choice of test tools.
   recording. Until a route's real body is recorded, the card names the proof that records it, and
   the nearest envelope measured on the real service stands in. Founder, 2026-11-08, to the
   study's `D3`: "okay". Failure: the Sankhya double refused orders in the documentation's shape,
-  the reader read that shape, and the real gateway's `error.details` was lost. [review]
+  the reader read that shape, and the real gateway's `error.details` was lost. An AWS adapter
+  follows it too: its test feeds AWS responses that firstmate's proof recorded in the laboratory
+  account through the client's `requestHandler` (`@aws-sdk/client-s3@3.1146.0`
+  `S3Client.d.ts:144`), so the SDK's own retries and error classes run; Hub tests and QA use the
+  port's in-memory double with state, as Neon's (`platform/test-neon.ts`). `aws-sdk-client-mock`
+  replaces only `send` (`@4.1.0` `dist/cjs/mockClient.js:9`) and `moto` skips unknown resources
+  (`==5.2.5` `cloudformation/parsing.py:277-279`): neither stands in. [review]
 - **T28.** In a model double, the arguments of a tool call **must** use only what the model call
   showed the model (names, texts), never an id or a value only the test knows. A double that knows
   more than the model hid the Assistant's `propose_automation` asking for ids it never saw. [review]

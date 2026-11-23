@@ -265,6 +265,7 @@ test('a barra do Projeto abre a lista com os recentes primeiro: um fora das pág
         mayPublish: true,
         publishRequest: null,
         address: null,
+        previewAddress: null,
       },
     }),
     [`GET /api/companies/${COMPANY.id}/projects/${GONE}`]: failure('NOT_FOUND'),

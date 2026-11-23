@@ -1,4 +1,5 @@
 import { APP_LIMITS } from '@conexus/app-contract'
+import type { AppEnvironment } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import type { PgTableExtraConfigValue } from 'drizzle-orm/pg-core'
 import {
@@ -30,9 +31,8 @@ function instant(name: string) {
   return timestamp(name, { withTimezone: true })
 }
 
-/** Where a pass was asked: the Hub's Prévia frame, or a tab through `/apps/open` (0024 amended). */
-export const APP_ENVIRONMENTS = ['preview', 'published'] as const
-export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number]
+// The host says the environment since the Prévia has its own; `environment` is still written from
+// it, never read, so an image from before reads its rows whole on a roll back (data D6).
 
 export const handoff = apps.table(
   'handoff',
@@ -44,7 +44,7 @@ export const handoff = apps.table(
     companyId: text('company_id').notNull(),
     projectId: text('project_id').notNull(),
     hubSessionId: text('hub_session_id').notNull(),
-    environment: text('environment', { enum: APP_ENVIRONMENTS }).notNull(),
+    environment: text('environment').$type<AppEnvironment>().notNull(),
     expiresAt: instant('expires_at').notNull(),
   },
   (table) => [
@@ -66,7 +66,7 @@ export const appSession = apps.table(
     companyId: text('company_id').notNull(),
     projectId: text('project_id').notNull(),
     hubSessionId: text('hub_session_id').notNull(),
-    environment: text('environment', { enum: APP_ENVIRONMENTS }).notNull(),
+    environment: text('environment').$type<AppEnvironment>().notNull(),
   },
   (table) => [
     check('app_session_environment', sql`${table.environment} IN ('preview', 'published')`),

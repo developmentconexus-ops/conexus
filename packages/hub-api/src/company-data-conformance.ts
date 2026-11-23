@@ -1,22 +1,22 @@
 import assert from 'node:assert/strict'
+import type { TestContext } from 'node:test'
 import { describe, it } from 'node:test'
-import type {
-  Catalog,
-  CatalogTable,
-  CompanyData,
-  DataSources,
-  ReadRequest,
-} from './company-data.ts'
-import { ActAnswer, companyData, Described, ReadAnswer } from './company-data.ts'
+import type { CatalogTable, CompanyData, ReadRequest } from './company-data.ts'
+import { ActAnswer, companyData, ReadAnswer } from './company-data.ts'
+import { fixturesOf, keptInput, namedConnections } from './company-data-fixtures.ts'
 import { queryLaws } from './company-data-query-conformance.ts'
+import { recordLaws } from './company-data-record-conformance.ts'
 import { roleLaws } from './company-data-role-conformance.ts'
 import type { DataWorld } from './company-data-world.ts'
-import type { ConnectionId } from './connectors.ts'
+
+export type { DataWorld } from './company-data-world.ts'
+
 import { ConversationId } from './conversations.ts'
 import { ToolCallId } from './questions.ts'
 import { OperationId } from './tools.ts'
 
-const AT = new Date('2026-11-14T12:00:00.000Z')
+/** The clock the laws read a live answer's hour by; a world that binds its contract binds it to this. */
+export const LAWS_AT = new Date('2026-11-14T12:00:00.000Z')
 const UNKNOWN = OperationId.parse('naoDeclarada')
 const CALL = {
   thread: ConversationId.parse('00000000-0000-4000-8000-000000000001'),
@@ -29,50 +29,6 @@ function reachedNothing(world: DataWorld): void {
   assert.deepEqual({ live, rows, funnel }, NOTHING_REACHED)
 }
 
-async function catalogOf(world: DataWorld): Promise<Catalog> {
-  const described = Described.parse(await world.sources.catalog({}))
-  assert.equal(described.kind, 'CATALOG')
-  return described
-}
-
-function operationOf({ kept: { source } }: CatalogTable): string | null {
-  return source.kind === 'OPERATION' ? source.operation : null
-}
-
-function namedConnections({ kept }: CatalogTable): ConnectionId[] {
-  return kept.sources.flatMap((one) => (one.kind === 'NAMED' ? [one.connection.id] : []))
-}
-
-function keptInput({ kept: { source } }: CatalogTable): Readonly<Record<string, unknown>> | null {
-  return source.kind === 'OPERATION' ? source.input : null
-}
-
-async function fixturesOf(world: DataWorld) {
-  const catalog = await catalogOf(world)
-  const table = catalog.tables.find((one) => Object.keys(keptInput(one) ?? {}).length > 0)
-  assert.ok(table && table.kept.source.kind === 'OPERATION', 'a copy of a read with a fixed input')
-  const connection = namedConnections(table)[0]
-  assert.ok(connection, 'the connection the copy reads')
-  const { operation, input } = table.kept.source
-  const copied = { connection, operation: OperationId.parse(operation), input }
-  const live = catalog.systems
-    .flatMap((system) => system.reads.map((read) => ({ ...read, connection: system.connection })))
-    .find((read) => !catalog.tables.some((one) => operationOf(one) === read.operation))
-  assert.ok(live, 'a read no copy serves')
-  const query = catalog.tables.find((one) => one.kept.source.kind === 'QUERY')
-  assert.ok(query, 'a copy that copies no read')
-  const system = catalog.systems.find((one) => one.actions.length > 0)
-  const [declared] = system?.actions ?? []
-  assert.ok(system && declared, 'a system with an action')
-  const action = { connection: system.connection, operation: OperationId.parse(declared.operation) }
-  const liveRead = {
-    connection: live.connection,
-    operation: OperationId.parse(live.operation),
-    input: {},
-  }
-  return { catalog, table, copied, live: liveRead, query, action }
-}
-
 function assertTable(world: DataWorld, answer: ReadAnswer, table: CatalogTable): void {
   const [page] = world.gave.rows
   assert.ok(page?.kind === 'ROWS', 'the page whoever keeps the table gave')
@@ -81,8 +37,9 @@ function assertTable(world: DataWorld, answer: ReadAnswer, table: CatalogTable):
   assert.deepEqual(world.reached.rows, [table.name])
 }
 
+/** Each answer is the live source's, dated in ISO by the laws' clock. */
 function assertLive(world: DataWorld, answers: readonly ReadAnswer[]): void {
-  const at = AT.toISOString()
+  const at = LAWS_AT.toISOString()
   assert.deepEqual(
     answers,
     world.gave.live.map((gave) => ({ ...gave, kind: 'LIVE', at })),
@@ -116,19 +73,6 @@ async function describesSystemsAndTables(world: DataWorld, data: CompanyData): P
   assert.ok(catalog.tables.some((table) => table.kept.lastRun?.outcome.kind === 'PARTIAL'))
 }
 
-export async function keepsLiveOnlyOutOfTables(world: DataWorld, data: CompanyData): Promise<void> {
-  const catalog = await catalogOf(world)
-  const live = catalog.systems.filter((system) => system.liveOnly)
-  assert.ok(live.length > 0, 'a live-only system in the world')
-  for (const system of live)
-    for (const table of catalog.tables)
-      assert.ok(
-        !namedConnections(table).includes(system.connection),
-        `${table.name} kept from ${system.name}`,
-      )
-  assert.deepEqual(await data.describe(), catalog)
-}
-
 async function readsTheCopy(world: DataWorld, data: CompanyData): Promise<void> {
   const { copied, table } = await fixturesOf(world)
   const answer = ReadAnswer.parse(await data.read({ kind: 'OPERATION', ...copied }))
@@ -153,8 +97,9 @@ async function readsTheCopyWithoutInput(world: DataWorld, data: CompanyData): Pr
 
 async function readsLiveAnotherInput(world: DataWorld, data: CompanyData): Promise<void> {
   const { copied } = await fixturesOf(world)
-  const otherValues = Object.fromEntries(Object.keys(copied.input).map((field) => [field, '-']))
-  const inputs = [{ ...copied.input, outro: 'campo' }, {}, otherValues]
+  const inputs = world.inputs.another
+  assert.ok(inputs.length > 0, 'an input the copy does not fix')
+  for (const input of inputs) assert.notDeepEqual(input, copied.input)
   const answers: ReadAnswer[] = []
   for (const input of inputs)
     answers.push(ReadAnswer.parse(await data.read({ kind: 'OPERATION', ...copied, input })))
@@ -268,10 +213,6 @@ const LAWS: readonly (readonly [string, Law])[] = [
     describesSystemsAndTables,
   ],
   [
-    'descreve o sistema só ao vivo com liveOnly e nenhuma tabela o tem como origem',
-    keepsLiveOnlyOutOfTables,
-  ],
-  [
     'lê da tabela a leitura que uma cópia guarda, sem chamar o sistema, com as linhas e quem as guarda',
     readsTheCopy,
   ],
@@ -310,15 +251,22 @@ const LAWS: readonly (readonly [string, Law])[] = [
   ],
   ['sem catálogo, nenhum verbo chama o sistema, a tabela ou o funil', callsNothingWithoutCatalog],
   ['passa o sinal de cancelamento a cada fonte que chama', passesTheSignalToEverySource],
+  ...recordLaws,
 ]
 
-/** What every implementation of the data track's sources passes against its fake connector, with no network. */
-export function runDataConformance(name: string, make: () => DataWorld): void {
-  describe(name, () => {
+export const DATA_LAWS: readonly string[] = LAWS.map(([law]) => law)
+
+/** What every implementation of the data track's sources passes, against a fake connector or the real database; the world is made for each law. */
+export function runDataConformance(
+  name: string,
+  make: (t: TestContext) => DataWorld | Promise<DataWorld>,
+): void {
+  // Each law keeps the runner's deadline; the suite, which runs them all, has none of its own.
+  describe(name, { timeout: Number.POSITIVE_INFINITY }, () => {
     for (const [law, run] of LAWS)
-      it(law, async () => {
-        const world = make()
-        await run(world, companyData({ sources: world.sources, now: () => AT }))
+      it(law, async (t) => {
+        const world = await make(t)
+        await run(world, world.data ?? companyData({ sources: world.sources, now: () => LAWS_AT }))
       })
   })
 }

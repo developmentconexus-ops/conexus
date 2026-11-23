@@ -117,7 +117,7 @@ test('NO_LOGIN no Início: o login é feito como o dono e a consulta lida de nov
   assert.equal(spies.readLogin.mock.callCount(), 0)
 })
 
-test('NO_LOGIN num Projeto: o login do Projeto é feito e a consulta lida de novo uma vez', async (t) => {
+test('NO_LOGIN num Projeto: o login de quem pergunta é feito como no Início, nunca o do Projeto', async (t) => {
   const { on, sellers } = await withCopies(t)
   await on.copies.grant({
     ...{ companyId: on.companyId, personId: on.anaId },
@@ -130,8 +130,8 @@ test('NO_LOGIN num Projeto: o login do Projeto é feito e a consulta lida de nov
   const sql = 'select * from sync.sankhya_vendedores limit 1'
   queryOf(await project.read({ kind: 'QUERY', sql }))
   assert.equal(spies.asked(), 2)
-  assert.equal(spies.reader.mock.callCount(), 0)
-  assert.equal(spies.readLogin.mock.callCount(), 1)
+  assert.equal(spies.reader.mock.callCount(), 1)
+  assert.equal(spies.readLogin.mock.callCount(), 0)
 })
 
 test('NO_LOGIN e o dono sem resposta dá TABLE_UNAVAILABLE com a causa', async (t) => {

@@ -16,10 +16,12 @@ const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 const NICKNAME = 'acme'
 const LABEL = `pedidos--${NICKNAME}`
+/** The Prévia's host, the door that serves the example app: a tab has no published version. */
+const PREVIEW = `${LABEL}--previa`
 // The dispatcher's wrangler vars type its domain as a literal, so the browser reaches it by that
 // name; the Hub's own address for the Projeto (`apps.example.test`) is checked where it is made.
 const EDGE_DOMAIN = 'conexusapp.tech'
-const APP = `https://${LABEL}.${EDGE_DOMAIN}`
+const APP = `https://${PREVIEW}.${EDGE_DOMAIN}`
 const HUB_ORIGIN = 'https://hub.conexus.fun'
 const OWNER_IP = '198.51.100.10'
 const MEMBER_IP = '203.0.113.10'
@@ -105,9 +107,12 @@ async function scenario(t: TestContext) {
     return jar
   }
 
-  /** One request of a browser to the app's host, through the dispatcher; redirects are not followed. */
+  /**
+   * One request of the Hub's Prévia frame to its host, through the dispatcher; redirects are not
+   * followed.
+   */
   async function visit(jar: Jar, path: string): Promise<Reply> {
-    const headers = new Headers()
+    const headers = new Headers({ 'Sec-Fetch-Dest': 'iframe' })
     if (jar.header() !== '') headers.set('Cookie', jar.header())
     const response = await serveDispatch(
       new Request(`${APP}${path}`, { headers, redirect: 'manual' }),
@@ -150,26 +155,26 @@ async function scenario(t: TestContext) {
 
 type Scenario = Awaited<ReturnType<typeof scenario>>
 
-/** First visit, then the Hub's 303 with the pass for this browser: stops before the redeeming visit. */
+/**
+ * First visit, the entry page that names the Hub and the binding's hash, then the pass the Hub's
+ * Prévia asks for this browser: stops before the redeeming visit.
+ */
 async function getPass(s: Scenario, browser: Jar): Promise<string> {
   const first = await s.visit(browser, '/')
-  assert.equal(first.status, 303)
-  const open = new URL(first.headers.get('location') ?? '')
-  assert.equal(open.origin, HUB_ORIGIN)
-  assert.equal(open.pathname, '/apps/open')
-  assert.equal(open.searchParams.get('host'), LABEL)
+  assert.equal(first.status, 200)
+  const entry = /data-hub="([^"]*)" data-host="([^"]*)" data-binding="([^"]*)"/.exec(first.text)
+  assert.deepEqual(entry?.slice(1, 3), [HUB_ORIGIN, PREVIEW])
   assert.match(browser.header(), /^__Host-conexus-binding=[\w-]{43}$/)
-  // The Prévia's frame is the door that serves the example app: a tab has no published version.
   const handoff = await s.hub(
     'POST',
     '/api/apps/frame-handoff',
     s.sessions.member,
-    { host: LABEL, binding: open.searchParams.get('binding') },
+    { host: PREVIEW, binding: entry?.[3] },
     MEMBER_IP,
   )
   assert.equal(handoff.status, 200)
   const { location } = JSON.parse(handoff.text)
-  const hubSide = `https://${LABEL}.${TEST_APPS_DOMAIN}`
+  const hubSide = `https://${PREVIEW}.${TEST_APPS_DOMAIN}`
   assert.ok(location.startsWith(`${hubSide}/__conexus/passagem?code=`))
   return location.slice(hubSide.length)
 }
@@ -178,7 +183,7 @@ async function enter(s: Scenario, browser: Jar) {
   const pass = await getPass(s, browser)
   const redeemed = await s.visit(browser, pass)
   assert.equal(redeemed.status, 303)
-  assert.equal(redeemed.headers.get('location'), '/')
+  assert.match(redeemed.headers.get('location') ?? '', /^\/__conexus\/entrada\?sessao=[\w-]{43}$/)
   assert.match(browser.header(), /__Host-conexus-app=[\w-]{43}/)
   return pass
 }

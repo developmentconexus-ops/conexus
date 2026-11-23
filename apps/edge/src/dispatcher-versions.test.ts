@@ -4,6 +4,7 @@ import {
   CALLER,
   EXAMPLE_CALL,
   edge,
+  HOST,
   pageText,
   problem,
   SESSION,
@@ -29,7 +30,7 @@ test('sem versão no ar: o exemplo, com props só caller, sem o que mais o Hub d
   assert.deepEqual(door.dbBindings, [])
 })
 
-test('versão no ar: o Worker dela, com props só caller, db e connectors, e o db preso ao login de execução', async () => {
+test('versão no ar: o Worker dela, com props só caller, db e connectors, e o db preso ao login de execução e à sessão', async () => {
   const door = edge({ hub: () => Response.json(VERSION_CALL) })
   const response = await door.fetch('/', { headers: LIVE })
   assert.equal(response.status, 200)
@@ -38,7 +39,7 @@ test('versão no ar: o Worker dela, com props só caller, db e connectors, e o d
   assert.deepEqual(Object.keys(call?.args.props ?? {}), ['caller', 'db', 'connectors'])
   assert.deepEqual(
     door.dbBindings.map(({ endsAt: _endsAt, ...login }) => login),
-    [VERSION_CALL.database],
+    [{ ...VERSION_CALL.database, session: SESSION, label: HOST }],
   )
 })
 

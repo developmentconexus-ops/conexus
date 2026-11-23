@@ -119,7 +119,9 @@ async function deleteCompany(w: Windows, neon: Neon) {
   await w.ana.getByRole('link', { name: new RegExp(COMPANY) }).click()
   await w.ana.getByRole('button', { name: 'Apagar cliente' }).click()
   const dialog = w.ana.getByRole('alertdialog')
-  await dialog.getByText('Os Projetos e o banco da empresa também serão apagados.').waitFor()
+  await dialog
+    .getByText('Os Projetos, o banco e o lago da empresa também serão apagados.')
+    .waitFor()
   await dialog.getByLabel('Digite o nome do cliente').fill(COMPANY)
   await dialog.getByRole('button', { name: 'Apagar cliente' }).click()
   await w.ana.getByText('Cliente apagado.').waitFor()

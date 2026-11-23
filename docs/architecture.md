@@ -1,9 +1,8 @@
 # Architecture
 
-What Conexus is, its parts, where each runs and who owns what. A choice that is expensive to undo
-has a record in [`decisions/`](decisions/), cited here as [0020]; the record holds the reason, the
-founder's words and what reopens it. The rules that follow from this design live in the
-[guides](guides/).
+What Conexus is, its parts, where each runs and who owns what. A costly choice has a record in
+[`decisions/`](decisions/), cited as [0020], with its reason, the founder's words and what reopens
+it. The rules live in the [guides](guides/).
 
 ## 1. Introduction and goals
 
@@ -49,13 +48,15 @@ flowchart LR
   CX --> EM[E-mail service]
   CX --> CS[Company system, read only]
   CX --> GC[R2 bucket, Git copy]
+  CX --> AWS[AWS lake]
 ```
 
 | Outside system | What crosses | Leaves Brazil |
 | --- | --- | --- |
 | Model vendors (Anthropic, OpenAI, Google) | The conversation with the Builder or the Assistant, and what it reads | Yes |
 | E2B | The code under construction; the rows the Assistant analyses, while its conversation exists | Yes |
-| Neon | Every row: the Hub's, the Builder's, Mastra's and each company's | No |
+| Neon | Every row outside the lake: the Hub's, the Builder's, Mastra's and each company's | No |
+| AWS | Each company's copied rows [0070] | Yes |
 | Cloudflare | Each request to the Hub and to an app; the apps' code | Request path only |
 | E-mail service | Invitation and automation e-mails [0017] | Yes |
 | Company system | Read-only queries through a connector [0056] | Depends on the company |
@@ -140,8 +141,8 @@ and tests, and a `public.ts` with what others may use. The import law is
 [code C3 to C8](guides/code.md); the web side's tree is [web W1](guides/web.md). A new one follows
 [adding a subject](how-to/add-a-subject.md).
 
-**Other subjects.** `hub/copies`, `builder/copy-clock` and the schema `sync` are [the Sync](explanation/sync.md):
-a copy's rows live in the company's database, its definition and runs in the Hub's `copies`.
+**Other subjects.** `hub/copies`, `builder/copy-clock` and the schema `sync` are [the Sync](explanation/sync.md),
+until the lake takes the copies [0070].
 `hub/ontology` has only tables and a contract. `hub/notifications` sends bell and e-mails,
 `hub/operations` keeps the Central's clients, `hub/status` each start's version. `builder/app-data`
 reads an app's data and copies for the Builder and for the agents of `builder/agents`;
@@ -158,16 +159,17 @@ the Google sign-in binary [0049]. Packages: [app](explanation/app-package.md),
 | Cloudflare | Tunnel, dispatcher, outbound wall, and a Workers for Platforms namespace for the apps, on a second domain, one host per app | [0018] [0023] [0024] |
 | Neon | Two organizations of Conexus's own: the Hub's, one project with two databases; the companies', one project each, under a key that cannot reach the Hub's | [0008] [0009] [0021] [0040] |
 | E2B | Build, Assistant and agent machines behind a domain list, under the founder's free-account key | [0028] [0051] [0059] |
+| AWS, a lab account for now [0072] | The lakes, read by the agents [0079]; Fargate copy tasks; the Hub's stack per company; the CDK platform | [0070] [0073] [0075] [0076] |
 
-**Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
-command on the server; a merge alone publishes nothing [0035] [0044]. Migrations run before the
+**Publish.** Merging a release note tags `main`, builds the image and puts it live with no command
+on the server; no other merge publishes [0035] [0044] [0081]. Migrations run before the
 program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image; migrations only add, so it runs on
-the migrated database ([data D6](guides/data.md)). Exceptions: none before v0.5.0 runs, as step 4.2 deleted old test
-companies [0039]; none before step 14.2 runs, as it drops `run_event` (D30), `builder.run`,
-`companies_with_runs()` and `hub_runs`; none before v0.24.101 runs, as it
-dropped `copies.copy.readers_set`, which an older image reads. The edge goes back first. Past v0.24.53, rerun
+the migrated database ([data D6](guides/data.md)). No image from before v0.5.0 runs (step 4.2 deleted old test
+companies [0039]), nor from before 14.2 (it drops `run_event` (D30), `builder.run`,
+`companies_with_runs()` and `hub_runs`) or v0.24.101 (it
+dropped `copies.copy.readers_set`, which older images read). The edge goes back first. Past v0.24.53, rerun
 `20261108033751_e245_active_by`'s `UPDATE`.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
@@ -186,13 +188,9 @@ e-mail the founder; the route skips the database, so a hung program shows [0035]
 and talks to Neon's HTTP driver: `db.query` in a read-only transaction, `db.batch` in one
 transaction for a call's writes. Nothing carries between calls ([data D28](guides/data.md)). The
 limits are `APP_CALL_LIMITS` [0047], listed in [the contract and the dispatcher](explanation/app-contract-and-dispatcher.md).
-Pieces still made by hand here:
-
-| Piece | Why it remains | Basis |
-| --- | --- | --- |
-| Session check | No call reaches an app without it | Purpose |
-| 10 s deadline per call | No platform limit cuts an app that only waits | Measured [0047] |
-| Statement and transaction timeouts on the run login | A slow statement keeps running after the caller gets the error | Measured [0047] |
+Made by hand: the session check, as no call may reach an app without it (purpose); the 10 s call
+deadline and the run login's statement and transaction timeouts, as no platform limit cuts a
+waiting app and a slow statement outlives the caller's error (measured [0047]).
 
 **Who may enter** [0013] [0014] [0015] [0016]. The Hub's session has three guarantees: no stored
 row works alone to sign in, the cookie is valid for one exact host, and the session has an idle and
@@ -205,21 +203,18 @@ Conexus's own; an app session lives inside the Hub's, with no sign-out of its ow
 table and the company carried in every transaction [0012]; row policies bound each transaction's
 scope [0039]. One project per company and one login per app, so PostgreSQL refuses a cross read
 [0021]. An app without secret or network [0018]. The rows Mastra writes carry the company, built by
-the server, never by the browser.
+the server, never by the browser. In the lake, a bucket and reader role per company; only the Hub
+queries Athena, under grants its marks derive [0078].
 
 **Model accounts and calls** [0049] [0050]. One queue per provider for the company and
 each person; the credential is sealed with the installation key and opened only inside the
 program, for one attempt, by Mastra's processors.
 
 **Work that runs alone.** Scheduled work is rows of Mastra's `mastra.schedules`: automations, the
-Sync's copies and the daily trace prune. A single owner is a lease row with an expiry, per subject and
-renewed by activity, as in a copy's run and a model account's refresh ([data D25](guides/data.md)). Basis: implemented so; queues and Redis serve
-a scale that does not exist.
-
-| Job | Shape |
-| --- | --- |
-| Expired sessions, handoffs, invitations | Expiry checked on read |
-| Schedules | Awake: Mastra reads its table every 10 s, from the first schedule until a restart without one (24.2, Capacidade 2) |
+Sync's copies and the daily trace prune. A single owner follows [data D25](guides/data.md), as in a
+copy's run and a model account's refresh. Basis: implemented so; Redis serves
+a scale that does not exist. Lake copies end by a queue, with no lease [0076]. Sessions,
+handoffs and invitations are expired on read; the scheduler sleeps between fires ([data D27](guides/data.md)).
 
 No job touches a machine; it ends with its conversation.
 
@@ -243,6 +238,7 @@ too.
 | Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
 | A page the Builder reads hides instructions | It strays, or leaks conversation text in an address | Accepted, founder 2026-10-19 [0050] |
 | A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
+| The lab AWS account | When credits end it closes with its data [0072] | The official account, before another company |
 
 **Debt.** Fixes left, with the steps that remove them.
 

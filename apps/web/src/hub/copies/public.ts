@@ -5,7 +5,7 @@ import { idOrNotFound, readOrNotFound } from '../../platform/hub.ts'
 import { copiesQuery, copyRunsQuery } from './queries.ts'
 
 export { CopyDetail } from './copy-detail.tsx'
-export { ProposalDialog } from './copy-proposal.tsx'
+export { ProposalDialog, QueryBlock } from './copy-proposal.tsx'
 export { DataPage, DataReadFailure } from './data-page.tsx'
 export { DataTree } from './data-tree.tsx'
 export { copiesQuery, copyReadersQuery, proposalsQuery, sendRoleCopies } from './queries.ts'
