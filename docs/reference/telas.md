@@ -249,7 +249,7 @@ A moldura: os grupos de hoje são dois, `Você` e o nome da empresa (`ui/setting
 #### TB18. Papéis (Empresa: Pessoas e acesso)
 
 - **Para que serve.** Definir o que cada papel usa de cada conector, de que dados lê e se publica agente que escreve sozinho. `C6` e G7.
-- **Conteúdo obrigatório.** Papéis de fábrica com frase e contagem; Papéis da empresa ("Sua empresa ainda não criou papéis."); "Novo papel". Um papel aberto: por conector, o que lê, escreve e apaga; as tabelas copiadas; "Desmarcar uma tabela não tira a leitura ao vivo do sistema…" (`hub/identity/role-tables.tsx`); "Publicar agente que escreve sozinho"; "Apagar papel" (`role-editor.tsx`).
+- **Conteúdo obrigatório.** Papéis de fábrica com frase e contagem; Papéis da empresa ("Sua empresa ainda não criou papéis."); "Novo papel". Um papel aberto: por conector, o que lê, escreve e apaga; "Publicar agente que escreve sozinho"; "Apagar papel" (`role-editor.tsx`).
 - **Ações.** Tudo, só `manageRoles`. Para os outros a seção some e o endereço responde "não encontrado" (`settings/roles.tsx`).
 - **Ação principal.** Novo papel na lista; Salvar dentro de um papel.
 - **Estados.** Só os de fábrica; carregando; "Não deu para carregar os papéis."; nome em uso.
@@ -419,27 +419,19 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 
 #### TD5. Dados, o índice com a árvore (`data.index.tsx`)
 
-- **Para que serve.** Ver todo o dado copiado num catálogo, com fonte, estado e de quando é. `C2`, e o lugar de `C3` pela pasta Negócio.
-- **Conteúdo obrigatório.** "Dados" e a frase do que é (`hub/copies/text.ts`); para quem não gerencia, o papel que lê. Bruto: por sistema e por tabela, nome, descrição, estado, último começo, falha, linhas, intervalo e Projetos que leem (`copy-list.tsx`). Propostas do Builder, só quem gerencia (`copy-list.tsx`). Negócio: "Nenhum conceito aprovado ainda" (`text.ts`). Apps: por Projeto, só leitura (`apps-layer.tsx`). Árvore com busca.
-- **Ações.** Ligar uma cópia, Rodar agora, Pausar, Retomar, Intervalo, Apagar, Ligar e Dispensar proposta, só quem gerencia (`data-page.tsx`). Abrir e buscar, todo membro, no limite do papel.
-- **Ação principal.** Ligar uma cópia (`new-copy.tsx`).
-- **Estados.** "Nenhum sistema ligado ainda" (`raw-layer.tsx`); papel sem tabela (`text.ts`); "Nenhuma tabela copiada"; esqueleto; busca sem resposta; erro "Nada foi apagado." (`text.ts`); estados da cópia (`text.ts`); falha e parcial.
-- **Faixa de dados.** Linhas até milhões (`text.ts`); seis intervalos, de 15 min a 24 h. Sistemas até 10; tabelas por sistema dezenas (hipótese).
-- **Hoje falta.** Favoritos, recentes, quem criou, etiquetas; ordenar e filtrar por sistema ou estado; "Atualizada" mistura estado e hora (`copy-list.tsx`); "Negócio 0" sem uso (`data-tree.tsx`).
+- **Para que serve.** Ver o dado da empresa num catálogo. Desde a U14 do lago (cartão `a-primeira-copia-chega-ao-lago`) as cópias do banco da empresa saíram, e as tabelas do lago chegam na U9. `C2`, e o lugar de `C3` pela pasta Negócio.
+- **Conteúdo obrigatório.** "Dados" e a frase do que é (`hub/copies/text.ts`); Bruto: quem gerencia vê cada sistema que as ligações da empresa ligam, com "Nenhuma tabela copiada" (`data-page.tsx`); quem não gerencia vê que o papel não lê tabela (`text.ts`). Negócio: "Nenhum conceito aprovado ainda" (`text.ts`). Apps: por Projeto, só leitura (`apps-layer.tsx`). Árvore com busca.
+- **Ações.** Abrir e buscar, todo membro, no limite do papel.
+- **Ação principal.** Nenhuma até a U9.
+- **Estados.** "Nenhum sistema ligado ainda", com o caminho para Integrações; papel sem tabela (`text.ts`); esqueleto; erro de leitura com tentar de novo (`data-page.tsx`).
+- **Faixa de dados.** Sistemas até 10 (hipótese).
+- **Hoje falta.** As tabelas do lago (U9); "Negócio 0" sem uso (`data-tree.tsx`).
 - **Referência.** Plataformas de dados mostram fixados e recentes, caminho completo e abas.
-- **Princípios.** E1 em parte (traço no lugar de "indisponível", `copy-list.tsx`). E3 P. E4 P. E5 P. E6 em parte (`copy-list.tsx`). E7 em parte ("tabela", "cópia" e "Dado" para o mesmo objeto).
+- **Princípios.** E3 P. E4 P. E5 P.
 
 #### TD6. A tabela (`data.$copyId.tsx`)
 
-- **Para que serve.** Entender uma tabela copiada, de qual sistema e de quando, quem lê, e perguntar sobre ela. `C2`, `C6`, G1.
-- **Conteúdo obrigatório.** Trilha; nome; estado; "Copiada do {sistema} em dia, hora · N linhas" (`hub/copies/copy-detail.tsx`); aviso de coluna inativa; Detalhes (`copy-facts.tsx`). Abas Visão geral (`copy-facts.tsx`), Colunas, Amostra (`copy-sample.tsx`), Rodadas (`copy-detail.tsx`), Quem lê (`copy-readers.tsx`).
-- **Ações.** Perguntar ao Assistente, todo membro que lê (`data.$copyId.tsx`). Rodar agora, Pausar, Retomar, Intervalo, Apagar, só quem gerencia (`copy-detail.tsx`). Abrir em Papéis: `manageRoles`.
-- **Ação principal.** Hoje duas no cabeçalho, Rodar agora e Perguntar ao Assistente. Uma só é escolha em aberto.
-- **Estados.** Esqueleto; erro (`copy-detail.tsx`); "não encontrado" (`data.$copyId.tsx`); primeira rodada pendente; rodada com erro; coluna inativa; amostra e rodadas vazias.
-- **Faixa de dados.** Amostra fixa em 5 linhas (`text.ts`); rodadas paginadas (`copy-detail.tsx`). Colunas: máximo hipótese.
-- **Hoje falta.** Na Amostra a grade passa da tela; sem busca nem filtro; sem permissões, histórico, linhagem e qualidade; Quem lê mostra papéis, não pessoas.
-- **Referência.** Plataformas de dados fazem a pergunta dentro da amostra e filtram as rodadas.
-- **Princípios.** E1 P. E3 P. E4 P. E5 P. E6 em parte (`copy-readers.tsx`). E7 P.
+- **Para que serve.** Nenhum desde a U14 do lago: o endereço antigo de uma cópia leva à página Dados (TD5). A página de uma tabela do lago mora em `/data/lake/<id>` (U9).
 
 #### TD8. Cópias, o endereço antigo (`copies.index.tsx`, `copies.$copyId.tsx`)
 
@@ -456,14 +448,14 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 #### TD9. Integrações do Projeto (`projects/$projectId_.integrations.tsx`)
 
 - **Para que serve.** Dizer de quais ligações da empresa o app, o Builder e os agentes do Projeto podem ler. `C1`, A5, G4.
-- **Conteúdo obrigatório.** "Integrações deste Projeto" (`text.ts`); por ligação, nome, estado, o que o Projeto faz com ela e conta (`hub/projects/project-integrations.tsx`); o remédio quando não funciona (`text.ts`); a seção Cópias com "Liberada" (`project-copies.tsx`).
-- **Ações.** Liberar para ler e Tirar (ligação, com confirmação); Liberar e Tirar (cópia, sem janela, `project-copies.tsx`). Quem gerencia. Os outros veem "Peça ao dono ou a um administrador" (`project-integrations.tsx`; `project-copies.tsx`).
+- **Conteúdo obrigatório.** "Integrações deste Projeto" (`text.ts`); por ligação, nome, estado, o que o Projeto faz com ela e conta (`hub/projects/project-integrations.tsx`); o remédio quando não funciona (`text.ts`).
+- **Ações.** Liberar para ler e Tirar (ligação, com confirmação). Quem gerencia. Os outros veem "Peça ao dono ou a um administrador" (`project-integrations.tsx`).
 - **Ação principal.** Liberar para ler.
-- **Estados.** Esqueleto; empresa sem sistema; empresa sem cópia (`project-copies.tsx`); erro; não encontrado; ligação liberada e parada; "Tire a {nome} antes" (`text.ts`).
-- **Faixa de dados.** Nome 1 a 60. Conectores 1 a 10 (hipótese). Cópias: hipótese.
-- **Hoje falta.** O título sem o nome do Projeto. Liberar cópia sem janela (`project-copies.tsx`). Dados do Projeto só lista as cópias liberadas (`hub/apps/data.tsx`); quem libera é esta página. O Desenvolvedor não libera.
+- **Estados.** Esqueleto; empresa sem sistema; erro; não encontrado; ligação liberada e parada; "Tire a {nome} antes" (`text.ts`).
+- **Faixa de dados.** Nome 1 a 60. Conectores 1 a 10 (hipótese).
+- **Hoje falta.** O título sem o nome do Projeto. O Desenvolvedor não libera.
 - **Referência.** Uma plataforma de agentes deixa a organização ligar e o projeto usar, com coluna de capacidades. Uma plataforma de dados faz o mesmo com os apps.
-- **Princípios.** E1 em parte. E4 P na ligação, F na cópia. E5 P. E6 em parte (`project-integrations.tsx`). E7 F.
+- **Princípios.** E1 em parte. E4 P. E5 P. E6 em parte (`project-integrations.tsx`). E7 F.
 
 #### TD10. Dados do Projeto (`projects/$projectId_.data*.tsx`)
 
@@ -843,11 +835,11 @@ Hipótese, fora do repositório até o estudo do marco. As fontes são web W31 (
 | --- | --- | --- |
 | Título da página dentro do Projeto sem o nome dele (regra do nível, mapa 5) | TD9, TD10, TG7, TG9, TG12, TG15, TA4, TA9, TA11 | `hub/projects/area.tsx`; "Integrações deste Projeto" em `hub/connectors/text.ts` |
 | Coluna de conversas em lugares que não são do Início (mapa 4 a tira) | TD1, TG3, TG4, TG5, TA1 | as listas de Integrações, Automações e Projetos |
-| A ação fora do papel some em vez de ficar à vista e desligada (E6); o agente já faz certo | TD1, TD5, TD9 contra TG10 | `hub/connectors/integrations.tsx`; `hub/copies/copy-list.tsx`; `hub/projects/project-integrations.tsx`; contra `builder/agents/write-lines.tsx` |
+| A ação fora do papel some em vez de ficar à vista e desligada (E6); o agente já faz certo | TD1, TD5, TD9 contra TG10 | `hub/connectors/integrations.tsx`; `hub/projects/project-integrations.tsx`; contra `builder/agents/write-lines.tsx` |
 | Modos de salvar diferentes (botão, ao mexer, ao sair do campo sem "Salvo") | TB15, TB19, TB20, TB21, TG10, TA11 | `builder/model-accounts/model-fallback.tsx`; `builder/observational-memory/settings.tsx`; `builder/agents/config-panel.tsx`; `hub/projects/access.tsx` |
 | A mesma coisa em dois lugares | TB17 e TA11 (acesso a app); TB21, TB13 e TD11 (três "Memórias") | `docs/approvals/e18-entrar-num-app.md` |
 | Dado sem fonte nem hora (E1) | TD10, TG4, TG6, TB13 | `hub/apps/data-rows.tsx`; "Rodou há 3 h" sem versão em `builder/agents/agent-list.tsx`; "Pronta" sem dado em `builder/automations/runs.tsx`; memória da pessoa sem fonte em `builder/assistant/profile-memory.tsx` |
-| Confirmação desigual para atos parecidos (E4) | TD9; TG14 contra TG10; TB4 | Cópia sem janela em `hub/projects/project-copies.tsx`; Publicar sem mensagem em `builder/agents/draft-panel.tsx` contra `publish.tsx`; Recusar convite sem confirmar em `hub/identity/invitation.tsx` |
+| Confirmação desigual para atos parecidos (E4) | TD9; TG14 contra TG10; TB4 | Publicar sem mensagem em `builder/agents/draft-panel.tsx` contra `publish.tsx`; Recusar convite sem confirmar em `hub/identity/invitation.tsx` |
 | Lista sem a última execução ou atividade (E3) | TG5, TB22, TA1 | `hub/operations/clients.tsx`; `hub/projects/project-cards.tsx` |
 | Erro sem ação ou genérico (web W34) | TA1, TG2 | `builder/conversation/chat.tsx` |
 | No celular some o que a pessoa precisa | TA3, TA6, Configurações | `hub/projects/area.tsx`; `builder/preview/preview.tsx` |

@@ -1,16 +1,11 @@
-import type { CopySummary } from '@conexus/hub-api'
 import {
-  CopyId,
   getCompany,
   listConnections,
-  listCopies,
-  listCopyReaders,
   listInvitations,
   listMembers,
   listProjects,
   listRoles,
   RoleView,
-  setRoleCopies,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
@@ -77,63 +72,10 @@ export function customRole(label: string, role: string, ops: readonly string[], 
   return viewOf(role, label, 'CUSTOM', ops, members)
 }
 
-export const VENDAS = CopyId.parse('11111111-1111-4111-8111-111111111111')
-export const CLIENTES = CopyId.parse('22222222-2222-4222-8222-222222222222')
-
-/** A copy of the Sankhya the Hub lists, as the roles screen needs it: its table, what it keeps, no runs. */
-function copyOf(id: CopyId, name: string, label: string, description: string): CopySummary {
-  return listCopies.success.body.shape.copies.element.parse({
-    id,
-    name,
-    label,
-    sources: [
-      {
-        connection: {
-          id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
-          name: 'Matriz',
-          connector: 'sankhya',
-        },
-      },
-    ],
-    interval: '30m',
-    schedule: { kind: 'ACTIVE', nextRunAt: '2026-11-02T10:30:00.000Z' },
-    run: null,
-    rows: 118402,
-    mode: { kind: 'WHOLE' },
-    projects: [],
-    shown: {
-      source: { kind: 'QUERY', query: 'SELECT 1' },
-      key: ['ID'],
-      changedSince: null,
-      window: null,
-      description,
-      columns: [],
-    },
-  })
-}
-
-/** The two copies of the Sankhya a company has when it copied something. */
-const COPIES = [
-  copyOf(VENDAS, 'sankhya_vendas', 'Vendas', 'Pedidos e notas de venda, um por linha.'),
-  copyOf(CLIENTES, 'sankhya_clientes', 'Clientes', 'Cadastro de clientes e parceiros.'),
-]
-
-/** Who reads which copy: the owner and the administrator read both, Financeiro only the sales. */
-const READERS = [
-  { copyId: VENDAS, roles: ['owner', 'admin', 'financeiro'] },
-  { copyId: CLIENTES, roles: ['owner', 'admin'] },
-]
-
-export const FINANCEIRO = viewOf('financeiro', 'Financeiro', 'CUSTOM', ['pedidos'], 2)
-
 type View = {
-  /** The copies the Hub lists; the Sankhya's two when absent. */
-  copies?: CopySummary[]
   /** The viewer's role in the company. */
   as: 'owner' | 'admin' | 'developer' | 'member'
   roles?: RoleView[]
-  /** What the copies' readers answer instead of its rows. */
-  readers?: () => Response | undefined
   people?: Parameters<typeof memberView>[0][]
   mayInviteAs?: string[]
   /** The open invitations, one list for each page the Hub answers. */
@@ -141,41 +83,6 @@ type View = {
 }
 
 type Written = { method: string; path: string; body?: unknown }[]
-
-/** The copies the roles screen reads and the two writes of an open role, each recorded in `written`. */
-function copiesHub(view: View, roles: RoleView[], written: Written) {
-  return [
-    http.get(`*/api/companies/${COMPANY.id}/copies`, () =>
-      HttpResponse.json(listCopies.success.body.parse({ copies: view.copies ?? COPIES })),
-    ),
-    http.get(
-      `*/api/companies/${COMPANY.id}/copy-readers`,
-      () =>
-        view.readers?.() ??
-        HttpResponse.json(
-          listCopyReaders.success.body.parse({
-            readers: (view.copies ?? COPIES).map((one) => ({
-              copyId: one.id,
-              roles: (READERS.find((row) => row.copyId === one.id)?.roles ?? []).map((role) => ({
-                role,
-                label: roles.find((row) => row.role === role)?.label ?? role,
-                members: 1,
-              })),
-            })),
-          }),
-        ),
-    ),
-    http.put(`*/api/companies/${COMPANY.id}/roles/:role`, async ({ request, params }) => {
-      written.push({ method: 'PUT', path: `roles/${params.role}`, body: await request.json() })
-      return HttpResponse.json({ role: roles.find((one) => one.role === params.role) })
-    }),
-    http.put(`*/api/companies/${COMPANY.id}/roles/:role/copies`, async ({ request, params }) => {
-      const body = setRoleCopies.input.body.parse(await request.json())
-      written.push({ method: 'PUT', path: `roles/${params.role}/copies`, body })
-      return HttpResponse.json(setRoleCopies.success.body.parse({ copies: body.copies }))
-    }),
-  ]
-}
 
 /** The Hub as one person sees it; the roles written are kept, and each write recorded. */
 export function hub(view: View) {
@@ -241,7 +148,10 @@ export function hub(view: View) {
     http.get(`*/api/companies/${COMPANY.id}/roles`, () =>
       HttpResponse.json(listRoles.success.body.parse({ roles })),
     ),
-    ...copiesHub(view, roles, written),
+    http.put(`*/api/companies/${COMPANY.id}/roles/:role`, async ({ request, params }) => {
+      written.push({ method: 'PUT', path: `roles/${params.role}`, body: await request.json() })
+      return HttpResponse.json({ role: roles.find((one) => one.role === params.role) })
+    }),
   )
   return { roles, written, server }
 }

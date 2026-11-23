@@ -1,20 +1,18 @@
-import type { CompanyId, ConnectorEntry, CopyId, RoleView } from '@conexus/hub-api'
+import type { CompanyId, ConnectorEntry, RoleView } from '@conexus/hub-api'
 import { createRole, ROLE_LABEL_MAX, RoleConnectors, updateRole } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
 import { useController, useFormContext } from 'react-hook-form'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure, unconfirmedText } from '../../platform/hub.ts'
+import { unconfirmedText } from '../../platform/hub.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
   Form,
   FormAlert,
   SubmitButton,
-  setServerError,
   setWriteError,
   TextField,
   useSchemaForm,
@@ -23,26 +21,13 @@ import { PageTitle } from '../../ui/list.tsx'
 import { changeCompanyRole, createCompanyRole } from './queries.ts'
 import { DeleteRole } from './role-delete.tsx'
 import { ConnectorPicker } from './role-picker.tsx'
-import type { RoleTables, SaveTables } from './role-tables.tsx'
-import { CopiedTables, LIVE_STAYS } from './role-tables.tsx'
 import { UnattendedAction } from './role-unattended.tsx'
 
 const UNCONFIRMED = unconfirmedText('a gravação', 'Veja a lista de papéis.')
 
 type Connectors = Record<string, string[]>
 
-type Copied = {
-  tables: RoleTables
-  marked: ReadonlySet<CopyId>
-  onMark: (id: CopyId, on: boolean) => void
-}
-
-function Picked(props: {
-  kit: readonly ConnectorEntry[]
-  readOnly: boolean
-  logo: Logo
-  copied?: Copied
-}) {
+function Picked(props: { kit: readonly ConnectorEntry[]; readOnly: boolean; logo: Logo }) {
   const { control } = useFormContext()
   const { field } = useController({ name: 'connectors', control })
   const value: Connectors = field.value
@@ -59,16 +44,7 @@ function Picked(props: {
             const { [entry.id]: _, ...others } = value
             field.onChange(next.length === 0 ? others : { ...others, [entry.id]: next })
           }}
-        >
-          {props.copied && (
-            <CopiedTables
-              tables={props.copied.tables[entry.id] ?? []}
-              marked={props.copied.marked}
-              readOnly={props.readOnly}
-              onChange={props.copied.onMark}
-            />
-          )}
-        </ConnectorPicker>
+        />
       ))}
     </div>
   )
@@ -138,34 +114,9 @@ export function NewRole({ companyId, kit, logo, onDone }: Common) {
 }
 
 /** An open role: the owner and the administrator only read, the others change what they use of each connector. */
-export function OpenRole({
-  companyId,
-  kit,
-  logo,
-  role,
-  tables,
-  saveTables,
-  onDone,
-}: Common & { role: RoleView; tables: RoleTables; saveTables: SaveTables }) {
+export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role: RoleView }) {
   const send = useMutation(changeCompanyRole)
   const fixed = role.kind === 'ALL'
-  const [marked, setMarked] = useState<ReadonlySet<CopyId>>(
-    () =>
-      new Set(
-        Object.values(tables)
-          .flat()
-          .filter((table) => fixed || table.readers.includes(role.role))
-          .map((table) => table.id),
-      ),
-  )
-  function mark(id: CopyId, on: boolean) {
-    setMarked((now) => {
-      const next = new Set(now)
-      if (on) next.add(id)
-      else next.delete(id)
-      return next
-    })
-  }
   const form = useSchemaForm(updateRole.input.body, {
     connectors: Object.fromEntries(
       Object.entries(role.connectors).map(([id, operations]) => [id, [...operations]]),
@@ -192,18 +143,13 @@ export function OpenRole({
                 unattended: values.unattended,
               },
             })
-            await saveTables(role.role, [...marked])
             onDone()
           } catch (error) {
-            // The database did not answer; the Hub kept or restored its marks, and the PUT repeats safely.
-            if (error instanceof HubFailure && error.code === 'COPY_DATABASE_UNAVAILABLE') {
-              setServerError(form, error)
-            } else setWriteError(form, error, UNCONFIRMED)
+            setWriteError(form, error, UNCONFIRMED)
           }
         }}
       >
-        <Picked kit={kit} readOnly={fixed} logo={logo} copied={{ tables, marked, onMark: mark }} />
-        <p className="text-text-2">{LIVE_STAYS}</p>
+        <Picked kit={kit} readOnly={fixed} logo={logo} />
         {role.role !== 'member' && role.kind !== 'CUSTOM' && <UnattendedAction readOnly={fixed} />}
         <FormAlert />
         {!fixed && <SubmitButton idle="Salvar" pending="Salvando…" />}

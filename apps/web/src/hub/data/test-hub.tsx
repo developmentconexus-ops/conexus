@@ -4,7 +4,6 @@ import {
   DataReadEntry as Entry,
   getCompany,
   listConnections,
-  listCopies,
   listMembers,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
@@ -59,7 +58,7 @@ type View = {
   asked?: string[]
 }
 
-/** The Hub of the Registro: Ana in Empresa Teste as `as`, Bruno a member, the Resumo semanal agent, the Matriz and its copies. */
+/** The Hub of the Registro: Ana in Empresa Teste as `as`, Bruno a member, the Resumo semanal agent, the Matriz. */
 export function readsHub(view: View) {
   server.use(
     sessionRead(() => ANA),
@@ -103,9 +102,6 @@ export function readsHub(view: View) {
           mayManage: true,
         }),
       ),
-    ),
-    http.get(`${BASE}/copies`, () =>
-      HttpResponse.json(listCopies.success.body.parse({ copies: [] })),
     ),
     http.get(`${BASE}/data-reads`, ({ request }) => {
       view.asked?.push(new URL(request.url).search)

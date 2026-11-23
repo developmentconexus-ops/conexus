@@ -1,16 +1,9 @@
 import type { DataReadEntry } from '@conexus/hub-api'
-import {
-  ASSISTANT_CONTROLLER,
-  listCopies,
-  listCopyReaders,
-  listDataReads,
-  readAssistantConversation,
-} from '@conexus/hub-api'
+import { ASSISTANT_CONTROLLER, listDataReads, readAssistantConversation } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import type { z } from 'zod'
 import type { Replies } from './layout-harness.ts'
 import { failure, ok } from './layout-harness.ts'
-import { copyOf, VENDAS } from './sweep-copies-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { companies, PROJECT_ID } from './sweep-replies.ts'
@@ -99,11 +92,6 @@ function reads(): z.input<typeof DataReadEntry>[] {
 function replies(list: Replies[string]): Replies {
   return {
     ...companies([{ name: 'Empresa Teste', role: 'owner' }], false),
-    [`GET ${API}/copies`]: ok(listCopies, {
-      copies: [copyOf(VENDAS, 'sankhya_vendas', 'Vendas', {})],
-    }),
-    // Papéis, beside it in the index, preloads who reads each copy on focus.
-    [`GET ${API}/copy-readers`]: ok(listCopyReaders, { readers: [] }),
     [`GET ${API}/data-reads`]: list,
   }
 }

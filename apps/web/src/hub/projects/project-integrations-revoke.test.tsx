@@ -10,7 +10,6 @@ import {
   conversationsNone,
   hubServer,
   PEDIDOS,
-  projectCopiesNone,
   projectsRead,
   refusal,
 } from '../../platform/test-hub.tsx'
@@ -41,7 +40,6 @@ function opened(revoked: () => Response) {
   const deletes: string[] = []
   server.use(
     conversationsNone,
-    projectCopiesNone,
     versionsRead({ versions: [] }),
     http.get(`${API}/projects/${PEDIDOS.id}/connections`, () =>
       HttpResponse.json(

@@ -1,82 +1,35 @@
-import {
-  AppTableName,
-  listAppTables,
-  listConnections,
-  listCopyRuns,
-  listProjects,
-  sampleCopy,
-} from '@conexus/hub-api'
+import { AppTableName, listAppTables, listConnections, listProjects } from '@conexus/hub-api'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import type { RunIn } from './sweep-copies-states.ts'
-import {
-  CLIENTES,
-  COMPANY_API,
-  copiesList,
-  copiesPage,
-  copyOf,
-  DONE,
-  LISTED,
-  PAGE,
-  RUNNING,
-  readersPage,
-  SOURCE_DOWN,
-  SOURCE_REFUSED,
-  VENDAS,
-} from './sweep-copies-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
-import { MEMBER, PROJECT_ID } from './sweep-replies.ts'
+import { MEMBER, OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
 
-const COLUMNED = copyOf(VENDAS, 'vendas', 'Vendas', {
-  shown: {
-    ...copyOf(VENDAS, 'vendas', 'Vendas', {}).shown,
-    description: 'As notas de venda da Matriz',
-    columns: [
-      { name: 'NUNOTA', type: 'bigint', description: 'O número da nota', inactiveSince: null },
-      { name: 'VLRNOTA', type: 'numeric', description: null, inactiveSince: null },
-      {
-        name: 'OBS',
-        type: 'text',
-        description: 'A observação',
-        inactiveSince: '2026-11-10T08:00:00.000Z',
-      },
-    ],
-  },
-})
+const COMPANY_API = `/api/companies/${COMPANY.id}`
+const PAGE = `/companies/${COMPANY.id}/data`
 
-const WIDE_COLUMNS = [
-  'NUNOTA',
-  'CODPARC',
-  'CODEMP',
-  'DTNEG',
-  'VLRNOTA',
-  'CODVEND',
-  'TIPMOV',
-  'STATUSNOTA',
-  'NUMNOTA',
-  'DTALTER',
-  'OBSERVACAO',
-]
+const MATRIZ = {
+  id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  connector: 'sankhya',
+  name: 'Matriz',
+  connectorVersion: '1',
+  state: 'ACTIVE',
+  linkedBy: null,
+  linkedAt: '2026-11-01T12:00:00.000Z',
+  testedAt: null,
+  testedBy: null,
+  account: null,
+} as const
 
-function columnedPage() {
+/** Dados of an owner whose company links the systems of `connections`. */
+function dataPage(connections: (typeof MATRIZ)[]) {
   return {
-    ...copiesPage([COLUMNED]),
-    [`GET ${COMPANY_API}/copies/${VENDAS}/runs`]: ok(listCopyRuns, {
-      copy: COLUMNED,
-      runs: [DONE],
-      next: { kind: 'END' },
-    }),
-  }
-}
-
-function detailPage(runs: RunIn[]) {
-  return {
-    ...copiesPage(LISTED),
-    [`GET ${COMPANY_API}/copies/${VENDAS}/runs`]: ok(listCopyRuns, {
-      copy: copyOf(VENDAS, 'vendas', 'Vendas', {}),
-      runs,
-      next: { kind: 'END' },
+    ...OWNER,
+    ...projectsPage(COMPANY.id),
+    [`GET ${COMPANY_API}/connections`]: ok(listConnections, {
+      connectors: [],
+      connections,
+      mayManage: true,
     }),
   }
 }
@@ -91,13 +44,13 @@ const WITH_APP = {
 
 function appsPage() {
   return {
-    ...copiesPage(LISTED),
-    [`GET /api/companies/${COMPANY.id}/projects`]: ok(listProjects, {
+    ...dataPage([MATRIZ]),
+    [`GET ${COMPANY_API}/projects`]: ok(listProjects, {
       projects: [WITH_APP],
       next: { kind: 'END' },
       databaseReady: true,
     }),
-    [`GET /api/companies/${COMPANY.id}/projects/${PROJECT_ID}/tables`]: ok(listAppTables, {
+    [`GET ${COMPANY_API}/projects/${PROJECT_ID}/tables`]: ok(listAppTables, {
       kind: 'TABLES',
       tables: [
         { name: AppTableName.parse('clientes'), rows: { kind: 'EXACT', rows: 1284 } },
@@ -107,12 +60,27 @@ function appsPage() {
   }
 }
 
-/** The layers and the empty states of Dados itself. */
+/** The layers and the empty states of Dados. */
 export const LAYER_STATES: State[] = [
+  {
+    name: 'Dados, a primeira vez: o sistema sem tabela copiada',
+    path: PAGE,
+    replies: dataPage([MATRIZ]),
+    settle: (p) => waitFor(p, 'Nenhuma tabela copiada'),
+  },
+  {
+    name: 'Dados, a leitura que falhou',
+    path: PAGE,
+    replies: {
+      ...dataPage([]),
+      [`GET ${COMPANY_API}/connections`]: failure('DATABASE_UNAVAILABLE'),
+    },
+    settle: (p) => waitFor(p, 'Tentar de novo'),
+  },
   {
     name: 'Dados, a camada Negócio vazia',
     path: `${PAGE}?layer=business`,
-    replies: copiesPage(LISTED),
+    replies: dataPage([MATRIZ]),
     settle: (p) => waitFor(p, 'Nenhum conceito aprovado ainda'),
   },
   {
@@ -124,135 +92,13 @@ export const LAYER_STATES: State[] = [
   {
     name: 'Dados, nenhum sistema ligado',
     path: PAGE,
-    replies: {
-      ...copiesPage([]),
-      [`GET ${COMPANY_API}/connections`]: ok(listConnections, {
-        connectors: [],
-        connections: [],
-        mayManage: true,
-      }),
-    },
+    replies: dataPage([]),
     settle: (p) => waitFor(p, 'Nenhum sistema ligado ainda'),
-  },
-  {
-    name: 'Dados, a busca sem resposta',
-    path: `${PAGE}?q=zzz`,
-    replies: copiesPage(LISTED),
-    settle: (p) => waitFor(p, 'Nenhuma tabela com esse texto.'),
   },
   {
     name: 'Dados, o membro',
     path: PAGE,
-    replies: {
-      ...copiesPage(LISTED),
-      ...MEMBER,
-      ...copiesList(LISTED),
-      ...readersPage(LISTED, [{ role: 'member', label: 'Membro' }]),
-    },
-    settle: (p) => waitFor(p, 'Você vê as tabelas que o papel Membro lê.'),
-  },
-]
-
-/** The page of one table of Dados: its tabs, the notice of a column that stopped, and the failures. */
-export const TABLE_STATES: State[] = [
-  {
-    name: 'A tabela, a consulta e as rodadas',
-    path: `${PAGE}/${VENDAS}?tab=runs`,
-    replies: detailPage([RUNNING, SOURCE_DOWN, DONE]),
-    settle: (p) => waitFor(p, 'O sistema não respondeu.'),
-  },
-  {
-    name: 'A tabela, a rodada que o sistema recusou',
-    path: `${PAGE}/${VENDAS}?tab=runs`,
-    replies: detailPage([
-      SOURCE_REFUSED,
-      {
-        ...SOURCE_REFUSED,
-        outcome: {
-          kind: 'ERROR',
-          code: 'COPY_SOURCE_REFUSED',
-          system: {
-            status: 403,
-            code: 'GTW3403',
-            message:
-              `${'O token da conexão não tem permissão para consultar esta visão. '.repeat(6)}`.trim(),
-          },
-        },
-      },
-      DONE,
-    ]),
-    settle: (p) => waitFor(p, '200 · Serviço recusado'),
-  },
-  {
-    name: 'A tabela, sem rodada ainda',
-    path: `${PAGE}/${VENDAS}?tab=runs`,
-    replies: detailPage([]),
-    settle: (p) => waitFor(p, 'A primeira rodada ainda não terminou.'),
-  },
-  {
-    name: 'A tabela, as colunas com uma inativa',
-    path: `${PAGE}/${VENDAS}?tab=columns`,
-    replies: columnedPage(),
-    settle: (p) => waitFor(p, 'Inativa desde 10/11'),
-  },
-  {
-    name: 'A tabela, a visão geral',
-    path: `${PAGE}/${VENDAS}`,
-    replies: columnedPage(),
-    settle: (p) => waitFor(p, 'As notas de venda da Matriz'),
-  },
-  {
-    name: 'A tabela, a amostra',
-    path: `${PAGE}/${VENDAS}?tab=sample`,
-    replies: {
-      ...columnedPage(),
-      [`GET ${COMPANY_API}/copies/${VENDAS}/sample`]: ok(sampleCopy, {
-        sample: {
-          columns: ['NUNOTA', 'CODPARC'],
-          rows: [1, 2, 3, 4, 5].map((n) => [n * 100, `P${n}`]),
-          complete: false,
-        },
-      }),
-    },
-    settle: (p) => waitFor(p, 'A cópia tem mais linhas que estas cinco.'),
-  },
-  {
-    name: 'A tabela, a amostra larga',
-    path: `${PAGE}/${VENDAS}?tab=sample`,
-    replies: {
-      ...columnedPage(),
-      [`GET ${COMPANY_API}/copies/${VENDAS}/sample`]: ok(sampleCopy, {
-        sample: {
-          columns: WIDE_COLUMNS,
-          rows: [1, 2, 3, 4, 5].map((n) => WIDE_COLUMNS.map((name) => `${name.slice(0, 3)}-${n}`)),
-          complete: true,
-        },
-      }),
-    },
-    settle: (p) => waitFor(p, 'Cinco linhas da cópia.'),
-  },
-  {
-    name: 'A tabela, quem lê',
-    path: `${PAGE}/${VENDAS}?tab=readers`,
-    replies: columnedPage(),
-    settle: (p) => waitFor(p, 'Quem lê esta tabela pela conversa e pelos agentes.'),
-  },
-  {
-    name: 'Uma cópia que não existe',
-    path: `${PAGE}/${CLIENTES.replace('2', '9')}`,
-    replies: {
-      ...copiesPage(LISTED),
-      [`GET ${COMPANY_API}/copies/${CLIENTES.replace('2', '9')}/runs`]: failure('COPY_NOT_FOUND'),
-    },
-    settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
-  },
-  {
-    name: 'A tabela, a leitura das rodadas que falhou',
-    path: `${PAGE}/${VENDAS}`,
-    replies: {
-      ...detailPage([]),
-      [`GET ${COMPANY_API}/copies/${VENDAS}/runs`]: failure('DATABASE_UNAVAILABLE'),
-    },
-    settle: (p) => waitFor(p, 'O banco do Conexus não respondeu.'),
+    replies: { ...dataPage([MATRIZ]), ...MEMBER },
+    settle: (p) => waitFor(p, 'Seu papel ainda não lê nenhuma tabela.'),
   },
 ]

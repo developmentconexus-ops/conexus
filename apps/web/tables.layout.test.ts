@@ -87,34 +87,3 @@ test('a coluna do nome das tabelas de Configurações segue legível a 800px', a
   assert.ok(w >= 150, `the account column is squeezed: ${w}`)
   await window.close()
 })
-
-test('a amostra larga rola dentro da sua caixa e o painel Detalhes não a corta, a 1366px', async () => {
-  const state = stateNamed('A tabela, a amostra larga')
-  const page = await harness.open(state.path, { viewport: DESKTOP, replies: state.replies })
-  await state.settle(page)
-  const box = page.locator('[data-slot="table-container"]')
-  const metrics = await page.evaluate(() => {
-    const doc = document.documentElement
-    const container = document.querySelector('[data-slot="table-container"]')
-    if (!(container instanceof HTMLElement)) throw new Error('the sample has no table container')
-    return {
-      docScroll: doc.scrollWidth,
-      docWidth: doc.clientWidth,
-      boxScroll: container.scrollWidth,
-      boxWidth: container.clientWidth,
-    }
-  })
-  assert.equal(metrics.docScroll, metrics.docWidth, 'the page scrolls sideways')
-  assert.ok(metrics.boxScroll > metrics.boxWidth, 'the grid does not scroll inside its own box')
-  const details = await page.getByRole('complementary', { name: 'Detalhes' }).boundingBox()
-  const frame = await box.boundingBox()
-  assert.ok(details && frame, 'the box or the panel is not laid out')
-  assert.ok(frame.x + frame.width <= details.x, 'the box runs under the panel Detalhes')
-  await box.evaluate((element) => {
-    element.scrollLeft = element.scrollWidth
-  })
-  const last = await page.getByRole('columnheader').last().boundingBox()
-  assert.ok(last, 'the last column head is not laid out')
-  assert.ok(last.x + last.width <= frame.x + frame.width + 1, 'the last column is cut by its box')
-  await page.close()
-})
