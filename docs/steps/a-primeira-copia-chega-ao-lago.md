@@ -5,7 +5,7 @@ Trilha Dados, a etapa 2 do lago, na ordem de [trilhas/dados.md](trilhas/dados.md
 vejo isso na página Dados?" Entre a parte 0 e a parte 1 deste cartão corre a etapa **O conector no
 padrão novo**, que o roteiro nomeia como etapa própria (decisão C do conector, T.21).
 
-Os estudos ficam fora do repositório (delivery L21). São seis, todos de 2026-11-23:
+Os estudos ficam fora do repositório (delivery L21). São cinco, todos de 2026-11-23:
 
 - o estudo `conexus-lago2-estudo`;
 - o reestudo `conexus-lago2-reestudo`, que o fundador pediu depois de recusar a decisão B da primeira
@@ -49,7 +49,7 @@ As versões que a construção instala são as que o estudo leu e rodou:
 2. **O reajuste das empresas**, antes de a parte 0 ser publicada (a seção do mesmo nome, abaixo).
 3. **A segunda preparação da conta de laboratório** (decisão E), pelo firstmate, com a palavra do
    fundador, antes de a U6 publicar a plataforma.
-4. **O L.2 à mão**, antes do G2. O firstmate, com a palavra do fundador, sobe na conta de laboratório
+4. **O L.2 à mão**, antes de qualquer unidade da parte 1. O firstmate, com a palavra do fundador, sobe na conta de laboratório
    uma tarefa avulsa na forma da prova (`conexus-lab-trilho/fases2a4/plataforma.py:80-90`), que faz o
    login e lê uma página do Sankhya do fundador. Se o gateway recusar o endereço da AWS, nenhuma
    unidade da parte 1 começa e a etapa volta ao fundador (0071). O critério 33 repete o teste com a
@@ -121,7 +121,7 @@ Sankhya e do Mercado Livre.
 
 *Parte 0, o legado sai do banco da empresa.*
 
-1. Em **Dados** não há mais `vendas`, `sankhya_clientes` nem `mercado_livre_pedidos`. Também saíram o
+1. Em **Dados** não há mais as cópias de hoje. Também saíram o
    botão **Ligar uma cópia**, a **Amostra**, **Quem lê** e a liberação de cópias a um Projeto. Num
    Projeto, o Builder não oferece mais propor uma cópia. Pergunte ao Assistente sobre as vendas: ele
    responde lendo o Sankhya ao vivo, como já faz quando não há cópia. As pessoas, os papéis, a
@@ -145,7 +145,8 @@ Sankhya e do Mercado Livre.
 6. Em **Integrações**, abra a ligação do Sankhya. Aparece a seção **Tabelas no lago** com a tabela
    que o Conexus recomenda nesta etapa: **Notas e pedidos**, com `TGFCAB` ao lado. Ela traz a
    descrição e o número de colunas do dicionário da sua instalação. Nada vem marcado.
-7. Marque **Notas e pedidos**, escolha o intervalo da ligação e clique **Salvar**.
+7. Marque **Notas e pedidos** e clique **Salvar**. Nesta parte, a cópia roda uma vez por dia; os
+   intervalos menores chegam na parte 2.
 8. Em **Dados**, **Notas e pedidos** aparece com `sankhya_notas` embaixo e "Rodando…". Quando a
    primeira carga termina, ela diz **Em dia**, com o número de linhas e a hora. Quanto tempo a
    primeira carga leva não foi medido.
@@ -153,8 +154,12 @@ Sankhya e do Mercado Livre.
    **Colunas** estão todas as da sua `TGFCAB`, com a descrição de cada uma, as criadas pela sua
    empresa (`ad_…`) incluídas.
 10. O firstmate mostra na sua frente, no console da AWS, a tabela `sankhya_notas` dentro do lago da
-    sua empresa, com o mesmo número de linhas. O Hub ainda não lê o lago para ninguém; isso é a
-    etapa 3.
+    sua empresa, com o mesmo número de linhas na última passada. O Hub ainda não lê o lago para
+    ninguém; isso é a etapa 3.
+
+Até a parte 2, cada rodada relê a tabela inteira e a guarda ao lado da anterior na camada bruta. Por
+isso a cópia roda no máximo uma vez por dia, para não pesar no seu Sankhya. A parte 2 passa a ler só
+o que mudou, monta a camada atual e limpa as passadas antigas (T.29).
 
 *Parte 2, a mudança aparece.*
 
@@ -173,8 +178,7 @@ Sankhya e do Mercado Livre.
 
 - **No começo:** aprova esta página.
 - **Antes de a parte 0 entrar no ar:** dá a palavra para o firstmate fazer o reajuste. Ele roda o
-  inventário só de leitura em todas as empresas e apaga, pelo botão Apagar, cada cópia que achar. Na
-  sua empresa são as três de hoje.
+  inventário só de leitura em todas as empresas e apaga, pelo botão Apagar, cada cópia que achar.
 - **Antes do último pull request da parte 0:** dá a palavra para a mudança de permissões que tira as
   tabelas das cópias do banco do Hub (data D11). Com a versão da parte 0 no ar, dá também a palavra
   para o firstmate tirar o esquema `sync` e os logins de cada empresa.
@@ -187,13 +191,9 @@ Sankhya e do Mercado Livre.
   o pull request daquela parte lista.
 
 **O reajuste das empresas.** Não é preciso apagar a sua empresa. O firstmate já rodou, com a sua
-palavra, o inventário só de leitura no banco do Hub de produção (2026-11-23). Na sua empresa há:
-
-- três cópias no banco da empresa: `vendas`, `sankhya_clientes` e `mercado_livre_pedidos`;
-- liberadas a dois Projetos de teste e lidas por nenhum papel;
-- duas propostas.
-
-As contagens ficam fora do repositório, na pasta da tarefa do firstmate (security S40). Os passos
+palavra, o inventário só de leitura no banco do Hub de produção (2026-11-23). O que ele achou na sua
+empresa (as cópias, as liberações a Projetos e as propostas) fica fora do repositório, na pasta da
+tarefa do firstmate (security S40). Os passos
 estão na seção "O reajuste, os passos do firstmate":
 
 1. O firstmate roda a mesma consulta em **todas** as empresas, porque a versão da parte 0 não sabe
@@ -210,9 +210,9 @@ O que se perde:
 
 - as linhas copiadas no `sync`, que voltam do Sankhya pelo lago;
 - o histórico das rodadas dessas cópias;
-- as três liberações.
+- as liberações a Projetos.
 
-Tudo o mais fica. Os dois Projetos de teste ficam sem a tabela até a etapa 4 (a sua J). A busca por
+Tudo o mais fica. Os Projetos que liam uma cópia ficam sem a tabela até a etapa 4 (a sua J). A busca por
 `sync.` nos arquivos publicados dos apps não rodou (eles moram no armazenamento de Git do Hub, fora
 do banco); as liberações já dizem quais Projetos leem.
 
@@ -235,8 +235,8 @@ Nada cruza a visão.
   3, o Assistente lê o Sankhya e o Mercado Livre só ao vivo.
 - **A janela Ligar em quatro passos, a descrição do sistema e o link de 30 minutos** (spec 02, `C1`, `C4`
   e `C5`). O passo "o que copiar" dessa janela é a seção **Tabelas no lago**, que só nasce na parte 1;
-  por isso a janela não cabe na etapa do conector. Ela vem numa etapa própria da trilha, logo depois
-  desta (T.23).
+  por isso a janela não cabe na etapa do conector. Pela recomendação da decisão L, ela vem numa
+  etapa própria da trilha, logo depois desta (T.23).
 - **Refazer o executor, o login por autorização, as leituras como ferramentas e a escrita com o
   cartão.** Eles já são o que você decidiu (0056, 0057, 0062) e ficam (A a).
 - **O Caderno sair.** As anotações viram propostas da Ontologia, e o Caderno sai, na etapa do Negócio
@@ -246,7 +246,8 @@ Nada cruza a visão.
 - **O Builder propor uma tabela.** Volta com a escolha de tabelas, na etapa 6, se alguém pedir.
 - **Mais tabelas do Sankhya, a busca no dicionário e a escolha de campos** (etapa 6). Nesta etapa a
   lista recomendada tem só **Notas e pedidos**.
-- **O que sumiu da fonte some do lago** (etapa 7). Nesta etapa só a primeira rodada é inteira; a
+- **O que sumiu da fonte some do lago** (etapa 7). Nesta etapa a rodada é inteira só na primeira vez,
+  quando o estado se perdeu e numa tabela sem coluna de alteração (o critério 60); a
   passada inteira de domingo do motor de hoje não vem.
 - **Pausar a cópia de uma ligação.** Desmarcar todas as tabelas para a cópia. Pausar entra se alguém
   pedir.
@@ -280,9 +281,12 @@ Nada cruza a visão.
     - a #998 (os dados pessoais dos conectores), cujos gatilhos são um conector escrito pelo
       Builder;
     - a #1124 e a #1125, da origem e das linhas da conversa, que são da outra trilha;
-    - a #1263 e a #1264, do lago da etapa 1, cujo gatilho esta etapa não toca.
+    - a #1263 e a #1264, do lago da etapa 1, cujo gatilho esta etapa não toca;
+    - a #994 e a #895, das dívidas do Assistente e do cartão da 24.6, que são da outra trilha;
+    - a #1175, das gravações do Mastra de versões antigas, que a U19 não regrava.
 
-**As suas decisões nesta etapa.** Todas respondidas; nenhuma nova. Em 2026-11-23:
+**As suas decisões nesta etapa.** Uma nova, a L, no fim da tabela. As outras estão respondidas, em
+2026-11-23:
 
 - ao reestudo: "Lago 2 aprovo os recomendados";
 - aos nomes: "okay", "okay", "sim" e "sim", às letras que aqui são NT1 a NT4 (o estudo as chama pela
@@ -305,15 +309,16 @@ da trilha e está na página dela. O que cada decisão faz no cartão:
 | G | Uma tarefa por tabela ou por sistema | (b) uma rodada por ligação | O relógio, a rodada e o intervalo são da ligação. Veredito: nativo (a seleção do `meltano run`; o gatilho por fonte das referências) |
 | H | O login da empresa lê a linha do próprio lago | (a) só lê a própria linha, num pull request próprio | O G3 |
 | I | Onde a empresa escreve a lista de e-mails do aviso | (a) Configurações, seção Avisos | A U13 |
-| J | O app que lê uma cópia, entre a etapa 2 e a 4 | (a) fica sem a tabela até a etapa 4 | Os dois Projetos de teste leem uma tabela que não existe; na etapa 4 o app declara a `sankhya_notas`, e a regra de venda passa para o app ou para a camada Negócio |
+| J | O app que lê uma cópia, entre a etapa 2 e a 4 | (a) fica sem a tabela até a etapa 4 | Os Projetos que liam uma cópia leem uma tabela que não existe; na etapa 4 o app declara a `sankhya_notas`, e a regra de venda passa para o app ou para a camada Negócio |
 | NT1 | O nome técnico de uma tabela do Sankhya no lago | (a) o nome de negócio declarado no kit para as recomendadas; o código para as que o kit não declara | `sankhya_notas`; a `TGFCAB` como origem, ao lado. Veredito: embrulhado (a lista no kit, sobre o `stream` e o `table_name` do Singer) |
 | NT2 | A língua do nome técnico | (a) português | `sankhya_notas`, `mercado_livre_pedidos` |
-| NT3 | Quando sai o que lê o `sync` | (a) na parte 0 | O G0b e o G0c; os dois Projetos de teste e o Assistente ficam só com o ao vivo até as etapas 3 e 4 |
+| NT3 | Quando sai o que lê o `sync` | (a) na parte 0 | O G0b e o G0c; os Projetos e o Assistente ficam só com o ao vivo até as etapas 3 e 4 |
 | NT4 | Os nomes da lista recomendada | (a) `sankhya_notas`, "Notas e pedidos" | A U3; as próximas da mesma regra (`sankhya_notas_itens`, `sankhya_parceiros`) entram na etapa 6, cada nome quando a tabela entrar |
 | NT5 | Duas ligações do mesmo sistema | (a) uma tabela por ligação | `<conector>_<ligação>_<tabela>` para a segunda ligação, gravado quando a tabela nasce; nesta etapa a segunda continua recusada (T.16), e a etapa 5 grava o nome |
 | A do conector | O alcance do "refeito" | (a) refazer do zero as pastas do Sankhya e do Mercado Livre e cada peça do Hub que diverge do decidido; as que já são o decidido ficam; a Fábrica é provada no TOTVS | A U16 a U19. Veredito: embrulhado (a forma do kit, conferida pela conformidade e pelos dublês) |
 | B do conector | Quando o Caderno sai | (a) na etapa nova, gravar pede o sim de quem gerencia a ligação; o Caderno sai na etapa do Negócio | A U19. Veredito: nativo (o `requireApproval` do Mastra, como na escrita) |
 | C do conector | Onde a troca entra no roteiro | (a) uma etapa própria entre a parte 0 e a parte 1, um pull request por conector, sem o Assistente perder as leituras ao vivo | O GC1, o GC2 e o GC3, entre o G0c e o G1 |
+| L (nova) | Onde entra a janela Ligar em quatro passos, a descrição do sistema e o link de 30 minutos, que o estudo do ao vivo punha na etapa do conector | **Recomendo (a): uma etapa própria logo depois desta.** O passo "o que copiar" da janela é a seção **Tabelas no lago**, que só nasce na parte 1, então ela não cabe entre a parte 0 e a parte 1; nada do lago precisa dela; o próprio estudo a tirava da etapa se ela passasse do teto (`EST/ao-vivo-estudo:187`). (b) Na parte 1, numa unidade depois da U9: a parte 1 passa de 4.000 linhas, e o gatilho tira a parte 3 do cartão | Com a (a), nada neste cartão (T.23). Veredito: embrulhado (spec 02, `C4` e `C5`; o `connect_link` da Nango) |
 
 ## As unidades
 
@@ -329,7 +334,7 @@ e os critérios novos, do 70.
 | GC1 O Sankhya no padrão novo (um PR, etapa do conector) | U16 O kit ganha a classe, a sessão, o número exato e a skill gerada | A classe da credencial em todo login; a sessão do kit, que o Hub usa; o leitor de número exato; a skill em duas partes, a gerada da definição e a escrita | o raio da U16 | testing (T5, T29) | a parte 0 usada |
 | GC1 | U17 A pasta do Sankhya, refeita | A pasta nova na forma do kit, com os mesmos ids; a pasta velha sai no mesmo commit | o raio da U17 | testing (T5) | U16 |
 | GC2 O Mercado Livre no padrão novo (um PR, etapa do conector) | U18 A pasta do Mercado Livre, refeita | A pasta nova, com a classe exclusiva; a velha sai no mesmo commit | o raio da U18 | testing (T5) | GC1 mesclado |
-| GC3 O Caderno pede o sim (um PR, etapa do conector) | U19 O Caderno pede o sim | Gravar no Caderno pede, no cartão da conversa, o sim de quem gerencia a ligação | o raio da U19 | testing (T5); security (S8) | a parte 0 usada |
+| GC3 O Caderno pede o sim (um PR, etapa do conector) | U19 O Caderno pede o sim | Gravar no Caderno pede, no cartão da conversa, o sim de quem gerencia a ligação | o raio da U19 | testing (T5); security (S8) | GC1 mesclado |
 | G1 O kit declara tabelas (um PR, parte 1) | U3 O kit declara as tabelas | A declaração por tabela, com o nome de negócio, o rótulo, a descrição, o grupo e a origem; o gancho do dicionário do Sankhya; **Notas e pedidos** recomendada; a página em linhas e bytes; a lista de tabelas na parte gerada da skill; os dublês que mudam um registro | o raio da U3 | testing (T5, T29) | a etapa do conector usada |
 | G1 | U4 O adaptador | `apps/extraction/tap/`, o leitor Singer único, que lê só a declaração do kit e copia numa rodada as tabelas escolhidas | o raio da U4 | testing (T26) | U3; a mudança de método |
 | G2 A tarefa e a plataforma (um PR, parte 1) | U5 A tarefa | `apps/extraction/`: o projeto `uv`, o `meltano.yml`, o gravador do lago, a entrada da tarefa, a imagem; o L.1, o L.3 e o L.5 | o raio da U5 | security (S31, S41) | G1 e G3 mesclados; a mudança de método |
@@ -342,15 +347,16 @@ e os critérios novos, do 70.
 | G7 O aviso (um PR, parte 3) | U12 O aviso de cópia parada | O e-mail por parada, a linha no sino, o lembrete por dia, a marca **Parada** | o raio da U12 | web; security (S41) | G6 mesclado |
 | G7 | U13 A lista de e-mails (I) | As rotas de listar, acrescentar e tirar um e-mail, e a seção **Avisos** de Configurações | o raio da U13 | web, design; security (S8) | G6 mesclado |
 
-São catorze grupos, um pull request cada ([delivery L9](../guides/delivery.md)), com um commit por
+São treze grupos, um pull request cada ([delivery L9](../guides/delivery.md)), com um commit por
 unidade. No G0a, a U2 entra antes da U1, que apaga o que a U2 deixa sem chamador. No GC1, a U16
 entra antes da U17.
 
 - **A linha principal.** Tirar antes de pôr: primeiro o G0a, o G0b e o G0c, nessa ordem.
   - O G0c espera o G0b publicado, porque um `DROP` só entra quando nenhum código no ar lê a tabela
     (data D6).
-  - A etapa do conector começa depois de o fundador usar a parte 0. O GC1 vem primeiro; depois
-    dele, o GC2. O GC3 corre em paralelo com o GC1 e o GC2, porque não divide pasta com eles.
+  - A etapa do conector começa depois de o fundador usar a parte 0. O GC1 vem primeiro. Depois dele,
+    o GC2 e o GC3 correm em paralelo: o GC3 divide pastas com o GC1 (`hub/connectors/`,
+    `builder/conversation/`), e não com o GC2.
   - A parte 1 começa depois de o fundador usar a etapa do conector. O G1 e o G3 correm em paralelo;
     o G2 parte dos dois mesclados, porque a imagem leva o adaptador e o contrato da tarefa usa os ids
     do G3; o G4 parte do G2 e do G3.
@@ -423,6 +429,8 @@ Dois gatilhos dizem quando o plano muda:
   próprio, com as mesmas unidades; o firstmate diz ao fundador antes de começar a parte 2.
 - Se o GC1 medir acima de 4.000, a U16 vira um pull request à parte, antes da U17; a pasta velha do
   Sankhya continua saindo no mesmo commit que traz a nova.
+- Se o G0b medir acima de 4.000, ele se divide em dois pull requests, o do servidor e o das telas,
+  nessa ordem.
 
 ## Os critérios de aceite
 
@@ -430,7 +438,8 @@ Os testes entram pela porta pública de cada peça ([testing T5](../guides/testi
 Hub; o índice do kit (`@conexus/connectors`) e a sua conformidade; a ferramenta do agente pela
 conversa; a linha de comando do adaptador; a entrada da tarefa pelo `meltano run`; o `cdk synth`
 com as asserções da receita. "Lab" é a conta de laboratório, com a palavra do fundador; o resultado
-vai no pull request, e não no CI (T14). "Os testes de hoje sem mudar o que esperam" quer dizer: os
+vai no pull request, e não no CI (T14). Um teste marcado "(novo)" não existe no `main` e nasce com a
+unidade. "Os testes de hoje sem mudar o que esperam" quer dizer: os
 casos ficam, e só muda o caminho de importação de um teste que lia um arquivo de dentro da pasta
 velha, que passa ao índice do kit.
 
@@ -439,7 +448,7 @@ velha, que passa ao índice do kit.
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | Nenhuma rota cria, aceita, roda, pausa, retoma, muda o intervalo ou apaga uma cópia no banco da empresa: `POST /copies`, a recusa de proposta, `pause`, `resume`, `interval`, `run` e `DELETE` de uma cópia respondem 404 de rota; `listCopyModels` não existe no contrato | `apps/server/src/hub/copies/routes.test.ts`, "o que cria cópia saiu", contra o servidor de teste | must |
-| 2 | U1 | O kit não tem modelo de cópia, nem `PAGE_ROWS`, nem `PageInput`, nem a leitura `lerPagina`; a conformidade recusa um conector que ainda declare `models`. `CopyDefinition`, nas versões 1 e 2, fica só como a forma da linha guardada que os leitores leem até o G0b, sem quem a escreva | `packages/connectors/src/kernel/conformance.test.ts`, "nenhum modelo"; `npm run typecheck` | must |
+| 2 | U1 | O kit não tem modelo de cópia, nem `PAGE_ROWS`, nem `PageInput`, nem a leitura `lerPagina`; a conformidade recusa um conector que ainda declare `models`. `CopyDefinition`, nas versões 1 e 2, fica só como a forma da linha guardada que os leitores leem até o G0b, sem quem a escreva | `packages/connectors/src/kernel/conformance.test.ts` (novo), "nenhum modelo"; `npm run typecheck` | must |
 | 3 | U1 | O Hub não registra nenhum relógio de cópia: depois da subida e depois de remover uma empresa, `mastra.schedules` não tem linha do fluxo `conexus-copy-run`, e a remoção não chama o relógio das cópias | `apps/server/src/builder/mastra/mastra.test.ts`, "nenhum relógio de cópia", que lê `mastra.schedules` depois da subida e da remoção; hoje a subida de uma empresa com cópia tem a linha | must |
 | 4 | U1 | A página **Dados** não mostra **Ligar uma cópia**, as propostas, **Pausar**, **Retomar**, **Intervalo**, **Rodar agora** nem **Apagar** de uma cópia do banco; o diálogo de **Desligar** não lista cópias | `apps/web/src/hub/copies/copy-list.test.tsx` e `copy-detail.test.tsx`, "sem o motor de hoje"; `apps/web/src/hub/connectors/unlink-dialog.test.tsx`, "sem a lista de cópias" | must |
 | 5 | U1 | Entre o G0a e o G0b, o que lê continua: com uma cópia do banco plantada pelo `plantCopy` de `hub/data/test-world.ts`, Descrever, Ler e Consultar a leem, a Amostra a mostra, e a liberação a um Projeto e as marcas de quem lê funcionam como hoje | os testes de hoje de `hub/data/`, `hub/apps/copy-data.test.ts` e de `hub/copies/` (`catalog-view`, `readers`, `sample`, `grants`), com a cópia plantada em lugar de `on.copies.enable`, sem mudar o que esperam | must |
@@ -449,10 +458,10 @@ velha, que passa ao índice do kit.
 | 70 | U14 | Nenhuma rota lê uma cópia do banco da empresa: `listCopies`, `listCopyRuns`, `sampleCopy`, `listCopyReaders`, `setRoleCopies` e as de liberar e tirar uma cópia de um Projeto respondem 404 de rota, e nenhuma delas está no contrato | `apps/server/src/hub/copies/routes.test.ts`, "o que lê saiu", contra o servidor de teste | must |
 | 71 | U14 | O contrato de acesso não tem fonte de cópia: Descrever devolve as ligações e as leituras ao vivo, sem tabela copiada; Consultar uma tabela que não está no catálogo responde a recusa de hoje para uma tabela fora do catálogo; a conformidade do contrato passa sem a fonte das cópias | `packages/hub-api/src/company-data-conformance.ts`, pelo mundo de teste de `hub/data/test-world.ts` sem cópia; `apps/server/src/hub/data/query.test.ts`, "sem cópia" | must |
 | 72 | U14 | Nenhum agente tem `copy_runs`; o texto de `app_data_read` e o contexto do Builder num Projeto não falam de `sync` nem de cópia liberada; com uma ligação do Sankhya e nenhuma cópia, o Assistente responde uma pergunta de vendas pela leitura ao vivo, com a origem ao vivo | `apps/server/src/builder/company-tools/tool-sets.test.ts`, "sem copy_runs"; `builder/app-data/context.test.ts`, "sem cópia"; `builder/assistant/assistant.test.ts`, "sem cópia, ao vivo" | must |
-| 73 | U14 | A página **Dados** mostra a árvore dos sistemas e a camada dos apps, sem a camada das cópias, sem a lista e sem a página de uma cópia; o endereço antigo de uma cópia (`/data/<id>`) leva à página Dados; numa empresa sem tabela, o vazio diz a frase da matriz | `apps/web/src/hub/copies/data-page.test.tsx`, "sem cópias"; `apps/web/src/routes/`, o teste do endereço antigo | must |
-| 74 | U14 | Um Projeto não lista nem libera cópia: a seção de cópias de **Integrações** do Projeto saiu, o banco do app não recebe permissão de leitura de um `sync`, e as tabelas que o app guarda continuam lidas como hoje | `apps/server/src/hub/apps/app-database.test.ts`, "sem liberação de cópia"; `apps/web/src/hub/projects/project-integrations.test.tsx`, "sem cópias" | must |
+| 73 | U14 | A página **Dados** mostra a árvore dos sistemas e a camada dos apps, sem a camada das cópias, sem a lista e sem a página de uma cópia; o endereço antigo de uma cópia (`/data/<id>`) leva à página Dados, e a página de uma tabela do lago mora em `/data/lake/<id>` (U9); numa empresa sem tabela, o vazio diz a frase da matriz | `apps/web/src/hub/copies/data-page.test.tsx`, "sem cópias"; `apps/web/src/routes/`, o teste do endereço antigo | must |
+| 74 | U14 | Um Projeto não lista nem libera cópia: a seção de cópias de **Integrações** do Projeto saiu, o banco do app não recebe permissão de leitura de um `sync`, e as tabelas que o app guarda continuam lidas como hoje | `apps/server/src/hub/apps/app-data.test.ts`, "sem liberação de cópia"; `apps/web/src/hub/projects/project-integrations.test.tsx`, "sem cópias" | must |
 | 75 | U14 | Nenhum código do Hub abre o banco de uma empresa com o login `conexus_sync`, `conexus_read` ou `conexus_role_*`: a porta do banco da empresa não tem mais `ensureSync` nem `syncAddress`, a de leitura não tem `readerAddress`, e `platform/copy-sql.ts` e `copy-reader.ts` não existem | `npm run typecheck`; `apps/server/src/platform/company-postgres.test.ts`, "a porta sem o sync" | must |
-| 76 | U15 | A migração tira as nove tabelas de `copies` de hoje e `notifications.copy_follower` e `copy_notice`, com as permissões delas; a foto do catálogo muda só nisso; a arquitetura ganha a linha nas exceções do roll-back, com a versão do G0b | `apps/server/src/platform/catalog.test.ts`; a conferência de migrações (`npm run migrations`) | must |
+| 76 | U15 | A migração tira as nove tabelas de `copies` de hoje, o esquema `copies` e `notifications.copy_follower` e `copy_notice`, com as permissões deles; a foto do catálogo muda só nisso; a arquitetura ganha a linha nas exceções do roll-back, com a versão do G0b | `apps/server/src/platform/catalog.test.ts`; a conferência de migrações (`npm run migrations`) | must |
 | 77 | U15 | Com a palavra do fundador e a versão do G0b no ar, o passo 4 do reajuste deixa cada empresa sem o esquema `sync` e sem os logins `conexus_sync`, `conexus_read` e `conexus_role_*`, e a consulta só de leitura do passo 4 mostra zero; o resultado vai no pull request do G0c | a consulta da seção do reajuste, pelo firstmate | must |
 
 ### A etapa do conector
@@ -461,25 +470,26 @@ velha, que passa ao índice do kit.
 | --- | --- | --- | --- | --- |
 | 12 | U16 | Numa leitura que dura mais que o token, a sessão do kit renova antes do fim e desloga a velha, e no fim não sobra sessão aberta; uma leitura recusada por sessão vencida renova e repete uma vez, e a segunda recusa termina em `NEEDS_REAUTH` | `packages/connectors/src/kernel/session.test.ts`, com o dublê do Sankhya e o relógio de teste | must |
 | 13 | U16 | O Hub lê, escreve e confere uma ligação pela sessão do kit; o "renova e repete uma vez" sai de `hub/connectors/` | `apps/server/src/hub/connectors/connections-refresh.test.ts`, `connections-sessions.test.ts` e `write-lost.test.ts`, os casos de hoje, verdes sem mudar o que esperam | must |
-| 14 | U16 | Todo login do kit declara a classe da credencial: o Sankhya, compartilhável; o Mercado Livre e o HubSpot, exclusiva; a conformidade recusa um conector sem a classe | `packages/connectors/src/kernel/conformance.test.ts`, "a classe da credencial" | must |
-| 15 | U16 | O número `12345678901234567890` num corpo JSON chega ao Hub como `"12345678901234567890"` quando o conector declara números exatos; `wire.ts` não chama mais `JSON.parse` sem o leitor do kit. O dublê do Sankhya guarda `VLRNOTA` como texto (hoje `REAL`, `fake-sales.ts:131`) e ganha uma nota de `1234567890123.123456` | `packages/connectors/src/kernel/exact-json.test.ts`; `apps/server/src/hub/connectors/wire.test.ts`, "o número grande"; `sankhya/fake.test.ts`, "o valor de 19 dígitos" | must |
-| 78 | U16, U17, U18 | A skill de cada conector tem duas partes. A gerada sai da definição: os assuntos, com o rótulo, e uma frase que diz se a ligação escreve, com a aprovação de uma pessoa, ou só lê. A escrita guarda o saber que a definição não tem. Nenhuma das duas nomeia uma ferramenta (`<conector>_<operação>`) nem diz quais existem. A do Sankhya diz que ele escreve; a frase "There is no operation that writes" não existe | `packages/connectors/src/kernel/skill.test.ts`, "a parte gerada", pelo índice do kit; `sankhya/sankhya.test.ts` e `mercado-livre/mercado-livre.test.ts`, "a skill" | must |
-| 79 | U17 | A pasta nova do Sankhya, lida pelo índice do kit, declara o mesmo conector de hoje: o id `sankhya`, a origem, os campos do login, as duas portas (`consultar`, `carregar`), as 27 leituras, a escrita `lancarPedido` com as três declarações da 0062 (incerto, marca, id), os assuntos, as recusas gravadas e a leitura de **Testar**, com os mesmos ids e a resposta `{ linhas, temMais }`. Nenhum arquivo da pasta velha fica, menos os dublês. A conformidade e os testes de hoje do Sankhya passam sem mudar o que esperam | `packages/connectors/src/sankhya/*.test.ts` de hoje, pelo índice do kit; `kernel/conformance.test.ts`, com o dublê | must |
-| 80 | U17 | Pelo Hub, nada muda para quem usa o Sankhya: as ferramentas tipadas `sankhya_*` têm os mesmos nomes e entradas, a busca de ferramentas as acha, um app e uma ferramenta salva leem pela mesma operação, o papel `connector_sankhya` admite as mesmas, e a escrita passa pelo cartão como hoje | os testes de hoje de `apps/server/src/builder/connectors/` (`typed-reads`), `builder/company-tools/` (`search`), `hub/connectors/` (`app-calls`, `tool-door`, `write`, `approval`) e `hub/identity/may-use.test.ts`, sem mudar o que esperam | must |
+| 14 | U16 | Todo login do kit declara a classe da credencial: o Sankhya, compartilhável; o Mercado Livre e o HubSpot, exclusiva; a conformidade recusa um conector sem a classe | `packages/connectors/src/kernel/conformance.test.ts` (novo), "a classe da credencial" | must |
+| 15 | U16 | O número `12345678901234567890` num corpo JSON chega ao Hub como `"12345678901234567890"` quando o conector declara números exatos; `wire.ts` não chama mais `JSON.parse` sem o leitor do kit. O dublê do Sankhya guarda `VLRNOTA` como texto (hoje `REAL`, `fake-sales.ts:131`) e ganha uma nota de `1234567890123.123456` | `packages/connectors/src/kernel/exact-json.test.ts`; `apps/server/src/hub/connectors/wire.test.ts` (novo), "o número grande"; `sankhya/fake.test.ts`, "o valor de 19 dígitos" | must |
+| 78 | U16, U17, U18 | A skill de cada conector tem duas partes. A gerada sai da definição: os assuntos, com o rótulo, e uma frase que diz se a ligação escreve, com a aprovação de uma pessoa, ou só lê. A escrita guarda o saber que a definição não tem. Nenhuma das duas nomeia uma ferramenta (`<conector>_<operação>`) nem diz quais existem. A do Sankhya diz que ele escreve; a frase "There is no operation that writes" não existe | `packages/connectors/src/kernel/skill.test.ts` (novo), "a parte gerada", pelo índice do kit; `sankhya/sankhya.test.ts` e `mercado-livre/mercado-livre.test.ts`, "a skill" | must |
+| 79 | U17 | A pasta nova do Sankhya, lida pelo índice do kit, declara o mesmo conector de hoje: o id `sankhya`, a origem, os campos do login, as duas portas (`consultar`, `carregar`), as 27 leituras, a escrita `lancarPedido` com as três declarações da 0062 (incerto, marca, id), os assuntos, as recusas gravadas e a leitura de **Testar**, com os mesmos ids e a resposta `{ linhas, temMais }`. O commit apaga cada arquivo da pasta velha que não é dublê, gravação nem teste. A conformidade e os testes de hoje do Sankhya passam sem mudar o que esperam | `packages/connectors/src/sankhya/*.test.ts` de hoje, pelo índice do kit; `kernel/conformance.test.ts` (novo), com o dublê; a lista dos arquivos apagados e criados do commit (`git show --stat`), no pull request | must |
+| 80 | U17 | Pelo Hub, nada muda para quem usa o Sankhya: as ferramentas tipadas `sankhya_*` têm os mesmos nomes e entradas, a busca de ferramentas as acha, um app e uma ferramenta salva leem pela mesma operação, o papel `connector_sankhya` admite as mesmas, e a escrita passa pelo cartão como hoje | os testes de hoje de `apps/server/src/builder/connectors/` (`typed-reads`), `builder/company-tools/` (`search`), `hub/connectors/` (`app-calls`, `tool-door`, `write`, `approval`) e os de hoje dos papéis em `hub/identity/`, sem mudar o que esperam | must |
 | 81 | U17 | As buscas do Sankhya escapam `[` e `]` no `LIKE` do SQL Server (#929), e o 20 da página padrão tem um dono só, a busca (#930) | `packages/connectors/src/sankhya/search.test.ts`, "o colchete na busca" e "a página padrão" | must |
-| 82 | U18 | A pasta nova do Mercado Livre, lida pelo índice do kit, declara o mesmo conector de hoje: o id `mercado-livre`, o login por autorização com PKCE, a renovação de uso único, a conta informada pelo sistema, a classe exclusiva, as 27 leituras com os mesmos ids e as listas que paginam (`pedidos`, `anuncios`, `perguntas`, `reclamacoes`, `periodosDeFaturamento`). Nenhum arquivo da pasta velha fica, menos os dublês e as gravações. Os testes de hoje do Mercado Livre e do Hub passam sem mudar o que esperam | `packages/connectors/src/mercado-livre/*.test.ts` de hoje, pelo índice do kit; `apps/server/src/hub/connectors/sign-ins.test.ts` e os de reconectar, sem mudar o que esperam | must |
+| 82 | U18 | A pasta nova do Mercado Livre, lida pelo índice do kit, declara o mesmo conector de hoje: o id `mercado-livre`, o login por autorização com PKCE, a renovação de uso único, a conta informada pelo sistema, a classe exclusiva, as 27 leituras com os mesmos ids e as listas que paginam (`pedidos`, `anuncios`, `perguntas`, `reclamacoes`, `periodosDeFaturamento`). O commit apaga cada arquivo da pasta velha que não é dublê, gravação, leitura da documentação nem teste. Os testes de hoje do Mercado Livre e do Hub passam sem mudar o que esperam | `packages/connectors/src/mercado-livre/*.test.ts` de hoje, pelo índice do kit; `apps/server/src/hub/connectors/sign-ins.test.ts` e os de reconectar, sem mudar o que esperam; a lista do commit (`git show --stat`), no pull request | must |
 | 83 | U19 | `connector_note_save` pede aprovação antes de gravar: a conversa mostra o cartão com o conceito, o mapeamento e a consulta da prova, e nada é gravado no Caderno antes do sim | `apps/server/src/builder/assistant/note-save.test.ts`, "pede o sim", pela conversa com as gravações do Mastra | must |
-| 84 | U19 | O sim de um membro que gerencia ligações grava a anotação com o nome de quem aprovou; o de quem não gerencia é recusado com `NOT_GRANTED`, e nada é gravado; a recusa no cartão não grava nada; a página da ligação mostra quem aprovou, e uma anotação de antes desta etapa mostra "Gravada sem aprovação" | `note-save.test.ts`, "quem aprova" e "a recusa"; `apps/web/src/hub/connectors/notes.test.tsx`, "quem aprovou" | must |
+| 84 | U19 | O sim de um membro que gerencia ligações grava a anotação com o nome de quem aprovou; o de quem não gerencia é recusado com `NOT_GRANTED`, e nada é gravado; a recusa no cartão não grava nada; a página da ligação mostra quem aprovou, e uma anotação de antes desta etapa mostra "Gravada sem aprovação". O cartão mostra a quem não gerencia ligações a frase da matriz, sem os botões, e a ligação que saiu antes do sim dá a frase dela | `note-save.test.ts`, "quem aprova" e "a recusa"; `apps/web/src/hub/connectors/notes.test.tsx`, "quem aprovou"; `apps/web/src/builder/conversation/approval-card.test.tsx` (novo), "o Caderno" | must |
 
 ### Parte 1, a carga chega
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 9 | U3 | O Sankhya declara a tabela recomendada `notas`: o nome no lago `sankhya_notas`, o rótulo "Notas e pedidos", a descrição, o grupo `vendas`, a origem `TGFCAB`, a chave `NUNOTA`, a alteração por `DTALTER` e as colunas descobertas. O gancho `descobrirTabelas` devolve, do dicionário do dublê, a descrição da tabela e cada coluna com nome, tipo e descrição; uma tabela que o dicionário não tem volta ausente, nunca inventada | `packages/connectors/src/sankhya/copy-tables.test.ts`, com o dublê | must |
-| 10 | U3 | A conformidade recusa: dois nomes iguais num conector; um nome fora do padrão (português, minúsculas, até 40); a mesma origem duas vezes; uma chave ou coluna de alteração fora das colunas declaradas; uma tabela de colunas descobertas num conector sem gancho; uma tabela de operação sem colunas; um grupo que não é assunto do conector | `packages/connectors/src/kernel/conformance.test.ts`, "a declaração por tabela" | must |
+| 10 | U3 | A conformidade recusa: dois nomes iguais num conector; um nome fora do padrão (português, minúsculas, até 40); a mesma origem duas vezes; uma chave ou coluna de alteração fora das colunas declaradas; uma tabela de colunas descobertas num conector sem gancho; uma tabela de operação sem colunas; um grupo que não é assunto do conector | `packages/connectors/src/kernel/conformance.test.ts` (novo), "a declaração por tabela" | must |
 | 11 | U3 | A leitura de uma tabela pede no máximo as linhas da página do conector; quando a resposta passa dos bytes da página, a próxima página pede menos linhas; uma tabela de 450 colunas do dublê lê inteira, sem teto de colunas | `packages/connectors/src/sankhya/copy-tables.test.ts`, "a página em bytes" | must |
-| 16 | U3 | Entre duas leituras, o dublê do Sankhya altera, cria e apaga uma nota, e o do HubSpot altera e remove um negócio, por rotas que só o dublê tem; o modo real não as tem | `packages/connectors/src/sankhya/fake.test.ts` e `hubspot/fake.test.ts`, "o registro muda entre duas leituras" | must |
-| 85 | U3 | A parte gerada da skill lista as tabelas recomendadas de cada conector: o nome no lago, o rótulo, a descrição e a origem (`sankhya_notas`, "Notas e pedidos", `TGFCAB`), e diz que a tabela de cada ligação traz só aquela ligação | `packages/connectors/src/kernel/skill.test.ts`, "as tabelas" | must |
+| 16 | U3 | Entre duas leituras, o dublê do Sankhya altera, cria e apaga uma nota, e o do HubSpot altera e remove um negócio, por rotas que só o dublê tem; o modo real não as tem | `packages/connectors/src/sankhya/fake.test.ts` e `hubspot/fake.test.ts` (novo), "o registro muda entre duas leituras" | must |
+| 86 | U3 | `readTablePage` lê uma página de qualquer tabela declarada, pelas duas origens: a da tabela, pela leitura do conector (o Sankhya), e a da operação, pela paginação `list` da operação (o negócio do HubSpot, as listas do Mercado Livre); a última página diz que acabou, e uma recusa da fonte volta como um dos quatro códigos de `TABLE_SOURCE_FAILURES`, nunca o corpo | `packages/connectors/src/kernel/tables.test.ts` (novo), contra os dublês do Sankhya e do HubSpot | must |
+| 85 | U3 | A parte gerada da skill lista as tabelas recomendadas de cada conector: o nome no lago, o rótulo, a descrição e a origem (`sankhya_notas`, "Notas e pedidos", `TGFCAB`), e diz que a tabela de cada ligação traz só aquela ligação | `packages/connectors/src/kernel/skill.test.ts` (novo), "as tabelas" | must |
 | 17 | U4 | `tap --about` e `tap --discover` respondem para todo conector que declara uma tabela. No `--discover`, cada entrada tem `stream` com o nome no lago (`sankhya_notas`), `table_name` com a origem (`TGFCAB`) e `selected: false`; as colunas vêm com o nome da fonte em minúsculas e a descrição, as do Sankhya pelo dicionário, as do HubSpot pela declaração. A bateria padrão do singer-sdk passa sobre a saída crua dos dois | `apps/extraction/tap/src/tap.test.ts`; `apps/extraction/tests/test_tap_battery.py` | must |
 | 18 | U4 | Uma rodada com duas tabelas escolhidas no catálogo lê as duas, uma depois da outra, e só elas; cada uma emite SCHEMA, RECORD com a versão da passada, STATE a cada página e ACTIVATE_VERSION no fim; a primeira passada lê tudo, a linha sem `DTALTER` incluída (#940); nenhum campo da credencial aparece na saída | `apps/extraction/tap/src/tap.test.ts`, "duas tabelas numa rodada", "a linha sem data" e "nada do segredo na saída" | must |
 | 19 | U4 | Um login recusado faz o adaptador sair com código diferente de zero e escrever no arquivo de resultado o código da fonte (`COPY_SOURCE_NEEDS_REAUTH`, `COPY_SOURCE_REFUSED`, `COPY_SOURCE_UNREACHABLE` ou `COPY_SOURCE_UNREADABLE`) e a tabela em que parou, nunca o corpo | `apps/extraction/tap/src/tap.test.ts`, "a fonte recusa" | must |
@@ -489,18 +499,18 @@ velha, que passa ao índice do kit.
 | 23 | U5 | A entrada lê o parâmetro da rodada, grava o segredo num arquivo `0600` e só o caminho vai à configuração do Meltano; nenhuma variável de ambiente do leitor e do gravador, nem linha do registro da tarefa, tem um campo do segredo | `apps/extraction/tests/test_entry.py`, "o segredo fica no arquivo" | must |
 | 24 | U5 | A entrada manda à fila um resultado só por rodada, na forma `CopyTaskResult`, com as contagens de cada tabela e o código; nunca o conteúdo de uma linha. Uma falha do leitor dá o código dele; do gravador, `COPY_LAKE_WRITE_FAILED` | `apps/extraction/tests/test_entry.py`, "um resultado por rodada", contra a gravação da fila | must |
 | 25 | U5 | Com o parâmetro da rodada apagado no meio, a tarefa para no lote seguinte, sem gravar mais e sem mandar resultado | `apps/extraction/tests/test_entry.py`, "a rodada fechada para a tarefa" | must |
-| 26 | U5 | A imagem (Node 24, Python 3.13, Meltano, o adaptador e o gravador, x86) responde a `tap --about` e a `meltano --version` antes de ser publicada; no Fargate (L.1), contra o dublê do Sankhya, as linhas chegam à bruta do `S3 Tables` e a soma bate | `scripts/workflows.test.ts`, "a imagem responde antes de sair"; Lab, no pull request do G2 | must |
+| 26 | U5, U6 | A imagem (Node 24, Python 3.13, Meltano, o adaptador e o gravador, x86) responde a `tap --about` e a `meltano --version` antes de ser publicada; no Fargate (L.1), contra o dublê do Sankhya, as linhas chegam à bruta do `S3 Tables` e a soma bate | `scripts/workflows.test.ts`, "a imagem responde antes de sair"; Lab, no pull request do G2 | must |
 | 27 | U5 | Na AWS (L.3), o fim normal, a falha do leitor, a falha do gravador e um `StopTask` chegam à fila com o motivo certo nos quatro | Lab, no pull request do G2 | must |
 | 28 | U5 | Na AWS (L.5), a soma de `decimal(38,9)` lida pelo Athena bate com a da fonte | Lab, no pull request do G2 | must |
 | 29 | U6 | A plataforma tem a fila e a fila de mortos, a regra que manda à fila a parada das tarefas do cluster da cópia, o cluster, a definição de tarefa única (2 vCPU, x86, sem segredo no ambiente), o depósito de imagens e a rede de sub-redes públicas sem NAT | `infra/aws/test/platform.test.ts`, "a plataforma da cópia" | must |
-| 30 | U6 | A receita do lago cria o papel `conexus-<lago>-escritor`, com o teto, confiando só nas tarefas do ECS da conta, com as concessões de escrita nas duas áreas do lago daquela empresa e a leitura dos parâmetros da empresa | `infra/aws/test/lake.test.ts`, "o papel que escreve" | must |
+| 30 | U6 | A receita do lago cria o papel `conexus-<lago>-escritor`, com o teto, confiando só nas tarefas do ECS da conta, com as concessões de escrita nas duas áreas do lago daquela empresa, a leitura dos parâmetros da empresa, a leitura e a escrita do prefixo dela no depósito do estado e o grupo de consultas do Athena | `infra/aws/test/lake.test.ts`, "o papel que escreve" | must |
 | 31 | U6 | Na AWS (L.6), o papel que escreve de A grava nas duas áreas de A e é recusado nas de B, e não lê o parâmetro de uma rodada de B | Lab, no pull request do G2 | must |
 | 32 | U6 | O papel do Hub pode iniciar e parar só a tarefa da cópia, entregar só papéis `conexus-*-escritor` às tarefas do ECS, gravar e apagar só parâmetros `/conexus/copia/*`, ler e apagar mensagens só da fila da cópia, e listar e apagar tabelas só de depósitos `conexus-*`; nada além | `infra/aws/test/platform.test.ts`, "os poderes do Hub" | must |
-| 33 | U6 | Na AWS (L.2), uma tarefa faz o login e lê uma página do Sankhya do fundador. Se o gateway recusar, a etapa para e volta ao fundador | Lab, no pull request do G2, antes de qualquer outro teste da parte 1 | must |
+| 33 | U6 | Na AWS (L.2), uma tarefa faz o login e lê uma página do Sankhya do fundador. Se o gateway recusar, a etapa para e volta ao fundador | Lab, no pull request do G2, com a imagem e a plataforma da U6; o L.2 à mão já rodou antes da parte 1 | must |
 | 34 | U6 | A preparação deixa a Release criar as peças do 29 e nada além do que já deixava; a Release monta a imagem, publica-a e só então publica a plataforma, com a tarefa apontando para a imagem pelo digest | `infra/aws/test/preparation.test.ts`, "a segunda preparação"; `scripts/workflows.test.ts`, "a imagem da cópia antes da plataforma" | must |
 | 35 | U7 | As quatro tabelas existem com as conferências do banco: uma cópia por ligação; uma tabela marcada por fonte e ligação, e um nome por empresa; uma rodada aberta por ligação; o código do sistema com teto (#1135) | `apps/server/src/hub/copies/lake-tables.test.ts`; `catalog.test.ts` | must |
 | 36 | U7 | O login da empresa lê, da linha do lago, só a da própria empresa e só as colunas nomeadas; gravar, mudar ou apagar é recusado; a foto do catálogo muda só nisso e nas tabelas novas | `apps/server/src/hub/lake/tables.test.ts`, "a empresa lê a sua linha"; `catalog.test.ts` | must |
-| 37 | U8 | `GET` das tabelas no lago de uma ligação do Sankhya devolve **Notas e pedidos**, com o nome `sankhya_notas`, a origem `TGFCAB`, a descrição e o número de colunas do dicionário, desmarcada, e o estado do lago. Numa ligação de credencial exclusiva, numa de um conector sem tabela declarada ou para quem não lê a ligação, a seção não vem: o campo `lake` é `UNAVAILABLE`, com o motivo. Com o dicionário fora do ar, a tabela vem com o rótulo e a descrição do kit, sem o número de colunas | `apps/server/src/hub/copies/lake-routes.test.ts`, "a lista da ligação" | must |
+| 37 | U8 | `GET` das tabelas no lago de uma ligação do Sankhya devolve **Notas e pedidos**, com o nome `sankhya_notas`, a origem `TGFCAB`, a descrição e o número de colunas do dicionário, desmarcada, e o estado do lago. Numa ligação de credencial exclusiva ou de um conector sem tabela declarada, a seção não vem: o campo `lake` é `UNAVAILABLE`, com o motivo. Para quem não lê a ligação, 404 (S10). Com o dicionário fora do ar, a tabela vem com o rótulo e a descrição do kit, sem o número de colunas | `apps/server/src/hub/copies/lake-routes.test.ts`, "a lista da ligação" | must |
 | 38 | U8 | Salvar a marca de **Notas e pedidos** cria a cópia da ligação, a linha `sankhya_notas` com a origem `TGFCAB`, o relógio da ligação e dispara a primeira rodada, inteira; salvar de novo o mesmo conjunto não muda nada. Numa empresa sem lago pronto responde 409 `COPY_LAKE_NOT_READY` sem criar nada; uma tabela que o kit não declara, 422; quem não gerencia cópias, 403; a mesma tabela de outra ligação do mesmo sistema, 409 `COPY_NAME_TAKEN` | `lake-routes.test.ts`, "marcar" | must |
 | 39 | U8 | A cada disparo, pelo relógio da ligação ou por **Rodar agora** (`POST .../lake-copy/run`), o Hub abre uma rodada da ligação, lê o dicionário para as colunas da tela, grava o parâmetro e inicia a tarefa com o papel da empresa e o `clientToken` de rodada e tentativa, levando as tabelas marcadas, cada uma com o seu `whole`; com rodada aberta, o disparo responde "já está rodando" e não grava nada | `apps/server/src/hub/copies/lake-run.test.ts`, "o disparo", pela rota e pelo passo do relógio, contra as gravações da AWS | must |
 | 40 | U8 | **Rodar agora** duas vezes ao mesmo tempo inicia uma tarefa só | `lake-run.test.ts`, "dois disparos juntos" | must |
@@ -510,14 +520,15 @@ velha, que passa ao índice do kit.
 | 44 | U8 | Toda rodada fechada apaga o parâmetro dela; um parâmetro que a AWS não tem conta como apagado | `lake-queue.test.ts`, "o parâmetro sai no fim" | must |
 | 45 | U8 | Um `RunTask` recusado fecha a rodada como `ERROR` `COPY_LAKE_UNAVAILABLE` e apaga o parâmetro; um `RunTask` sem resposta é repetido com o mesmo `clientToken`, e a AWS não inicia duas | `lake-run.test.ts`, "a AWS recusa" e "a AWS não responde" | must |
 | 46 | U8 | Dez disparos de dez ligações no mesmo segundo (L.9): o parâmetro recusado por cota é refeito, e as dez rodadas abrem | Lab, no pull request do G4 | should |
-| 47 | U8 | Desmarcar uma tabela apaga as tabelas dela nas duas áreas do lago e a linha; desmarcar a última apaga também a cópia da ligação e o relógio; desmarcar com a rodada aberta responde 409 `COPY_RUN_OPEN` e não muda nada; desligar a ligação nunca é recusado: para a tarefa aberta, fecha a rodada `INTERRUPTED` e leva a cópia dela pelo mesmo caminho; na AWS (L.8), nada sobra | `lake-routes.test.ts`, "desmarcar"; Lab | must |
+| 47 | U8 | Desmarcar uma tabela apaga as tabelas dela nas duas áreas do lago e a linha; desmarcar a última apaga também a cópia da ligação e o relógio; desmarcar com a rodada aberta responde 409 `COPY_RUN_OPEN` e não muda nada. Desligar a ligação não é recusado pelo estado da cópia: para a tarefa aberta, fecha a rodada `INTERRUPTED`, apaga as tabelas do lago e só então a linha da ligação, que leva a cópia em cascata. Com a AWS fora, desmarcar e desligar respondem 503 e nada muda. Na AWS (L.8), nada sobra | `lake-routes.test.ts`, "desmarcar"; Lab | must |
 | 48 | U8 | Apagar o lago de uma empresa com tabelas apaga as tabelas, depois as áreas e a pilha, e leva as cópias do lago da empresa; na AWS (L.8), nada sobra | `apps/server/src/hub/lake/lake-remove.test.ts`, "o lago com tabela"; Lab | must |
+| 87 | U8 | Remover uma empresa tira os relógios das ligações dela; depois da subida, `mastra.schedules` tem um relógio por cópia de ligação e nenhum de uma ligação que saiu | `apps/server/src/builder/mastra/mastra.test.ts`, "o relógio da ligação" | must |
 | 49 | U8 | `GET .../lake-tables` da empresa devolve cada tabela marcada, agrupada pela ligação, com o rótulo, o nome no lago, a origem, o estado, as linhas, a hora e o intervalo da ligação (`LakeTableSummary`); as rodadas de uma tabela (`GET .../lake-tables/{id}/runs`) são as da ligação que a levaram, com as contagens dela; quem não lê a ligação não vê a tabela | `apps/server/src/hub/copies/lake-routes.test.ts`, "a lista de Dados" | must |
 | 50 | U8 | O registro do Hub mostra `COPY_RUN_ENDED` com as contagens e a ligação; nem ele nem a fila levam o conteúdo de uma linha ou do segredo | `lake-queue.test.ts`, "o que o registro leva" | must |
 | 51 | U8 | Sem cópia de ligação, o Hub não chama a AWS; com cópias, o consumidor da fila não abre conexão com o banco enquanto não chega mensagem (data D27) | `lake-queue.test.ts`, "o banco que dorme", na forma de `apps/server/src/builder/automations/scheduler.test.ts` | must |
 | 52 | U8 | Uma tabela do lago não cria nada no banco da empresa (nem esquema, nem login, nem tabela) e não entra no catálogo que o Assistente e os Projetos leem | `lake-routes.test.ts`, "a tabela do lago fica fora do banco"; o teste de conformidade do contrato | must |
 | 53 | U8 | O servidor de respostas gravadas responde `DescribeStackEvents` e as chamadas do `S3 Tables` (#1265); nenhuma gravação fica sem teste que a leia, e os ids de laboratório saem delas (#1266); o roteiro que grava está no repositório (#1267) | `apps/server/src/platform/recordings.test.ts`, "toda gravação tem leitor"; `aws.test.ts`, pelo servidor de respostas gravadas | must |
-| 54 | U9 | Na página da ligação, a seção **Tabelas no lago** lista **Notas e pedidos** com `TGFCAB` ao lado, a descrição e as colunas, desmarcada, o intervalo e **Salvar**; marcar e salvar mostra a tabela marcada e "Rodando…"; quem não gerencia cópias vê a lista sem as marcas; sem lago pronto, a frase da matriz | `apps/web/src/hub/connectors/lake-tables.test.tsx` | must |
+| 54 | U9 | Na página da ligação, a seção **Tabelas no lago** lista **Notas e pedidos** com `TGFCAB` ao lado, a descrição e as colunas, desmarcada, o intervalo e **Salvar**; na parte 1, o intervalo oferece só 24 h (T.29); marcar e salvar mostra a tabela marcada e "Rodando…"; quem não gerencia cópias vê a lista sem as marcas; sem lago pronto, a frase da matriz | `apps/web/src/hub/connectors/lake-tables.test.tsx` | must |
 | 55 | U9 | Em **Dados**, a tabela aparece pelo rótulo, com o nome no lago e "<sistema> · <origem>" embaixo. A página dela tem **Visão geral**, **Colunas** (o nome e a descrição de cada uma), **Rodadas** e **Detalhes**. Em **Rodadas**, o resultado diz "Completa · inteira" ou "Completa · só o que mudou"; em **Detalhes**, "As linhas ficam no lago da empresa."; não há **Amostra**, **Quem lê** nem Projetos, que chegam nas etapas 3 e 4. Cada código novo tem a sua frase | `apps/web/src/hub/copies/lake-list.test.tsx` e `lake-detail.test.tsx` | must |
 
 ### Parte 2, a mudança aparece
@@ -527,8 +538,8 @@ velha, que passa ao índice do kit.
 | 56 | U10 | Pelo `meltano run`, a segunda rodada de uma ligação do Sankhya lê, de cada tabela, só o que mudou desde o ponto de parada dela, guardado no depósito do estado com o prefixo da empresa; uma tabela sem coluna de alteração (o negócio do HubSpot) lê tudo | `apps/extraction/tests/test_state.py`, "a segunda rodada" | must |
 | 57 | U10 | Na AWS (L.4): uma rodada morta no meio retoma lendo menos que o total; o estado salvo nunca está adiante das linhas gravadas; o papel de A não lê o prefixo de B | Lab, no pull request do G5 | must |
 | 58 | U10 | Pela entrada da tarefa (`meltano run` e a atualização depois), depois de uma rodada inteira e uma só do que mudou, a atual tem uma linha por chave, igual à fonte, com o valor de hoje; o `MERGE` roda um caso por instrução e passa com as 450 colunas do dublê | `apps/extraction/tests/test_update.py`, pela entrada, contra as gravações do Athena; Lab (L.7) | must |
-| 59 | U10 | Depois de cada atualização, a bruta não tem mais as linhas que já entraram na atual, e a atual não muda com a limpeza (decisão A) | `test_update.py`, "a limpeza"; Lab (L.7) | must |
-| 60 | U10 | O Hub pede `whole` para uma tabela recém-marcada; a tarefa lê inteira também a tabela sem ponto de parada no estado e a sem coluna de alteração, e o resultado diz `whole` por tabela; as outras leem só o que mudou; **Rodar agora** segue o mesmo | `apps/extraction/tests/test_state.py`, "o modo por tabela"; `lake-run.test.ts`, "a tabela nova é inteira" | must |
+| 59 | U10 | Depois de cada atualização, a bruta não tem mais as linhas que já entraram na atual, nem as passadas inteiras anteriores, as da parte 1 incluídas; a atual não muda com a limpeza (decisão A) | `test_update.py`, "a limpeza"; Lab (L.7) | must |
+| 60 | U10 | O Hub pede `whole` para uma tabela recém-marcada; a tarefa lê inteira também a tabela sem ponto de parada no estado e a sem coluna de alteração, e o resultado diz `whole` por tabela; as outras leem só o que mudou; **Rodar agora** segue o mesmo. O intervalo passa a oferecer de 15 min a 24 h | `apps/extraction/tests/test_state.py`, "o modo por tabela"; `lake-run.test.ts`, "a tabela nova é inteira" | must |
 | 61 | U10 | Desmarcar uma tabela apaga também o ponto de parada dela | `lake-routes.test.ts`, "o ponto de parada sai" | must |
 
 ### Parte 3, o aviso
@@ -542,7 +553,7 @@ velha, que passa ao índice do kit.
 | 66 | U12 | Um lembrete por dia, na hora do T.15, por ligação ainda parada, com as tabelas dela; nenhum lembrete depois que ela volta, e nenhum no dia em que ela parou | `copy-stop.test.ts`, "o lembrete" | must |
 | 67 | U12 | Na página Dados e na seção da ligação, a cópia parada mostra **Parada** e o motivo; quem não é Dono nem Administrador não recebe o aviso no sino | `apps/web/src/hub/copies/lake-list.test.tsx`, "parada"; `copy-stop.test.ts`, "quem recebe" | must |
 | 68 | U12 | Um e-mail que não sai não desfaz a parada e é registrado; o próximo lembrete do dia vai | `copy-stop.test.ts`, "o e-mail que não sai" | must |
-| 69 | U13 | O Dono e o Administrador listam, acrescentam e tiram um e-mail da lista; o mesmo e-mail com outra caixa é recusado (409 `ALERT_RECIPIENT_EXISTS`); quem não é Dono nem Administrador recebe 403 e não vê a seção; um e-mail acrescentado recebe o próximo aviso | `apps/server/src/hub/notifications/routes.test.ts`, "a lista de e-mails"; `apps/web/src/hub/identity/alert-recipients.test.tsx` | must |
+| 69 | U13 | O Dono e o Administrador listam, acrescentam e tiram um e-mail da lista; o mesmo e-mail com outra caixa é recusado (409 `ALERT_RECIPIENT_EXISTS`); quem não é Dono nem Administrador recebe 403 e não vê a seção; um e-mail acrescentado recebe o próximo aviso | `apps/server/src/hub/notifications/routes.test.ts` (novo), "a lista de e-mails"; `apps/web/src/hub/identity/alert-recipients.test.tsx` | must |
 
 ## A matriz de estados
 
@@ -551,7 +562,7 @@ velha, que passa ao índice do kit.
 | Dados, a página (U1, U14) | Parte 0: a árvore dos sistemas e a camada dos apps; "Nenhuma tabela copiada." | O mesmo da primeira vez | O de hoje | O de hoje | O endereço antigo de uma cópia leva à página Dados | Como hoje | — |
 | Dados, a lista do lago (U9, U12) | Parte 1: "Nenhuma tabela copiada. Para copiar, abra a ligação em Integrações." | O mesmo da primeira vez | O de hoje da página | O de hoje da página | Uma tabela desmarcada noutra aba some na próxima leitura | Quem não lê a ligação não vê as tabelas dela | A última rodada com erro: o selo de hoje, com a frase do código; parte 3: **Parada**, com o motivo |
 | A ligação, a seção Tabelas no lago (U9, U12) | A lista do kit, nada marcado, o intervalo padrão, **Salvar** desligado até mudar algo | Conector sem tabela declarada ou de credencial exclusiva: a seção não aparece | "Lendo o dicionário do Sankhya…" | O dicionário fora do ar: a tabela com o rótulo do kit e "Não deu para ler o dicionário agora."; `COPY_LAKE_NOT_READY`: "O lago desta empresa não está pronto. Peça ao operador do Conexus."; `COPY_RUN_OPEN`: "A ligação está copiando agora. Desmarque quando a rodada terminar."; `COPY_NAME_TAKEN`: "Outra ligação deste sistema já copia esta tabela." | A ligação desligada: a frase de hoje da página | Quem não gerencia cópias vê as tabelas marcadas, sem caixas nem **Salvar** | Parte 3: a cópia parada mostra **Parada** e o motivo ao lado do intervalo |
-| A tabela do lago, Visão geral, Colunas, Rodadas e Detalhes (U9) | A primeira rodada aberta: "Rodando…", sem linhas | Nenhuma rodada ainda: "Esta tabela ainda não rodou." | O de hoje da página | `COPY_LAKE_UNAVAILABLE`: "A AWS não iniciou a cópia. A próxima rodada tenta de novo." `COPY_TASK_LOST`: "A cópia parou antes de terminar. A próxima rodada tenta de novo." `COPY_LAKE_WRITE_FAILED`: "Não deu para gravar no lago. A próxima rodada tenta de novo." Os `COPY_SOURCE_*`: as frases de hoje da ligação | A tabela desmarcada: "Esta tabela não é mais copiada." | Quem não lê a ligação: o "não encontrado" (S10) | A rodada interrompida: "Interrompida." |
+| A tabela do lago, Visão geral, Colunas, Rodadas e Detalhes (U9) | A primeira rodada aberta: "Rodando…", sem linhas | Nenhuma rodada ainda: "Esta tabela ainda não rodou." | O de hoje da página | `COPY_LAKE_UNAVAILABLE`: "A AWS não iniciou a cópia. A próxima rodada tenta de novo." `COPY_TASK_LOST`: "A cópia parou antes de terminar. A próxima rodada tenta de novo." `COPY_LAKE_WRITE_FAILED`: "Não deu para gravar no lago. A próxima rodada tenta de novo." `COPY_SOURCE_NEEDS_REAUTH`: "<sistema> recusou o login da ligação. Reconecte a ligação." `COPY_SOURCE_REFUSED`: "<sistema> recusou a leitura." `COPY_SOURCE_UNREACHABLE`: "<sistema> não respondeu. A próxima rodada tenta de novo." `COPY_SOURCE_UNREADABLE`: "<sistema> respondeu algo que o Conexus não entende. A próxima rodada tenta de novo." Uma rodada com erro diz em que tabela parou | A tabela desmarcada: "Esta tabela não é mais copiada." | Quem não lê a ligação: o "não encontrado" (S10) | A rodada interrompida: "Interrompida." |
 | O cartão do Caderno na conversa (U19) | "Gravar no Caderno?", com o conceito, o mapeamento, a consulta da prova e o número de linhas, e **Aprovar** e **Recusar** | — | O de hoje do cartão de escrita | A ligação saiu antes do sim: "Esta ligação não existe mais. Nada foi gravado." | — | Quem não gerencia ligações vê o cartão sem os botões e "Peça a quem gerencia a ligação." | Recusado: "Não gravado." |
 | A ligação, o Caderno (U19) | A lista de hoje, com "Aprovada por <nome>" em cada anotação | O vazio de hoje | O de hoje | O de hoje | — | Como hoje | Uma anotação de antes desta etapa: "Gravada sem aprovação" |
 | O sino, a linha da parada (U12) | "A cópia de <ligação> parou: <tabelas>." | Sem parada: nenhuma linha | O de hoje | O de hoje | A ligação desligada depois do aviso: a linha fica, com o nome guardado | Só Dono e Administrador recebem a linha | — |
@@ -603,6 +614,9 @@ parte com tela ([Impeccable](../reference/impeccable.md)).
 | `LakeTablesOfConnection.lake` (`READY`, `NOT_READY` ou `UNAVAILABLE` com o motivo) | U8, `hub/copies/lake-routes.ts`, da linha do lago e da classe da credencial | U9, `lake-tables.tsx` |
 | `LakeTablesOfConnection.tables[]` (`source`, `name`, `label`, `description`, `columns`, `marked`, `lastRun`) | U8, do kit, do dicionário e de `lake_table` | U9 |
 | `LakeTablesOfConnection.interval` e `lastRun` | U8, de `lake_copy` e `lake_run` | U9 |
+| `TableDeclaration.group` | U3, a declaração do kit | U3, a parte gerada da skill (as tabelas por assunto); U9, a seção agrupa por assunto |
+| `LakeTableSummary.next` | U8, a próxima hora do relógio da ligação | U9, a Visão geral ("Próxima rodada") |
+| `LakeRun.failedTable` | U8, de `lake_run.failed_table`, que o resultado da U5 traz | U9, a frase da rodada com erro |
 | `SetLakeCopy` (`tables`, `interval`) | U9, `lake-tables.tsx` | U8, `lake-copy.ts` |
 | As falhas `COPY_LAKE_NOT_READY`, `COPY_RUN_OPEN`, `COPY_NAME_TAKEN`, `COPY_TABLE_NOT_DECLARED` | U8 | U9, `text.ts` |
 | `LakeTableSummary` (`connection`, `label`, `name`, `source`, `interval`, `rows`, `columns`, o último resultado) | U8, `hub/copies/lake-list.ts`, de `lake_table` e `lake_run` | U9, `lake-list.tsx`, `lake-detail.tsx` |
@@ -624,6 +638,7 @@ parte com tela ([Impeccable](../reference/impeccable.md)).
 | --- | --- | --- | --- | --- | --- |
 | O Apagar do reajuste (a rota de hoje, antes da parte 0) | A segunda acha a cópia apagada: a mesma resposta (S10) | O `REVOKE` feito e a transação não: a cópia fica; clicar de novo termina | O banco da empresa fora: 503 sem mudar nada, como hoje | `COPY_DELETED` de hoje | 8 |
 | A migração que tira as tabelas das cópias (U15) | O `migrate` roda uma vez por subida, com a trava de hoje | Uma instrução por tabela, numa transação: ou todas saem, ou nenhuma | O banco do Hub fora: a subida falha antes de servir, como hoje | o do `migrate` | 76 |
+| As migrações que acrescentam (U7, U11) | O `migrate` roda uma vez por subida, com a trava de hoje | Numa transação: ou tudo entra, ou nada | O banco do Hub fora: a subida falha antes de servir, como hoje | o do `migrate` | 35, 36, 62 |
 | Tirar o `sync` e os logins de uma empresa (o passo 4 do reajuste) | Cada instrução tem `IF EXISTS`: a segunda vez não acha nada e termina | Um login tirado e o esquema não: repetir termina | O banco da empresa fora: a empresa fica para depois; a consulta do passo 4 diz qual | a saída do `psql` do firstmate, fora do repositório (S40) | 77 |
 | Gravar no Caderno depois do sim (U19) | Duas aprovações da mesma chamada: o Mastra retoma a chamada uma vez; o mesmo conceito duas vezes fica com a última, como hoje | A ligação saiu entre o sim e a gravação: `GONE`, nada gravado | O banco fora: a ferramenta responde a falha de hoje, e nada é gravado | `CONNECTION_NOTE_SAVED`, com quem aprovou; `CONNECTION_NOTE_REFUSED` | 83, 84 |
 | A sessão do kit renova (U16) | Duas leituras da mesma ligação usam a mesma sessão; a renovação é uma por vez, pela fila de hoje da ligação | A renovação recusada: a sessão fecha, e a leitura termina em `NEEDS_REAUTH` | O sistema fora: a leitura termina com a recusa de hoje da ligação | `CONNECTION_SESSION_RENEWED`, sem o token | 12, 13 |
@@ -637,11 +652,13 @@ parte com tela ([Impeccable](../reference/impeccable.md)).
 | Gravar `lake_run.task_arn` depois do `RunTask` | Uma rodada só grava (a linha dela) | O Hub cai entre o `RunTask` e a gravação: a varredura acha a tarefa pelo `startedBy` da rodada (`ListTasks`), ou fecha a rodada pelas 6 horas | Banco fora: o mesmo | `COPY_TASK_UNRECORDED` | 43 |
 | A varredura no disparo | Duas varreduras fecham a mesma rodada uma vez (o mesmo `UPDATE`) | — | A AWS fora: a rodada aberta há mais de 6 h fecha mesmo assim, como `COPY_TASK_LOST` | `COPY_RUN_SWEPT` | 43 |
 | O gravador acrescenta na bruta (`append` do PyIceberg) | Uma rodada aberta por ligação (o índice); o PyIceberg refaz o commit em conflito 4 vezes | Um lote sem commit não aparece; o estado não sai antes dele | O catálogo responde 429 e o PyIceberg não refaz: a rodada termina `COPY_LAKE_WRITE_FAILED` | A linha `METRIC` do SDK e o resultado; nunca uma linha de dado | 21, 22, 24 |
+| A entrada grava o segredo num arquivo `0600`, e o adaptador grava `result_path` | Uma tarefa por rodada; cada uma no seu disco | O arquivo não grava: a tarefa termina sem resultado, e a parada do ECS fecha a rodada como `COPY_TASK_LOST` | — (o disco da tarefa) | `SECRET_NOT_WRITTEN` ou `RESULT_FILE_NOT_WRITTEN`, sem o conteúdo | 19, 23 |
 | A tarefa manda o resultado à fila (`SendMessage`) | Um resultado por rodada; uma entrega repetida acha a rodada fechada e não muda nada | O resultado não sai: a tarefa termina, e a parada do ECS fecha a rodada como `COPY_TASK_LOST` | A fila fora: o mesmo | `RESULT_NOT_SENT` no registro da tarefa | 24, 42 |
 | A poda das rodadas além das 100 mais novas (no fim) | Duas pelas mesmas linhas: a segunda acha nada | Na transação do fim: desfaz com ele | O banco fora: o fim não grava, e a mensagem volta à fila | — (dentro de `COPY_RUN_ENDED`) | 41 |
 | As colunas do dicionário em `lake_table.columns` (ao marcar e no disparo) | O último a gravar vence; as duas leram o mesmo dicionário | Gravadas e rodada não aberta: a próxima rodada regrava | O dicionário fora: as colunas guardadas ficam, e a rodada segue | `COPY_COLUMNS_KEPT` | 37, 39 |
 | A tarefa confere a rodada a cada lote | — | Parâmetro apagado: para sem mandar resultado; a parada do ECS fecha o que sobrou | A AWS fora na conferência: conta como fechada e para | `RUN_CLOSED` no registro da tarefa | 25 |
-| Desmarcar uma tabela e desligar a ligação (as tabelas das duas áreas e, na parte 2, o prefixo do estado no `S3`) | A segunda acha a linha apagada e responde o conjunto de agora; desligar com a rodada aberta para a tarefa primeiro | Tabelas do lago ou estado apagados e linha não: a tabela que a AWS não tem conta como apagada; repetir termina | A AWS fora: a linha fica, e a tela diz a frase de hoje de tentar de novo | `COPY_LAKE_TABLE_LEFT` | 47, 61 |
+| Parar a tarefa aberta ao desligar (`StopTask`) | A segunda acha a tarefa parada e conta como parada | Recusada: a parada do ECS fecha a rodada `INTERRUPTED` pelo fim de sempre | A AWS fora: desligar responde 503 e nada muda | `COPY_TASK_STOPPED` | 47 |
+| Desmarcar uma tabela e desligar a ligação (as tabelas das duas áreas e, na parte 2, o prefixo do estado no `S3`) | A segunda acha a linha apagada e responde o conjunto de agora; desligar com a rodada aberta para a tarefa primeiro | Tabelas do lago ou estado apagados e linha não: a tabela que a AWS não tem conta como apagada; repetir termina. A linha da ligação sai só depois das tabelas, e a cópia dela vai em cascata | A AWS fora: 503, nada muda, e a tela diz a frase de hoje de tentar de novo | `COPY_LAKE_TABLE_LEFT` | 47, 61 |
 | Apagar o lago com tabelas | A trava do lago de hoje (etapa 1) | Tabelas apagadas e pilha não: o próximo **Apagar o lago** termina | A AWS fora: o estado `delete_failed` de hoje | o de hoje do lago | 48 |
 | A Release publica a imagem e a plataforma | O grupo de concorrência da Release de hoje | Imagem publicada e plataforma não: a próxima Release publica a mesma versão | O ECR fora: a Release falha antes do `deploy` | o do workflow | 26, 34 |
 | O ponto de parada do Meltano (parte 2) | Uma rodada por ligação; o Meltano grava a cada linha de estado | Morte no meio: o estado é o do último lote gravado | O `S3` fora: o Meltano falha, e a rodada termina com o código do gravador | o de hoje do Meltano | 56, 57 |
@@ -678,7 +695,7 @@ limpeza; L.8, apagar sem sobra; L.9, a cota do parâmetro.
 | 6 | O Builder propõe uma cópia (`copy_propose`) | sai na parte 0 | `C/apps/server/src/builder/connectors/copy-propose.ts`; `C/apps/server/src/hub/copies/propose.ts:215` | Nekt TOTVS RM: uma consulta da empresa como tabela, opcional (`NK:178309`) | nativo, ao sair: nenhuma referência propõe por padrão | — | volta, se pedir, na etapa 6 | U2 | — |
 | 7 | Apagar a cópia do banco, para o reajuste | fica até o reajuste; sai com a parte 0 | `deleteCopy`, `C/apps/server/src/hub/copies/leave.ts:196-233`; o fim e o `DROP`, `:161-178`, `:282-300` | — | embrulhado: herdado, já em produção | — | o reajuste | o reajuste; U1 | — |
 | 8 | A declaração da tabela no kit: a tabela da fonte, a chave, o modo, a página | refeita | `C/packages/connectors/src/kernel/copy.ts:66-92` (`QUERY`, até 100 colunas `:73`, chave só `bigint` `:81-87`); `PAGE_ROWS = 500` `:6`; `CopyModel` `:184` | 0080, `C/docs/decisions/0080-copy-declared-per-table-raw-appends.md:10-13`; Nekt API, por tabela, `primary_keys`, `replication_key`, `sync_type` (`NK:20888-20897`); `CDK .../declarative_component_schema.yaml:2244-2271` (`page_size` por paginador) | embrulhado: a lista recomendada do kit sobre o `--discover` | O dicionário no dublê, 286 linhas (`EST/descoberta-catalogo:75-80`). Não provado: 450 colunas, a página em bytes (critérios 11, 21) | F; NT1, NT4 | U3 | `packages/connectors/src/kernel/tables.ts`; `packages/connectors/src/sankhya/copy-tables.ts` |
-| 9 | A descoberta das colunas pelo dicionário (`TDDTAB`, `TDDCAM`) | nova | nenhuma na cópia; a skill do agente já lê o dicionário (`C/packages/connectors/src/sankhya/skill/SKILL.md:49`) | o `--discover` do Singer; tap-oracle lê `all_tab_columns` (`EST/descoberta-catalogo:135`); Nekt Protheus, os nomes do dicionário (`NK:177778`) | nativo | Medido antes, no dublê (`EST/descoberta-catalogo:75-80`). Não provado no Sankhya real: o passo 2 do roteiro | D1, 2026-11-19 | U3, U4 | — (em `copy-tables.ts`) |
+| 9 | A descoberta das colunas pelo dicionário (`TDDTAB`, `TDDCAM`) | nova | nenhuma na cópia; a skill do agente já lê o dicionário (`C/packages/connectors/src/sankhya/skill/SKILL.md:49`) | o `--discover` do Singer; tap-oracle lê `all_tab_columns` (`EST/descoberta-catalogo:135`); Nekt Protheus, os nomes do dicionário (`NK:177778`) | nativo | Medido antes, no dublê (`EST/descoberta-catalogo:75-80`). Não provado no Sankhya real: o passo 6 do roteiro | D1, 2026-11-19 | U3, U4 | — (em `copy-tables.ts`) |
 | 10 | O prefixo do conector no nome do lago | fica | `copyPrefixOf`, `C/packages/connectors/src/kernel/copy.ts:16-18` | Nekt, "`hubspot_deals`" (`NK:12217-12218`); `AP .../Mapper.kt:171-179` | nativo | — | não precisa | U3, U4, U8 | — (`lakeNameOf` em `kernel/tables.ts`) |
 | 11 | O adaptador: do kit a um leitor Singer, um só | fica | nenhum; o laço mora no Hub, `C/apps/server/src/hub/copies/source-pass.ts:194-212`, `hub/connectors/copy-port.ts:243-315` | `TRM tap.py:455`, `:506-540`; `CDK .../concurrent_declarative_source.py:165` | remendo: TypeScript que fala Singer, porque o kit é TypeScript (0074) | 344 linhas, duas classes, 34 e 24 testes da bateria do singer-sdk 0.54.9 (estudo) | 0071 | U4 | `apps/extraction/tap/src/tap.ts` |
 | 12 | A sessão do kit, no Hub e na tarefa: reusar, renovar antes do fim, deslogar | fica; vai para a etapa do conector | `C/apps/server/src/hub/connectors/limits.ts:127`; `read.ts:109-115`, `check.ts:43-48` | `singer-sdk@0.54.9 singer_sdk/authenticators.py:526-527`, `:609-619` | remendo: a peça é do kit | A P2: 87 linhas, 4 renovações em 100 s, nenhuma sessão pendurada; o autenticador lido no singer-sdk 0.54.9 | 0077; A do conector | U16 | `packages/connectors/src/kernel/session.ts` |
@@ -774,19 +791,20 @@ que está feito como atual").
 | T.13 | Os códigos novos: de rodada, `COPY_LAKE_UNAVAILABLE`, `COPY_TASK_LOST`, `COPY_LAKE_WRITE_FAILED`; de marcar, `COPY_LAKE_NOT_READY`, `COPY_RUN_OPEN`, `COPY_NAME_TAKEN`, `COPY_TABLE_NOT_DECLARED` | Cada um tem uma frase diferente na tela e um dono diferente | Fundir códigos |
 | T.14 | A mensagem que falha três vezes vai à fila de mortos, lida só pelo firstmate | A forma da P4; um fim perdido é fechado pela varredura | Mudar o `maxReceiveCount` |
 | T.15 | O lembrete sai às 8h de São Paulo, o fuso dos relógios das cópias (`clock.ts:11-12`) | Nenhuma referência manda lembrete; o fundador disse "um lembrete por dia" sem hora | Mudar a constante |
-| T.16 | Um nome por empresa: a mesma tabela de uma segunda ligação do mesmo sistema é recusada (`COPY_NAME_TAKEN`) até a etapa 5 | A regra do nome da segunda ligação está decidida (NT5: `<conector>_<ligação>_<tabela>`), mas o corte do trecho da ligação não foi provado (`EST/n5-duas-ligacoes`, seção 5), e o Lago 2 tem uma ligação do Sankhya só; a etapa 5 é a primeira com duas lojas | Gravar o nome da NT5 já nesta etapa, com o corte |
-| T.17 | Sem a passada inteira de domingo: a rodada é inteira só na primeira vez e quando o estado se perdeu | A passada de domingo existe só porque o motor de hoje a tinha (`clock.ts:24-25`); o que sumiu da fonte é a pergunta da etapa 7 | Um relógio semanal da ligação com `whole` |
+| T.16 | Um nome por empresa: a mesma tabela de uma segunda ligação do mesmo sistema é recusada (`COPY_NAME_TAKEN`) até a etapa 5 | A regra do nome da segunda ligação está decidida (NT5: `<conector>_<ligação>_<tabela>`), mas o corte do trecho da ligação não foi provado (`EST/n5-duas-ligacoes`, seção 5), e o Lago 2 tem uma ligação do Sankhya só; a etapa 5 é a primeira com duas lojas e decide qual ligação fica com o nome sem o trecho (a primeira a existir, pelo estudo, ou a primeira a marcar a tabela, como este cartão faz) | Gravar o nome da NT5 já nesta etapa, com o corte |
+| T.17 | Sem a passada inteira de domingo: a rodada é inteira só na primeira vez, quando o estado se perdeu e numa tabela sem coluna de alteração | A passada de domingo existe só porque o motor de hoje a tinha (`clock.ts:24-25`); o que sumiu da fonte é a pergunta da etapa 7 | Um relógio semanal da ligação com `whole` |
 | T.18 | Desmarcar com a rodada aberta é recusado (`COPY_RUN_OPEN`), em vez de parar a rodada das outras tabelas | Uma rodada leva as tabelas da ligação (G); parar uma para tirar outra perde a carga das que ficam | Parar a tarefa e reabrir a rodada sem a tabela |
 | T.19 | A linha do lago em `ready` é relida da AWS antes de marcar a primeira tabela de uma empresa, pelo estado da pilha | É a primeira etapa que usa o lago, e a trilha manda escolher quando reler (`C/docs/steps/trilhas/dados.md:84-88`); reler antes de agir é a forma do exemplo serverless da AWS | Reler por um relógio |
 | T.20 | As tabelas das cópias de hoje saem num pull request próprio, o G0c, depois de a versão do G0b estar no ar | Um `DROP` só entra quando nenhum código no ar lê a tabela (data D6), e a mudança de permissões vai num pull request só dela, com a palavra do fundador (data D11). A NT3 manda tirá-las na parte 0 | Deixar as tabelas vazias até a etapa 4 |
 | T.21 | A etapa O conector no padrão novo é uma seção deste cartão, com os seus grupos, critérios e passos do roteiro, e não um cartão próprio; o roteiro da trilha a nomeia como etapa | `docs/steps/` guarda um cartão por trilha (delivery L5), e a etapa fica entre a parte 0 e a parte 1 desta: um cartão próprio pararia este no meio da construção, e a L1 pede uma etapa em construção por trilha. As decisões A, B e C do conector e as NT1 a NT5 valem para as duas, respondidas no mesmo dia | Tirar a seção para um cartão próprio, num rascunho, com as mesmas unidades |
 | T.22 | O esquema `sync` e os logins de cada empresa saem pelo firstmate, com a palavra do fundador, no passo 4 do reajuste, e não por código do Hub | A U14 tira todo código que abre esses logins. Um código que os tirasse teria de abrir o banco de cada empresa ao subir, contra a data D27, e só roda uma vez. A forma é a da consulta do reajuste, que o firstmate já roda, e cada instrução tem `IF EXISTS` | Uma rota do operador na Central que faça o mesmo por empresa |
-| T.23 | A janela Ligar em quatro passos, a descrição do sistema e o link de 30 minutos (spec 02, `C1`, `C4`, `C5`) saem da etapa do conector e vão para uma etapa própria, logo depois deste cartão | O passo "o que copiar" da janela é a seção **Tabelas no lago**, que só nasce na U9; o estudo do ao vivo já dizia que a janela sai da etapa se ela passar do teto (`EST/ao-vivo-estudo:187`); nada do lago precisa dela | Pôr a janela na parte 1, depois da U9 |
+| T.23 | A recomendação da decisão L: a janela Ligar em quatro passos, a descrição do sistema e o link de 30 minutos (spec 02, `C1`, `C4`, `C5`) saem da etapa do conector e vão para uma etapa própria, logo depois deste cartão. É mudança de escopo do que o fundador aprovou, por isso é dele (delivery L7) | O passo "o que copiar" da janela é a seção **Tabelas no lago**, que só nasce na U9; o estudo do ao vivo já dizia que a janela sai da etapa se ela passar do teto (`EST/ao-vivo-estudo:187`); nada do lago precisa dela | Pôr a janela na parte 1, depois da U9 |
 | T.24 | A lista e a página de uma tabela em Dados são escritas de novo sobre um contrato novo (`LakeTableSummary`, `LakeRun`), e não sobre o `CopySummary` | O contrato das cópias sai com as tabelas dele na parte 0 (NT3), e nenhum código pode ler uma tabela tirada (data D6) | Manter o contrato das cópias até a parte 1 e tirar as tabelas depois da U8 |
 | T.25 | A skill de cada conector tem uma parte gerada da definição (os assuntos, se escreve, as tabelas) e uma escrita à mão (o saber); nenhuma das duas nomeia ferramenta | A frase escrita à mão se desencontrou da definição (`C/packages/connectors/src/sankhya/skill/SKILL.md:14` contra `operations/index.ts:62`); a Nekt manda achar as ferramentas na hora (`NK:12598-12600`) | Voltar ao texto à mão |
 | T.26 | O sim do Caderno vem pelo cartão de aprovação da conversa, e quem aprova precisa gerenciar ligações (`manageConnections`), conferido na mesma transação da gravação | É a regra que `notes.ts` já usa para o Assistente (`C/apps/server/src/hub/connectors/notes.ts:71-80`), agora sobre quem aprova; o cartão é o da escrita (e245) | Aprovar pela página da ligação, fora da conversa |
-| T.27 | Os dublês e as gravações do Sankhya e do Mercado Livre ficam e não são reescritos com as pastas | São a prova de que a pasta nova se comporta como a de hoje; reescrever os dois juntos não provaria nada | Reescrever os dublês num pull request depois |
+| T.27 | Os dublês e as gravações do Sankhya e do Mercado Livre ficam e não são reescritos com as pastas; mudam só onde um critério pede (o 15, o 16 e a `TGFCAB` larga da U3) | São a prova de que a pasta nova se comporta como a de hoje; reescrever os dois juntos não provaria nada | Reescrever os dublês num pull request depois |
 | T.28 | O GC1 leva as peças do kit (U16) e o Sankhya (U17) num pull request só; o GC2, o Mercado Livre; o GC3, o Caderno | Um pull request por conector (C do conector); a sessão, a classe e o número exato nascem com o primeiro conector que os usa (code C75) | Separar a U16 num pull request próprio (o gatilho do orçamento) |
+| T.29 | Na parte 1, o intervalo da ligação oferece só 24 h; a U10 abre os de 15 min a 24 h | Antes da U10, cada rodada é uma passada inteira, que a bruta guarda ao lado da anterior (o gravador só acrescenta, linha 15), e relê a tabela inteira no Sankhya do fundador. Uma vez por dia limita as duas coisas até a parte 2, que lê só o que mudou e limpa as passadas antigas (critério 59) | Abrir todos os intervalos já na parte 1 |
 
 ## O reajuste, os passos do firstmate
 
@@ -850,14 +868,15 @@ unidade deixa sem chamador. Sonnet: remoção de uma ferramenta, em arquivos da 
   `propose` e `provedPage` de `C/apps/server/src/hub/connectors/builder-port.ts`, com `copy-proof.ts`,
   `list-proof.ts` e `packages/hub-api/src/copy-proof.ts`, que só eles usam. O texto de contexto do
   Builder num Projeto: a frase que manda propor a cópia que falta com `copy_propose`
-  (`C/apps/server/src/builder/app-data/context.ts:17`) e a de "uma proposta sua" (`:25`), com as
+  (`C/apps/server/src/builder/app-data/context.ts:17`) e a de "uma proposta sua" (`:24`), com as
   propostas que `hub/copies/project-view.ts:20` lê para ela. Na tela,
   `apps/web/src/builder/conversation/copy-proposal-card.tsx` e a sua linha em `builder-turn.tsx`,
   `connector-specs.ts` e `tool-row-states`.
 - **Os testes que rodam o motor, da outra trilha.** `builder/assistant/copy-runs.test.ts`,
   `assistant.scorecard-copy.test.ts`, `overview-reach.test.ts`, `builder/app-data/context.test.ts`,
   `builder/conversation/data-turn.test.ts` e `apps/web/data-rows.layout.test.ts` passam à cópia
-  plantada (`plantCopy`, que esta unidade exporta de `hub/data/test-world.ts`) e, onde precisam de
+  plantada (o `plantCopy` local de `hub/data/test-world.ts:74`, que esta unidade exporta; o de
+  `hub/copies/test-copies.ts:252`, de outra assinatura, sai com a U1) e, onde precisam de
   rodadas, a linhas de `copies.copy_run` plantadas pelo mesmo ajudante.
 
 ### O raio da mudança
@@ -957,7 +976,7 @@ tela, e o que lê o banco da empresa tem de continuar verde até o G0b, sem o ca
 | --- | --- | --- |
 | `packages/connectors/src/kernel/`, `sankhya/` | Apaga e muda (acima) | `apps/server/src/hub/connectors/`, `hub/copies/`, `hub/data/test-world.ts` |
 | `apps/server/src/hub/copies/` | Apaga e muda (acima); muda `test-copies.ts` (o `copiesOn` sem o relógio nem o motor) e apaga `test-sources.ts`, `test-routes.ts`, `test-proposals.ts`, `test-list-proposals.ts` e os testes do que sai (`enable`, `delete`, `propose`, `run`, `sources`, `whole`) | `hub/data/`, `hub/apps/`, `hub/access/`, `hub/projects/`, `conversations-of.ts` |
-| `apps/server/src/hub/data/test-world.ts` | Usa o `plantCopy` que a U2 exporta, o único jeito de os testes terem uma cópia do banco | os testes dos leitores |
+| `apps/server/src/hub/data/test-world.ts` | Usa o `plantCopy` que a U2 exporta, o único jeito de os testes terem uma cópia do banco; as duas lojas de teste (`STORE_A`, `STORE_B`, hoje em `hub/copies/test-sources.ts`, `test-world.ts:28`) passam para ele antes de `test-sources.ts` sair | os testes dos leitores |
 | `apps/server/src/builder/copy-clock/`, `builder/mastra/hub-mastra.ts`, `conversations-of.ts`, `main.ts` | Apaga o relógio; muda a subida e a remoção da empresa | — |
 | `apps/server/src/platform/copy-sql.ts`, `company-postgres.ts`, `test-app-ports.ts` | Muda | `hub/copies/`, `platform/copy-reader.ts` |
 | `apps/server/src/hub/connectors/` | Apaga `copy-port.ts`, `copy-system.ts`, `connection-copies.ts`; muda `list-read.ts`, `rows.ts`, `builder-port.ts`, `public.ts`, `unlink-copies.test.ts`, `copy-lane.test.ts` | a tela de Desligar |
@@ -1117,7 +1136,7 @@ skills `mastra` e `drizzle`. O guia de dados, D6: nenhuma tabela sai nesta unida
      `company-postgres.test.ts`, "a porta sem o sync".
    - **Mutações à mão:** deixar a fonte das cópias no catálogo: o 71 fica vermelho.
 2. **O Hub das cópias e o banco do app.** Critérios: 70, 74.
-   - **Testes:** `routes.test.ts`, "o que lê saiu"; `app-database.test.ts`, "sem liberação de cópia".
+   - **Testes:** `routes.test.ts`, "o que lê saiu"; `app-data.test.ts`, "sem liberação de cópia".
 3. **As ferramentas e o texto.** Critérios: 7, 72.
    - **Testes:** `tool-sets.test.ts`, "sem copy_runs"; `context.test.ts`, "sem cópia";
      `assistant.test.ts`, "sem cópia, ao vivo"; `tool-row.test.tsx`, "a ferramenta que saiu".
@@ -1157,7 +1176,8 @@ uma migração que só tira, com as permissões.
   `:274`, `:319`, `:343`; `readers/tables.ts:12`) e `notifications.copy_follower` e `copy_notice`
   (`C/apps/server/src/hub/notifications/tables.ts:176`, `:207`), com as linhas delas em
   `database-grants.sql`. Fica `notifications.alert_recipient`, que a U13 usa. O esquema `copies`
-  fica: a U7 cria as tabelas novas nele.
+  sai junto, com as permissões dele: `pgSchema('copies')` mora em `hub/copies/tables.ts:28`, que
+  sai; a U7 o cria de novo com as tabelas do lago.
 
 ### O raio da mudança
 
@@ -1226,7 +1246,7 @@ O que o código de hoje tem de diferente do decidido, peça por peça, e onde ca
 
 **O que prende a troca.** Os ids das operações (`pedidos`, `lancarPedido`) e a forma da resposta
 (`{ linhas, temMais }`) são contrato de cinco lugares: o app publicado, a ferramenta salva, o papel
-(`connector_<id>: [operação]`, `C/apps/server/src/hub/identity/may-use.ts:113`), o Caderno e o nome da
+(`connector_<id>: [operação]`, `C/apps/server/src/hub/identity/may-use.ts:114`), o Caderno e o nome da
 ferramenta tipada. A pasta nova mantém os ids, e os testes de hoje passam por ela sem mudar o que
 esperam (`EST/ao-vivo-estudo:158`).
 
@@ -1257,7 +1277,7 @@ da definição que três agentes leem.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `packages/connectors/src/kernel/` | Cria `session.ts`, `exact-json.ts` e testes; muda `auth.ts`, `oauth.ts`, `definition.ts`, `conformance.ts`, `skill.ts`, o índice | `apps/server/src/hub/connectors/`, o adaptador (U4) |
-| `packages/connectors/src/sankhya/fake-sales.ts`, `fake.ts` | Muda: `VLRNOTA` como texto, a nota de 19 dígitos | os testes |
+| `packages/connectors/src/sankhya/definition.ts`, `fake-sales.ts`, `fake.ts` | Muda: a classe e os números exatos na definição de hoje (a U17 a refaz); `VLRNOTA` como texto, a nota de 19 dígitos | os testes |
 | `packages/connectors/src/hubspot/`, `mercado-livre/definition.ts` | Muda: a classe exclusiva e a skill na forma nova (o Mercado Livre é refeito na U18) | o kit |
 | `apps/server/src/hub/connectors/` | Muda `read.ts`, `check.ts`, `limits.ts`, `tokens.ts`, `wire.ts`, `builder-port.ts`: a sessão, o leitor do kit e a skill | `hub/data/`, `builder/` |
 | `apps/server/src/builder/assistant/assistant.ts`, `builder/conversation/builder.ts` | Muda: leem a skill pela função do kit | — |
@@ -1268,6 +1288,7 @@ da definição que três agentes leem.
 // packages/connectors/src/kernel/auth.ts — every login declares it (0077); no default
 export type CredentialClass = 'SHAREABLE' | 'EXCLUSIVE'
 // ClientCredentialsAuth and OAuth2CodeAuth gain: credentialClass: CredentialClass
+// Not the account's `exclusive` (`kernel/definition.ts:20-23`, one connection per account): that one stays as it is
 // packages/connectors/src/kernel/session.ts
 export type SessionState = { kind: 'NONE' } | { kind: 'OPEN'; token: string; expiresAt: number } | { kind: 'CLOSED' }
 export type SessionFailure = { kind: 'NEEDS_REAUTH' } | { kind: 'UNREACHABLE' } | { kind: 'REFUSED'; native: unknown }
@@ -1317,6 +1338,9 @@ As linhas de `packages/connectors` e de `@mastra/core` do `stack.md`. O guia de 
 4. **A skill.** Critério: 78 (a parte da U16).
    - **Arquivos:** muda `skill.ts`, `builder-port.ts`, `assistant.ts`, `builder.ts`.
    - **Mutações à mão:** gerar a frase "só lê" para um conector com escrita: o 78 fica vermelho.
+
+- **A entrada em `docs/reference/boundaries.md`** das linhas 12 e 13, remendo, com a prova de cada
+  uma, no commit da unidade.
 
 ### Como se prova
 
@@ -1553,7 +1577,7 @@ adaptador, e nasce desenhada para as duas origens, a tabela e a leitura que pagi
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/connectors/src/kernel/` | Cria `tables.ts` e o teste; apaga o que sobrou de `copy.ts` (`CopyDefinition`, que a U14 deixou sem leitor) e de `list.ts` que só a cópia de hoje usava; muda `definition.ts`, `conformance.ts`, `skill.ts`, o índice | o adaptador (U4), `hub/copies/` (U8) |
+| `packages/connectors/src/kernel/` | Cria `tables.ts` e o teste; apaga o que sobrou de `copy.ts` (`CopyDefinition`, que a U14 deixou sem leitor), `list.ts`, `conformance-list.ts` e `list-fixture.ts`; muda `definition.ts`, `conformance.ts`, `skill.ts`, o índice | o adaptador (U4), `hub/copies/` (U8) |
 | `packages/connectors/src/sankhya/` | Cria `copy-tables.ts` e o teste; muda `definition.ts`, `fake.ts`, `fake-sales.ts`, o dicionário do dublê | o kit |
 | `packages/connectors/src/hubspot/` | Muda: declara a tabela `negocios` por operação; a rota de teste do dublê | o kit |
 
@@ -1597,6 +1621,13 @@ export type ConnectorTables = Readonly<{
 }>
 /** The one owner of the lake name: the connector's prefix and the declared name (`sankhya_notas`). */
 export function lakeNameOf(connector: ConnectorId, table: TableName): string
+/** What a source answers when it stops a table's read: the code, never the body. */
+export const TABLE_SOURCE_FAILURES = ['COPY_SOURCE_NEEDS_REAUTH', 'COPY_SOURCE_REFUSED', 'COPY_SOURCE_UNREACHABLE', 'COPY_SOURCE_UNREADABLE'] as const
+export type TableSourceFailure = Readonly<{ code: (typeof TABLE_SOURCE_FAILURES)[number]; system: Readonly<{ status: number; code: string | null; message: string | null }> | null }>
+/** One page of any declared table: a TABLE source through `readTable`, an OPERATION source through the operation's `list` paging. */
+export function readTablePage(
+  input: Readonly<{ connector: Connector; table: TableDeclaration; columns: readonly TableColumn[]; after: TablePosition | null; session: Session; signal: AbortSignal }>,
+): Promise<{ kind: 'PAGE'; rows: readonly Record<string, string | null>[]; next: TablePosition | null } | ({ kind: 'FAILED' } & TableSourceFailure)>
 // Connector gains: tables?: ConnectorTables
 ```
 
@@ -1609,10 +1640,17 @@ export function lakeNameOf(connector: ConnectorId, table: TableName): string
     transferência. O tipo de cada uma vem em TIPMOV.", o grupo `vendas`, a origem `TGFCAB`, a chave
     `NUNOTA` e a alteração `DTALTER`;
   - o padrão da página, em `tables.ts`;
-  - a página do Sankhya, na declaração dele, em linhas e bytes: 5.000 linhas e 1 MiB, a regra de
+  - a página do Sankhya, na declaração dele, em linhas e bytes: 5.000 linhas, o teto medido do
+    gateway (`C/docs/decisions/0080-copy-declared-per-table-raw-appends.md:17`), e 1 MiB, a regra de
     parada da 0063 (`C/docs/decisions/0063-copy-models-proof.md:22`), abaixo do teto de 2 MiB do
     executor (0056);
   - o nome no lago, só em `lakeNameOf`.
+- **A leitura de uma página tem um dono**, `readTablePage`, que o adaptador (U4) chama para as duas
+  origens. A de operação segue a paginação `list` da operação (`kernel/operation.ts:148-167`,
+  `ListPaging`, `ListRead`), escrita de novo aqui; `kernel/list.ts` e `conformance-list.ts` saem.
+- **O tamanho do nome**: `lakeNameOf` dá até 60 caracteres (o `LakeTableName` do fio, U7); o prefixo
+  mais longo de hoje, `mercado_livre_`, tem 14, e o nome até 40. A conformidade recusa um prefixo
+  acima de 20.
 - **O esquema de cada entrada externa** (C27): a resposta do dicionário, com Zod, antes de virar
   `DiscoveredTable`; uma coluna de tipo que o mapa não conhece vem como `text`, com o tipo do
   dicionário na descrição.
@@ -1628,7 +1666,7 @@ As linhas de `packages/connectors` do `stack.md`. O guia de testes, T5 e T29.
 
 ### A ordem do trabalho
 
-1. **A declaração e a conformidade.** Critério: 10.
+1. **A declaração, a leitura de página e a conformidade.** Critérios: 10, 86.
    - **Arquivos:** cria `kernel/tables.ts`; muda `definition.ts`, `conformance.ts`; apaga o resto de
      `copy.ts`.
    - **Testes:** `conformance.test.ts`, "a declaração por tabela".
@@ -1698,7 +1736,7 @@ export type SingerMessage =
   | { type: 'STATE'; value: TapState }
   | { type: 'ACTIVATE_VERSION'; stream: string; version: number }
 /** What the tap writes to result_path when the source stops it: the kit's code and the table, never a body. */
-export type TapFailure = { code: CopySourceFailureCode; table: TableName; system: SystemMessage | null }
+export type TapFailure = TableSourceFailure & { table: string }   // the lake name of the table it stopped on
 ```
 
 - **O nome do fluxo** é o nome no lago, de `lakeNameOf` (`sankhya_notas`); o adaptador não monta
@@ -1720,13 +1758,16 @@ especificação do Singer que ela cita.
 
 1. **`--about` e `--discover`.** Critério: 17. Do índice do kit, para cada declaração.
    - **Mutações à mão:** deixar `selected` de fora: a entrada sai marcada e o 17 fica vermelho.
-2. **A leitura.** Critérios: 18, 19. A sessão do kit (U3), as tabelas escolhidas em ordem, uma
-   página por vez com a página do conector, `STATE` depois de cada página, a versão da passada,
+2. **A leitura.** Critérios: 18, 19, 86. A sessão do kit (U16), as tabelas escolhidas em ordem, uma
+   página por vez pela leitura de página do kit (`readTablePage`, U3), com a página do conector, `STATE` depois de cada página, a versão da passada,
    `ACTIVATE_VERSION` no fim de cada tabela. Uma passada inteira não filtra pela coluna de alteração.
    A recusa da fonte escreve `TapFailure` e sai com código 1.
    - **Testes:** `tap.test.ts` contra os dublês; `test_tap_battery.py` roda a bateria do singer-sdk.
    - **Mutações à mão:** emitir o `STATE` antes do `RECORD` da página: a bateria fica vermelha.
 3. **A regra.** Critério: 20.
+
+- **A entrada em `docs/reference/boundaries.md`** da linha 11, remendo, com a prova da linha e a
+  versão do pacote, no commit da unidade.
 
 ### Como se prova
 
@@ -1880,6 +1921,9 @@ abre o lago de uma empresa a outra.
   `COPY_EXECUTION_ROLE = 'conexus-copia-execucao'`, em `PLATFORM_ROLES`.
 - **As saídas da plataforma** que o Hub lê: o ARN do cluster, da definição de tarefa, da fila, e as
   sub-redes e o grupo de segurança.
+- **O que a parte 2 usa já nasce aqui**, para a U10 não mudar a receita de um lago que já tem dado
+  (T.5): o prefixo da empresa no depósito do estado e o grupo de consultas do Athena do papel que
+  escreve.
 - **O papel que escreve**, na receita: `conexus-<lago>-escritor`, com o teto, a etiqueta da empresa,
   confiando só em `ecs-tasks.amazonaws.com` com `aws:SourceAccount`; grava nas duas áreas do lago da
   empresa pelas concessões do Lake Formation; lê só `/conexus/copia/<empresa>/*`; manda mensagem só
@@ -1952,7 +1996,7 @@ permissão nomeada, e os ids do fio da cópia.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/copies/lake-tables.ts` | Cria as quatro tabelas | U8 |
+| `apps/server/src/hub/copies/lake-tables.ts` | Cria o esquema `copies`, de novo, e as quatro tabelas | U8 |
 | `apps/server/src/hub/lake/tables.ts` | Muda: a política de leitura da empresa | `hub/lake/`; U8 |
 | `apps/server/migrations/`, `database-grants.sql`, a foto do catálogo | Cria a migração (só acrescenta); muda as permissões | `migrate`; `apps/server/src/platform/catalog.test.ts` |
 | `packages/hub-api/src/lake-copies.ts`, `index.ts` | Cria: os ids e os códigos do fio da cópia | U5, U8, U9, U12 |
@@ -1961,8 +2005,8 @@ permissão nomeada, e os ids do fio da cópia.
 
 | Tabela | Coluna | Tipo | Restrição | Ao apagar |
 | --- | --- | --- | --- | --- |
-| `copies.lake_copy` | `company_id`, `connector_id`, `connection_id`, `interval`, `created_by`, `created_at` | `text`, `text`, `uuid`, `text`, `text`, `timestamptz` | chave `(company_id, connection_id)`; `interval` em `LakeInterval`; política da empresa | a ligação (`company_id, connector_id, connection_id`): `cascade`; a empresa: `cascade` |
-| `copies.lake_table` | `id`, `company_id`, `connection_id`, `source_table`, `name`, `columns`, `rows`, `last_run_id`, `marked_by`, `marked_at` | `uuid`, `text`, `uuid`, `text`, `text`, `jsonb`, `bigint`, `uuid`, `text`, `timestamptz` | `UNIQUE (company_id, connection_id, source_table)`; `UNIQUE (company_id, name)`; `name` pelo padrão de `LakeTableName`; `columns` um array JSON | a cópia da ligação (`company_id, connection_id`): `cascade`; `last_run_id`: `set null` |
+| `copies.lake_copy` | `company_id`, `connector_id`, `connection_id`, `interval`, `created_at` | `text`, `text`, `uuid`, `text`, `timestamptz` | chave `(company_id, connection_id)`; `interval` em `LakeInterval`; política da empresa | a ligação (`company_id, connector_id, connection_id`): `cascade`; a empresa: `cascade` |
+| `copies.lake_table` | `id`, `company_id`, `connection_id`, `source_table`, `name`, `label`, `columns`, `rows`, `last_run_id` | `uuid`, `text`, `uuid`, `text`, `text`, `text`, `jsonb`, `bigint`, `uuid` | `UNIQUE (company_id, connection_id, source_table)`; `UNIQUE (company_id, name)`; `name` pelo padrão de `LakeTableName`; `columns` um array JSON | a cópia da ligação (`company_id, connection_id`): `cascade`; `last_run_id`: `set null` |
 | `copies.lake_run` | `id`, `company_id`, `connection_id`, `started_at`, `ended_at`, `outcome`, `whole`, `code`, `failed_table`, `system_code`, `system_message`, `task_arn`, `attempt` | `uuid`, `text`, `uuid`, `timestamptz`, `timestamptz`, `text`, `boolean`, `text`, `text`, `text`, `text`, `text`, `integer` | `ended_at` e `outcome` nulos juntos; `outcome` em `COMPLETE`, `ERROR`, `INTERRUPTED`; código só com `ERROR`; `system_code` até `SYSTEM_CODE_MAX`; `task_arn` nulo ou `arn:aws:ecs:%`; `attempt >= 1`; índice único `lake_run_open_key` em `connection_id` onde `ended_at IS NULL` | a cópia da ligação: `cascade` |
 | `copies.lake_table_run` | `run_id`, `table_id`, `company_id`, `read`, `written`, `rows`, `whole` | `uuid`, `uuid`, `text`, `integer`, `integer`, `bigint`, `boolean` | chave `(run_id, table_id)`; contagens `>= 0` | a rodada: `cascade`; a tabela: `cascade` |
 | `lake.company_lake` | — | — | política `select` para o login da empresa, `company_id = <empresa da sessão>`; `GRANT SELECT (company_id, lake_id, state, account, region)` | — |
@@ -1986,8 +2030,11 @@ export const SystemMessage = z.object({ status: z.int(), code: z.string().max(SY
 
 - O login da empresa tem `SELECT`, `INSERT`, `UPDATE` e `DELETE` nas quatro tabelas, com a política
   da empresa, como as de `copies` hoje.
-- **O arquivo modelo**: `apps/server/src/hub/copies/tables.ts` (C26: as conferências nomeadas; C23:
-  os ids `uuid` conferidos na leitura).
+- Quem marcou e quando vai no registro do Hub (`LAKE_COPY_SET`), e não numa coluna: nenhuma tela o
+  mostra.
+- **O arquivo modelo**: `apps/server/src/hub/lake/tables.ts`, da etapa 1 (C26: as conferências
+  nomeadas e a política da empresa; C23: os ids conferidos na leitura). As tabelas de `copies` de hoje
+  (`C/apps/server/src/hub/copies/tables.ts`, no histórico) são só leitura.
 - **O dono do fato**: o teto do código ao lado do da mensagem, e a lista dos códigos, só em
   `lake-copies.ts` (C26); o índice de `lake_run` confere o código contra a mesma lista.
 - **O padrão de `SourceTableId`** é o de `SourceTable` do kit; `lake-routes.test.ts` (U8) confere que
@@ -2053,7 +2100,7 @@ e o fim de uma rodada que roda fora do Hub.
 | --- | --- | --- |
 | `apps/server/src/platform/aws.ts`, `config-aws.ts`, `test-aws.ts`, `recordings/aws/`, `scripts/` (o roteiro de gravação) | Muda: as portas `CopyTasks`, `CopyQueue`, `LakeTables`, os nomes da U6, as saídas na configuração; os dublês; as gravações | `hub/copies/`, `hub/lake/`, a QA |
 | `apps/server/src/hub/copies/` | Cria `lake-copy.ts`, `lake-run.ts`, `lake-queue.ts`, `lake-list.ts`, `lake-routes.ts`, `public.ts` | `hub/connectors/` (desligar), `main.ts` (a subida) |
-| `apps/server/src/builder/copy-clock/` | Cria de novo: o relógio da ligação | `hub/copies/` |
+| `apps/server/src/builder/copy-clock/`, `builder/mastra/hub-mastra.ts`, `conversations-of.ts`, `main.ts` | Cria de novo o relógio da ligação; liga a subida e a remoção da empresa | `hub/copies/` |
 | `apps/server/src/hub/lake/lake.ts` | Muda: apagar o lago apaga as tabelas e as cópias do lago | `hub/operations/` |
 | `apps/server/src/hub/connectors/` | Muda: desligar a ligação leva a cópia dela | — |
 | `packages/hub-api/src/lake-copies.ts`, `failures.ts`, `index.ts` | Muda: as rotas da ligação e de Dados, os códigos de marcar | U9 |
@@ -2066,7 +2113,7 @@ export const LakeRun = z.object({
   id: LakeRunId, startedAt: z.iso.datetime(), endedAt: z.iso.datetime().nullable(),
   outcome: z.enum(['RUNNING', 'COMPLETE', 'ERROR', 'INTERRUPTED']), whole: z.boolean(),
   read: z.int().min(0).nullable(), written: z.int().min(0).nullable(),
-  code: LakeRunFailureCode.nullable(), system: SystemMessage.nullable(),
+  code: LakeRunFailureCode.nullable(), failedTable: LakeTableName.nullable(), system: SystemMessage.nullable(),
 })
 export const LakeTablesOfConnection = z.object({
   lake: z.discriminatedUnion('kind', [
@@ -2142,6 +2189,16 @@ export const CopyQueueMessage = z.discriminatedUnion('type', [
   desmarcadas; antes dela, a linha do lago relida (T.19) e o dicionário para as colunas; depois, o
   relógio e, se nasceu uma tabela, um disparo. Desmarcar apaga as tabelas da AWS primeiro e a linha
   depois.
+- **As frases e o registro de falhas**: cada `LakeRunFailureCode` e cada código de marcar tem a sua
+  entrada no registro de falhas de `packages/hub-api/src/failures.ts`, escrita de novo (as de hoje,
+  `C/packages/hub-api/src/copy-failures.ts:69`, no histórico, são só leitura); as frases da tela são
+  as da matriz, em `text.ts` (U9). `lake-routes.test.ts`, "os códigos da fonte", confere que todo
+  código de `TABLE_SOURCE_FAILURES` do kit está em `LakeRunFailureCode` (C26: um dono de cada lado,
+  uma prova que cruza).
+- **Desligar**: a rota de hoje de `hub/connectors/` chama a cópia do lago antes de apagar a linha:
+  para a tarefa aberta, apaga as tabelas da AWS e só então a linha da ligação, cuja chave leva
+  `lake_copy` em cascata; com a AWS fora, 503 e nada muda.
+- **O relógio** sai com a empresa: a remoção da empresa apaga o relógio de cada ligação dela.
 - **Quem fecha**: uma função só, `closeLakeRun`, chamada pela fila e pela varredura; fecha com
   `UPDATE lake_run ... WHERE id = $1 AND ended_at IS NULL RETURNING`, e só quem recebe a linha grava
   as contagens, `lake_table.rows` e `last_run_id`, apaga o parâmetro e registra `COPY_RUN_ENDED`.
@@ -2169,7 +2226,7 @@ As linhas de `@aws-sdk/client-ecs`, `client-sqs`, `client-ssm`, `client-s3tables
    - **Arquivos:** cria `lake-copy.ts`, `lake-routes.ts`.
    - **Testes:** `lake-routes.test.ts`, "a lista da ligação", "marcar", "a tabela do lago fica fora do
      banco".
-3. **O relógio, o disparo e a varredura.** Critérios: 39, 40, 43, 45, 46.
+3. **O relógio, o disparo e a varredura.** Critérios: 39, 40, 43, 45, 46, 87.
    - **Arquivos:** cria `builder/copy-clock/` (o relógio da ligação) e `lake-run.ts`.
    - **O que entra:** a varredura das rodadas abertas da ligação; o `INSERT` recusado pelo índice; o
      dicionário para as colunas; a especificação com o selo aberto; o `PutParameter`, refeito na cota;
@@ -2183,6 +2240,9 @@ As linhas de `@aws-sdk/client-ecs`, `client-sqs`, `client-ssm`, `client-s3tables
    ligações que quem pede lê.
 6. **Desmarcar, desligar e apagar o lago.** Critérios: 47, 48.
 7. **Os testes na AWS.** Critérios: 46, 47, 48 (L.8, L.9).
+
+- **A entrada em `docs/reference/boundaries.md`** das linhas 21 e 22, remendo, com a prova de cada
+  uma, no commit da unidade.
 
 ### Como se prova
 
@@ -2223,14 +2283,14 @@ em Dados, escritas de novo sobre o contrato da U8.
 | --- | --- | --- |
 | `apps/web/src/hub/connectors/` | Cria `lake-tables.tsx` e o teste; muda `connection-page.tsx`, `text.ts`, `queries.ts` | a página da ligação |
 | `apps/web/src/hub/copies/` | Cria `lake-list.tsx`, `lake-detail.tsx`, `lake-queries.ts` e os testes; muda `data-page.tsx`, `data-tree.tsx` (a camada do lago), `text.ts`, `test-hub.tsx` | a página Dados |
-| `apps/web/src/routes/_app/companies/$companyId/` | Cria `data.$tableId.tsx` | o roteador |
+| `apps/web/src/routes/_app/companies/$companyId/` | Cria `data.lake.$tableId.tsx` (`/data/lake/<id>`), ao lado do endereço antigo de uma cópia, que a U14 leva à página Dados | o roteador |
 
 ### Os contratos que a unidade cria
 
 - Nenhum contrato novo: a tela lê `LakeTablesOfConnection`, `LakeTableSummary` e `LakeRun` da U8.
 - Os textos, todos em `text.ts` de cada pasta (C26): "Tabelas no lago", "Salvar", "Rodar agora",
-  "Completa · inteira", "Completa · só o que mudou", "As linhas ficam no lago da empresa." e as frases
-  da matriz de estados.
+  "Completa · inteira", "Completa · só o que mudou", "As linhas ficam no lago da empresa.", "Próxima
+  rodada" e as frases da matriz de estados, as dos códigos `COPY_SOURCE_*` incluídas.
 - **O arquivo modelo**: `apps/web/src/hub/connectors/connection-page.tsx`, a seção `Facts` (`:207-222`),
   na forma; nenhum estado nem id novo na tela (C21, C23 não se aplicam).
 
@@ -2241,8 +2301,8 @@ de web e o de desenho; o `DESIGN.md`.
 
 ### A ordem do trabalho
 
-1. **A seção.** Critério: 54. A lista, as caixas, o intervalo, **Salvar** e **Rodar agora**, com os
-   estados da matriz.
+1. **A seção.** Critério: 54. A lista, as caixas, o intervalo (na parte 1, só 24 h, T.29), **Salvar**
+   e **Rodar agora**, com os estados da matriz.
 2. **Dados.** Critério: 55. A lista agrupada pela ligação, a página da tabela com as quatro abas, o
    tipo da rodada pelo `whole` e a frase do lugar.
    - **Testes:** com o Hub falso de `test-hub.tsx`.
@@ -2289,8 +2349,9 @@ juntos, e entre duas instruções a tabela fica num estado do meio.
 | --- | --- | --- |
 | `apps/extraction/` | Cria `src/conexus_extraction/update.py`; muda `entry.py`, `meltano.yml`, `tests/` | a imagem |
 | `apps/extraction/tap/` | Muda: a retomada pelo `--state` e o modo incremental | o `meltano.yml` |
-| `infra/aws/lib/` | Muda `copy.ts` (o depósito do estado), `lake.ts` (o prefixo da empresa e o grupo de consultas para o papel que escreve), `platform.ts` (o Hub apaga o prefixo de uma tabela) | o Hub, pela Release |
+| `infra/aws/lib/` | Muda `copy.ts` (o depósito do estado) e `platform.ts` (o Hub apaga o prefixo de uma tabela); a receita do lago não muda: o prefixo e o grupo de consultas nasceram na U6 | o Hub, pela Release |
 | `apps/server/src/hub/copies/` | Muda `lake-run.ts` (`whole` pelo modo), `lake-copy.ts` (desmarcar apaga o estado) | — |
+| `apps/web/src/hub/connectors/lake-tables.tsx`, `text.ts` | Muda: o intervalo passa a oferecer de 15 min a 24 h (T.29) | — |
 | `apps/server/src/platform/aws.ts`, `recordings/aws/` | Muda: apagar o prefixo do estado; as gravações do Athena | — |
 
 ### Os contratos que a unidade cria
@@ -2316,9 +2377,13 @@ D25.
 2. **A atual e a limpeza.** Critérios: 58, 59.
    - **Mutações à mão:** limpar antes do `MERGE`: a atual perde as linhas da rodada e o 58 fica
      vermelho.
-3. **O modo por tabela.** Critério: 60. O Hub pede; a tarefa decide pelo estado e diz.
+3. **O modo por tabela e os intervalos.** Critério: 60. O Hub pede; a tarefa decide pelo estado e
+   diz. A seção da ligação passa a oferecer de 15 min a 24 h.
 4. **Desmarcar.** Critério: 61.
 5. **Os testes na AWS.** Critérios: 57, 58, 59 (L.4, L.7), na `sankhya_notas` do dublê de 450 colunas.
+
+- **A entrada em `docs/reference/boundaries.md`** das linhas 28 e 29, remendo, com a prova de cada
+  uma, no commit da unidade.
 
 ### Como se prova
 
@@ -2403,8 +2468,8 @@ uma que volta não pode dar nenhum.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/notifications/` | Cria `copy-stop.ts`, `copy-stop-email.tsx`; muda `notifications.ts`, `notification-render.d.mts` | `hub/copies/lake-queue.ts`, `lake-copy.ts` |
-| `apps/server/src/hub/copies/lake-queue.ts`, `lake-copy.ts`, `lake-list.ts` | Muda: `closeLakeRun` anota e tira a parada; a lista e a seção mostram a parada | — |
+| `apps/server/src/hub/notifications/` | Cria `copy-stop.ts` (as linhas do sino e o e-mail) e `copy-stop-email.tsx`; muda `notifications.ts`, `notification-render.d.mts` | `hub/copies/lake-stop.ts` |
+| `apps/server/src/hub/copies/` | Cria `lake-stop.ts`, o dono da parada em `lake_copy` (code C8); muda `lake-queue.ts`, `lake-copy.ts`, `lake-list.ts`: `closeLakeRun` chama a parada e a volta; a lista e a seção mostram a parada | — |
 | `apps/server/src/builder/copy-clock/` | Muda: o relógio do lembrete | — |
 | `apps/server/package.json` (o `build` dos e-mails com `esbuild`), `.gitignore` | Muda: o segundo modelo de e-mail | a Release |
 | `packages/hub-api/src/lake-copies.ts`, `notifications.ts` | Muda: `stopped`; o aviso no sino | a tela |
@@ -2417,9 +2482,11 @@ uma que volta não pode dar nenhum.
 LakeTableSummary, LakeTablesOfConnection // gain: stopped: z.object({ since: z.iso.datetime(), code: LakeRunFailureCode }).nullable()
 // packages/hub-api/src/notifications.ts — the bell gains one kind
 z.object({ kind: z.literal('COPY_STOPPED'), connection: z.string(), tables: z.array(LakeTableName).min(1), code: LakeRunFailureCode })
-// apps/server/src/hub/notifications/copy-stop.ts — called inside closeLakeRun's transaction; the mail goes after the commit
+// apps/server/src/hub/copies/lake-stop.ts — the owner of lake_copy's stop; called inside closeLakeRun's transaction
 export function stopped(tx: CommandTx, run: { companyId: CompanyId; connectionId: ConnectionId; tables: LakeTableName[]; code: LakeRunFailureCode }): Promise<'OPENED' | 'ALREADY_OPEN'>
 export function recovered(tx: CommandTx, run: { companyId: CompanyId; connectionId: ConnectionId }): Promise<'CLOSED' | 'WAS_RUNNING'>
+// apps/server/src/hub/notifications/copy-stop.ts — the bell rows in the same transaction; the mail after the commit
+export function copyStopNotices(tx: CommandTx, stop: { companyId: CompanyId; connectionName: string; tables: LakeTableName[]; code: LakeRunFailureCode }): Promise<readonly MailTo[]>
 ```
 
 - **Quem abre a parada**: `UPDATE lake_copy SET stopped_since = ... WHERE ... AND stopped_since IS NULL
@@ -2443,6 +2510,9 @@ O guia de web; a security S41.
 2. **O e-mail e o sino.** Critérios: 63, 67, 68.
 3. **O lembrete.** Critério: 66.
 4. **A tela.** Critério: 67.
+
+- **A entrada em `docs/reference/boundaries.md`** da linha 34, remendo, com a prova da linha, no
+  commit da unidade.
 
 ### Como se prova
 
