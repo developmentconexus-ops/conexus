@@ -166,9 +166,13 @@ O lago guarda também arquivos. O fundador, 2026-11-23: "Pra mim e totalmente er
 so dados [...] ter o XML e crucial ( nao so ele)". Da regra de 2026-11-19 ("Anexos, índices, logs e
 cópias de backup datadas ficam fora") sai a parte dos anexos: anexos e colunas de arquivo entram no
 lago; índices, logs e cópias de backup datadas continuam fora (`conexus-arquivos-no-lago`). O XML da
-NF-e entra na etapa 2 como texto numa tabela própria ("Já no Lago 2, como a Nekt"), com o histórico
-ligado nela ("Okay"), e é lido em `nfe_notas` e `nfe_itens` numa etapa própria depois da 3 ("Etapa
-própria, depois da 3"). O depósito de arquivos para binário grande vem com a primeira fonte que
+NF-e entra na etapa 2 ("Já no Lago 2, como a Nekt") como uma coluna de texto da tabela dos dados da
+NF-e (`sankhya_notas_nfe`, a `TGFNFE`), e não numa tabela própria (2026-11-23, à recomendação do
+firstmate: "E, não, beleza"), com o histórico ligado nessa tabela ("Okay"). Vale para todo conector
+uma regra só, pelo tipo que a descoberta lê: texto longo (`CLOB`, `NCLOB`, `LONG`) vira texto, e
+binário (`BLOB`, `RAW`, `LONG RAW`) vira o tipo binário do Iceberg; ninguém marca arquivo à mão, e o
+kit pode declarar o significado de uma coluna só como metadado. O XML é lido em `nfe_notas` e
+`nfe_itens` numa etapa própria depois da 3 ("Etapa própria, depois da 3"). O depósito de arquivos para binário grande vem com a primeira fonte que
 trouxer um.
 
 As decisões do fundador que chegam com a etapa delas, e não antes:
@@ -209,7 +213,8 @@ As respostas da entrevista, que o cartão da etapa 2 segue:
   framework agora;
 - a primeira carga: "Na hora, com prova antes" (uma sonda num dia útil de guarda);
 - o usuário de integração do Sankhya: "Seguir como está";
-- o XML: "Já no Lago 2, como a Nekt", "Etapa própria, depois da 3" e, ao histórico, "Okay" (acima).
+- o XML: "Já no Lago 2, como a Nekt", "Etapa própria, depois da 3", ao histórico, "Okay", e, à
+  coluna de texto no lugar da tabela própria, "E, não, beleza" (acima).
 
 ## O que a trilha possui
 
