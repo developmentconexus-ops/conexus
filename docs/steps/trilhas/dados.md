@@ -27,7 +27,9 @@ lago de uma empresa pela Central, e apagar o cliente leva o lago. O cartão est�
 `main`, no commit `0a3e4d1c`, o último que o mudou. A trilha está sem cartão em `docs/steps/` até o
 cartão da etapa seguinte entrar.
 
-A etapa seguinte é a 2 do lago, A primeira cópia chega ao lago, ainda sem estudo nem cartão.
+A etapa seguinte é a 2 do lago, A primeira cópia chega ao lago: o cartão dela está em
+[a-primeira-copia-chega-ao-lago.md](../a-primeira-copia-chega-ao-lago.md), à espera da aprovação do
+fundador.
 
 As etapas anteriores fecharam: a pergunta respondida com a origem, em 2026-11-16
 ([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md)); cada papel lê só o seu, com
@@ -105,8 +107,11 @@ continuar parada; o botão Seguir só entra se alguém pedir. O estudo da etapa 
 conexão ou da tabela, com a rodada do lago na mão, e se usa as tabelas `copy_follower`,
 `alert_recipient` e `copy_notice`, que estão no `main` sem uso.
 
-O motor de cópias de hoje sai inteiro quando a etapa 7 fechar. Até lá ele copia o que o lago ainda
-não copia, e o cartão de cada etapa diz o que sai nela.
+O motor de cópias de hoje sai em três pedaços, cada um na etapa que substitui o que ele fazia, porque
+o lago é a única fonte e nenhuma tabela mora em dois lugares (fundador, 2026-11-23: "nao e pra ter
+essa opcao [...] nossa fonte e o lago"). Na etapa 2 sai o que cria cópia no banco da empresa; na
+etapa 3, a leitura do contrato pelo banco da empresa, a Amostra e os logins de leitura por papel; na
+etapa 4, a liberação a Projetos, o esquema `sync` e os logins `conexus_sync` e `conexus_read`.
 
 Ficam para depois do lago implementado, por palavra do fundador em 2026-11-20: o tratamento e a
 qualidade dos dados, a camada Negócio no lago e o agente de dados. Por decisões anteriores: o
