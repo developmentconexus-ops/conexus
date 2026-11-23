@@ -18,6 +18,7 @@ import type {
 } from '../../hub/connectors/public.ts'
 import { mustAsk, openText, uncertainText } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { NEVER_ASKS } from '../controller-kit/public.ts'
 import { approvedCallOf } from '../conversation/public.ts'
 import { unfixedOf } from '../tools/public.ts'
 import type { FrozenTool, PresetFrozenTool } from './frozen.ts'
@@ -72,11 +73,6 @@ function refuse(answer: Refusal): never {
     ...{ message: message === null ? null : cappedText(message), body: capped(body) },
   }
   throw new ConnectorRefused(JSON.stringify(told))
-}
-
-/** Every tool of an agent but a write runs without asking (step 24.5): only its own rule beats the controller's. */
-export function NEVER_ASKS() {
-  return false
 }
 
 /** Who an agent's write speaks as: a published version by its agent and number (it has no id of its own), or the person talking to the draft. */

@@ -1,6 +1,6 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { AGENTS_CONTROLLER, AgentId as AgentIdSchema, ProjectId } from '@conexus/hub-api'
-import { Agent } from '@mastra/core/agent'
+import { AgentId as AgentIdSchema, ProjectId } from '@conexus/hub-api'
+import type { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
@@ -13,18 +13,16 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AppDataPort } from '../app-data/public.ts'
-import type { Owner, ReleaseScope } from '../controller-kit/public.ts'
+import type { ConversationSpec, Owner, ReleaseScope } from '../controller-kit/public.ts'
 import {
-  agentDefaults,
   agentManagerAdmission,
   CONVERSATION_MODE,
-  controllerOf,
   conversationMemory,
+  mountAgent,
   RUN_MARKS,
   releaseByMarks,
   releaseThreads,
   routedModel,
-  sessionTurns,
   TITLE,
   threadsByMarks,
 } from '../controller-kit/public.ts'
@@ -64,6 +62,8 @@ type RunOf = (requestContext: RequestContext) => Promise<AgentRun | undefined>
 
 type Resolved = (requestContext: RequestContext) => Promise<Agent>
 
+type OwnOf = { database: Database; log: FailureLog }
+
 /**
  * The start of a turn with the published version, written on the agent's row (`last_run_at`, step
  * 24.3.1, U9). A write that fails does not stop the turn: the next one writes.
@@ -88,26 +88,18 @@ async function markRun(database: Database, log: FailureLog, run: AgentRun): Prom
 }
 
 /**
- * The turns of the agents' conversations, on the kit's owner of their end: a run takes its
- * person's turn with the model of the version it runs held.
+ * The turn of the agents' conversations: a run takes its person's turn with the model of the
+ * version it runs held.
  */
-function agentTurns(
-  queue: QueueDeps,
-  runOf: RunOf,
-  resolvedOf: Resolved,
-  own: { database: Database; log: FailureLog; machines: ConversationMachines },
-) {
-  return sessionTurns({
-    id: 'conexus-agents-turn',
-    async take(requestContext) {
-      const run = await runOf(requestContext)
-      if (run === undefined) return undefined
-      if (run.kind === 'PUBLISHED') await markRun(own.database, own.log, run)
-      const { start } = await planOf(await resolvedOf(requestContext), requestContext)
-      const model = { id: start.model, effort: start.effort }
-      return agentTurnOf(queue, requestContext, { run, model })
-    },
-  })
+function agentTake(queue: QueueDeps, runOf: RunOf, resolvedOf: Resolved, own: OwnOf) {
+  return async (requestContext: RequestContext) => {
+    const run = await runOf(requestContext)
+    if (run === undefined) return undefined
+    if (run.kind === 'PUBLISHED') await markRun(own.database, own.log, run)
+    const { start } = await planOf(await resolvedOf(requestContext), requestContext)
+    const model = { id: start.model, effort: start.effort }
+    return agentTurnOf(queue, requestContext, { run, model })
+  }
 }
 
 /**
@@ -130,26 +122,42 @@ function machineMarks(runOf: RunOf, resolvedOf: Resolved) {
 }
 
 /**
- * The controller's one agent, which delegates at each request to the agent the conversation names:
+ * The agents' ficha: its one agent delegates at each request to the agent the conversation names:
  * its instructions, tools and memory, read once per run, and the version's model; the registered
- * agent's own processors do not run here, the turn below takes their place.
+ * agent's own processors do not run here, the turn takes their place. `yolo` off (step 24.5): a
+ * write asks by its own rule, and every other tool by the regime of the ficha. The mode lists no
+ * tools: the closed set is the version's, which only this code builds. The conversation's machine
+ * is none for a version without its Computador (Factory `session-sandbox.ts:29-36`).
  */
-function delegatingAgent(
-  queue: QueueDeps,
-  own: { resolvedOf: Resolved; scopes: ReturnType<typeof scopesOf> },
-  turns: ReturnType<typeof sessionTurns>,
-): Agent {
-  const { resolvedOf } = own
-  return new Agent({
-    id: AGENTS_CONTROLLER,
+function agentsSpec(
+  deps: { queue: QueueDeps; own: OwnOf },
+  parts: {
+    runOf: RunOf
+    resolvedOf: Resolved
+    registry: Registry
+    threads: Memory
+    machines: ConversationMachines
+  },
+): ConversationSpec {
+  const { runOf, resolvedOf } = parts
+  return {
+    kind: 'agents',
     name: 'Agents',
-    scopes: own.scopes,
-    instructions: async ({ requestContext }) =>
-      (await resolvedOf(requestContext)).getInstructions({ requestContext }),
-    model: async ({ requestContext }) =>
-      routedModel((await planOf(await resolvedOf(requestContext), requestContext)).start.model),
-    tools: async ({ requestContext }) =>
+    base: 'AGENT',
+    prompt: {
+      kind: 'DELEGATED',
+      of: async (requestContext) =>
+        (await resolvedOf(requestContext)).getInstructions({ requestContext }),
+    },
+    model: {
+      kind: 'OF_RUN',
+      of: async (requestContext) =>
+        routedModel((await planOf(await resolvedOf(requestContext), requestContext)).start.model),
+    },
+    tools: async (requestContext) =>
       (await resolvedOf(requestContext)).listTools({ requestContext }),
+    approval: { kind: 'THE_WRITE_ASKS' },
+    scopes: scopesOf(runOf, parts.registry),
     memory: async ({ requestContext }) => {
       const chosen = await (await resolvedOf(requestContext)).getMemory({ requestContext })
       if (chosen === undefined) {
@@ -157,8 +165,15 @@ function delegatingAgent(
       }
       return chosen
     },
-    ...agentDefaults(queue, turns),
-  })
+    threads: parts.threads,
+    turn: {
+      kind: 'SESSION',
+      id: 'conexus-agents-turn',
+      take: agentTake(deps.queue, runOf, resolvedOf, deps.own),
+    },
+    mode: { id: CONVERSATION_MODE },
+    workspace: ({ requestContext }) => parts.machines.workspace(requestContext),
+  }
 }
 
 /** The draft's `Agent`, with no observational memory, which reads a thread a run alone has not. */
@@ -221,22 +236,13 @@ export function createAgentConversations(deps: Deps) {
     },
     deps.machineTuning,
   )
-  const turns = agentTurns(queue, runOf, resolvedOf, { database, log, machines })
-  // `yolo` off (step 24.5): a write asks by its own rule; no session rule, whose `allow` loses calls.
-  // The mode lists no tools: the closed set is the version's, which only this code builds.
-  const controller = controllerOf({
-    ...{
-      kind: 'agents',
-      storage,
-      memory,
-      agent: delegatingAgent(queue, { resolvedOf, scopes: scopesOf(runOf, registry) }, turns),
-    },
-    mode: { id: CONVERSATION_MODE },
-    // The conversation's machine, none for a version without its Computador (Factory `session-sandbox.ts:29-36`).
-    workspace: ({ requestContext }) => machines.workspace(requestContext),
-    initialState: { yolo: false },
-  })
-  turns.watch(controller)
+  const { controller } = mountAgent(
+    agentsSpec(
+      { queue, own: { database, log } },
+      { ...{ runOf, resolvedOf, registry }, threads: memory, machines },
+    ),
+    { queue, storage },
+  )
 
   async function sweep(marks: Record<string, string>): Promise<number> {
     return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), (id) =>

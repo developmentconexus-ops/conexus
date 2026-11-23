@@ -1,4 +1,4 @@
-import type { AgentConfig, AgentInstructions } from '@mastra/core/agent'
+import type { AgentConfig, AgentInstructions, ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -17,7 +17,7 @@ import type {
   PromptPart,
   TurnSource,
 } from './spec.ts'
-import { sessionTurns } from './turns.ts'
+import { sessionTurns, turnProcessor } from './turns.ts'
 
 /** The parts as system messages, in order: each `OF_RUN` read first, all together; one that gives nothing is left out. */
 async function messagesOf(
@@ -47,8 +47,10 @@ function instructionsOf(prompt: Prompt): AgentConfig['instructions'] {
   switch (prompt.kind) {
     case 'MESSAGES':
       return ({ requestContext }) => messagesOf(prompt.parts, requestContext)
+    case 'DELEGATED':
+      return ({ requestContext }) => prompt.of(requestContext)
     default:
-      return prompt.kind satisfies never
+      return prompt satisfies never
   }
 }
 
@@ -56,36 +58,81 @@ function modelOf(model: ModelSource): AgentConfig['model'] {
   switch (model.kind) {
     case 'SESSION':
       return ({ requestContext }) => sessionModel(requestContext)
+    case 'OF_RUN':
+      return ({ requestContext }) => model.of(requestContext)
     default:
-      return model.kind satisfies never
+      return model satisfies never
   }
 }
 
+/** The turn's processor, and for a session's turn the end it owns: `deletedRun` and `watch`. */
 function turnsOf(turn: TurnSource) {
   switch (turn.kind) {
     case 'SESSION':
       return sessionTurns({ id: turn.id, take: turn.take })
+    case 'RUN':
+      return { processor: turnProcessor(turn) }
     default:
-      return turn.kind satisfies never
+      return turn satisfies never
   }
 }
 
-/** The session's starting state of a regime: `NOTHING_ASKS` is `{ yolo: true }`; one owner of the `yolo` (C26). */
+/** A tool's own rule beats the session's (row 10): the rule of every tool that `THE_WRITE_ASKS` leaves alone. */
+export function NEVER_ASKS() {
+  return false
+}
+
+/**
+ * The tools of a ficha whose write asks: each tool whose `requireApproval` is not a function
+ * (`createTool` sets `false` when none is given, `NM/tool-3X7mHzgh.js:858`) as a copy with
+ * `NEVER_ASKS`; a tool whose rule is a function as it is (only a function beats the session,
+ * `C/loop/workflows/agentic-execution/tool-approval-verdict.ts:85-93`); the given objects unchanged.
+ * The copy keeps the tool's prototype, so the objects the Builder shares (`web_fetch`) keep their rule.
+ */
+function askingOnlyByOwnRule(tools: ToolsInput): ToolsInput {
+  return Object.fromEntries(
+    Object.entries(tools).map(([id, tool]) => [
+      id,
+      'requireApproval' in tool && typeof tool.requireApproval === 'function'
+        ? tool
+        : Object.assign(Object.create(Object.getPrototypeOf(tool)), tool, {
+            requireApproval: NEVER_ASKS,
+          }),
+    ]),
+  )
+}
+
+async function toolsOfSpec(spec: AgentSpec, requestContext: RequestContext): Promise<ToolsInput> {
+  const tools = await spec.tools(requestContext)
+  switch (spec.approval.kind) {
+    case 'NOTHING_ASKS':
+      return tools
+    case 'THE_WRITE_ASKS':
+      return askingOnlyByOwnRule(tools)
+    default:
+      return spec.approval satisfies never
+  }
+}
+
+/** The session's starting state of a regime: `NOTHING_ASKS` is `{ yolo: true }`, `THE_WRITE_ASKS` `{ yolo: false }`; one owner of the `yolo` (C26). */
 function initialStateOf(approval: Approval): Readonly<{ yolo: boolean }> {
   switch (approval.kind) {
     case 'NOTHING_ASKS':
       return { yolo: true }
+    case 'THE_WRITE_ASKS':
+      return { yolo: false }
     default:
-      return approval.kind satisfies never
+      return approval satisfies never
   }
 }
 
 /**
  * The one place that calls Mastra's agent constructor for the agents on a ficha, with the turn's
- * processor made from `spec.turn`, and only the optional fields the ficha fills. `watch` comes with
- * a `SESSION` turn (`sessionTurns`): `mountAgent` calls it with the controller.
+ * processor made from `spec.turn`, the tools under the ficha's regime, and only the optional fields
+ * the ficha fills. `watch` comes with a `SESSION` turn (`sessionTurns`): `mountAgent` calls it with
+ * the controller; a `RUN` turn has none, the agent runs alone.
  */
-function agentOfSpec(
+export function agentOfSpec(
   spec: AgentSpec,
   deps: { queue: QueueDeps },
 ): Readonly<{ agent: Agent; watch?: (controller: AgentController) => void }> {
@@ -93,9 +140,10 @@ function agentOfSpec(
   const config: AgentConfig = {
     id: spec.id,
     name: spec.name,
+    ...(spec.description === undefined ? {} : { description: spec.description }),
     instructions: instructionsOf(spec.prompt),
     model: modelOf(spec.model),
-    tools: ({ requestContext }) => spec.tools(requestContext),
+    tools: ({ requestContext }) => toolsOfSpec(spec, requestContext),
     ...agentDefaults(deps.queue, turns),
     memory: spec.memory,
     ...(spec.skills === undefined ? {} : { skills: spec.skills }),
@@ -105,7 +153,7 @@ function agentOfSpec(
   }
   switch (spec.base) {
     case 'AGENT':
-      return { agent: new Agent(config), watch: turns.watch }
+      return { agent: new Agent(config), ...('watch' in turns ? { watch: turns.watch } : {}) }
     default:
       return spec.base satisfies never
   }
@@ -116,9 +164,9 @@ export function mountAgent(
   spec: ConversationSpec,
   deps: { queue: QueueDeps; storage: MastraCompositeStore },
 ): Readonly<{ agent: Agent; controller: AgentController }> {
-  const { kind, threads, mode, own, workspace, ...fields } = spec
+  const { kind, threads, memory, mode, own, workspace, ...fields } = spec
   const { agent, watch } = agentOfSpec(
-    { ...fields, id: CONTROLLER_KINDS[kind].id, memory: threads },
+    { ...fields, id: CONTROLLER_KINDS[kind].id, memory: memory ?? threads },
     deps,
   )
   const controller = controllerOf({
