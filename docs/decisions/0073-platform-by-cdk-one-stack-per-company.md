@@ -43,7 +43,7 @@ Drift the stack cannot see (it checks the roles, not Athena) needs an inventory 
 ## State
 
 Accepted 2026-11-20. Founder: C "okay" (CDK for the platform, a stack per company, the four
-adjustments).
+adjustments). Amended by [0082](0082-the-lake-holds-tables-and-files.md).
 
 [0003]: 0003-repository-shape.md
 [0070]: 0070-copied-company-data-lives-in-a-lake-on-aws.md

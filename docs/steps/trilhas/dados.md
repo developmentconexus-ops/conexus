@@ -80,7 +80,8 @@ para a etapa que a pedir.
 | 2. A primeira cópia chega ao lago | Eu ligo o Sankhya numa janela só, escolho as tabelas e quando copiar, elas chegam inteiras ao lago, a mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados? | O Sankhya completo, núcleo, fiscal e contábil, e o XML da NF-e; o dublê do HubSpot na mesma bateria, para o adaptador não aprender um sistema só |
 | O conector no padrão novo, entre a parte 0 e a parte 1 da etapa 2 | O Assistente continua lendo o Sankhya e o Mercado Livre enquanto cada conector é refeito, e cada um nasce de uma definição só, com a sua skill e a classe da credencial? | O Sankhya e o Mercado Livre, um pull request por conector |
 | 3. O agente responde pelo lago | Pergunto ao Assistente e ele responde do lago, diz de quando é, e recusa o que o meu papel não lê? É o `D2` | Qualquer tabela copiada |
-| O XML lido em linhas, depois da 3 | Pergunto ao Assistente se a nota que lançamos bate com o XML do fornecedor, e ele responde item por item, com as duas origens? | O XML da NF-e do Sankhya, guardado na etapa 2, lido em `nfe_notas` e `nfe_itens`; o dublê do conector NF-e |
+| 3a. O arquivo chega ao lago, ligado à sua linha | Pergunto ao Assistente por uma linha e abro o arquivo ligado a ela, e quem não lê a tabela não abre o arquivo? | Uma leitura de API que baixa o arquivo (um documento ou anexo do Mercado Livre, se a prova PM1 confirmar; senão, o dublê do HubSpot) e uma coluna binária grande de banco (um anexo do Sankhya, se a sonda PS1 achar) |
+| O XML lido em linhas, depois da 3a | Pergunto ao Assistente se a nota que lançamos bate com o XML do fornecedor, e ele responde item por item, com as duas origens? | O XML da NF-e do Sankhya, guardado na etapa 2, lido em `nfe_notas` e `nfe_itens`; o dublê do conector NF-e |
 | 4. O app lê o que foi publicado | Um app publicado mostra o dado do lago sem nunca ver uma tabela pela metade? | Qualquer tabela copiada |
 | 5. A segunda classe pelo mesmo caminho | Uma lista de um sistema de outro tipo entra pelo mesmo caminho, sem código novo no adaptador? | O Mercado Livre, a lista de vendas. O estudo usa o conector dele numa plataforma de referência e o que já rodamos |
 | 6. Escolher o que copiar | Eu acho no dicionário uma tabela que o kit não declara e escolho os campos de cada tabela, e nada vem marcado? A escolha das tabelas do kit, na janela, entra na etapa 2 | O Sankhya pelo dicionário, o Mercado Livre pela lista declarada |
@@ -159,8 +160,8 @@ BigQuery e o dado na nuvem do cliente, os gatilhos (`D5`), a medição por empre
 a conta oficial) e os bancos de dados por tap pronto. Os taps prontos da loja do Meltano ficam fora
 até um sistema pedir, e são ponto de partida do estudo de cada conector (2026-11-21: "G2 a"). Os
 documentos do Drive, do SharePoint e do Gmail não viram tabela: a planilha vai para o lago; o
-documento guarda o original, com uma linha por arquivo no catálogo do lago, e o texto vai para o
-Knowledge, na etapa das fontes de conhecimento do Brain (2026-11-21: "g3 a").
+documento guarda o original no depósito de arquivos do lago da empresa, com a sua linha numa tabela
+do lago (a etapa 3a), e o texto vai para o Knowledge, na etapa das fontes de conhecimento do Brain (2026-11-21: "g3 a").
 
 O lago guarda também arquivos. O fundador, 2026-11-23: "Pra mim e totalmente errado lakehouse nao e
 so dados [...] ter o XML e crucial ( nao so ele)". Da regra de 2026-11-19 ("Anexos, índices, logs e
@@ -172,8 +173,27 @@ firstmate: "E, não, beleza"), com o histórico ligado nessa tabela ("Okay"). Va
 uma regra só, pelo tipo que a descoberta lê: texto longo (`CLOB`, `NCLOB`, `LONG`) vira texto, e
 binário (`BLOB`, `RAW`, `LONG RAW`) vira o tipo binário do Iceberg; ninguém marca arquivo à mão, e o
 kit pode declarar o significado de uma coluna só como metadado. O XML é lido em `nfe_notas` e
-`nfe_itens` numa etapa própria depois da 3 ("Etapa própria, depois da 3"). O depósito de arquivos para binário grande vem com a primeira fonte que
-trouxer um.
+`nfe_itens` numa etapa própria depois da 3 ("Etapa própria, depois da 3").
+
+O lakehouse guarda tabelas e arquivos, como fundação (`conexus-lakehouse-arquivos`). O fundador,
+2026-11-23: "Pra mim e totalmente errado lakehouse nao e so dados [...] a Next, por exemplo, dava a
+possibilidade da gente já linkar os anexos. Google Drive é a mesma coisa com itens"; e, às duas
+perguntas do estudo, "F1. A F2. A":
+
+- **F1 (a).** Os arquivos entram numa etapa própria, a 3a, "O arquivo chega ao lago, ligado à sua
+  linha", logo depois da 3 e antes do XML lido em linhas. A etapa 2 segue no seu escopo e não fecha
+  nenhuma porta para os arquivos. O desenho está no registro
+  [0082](../../decisions/0082-the-lake-holds-tables-and-files.md), que emenda a 0070, a 0071, a 0073,
+  a 0078 e a 0080: os arquivos moram num depósito `S3` de uso geral da empresa, na mesma pilha, cada um com a sua linha numa tabela do lago; o kit
+  declara a linha de origem e a leitura que baixa os bytes; o nosso target grava o arquivo antes da
+  linha; e quem lê a tabela abre os arquivos dela, sempre pelo Hub. A regra pelo tipo fica, e o
+  binário acima de um teto vai ao depósito pela regra de tamanho, na 3a. O contrato ganhar "abrir o
+  arquivo de uma linha" (0079, pela issue `contrato`) e o ajuste da frase da 0065 sobre dado de
+  conector entram com o cartão da 3a.
+- **F2 (a).** A AWS da empresa ganha os poderes de `S3` só no depósito de arquivos de cada empresa: o
+  papel que escreve grava e lista, o papel leitor lê, o Hub lista e apaga nos depósitos `conexus-*`, e
+  o papel de serviço do CloudFormation e o teto criam e apagam esse depósito. Eles entram na etapa
+  3a, pelo mesmo passo a passo da conta.
 
 As decisões do fundador que chegam com a etapa delas, e não antes:
 
@@ -214,7 +234,8 @@ As respostas da entrevista, que o cartão da etapa 2 segue:
 - a primeira carga: "Na hora, com prova antes" (uma sonda num dia útil de guarda);
 - o usuário de integração do Sankhya: "Seguir como está";
 - o XML: "Já no Lago 2, como a Nekt", "Etapa própria, depois da 3", ao histórico, "Okay", e, à
-  coluna de texto no lugar da tabela própria, "E, não, beleza" (acima).
+  coluna de texto no lugar da tabela própria, "E, não, beleza" (acima);
+- os arquivos no lakehouse: "F1. A F2. A" (acima).
 
 ## O que a trilha possui
 
@@ -320,7 +341,8 @@ consumidos pela trilha Agentes e Apps.
 6. **A entrada conversada**, o onboarding que aprende o começo: "quando tiver definido a ontologia, o brand".
 7. **Os agentes da empresa nos dois**, com a Capacidade 6.
 8. **Fontes de conhecimento**: arquivos, depois pastas por conector. O original de cada documento
-   fica guardado, com uma linha por arquivo no catálogo do lago, e o texto vai para o Knowledge.
+   fica no depósito de arquivos do lago, com a sua linha numa tabela do lago (a etapa 3a), e o texto
+   vai para o Knowledge, lido dali.
    Antes do cartão: fechar a 0057, decidir a retenção do que a fonte apagou, escolher quem converte
    PDF e DOCX em texto e ajustar a frase da 0065 sobre dado de conector.
 9. **A revisão semanal**, que só propõe.

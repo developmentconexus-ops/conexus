@@ -54,8 +54,8 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow com chave única |
 | `D6`. A medição por empresa | Uma página com o uso de cada empresa | Tarefas de cópia, consultas ao lago, chamadas de conector e tokens por empresa, sem preço no repositório |
 
-`D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b"), e uma
-oitava, o XML lido em linhas, depois da 3 (2026-11-23); depois vêm os conectores por classe e a porta
+`D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b"), mais a 3a, dos
+arquivos, e o XML lido em linhas; depois vêm os conectores por classe e a porta
 de fora. A etapa 1 fechou; segue a 2, com a etapa O conector no padrão novo entre a parte 0 e a parte
 1 dela. As etapas, os onze de `D3` e o
 Brain estão na [trilha Dados](steps/trilhas/dados.md).

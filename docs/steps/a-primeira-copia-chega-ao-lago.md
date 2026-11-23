@@ -6,7 +6,7 @@ mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados?" E
 parte 1 deste cartão corre a etapa **O conector no padrão novo**, que o roteiro nomeia como etapa
 própria (decisão C do conector, T.21).
 
-Os estudos ficam fora do repositório (delivery L21). São nove, todos de 2026-11-23:
+Os estudos ficam fora do repositório (delivery L21). São dez, todos de 2026-11-23:
 
 - o estudo `conexus-lago2-estudo` e o reestudo `conexus-lago2-reestudo`;
 - o estudo do conector no estilo novo, `conexus-conector-estilo-novo-estudo` (os nomes NT1 a NT4 e o
@@ -18,7 +18,8 @@ Os estudos ficam fora do repositório (delivery L21). São nove, todos de 2026-1
 - o Sankhya completo, `conexus-sankhya-tabelas-completo` (as 42 tabelas, o modo de cada uma e a
   primeira carga);
 - os arquivos no lago, `conexus-arquivos-no-lago` (o XML da NF-e);
-- o relógio das cópias, `conexus-agendador-copias`.
+- o relógio das cópias, `conexus-agendador-copias`;
+- o lakehouse com arquivos, `conexus-lakehouse-arquivos` (as perguntas F1 e F2 de lá).
 
 O fundador decidiu nas palavras da página abaixo, todas de uma entrevista em 2026-11-23. Este cartão
 cita dos estudos só o que a construção precisa. O código de hoje entra só como inventário do que
@@ -28,7 +29,7 @@ Cada linha do `main` citada foi lida em `538b0562`. Nas pastas da cópia e dos c
 à do `main` em `9e05c9b8`, a base deste cartão: `git diff --stat 538b0562 9e05c9b8 -- packages apps`
 não toca essas pastas. `EST/<nome>:N` é a linha `N` do relatório `data/conexus-<nome>/report.md` do
 firstmate; `MAPA` é `EST/lago2-fluxo-nekt`, `SK` é `EST/sankhya-tabelas-completo`, `ARQ` é
-`EST/arquivos-no-lago` e `REL` é `EST/agendador-copias`; `INV §n` é a seção `n` do inventário do
+`EST/arquivos-no-lago`, `REL` é `EST/agendador-copias` e `LAK` é `EST/lakehouse-arquivos`; `INV §n` é a seção `n` do inventário do
 legado, em `data/conexus-conector-estilo-novo-estudo/notas/inventario-legado.md`.
 
 As versões que a construção instala são as que o estudo leu e rodou:
@@ -63,10 +64,14 @@ As versões que a construção instala são as que o estudo leu e rodou:
 5. **As sondas do Sankhya completo**, só de leitura, no Sankhya do fundador, com a palavra dele,
    antes da U3 (`SK` seção 4; `ARQ` seção 5). Cada uma é uma consulta ao dicionário ou poucas
    páginas, na janela em que as sondas de 2026-11-20 rodaram, menos a P6:
-   - **P1 e PS1**: a `DESCRTAB`, a `NUM_ROWS` e as colunas de arquivo (`BLOB`, `CLOB`, `NCLOB`,
-     `LONG`, `LONG RAW`, `RAW`, `BFILE`) das 42 tabelas e das oito candidatas (`SK` 1.4); o nome e o
-     tipo da coluna do XML na `TGFNFE`. Uma candidata entra na lista só se existir numa instalação
-     padrão.
+   - **P1**: a `DESCRTAB` e a `NUM_ROWS` das 42 tabelas e das oito candidatas (`SK` 1.4). Uma
+     candidata entra na lista só se existir numa instalação padrão.
+   - **PS1, as colunas de arquivo** (`LAK` seção 5): as colunas `BLOB`, `CLOB`, `NCLOB`, `LONG`,
+     `LONG RAW`, `RAW` e `BFILE` das 42 tabelas e das candidatas, com o maior valor de cada uma; o
+     nome e o tipo da coluna do XML na `TGFNFE`; e a tabela de anexos do Sankhya, com as colunas e o
+     maior anexo. Se uma das 42 tiver uma coluna `BLOB`, `RAW` ou `LONG RAW` com valor, a U3 não a
+     declara antes de o fundador ver a coluna e o maior valor (T.41). A tabela de anexos não entra
+     nesta etapa: é o alvo da etapa 3a.
    - **P2**: a chave, as colunas de alteração, as datas e os índices das tabelas que nenhuma sonda
      leu (a `TGFDIN`, a `TCBLAN`, a `TGFFIN` e as outras de `SK:283`).
    - **P3**: páginas cronometradas de 1 MiB na `TGFDIN`, `TGFITE`, `TCBLAN`, `TGFCAB`, `TGFFIN` e
@@ -153,6 +158,14 @@ o mapa do desenho, entrevistou você, e você confirmou o desenho. O cartão mud
   unidades (T.30). A seção **Avisos** de Configurações, com a lista da empresa, sai.
 - **A primeira carga sai na hora**, com a P6 de guarda ("Na hora, com prova antes"). O usuário de
   integração do Sankhya segue como está ("Seguir como está").
+- **Os arquivos no lakehouse** ("F1. A F2. A"). O lago guarda tabelas e arquivos, como a Nekt e o
+  Databricks: o arquivo mora num depósito de arquivos da empresa, ligado à sua linha numa tabela do
+  lago. Eles entram numa etapa própria, a 3a, "O arquivo chega ao lago, ligado à sua linha", logo
+  depois da 3 e antes do XML lido em linhas. Esta etapa fica no seu escopo, sem fechar porta para
+  eles: a sonda PS1 mostra antes da U3 se alguma das 42 tabelas tem uma coluna binária com valor, e
+  essa tabela espera você ver o número (T.41). O desenho está no registro 0082, escrito nesta mudança,
+  que emenda a 0070, a 0071, a 0073, a 0078 e a 0080. Os poderes de `S3` só no depósito de cada empresa entram
+  na 3a.
 
 **Como a etapa chega até você: em três partes.** A parte 0, a etapa do conector e a parte 1. Cada
 parte tem os seus pull requests e é usada por você quando entra no ar.
@@ -246,7 +259,8 @@ No Mercado Livre, que tem a credencial exclusiva até a etapa 5, a janela vai do
   (E), para o L.2, o primeiro teste de uma tarefa contra o seu Sankhya de dentro da AWS, e para as
   sondas só de leitura do Sankhya completo, a P6 num dia útil. Se o Sankhya recusar o endereço da
   AWS, nada da parte 1 é construído e a etapa volta a você. Se a P6 der mais que o dobro, a primeira
-  carga "na hora" volta a você com o número.
+  carga "na hora" volta a você com o número. Se a PS1 achar numa das 42 tabelas uma coluna binária com
+  valor, você vê a coluna e o maior valor antes de essa tabela entrar.
 - **Na parte 1:** dá a palavra para as permissões novas no banco do Hub (data D11): o login da
   empresa ler a linha do próprio lago (H), as tabelas novas da cópia e a do link.
 - **No fim de cada parte:** faz o roteiro dela, diz o que viu e aprova os textos novos da tela, que
@@ -295,7 +309,11 @@ Nada cruza a visão.
 
 - **O Hub ler o lago**, para o Assistente (etapa 3) e para os apps (etapa 4). Da parte 0 até a etapa
   3, o Assistente lê o Sankhya e o Mercado Livre só ao vivo.
-- **O XML lido em linhas** (`nfe_notas` e `nfe_itens`): a etapa própria logo depois da 3, que a
+- **Os arquivos no lago** (a etapa 3a): o depósito de arquivos na pilha da empresa e os poderes de
+  `S3` nele (F2), a linha de origem e a leitura que baixa no kit, a regra de tamanho, o arquivo no
+  registro do Singer, e abrir o arquivo de uma linha pelo Hub. A tabela de anexos do Sankhya vem com
+  ela.
+- **O XML lido em linhas** (`nfe_notas` e `nfe_itens`): a etapa própria logo depois da 3a, que a
   trilha ganha nesta mudança.
 - **O aviso de cópia parada**, com os e-mails no passo Quando copiar: o cartão próprio logo depois
   deste (T.30).
@@ -311,9 +329,9 @@ Nada cruza a visão.
 - **O que sumiu da fonte some do lago** (etapa 7). As tabelas inteiras já trocam tudo a cada rodada, e
   as de janela trocam a janela; numa tabela só do que mudou, a linha apagada no Sankhya fica no lago
   até a etapa 7. A passada inteira de domingo do motor de hoje não vem (T.17).
-- **O depósito de arquivos para binário muito grande** (imagem, PDF anexado): por uma regra de tamanho,
-  com o primeiro caso real (`ARQ` 3.2). Nesta etapa o binário fica na linha, no tipo binário do
-  Iceberg, abaixo do limite de 32 MB do Athena (PS4).
+- **O binário muito grande no depósito** (imagem, PDF anexado): a regra de tamanho entra na 3a
+  (`LAK` 1.1). Nesta etapa o binário fica na linha, no tipo binário do Iceberg, abaixo do limite de
+  32 MB do Athena (PS4), e só numa tabela que passou pela PS1 (T.41).
 - **O histórico nas outras tabelas** (decisão A): só a dos dados da NF-e o liga.
 - **A descrição do sistema** (spec 02, `C1`): o fluxo que você confirmou não a usa; ela entra com a
   etapa que a pedir.
@@ -360,7 +378,8 @@ Nada cruza a visão.
   "Sim, é esse", "2 vCPU na primeira carga", "Sim, núcleo+fiscal+contábil", "24 h, como a Nekt",
   "Aprovo", "Já no Lago 2", "Por ligação, na janela", "Não, eu confirmo o desenho", "(a) Hub, só o
   'quando'", "Na hora, com prova antes", "Seguir como está", "Já no Lago 2, como a Nekt", "Etapa
-  própria, depois da 3" e "Okay".
+  própria, depois da 3" e "Okay";
+- ao estudo do lakehouse com arquivos (`conexus-lakehouse-arquivos`): "F1. A F2. A".
 
 A lista dos onze sistemas do `D3` ("Conector eu quero: - Sankhya - Mercado Livre - Hubspot - TOTVS -
 Gmail com Agenda - Outlook email - Outlook Calendar - google drive - Sharepoint - NF-e - Sicoob") é
@@ -374,6 +393,7 @@ da trilha e está na página dela. O que cada decisão faz no cartão:
 | Nome | Quem dá o nome da tabela no lago | "Aprovo": sugerido do kit, trocável ao ligar, com prefixo, fixo depois; a origem e o rótulo no catálogo; a skill com os nomes reais; repetido recusado | A U3, a U5, a U8 e a U9. **Emenda a NT1**: o nome do kit é sugestão, não regra. Veredito: nativo (a Nekt, `NK:12217-12220`) |
 | Completo | Quais tabelas do Sankhya o kit declara | "So as que o kit declara [...] vamos fazer ele completo"; "Sim, núcleo+fiscal+contábil" | As 42 tabelas da U3, cada uma com o modo. **Emenda a F (a)**: a `TGFCAB` continua a tabela que prova, e o kit declara as 42. Veredito: embrulhado (a lista do kit sobre o `--discover`) |
 | XML | O XML da NF-e e as colunas de arquivo | "Já no Lago 2, como a Nekt"; "Etapa própria, depois da 3"; o histórico: "Okay"; sem tabela própria: "E, não, beleza" | O XML como coluna de texto da `sankhya_notas_nfe`, com o histórico ligado nela (U3, U10); a regra pelo tipo para todo conector (U3, U4, U5); a leitura em linhas na etapa nova da trilha. **Emenda a regra de 2026-11-19**: sai a parte dos anexos; índices, logs e cópias de backup datadas continuam fora. Veredito: nativo (o tipo que a descoberta lê, a forma da Nekt e do Airbyte para o Oracle, `NK:132602`) |
+| Arquivos | Em que etapa os arquivos entram (F1) e os poderes de `S3` que eles pedem (F2) | "F1. A F2. A" | Nada constrói os arquivos nesta etapa; a PS1 antes da U3 e a T.41 guardam a porta. A trilha ganha a etapa 3a, e os poderes de `S3` só no depósito de cada empresa entram nela. **O registro 0082 emenda a 0070, a 0071, a 0073, a 0078 e a 0080**. Veredito: fica de fora (a 3a); o desenho é o volume da Nekt e do Databricks (`LAK` 1.7) |
 | Máquina | O tamanho da tarefa | "2 vCPU na primeira carga"; 1 vCPU e 2 GB nas seguintes | A U6 e a U8 (T.6). A 0076 fica como está, e a linha das seguintes se acrescenta |
 | Relógio | Onde mora o relógio das cópias | "(a) Hub, só o 'quando'" | A U8: uma chamada só para o relógio e o **Rodar agora**, o intervalo contado da hora de ligar, a poda do rastro, uma partida por vez. **Emenda o relógio da 0076**. Veredito: nativo no relógio (o agendador do Hub, como as oito referências de `REL` seção 3); a partida pela tarefa continua remendo, da 0076 (linha 21) |
 | Aviso | Onde moram os e-mails do aviso de parada | "Por ligação, na janela" | O cartão do aviso, logo depois deste. **Substitui a I (a)** de 2026-11-21 e de 2026-11-23 |
@@ -409,8 +429,13 @@ da trilha e está na página dela. O que cada decisão faz no cartão:
   busca no dicionário e os campos.
 - **A spec 02**: o intervalo padrão de 30 min passa a 24 h, e "Ligar e copiar agora" grava a cópia da
   ligação num pedido só (G b), em vez de um `enableCopy` por tabela.
-- **A trilha** ganha a etapa "O XML lido em linhas", depois da 3; as fiscais e as contábeis da etapa 7
-  entram já nesta.
+- **A trilha** ganha duas etapas depois da 3: a 3a, "O arquivo chega ao lago, ligado à sua linha", e
+  "O XML lido em linhas"; as fiscais e as contábeis da etapa 7 entram já nesta.
+- **Os registros 0070, 0071, 0073, 0078 e 0080** ("F1. A F2. A"), pelo registro 0082, escrito
+  nesta mudança: o lago guarda tabelas e arquivos, no depósito de arquivos da empresa (0070), com o
+  arquivo no registro do Singer e a regra de tamanho (0071), o depósito e os poderes de `S3` na pilha
+  (0073), o arquivo aberto pela tabela dele, só pelo Hub (0078), e a linha de origem e a leitura que
+  baixa na declaração (0080). Tudo isso é construído na 3a.
 
 ## As unidades
 
@@ -573,7 +598,7 @@ velha, que passa ao índice do kit.
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 9 | U3 | O Sankhya declara as tabelas que as sondas fecharam (as 42 de `SK` seção 1 e as candidatas que a P1 achou), cada uma com o nome sugerido, o rótulo, a descrição, o grupo, a origem, a chave e o modo. `notas`: `sankhya_notas`, "Notas e pedidos", o grupo `vendas`, a origem `TGFCAB`, a chave `NUNOTA`, só o que mudou por `DTALTER`. `efd_st_media_diaria`: janela por mês de `DTREF`. `notas_nfe`: inteira, com o histórico ligado, a coluna do XML descoberta como texto e o significado dela declarado como metadado (`NFE_XML`). O gancho `descobrirTabelas` devolve, do dicionário do dublê, a descrição da tabela e cada coluna com nome, tipo e descrição; uma tabela que o dicionário não tem volta ausente, nunca inventada | `packages/connectors/src/sankhya/copy-tables.test.ts`, com o dublê | must |
-| 10 | U3 | A conformidade recusa: dois nomes sugeridos iguais num conector; um nome fora do padrão (português, minúsculas, até 40); a mesma origem duas vezes com uma coluna em comum que não seja da chave; uma chave, coluna de alteração ou coluna de janela fora das colunas; uma janela sem coluna de data; uma tabela de colunas descobertas num conector sem gancho; uma tabela de operação sem colunas; um grupo que não é assunto do conector | `packages/connectors/src/kernel/conformance.test.ts` (novo), "a declaração por tabela" | must |
+| 10 | U3 | A conformidade recusa: dois nomes sugeridos iguais num conector; um nome fora do padrão (português, minúsculas, até 40); a mesma origem duas vezes com uma coluna em comum que não seja da chave; uma chave, coluna de alteração ou coluna de janela fora das colunas; uma janela sem coluna de data; uma tabela de colunas descobertas num conector sem gancho; uma tabela de operação sem colunas; um grupo que não é assunto do conector; uma coluna declarada que começa por `_`, que é do motor (T.41) | `packages/connectors/src/kernel/conformance.test.ts` (novo), "a declaração por tabela" | must |
 | 11 | U3 | A leitura de uma tabela pede no máximo as linhas da página do conector; quando a resposta passa dos bytes da página, a próxima página pede menos linhas; uma tabela de 450 colunas do dublê lê inteira, sem teto de colunas | `packages/connectors/src/sankhya/copy-tables.test.ts`, "a página em bytes" | must |
 | 16 | U3 | Entre duas leituras, o dublê do Sankhya altera, cria e apaga uma nota e muda o XML de uma NF-e, e o do HubSpot altera e remove um negócio, por rotas que só o dublê tem; o modo real não as tem | `packages/connectors/src/sankhya/fake.test.ts` e `hubspot/fake.test.ts` (novo), "o registro muda entre duas leituras" | must |
 | 86 | U3 | `readTablePage` lê uma página de qualquer tabela declarada, pelas duas origens: a da tabela, pela leitura do conector (o Sankhya), e a da operação, pela paginação `list` da operação (o negócio do HubSpot); a última página diz que acabou, e uma recusa da fonte volta como um dos quatro códigos de `TABLE_SOURCE_FAILURES`, nunca o corpo | `packages/connectors/src/kernel/tables.test.ts` (novo), contra os dublês do Sankhya e do HubSpot | must |
@@ -801,7 +826,7 @@ Impeccable roda na QA da parte 1 ([Impeccable](../reference/impeccable.md)).
 A tabela dos estudos, com a unidade e o arquivo novo de cada linha. As linhas 1 a 38 são do estudo e
 do reestudo; as 39 a 45, do estudo do conector no estilo novo e do das duas ligações (`T<n>` lá); as
 46 a 55, do estudo do ao vivo (`R<n>` e a seção 1.3 lá); as 56 a 69, do mapa do desenho e dos três
-estudos que ele chamou (`MAPA`, `SK`, `ARQ`, `REL`). `C/` é o `main` em `538b0562`; as siglas são
+estudos que ele chamou (`MAPA`, `SK`, `ARQ`, `REL`); a 70, do estudo do lakehouse com arquivos (`LAK`). `C/` é o `main` em `538b0562`; as siglas são
 as dos estudos: `AB` airbyte `8b40981a`, `AP` airbyte-platform `c46502e`,
 `CDK` airbyte-python-cdk `bde4377`, `DLT` dlt `efaf0e3`, `TRM` tap-rest-api-msdk `071b540`,
 guardados em `data/conexus-credenciais-framework/refs/`, e `NK` o texto da Nekt guardado em
@@ -885,6 +910,7 @@ limpeza; L.8, apagar sem sobra; L.9, a cota do parâmetro.
 | 67 | As 42 tabelas do Sankhya, núcleo, fiscal e contábil | nova | cinco modelos de consulta, `C/packages/connectors/src/sankhya/copies.ts:89-155` | Nekt: uma lista fixa por ERP de API, Protheus e TOTVS RM (`EST/conector-estilo-novo-estudo:44-51`) | embrulhado: a lista do kit | As 42 contadas no dicionário (`SK` seção 3.1); faltam a P1 e a P2 | Completo | U3 | — (em `sankhya/copy-tables.ts`) |
 | 68 | Ler o XML em linhas (`nfe_notas`, `nfe_itens`) | fica de fora | nenhum | Databricks, `read_files(format => 'xml')` (`ARQ` seção 7) | embrulhado, na etapa nova, com uma biblioteca do XSD oficial | — | XML: "Etapa própria, depois da 3" | fica de fora: a etapa nova da trilha | — |
 | 69 | Todas as colunas, atuais e futuras | nova | nenhum | Databricks: "By default, managed connectors in Lakeflow Connect ingest all current and future columns" (`MAPA` 1.2); Nekt, "Auto-add fields" ligado (`MAPA` 1.1); `pyiceberg@0.12.0`, `update_schema().union_by_name`; o `SCHEMA` novo do Singer a cada rodada | nativo | — | o desenho, área 4; K3 | U5, U10 | — (em `target.py` e `update.py`) |
+| 70 | O arquivo no lago, ligado à sua linha | fica de fora | nenhum | Nekt, o volume ao lado das tabelas (`NK:441-460`) e a tabela de metadados por fonte; Databricks, o volume e `binaryFile`; Airbyte, `file_reference` (`LAK` 1.7, 2.2) | embrulhado, na etapa 3a | PF1 a PF6 e PM1 (`LAK` seção 5); a PS1 nesta etapa | Arquivos: "F1. A F2. A" | fica de fora: a etapa 3a | — |
 
 **A medida do transplante.** Nenhum código do repositório antigo entra, e nenhum código de hoje
 das pastas que saem é trazido (o fundador, 2026-11-23: "Eu quero refazer, eu não quero utilizar nada
@@ -915,8 +941,9 @@ que está feito como atual").
 - O texto da 0076 sobre o relógio e o tamanho da máquina: o fechamento acrescenta que o relógio só
   diz "quando", com o intervalo contado da hora de ligar, e que as rodadas seguintes à primeira carga
   rodam com 1 vCPU e 2 GB (Relógio, Máquina).
-- A frase da 0065 "Connector data never enters the Brain" e a regra de 2026-11-19 sobre os anexos, que o
-  XML no lago mudou: o fechamento corrige o texto (`ARQ` seção 6).
+- A regra de 2026-11-19 sobre os anexos, que o XML no lago mudou: o fechamento corrige o texto (`ARQ`
+  seção 6). A frase da 0065 "Connector data never enters the Brain" e "abrir o arquivo de uma linha"
+  na 0079 entram com o cartão da 3a (`LAK` seção 3).
 - Um `RunTask` sem resposta repete com o mesmo token. Por quanto tempo a AWS guarda o token não foi
   lido: a U8 lê no tipo instalado e, se for menor que a espera da repetição, para.
 
@@ -956,11 +983,12 @@ que está feito como atual").
 | T.33 | A seção de uma ligação sem cópia abre a mesma janela em **O que copiar**, para quem fechou a janela no meio ou ligou pelo link | A spec 02: "Fechar no meio deixa a ligação feita e nenhuma cópia: a pessoa retoma" (`design.md:179`); uma janela só para os dois caminhos | Retomar só pela seção, sem a janela |
 | T.34 | A `sankhya_notas_nfe` é inteira, pela A0-c, com o histórico ligado: cada passada entra na bruta, e a limpeza não roda nela. Antes da U3, o firstmate leva ao fundador o tamanho que a PS1 e a PS2 medirem e quanto a bruta dessa tabela cresce por mês com a passada diária; o cartão não decide isso | A A0-c pôs a `TGFNFE` em passada inteira ("passada inteira nas cinco"); o XML soma de 0,8 a 5 GB à tabela (`ARQ` 4.4, inferido), e a bruta, sem limpeza, guarda cada passada. Ler só as notas novas pelo `NUNOTA` perderia o cancelamento, que muda a nota depois | Declarar a tabela só do que mudou pelo `NUNOTA`, com uma passada inteira rara |
 | T.35 | A `TCBLAN` vai em janela por mês de uma data dela, se a P5 achar uma; senão, inteira, como a 0080 manda | Inteira, ela custa de 0,3 a 2,4 h por rodada (`SK` 1.3); a janela é um dos modos da 0080 | Declarar a `TCBLAN` inteira |
-| T.36 | O tipo da coluna sai da descoberta, para todo conector: `CLOB`, `NCLOB` e `LONG` como texto; `BLOB`, `RAW` e `LONG RAW` como o tipo binário do Iceberg (o leitor manda o binário em base64 com `contentEncoding`, e o gravador o grava como bytes). O kit pode declarar o significado de uma coluna só como metadado (`NFE_XML`). Uma linha perto do limite de 32 MB do Athena (PS4) para a U3; o binário muito grande vai ao depósito de arquivos por uma regra de tamanho, com o primeiro caso real | A forma da Nekt e do Airbyte para o Oracle (`ARQ` 4.2), com o tipo binário do Iceberg no lugar do hexadecimal, que dobra o tamanho; o firstmate, com a palavra do fundador, 2026-11-23 ("E, não, beleza") | Copiar o binário como hexadecimal na linha |
+| T.36 | O tipo da coluna sai da descoberta, para todo conector: `CLOB`, `NCLOB` e `LONG` como texto; `BLOB`, `RAW` e `LONG RAW` como o tipo binário do Iceberg (o leitor manda o binário em base64 com `contentEncoding`, e o gravador o grava como bytes). O kit pode declarar o significado de uma coluna só como metadado (`NFE_XML`). Uma linha perto do limite de 32 MB do Athena (PS4) para a U3; o binário muito grande vai ao depósito de arquivos por uma regra de tamanho, na etapa 3a (0071) | A forma da Nekt e do Airbyte para o Oracle (`ARQ` 4.2), com o tipo binário do Iceberg no lugar do hexadecimal, que dobra o tamanho; o firstmate, com a palavra do fundador, 2026-11-23 ("E, não, beleza") | Copiar o binário como hexadecimal na linha |
 | T.37 | O intervalo tem os seis valores de hoje mais **Só manual** (`MANUAL`), e o padrão é 24 h | Os valores são os de `CopyInterval` (`C/packages/hub-api/src/copies.ts:20`); o padrão é a palavra do fundador | Mudar a lista em `LakeInterval` |
 | T.38 | A hora de partida é `lake_copy.created_at`, a hora em que a pessoa clicou **Ligar e copiar agora**; mudar o intervalo não a muda | O fundador: "o intervalo contado de quando a ligação foi feita" (Relógio); a cópia da ligação nasce nesse clique | Ancorar em `connection.created_at` |
 | T.39 | Gravar a cópia com uma tabela nova dispara na hora uma rodada da ligação, que lê inteira só a nova; a página de uma tabela mostra o tipo da rodada daquela tabela (`lake_table_run.whole`) | A Nekt aplica a tabela nova na fonte viva, e ela começa lendo tudo (`MAPA` 1.3); disparar na hora é o "a primeira carga sai na hora" da janela, para a tabela nova | Esperar o relógio |
 | T.40 | A U3 acrescenta ao Sankhya os assuntos `fiscal` e `contabil`, com o rótulo e a parte da skill; as tabelas usam os assuntos de hoje (`cadastros`, `produtos`, `vendas`, `estoque`, `financeiro`, `precos`, `logistica`, `C/packages/connectors/src/sankhya/operations/index.ts:68-75`) e esses dois | O grupo de uma tabela é um assunto do conector (critério 10), e o completo traz o fiscal e o contábil ("Sim, núcleo+fiscal+contábil") | Agrupar as fiscais e contábeis num assunto de hoje |
+| T.41 | Esta etapa não fecha porta para os arquivos. Uma tabela das 42 com uma coluna `BLOB`, `RAW` ou `LONG RAW` com valor (PS1) não é declarada antes de o fundador ver a coluna e o maior valor; a tabela de anexos do Sankhya fica para a 3a. O resto já deixa a porta aberta: as colunas `_` continuam do motor (`C/packages/connectors/src/kernel/copy.ts:145-151`, que a U3 leva para `tables.ts`, critério 10), as propriedades `conexus.*` já estão no catálogo, a declaração da U3 ganha `parent` e `file` como campos opcionais sem mudar os modos (0080), e o depósito de arquivos entra na pilha por um `UpdateStack` por empresa (0073), que a 3a constrói | A coluna binária é a única porta que esta etapa pode fechar: a forma de uma coluna fica fixa depois de criada, e uma coluna de arquivo acima do teto mora no depósito, não na linha (`LAK` 1.1, seção 4); o fundador, "F1. A F2. A" | Declarar a tabela com o binário na linha e mudar a forma na 3a |
 
 ## O reajuste, os passos do firstmate
 
@@ -1846,6 +1874,10 @@ export function readTablePage(
   HubSpot, só no modo dublê (T29). O dicionário, a contagem por mês e a página da `TGFNFE` com o XML
   do dublê respondem com as gravações das sondas P1, P3, P5 e PS2, com os valores inventados (S40).
 - **A origem de uma tabela por operação** é o id da operação (`negocios`), no fio e no `table_name`.
+- **As colunas `_` são do motor** (T.41): a regra de hoje (`C/packages/connectors/src/kernel/copy.ts:145-151`)
+  passa para a conformidade de `tables.ts` antes de `copy.ts` sair. Assim o `_sdc_*` de hoje e as
+  colunas `_` que a 3a acrescentar não colidem com uma coluna declarada. No Oracle, um nome sem aspas
+  começa por letra; se a descoberta do Sankhya achar uma coluna que começa por `_`, a U3 para.
 - **O arquivo modelo**: nenhum declarado; a unidade segue C21, C23 e C26 direto.
 
 ### As skills e a leitura
@@ -1887,8 +1919,11 @@ o 16 pelas rotas de teste; o 88 junto com a U4. Hoje nada disso existe.
   builder diz ao firstmate qual.
 - A PS2 mostrou que a porta de consulta não devolve o XML inteiro, ou a PS1, a PS2 ou a PS4 acharam uma
   linha perto do limite de 32 MB do Athena (T.36).
+- A PS1 achou numa das 42 tabelas uma coluna `BLOB`, `RAW` ou `LONG RAW` com valor, e o fundador ainda
+  não viu a coluna e o maior valor (T.41): essa tabela fica fora da lista até a palavra dele.
 - O fundador ainda não viu o tamanho da bruta da `sankhya_notas_nfe` (T.34).
 - O dicionário do dublê não tem a forma da sonda, ou a sonda não trouxe o mapa de um tipo.
+- A descoberta do Sankhya achou uma coluna que começa por `_` (T.41).
 - A página do Sankhya de 1 MiB não cabe numa linha larga do dublê: o builder mede e diz ao
   firstmate.
 

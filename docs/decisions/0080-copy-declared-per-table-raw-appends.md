@@ -3,7 +3,7 @@
 ## Context
 
 The Sankhya's proofs put each of its adjustments (page size, month window, dictionary, change
-columns) in the adapter or in a constant shared by all connectors: the kit has no place to say how
+columns) in the adapter or a shared constant: the kit has no place to say how
 a table is copied [0071]. Singer and the Airbyte manifest declare it per table.
 
 ## Decision
@@ -43,7 +43,7 @@ A source's change cannot be declared in these modes.
 ## State
 
 Accepted for the incremental mode, a technical call (delivery L6) on measured proof; proposed for
-the others. Founder, 2026-11-20: "de mês em mês" (the fiscal window), A0-c "okay".
+the others. Founder, 2026-11-20: "de mês em mês" (the fiscal window), A0-c "okay". Amended by [0082](0082-the-lake-holds-tables-and-files.md).
 
 [0063]: 0063-copy-models-proof.md
 [0071]: 0071-connectors-kit-live-copies-singer.md
