@@ -6,9 +6,10 @@ it. The rules live in the [guides](guides/).
 
 ## 1. Introduction and goals
 
-What Conexus is, what it never does and what each of its three Solutions refuses is
-[`VISION.md`](../VISION.md), in Portuguese. The Builder agent writes a company's apps, for its
-people, on its data. One founder operates it, for a handful of invited companies at launch.
+Conexus gathers company data, systems and know-how in a context and ontology layer that learns.
+On it the company analyses, automates, uses AI and asks for apps; the Builder agent writes them, for
+its people, on its data. One founder operates it, for a handful of invited companies
+at launch.
 
 **Quality goals, in order.**
 
@@ -22,6 +23,8 @@ people, on its data. One founder operates it, for a handful of invited companies
    the line where the library does less.
 5. **Readable.** One language, one tree, and walls checked by a machine, so a person or an agent
    finds any fact's owner [0002] [0003].
+
+**What the product never does** is [`VISION.md`](../VISION.md), in Portuguese.
 
 **Who has a stake.** The founder: product owner, operator, and the person who closes each step by
 using it. Company administrators and members, who use the Hub and apps. The agents that build

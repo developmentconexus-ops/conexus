@@ -1,6 +1,8 @@
 # Conexus
 
-O que o Conexus é, e o que ele não é, está na [VISION.md](VISION.md).
+O Conexus junta os dados, os sistemas e o conhecimento de como a empresa opera numa camada de
+contexto e ontologia que aprende com o uso. O que ele é, e o que ele não é, está na
+[VISION.md](VISION.md).
 
 Este repositório guarda o programa do servidor (o Hub e o Builder), as telas do Hub, a parte que
 roda no Cloudflare e os contratos entre eles. Os estudos e as provas que levaram a este desenho

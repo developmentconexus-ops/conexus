@@ -15,11 +15,14 @@ the Central. Owner: docs/architecture.md §1 "Who has a stake". Concept: docs/ex
 
 ## Product Purpose
 
-Owner: VISION.md (in Portuguese), "O Conexus".
+Conexus gathers a company's data, systems and knowledge of how it operates into a context and ontology
+layer that learns with use. On it the company analyses, automates, puts AI to work and asks the Builder
+for the apps its processes need; Conexus builds, previews, publishes and runs them on that company's
+data. Owner: docs/architecture.md §1.
 
 ## Positioning
 
-Owner: VISION.md: three Solutions on the Platform, and what Conexus is not.
+Owner: VISION.md (in Portuguese): the three Solutions on the Platform, and "Escopo".
 
 ## Capabilities and Constraints
 
@@ -38,7 +41,7 @@ No customer yet. Never invent testimonials, customers, numbers or claims.
 
 ## Product Principles
 
-Owner: VISION.md: the "Nunca" lines and each Solution's refusal test.
+Owner: VISION.md (in Portuguese): its principle sections and the "alinha" / "deve ser recusada" test.
 
 ## Accessibility & Inclusion
 
