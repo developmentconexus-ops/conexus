@@ -7,7 +7,7 @@ import type { RunOf } from './context.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'
 
-/** The key the company's door counts the 50 calls of a turn by, on the run's context (the kit's owner of it). */
+/** The key the company's door counts a turn's `CONNECTOR_CALLS_PER_TURN` calls by, on the run's context (the kit's owner of it). */
 export const turnKey = turnKeyOn('conexus-assistant-turn-key')
 
 /**

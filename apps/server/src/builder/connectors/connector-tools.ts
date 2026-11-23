@@ -21,7 +21,7 @@ type Answer = Awaited<ReturnType<BuilderConnectors['read']>>
 type WholeAnswer = Extract<Answer, { kind: 'OK' }> & { whole: unknown }
 type Saved = Awaited<ReturnType<BuilderConnectors['saveNote']>>
 
-/** Who asks, and the run the port counts the 50 calls by, known only when a tool runs. */
+/** Who asks, and the run the port counts its `CONNECTOR_CALLS_PER_TURN` calls by, known only when a tool runs. */
 export type Asker = OfProject & {
   personId: PersonId
   runIdOf: (requestContext: RequestContext) => RunId | undefined

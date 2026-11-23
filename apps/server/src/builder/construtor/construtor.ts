@@ -30,20 +30,19 @@ import {
   agentManagerAdmission,
   blockOf,
   CONEXUS_PROMPT,
+  CONVERSATION_MODE,
   controllerOf,
   conversationMemory,
   createAskUserTool,
   fixedSystem,
   oncePerRun,
   principalOf,
-  RUN_MARKS,
-  releaseThreads,
+  releaseByMarks,
   runResolver,
   sessionModel,
   sessionTurns,
   TITLE,
   takeOfScope,
-  threadsByMarks,
   toolsOf,
   turnKeyOn,
 } from '../controller-kit/public.ts'
@@ -56,7 +55,6 @@ import { testDraft } from './draft-trial.ts'
 import { registerConstrutorRoutes } from './routes.ts'
 import { construtorTools } from './tools.ts'
 
-const MODE = 'conversa'
 const turnKey = turnKeyOn('conexus-construtor-turn-key')
 const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 'utf8').trim()
 
@@ -297,7 +295,7 @@ export function createConstrutor(deps: Deps) {
   // Decision 0053: nothing waits to be approved; the tools only build a draft.
   const controller = controllerOf({
     ...{ kind: 'construtor', storage, memory, agent },
-    mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
+    mode: { id: CONVERSATION_MODE, availableTools: AVAILABLE_TOOLS },
     tools: { fixed: { [ASK_USER_TOOL]: createAskUserTool() } },
     initialState: { yolo: true },
   })
@@ -318,17 +316,15 @@ export function createConstrutor(deps: Deps) {
       /** Whether the person may build agents in the company now (`manageAgents`). */
       admit: construtorAdmission(deps),
       async release(scope: ReleaseScope): Promise<void> {
-        const ids = await threadsByMarks(memory, {
-          [RUN_MARKS.construtor.company]: scope.companyId,
-          ...(scope.personId === undefined
-            ? {}
-            : { [RUN_MARKS.construtor.person]: scope.personId }),
-          ...(scope.projectId === undefined
-            ? {}
-            : { [RUN_MARKS.construtor.project]: scope.projectId }),
-        })
-        const count = await releaseThreads({ controller, memory }, ids, (id) => machines.kill(id))
-        log.info({ companyId: scope.companyId, count }, 'CONSTRUTOR_CONVERSATIONS_RELEASED')
+        await releaseByMarks(
+          { controller, memory, log },
+          {
+            kind: 'construtor',
+            scope,
+            code: 'CONSTRUTOR_CONVERSATIONS_RELEASED',
+            each: (id) => machines.kill(id),
+          },
+        )
       },
     },
     routes: (app: FastifyInstance) =>
