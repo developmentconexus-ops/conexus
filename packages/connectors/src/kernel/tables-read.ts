@@ -14,13 +14,16 @@ import { operationPage } from './tables-operation.ts'
 /** The tables a connector declares by kind of columns, each `DISCOVERED` one asked of the hook in batches. */
 const DISCOVER_BATCH = 8
 
-async function discoveredOf(
-  reach: TableReach,
-  tables: ConnectorTables,
-): Promise<ReadonlyMap<string, DiscoveredTable>> {
+type Discovered = Readonly<{
+  found: ReadonlyMap<string, DiscoveredTable>
+  failed: ReadonlyMap<string, TableReadFailed>
+}>
+
+async function discoveredOf(reach: TableReach, tables: ConnectorTables): Promise<Discovered> {
   const found = new Map<string, DiscoveredTable>()
+  const failed = new Map<string, TableReadFailed>()
   const { discover } = tables
-  if (discover === undefined) return found
+  if (discover === undefined) return { found, failed }
   const wanted = [
     ...new Set(
       tables.declared.flatMap((table) =>
@@ -31,11 +34,12 @@ async function discoveredOf(
     ),
   ]
   for (let at = 0; at < wanted.length; at += DISCOVER_BATCH) {
-    const read = await called(reach, discover, { tables: wanted.slice(at, at + DISCOVER_BATCH) })
-    if (read.kind !== 'READ') continue
-    for (const table of read.value.tables) found.set(table.table, table)
+    const batch = wanted.slice(at, at + DISCOVER_BATCH)
+    const read = await called(reach, discover, { tables: batch })
+    if (read.kind === 'READ') for (const table of read.value.tables) found.set(table.table, table)
+    else for (const table of batch) failed.set(table, read)
   }
-  return found
+  return { found, failed }
 }
 
 function columnsOf(
@@ -55,19 +59,26 @@ function columnsOf(
     : discovered.columns.filter((column) => !exclude.includes(column.name))
 }
 
-/** The one discovery: what the window lists (U8) and what `tap --discover` writes (U4); null columns: the dictionary did not answer. */
-export async function discoverTables(
-  reach: TableReach,
-): Promise<
-  readonly Readonly<{ declaration: TableDeclaration; columns: readonly TableColumn[] | null }>[]
+/**
+ * The one discovery: what the window lists (U8) and what `tap --discover` writes (U4). Null columns:
+ * the dictionary did not answer, and `failed` says why when the source stopped the call; without it
+ * the dictionary has no such table.
+ */
+export async function discoverTables(reach: TableReach): Promise<
+  readonly Readonly<{
+    declaration: TableDeclaration
+    columns: readonly TableColumn[] | null
+    failed?: TableReadFailed
+  }>[]
 > {
   const { tables } = reach.connector
   if (tables === undefined) return []
-  const found = await discoveredOf(reach, tables)
-  return tables.declared.map((declaration) => ({
-    declaration,
-    columns: columnsOf(declaration, found),
-  }))
+  const { found, failed } = await discoveredOf(reach, tables)
+  return tables.declared.map((declaration) => {
+    const columns = columnsOf(declaration, found)
+    const stop = columns === null ? failed.get(sourceOf(declaration)) : undefined
+    return stop === undefined ? { declaration, columns } : { declaration, columns, failed: stop }
+  })
 }
 
 /** The months a WINDOW table has rows in, as the source counts them: out-of-calendar ones included. */

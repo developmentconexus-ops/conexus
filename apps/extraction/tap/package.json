@@ -1,0 +1,14 @@
+{
+  "name": "@conexus/tap",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node ../../../scripts/test-run.ts --test-reporter=../../../scripts/test-reporter.ts \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@conexus/connectors": "*",
+    "zod": "4.6.5"
+  }
+}

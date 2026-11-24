@@ -29,10 +29,10 @@ function failed(
   return { kind: 'FAILED', code, system: systemOf(native), waitMs }
 }
 
-type Stopped = Readonly<{ kind: string; native?: Native; waitMs?: number | null }>
+export type TableStop = Readonly<{ kind: string; native?: Native; waitMs?: number | null }>
 
 /** A call that gave no value, as the kit's code: a 5xx, a 429 or the network is the source out of reach, which the adapter repeats. */
-function stoppedBy(stop: Stopped): TableReadFailed {
+export function tableFailureOf(stop: TableStop): TableReadFailed {
   const { kind, native } = stop
   if (kind === 'AUTH_REFUSED' || kind === 'TOKEN_EXPIRED' || kind === 'NEEDS_REAUTH')
     return failed('COPY_SOURCE_NEEDS_REAUTH', native)
@@ -58,8 +58,8 @@ export async function called<I, O>(
     reach.signal,
   )
   if (done.kind === 'OK' && 'value' in done) return { kind: 'READ', value: done.value }
-  if (done.kind === 'UNSENT' && 'sent' in done) return stoppedBy(done.sent)
-  return stoppedBy(done)
+  if (done.kind === 'UNSENT' && 'sent' in done) return tableFailureOf(done.sent)
+  return tableFailureOf(done)
 }
 
 export type TablePageRead =

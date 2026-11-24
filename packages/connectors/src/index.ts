@@ -101,7 +101,12 @@ export {
   type TableSourceFailure,
   tablePrefixOf,
 } from './kernel/tables.ts'
-export type { TablePageRead, TableReach } from './kernel/tables-call.ts'
+export {
+  type TablePageRead,
+  type TableReach,
+  type TableStop,
+  tableFailureOf,
+} from './kernel/tables-call.ts'
 export {
   DISCOVERED_TYPES,
   type ExpectedTable,

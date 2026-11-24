@@ -5,6 +5,7 @@
   "type": "module",
   "workspaces": [
     "apps/*",
+    "apps/extraction/tap",
     "packages/*",
     "infra/aws"
   ],

@@ -230,3 +230,19 @@ test('o nome no lago: o prefixo do conector, o da ligação quando o nome já ex
   assert.throws(() => TableName.parse('Notas'), 'só minúsculas')
   assert.throws(() => TableName.parse('x'.repeat(41)), 'até 40')
 })
+
+test('a descoberta recusada diz por quê: a tabela sem colunas leva o código da fonte, e a ausente do dicionário não leva nenhum', async () => {
+  const fake = sankhyaFake()
+  const reach = await tableReachOf(sankhya, fake)
+  fake.switches.refuse.add('consultar')
+  const found = await discoverTables(reach)
+  const notas = found.find(({ declaration }) => declaration.name === 'notas')
+  assert.equal(notas?.columns, null)
+  assert.partialDeepStrictEqual(notas?.failed, { kind: 'FAILED', code: 'COPY_SOURCE_REFUSED' })
+  const absent = (await discoverTables(await tableReachOf(sankhya, sankhyaFake()))).find(
+    ({ declaration }) => declaration.name === 'financeiro',
+  )
+  assert.deepEqual(absent, { declaration: tableOf(sankhya, 'financeiro'), columns: null })
+  const deals = (await discoverTables(await tableReachOf(hubspot, hubspotFake())))[0]
+  assert.equal(deals?.failed, undefined, 'uma tabela declarada não pergunta ao dicionário')
+})
