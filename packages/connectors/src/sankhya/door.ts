@@ -19,23 +19,36 @@ function service(serviceName: string, requestBody: unknown): ProviderRequest {
 /** One read statement, the only text a DbExplorer request is built from (code C23). */
 const ReadSql = z.string().min(1).max(8000).refine(isOneReadStatement).brand('ReadSql')
 
+const Queried = z.object({
+  fieldsMetadata: z.array(z.looseObject({ name: z.string() })),
+  rows: z.array(z.array(z.unknown())),
+  burstLimit: z.boolean().optional(),
+})
+
+/** What `DbExplorerSP.executeQuery` answers, each row's cells in the order the statement selects them; `completo` is false when Sankhya cut the list. */
+export const QueriedCells = Queried.transform(({ rows, burstLimit }) => ({
+  linhas: rows,
+  completo: burstLimit !== true,
+}))
+
 /** What `DbExplorerSP.executeQuery` answers, each row keyed by its column; `completo` is false when Sankhya cut the list. */
-export const QueriedRows = z
-  .object({
-    fieldsMetadata: z.array(z.looseObject({ name: z.string() })),
-    rows: z.array(z.array(z.unknown())),
-    burstLimit: z.boolean().optional(),
-  })
-  .transform(({ fieldsMetadata, rows, burstLimit }) => ({
-    linhas: rows.map((row) =>
-      Object.fromEntries(fieldsMetadata.map(({ name }, at) => [name, row[at] ?? null])),
-    ),
-    completo: burstLimit !== true,
-  }))
+export const QueriedRows = Queried.transform(({ fieldsMetadata, rows, burstLimit }) => ({
+  linhas: rows.map((row) =>
+    Object.fromEntries(fieldsMetadata.map(({ name }, at) => [name, row[at] ?? null])),
+  ),
+  completo: burstLimit !== true,
+}))
 
 /** The DbExplorer request of a statement, judged by the read filter whoever wrote it. */
 export function queryRequest(sql: string): ProviderRequest {
   return service('DbExplorerSP.executeQuery', { sql: ReadSql.parse(sql) })
+}
+
+/** A table copy's page names each column it reads (TGFCAB has 449, measured by P3), past what an agent's query takes; the same read filter judges it. */
+const PageSql = z.string().min(1).max(65_536).refine(isOneReadStatement).brand('PageSql')
+
+export function pageQueryRequest(sql: string): ProviderRequest {
+  return service('DbExplorerSP.executeQuery', { sql: PageSql.parse(sql) })
 }
 
 const consultar = defineOperation({

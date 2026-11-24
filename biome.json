@@ -165,6 +165,7 @@
         "packages/app/src/client.ts",
         "scripts/**",
         "apps/server/**",
+        "apps/extraction/**",
         "tests/apps/*/assets/**"
       ],
       "linter": {

@@ -125,6 +125,9 @@ export function shapeOf(error: z.ZodError, body: unknown): Unread {
   return { kind: 'SHAPE', issues }
 }
 
+/** An instant with its offset: the date-time a source's filter takes and a timestamp cell read from an operation. */
+export const Instant = z.iso.datetime({ offset: true })
+
 export const OperationId = z
   .string()
   .regex(/^[a-z][a-zA-Z0-9]{1,39}$/)

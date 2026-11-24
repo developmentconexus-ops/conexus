@@ -1,6 +1,8 @@
 import { DatabaseSync } from 'node:sqlite'
 import { z } from 'zod'
 import { inserter, registerOn } from './fake-register.ts'
+import type { CopyTables } from './fake-tables.ts'
+import { copyTablesOn } from './fake-tables.ts'
 
 // Invented values only (S40): a bakery, its sellers, customers and products, September and October 2026.
 
@@ -247,11 +249,25 @@ function likeOf(pattern: string, escapeMark: unknown): RegExp {
 /** The answer of a read query: the columns by name and the rows in their order. */
 export type QueryAnswer = { fields: string[]; rows: unknown[][] }
 
+type Query = (sql: string) => QueryAnswer | undefined
+
 /**
  * The set's tables in an in-memory SQLite, read by the SQL a read sends (`DbExplorerSP.executeQuery`):
  * the answer, or `undefined` when SQLite refuses the query, as Sankhya refuses one it cannot run.
  */
-export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | undefined {
+export function salesDatabase(set: SalesSet): Query {
+  return openSales(set).query
+}
+
+/** A cell as the DbExplorer answers it: a date in Sankhya's form, a decimal as its JSON number, a BLOB as base64 (not measured on the real gateway). */
+function answeredCell(cell: unknown, dated: boolean, decimal: boolean): unknown {
+  if (dated && cell !== null) return asSankhyaDate(cell)
+  if (cell instanceof Uint8Array) return Buffer.from(cell).toString('base64')
+  return decimal && typeof cell === 'string' ? rawJSON(cell) : cell
+}
+
+/** The double's database: its query, and the copy's tables with the changes only a test route makes. */
+export function openSales(set: SalesSet): Readonly<{ query: Query; tables: CopyTables }> {
   const database = new DatabaseSync(':memory:')
   // Oracle's and SQL Server's `TRANSLATE`, which SQLite lacks: each letter of `from` becomes the one of `to` at its place.
   database.function('TRANSLATE', (text, from, to) => {
@@ -264,19 +280,33 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
   database.function('UPPER', { deterministic: true }, (text) =>
     text === null ? null : String(text).toUpperCase(),
   )
-  // Oracle's `TO_DATE` in the one form the paged read writes (`YYYY-MM-DD`): the day, as the double keeps dates.
+  // Oracle's `TO_DATE` in the two forms the reads write: the day, or the day and hour, as the double keeps dates.
   database.function('TO_DATE', { deterministic: true }, (text, format) => {
-    if (format !== 'YYYY-MM-DD' || !/^\d{4}-\d{2}-\d{2}$/.test(String(text)))
-      throw new DoubleRefusal('The double reads only TO_DATE(day, YYYY-MM-DD).')
+    const day = format === 'YYYY-MM-DD' && /^\d{4}-\d{2}-\d{2}$/.test(String(text))
+    const hour =
+      format === 'YYYY-MM-DD HH24:MI:SS' &&
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(String(text))
+    if (!day && !hour)
+      throw new DoubleRefusal('The double reads only the TO_DATE forms the kit writes.')
     return String(text)
   })
   // `LIKE` as SQL Server reads it, case and all: there `[...]` is a class besides `%` and `_` (#929).
   database.function('like', { deterministic: true, varargs: true }, (pattern, text, escapeMark) =>
     text === null ? null : Number(likeOf(String(pattern), escapeMark).test(String(text))),
   )
+  // Oracle's `TO_CHAR` of a date in the forms the copy writes: the month, the day, or the day and hour.
+  database.function('TO_CHAR', { deterministic: true }, (value, format) => {
+    if (value === null) return null
+    const [day = '', hour = '00:00:00'] = String(value).split(' ')
+    if (format === 'YYYY-MM') return day.slice(0, 7)
+    if (format === 'YYYY-MM-DD') return day
+    if (format === 'YYYY-MM-DD"T"HH24:MI:SS') return `${day}T${hour}`
+    throw new DoubleRefusal('The double reads only the TO_CHAR forms the kit writes.')
+  })
   tablesOf(database, set)
   registerOn(database)
-  return (sql) => {
+  const tables = copyTablesOn(database, DECIMAL)
+  const query: Query = (sql) => {
     let statement: ReturnType<DatabaseSync['prepare']>
     try {
       statement = database.prepare(withLimit(sql))
@@ -302,11 +332,11 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
     return {
       fields,
       rows: read.map((row) =>
-        Object.values(row).map((cell, at) => {
-          if (dated[at] && cell !== null) return asSankhyaDate(cell)
-          return decimal[at] && typeof cell === 'string' ? rawJSON(cell) : cell
-        }),
+        Object.values(row).map((cell, at) =>
+          answeredCell(cell, dated[at] === true, decimal[at] === true),
+        ),
       ),
     }
   }
+  return { query, tables }
 }

@@ -145,7 +145,7 @@ export async function answeredEach(
 }
 
 /** One call of an operation as the conformance makes it: the request the kit builds from `input`, sent to the double. */
-export async function askOf(
+async function askOf(
   connector: Connector,
   fake: Fake,
   session: Session,

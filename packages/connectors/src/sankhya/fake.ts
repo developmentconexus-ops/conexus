@@ -18,7 +18,8 @@ import type { OrderSwitches, StoredOrder } from './fake-orders.ts'
 import { ORDERS_PATH, orderBook } from './fake-orders.ts'
 import { forbidden, routeOf } from './fake-rest.ts'
 import type { SalesSet } from './fake-sales.ts'
-import { PADARIA_SOL_MATRIZ, salesDatabase } from './fake-sales.ts'
+import { openSales, PADARIA_SOL_MATRIZ } from './fake-sales.ts'
+import type { CopyTables } from './fake-tables.ts'
 
 /** What the fake can be told to do wrong, per service: the executor's tests (U3) and the QA flip these. */
 type SankhyaSwitches = {
@@ -119,7 +120,7 @@ function restAnswer(route: ReturnType<typeof routeOf>, url: URL, switches: Sankh
   return switches.nothingFound ? nothingFound(route.entity) : route.answer(url.searchParams)
 }
 
-type Query = ReturnType<typeof salesDatabase>
+type Query = ReturnType<typeof openSales>['query']
 
 /** The one POST route: the order's add, which a `refuse` of `lancarPedido` answers 403. */
 function isAdd(request: Request, url: URL): boolean {
@@ -220,13 +221,48 @@ function sessionAnswer(url: URL, token: string, sessions: Sessions): Response | 
   return refused === null && isLogout(url) ? logout(sessions, token) : refused
 }
 
+const NoteChange = z.object({
+  acao: z.enum(['ALTERAR', 'CRIAR', 'APAGAR']),
+  dtalter: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    .optional(),
+})
+
+/** The double's own routes, which no real Sankhya has: a test changes a note, a NF-e or the columns between two reads. */
+async function testRoute(request: Request, url: URL, tables: CopyTables): Promise<Response> {
+  const [, , what, id] = url.pathname.split('/')
+  const nunota = Number(id)
+  if (request.method !== 'POST') return json({ code: 'NOT_FOUND' }, 404)
+  if (what === 'colunas' && id === undefined) return json({ coluna: tables.addColumn() })
+  if (!Number.isSafeInteger(nunota)) return json({ code: 'NOT_FOUND' }, 404)
+  if (what === 'notas') {
+    const { acao, dtalter } = NoteChange.parse(await request.json())
+    return tables.note(nunota, acao, dtalter) ? json({ nunota }) : json({ code: 'NOT_FOUND' }, 404)
+  }
+  if (what === 'nfe')
+    return tables.nfe(nunota) ? json({ nunota }) : json({ code: 'NOT_FOUND' }, 404)
+  return json({ code: 'NOT_FOUND' }, 404)
+}
+
 /**
  * A Sankhya that answers in the shapes the real gateway sent, with invented rows. One token is one session: a
  * second call on a token while the first is unanswered gets the gateway's envelope "4" (409 on REST).
  * Its read queries run on the tables of `sales`, Padaria Sol's Matriz when none is given.
  */
+/** A 429 while the switch counts down, with the wait it names. */
+function busyAnswer(switches: SankhyaSwitches): Response | null {
+  if (switches.busyReads === 0) return null
+  switches.busyReads -= 1
+  const { busyWait } = switches
+  return Response.json(
+    { code: 'TOO_MANY_REQUESTS' },
+    { status: 429, headers: busyWait === null ? {} : { [busyWait.header]: busyWait.value } },
+  )
+}
+
 export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
-  const query = salesDatabase(options.sales ?? PADARIA_SOL_MATRIZ)
+  const { query, tables } = openSales(options.sales ?? PADARIA_SOL_MATRIZ)
   const orders = orderBook()
   const switches: SankhyaSwitches = {
     refuse: new Set(),
@@ -256,6 +292,7 @@ export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
 
   async function handle(request: Request): Promise<Response> {
     const url = new URL(request.url)
+    if (url.pathname.startsWith('/__teste/')) return testRoute(request, url, tables)
     if (url.pathname === '/authenticate' && request.method === 'POST') {
       await sleep(switches.loginDelayMilliseconds)
       return authenticate(request, sessions, switches)
@@ -265,14 +302,8 @@ export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
     const token = request.headers.get('authorization')?.replace(/^Bearer /, '') ?? ''
     const stopped = sessionAnswer(url, token, sessions)
     if (stopped) return stopped
-    if (switches.busyReads > 0) {
-      switches.busyReads -= 1
-      const { busyWait } = switches
-      return Response.json(
-        { code: 'TOO_MANY_REQUESTS' },
-        { status: 429, headers: busyWait === null ? {} : { [busyWait.header]: busyWait.value } },
-      )
-    }
+    const busy = busyAnswer(switches)
+    if (busy) return busy
     sessions.busy.add(token)
     try {
       await sleep(SERVICE_MILLISECONDS + switches.delayMilliseconds)

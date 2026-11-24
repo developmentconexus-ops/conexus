@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { Instant } from '../../kernel/copy.ts'
 import type { OperationId } from '../../kernel/operation.ts'
-import { get } from '../../kernel/operation.ts'
+import { get, Instant } from '../../kernel/operation.ts'
 import { chain, defineRoute, firstId, Limit, Offset, PathId, sellerOf } from './route.ts'
 
 export const pedidos = defineRoute({

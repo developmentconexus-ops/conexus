@@ -187,7 +187,7 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         connector: connector.id,
         name: row.name,
         perProject: connector.perProject,
-        skill: { name: `conexus-${connector.id}`, ...connectorSkill(connector) },
+        skill: { name: `conexus-${connector.id}`, ...connectorSkill(connector, []) },
         reads: reads.filter((operation) => operation.class === 'read').map(readOfKit),
         writes: (connector.writes ?? []).map(listedOf),
         notes: Object.keys(Notes.parse(row.notes)),

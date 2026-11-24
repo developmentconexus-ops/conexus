@@ -181,7 +181,7 @@ test('um pedido que o Mercado Livre devolve parcial (206) é lido e diz que veio
 })
 
 test('a skill: diz que a ligação só lê pela parte gerada, e nunca nomeia ferramenta', () => {
-  const { content, references } = connectorSkill(mercadoLivre)
+  const { content, references } = connectorSkill(mercadoLivre, [])
   const text = [content, ...Object.values(references)].join('\n')
   assert.ok(content.includes('Esta ligação só lê.'))
   assert.ok(!content.includes('lê e escreve'))

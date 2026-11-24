@@ -3,6 +3,8 @@ import type { Auth } from './auth.ts'
 import { CredentialClass } from './credential-class.ts'
 import { Numbers } from './exact-json.ts'
 import type { AccountOf, Failure, Operation, OperationId, WriteOperation } from './operation.ts'
+import type { ConnectorTables } from './tables.ts'
+import { assertTablesDeclared } from './tables-declared.ts'
 
 export const ConnectorId = z
   .string()
@@ -57,7 +59,7 @@ export type Connector = Readonly<{
   logo: string // the provider's official logo, an SVG read from the connector's folder; the screen shows it as a data: image
   // How many of this connector's connections one Projeto may use (founder, 2026-10-29): a key, not code.
   perProject: PerProject // required, no default
-  subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation
+  subjects: Readonly<Record<string, string>> // subject id → label ("vendas" → "Vendas"); each has an operation or groups a table
   operations: readonly Operation<unknown, unknown>[] // typed, the same for every company
   readDoor?: ReadDoor // for what each company has of its own
   // Where the provider counts its call limit: by the Conexus app, one for every company, or by each account. Required when an operation declares `list`.
@@ -73,6 +75,8 @@ export type Connector = Readonly<{
   numbers: Numbers
   // The part of the skill a person writes; the agents read `connectorSkill`
   skill: Readonly<{ written: ConnectorSkill }>
+  // The tables a copy to the lake reads, each declared once (decision 0080)
+  tables?: ConnectorTables
 }>
 
 const Version = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/)
@@ -83,7 +87,7 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a login without its credential class, a `numbers` other than 'EXACT' or 'DOUBLE', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, a check that is not one of its operations or needs an earlier one, a written skill that names one of its tools, or a copy model the kit no longer takes. */
+/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a login without its credential class, a `numbers` other than 'EXACT' or 'DOUBLE', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation nor table, a `from` that is not an earlier operation, a check that is not one of its operations or needs an earlier one, a written skill that names one of its tools, or a table declaration `assertTablesDeclared` refuses. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
@@ -99,21 +103,18 @@ export function defineConnector<A extends Auth>(
   const ids = declared.map((operation) => operation.id)
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
   assertWritesWrite(connector)
-  assertNoCopyModels(connector)
   assertCallLimit(connector, declared)
   for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
     if (operation.id !== key) throw new Error(`Door entry ${key} is named ${operation.id}`)
   }
-  const named = new Set(declared.map((operation) => operation.subject))
-  for (const subject of named)
-    if (!(subject in connector.subjects)) throw new Error(`Unknown subject ${subject}`)
-  for (const subject of Object.keys(connector.subjects))
-    if (!named.has(subject)) throw new Error(`Subject without operation: ${subject}`)
+  assertSubjectsUsed(connector, declared)
   assertSourcesEarlier(all)
   assertCheckStandsAlone(connector)
   assertSkillNamesNoTool(connector, declared)
-  return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
+  const defined = Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
+  assertTablesDeclared(defined)
+  return defined
 }
 
 /** Every operation the connector declares: the door's, the reads and the writes. */
@@ -154,8 +155,18 @@ function assertCallLimit(
     throw new Error(`List read without callLimit in ${connector.id}`)
 }
 
-function assertNoCopyModels(connector: object): void {
-  if ('copy' in connector) throw new Error('A connector declares no copy models')
+/** Each operation's subject is the connector's, and each subject has an operation or groups a table. */
+function assertSubjectsUsed(
+  connector: Pick<Connector, 'subjects' | 'tables'>,
+  declared: readonly Operation<unknown, unknown>[],
+): void {
+  const named = new Set(declared.map((operation) => operation.subject))
+  for (const subject of named)
+    if (!(subject in connector.subjects)) throw new Error(`Unknown subject ${subject}`)
+  const grouped = new Set(connector.tables?.declared.map((table) => table.group))
+  for (const subject of Object.keys(connector.subjects))
+    if (!named.has(subject) && !grouped.has(subject))
+      throw new Error(`Subject without operation: ${subject}`)
 }
 
 function assertCheckStandsAlone(connector: Pick<Connector, 'operations' | 'check'>): void {
