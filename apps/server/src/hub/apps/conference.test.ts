@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import { appCheckLogin, appLogin, ProjectId } from '@conexus/hub-api'
 import { savedOf } from '../../platform/test-company-postgres.ts'
+import { call } from '../identity/test-hub.ts'
 import { asAppLogin, checkDatabaseOf, confer, opened } from './test-conference.ts'
 import { PEDIDOS } from './test-handoff.ts'
 import { companyForVersions, folder, MIGRATION, send } from './test-versions.ts'
@@ -111,4 +112,39 @@ test('conferência: cada uma começa no esquema de teste vazio; a migração rec
     },
   })
   assert.deepEqual(await savedOf(owner, id), previa)
+})
+
+test('conferência: o Projeto apagado inteiro durante o upload deixa a conferência parar e tira o Worker c-, sem sessão nem Neon', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, owner, projectId, projects } = subject
+  const held = hub.cloudflare.holdUpload()
+  const opening = confer(subject, ana)
+  await held.arrived
+  const url = `${projects}/${projectId}`
+  assert.equal((await call(hub, ana, 'DELETE', url, { name: 'Pedidos' })).statusCode, 204)
+  const connections = hub.neon.calls.length
+  held.release()
+  assert.deepEqual(await opening, PLATFORM_FAILED)
+  assert.ok(
+    hub.cloudflare.calls.some(
+      ({ call: kind, worker }) => kind === 'remove' && worker === `c-${projectId}`,
+    ),
+  )
+  assert.deepEqual(hub.cloudflare.workers(), [])
+  // The deletion's own connection came before the release; the stopped conference opens none.
+  assert.equal(hub.neon.calls.length, connections)
+  assert.equal((await checkDatabaseOf(owner, projectId)).schema, false)
+  assert.deepEqual(await hub.test.asOwner('select * from apps.check_session'), [])
+})
+
+test('conferência: o Projeto marcado para apagar depois das migrações não grava a sessão', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana } = subject
+  const held = hub.postgres.holdMigrate()
+  const opening = confer(subject, ana)
+  await held.arrived
+  await hub.test.asOwner('update projects.project set deleting_since = now()')
+  held.release()
+  assert.deepEqual(await opening, PLATFORM_FAILED)
+  assert.deepEqual(await hub.test.asOwner('select * from apps.check_session'), [])
 })

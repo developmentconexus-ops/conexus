@@ -67,8 +67,13 @@ type Knobs = {
   opening: Result<Conference, ConferPlatformFailed>
   /** What the machine's browser saw: a clean screen by default. */
   seeing: Result<BrowserReport, ConferPlatformFailed>
-  /** The sessions the check opened and ended, and the times its browser ran. */
-  conferred: { opened: AppSessionToken[]; ended: AppSessionToken[]; browsed: number }
+  /** The sessions the check opened and ended, the times its browser ran, and the most sessions open at once. */
+  conferred: {
+    opened: AppSessionToken[]
+    ended: AppSessionToken[]
+    browsed: number
+    peak: number
+  }
 }
 
 const SESSION = AppSessionTokenSchema.parse('c'.repeat(43))
@@ -86,7 +91,7 @@ function newKnobs(): Knobs {
       ok: true,
       value: { kind: 'CLEAN', shot: 'node_modules/.conexus/tela.png', console: [] },
     },
-    conferred: { opened: [], ended: [], browsed: 0 },
+    conferred: { opened: [], ended: [], browsed: 0, peak: 0 },
   }
 }
 
@@ -112,7 +117,9 @@ function conferOf(knobs: Knobs): BuilderConfer {
     async open() {
       const { opening } = knobs
       if (opening.ok && opening.value.kind === 'OPENED') {
-        knobs.conferred.opened.push(opening.value.session)
+        const { conferred } = knobs
+        conferred.opened.push(opening.value.session)
+        conferred.peak = Math.max(conferred.peak, conferred.opened.length - conferred.ended.length)
       }
       return opening
     },
@@ -151,6 +158,7 @@ function doubled(machines: ReturnType<typeof createMachines>, knobs: Knobs, fold
   }
   machines.confer = async () => {
     knobs.conferred.browsed += 1
+    await new Promise((later) => setTimeout(later, 20))
     return knobs.seeing
   }
 }

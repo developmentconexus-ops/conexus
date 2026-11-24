@@ -128,7 +128,7 @@ export class Runs {
     this.#writing.set(projectId, {
       ...{ runId, companyId, projectId, personId, conversationId },
       ...{ check: undefined, rounds: { open: 0, check: 0 } },
-      ...{ stopped: false, ends: [input.onEnd], saving: undefined },
+      ...{ stopped: false, ends: [input.onEnd], saving: undefined, checking: Promise.resolve() },
     })
     this.#deps.log.info({ ...fields, runId }, 'RUN_ADMITTED')
     return { ok: true }
@@ -217,6 +217,15 @@ export class Runs {
   ): Promise<Result<BuilderCheck, CheckPlatformFailed | ConferPlatformFailed>> {
     const mine = this.#mine(requestContext)
     if (mine === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' }
+    // Two `conexus_check` calls of one step run in parallel; one at a time, a failure of the first not the second's.
+    const turn = mine.checking.then(() => this.#checked(mine))
+    mine.checking = Promise.allSettled([turn])
+    return turn
+  }
+
+  async #checked(
+    mine: Driven,
+  ): Promise<Result<BuilderCheck, CheckPlatformFailed | ConferPlatformFailed>> {
     const machine = await this.#deps.machines.check({ conversationId: mine.conversationId })
     if (!machine.ok) return machine
     if (!machine.value.ok)

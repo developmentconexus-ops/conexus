@@ -8,6 +8,7 @@ import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import { visitApp } from './apps-edge.ts'
 import type { Scenario } from './apps-journey.ts'
 import {
+  builderAsked,
   builderSends,
   GREEN,
   openApp,
@@ -25,6 +26,7 @@ import {
   plantJourney,
   plantTwoCompanies,
   publicPage,
+  transcriptOf,
 } from './conversation-journey.ts'
 import { hubWindow, openConversation } from './hub-window.ts'
 import { createProject, liveHub, PASSWORD, signIn, waitForHome } from './live-hub.ts'
@@ -89,7 +91,14 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   const kept = await visitApp(pedidos.door, written, '/api/escreverRecado', { texto: RECADO })
   assert.equal(kept.status, 200)
   // 2. The version that does not start fails, and Abrir app is still Versão 2 with its recado.
-  await sent(s, pedidos.url, 'recados-nao-inicia', 'Versão 3 · Falhou: O app não inicia.')
+  await builderAsked(s, pedidos.url, 'recados-nao-inicia')
+  const line = transcriptOf(page).getByText(/^Versão 3 guardada, não montou/)
+  await line.waitFor()
+  assert.match(await line.innerText(), /O app não passou na conferência depois de \d+ tentativas\./)
+  // The conference caught it before the Prévia: the Versões list never gets it.
+  await page.goto(settings)
+  await page.getByText('Versão 2', { exact: false }).first().waitFor()
+  assert.equal(await page.getByText('Versão 3', { exact: false }).count(), 0)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
   // 3. The write in `db.query` is on the air and refused; nothing reaches the company's database.
   await sent(s, pedidos.url, 'recados-defeito', 'Versão 4 · Na Prévia')

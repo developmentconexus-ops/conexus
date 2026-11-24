@@ -43,8 +43,9 @@ export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
-/** `aws` puts the real AWS adapter in the Hub, in place of the AWS of memory. */
-type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'> & { aws?: LakeStacks }
+/** `aws` puts the real AWS adapter in the Hub, in place of the AWS of memory; `outside`, ports in place of the doubles. */
+type HubTuning = Pick<ConnectorTuning, 'now' | 'catalog'> & { aws?: LakeStacks; outside?: Outside }
+type Outside = (config: Config, log: FailureLog) => Partial<Parameters<typeof subjectsOf>[0]>
 
 /** A connector call's deadline in tests: a silent double is given up on quickly (criterion 11), and a Testar waiting on another's refresh still sees the double's refresh land. */
 const TEST_CALL_DEADLINE_MS = 1_000
@@ -85,7 +86,7 @@ async function hubServing(
   const ports = testAppPorts(config, { neon, cloudflare, postgres, tools, aws })
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
-    ...{ ...ports, log },
+    ...{ ...ports, log, ...tuning.outside?.(config, log) },
     tuning: { callDeadlineMs: TEST_CALL_DEADLINE_MS, now: tuning.now, catalog: tuning.catalog },
     pruneBudgetMs: TEST_PRUNE_BUDGET_MS,
     appDataDeadlineMs: TEST_CALL_DEADLINE_MS,

@@ -171,3 +171,16 @@ test('conexus_check e o fim do turno dão o mesmo relatório do navegador, pelo 
   assert.equal(byTool?.kind, 'SEEN')
   assert.deepEqual(byEnd, byTool)
 })
+
+test('dois conexus_check no mesmo passo rodam um depois do outro: nunca duas conferências abertas, e os dois voltam com resultado', async (t) => {
+  const model = turnOf([WRITE, CHECK, CHECK])
+  const { hub, ana, conversations } = await conversing(t, model.answer)
+  checking(hub.builder.folder, [])
+  await asked(t, { hub, person: ana, conversations }, 'Crie o app')
+  const { conferred } = hub.builder.knobs
+  assert.equal(conferred.peak, 1)
+  assert.ok(conferred.opened.length >= 2)
+  const answers = checksIn(model.asked[1])
+  assert.equal(answers.length, 2)
+  assert.ok(answers.every(({ kind }) => kind === 'SEEN'))
+})

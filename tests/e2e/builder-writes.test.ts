@@ -109,7 +109,7 @@ async function writeFirst(chat: Page) {
 
 test('o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 na aba Código; outra empresa não vê', async (t) => {
   builderThatWrites(t)
-  const { port, database } = await liveHub(t, 'http://127.0.0.1:9/unused')
+  const { port, database } = await liveHub(t, 'http://127.0.0.1:9/unused', undefined, {}, true)
   const ids = await plantTwoCompanies(database)
   const problems: string[] = []
   const closers: (() => Promise<void>)[] = []

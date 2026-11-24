@@ -79,3 +79,17 @@ test('a sessão de conferência recusa depois do fim, depois de 10 minutos, em o
     [{ n: 0 }],
   )
 })
+
+test('a sessão de conferência recusa 403 a quem saiu da empresa, ainda que tenha acesso ao app', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, bruno, companyId, projectId } = subject
+  const session = (await opened(subject, bruno)).session
+  assert.equal((await check(hub, PEDIDOS, session)).statusCode, 200)
+  await hub.test.asOwner(
+    `insert into projects.app_access(company_id, project_id, person_id, role)
+      values ($1, $2, $3, 'vendedor')`,
+    [companyId, projectId, bruno.id],
+  )
+  await hub.test.asOwner('delete from auth.member where user_id = $1', [bruno.id])
+  assert.deepEqual(refused(await check(hub, PEDIDOS, session)), [403, 'APP_ACCESS_REFUSED'])
+})

@@ -95,13 +95,15 @@ function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
  * The Hub in this process, on the CI database, serving the built screens on its public port and the
  * dispatcher's calls on its edge port; `names` are its public origin and apps' domain, when a
  * browser reaches it by the names the dispatcher is built with. `machineFolder` is the test
- * machine's folder, where a journey puts the check program the machine runs.
+ * machine's folder, where a journey puts the check program the machine runs. `doubledConference`
+ * swaps the Hub's own conference, which needs Cloudflare, for the test double.
  */
 export async function liveHub(
   t: TestContext,
   mailUrl: string,
   cloudflareUrl?: string,
   names: Partial<Pick<Config, 'publicOrigin' | 'appsDomain'>> = {},
+  doubledConference = false,
 ) {
   assert.ok(existsSync(join(WEB_ROOT, 'index.html')), 'the screens are not built: run npm run e2e')
   // Hooks run in the order they were added: the Hub closes before its databases end.
@@ -135,9 +137,11 @@ export async function liveHub(
     ...{ database: database.database, config, sendMail },
     ...{ log: silent, kit: roleKit() },
   })
-  const { machinesOf, conversationMachine, repository, copy, folder } = testBuilderPorts(config)
+  const { machinesOf, conversationMachine, repository, copy, folder, confer } =
+    testBuilderPorts(config)
   const subjects = subjectsOf({
     ...{ machinesOf, conversationMachine, repository, copy },
+    confer: doubledConference ? confer : undefined,
     database: database.database,
     mastraPool: database.mastraPool,
     ...{ config, identity, sendMail },
@@ -153,9 +157,7 @@ export async function liveHub(
   })
   const { apps, conversations, connectors } = subjects
   const app = await createHub(config, { status, identity, ...subjects, webRoot: WEB_ROOT })
-  closing.hub = function closeHub() {
-    return closeListeners([app], () => conversations.close())
-  }
+  closing.hub = () => closeListeners([app], () => conversations.close())
   const edge = await createEdgeHub(config, { apps, connectors })
   t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })

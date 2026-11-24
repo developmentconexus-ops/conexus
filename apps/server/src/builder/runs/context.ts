@@ -135,6 +135,8 @@ export type Driven = {
   stopped: boolean
   /** What the run keeps open while it writes, let go when it ends. */
   ends: Array<() => void>
+  /** The run's last check: the next waits for it, as they share the machine's network and browser and the Hub's test environment. */
+  checking: Promise<unknown>
   /** The run's end in progress: its save and the machine let go. */
   saving: Promise<unknown> | undefined
 }

@@ -299,7 +299,13 @@ async function screenOnly(chat: Page) {
 
 test('o roteiro do Builder que constrói: perguntas, plano ajustado e aprovado, tarefas, a versão que monta, uma biblioteca nova sem pergunta e um Projeto só de tela', async (t) => {
   const anthropic = builderThatBuilds(t)
-  const { port, database, machineFolder } = await liveHub(t, 'http://127.0.0.1:9/unused')
+  const { port, database, machineFolder } = await liveHub(
+    t,
+    'http://127.0.0.1:9/unused',
+    undefined,
+    {},
+    true,
+  )
   passingCheck(machineFolder)
   const ids = await plantTwoCompanies(database)
   const problems: string[] = []

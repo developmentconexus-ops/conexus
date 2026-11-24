@@ -8,13 +8,13 @@ import { ENCOMENDAS_DEFEITO } from '@conexus/app/check/test-app'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { MastraDBMessage } from '@mastra/core/agent'
 import { checks } from '@mastra/evals/checks'
-import { z } from 'zod'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { REAL_MODEL } from '../assistant/test-real-model.ts'
 import { APP_FOLDER } from '../machine/public.ts'
 import { moveMain } from '../machine/test-machine.ts'
+import { cloudHub, cloudSwitches } from './test-cloud-hub.ts'
 import { asked, conversing, endOf, title } from './test-conversation.ts'
 import { shownPartsOf, versionsOf } from './test-parts.ts'
 
@@ -144,17 +144,9 @@ test('o portão do Builder: uma senha colada na conversa não vai a arquivo nem 
 })
 
 const OPT_IN =
-  'opt-in: the real-model case of the planted defect runs at the cloud checkpoint: set CONEXUS_EVAL_REAL_MODEL to a folder (and CONEXUS_EVAL_CLAUDE_CREDENTIAL to a saved sign-in), and CONEXUS_EVAL_CLOUD_HUB to the file URL of a module outside the repository that exports cloudHub(t, folder): a Hub whose machines are E2B, whose conference is the real Cloudflare Worker and whose dispatcher calls it back'
-const { env } = process
-const CLOUD_HUB = env.CONEXUS_EVAL_CLOUD_HUB
+  "opt-in: the real-model case of the planted defect runs at the cloud checkpoint: set CONEXUS_EVAL_REAL_MODEL to the folder its report goes to, CONEXUS_EVAL_CLAUDE_CREDENTIAL to the test model account's kept Claude login (or sign in through the folder) and CONEXUS_EVAL_CLOUD_ENV to the installation's env file, all outside the repository (see cloudHub)"
 
-/** What the module of the cloud checkpoint gives: the Hub the real conference runs on, with Ana, a company and a linked model account. */
-type CloudHub = Pick<Awaited<ReturnType<typeof conversing>>, 'hub' | 'ana' | 'companyId'>
-const Cloud = z.object({
-  cloudHub: z.custom<(t: TestContext, folder: string) => Promise<CloudHub>>(
-    (value) => typeof value === 'function',
-  ),
-})
+type CloudHub = Awaited<ReturnType<typeof cloudHub>>
 
 const REQUEST = 'Confira e entregue o app'
 
@@ -189,12 +181,12 @@ async function defective(t: TestContext, cloud: CloudHub, name: string) {
 test('o defeito plantado: o Builder de verdade, com o pedido "Confira e entregue o app", termina com a conferência passed em até as voltas do limite, com a versão salva (18)', {
   timeout: 7_200_000,
 }, async (t) => {
-  if (REAL_MODEL === undefined || CLOUD_HUB === undefined) {
+  const switches = cloudSwitches()
+  if (REAL_MODEL === undefined || switches === undefined) {
     t.skip(OPT_IN)
     return
   }
-  const { cloudHub } = Cloud.parse(await import(CLOUD_HUB))
-  const cloud = await cloudHub(t, REAL_MODEL)
+  const cloud = await cloudHub(t, switches, REAL_MODEL)
   const runs: Awaited<ReturnType<typeof defective>>[] = []
   for (let attempt = 1; attempt <= 2 && !runs.some((run) => run.ok); attempt += 1) {
     runs.push(await defective(t, cloud, `Encomendas ${attempt}`))

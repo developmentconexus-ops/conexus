@@ -48,7 +48,6 @@ function admitted(deps: ConferenceDeps, scope: Scope, input: Opening) {
   return deps.database.command(scope, async (tx) => {
     const project = await admitSender(deps, tx, input)
     if (project.hostLabel === null) return { kind: 'NO_ADDRESS' } as const
-    if (!(await projectLive(deps, tx, input))) return { kind: 'GONE' } as const
     const { databaseReady } = await lockApp(tx, input)
     return { kind: 'HELD', hostLabel: project.hostLabel, databaseReady } as const
   })
@@ -81,14 +80,19 @@ async function conference(deps: ConferenceDeps, input: Opening): Promise<Opened>
   function live() {
     return deps.database.read(scope, (tx) => projectLive(deps, tx, input))
   }
-  function stopped(): Opened {
+  async function stopped(): Promise<Opened> {
     deps.log.info({ companyId, projectId }, 'APP_CONFERENCE_STOPPED')
+    // A deletion that ran whole during the upload found no Worker and no row: nothing else
+    // knows this Worker, so it goes now, for no removal of the Projeto may come.
+    const removed = await deps.cloudflare.remove(appCheckWorkerOf(projectId))
+    if (removed.kind !== 'DONE') {
+      deps.log.error({ companyId, projectId, code: removed.kind }, 'APP_CONFERENCE_WORKER_LEFT')
+    }
     return PLATFORM_FAILED
   }
   const received = receiveVersion(input.folder)
   const held = await admitted(deps, scope, input)
   if (held.kind === 'NO_ADDRESS') return ok(held)
-  if (held.kind === 'GONE') return stopped()
   const worker = appCheckWorkerOf(projectId)
   const uploaded = await uploadVersion(deps.cloudflare, { ...input, ...received, worker })
   if (uploaded.kind !== 'DONE') return PLATFORM_FAILED
