@@ -2,9 +2,10 @@ import type { CompanyId, ConversationId, Person } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { AnyWorkflow } from '@mastra/core/workflows'
+import type { Memory } from '@mastra/memory'
 import type { ControllerKind, ReleaseScope, RunMark } from '../../builder/controller-kit/public.ts'
 import { CONTROLLER_KINDS } from '../../builder/controller-kit/public.ts'
-import type { MayApprove, Watched, WriteOf } from '../../builder/conversation/public.ts'
+import type { MayApprove, TurnEnds, Watched, WriteOf } from '../../builder/conversation/public.ts'
 import { watchRuns } from '../../builder/conversation/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { createMastra } from './mastra.ts'
@@ -14,7 +15,7 @@ import { RETENTION_WORKFLOW, retentionOf, storageOf } from './retention.ts'
 type Part = {
   kind: ControllerKind
   controller: AgentController
-  memory: Watched['memory']
+  memory: Watched['memory'] & Pick<Memory, 'settled'>
   /**
    * The door of the six routes, at each request: the owner is already checked by the thread, and
    * its marks against it (`markIn`); `NOT_FOUND` becomes `CONVERSATION_NOT_FOUND`.
@@ -30,8 +31,8 @@ type Part = {
   /** Whether the person answering a write's card holds that write in their role (step 24.5, D3-a). */
   mayApprove?: MayApprove
   release(scope: ReleaseScope): Promise<void>
-  /** The Builder's end of a turn (`finish`, `onPhase`); without it, `watchRuns` keeps only the failure it said. */
-  ends?: Pick<Watched, 'finish' | 'onPhase'>
+  /** The controller's own end of a turn (`finish`, `refusal`, `onPhase`); without it, `watchRuns` keeps only the failure it said. */
+  ends?: TurnEnds
   /** What must exist before the scheduler wakes. */
   beforeWorkers?(): Promise<void>
   close?(): Promise<void>
@@ -40,11 +41,12 @@ type Part = {
 /**
  * The Hub's one `Mastra` and the order around it (step 24.3, U1b): Mastra registers the
  * controllers and workflows (`new Mastra({ agentControllers, workflows })`), and the order to
- * start, stop and remove is ours, since `mastra.shutdown` drains no controller
- * (`NM:mastra-Da0Czfte.js:5521-5551`). Each module is registered in one place, as n8n's module
- * manifest (`packages/cli/src/modules/modules.manifest.ts:6-17` at `2e855356`) and activepieces'
- * `app.ts` (`packages/server/api/src/app/app.ts:236-250` at `f34c43cd`) do. `parts` is in the
- * order of removal and of `close`.
+ * start, stop and remove is ours, since `mastra.shutdown` hands the thread runs back aborted, their
+ * partial response unsaved, and waits for no controller's end
+ * (`NM:mastra-B51eYkgX.js:5440-5451,5744-5754`). Each module is registered in one place, as n8n's
+ * module manifest (`packages/cli/src/modules/modules.manifest.ts:6-17` at `2e855356`) and
+ * activepieces' `app.ts` (`packages/server/api/src/app/app.ts:236-250` at `f34c43cd`) do. `parts`
+ * is in the order of removal and of `close`.
  */
 export function createHubMastra(deps: {
   storage: MastraCompositeStore

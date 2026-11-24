@@ -14,13 +14,14 @@ import { resourceOf } from '../controller-kit/public.ts'
 import { registerSourceRoutes } from '../git/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
+import { builderEnds } from './builder-end.ts'
 import type { GuardedMastra } from './guard.ts'
 import { registerBuilderRoutes } from './guard.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { created, registerConversationRoutes } from './routes.ts'
 import { createConversationStore } from './store.ts'
 
-export type { Watched } from './end.ts'
+export type { TurnEnds, Watched } from './end.ts'
 export { failureOf, modelFailure, watchRuns } from './end.ts'
 export type { GuardedMastra, MayApprove, WriteOf } from './guard.ts'
 export { approvedCallOf } from './guard.ts'
@@ -90,10 +91,7 @@ export function createBuilderConversations(deps: {
       memory: builder.memory,
       admit: (input: Parameters<typeof store.mine>[0]) => store.mine(input),
       release: releaseOf({ ...deps, store, builder }),
-      ends: {
-        finish: (input: Parameters<Runs['finish']>[0]) => deps.runs.finish(input),
-        onPhase: (...args: Parameters<Runs['onPhase']>) => deps.runs.onPhase(...args),
-      },
+      ends: builderEnds(deps.runs),
       /** The open streams once each said its end, then the runs' own work (code C62). */
       async close(): Promise<void> {
         // Mastra's adapter stops writing on the response's close (`@mastra/fastify` `stream`).

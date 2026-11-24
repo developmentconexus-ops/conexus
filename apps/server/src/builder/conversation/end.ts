@@ -13,15 +13,13 @@ import type {
   MastraMessagePart,
   Session,
 } from '@mastra/core/agent-controller'
+import type { Memory } from '@mastra/memory'
 import type { Phase } from '../../harness/machine/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { logMemory } from '../../platform/memory.ts'
 import { ownerOfResource } from '../controller-kit/public.ts'
-import type { Runs, Settled } from '../runs/public.ts'
-import type { Builder } from './builder.ts'
 import { FINISHES, TurnTally, turnLine } from './turn-line.ts'
-import { busyIn } from './turn-of.ts'
 
 export type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
 
@@ -57,26 +55,30 @@ function newRun(session: Session): Run {
   }
 }
 
-/**
- * The failure a run's error is the run's: the Projeto busy (`turnOf`), or one of ours the queue
- * said (`MODEL_NO_ACCOUNT`); none for the model's own.
- */
+/** The failure a run's error is the run's, one of ours the queue said (`MODEL_NO_ACCOUNT`); none for the model's own. */
 export function failureOf(error: Error): FailureData | undefined {
-  const busy = busyIn(error)
-  if (busy !== undefined)
-    return busy.person === undefined
-      ? { code: 'RUN_BUSY' }
-      : { code: 'RUN_BUSY', person: busy.person }
   if (!(error instanceof Failure)) return undefined
   const code = TurnFailureCode.safeParse(error.code)
   return code.success ? { code: code.data } : undefined
 }
 
 /**
- * How the run's end settled its Projeto: saved (`Settled`), its Projeto gone mid-turn, the save
- * thrown, or nothing to save, for a controller whose runs hold no Projeto (`unsaved`).
+ * What a controller's own end of a run adds to the message of ours: its parts (the Builder's
+ * version and Preview), the failure its settling said, how many rounds the end of the turn judged,
+ * and whether the message is kept and told again once the end is over (a Preview still sending).
  */
-type Outcome = Settled | 'gone' | 'threw' | 'unsaved'
+export type EndParts = {
+  parts: MastraMessagePart[]
+  failure?: FailureData['code']
+  rounds?: number
+  again: boolean
+}
+
+/**
+ * How the run's end settled: the controller's own parts, its conversation gone mid-turn, the
+ * settling thrown, or nothing to settle, for a controller that has no `finish` (`unsaved`).
+ */
+type Outcome = EndParts | 'gone' | 'threw' | 'unsaved'
 
 /**
  * The run's failure, decided once (the failures table of the card): one its error said first, then
@@ -85,7 +87,7 @@ type Outcome = Settled | 'gone' | 'threw' | 'unsaved'
 function decided(run: Run, reason: AgentEnd, outcome: Outcome): FailureData | undefined {
   if (run.failure !== undefined) return run.failure
   if (outcome === 'threw') return { code: 'INTERNAL_UNEXPECTED' }
-  if (typeof outcome === 'object' && outcome.kind === 'failed') return { code: outcome.code }
+  if (typeof outcome === 'object' && outcome.failure !== undefined) return { code: outcome.failure }
   const code = modelFailure(reason, run.tally)
   return code === undefined ? undefined : { code }
 }
@@ -112,9 +114,9 @@ function startThinking(run: Run, message: string, index: number): void {
 }
 
 /** What a run keeps of each event: its line's counts, its error's failure and the thinking clock. */
-function heard(run: Run, event: AgentControllerEvent): void {
+function heard(run: Run, event: AgentControllerEvent, refusal: TurnEnds['refusal']): void {
   run.tally.heard(event)
-  if (event.type === 'error') run.failure ??= failureOf(event.error)
+  if (event.type === 'error') run.failure ??= refusal?.(event.error) ?? failureOf(event.error)
   if (event.type === 'message_start' && event.message.role === 'assistant') {
     for (const [index, part] of event.message.content.parts.entries()) {
       if (part.type === 'reasoning') startThinking(run, event.message.id, index)
@@ -137,15 +139,24 @@ function heard(run: Run, event: AgentControllerEvent): void {
 }
 
 /**
- * A controller whose runs the Hub watches: the Builder's settles each run's Projeto
- * (`Runs.finish`) and tells its machine's steps; the Assistant's holds no Projeto, so it has no
- * `finish` (step 24.1, U2).
+ * The end of a turn a controller fills in for itself: the Builder settles each run's Projeto
+ * (`finish`), reads the Projeto busy on the run's error (`refusal`) and tells its machine's steps
+ * (`onPhase`); the other three hold no Projeto, so they fill in at most `onPhase` (step 24.1, U2).
  */
-export type Watched = {
+export type TurnEnds = {
+  finish?(input: {
+    conversationId: ConversationId
+    reason: AgentEnd
+    told(end: EndParts): void
+  }): Promise<EndParts | 'gone'>
+  refusal?(error: Error): FailureData | undefined
+  onPhase?(conversationId: ConversationId, listener: (phase: Phase) => void): () => void
+}
+
+/** A controller whose runs the Hub watches, and its end of a turn. */
+export type Watched = TurnEnds & {
   controller: AgentController
-  memory: Builder['memory']
-  finish?: Runs['finish']
-  onPhase?: Runs['onPhase']
+  memory: Pick<Memory, 'saveMessages'>
 }
 
 type Deps = Pick<Watched, 'memory' | 'finish'> & { log: FailureLog }
@@ -179,11 +190,8 @@ function partsOf(run: Run, reason: AgentEnd, outcome: Outcome) {
   settleThinking(run)
   const parts = [...run.parts]
   if (typeof outcome === 'object') {
-    run.tally.rounds = outcome.rounds
-    if (outcome.kind === 'saved')
-      parts.push({ type: 'data-conexus-version', data: outcome.version })
-    if (outcome.preview !== undefined)
-      parts.push({ type: 'data-conexus-preview', data: outcome.preview })
+    if (outcome.rounds !== undefined) run.tally.rounds = outcome.rounds
+    parts.push(...outcome.parts)
   }
   const failure = decided(run, reason, outcome)
   run.failed = failure?.code
@@ -201,23 +209,23 @@ async function keep(deps: Deps, message: MastraDBMessage): Promise<void> {
 }
 
 /**
- * The run ends, for any reason, a question or a plan included (`suspended`): its version is saved
- * by the conversation, kept on the thread and told at once as one message of our parts, its
- * failure decided once; once the version went to the app, the same message is kept and told again,
- * before Mastra says `agent_end`, never sent to the model (criteria 30, 48; step 14.1, criteria 2
- * to 4, 31).
+ * The run ends, for any reason, a question or a plan included (`suspended`): what the controller's
+ * `finish` settled (the Builder's version) is kept on the thread and told at once as one message
+ * of our parts, its failure decided once; when the settling says `again` (the version went to the
+ * app), the same message is kept and told again, before Mastra says `agent_end`, never sent to the
+ * model (criteria 30, 48; step 14.1, criteria 2 to 4, 31).
  */
 async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): Promise<void> {
   const conversationId = ConversationIdSchema.parse(session.identity.getId())
   let message = oursOf(session, conversationId, [])
   let kept: Promise<void> | undefined
   let sending = false
-  function saved(settled: Settled): void {
-    const parts = partsOf(run, reason, settled)
+  function told(end: EndParts): void {
+    const parts = partsOf(run, reason, end)
     if (parts.length === 0) return
     message = { ...message, content: { format: 2, parts } }
     kept = keep(deps, message)
-    sending = settled.preview?.state === 'sending'
+    sending = end.again
     tell(session, message)
   }
   // A save that throws is this run's failure, said and logged here: Mastra would print the
@@ -225,7 +233,7 @@ async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): 
   const outcome: Outcome =
     deps.finish === undefined
       ? 'unsaved'
-      : await deps.finish({ conversationId, reason, saved }).catch((cause: unknown) => {
+      : await deps.finish({ conversationId, reason, told }).catch((cause: unknown) => {
           logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
           return 'threw' as const
         })
@@ -294,7 +302,7 @@ async function settleRuns(
 
 /**
  * Every Mastra run of every conversation, from the session Mastra makes for it: its end saved by
- * the conversation (`onBeforeAgentEnd`, core `agent-controller-DO6rGsQm.js:4836-4859`), and its
+ * the controller's `finish` (`onBeforeAgentEnd`, core `agent-controller-BhkzVgCi.js:5061-5085`), and its
  * line in the log at `agent_end` (security S41). At a stop signal `settle` refuses new turns and
  * waits for the runs in flight to end, up to its bound (founder E1); `drain` then stops what is
  * left as Parar does, so each saves what it wrote, with `HUB_UPDATED` after a `settle`, and waits for their ends
@@ -319,7 +327,7 @@ export function watchRuns(deps: { watched: readonly Watched[]; log: FailureLog }
           each.log.info({ ...fields, runId: run.runId }, 'CONVERSATION_TURN_STARTED')
         }
         if (run === undefined) return
-        heard(run, event)
+        heard(run, event, each.refusal)
         if (event.type !== 'agent_end') return
         const line = turnLine({
           ...{ runId: run.runId, startedAt: run.startedAt, tally: run.tally },
