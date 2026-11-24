@@ -1,7 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { ConstrutorChat, loadConstrutorConversation } from '../../../../../builder/agents/public.ts'
-import { ConversationGone } from '../../../../../builder/assistant/public.ts'
-import { projectConversationParams } from '../../../../../builder/conversation/public.ts'
+import {
+  ConstrutorChat,
+  loadConstrutorConversation,
+} from '../../../../../agents/agent-builder/public.ts'
+import { ConversationGone } from '../../../../../agents/assistant/public.ts'
+import { projectConversationParams } from '../../../../../harness/room/public.ts'
 
 // A conversation with the Construtor, at its Projeto's address; another person's or another Projeto's is not found.
 export const Route = createFileRoute(

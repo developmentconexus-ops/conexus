@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { UserRoundIcon } from 'lucide-react'
-import { ProfileMemory } from '../../../../../builder/assistant/public.ts'
+import { ProfileMemory } from '../../../../../agents/assistant/public.ts'
 import { MyAccount, MyProfile } from '../../../../../hub/identity/public.ts'
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/account')({

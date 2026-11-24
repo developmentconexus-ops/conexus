@@ -1,6 +1,6 @@
 import { listAssistantConversations } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
-import { AssistantProject } from '../../../../../builder/assistant/public.ts'
+import { AssistantProject } from '../../../../../agents/assistant/public.ts'
 import { projectParams, projectQuery } from '../../../../../hub/projects/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 

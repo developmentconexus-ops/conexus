@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { AgentChat, loadAgentConversation } from '../../../../../builder/agents/public.ts'
-import { ConversationGone } from '../../../../../builder/assistant/public.ts'
-import { conversationParams } from '../../../../../builder/conversation/public.ts'
+import { ConversationGone } from '../../../../../agents/assistant/public.ts'
+import { AgentChat, loadAgentConversation } from '../../../../../agents/saved-agent/public.ts'
+import { conversationParams } from '../../../../../harness/room/public.ts'
 
 // A conversation with an agent, published or the test one with its draft, inside the agent's page.
 export const Route = createFileRoute(

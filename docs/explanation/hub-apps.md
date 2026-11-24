@@ -60,7 +60,7 @@ There is one Worker per version, and each environment has its own host ([0024](.
 at `<label>`, the Prévia at `<label>--previa`, under the same apps' domain. The host a visit opens
 says which version it runs ([the app contract and the dispatcher](app-contract-and-dispatcher.md)).
 A tab opened through `/apps/open` is on the published host and runs `published_version_id`. The
-Prévia's frame in the Hub (`apps/web/src/builder/preview/preview.tsx`) loads the Prévia's host,
+Prévia's frame in the Hub (`apps/web/src/agents/app-builder/preview/preview.tsx`) loads the Prévia's host,
 which the Hub sends as `Project.previewAddress`, and gets its pass from
 `POST /api/apps/frame-handoff`; it runs `live_version_id`, or the example app before the first
 version (`callTo` in `hub/apps/handoff.ts`). Only company members enter the Prévia. A label of 56

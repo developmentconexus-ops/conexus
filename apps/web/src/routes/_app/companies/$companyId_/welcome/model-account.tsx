@@ -4,7 +4,7 @@ import {
   accountsQuery,
   LinkAccount,
   providersQuery,
-} from '../../../../../builder/model-accounts/public.ts'
+} from '../../../../../harness/model-accounts/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 import { buttonVariants } from '../../../../../ui/button.tsx'
 

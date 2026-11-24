@@ -1,6 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { AgentsReadFailure, AreaPending } from '../../../../../builder/agents/public.ts'
-import { loadTools, ToolsTab } from '../../../../../builder/tools/public.ts'
+import {
+  AgentsReadFailure,
+  AreaPending,
+  loadTools,
+  ToolsTab,
+} from '../../../../../agents/saved-agent/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
 
 // The tab Ferramentas of a Projeto's agents: the library's tools it may use, beside the agents' list (web W29, W31).

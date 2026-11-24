@@ -1,0 +1,20 @@
+import { unconfirmedText } from '../../../platform/hub.ts'
+/** The words of the Automações screens (step 24.2, U3); the founder approves them at the step's end. */
+export const AUTOMATIONS_TITLE = 'Automações'
+export const NO_AUTOMATIONS =
+  'Peça numa conversa, por exemplo: todo dia às 7h me manda o resumo de vendas.'
+export const NEW_CONVERSATION = 'Nova conversa'
+export const ACTIVE = 'Ativa'
+export const PAUSED = 'Pausada'
+export const UNCONFIRMED_ACTION = unconfirmedText('a mudança', 'Veja a lista.')
+export const UNCONFIRMED_CREATION = unconfirmedText('a criação', 'Toque de novo.')
+export const RUN_REQUESTED = 'Pedido enviado. A execução aparece no histórico.'
+export const NO_RUNS = 'Ainda não rodou.'
+export const BACK_TO_AUTOMATIONS = 'Automações'
+export const OPEN_CONVERSATION = 'Abrir a conversa'
+export const NOT_RUN = 'Não rodou'
+export const SKIPPED_BECAUSE = 'Você não cria mais automações.'
+export const CREATED = 'Automação criada'
+export const ONLY_BUILDERS_CREATE =
+  'Só o dono, os administradores e os desenvolvedores criam automações.'
+export const READS_NO_SYSTEM = 'Não lê nenhum sistema.'

@@ -11,7 +11,7 @@ import {
 import type { Locator, Page } from 'playwright-core'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
-import { HANDOFF_UNCONFIRMED } from './src/builder/conversation/text.ts'
+import { HANDOFF_UNCONFIRMED } from './src/harness/room/text.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import {
   companies,
