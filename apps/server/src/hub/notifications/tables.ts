@@ -7,7 +7,6 @@ import {
   foreignKey,
   index,
   pgSchema,
-  primaryKey,
   text,
   timestamp,
   unique,
@@ -15,7 +14,6 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
-import { copy } from '../copies/public-tables.ts'
 import { policy } from '../identity/public.ts'
 import { company, member } from '../identity/public-tables.ts'
 import { request } from '../requests/public-tables.ts'
@@ -32,16 +30,6 @@ function listOf(codes: readonly string[]) {
 }
 
 const FAILURE_CODES = listOf(AutomationFailureCode.options)
-/** The codes a copy's run ended with, checked until the migration that drops its notices (U15). */
-const COPY_FAILURE_CODES = listOf([
-  'COPY_SOURCE_REFUSED',
-  'COPY_SOURCE_NEEDS_REAUTH',
-  'COPY_SOURCE_UNREACHABLE',
-  'COPY_SOURCE_UNREADABLE',
-  'COPY_SOURCE_CEILING',
-  'COPY_DATABASE_UNAVAILABLE',
-])
-
 // A notification is its person's alone: the company's routes reach only their own rows.
 const OWN = sql`company_id = ${scoped.companyId} and person_id = ${scoped.personId}`
 
@@ -176,67 +164,5 @@ export const alertRecipient = notifications.table(
     // One address once per company however it is cased, as `invitation_pending_email_key`.
     uniqueIndex('alert_recipient_key').on(table.companyId, sql`lower(${table.email})`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
-  ],
-)
-
-/** A person who follows a copy: the failure reaches their bell and their login's e-mail. */
-export const copyFollower = notifications.table(
-  'copy_follower',
-  {
-    companyId: text('company_id').notNull(),
-    copyId: uuid('copy_id').notNull(),
-    personId: text('person_id').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.copyId, table.personId] }),
-    foreignKey({
-      name: 'copy_follower_member_fkey',
-      columns: [table.companyId, table.personId],
-      foreignColumns: [member.organizationId, member.userId],
-    }).onDelete('cascade'),
-    foreignKey({
-      name: 'copy_follower_copy_fkey',
-      columns: [table.companyId, table.copyId],
-      foreignColumns: [copy.companyId, copy.id],
-    }).onDelete('cascade'),
-    policy(SCOPE_ROLES.COMPANY, 'select', sql`company_id = ${scoped.companyId}`),
-    policy(SCOPE_ROLES.COMPANY, 'insert', OWN),
-    policy(SCOPE_ROLES.COMPANY, 'delete', OWN),
-  ],
-)
-
-/**
- * A copy's failure told to a person, one per run and person, beside `notification` (data D6). It
- * keeps the copy's name and the failure's code because the run leaves with the 100 newest and the
- * notice stays.
- */
-export const copyNotice = notifications.table(
-  'copy_notice',
-  {
-    id: uuid('id').primaryKey(),
-    companyId: text('company_id').notNull(),
-    personId: text('person_id').notNull(),
-    copyId: uuid('copy_id').notNull(),
-    runId: uuid('run_id').notNull(),
-    copyName: text('copy_name').notNull(),
-    code: text('code').notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
-    readAt: timestamp('read_at', { withTimezone: true }),
-  },
-  (table) => [
-    foreignKey({
-      name: 'copy_notice_member_fkey',
-      columns: [table.companyId, table.personId],
-      foreignColumns: [member.organizationId, member.userId],
-    }).onDelete('cascade'),
-    foreignKey({
-      name: 'copy_notice_copy_fkey',
-      columns: [table.companyId, table.copyId],
-      foreignColumns: [copy.companyId, copy.id],
-    }).onDelete('cascade'),
-    check('copy_notice_code', sql`${table.code} in (${COPY_FAILURE_CODES})`),
-    unique('copy_notice_key').on(table.runId, table.personId),
-    ...noticeIndexAndPolicies('copy_notice_person_created', table),
   ],
 )

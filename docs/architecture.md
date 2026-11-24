@@ -164,8 +164,9 @@ program starts ([data D9](guides/data.md)).
 the migrated database ([data D6](guides/data.md)). No image runs from
 before v0.5.0 (old test companies deleted [0039]), 14.2 (`run_event` (D30), `builder.run`,
 `companies_with_runs()`, `hub_runs`), v0.24.101 (`copies.copy.readers_set`) or the closing of A
-Prévia em endereço próprio (`apps.app_session.environment`, `apps.handoff.environment`): each drops
-what older images use. The edge goes back first. Past v0.24.53, rerun
+Prévia em endereço próprio (`apps.app_session.environment`, `apps.handoff.environment`) or v0.24.119,
+the G0b (the nine tables of the `copies` schema and the schema itself, `notifications.copy_follower`
+and `copy_notice`): each drops what older images use. The edge goes back first. Past v0.24.53, rerun
 `20261108033751_e245_active_by`'s `UPDATE`.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the

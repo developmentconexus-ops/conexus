@@ -9,9 +9,8 @@ of the lake's part 0, and what read a copy left with the second
 
 What remains:
 
-- The Hub's tables of the schema `copies` (`apps/server/src/hub/copies/tables.ts`) and the copies'
-  notifications (`hub/notifications/tables.ts`), kept until the migration that drops them (data D6).
-  No code reads or writes them.
+- The Hub's tables of the schema `copies` and the copies' notifications left with the migration of
+  the lake's part 0, third group (data D6, G0c). No code reads or writes them.
 - In each company's database, the schema `sync` and its logins, until the readjust takes them out.
   No Hub code opens a company's database with them.
 - The kit's `CopyDefinition` (`packages/connectors/src/kernel/copy.ts`), the shape of a stored

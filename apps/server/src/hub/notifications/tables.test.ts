@@ -155,65 +155,11 @@ test('o que cada tipo carrega: a conversa no pronta, um código conhecido no fal
   await insert('AUTOMATION_PAUSED', null, null)
 })
 
-/** A copy of company A, with Ana following it and a notice of one run for her and for Bia. */
-async function withCopyNotices(t: Parameters<typeof createTestDatabase>[0]) {
-  const test = await seeded(t)
-  const copyId = randomUUID()
-  const runId = randomUUID()
-  await test.asOwner(
-    `insert into copies.copy (id, company_id, connector_id, connection_id, name, label, definition,
-       created_by, created_at, attempt_key, body_hash)
-     values ($1, $2, 'sankhya', $3, 'sankhya_vendas', 'Vendas', '{}'::jsonb, $4, now(), $5, 'planted')`,
-    [copyId, A, randomUUID(), ANA, randomUUID()],
-  )
-  for (const person of [ANA, BIA]) {
-    await test.asOwner(
-      `insert into notifications.copy_follower (company_id, copy_id, person_id, created_at)
-       values ($1, $2, $3, now())`,
-      [A, copyId, person],
-    )
-    await test.asOwner(
-      `insert into notifications.copy_notice
-         (id, company_id, person_id, copy_id, run_id, copy_name, code, created_at)
-       values ($1, $2, $3, $4, $5, 'sankhya_vendas', 'COPY_SOURCE_NEEDS_REAUTH', now())`,
-      [randomUUID(), A, person, copyId, runId],
-    )
-  }
-  return { ...test, copyId, runId }
-}
-
 function countOf(test: Seeded, table: string) {
   return test
     .asOwner(`select count(*)::int n from notifications.${table}`)
     .then((rows) => rows[0]?.n)
 }
-
-test('o aviso de cópia: uma por rodada e pessoa', async (t) => {
-  const { asOwner, copyId, runId } = await withCopyNotices(t)
-  await assert.rejects(
-    asOwner(
-      `insert into notifications.copy_notice
-         (id, company_id, person_id, copy_id, run_id, copy_name, code, created_at)
-       values ($1, $2, $3, $4, $5, 'sankhya_vendas', 'COPY_SOURCE_NEEDS_REAUTH', now())`,
-      [randomUUID(), A, ANA, copyId, runId],
-    ),
-    { code: '23505', constraint: 'copy_notice_key' },
-  )
-})
-
-test('quem sai da empresa leva o que segue e os seus avisos de cópia', async (t) => {
-  const test = await withCopyNotices(t)
-  await test.asOwner('delete from auth.member where company_id = $1 and user_id = $2', [A, BIA])
-  assert.equal(await countOf(test, 'copy_follower'), 1)
-  assert.equal(await countOf(test, 'copy_notice'), 1)
-})
-
-test('a cópia apagada leva quem a segue e os avisos dela', async (t) => {
-  const test = await withCopyNotices(t)
-  await test.asOwner('delete from copies.copy where id = $1', [test.copyId])
-  assert.equal(await countOf(test, 'copy_follower'), 0)
-  assert.equal(await countOf(test, 'copy_notice'), 0)
-})
 
 test('o mesmo e-mail só entra uma vez na lista de cada empresa, com as letras como vierem', async (t) => {
   const { asOwner } = await seeded(t)
@@ -241,29 +187,4 @@ test('a empresa apagada leva a lista de e-mails dela', async (t) => {
   await test.asOwner('delete from auth.member where company_id = $1', [A])
   await test.asOwner('delete from auth.company where id = $1', [A])
   assert.equal(await countOf(test, 'alert_recipient'), 0)
-})
-
-test('quem já segue uma cópia não a segue de novo', async (t) => {
-  const { asOwner, copyId } = await withCopyNotices(t)
-  await assert.rejects(
-    asOwner(
-      `insert into notifications.copy_follower (company_id, copy_id, person_id, created_at)
-       values ($1, $2, $3, now())`,
-      [A, copyId, ANA],
-    ),
-    { code: '23505', constraint: 'copy_follower_pkey' },
-  )
-})
-
-test('o aviso de cópia só guarda um código de falha de cópia', async (t) => {
-  const { asOwner, copyId } = await withCopyNotices(t)
-  await assert.rejects(
-    asOwner(
-      `insert into notifications.copy_notice
-         (id, company_id, person_id, copy_id, run_id, copy_name, code, created_at)
-       values ($1, $2, $3, $4, $5, 'sankhya_vendas', 'AUTOMATION_TIMEOUT', now())`,
-      [randomUUID(), A, ANA, copyId, randomUUID()],
-    ),
-    { code: '23514', constraint: 'copy_notice_code' },
-  )
 })

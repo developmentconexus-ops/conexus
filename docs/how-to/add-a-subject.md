@@ -28,7 +28,7 @@ write those.
    `platform/isolation-ontology.test.ts` does. Nothing refuses its absence.
 7. **The door.** `hub/<subject>/public.ts` exports what other subjects may use, and
    `public-tables.ts` only when another owner needs a foreign key to a table
-   (`connectors/public-tables.ts`). dependency-cruiser refuses an import that goes around them
+   (`identity/public-tables.ts`). dependency-cruiser refuses an import that goes around them
    (`subject-only-through-public`, `table-door-only-for-foreign-keys-and-schema`).
 8. **The wiring.** `apps/server/src/main.ts` makes the subject and hands its door to the others. A job
    or a workflow is registered in `apps/server/src/conversations-of.ts` (`workflows`, `releaseFirst`).
