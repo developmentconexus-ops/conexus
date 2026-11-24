@@ -52,17 +52,14 @@ function register(surface: Surface, into: string, name: Binding): void {
 function sourceOf(context: Context, at: string, ref: Ref, name: Binding, target: string): string {
   const { plan, graph } = context
   const into = plan.newOf(target)
-  if (isAnyDoor(ref.target) && !graph.doors.has(ref.target)) return plan.newOf(ref.target)
+  const dissolving = graph.doors.has(ref.target)
+  if (isAnyDoor(ref.target) && !dissolving) return plan.newOf(ref.target)
+  if (plan.kinds.get(ref.target) === 'trimmed' && into === target) return ref.target
   const subject = subjectOf(into)
-  const direct = !graph.doors.has(ref.target) || into === target
-  const inside = subject !== undefined && subject === subjectOf(at)
-  if (graph.doors.has(ref.target) && plan.kinds.get(ref.target) === 'trimmed' && direct)
-    return ref.target
-  if (!graph.doors.has(ref.target)) {
-    if (subject === undefined || (inside && !isTest(at))) return into
-    if (isHelper(target) || isHelper(at) || subjectOf(at) === undefined) return into
-  }
-  if (subject !== undefined && plan.synthesized.has(subject)) {
+  const sameSubject = subject !== undefined && subject === subjectOf(at) && !isTest(at)
+  if (subject === undefined || sameSubject) return into
+  if (!dissolving && (isHelper(at) || isHelper(target) || subjectOf(at) === undefined)) return into
+  if (plan.synthesized.has(subject)) {
     register(context.surface, into, name)
     return `${subject}/public.ts`
   }

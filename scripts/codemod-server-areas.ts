@@ -21,7 +21,7 @@ const ROWS = new Map<string, Row>([
   ['schema', { area: 'g5d', to: 'harness/schema' }],
   ['controller-kit', { area: 'g5d', to: 'harness/spec' }],
   ['controller-kit/instructions.ts', { area: 'g5d', to: 'harness/prompt' }],
-  ['controller-context', { area: 'g5d', to: 'harness/spec/context' }],
+  ['controller-context', { area: 'g5d', to: 'harness/memory' }],
   ['conversation', { area: 'g5f', to: 'agents/app-builder' }],
   ['conversation/guard.ts', { area: 'g5d', to: 'harness/routes' }],
   ['conversation/guard.test.ts', { area: 'g5d', to: 'harness/routes' }],
@@ -53,6 +53,9 @@ const ROWS = new Map<string, Row>([
   ['agents', { area: 'g5f', to: 'agents/saved-agent' }],
   ['tools', { area: 'g5f', to: 'agents/saved-agent/tools' }],
 ])
+
+/** The folders of builder/ the table names, for the paths a document gives without their tree. */
+export const ROWS_TOP = [...new Set([...ROWS.keys()].map((row) => row.split('/')[0] ?? row))]
 
 /** The one agent whose door another agent reads: the Construtor de agentes reads the saved agent's. */
 export const READS = new Map<string, string>([['agent-builder', 'saved-agent']])

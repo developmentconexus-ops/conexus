@@ -8,7 +8,15 @@ import { existsSync, lstatSync, mkdirSync, readFileSync, rmSync, writeFileSync }
 import { posix } from 'node:path'
 import { z } from 'zod'
 import type { Area } from './codemod-server-areas.ts'
-import { AREAS, destinationOf, folderRows, isOld, OLD, SRC } from './codemod-server-areas.ts'
+import {
+  AREAS,
+  destinationOf,
+  folderRows,
+  isOld,
+  OLD,
+  ROWS_TOP,
+  SRC,
+} from './codemod-server-areas.ts'
 import type { Graph, Move, Plan } from './codemod-server-plan.ts'
 import {
   againstDirection,
@@ -26,6 +34,9 @@ const Listed = z.record(z.string(), z.array(z.object({ from: z.string(), to: z.s
 const KEPT = /^(docs\/(steps|approvals|decisions|guides)\/|\.agents\/)/
 const BINARY = /\.(png|jpe?g|svg|ico|woff2?|zip|snapshot)$/
 const CITED = /(?<![\w/.-])((?:apps\/server\/src\/|src\/|\$\{SERVER\}\/)?)builder\/([\w.$/-]*\w)/g
+// The reference documents also name a file as the folder of builder/ holds it, `conversation/guard.ts`.
+const SHORT_DOCS = /^docs\/(reference|explanation|how-to)\/|^docs\/architecture\.md$/
+const SHORT = new RegExp(`(?<![\\w/.@-])(?:${ROWS_TOP.join('|')})/[\\w.$/-]*\\w`, 'g')
 const READ_URL = /new URL\(\s*(['"`])(\.[^'"`]*)\1\s*,\s*import\.meta\.url/g
 
 function git(...args: string[]): string {
@@ -49,14 +60,27 @@ function writeList(area: Area, moves: readonly Move[]): void {
 }
 
 /** A path a document or a comment cites, moved as its file or its folder moved; the others stay as written. */
-function citedPaths(text: string, moves: ReadonlyMap<string, string>, area: Area): string {
+function citedPaths(
+  text: string,
+  file: string,
+  moves: ReadonlyMap<string, string>,
+  area: Area,
+): string {
   const folders = [...folderRows(area)].sort(([a], [b]) => b.length - a.length)
-  return text.replace(CITED, (cited, prefix: string, rest: string) => {
-    const full = `${OLD}/${rest}`
+  const movedOf = (full: string): string | undefined => {
     const folder = folders.find(([from]) => full === from || full.startsWith(`${from}/`))
-    const moved =
+    return (
       moves.get(full) ?? (folder === undefined ? undefined : full.replace(folder[0], folder[1]))
+    )
+  }
+  const whole = text.replace(CITED, (cited, prefix: string, rest: string) => {
+    const moved = movedOf(`${OLD}/${rest}`)
     return moved === undefined ? cited : `${prefix}${moved.slice(SRC.length + 1)}`
+  })
+  if (!SHORT_DOCS.test(file)) return whole
+  return whole.replace(SHORT, (cited) => {
+    const moved = movedOf(`${OLD}/${cited}`)
+    return moved === undefined ? cited : moved.slice(SRC.length + 1)
   })
 }
 
@@ -67,7 +91,7 @@ function rewriteCitations(plan: Plan, area: Area, skip: ReadonlySet<string>): vo
       KEPT.test(file) || file.startsWith('scripts/codemod-server') || BINARY.test(file)
     if (skipped || skip.has(file) || !existsSync(file) || !lstatSync(file).isFile()) continue
     const text = readFileSync(file, 'utf8')
-    const next = citedPaths(text, cited, area)
+    const next = citedPaths(text, file, cited, area)
     if (next !== text) writeFileSync(file, next)
   }
 }
