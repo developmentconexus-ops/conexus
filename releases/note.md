@@ -1,20 +1,13 @@
-# v0.24.119
+# v0.24.120
 
-Esta versão publica o que entrou no `main` em 23/11: a segunda parte do Lago 2. O Conexus deixa de
-mostrar e de ler as cópias antigas dos dados da empresa.
+Esta versão publica o que entrou no `main` em 24/11: o último passo da parte 0 do Lago 2. Nada muda na
+tela nem no que o Conexus responde.
 
-**Dados.** A página Dados não mostra mais cópias: some a lista, some a página de uma cópia com a
-Amostra e o "Quem lê", e a busca da árvore também. Em Dados, quem gerencia vê cada sistema ativo da
-empresa com "Nenhuma tabela copiada". Os endereços antigos de uma cópia levam à página Dados.
+**Hub.** O Hub deixa de guardar as tabelas antigas das cópias dos dados da empresa e as permissões
+delas. Nenhuma tela, nenhum Projeto, nenhum app e nenhum agente lia essas tabelas desde a
+v0.24.119, e agora elas saem do banco.
 
-**Projetos e apps.** Os Projetos e os apps não recebem mais cópias liberadas. A seção de cópias das
-Integrações do Projeto sai, e o papel só mostra o que lê, escreve e apaga de cada conector.
+**Lago 2.** Com isso a parte 0 do Lago 2 fecha: o Conexus não guarda mais cópias dos dados da
+empresa e lê os sistemas só ao vivo, até o lago trazer as tabelas.
 
-**Assistente, Builder e agentes.** Eles leem os sistemas só ao vivo, até o lago trazer as tabelas.
-O Assistente continua respondendo, por exemplo, as vendas do mês direto do Sankhya, com a hora da
-leitura.
-
-**Registro de dados.** O filtro Tabela fica sem opções, só com "Todas", até o lago trazer as
-tabelas.
-
-Segue o `G0c`: tirar as tabelas antigas das cópias. Depois vem o conector no padrão novo.
+Segue a etapa O conector no padrão novo, começando pelo Sankhya.

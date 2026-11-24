@@ -82,6 +82,8 @@ export type Kit = {
   /** The provider's own file API, when it has one, is what the file tools use. */
   sandbox: WorkspaceSandbox & { readonly filesystem?: WorkspaceFilesystem }
   transport: Transport
+  /** Opens a running machine to the allowed hosts and `extra`, and nothing else: the list is replaced, not added to. */
+  openNetwork(extra: readonly string[]): Promise<void>
   /** Narrows a running machine to the allowed hosts again. */
   closeNetwork(): Promise<void>
 }

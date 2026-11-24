@@ -44,6 +44,7 @@ ALTER TABLE apps.app OWNER TO test_owner;
 ALTER TABLE apps.app_session OWNER TO test_owner;
 ALTER TABLE apps.app_version OWNER TO test_owner;
 ALTER TABLE apps.blob OWNER TO test_owner;
+ALTER TABLE apps.check_session OWNER TO test_owner;
 ALTER TABLE apps.handoff OWNER TO test_owner;
 ALTER TABLE apps.version_file OWNER TO test_owner;
 ALTER TABLE auth.account OWNER TO test_owner;
@@ -190,6 +191,9 @@ GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE apps.app_version TO hub_company;
 GRANT SELECT,DELETE ON TABLE apps.app_version TO hub_operator;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE apps.blob TO hub_company;
 GRANT SELECT,DELETE ON TABLE apps.blob TO hub_operator;
+-- Step A1 (D11, founder 2026-11-23, "2. A"): the Hub's login writes and redeems
+-- a conference's session, with no scope, as it does an app session; it never changes one.
+GRANT SELECT,INSERT,DELETE ON TABLE apps.check_session TO hub_runtime;
 GRANT SELECT,INSERT,DELETE ON TABLE apps.handoff TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE apps.version_file TO hub_company;
 GRANT SELECT,DELETE ON TABLE apps.version_file TO hub_operator;

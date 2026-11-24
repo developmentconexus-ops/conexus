@@ -281,6 +281,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      # The conference's browser test drives the repository's agent-browser over this Chromium.
+      - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
       - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}

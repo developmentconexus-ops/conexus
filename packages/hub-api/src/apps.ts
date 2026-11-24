@@ -75,10 +75,17 @@ export const createAppSession = defineOperation({
 export const AppVersionId = z.string().regex(LIBRARY_ID).brand('AppVersionId')
 export type AppVersionId = z.infer<typeof AppVersionId>
 
-/** A version's Worker in the namespace, named by its id (decision 0043). */
-export const AppWorker = z.string().regex(/^v-[A-Za-z0-9]{32}$/)
+/**
+ * A Worker in the namespace: a version's, named by its id (decision 0043), or a Projeto's
+ * conference Worker, named by the Projeto.
+ */
+export const AppWorker = z.string().regex(/^[vc]-[A-Za-z0-9]{32}$/)
 export function appWorkerOf(versionId: AppVersionId) {
   return AppWorker.parse(`v-${versionId}`)
+}
+/** The Projeto's conference Worker: one per Projeto, replaced at each conference. */
+export function appCheckWorkerOf(projectId: ProjectId) {
+  return AppWorker.parse(`c-${projectId}`)
 }
 
 /**
