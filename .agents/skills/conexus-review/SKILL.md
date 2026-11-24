@@ -8,8 +8,8 @@ description: "Reviews a Conexus roadmap step at its exact commit, as the one Opu
 ## When to use
 
 Each unit commit by commit from its pull request's opening, and the whole step once beside QA, by
-[delivery L9](../../../docs/guides/delivery.md)'s reviewer. Later passes are a delta check
-(step 10).
+[delivery L9](../../../docs/guides/delivery.md)'s reviewer. Later passes run step 10's delta
+check.
 
 ## What it receives
 
@@ -19,7 +19,8 @@ The pull request, its head commit and the card; nothing from the builders' conve
 
 1. Read the rules from `main`: `AGENTS.md`, [the vision](../../../VISION.md), this skill, [the
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
-   and the card's guides; load pstack `poteto-mode` and, for code, `typescript-best-practices`.
+   and the card's guides; load pstack `poteto-mode`, for code
+   `typescript-best-practices`, for connectors [`conexus-connector`](../conexus-connector/SKILL.md).
    An unloaded skill is read from its `stack.md` docs column.
 2. A unit review reads every file of its commit against its section; the step review reads only
    what L9 names, in steps 5 and 6.
