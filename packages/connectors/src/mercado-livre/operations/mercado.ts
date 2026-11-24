@@ -1,21 +1,21 @@
 import { z } from 'zod'
 import { get, valueAt } from '../../kernel/operation.ts'
 import { anunciosDetalhe } from './anuncios.ts'
-import { chain, firstRowWith, PathId, readOf } from './shared.ts'
+import { chain, Decimal, defineRoute, firstRowWith, PathId } from './route.ts'
 
-export const tendencias = readOf({
+export const tendencias = defineRoute({
   id: 'tendencias',
   subject: 'mercado',
   docs: 'tendencias',
   summary: 'Lista as buscas em alta no Mercado Livre Brasil, com a palavra e o endereço da busca.',
   label: 'Tendências',
   input: z.object({}),
-  list: null,
+  rowsAt: null,
   probe: () => ({}),
   request: () => get('/trends/MLB'),
 })
 
-export const maisVendidos = readOf({
+export const maisVendidos = defineRoute({
   id: 'maisVendidos',
   subject: 'mercado',
   docs: 'mais-vendidos-no-mercado-livre',
@@ -23,13 +23,15 @@ export const maisVendidos = readOf({
     'Lista os mais vendidos de uma categoria do Mercado Livre Brasil, na ordem, com o id e o tipo de cada um.',
   label: 'Mais vendidos',
   input: z.object({ categoryId: PathId }),
-  list: 'content',
+  rowsAt: 'content',
   from: [anunciosDetalhe.id],
-  probe: chain(anunciosDetalhe.id, 'body.category_id', (categoryId) => ({ categoryId })),
+  probe: chain(anunciosDetalhe.id, 'body.category_id', (categoryId) => ({
+    categoryId,
+  })),
   request: (input) => get(`/highlights/MLB/category/${input.categoryId}`),
 })
 
-export const tarifaDeVenda = readOf({
+export const tarifaDeVenda = defineRoute({
   id: 'tarifaDeVenda',
   subject: 'mercado',
   docs: 'comissao-por-vender',
@@ -41,7 +43,7 @@ export const tarifaDeVenda = readOf({
     categoryId: PathId,
     listingTypeId: PathId,
   }),
-  list: null,
+  rowsAt: null,
   from: [anunciosDetalhe.id],
   probe: (earlier) => {
     const row = firstRowWith(earlier, anunciosDetalhe.id, [
@@ -49,10 +51,10 @@ export const tarifaDeVenda = readOf({
       'body.category_id',
       'body.listing_type_id',
     ])
-    const price = row && valueAt(row, 'body.price')
+    const price = Decimal.safeParse(row && valueAt(row, 'body.price')).data
     const categoryId = row && valueAt(row, 'body.category_id')
     const listingTypeId = row && valueAt(row, 'body.listing_type_id')
-    return typeof price === 'number' &&
+    return price !== undefined &&
       typeof categoryId === 'string' &&
       typeof listingTypeId === 'string'
       ? { price, categoryId, listingTypeId }

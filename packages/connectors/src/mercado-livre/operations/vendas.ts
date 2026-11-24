@@ -2,9 +2,9 @@ import { z } from 'zod'
 import { Instant } from '../../kernel/copy.ts'
 import type { OperationId } from '../../kernel/operation.ts'
 import { get } from '../../kernel/operation.ts'
-import { chain, firstId, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, defineRoute, firstId, Limit, Offset, PathId, sellerOf } from './route.ts'
 
-export const pedidos = readOf({
+export const pedidos = defineRoute({
   id: 'pedidos',
   subject: 'vendas',
   docs: 'pedidos-e-opinioes',
@@ -22,8 +22,8 @@ export const pedidos = readOf({
     offset: Offset.optional(),
     limit: Limit(50).optional(),
   }),
-  list: 'results',
-  paged: {
+  rowsAt: 'results',
+  list: {
     paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 50, ceiling: null },
     changed: { input: 'changedFrom', field: 'date_last_updated' },
   },
@@ -41,33 +41,32 @@ export const pedidos = readOf({
     }),
 })
 
-/** The first order the listing before gave, for the reads that open one order. */
 export function firstOrder(earlier: ReadonlyMap<OperationId, unknown>) {
   const orderId = firstId(earlier, pedidos.id, 'id')
   return orderId === undefined ? null : { orderId }
 }
 
-export const pedido = readOf({
+export const pedido = defineRoute({
   id: 'pedido',
   subject: 'vendas',
   docs: 'gerenciamento-de-vendas',
   summary: 'Mostra um pedido pelo id: status, datas, valores, itens e o id do envio e do pacote.',
   label: 'Pedido',
   input: z.object({ orderId: PathId }),
-  list: null,
+  rowsAt: null,
   from: [pedidos.id],
   probe: firstOrder,
   request: (input) => get(`/orders/${input.orderId}`),
 })
 
-export const pacote = readOf({
+export const pacote = defineRoute({
   id: 'pacote',
   subject: 'vendas',
   docs: 'gestao-packs',
   summary: 'Mostra um pacote (várias vendas de um comprador num envio só): os pedidos e o envio.',
   label: 'Pacote',
   input: z.object({ packId: PathId }),
-  list: null,
+  rowsAt: null,
   from: [pedido.id],
   probe: chain(pedido.id, 'pack_id', (packId) => ({ packId })),
   request: (input) => get(`/packs/${input.packId}`),

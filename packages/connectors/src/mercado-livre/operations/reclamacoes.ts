@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { chain, Limit, Offset, PathId, readOf, sellerOf } from './shared.ts'
+import { chain, defineRoute, Limit, Offset, PathId, sellerOf } from './route.ts'
 
-export const reclamacoes = readOf({
+export const reclamacoes = defineRoute({
   id: 'reclamacoes',
   subject: 'reclamacoes',
   docs: 'gerenciar-reclamacoes',
@@ -14,8 +14,8 @@ export const reclamacoes = readOf({
     offset: Offset,
     limit: Limit(30),
   }),
-  list: 'data',
-  paged: {
+  rowsAt: 'data',
+  list: {
     paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 30, ceiling: null },
     changed: null,
   },
@@ -30,15 +30,14 @@ export const reclamacoes = readOf({
     }),
 })
 
-/** What a read of one claim shares: its id, taken from the claim search. */
 const ofClaim = {
   input: z.object({ claimId: PathId }),
-  list: null,
+  rowsAt: null,
   from: [reclamacoes.id],
   probe: chain(reclamacoes.id, 'id', (claimId) => ({ claimId })),
 }
 
-export const reclamacao = readOf({
+export const reclamacao = defineRoute({
   id: 'reclamacao',
   subject: 'reclamacoes',
   docs: 'gerenciar-reclamacoes',
@@ -48,7 +47,7 @@ export const reclamacao = readOf({
   request: (input) => get(`/post-purchase/v1/claims/${input.claimId}`),
 })
 
-export const devolucao = readOf({
+export const devolucao = defineRoute({
   id: 'devolucao',
   subject: 'reclamacoes',
   docs: 'gerenciar-devolucoes',

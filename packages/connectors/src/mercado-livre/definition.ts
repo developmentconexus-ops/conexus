@@ -7,28 +7,33 @@ import { readSkill } from '../kernel/skill.ts'
 import { conta } from './operations/conta.ts'
 import { mercadoLivreOperations, mercadoLivreSubjects } from './operations/index.ts'
 
-const SKILL = new URL('./skill/', import.meta.url)
-
-// The provider's official symbol, without the written name (founder, 2026-10-29).
-const LOGO = readFileSync(new URL('./logo.svg', import.meta.url), 'utf8')
-
-const Id = z.union([z.string().min(1), z.number().int()]).transform(String)
+const Seller = z
+  .object({
+    id: z.union([z.string().min(1), z.number().int()]).transform(String),
+    nickname: z.string().min(1),
+  })
+  .transform(({ id, nickname }) => ({
+    ref: AccountRef.parse(id),
+    label: nickname,
+  }))
 
 export const mercadoLivre = defineConnector({
   id: 'mercado-livre',
   name: 'Mercado Livre',
   version: '1.0.0',
   origin: 'https://api.mercadolibre.com',
-  // The key lasts 6 h; the refresh key 6 months, single use, only the last one counts; the
+  // The access key lasts 6 h; the refresh key 6 months, single use, only the last one counts; the
   // redirect address is fixed and https; the body goes in the form (autenticacao-e-autorizacao,
   // desenvolvimento-seguro). The scopes (read, offline access) are marked on the app, not here.
   auth: oauth2Code({
     credentialClass: 'EXCLUSIVE',
     app: { from: 'installation' },
-    authorize: { url: 'https://auth.mercadolivre.com.br/authorization', pkce: 'S256', params: {} },
+    authorize: {
+      url: 'https://auth.mercadolivre.com.br/authorization',
+      pkce: 'S256',
+      params: {},
+    },
     token: { path: '/oauth/token' },
-    // Revoga a permissão do aplicativo para o usuário, with the seller's own bearer
-    // (developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/usuarios-e-aplicativos).
     revoke: { method: 'DELETE', path: '/users/{account}/applications/{app}' },
     answer: rfc6749Answer,
     refusals: {
@@ -39,21 +44,16 @@ export const mercadoLivre = defineConnector({
   account: {
     kind: 'reported',
     exclusive: true,
-    who: {
-      path: '/users/me',
-      answer: z
-        .object({ id: Id, nickname: z.string().min(1) })
-        .transform(({ id, nickname }) => ({ ref: AccountRef.parse(id), label: nickname })),
-    },
+    who: { path: '/users/me', answer: Seller },
   },
   category: 'Marketplace',
   summary: 'O marketplace onde a loja vende: anúncios, pedidos, envios, perguntas e reclamações.',
-  logo: LOGO,
-  numbers: 'DOUBLE',
-  perProject: 'many', // a Projeto may read several stores
+  logo: readFileSync(new URL('./logo.svg', import.meta.url), 'utf8'),
+  numbers: 'EXACT',
+  perProject: 'many',
   callLimit: { countedBy: 'APP' }, // "per Client ID (application)": one Conexus app serves every company
   subjects: mercadoLivreSubjects,
   operations: mercadoLivreOperations,
   check: conta,
-  skill: { written: readSkill(SKILL) },
+  skill: { written: readSkill(new URL('./skill/', import.meta.url)) },
 })

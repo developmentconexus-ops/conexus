@@ -6,7 +6,7 @@ import { mercadoLivre } from './definition.ts'
 import { downloadPages, inBrowser, routeInPage } from './docs-source.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { APP } from './fake-data.ts'
-import { docsOf } from './operations/shared.ts'
+import { docsOf } from './operations/route.ts'
 import { ACCOUNT, probeAll } from './test-session.ts'
 
 // The documentation is read when the check runs and nothing of it is kept. With

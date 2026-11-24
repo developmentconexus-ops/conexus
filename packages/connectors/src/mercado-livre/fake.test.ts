@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { z } from 'zod'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
 import { answerOf } from '../kernel/conformance-session.ts'
+import { parseJson } from '../kernel/exact-json.ts'
 import { refreshRequest } from '../kernel/oauth.ts'
 import { requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
@@ -163,7 +164,7 @@ test('as respostas gravadas: o dublê responde as quatro formas com as chaves, o
     assert.deepEqual(Object.keys(request.query).sort(), real.route.query, `${name}: o pedido`)
     assert.equal(answered.status, real.status, name)
     const given = shapeOf(bodyOf(answered))
-    const recorded = shapeOf(real.body)
+    const recorded = shapeOf(parseJson(JSON.stringify(real.body), mercadoLivre.numbers))
     for (const [at, types] of recorded)
       for (const type of types)
         assert.ok(given.get(at)?.has(type), `${name}: o dublê não manda ${at} como ${type}`)

@@ -1,17 +1,17 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
 import {
+  defineRoute,
   Limit,
   Offset,
-  readOf,
   SCROLL_TTL_MS,
   Scan,
   scanAlone,
   searchTypeOf,
   sellerOf,
-} from './shared.ts'
+} from './route.ts'
 
-export const perguntas = readOf({
+export const perguntas = defineRoute({
   id: 'perguntas',
   subject: 'perguntas',
   docs: 'gerenciamento-perguntas-respostas',
@@ -36,8 +36,8 @@ export const perguntas = readOf({
       limit: Limit(50),
     })
     .refine(scanAlone.check, scanAlone.issue),
-  list: 'questions',
-  paged: {
+  rowsAt: 'questions',
+  list: {
     paging: {
       ...{ kind: 'CURSOR', cursor: 'scrollId', limit: 'limit', max: 50 },
       ...{ start: { scan: true }, ttlMs: SCROLL_TTL_MS },
@@ -57,14 +57,14 @@ export const perguntas = readOf({
     }),
 })
 
-export const tempoDeResposta = readOf({
+export const tempoDeResposta = defineRoute({
   id: 'tempoDeResposta',
   subject: 'perguntas',
   docs: 'gerenciamento-perguntas-respostas',
   summary: 'Mostra o tempo médio, em minutos, que o vendedor leva para responder as perguntas.',
   label: 'Tempo de resposta',
   input: z.object({}),
-  list: null,
+  rowsAt: null,
   // gerenciamento-perguntas-respostas: a seller with no questions on their items gets this 404
   emptyNotFound: 'Response time not found for user id',
   probe: () => ({}),
