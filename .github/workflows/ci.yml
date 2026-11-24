@@ -436,6 +436,8 @@ jobs:
             echo "No apps/extraction yet: the Python checks are skipped." >> "$GITHUB_STEP_SUMMARY"
           fi
       - if: steps.project.outputs.present == 'true'
+        uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - if: steps.project.outputs.present == 'true'
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           version: 0.13.9

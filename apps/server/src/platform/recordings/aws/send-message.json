@@ -1,0 +1,10 @@
+{
+  "service": "sqs",
+  "api": "SendMessage",
+  "sdk": "boto3 1.44.6 (botocore 1.44.10)",
+  "recordedAt": "2026-11-24",
+  "source": "U5 step 3, boto3 from this machine on a temporary parameter and queue of the laboratory account, both deleted; values changed (S40)",
+  "status": 200,
+  "contentType": "application/x-amz-json-1.0",
+  "body": "{\"MD5OfMessageBody\":\"817d09e951bc3a80247c0523557b7012\",\"MessageId\":\"00000000-0000-4000-8000-0000000000b1\"}"
+}

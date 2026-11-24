@@ -1,0 +1,5 @@
+{"library":"@conexus/tap (apps/extraction/tap/src/messages.ts: schemaOf, recordLine, lineOf)","version":"main 50e11616","source":"U5, the adapter's own emitters on invented rows: a column the source drops between two SCHEMA messages (criterion 105)","recordedAt":"2026-11-24"}
+{"type":"SCHEMA","stream":"teste_colunas","schema":{"type":"object","properties":{"codigo":{"type":["integer","null"]},"nome":{"type":["string","null"]},"extra":{"type":["string","null"]}}},"key_properties":["codigo"]}
+{"type":"RECORD","stream":"teste_colunas","record":{"codigo":1,"nome":"antes","extra":"x"},"version":1}
+{"type":"SCHEMA","stream":"teste_colunas","schema":{"type":"object","properties":{"codigo":{"type":["integer","null"]},"nome":{"type":["string","null"]}}},"key_properties":["codigo"]}
+{"type":"RECORD","stream":"teste_colunas","record":{"codigo":2,"nome":"depois"},"version":1}

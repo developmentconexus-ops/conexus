@@ -1,0 +1,4 @@
+{"library":"@conexus/tap (apps/extraction/tap/src/messages.ts: schemaOf, recordLine, lineOf)","version":"main 50e11616","source":"U5, the adapter's own emitters on invented rows: a number past decimal(38, 9) after one that fits (criterion 22)","recordedAt":"2026-11-24"}
+{"type":"SCHEMA","stream":"teste_numero","schema":{"type":"object","properties":{"codigo":{"type":["integer","null"]},"valor":{"type":["string","null"],"format":"x-singer.decimal"}}},"key_properties":["codigo"]}
+{"type":"RECORD","stream":"teste_numero","record":{"codigo":1,"valor":"1.5"},"version":1}
+{"type":"RECORD","stream":"teste_numero","record":{"codigo":2,"valor":"123456789012345678901234567890.5"},"version":1}

@@ -1,0 +1,35 @@
+project_id: conexus-extraction
+send_anonymous_usage_stats: false
+default_environment: copia
+environments:
+- name: copia
+plugins:
+  extractors:
+  - name: tap-conexus
+    namespace: tap_conexus
+    executable: tap-conexus
+    capabilities: [about, catalog, discover, state]
+    settings:
+    - name: connector
+    - name: account
+    - name: secret_path
+    - name: result_path
+    - name: start_date
+    - name: tables
+      kind: array
+  loaders:
+  - name: target-conexus
+    namespace: target_conexus
+    executable: target-conexus
+    settings:
+    - name: catalog
+      kind: object
+    - name: tables
+      kind: object
+    - name: run_parameter
+    - name: region
+    - name: report_path
+    - name: add_record_metadata
+      kind: boolean
+    config:
+      add_record_metadata: true
