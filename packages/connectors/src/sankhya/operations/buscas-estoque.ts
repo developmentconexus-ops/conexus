@@ -17,7 +17,7 @@ export const estoqueDosProdutos = defineSearch({
     'Lê o saldo de estoque de vários produtos de uma vez (até 50 códigos), por empresa, local e controle, com o reservado e o disponível; `codigoEmpresa` e `codigoLocal` restringem. Cada linha traz `tipo` e `codigoParceiro`, que dizem se o saldo é próprio ou de terceiros. Devolve até 200 linhas em ordem de produto, empresa, local, controle, tipo e parceiro, e `temMais`; se houver mais, peça menos produtos.',
   label: 'Estoque de vários produtos',
   input: EstoqueInput,
-  row: {
+  row: z.object({
     codigoProduto: Whole,
     codigoEmpresa: Whole,
     codigoLocal: Whole,
@@ -27,7 +27,7 @@ export const estoqueDosProdutos = defineSearch({
     estoque: Num,
     reservado: Num,
     disponivel: Num,
-  },
+  }),
   columns: {
     codigoProduto: 'E.CODPROD',
     codigoEmpresa: 'E.CODEMP',

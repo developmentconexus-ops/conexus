@@ -94,14 +94,17 @@ function nameOf(select: string): string {
  * select of each of its fields. It asks one row past `limit`, marked `EXTRA = 'S'`, so the answer
  * drops it and knows another page follows; `temMais` is true too when Sankhya cut the list.
  */
-export function defineSearch<I, S extends z.ZodRawShape>(search: {
+export function defineSearch<
+  I,
+  Row extends z.ZodType<object, Record<string, NonNullable<unknown> | null>>,
+>(search: {
   id: string
   subject: string
   summary: string
   label: string
   input: z.ZodType<I>
-  row: S
-  columns: { readonly [K in keyof S]: string }
+  row: Row
+  columns: { readonly [K in keyof z.output<Row>]: string }
   probe: () => NoInfer<I> | null
   page: (input: NoInfer<I>) => Page
 }) {
@@ -116,7 +119,7 @@ export function defineSearch<I, S extends z.ZodRawShape>(search: {
         .map((each) => Object.fromEntries(fields.map(([field, name]) => [field, each[name]]))),
       temMais: !completo || linhas.some((each) => each.EXTRA === 'S'),
     }
-  }).pipe(z.object({ linhas: z.array(z.object(row)), temMais: z.boolean() }))
+  }).pipe(z.object({ linhas: z.array(row), temMais: z.boolean() }))
   function sql(input: I): string {
     const { from, where, order, limit } = page(input)
     const filters = where.filter((each): each is string => Boolean(each))

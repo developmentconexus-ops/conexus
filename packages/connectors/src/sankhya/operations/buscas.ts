@@ -66,7 +66,7 @@ export const buscarParceiros = defineSearch({
   summary: `Busca parceiros (clientes e fornecedores) do Sankhya por parte do nome ou da razão social, sem diferença de maiúscula nem de acento, por CPF/CNPJ, por lista ou faixa de códigos, por papel (cliente ou fornecedor) e por ativo, tudo combinável. Devolve até ${SEARCH_PAGE_ROWS} linhas em ordem de código (\`limite\` até 100) e \`temMais\`; para as próximas, passe o último código lido em \`depoisDe\`.`,
   label: 'Buscar parceiros',
   input: ParceiroInput,
-  row: {
+  row: z.object({
     codigoParceiro: Whole,
     nome: Text,
     razaoSocial: Text,
@@ -75,7 +75,7 @@ export const buscarParceiros = defineSearch({
     ativo: Flag,
     cliente: Flag,
     fornecedor: Flag,
-  },
+  }),
   columns: {
     codigoParceiro: 'CODPARC',
     nome: 'NOMEPARC',
@@ -111,7 +111,7 @@ export const buscarProdutos = defineSearch({
   summary: `Busca produtos do Sankhya por parte do nome ou da referência, sem diferença de maiúscula nem de acento, por lista ou faixa de códigos, por grupo e por ativo, tudo combinável. Devolve até ${SEARCH_PAGE_ROWS} linhas em ordem de código (\`limite\` até 100), com o grupo e a unidade, e \`temMais\`; para as próximas, passe o último código lido em \`depoisDe\`.`,
   label: 'Buscar produtos',
   input: ProdutoInput,
-  row: {
+  row: z.object({
     codigoProduto: Whole,
     nome: Text,
     referencia: Text,
@@ -120,7 +120,7 @@ export const buscarProdutos = defineSearch({
     unidade: Text,
     marca: Text,
     ativo: Flag,
-  },
+  }),
   columns: {
     codigoProduto: 'P.CODPROD',
     nome: 'P.DESCRPROD',
@@ -152,7 +152,7 @@ export const buscarVendedores = defineSearch({
   summary: `Busca vendedores do Sankhya por parte do apelido, sem diferença de maiúscula nem de acento, por lista de códigos e por ativo, tudo combinável. Devolve até ${SEARCH_PAGE_ROWS} linhas em ordem de código (\`limite\` até 100) e \`temMais\`; para as próximas, passe o último código lido em \`depoisDe\`.`,
   label: 'Buscar vendedores',
   input: z.strictObject({ nome: SearchText.optional(), ...ByCode }),
-  row: { codigoVendedor: Whole, apelido: Text, ativo: Flag },
+  row: z.object({ codigoVendedor: Whole, apelido: Text, ativo: Flag }),
   columns: { codigoVendedor: 'CODVEND', apelido: 'APELIDO', ativo: 'ATIVO' },
   probe: () => ({ limite: 1 }),
   page: (input) =>
