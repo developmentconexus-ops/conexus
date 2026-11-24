@@ -1,6 +1,8 @@
 import type { StackProps } from 'aws-cdk-lib'
 import { CfnParameter, DefaultStackSynthesizer, Duration, aws_iam as iam, Stack } from 'aws-cdk-lib'
 import type { Construct } from 'constructs'
+import { LOG_GROUP_ACTIONS } from './actions.ts'
+import { copyImages, copyPlatformStatements } from './copy-preparation.ts'
 import {
   CDK_EXECUTION_POLICY,
   HUB_KEY_USER,
@@ -73,18 +75,6 @@ const CATALOG_FUNCTION_ACTIONS = [
   'lambda:UpdateFunctionConfiguration',
 ]
 
-/** What AWS::Logs::LogGroup's handlers call for the function's group, with no KMS or delivery. */
-const CATALOG_LOGS_ACTIONS = [
-  'logs:CreateLogGroup',
-  'logs:DeleteLogGroup',
-  'logs:PutRetentionPolicy',
-  'logs:TagResource',
-  'logs:UntagResource',
-  'logs:ListTagsForResource',
-  'logs:GetDataProtectionPolicy',
-  'logs:DescribeIndexPolicies',
-]
-
 const SPEND_ACTIONS = [
   'budgets:ModifyBudget',
   'budgets:ViewBudget',
@@ -106,8 +96,9 @@ const SPEND_ACTIONS = [
 
 /**
  * What only an administrator does, once per account, before `cdk bootstrap`: GitHub's OIDC
- * provider and the Release role, the user of the Hub's base key, and the CDK execution policy the
- * bootstrap attaches in place of `AdministratorAccess` (decision D, card U1).
+ * provider and the Release role, the user of the Hub's base key, the copy task's image repository,
+ * and the CDK execution policy the bootstrap attaches in place of `AdministratorAccess`
+ * (decision D, card U1; decision E, card U6).
  */
 export class PreparationStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -116,7 +107,8 @@ export class PreparationStack extends Stack {
       type: 'String',
       allowedPattern: '^[A-Za-z0-9-]+@[0-9]+/[A-Za-z0-9_.-]+@[0-9]+$',
     })
-    releaseRole(this, repository.valueAsString)
+    const release = releaseRole(this, repository.valueAsString)
+    copyImages(this, release)
     const keyUser = new iam.User(this, 'HubKeyUser', { userName: HUB_KEY_USER })
     keyUser.addToPrincipalPolicy(
       new iam.PolicyStatement({
@@ -191,7 +183,7 @@ function catalogFunctionStatements(stack: Stack): iam.PolicyStatement[] {
     }),
     new iam.PolicyStatement({
       sid: 'TheCatalogFunctionLogs',
-      actions: CATALOG_LOGS_ACTIONS,
+      actions: LOG_GROUP_ACTIONS,
       resources: [
         `arn:${stack.partition}:logs:*:${stack.account}:log-group:${TABLES_CATALOG_LOGS}`,
         `arn:${stack.partition}:logs:*:${stack.account}:log-group:${TABLES_CATALOG_LOGS}:*`,
@@ -231,6 +223,7 @@ function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
         resources: ['*'],
       }),
       ...catalogFunctionStatements(stack),
+      ...copyPlatformStatements(stack),
       new iam.PolicyStatement({
         sid: 'TheTemplatesBucket',
         actions: ['s3:*'],

@@ -221,3 +221,78 @@ test('a execução do CDK só cria a função do catálogo, e não registra nem 
     Resource: `arn:aws:s3:::cdk-hnb659fds-assets-${ACCOUNT}-*/*`,
   })
 })
+
+test('a segunda preparação', () => {
+  const statements = statementsOf(find(preparation, 'CdkExecution'))
+  assert.deepEqual(
+    statements.map((statement) => statement.Sid),
+    [
+      'OurRolesAndPolicies',
+      'NeverThePreparation',
+      'LakeFormationSettings',
+      'TheCatalogFunction',
+      'TheCatalogFunctionCode',
+      'TheCatalogFunctionLogs',
+      'DescribeLogGroups',
+      'TheCopyCluster',
+      'TheCopyTaskDefinition',
+      'TaskDefinitionsHaveNoResource',
+      'TheCopyQueues',
+      'TheCopyRule',
+      'TheCopyNetwork',
+      'TheCopyLogs',
+      'TheTemplatesBucket',
+      'BudgetAndAnomalies',
+      'ThePlatformStack',
+      'ReadBootstrapVersion',
+    ],
+  )
+  function copy(sid: string) {
+    return resourcesOf(bySid(statements, sid))
+  }
+  function at(service: string, resource: string) {
+    return `arn:aws:${service}:*:${ACCOUNT}:${resource}`
+  }
+  assert.deepEqual(copy('TheCopyCluster'), [at('ecs', 'cluster/conexus-copia')])
+  assert.deepEqual(copy('TheCopyTaskDefinition'), [at('ecs', 'task-definition/conexus-copia:*')])
+  assert.deepEqual(copy('TheCopyQueues'), [at('sqs', 'conexus-copia-fim*')])
+  assert.deepEqual(copy('TheCopyRule'), [at('events', 'rule/conexus-plataforma-*')])
+  assert.deepEqual(copy('TheCopyLogs'), [
+    at('logs', 'log-group:conexus-plataforma-copia'),
+    at('logs', 'log-group:conexus-plataforma-copia:*'),
+  ])
+  assert.deepEqual(actionsOf(bySid(statements, 'TaskDefinitionsHaveNoResource')), [
+    'ecs:DeregisterTaskDefinition',
+    'ecs:DescribeTaskDefinition',
+  ])
+  const network = actionsOf(bySid(statements, 'TheCopyNetwork'))
+  assert.ok(network.every((action) => action.startsWith('ec2:')))
+  for (const action of network) assert.doesNotMatch(action, /\*|Instance(?!s$)|NatGateway|Peering/)
+  for (const sid of ['TheCopyCluster', 'TheCopyQueues', 'TheCopyRule']) {
+    for (const action of actionsOf(bySid(statements, sid))) assert.doesNotMatch(action, /\*/)
+  }
+  assert.ok(!statements.flatMap(actionsOf).some((action) => action.startsWith('ecr:')))
+})
+
+test('o depósito das imagens da cópia nasce na preparação, e a Release só publica nele', () => {
+  assert.deepEqual(find(preparation, 'CopyRepository'), {
+    Type: 'AWS::ECR::Repository',
+    Properties: { ImageTagMutability: 'IMMUTABLE', RepositoryName: 'conexus-copia' },
+    DeletionPolicy: 'Retain',
+  })
+  assert.deepEqual(statementsOf(find(preparation, 'ReleaseRoleDefaultPolicy')), [
+    {
+      Action: [
+        'ecr:CompleteLayerUpload',
+        'ecr:UploadLayerPart',
+        'ecr:InitiateLayerUpload',
+        'ecr:BatchCheckLayerAvailability',
+        'ecr:PutImage',
+      ],
+      Effect: 'Allow',
+      Resource: '<CopyRepository.Arn>',
+    },
+    { Action: 'ecr:GetAuthorizationToken', Effect: 'Allow', Resource: '*' },
+    { Action: 'ecr:DescribeImages', Effect: 'Allow', Resource: '<CopyRepository.Arn>' },
+  ])
+})

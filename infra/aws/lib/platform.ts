@@ -11,17 +11,20 @@ import {
   aws_s3 as s3,
 } from 'aws-cdk-lib'
 import type { Construct } from 'constructs'
+import { AREAS, READER_ACTIONS, WRITER_TABLE_ACTIONS } from './actions.ts'
+import { copyPlatform } from './copy.ts'
 import { hubRole } from './hub.ts'
-import { READER_ACTIONS } from './lake.ts'
 import {
   BOUNDARY,
   BUCKET_PREFIX,
+  COPY_QUEUE,
   HUB_KEY_USER,
   LAKE_FORMATION_ROLE,
   PLATFORM_ROLES,
   READER_SUFFIX,
   RELEASE_ROLE,
   SERVICE_ROLE,
+  stateBucket,
   TABLES_CATALOG_ROLE,
   TEMPLATE_PREFIX,
   templateBucket,
@@ -29,7 +32,7 @@ import {
 import { Place } from './place.ts'
 import { tablesInLakeFormation } from './tables.ts'
 
-const TEND_READER_ACTIONS = [
+const TEND_COMPANY_ROLE_ACTIONS = [
   'iam:DeleteRole',
   'iam:GetRole',
   'iam:UpdateRole',
@@ -78,7 +81,8 @@ export class PlatformStack extends Stack {
     new CfnOutput(this, 'TemplatesPrefix', { value: TEMPLATE_PREFIX })
     const boundary = boundaryPolicy(this, place)
     const service = serviceRole(this, place, boundary)
-    hubRole(this, place, { service, templates, sourceIp: hubSourceIp.valueAsString })
+    const copy = copyPlatform(this, place)
+    hubRole(this, place, { service, templates, copy, sourceIp: hubSourceIp.valueAsString })
     new lakeformation.CfnDataLakeSettings(this, 'ServiceRoleAdministersTheLake', {
       admins: [{ dataLakePrincipalIdentifier: service.roleArn }],
       mutationType: 'APPEND',
@@ -110,21 +114,54 @@ function templatesBucket(stack: Stack, place: Place): s3.Bucket {
   return templates
 }
 
-/** The most a company's role may ever hold. */
+/** The most a company's role may ever hold: never IAM. */
 function boundaryPolicy(stack: Stack, place: Place): iam.ManagedPolicy {
+  const state = stateBucket(stack.account, stack.region)
   return new iam.ManagedPolicy(stack, 'Boundary', {
     managedPolicyName: BOUNDARY,
     statements: [
       new iam.PolicyStatement({ actions: READER_ACTIONS.athena, resources: [place.workGroups] }),
       new iam.PolicyStatement({ actions: READER_ACTIONS.glue, resources: ['*'] }),
       new iam.PolicyStatement({ actions: ['lakeformation:GetDataAccess'], resources: ['*'] }),
+      new iam.PolicyStatement({
+        sid: 'WriteTheLakeTables',
+        actions: WRITER_TABLE_ACTIONS,
+        resources: [place.lakeTableBuckets, `${place.lakeTableBuckets}/table/*`],
+      }),
+      new iam.PolicyStatement({
+        sid: 'ChangeTheTablesOfBothAreas',
+        actions: ['glue:UpdateTable'],
+        resources: AREAS.map((area) =>
+          place.arn('glue', `table/s3tablescatalog/${BUCKET_PREFIX}*/${area}/*`),
+        ),
+      }),
+      new iam.PolicyStatement({
+        sid: 'ReadTheRunParameters',
+        actions: ['ssm:GetParameter'],
+        resources: [place.runParameters],
+      }),
+      new iam.PolicyStatement({
+        sid: 'SendTheResult',
+        actions: ['sqs:SendMessage'],
+        resources: [place.arn('sqs', COPY_QUEUE)],
+      }),
+      new iam.PolicyStatement({
+        sid: 'TheStoppingPoints',
+        actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+        resources: [`arn:${stack.partition}:s3:::${state}/*`],
+      }),
+      new iam.PolicyStatement({
+        sid: 'ListTheStoppingPoints',
+        actions: ['s3:ListBucket'],
+        resources: [`arn:${stack.partition}:s3:::${state}`],
+      }),
     ],
   })
 }
 
-/** CloudFormation's role for a company's stack: it tends only conexus-*-leitor roles, boundary held. */
+/** CloudFormation's role for a company's stack: it tends only the company's roles, boundary held. */
 function serviceRole(stack: Stack, place: Place, boundary: iam.ManagedPolicy): iam.Role {
-  const readers = place.iam(`role/${BUCKET_PREFIX}*${READER_SUFFIX}`)
+  const companyRoles = [place.iam(`role/${BUCKET_PREFIX}*${READER_SUFFIX}`), place.writers]
   const statements = [
     new iam.PolicyStatement({
       sid: 'LakeTableBuckets',
@@ -137,15 +174,15 @@ function serviceRole(stack: Stack, place: Place, boundary: iam.ManagedPolicy): i
       resources: ['*'],
     }),
     new iam.PolicyStatement({
-      sid: 'CreateReadersOnlyWithTheBoundary',
+      sid: 'CreateCompanyRolesOnlyWithTheBoundary',
       actions: ['iam:CreateRole'],
-      resources: [readers],
+      resources: companyRoles,
       conditions: { StringEquals: { 'iam:PermissionsBoundary': boundary.managedPolicyArn } },
     }),
     new iam.PolicyStatement({
-      sid: 'TendReaders',
-      actions: TEND_READER_ACTIONS,
-      resources: [readers],
+      sid: 'TendCompanyRoles',
+      actions: TEND_COMPANY_ROLE_ACTIONS,
+      resources: companyRoles,
     }),
     new iam.PolicyStatement({
       sid: 'NeverTouchThePlatform',

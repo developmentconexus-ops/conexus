@@ -10,6 +10,7 @@ import {
   aws_s3tables as s3tables,
 } from 'aws-cdk-lib'
 import type { Construct } from 'constructs'
+import { READER_ACTIONS } from './actions.ts'
 import {
   BOUNDARY,
   BUCKET_PREFIX,
@@ -18,33 +19,16 @@ import {
   TAG_COMPANY,
   TAG_READER,
 } from './names.ts'
+import { writerGrants, writerRole } from './writer.ts'
 
 /** The most a single query may scan, 1 GiB, as the study's P1 and P3 templates measured. */
 const QUERY_BYTES_CUTOFF = 1024 ** 3
 
-/** What a company's reader does, and the most the boundary lets a company's role do. */
-export const READER_ACTIONS = {
-  athena: [
-    'athena:StartQueryExecution',
-    'athena:GetQueryExecution',
-    'athena:GetQueryResults',
-    'athena:StopQueryExecution',
-    'athena:GetWorkGroup',
-  ],
-  glue: [
-    'glue:GetCatalog',
-    'glue:GetCatalogs',
-    'glue:GetDatabase',
-    'glue:GetDatabases',
-    'glue:GetTable',
-    'glue:GetTables',
-  ],
-}
-
 /**
  * One company's lake, the template the Hub creates through CloudFormation's service role: the
- * table bucket, the `raw` and `current` namespaces, the reader role, the Athena workgroup and the
- * reader's two `DESCRIBE` grants (decision 0073, card L.1, L.5).
+ * table bucket, the `raw` and `current` namespaces, the reader role, the Athena workgroup, the
+ * reader's two `DESCRIBE` grants, and the copy task's writer with its grants on both areas
+ * (decision 0073, card L.1, L.5, U6).
  */
 export class LakeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -64,7 +48,7 @@ export class LakeStack extends Stack {
       tableBucketName: name,
       tags: [{ key: TAG_COMPANY, value: company }],
     })
-    new s3tables.CfnNamespace(this, 'Raw', {
+    const raw = new s3tables.CfnNamespace(this, 'Raw', {
       namespace: 'raw',
       tableBucketArn: bucket.attrTableBucketArn,
     })
@@ -73,6 +57,7 @@ export class LakeStack extends Stack {
       tableBucketArn: bucket.attrTableBucketArn,
     })
     const reader = readerRole(this, name, company)
+    const writer = writerRole(this, name, company, bucket.attrTableBucketArn)
     new athena.CfnWorkGroup(this, 'WorkGroup', {
       name,
       recursiveDeleteOption: true,
@@ -103,6 +88,7 @@ export class LakeStack extends Stack {
       }),
     ]
     for (const grant of grants) grant.addResourceDependency(current)
+    writerGrants(this, writer, catalogId, [raw, current])
 
     new CfnOutput(this, 'BucketArn', { value: bucket.attrTableBucketArn })
   }
