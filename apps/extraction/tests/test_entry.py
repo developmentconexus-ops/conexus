@@ -104,7 +104,9 @@ def test_o_stoptask_para_o_meltano_e_nao_manda_resultado(
     assert task.run(task.spec(NOTAS)) == 1
     assert task.aws.sent == []
     assert stopped.exists()
-    assert '"event": "RUN_STOPPED"' in "".join(capfd.readouterr())
+    logged = "".join(capfd.readouterr())
+    assert '"event": "RUN_STOPPED"' in logged
+    assert "RUN_UNEXPLAINED" not in logged
 
 
 def _stop_when(started: Path) -> None:

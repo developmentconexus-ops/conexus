@@ -206,6 +206,8 @@ def copied(
         "region": base["AWS_REGION"],
     }
     code = round_.run(discovered, target)
+    if stopping.asked:
+        return None
     report = round_.target_report()
     if report["closed"]:
         log("RUN_CLOSED", runId=spec["runId"])
