@@ -1,8 +1,9 @@
 # The kit, piece by piece
 
 Every file below is in `packages/connectors/src/kernel/`. Each piece names its reference and says
-whether the situation is the same or how Conexus differs. The kit imports only `zod` and Node, and
-only `apps/server/src/hub/connectors/` imports it; `npm run deps` holds that wall
+whether the situation is the same or how Conexus differs. The kit imports only `zod` and Node. In
+production code only `apps/server/src/hub/connectors/` imports it; `.dependency-cruiser.cjs` also
+lets tests, the app SDK's types (`calls.ts`) and the recorders in, and `npm run deps` holds that wall
 ([0056](../../../../docs/decisions/0056-connectors-kit-and-one-executor.md)).
 
 The references are the local checkouts at these commits: Nango `c607ff39`, dlt `8fa90a97`, n8n
@@ -32,8 +33,11 @@ default), Zod `input` and `output`, `from` and `probe` for the conformance, `req
 failure (`REFUSED`, `AUTH_REFUSED`, `TOKEN_EXPIRED`, `UNREADABLE`, `BUSY`), each with the provider's
 `Native` answer as it came.
 
-- Status map, `outcomeOf` and `deniesAccess` (403): n8n treats 401 and 403 as a rejected credential
-  (packages/cli/src/services/credentials-tester.service.ts:348-353). Same situation.
+- Status map, `outcomeOf`, `failedBy` and `deniesAccess` (403): n8n treats 401 and 403 as a
+  rejected credential (packages/cli/src/services/credentials-tester.service.ts:348-353). Same
+  situation. `failedBy` never returns `TOKEN_EXPIRED`, the only failure the session renews on: each
+  connector maps its own expiry answer first (401 in `mercado-livre/answers.ts` and
+  `hubspot/operations/shared.ts`; 401 and a 403 with `GTW3403` in `sankhya/answers.ts`).
 - `BUSY` after one wait: Nango retries 5xx, 429 and 401 by itself
   (packages/shared/lib/services/proxy/retry.ts:56-64). Different situation: Nango's consumer is an
   engine; ours is an agent that decides, so the kit hands it the failure.
@@ -143,6 +147,8 @@ them.
 
 ## Leftovers of the old copy engine
 
-`copy.ts`, `list.ts`, `conformance-list.ts` and `list-fixture.ts` have no production reader; U3
-deletes them, and `ListPaging` and `ListRead` stay. `assertNoCopyModels` in `definition.ts` and
+`copy.ts`, `list.ts`, `conformance-list.ts` and `list-fixture.ts` serve no live call, but they are
+still read: the conformance's page walk goes through `conformance-list.ts`, which uses the other
+two, `mercado-livre/operations/vendas.ts` imports `Instant` from `copy.ts`, and the index exports
+both. U3 moves `Instant`, rewrites the page walk and deletes them; `ListPaging` and `ListRead` stay. `assertNoCopyModels` in `definition.ts` and
 `inCopyTurn` in `limits.ts` guard or queue a shape no connector has. Never build on any of them.

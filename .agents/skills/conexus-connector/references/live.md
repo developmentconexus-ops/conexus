@@ -1,8 +1,8 @@
 # The live path
 
 A live call is a read or a write the Assistant, the Builder, a published app or a saved tool makes
-while a person waits. Every one goes through the kit today. Every file named here is in
-`apps/server/src/hub/connectors/`, the only folder that imports the kit. The card lists these Hub
+while a person waits. Every one goes through the kit today. A bare file name here is in
+`apps/server/src/hub/connectors/`, the only production folder that imports the kit. The card lists these Hub
 pieces as already decided: they stay when a connector is rebuilt.
 
 ## One executor
@@ -30,7 +30,7 @@ connector's `check`; `write.ts` runs a write with `session.once`, after the appr
 | Caller | Door | What it reads of the kit |
 | --- | --- | --- |
 | The Assistant | `assistant-port.ts` | the reads as tools, the generated skill |
-| The Builder | `builder-port.ts` | the reads as typed tools, the skill through `connectorSkill`, the `list` declarations |
+| The Builder | `builder-port.ts`; the typed tools in `builder/connectors/typed-reads.ts` | the skill through `connectorSkill`, the `list` declarations, the reads as typed tools |
 | A saved tool | `tool-door.ts` | the operation it was saved with |
 | A published app | `app-calls.ts`, `apps.ts` | the reads its manifest declares; the types come from `packages/connectors/src/calls.ts` |
 | Roles | `role-kit.ts`, `grants.ts` | one resource per connector and one action per operation |
@@ -52,8 +52,8 @@ the system's users say them, before the first app can read them.
 ## A write
 
 The Hub's write funnel reads only `writes`; `operations` and the read door refuse a write. A person
-approves each write on the approval card (Mastra's `requireApproval`; `approval.ts`), and
-`write-record.ts` records it. The Hub asks the operation what only the provider knows
+approves each write on the approval card: `approval.ts` decides whether and whom to ask, Mastra's
+`requireApproval` asks (wired in `builder/agents/tools.ts`), and `write-record.ts` records it. The Hub asks the operation what only the provider knows
 ([0062](../../../../docs/decisions/0062-a-write-declares-its-provider-facts.md)):
 
 - `uncertain(native)`: the answer leaves the write's end unknown, so the Hub never resends it

@@ -48,8 +48,8 @@ names. A study or card reads 6 before it promises a system.
 
 ## Rules that decide most cases
 
-- Build from `mercado-livre/` and `sankhya/`, the two folders in the pattern. `hubspot/` still has
-  the shape from before the rebuild.
+- Build from `mercado-livre/` and `sankhya/`, the two folders in the pattern. `hubspot/` (reads and a
+  note on a contact) still has the shape from before the rebuild.
 - Record every provider shape from the real service with invented values; never type one
   ([testing T29](../../../docs/guides/testing.md), [security S40](../../../docs/guides/security.md)).
 - A credential is `EXCLUSIVE` until a measurement proves it `SHAREABLE`
