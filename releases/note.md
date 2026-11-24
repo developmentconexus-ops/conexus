@@ -1,6 +1,6 @@
 # v0.24.120
 
-Esta versão publica o que entrou no `main` em 24/11: o fim da segunda parte do Lago 2. Nada muda na
+Esta versão publica o que entrou no `main` em 24/11: o último passo da parte 0 do Lago 2. Nada muda na
 tela nem no que o Conexus responde.
 
 **Hub.** O Hub deixa de guardar as tabelas antigas das cópias dos dados da empresa e as permissões
