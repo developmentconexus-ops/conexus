@@ -278,10 +278,10 @@ test('um envio de cada vez: com a trava viva de outro envio, o do Builder falha 
   )
 })
 
-test('pasta recusada: a versão trocada por um link na máquina falha APP_VERSION_FAILED, NOT_REGULAR (11)', async (t) => {
+test('pasta recusada: a versão trocada por um link na máquina não chega ao navegador, o turno fica unchecked e nada sobe, NOT_REGULAR (11)', async (t) => {
   const subject = await previewing(t, ['linked'])
   const { previews } = await turn(t, subject)
-  assert.deepEqual(previews, [{ state: 'failed', number: 1, code: 'APP_VERSION_FAILED' }])
+  assert.deepEqual(previews, [])
   const refused = subject.lines.filter((line) => line.message === 'PREVIEW_PACK_REFUSED')
   assert.deepEqual(
     refused.map((line) => line.fields.reason),
@@ -290,7 +290,7 @@ test('pasta recusada: a versão trocada por um link na máquina falha APP_VERSIO
   assert.deepEqual(await versionsOf(subject), [])
 })
 
-test('pasta que não bate com o manifesto: um arquivo que falta ou um a mais não sobe, APP_VERSION_FAILED, VERSION_INVALID', async (t) => {
+test('pasta que não bate com o manifesto: um arquivo que falta ou um a mais não chega ao navegador nem sobe, VERSION_INVALID', async (t) => {
   const cases = {
     falta: folder({ assets: ['index.html', 'style.css', 'logo.svg'] }),
     'a mais': folder({ assets: ['index.html'] }),
@@ -300,7 +300,7 @@ test('pasta que não bate com o manifesto: um arquivo que falta ou um a mais nã
       const subject = await previewing(t)
       checking(subject.hub.builder.folder, ['passed'], mismatched)
       const { previews } = await turn(t, subject)
-      assert.deepEqual(previews, [{ state: 'failed', number: 1, code: 'APP_VERSION_FAILED' }])
+      assert.deepEqual(previews, [])
       const refused = subject.lines.filter((line) => line.message === 'PREVIEW_PACK_REFUSED')
       assert.deepEqual(
         refused.map((line) => line.fields.reason),

@@ -139,7 +139,13 @@ test('depois da primeira versão: sem a linha 51, e AGENTS.md e MEMORY.md lidos 
   assert.ok(dataOf(events, 'data-conexus-version').length > 0, 'the first turn saved a version')
   assert.equal(endOf(events), 'complete')
   const app = join(hub.builder.folder, 'app')
-  const starter = new Set([...readdirSync(STARTER_DIR), '.git', 'AGENTS.md', '.conexus'])
+  const starter = new Set([
+    ...readdirSync(STARTER_DIR),
+    '.git',
+    'AGENTS.md',
+    '.conexus',
+    'node_modules',
+  ])
   assert.deepEqual(
     readdirSync(app).filter((name) => !starter.has(name)),
     [],

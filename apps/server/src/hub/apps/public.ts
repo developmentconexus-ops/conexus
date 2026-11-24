@@ -38,6 +38,7 @@ export type { AppRead, SqlStatement } from '../../platform/company-postgres.ts'
 export type { AppCheck } from './app-check.ts'
 export type { AppTablesRead } from './app-tables.ts'
 export type { BuilderData } from './builder-data.ts'
+export type { Conference } from './conference.ts'
 export type { ConnectorCall } from './handoff.ts'
 export type { CloseRequests, PublishDeps, PublishInput, Ungranted } from './live.ts'
 /**

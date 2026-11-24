@@ -89,3 +89,105 @@ export function onTheMachine(t: TestContext, files: Files): CheckContext {
   unlinkSync(join(root, 'node_modules', '@conexus'))
   return { ...contextOf(root), platform: builtPlatform(t) }
 }
+
+const ENCOMENDAS_OPERATIONS = `import { defineOperations } from '@conexus/app'
+import { z } from 'zod'
+
+export const operations = defineOperations({
+  listarEncomendas: {
+    input: z.object({}),
+    output: z.array(z.object({ id: z.number(), cliente: z.string() })),
+  },
+})
+`
+
+const ENCOMENDAS_HANDLERS = `import { defineHandlers, query } from '@conexus/app'
+import { z } from 'zod'
+import { operations } from '../shared/operations'
+
+const Encomenda = z.object({ id: z.number(), cliente: z.string() })
+
+export const handlers = defineHandlers(operations, {
+  listarEncomendas: (_input, { db }) => query(db, Encomenda, 'select id, cliente from encomenda order by id'),
+})
+`
+
+const ENCOMENDAS_SCREEN = `import { useQuery } from '@tanstack/react-query'
+import { api } from '@/conexus/api.gen'
+
+export function Home() {
+  const lista = useQuery({
+    queryKey: ['listarEncomendas'],
+    queryFn: () => api('listarEncomendas', {}),
+    retry: false,
+  })
+  if (lista.isPending) return <p>Carregando</p>
+  if (lista.isError) return <p role="alert">Erro ao carregar</p>
+  return (
+    <ul>
+      {lista.data.map((encomenda) => (
+        <li key={encomenda.id}>{encomenda.cliente}</li>
+      ))}
+    </ul>
+  )
+}
+`
+
+/** The app a Builder is asked to check, with its defect planted: `listarEncomendas` is declared and typed, and its handler reads `encomenda`, which no migration creates. */
+export const ENCOMENDAS_DEFEITO: Files = {
+  'shared/operations.ts': ENCOMENDAS_OPERATIONS,
+  'server/handlers.ts': ENCOMENDAS_HANDLERS,
+  'src/routes/home.tsx': ENCOMENDAS_SCREEN,
+}
+
+const CONECTOR_OPERATIONS = `import { defineConnectors, defineOperations } from '@conexus/app'
+import { z } from 'zod'
+
+export const connectors = defineConnectors({ sankhya: ['consultar'] })
+
+export const operations = defineOperations({
+  listarPedidos: {
+    input: z.object({}),
+    output: z.discriminatedUnion('estado', [
+      z.object({ estado: z.literal('OK'), pedidos: z.int() }),
+      z.object({ estado: z.literal('SEM_CONEXAO') }),
+    ]),
+  },
+})
+`
+
+const CONECTOR_HANDLERS = `import { connectorsOf, defineHandlers } from '@conexus/app'
+import { connectors, operations } from '../shared/operations'
+
+export const handlers = defineHandlers(operations, {
+  listarPedidos: async (_input, context) => {
+    const lido = await connectorsOf(context, connectors).sankhya.consultar({ sql: 'SELECT 1 FROM TSIEMP' })
+    if (lido.kind === 'NOT_GRANTED') return { estado: 'SEM_CONEXAO' as const }
+    if (lido.kind === 'OK') return { estado: 'OK' as const, pedidos: lido.value.linhas.length }
+    throw new Error('CONECTOR_FALHOU')
+  },
+})
+`
+
+const CONECTOR_SCREEN = `import { useQuery } from '@tanstack/react-query'
+import { api } from '@/conexus/api.gen'
+
+export function Home() {
+  const lista = useQuery({
+    queryKey: ['listarPedidos'],
+    queryFn: () => api('listarPedidos', {}),
+    retry: false,
+  })
+  if (lista.isPending) return <p>Carregando</p>
+  if (lista.isError) return <p role="alert">Erro ao carregar</p>
+  if (lista.data.estado === 'SEM_CONEXAO') return <p>Sem conexão</p>
+  return <p>{lista.data.pedidos} pedidos</p>
+}
+`
+
+/** An app whose entry screen reads a connector: with none connected it shows `Sem conexão`, and that is no defect. */
+export const CONECTOR_NA_ENTRADA: Files = {
+  'shared/operations.ts': CONECTOR_OPERATIONS,
+  'server/handlers.ts': CONECTOR_HANDLERS,
+  'src/routes/home.tsx': CONECTOR_SCREEN,
+}
