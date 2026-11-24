@@ -2,10 +2,12 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
 import { logoutRequest, readToken, tokenRequest } from '../kernel/auth.ts'
+import { parseExact } from '../kernel/exact-json.ts'
 import type { ProviderAnswer, ProviderRequest } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
+import { EXACT_NOTE } from './fake-sales.ts'
 import { MISSING_DATE_AND_HOUR, UNKNOWN_PRODUCT } from './refusals.ts'
 
 const GATEWAY = '/gateway/v1/mge/service.sbr'
@@ -20,7 +22,7 @@ async function send(request: Request): Promise<ProviderAnswer> {
   }
 }
 
-function door(requestBody: typeof COUNT): ProviderRequest {
+function door(requestBody: Readonly<{ sql: string }>): ProviderRequest {
   const serviceName = 'DbExplorerSP.executeQuery'
   return {
     method: 'POST',
@@ -297,5 +299,20 @@ test('uma consulta que o dublê não lê, como uma data em outra forma, volta co
     const body = z.object({ status: z.string(), statusMessage: z.string() }).parse(answered.body)
     assert.equal(body.status, '0')
     assert.match(body.statusMessage, /^ORA-\d{5}: /)
+  })
+})
+
+test('o valor de 19 dígitos: o dublê guarda VLRNOTA como texto e o responde como número JSON, que só o leitor exato lê inteiro', async () => {
+  await withToken(async (origin, token) => {
+    const sql = `SELECT VLRNOTA FROM TGFCAB WHERE DTNEG = '${EXACT_NOTE.dtneg}'`
+    const request = toRequest(sankhya, door({ sql }), token, origin)
+    const text = await (await globalThis.fetch(request)).text()
+    assert.ok(text.includes(`[[${EXACT_NOTE.vlrnota}]]`), 'a JSON number, every digit')
+    const rows = z.object({ responseBody: z.object({ rows: z.array(z.array(z.unknown())) }) })
+    assert.deepEqual(rows.parse(parseExact(text)).responseBody.rows, [[EXACT_NOTE.vlrnota]])
+    assert.notEqual(
+      String(rows.parse(JSON.parse(text)).responseBody.rows[0]?.[0]),
+      EXACT_NOTE.vlrnota,
+    )
   })
 })

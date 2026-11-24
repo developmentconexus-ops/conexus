@@ -136,7 +136,10 @@ async function walked(
     const input = operation.input.parse(listInputOf({ list, definition, position, since }))
     const request = requestOf(operation, input, ACCOUNT, SENT_AT)
     const answered = operation.answer(
-      await answerOf(await fake.handle(toRequest(mercadoLivre, request, granted.accessToken))),
+      await answerOf(
+        await fake.handle(toRequest(mercadoLivre, request, granted.accessToken)),
+        mercadoLivre.numbers,
+      ),
     )
     if (answered.kind !== 'OK') return assert.fail(`${operation.id}: ${answered.kind}`)
     const rows = Rows.parse(answered.value)

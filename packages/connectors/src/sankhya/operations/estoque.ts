@@ -1,45 +1,38 @@
 import { z } from 'zod'
-import { defineOperation, get } from '../../kernel/operation.ts'
-import { rows } from '../answers.ts'
-import { Code, Page } from './shared.ts'
+import { get } from '../../kernel/operation.ts'
+import { Code, defineRoute, FirstPage } from './route.ts'
 
-export const estoque = defineOperation({
+export const estoque = defineRoute({
   id: 'estoque',
-  class: 'read' as const,
   subject: 'estoque',
-  idempotent: true,
   summary:
     'Lista o saldo de estoque por produto, empresa e local (até 50 por página); a página começa em 0. Só traz produto que já teve movimento.',
   label: 'Estoque por produto',
-  input: z.strictObject({ page: Page(0) }),
-  ...rows({ list: 'estoque' }),
+  input: FirstPage,
+  rowsAt: 'estoque',
   probe: () => ({ page: 0 }),
-  request: ({ page }) => get('/v1/estoque/produtos', { page }),
+  request: (input) => get('/v1/estoque/produtos', input),
 })
 
-export const estoqueDoProduto = defineOperation({
+export const estoqueDoProduto = defineRoute({
   id: 'estoqueDoProduto',
-  class: 'read' as const,
   subject: 'estoque',
-  idempotent: true,
   summary:
     'Lê o saldo de estoque de um produto, por empresa, local e controle. Leia antes de lançar um pedido: o local de cada item vem daqui. Sem linha, o produto não tem estoque lido.',
   label: 'Estoque de um produto',
   input: z.strictObject({ codigoProduto: Code.positive() }),
-  ...rows({ list: 'estoque' }),
+  rowsAt: 'estoque',
   probe: () => ({ codigoProduto: 11 }),
   request: ({ codigoProduto }) => get(`/v1/estoque/produtos/${codigoProduto}`),
 })
 
-export const locaisEstoque = defineOperation({
+export const locaisEstoque = defineRoute({
   id: 'locaisEstoque',
-  class: 'read' as const,
   subject: 'estoque',
-  idempotent: true,
   summary: 'Lista os locais de estoque (código, descrição, local pai); a página começa em 0.',
   label: 'Locais de estoque',
-  input: z.strictObject({ page: Page(0) }),
-  ...rows({ list: 'locais' }),
+  input: FirstPage,
+  rowsAt: 'locais',
   probe: () => ({ page: 0 }),
-  request: ({ page }) => get('/v1/estoque/locais', { page }),
+  request: (input) => get('/v1/estoque/locais', input),
 })

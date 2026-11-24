@@ -1,59 +1,17 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { readToken, tokenRequest } from '../kernel/auth.ts'
+import { SEARCH_PAGE_ROWS } from '../index.ts'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
 import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
-import { toRequest } from '../kernel/request.ts'
-import { sankhya } from './definition.ts'
 import { queryRequest } from './door.ts'
-import { sankhyaFake } from './fake.ts'
 import { buscarParceiros, buscarProdutos, buscarVendedores } from './operations/buscas.ts'
 import { estoqueDosProdutos } from './operations/buscas-estoque.ts'
 import { isOneReadStatement } from './read-only-sql.ts'
+import { codes, rowsOf, withDouble } from './test-search.ts'
 
-/** The double without a socket, signed in once: `read` sends an operation's input and gives what the kit reads from the answer. */
-async function withDouble(
-  use: (
-    read: <I, O>(
-      operation: Operation<I, O>,
-      input: unknown,
-    ) => Promise<ReturnType<typeof answerOf<O>>>,
-    fake: ReturnType<typeof sankhyaFake>,
-  ) => Promise<void>,
-) {
-  const fake = sankhyaFake()
-  const login = await fake.handle(
-    toRequest(sankhya, tokenRequest(sankhya.auth, fake.credential), null),
-  )
-  const token = readToken(sankhya.auth, { status: login.status, body: await login.json() })
-  assert.equal(token.kind, 'OK')
-  if (token.kind !== 'OK') return
-  await use(async (operation, input) => {
-    const request = requestOf(operation, input, { ref: null }, SENT_AT)
-    const response = await fake.handle(toRequest(sankhya, request, token.accessToken))
-    return answerOf(operation, response.status, z.unknown().parse(await response.json()))
-  }, fake)
-}
-
-function answerOf<O>(operation: Operation<unknown, O>, status: number, body: unknown) {
-  return operation.answer({ status, body })
-}
-
-/** The rows of an OK answer, or the failure it was. */
-function rowsOf(answered: { kind: string; value?: unknown }) {
-  assert.equal(answered.kind, 'OK', JSON.stringify(answered))
-  return z
-    .object({ linhas: z.array(z.record(z.string(), z.unknown())), temMais: z.boolean() })
-    .parse(answered.value)
-}
-
-function codes(answered: { kind: string; value?: unknown }, field: string) {
-  return rowsOf(answered).linhas.map((row) => row[field])
-}
-
-const TOTAL_PARCEIROS = 4 + 7 + 45
+const TOTAL_PARCEIROS = 4 + 8 + 45
 
 test('parceiro por parte do nome: com ou sem acento, em qualquer caixa, em nome ou razão social', async () => {
   await withDouble(async (read) => {
@@ -88,6 +46,41 @@ test('o nome com aspa, %, _ ou barra procura esse texto e nunca vira curinga nem
     for (const nome of ['__', '%%', '\\\\', "x' OR '1'='1", "''"]) {
       assert.deepEqual(rowsOf(await read(buscarParceiros, { nome })).linhas, [], nome)
     }
+  })
+})
+
+const BY_NAME: readonly Operation<unknown, unknown>[] = [
+  buscarParceiros,
+  buscarProdutos,
+  buscarVendedores,
+]
+
+test('o colchete na busca: [ e ] procuram esse texto, nunca uma classe do SQL Server', async () => {
+  await withDouble(async (read) => {
+    // Unescaped, `[A]` is any name with an A and `[^Z]` any name at all.
+    for (const nome of ['[a]', '[^z]', '[a-z]'])
+      for (const operation of BY_NAME)
+        assert.deepEqual(
+          rowsOf(await read(operation, { nome })).linhas,
+          [],
+          `${operation.id} ${nome}`,
+        )
+    assert.deepEqual(
+      codes(await read(buscarParceiros, { nome: '[centro]' }), 'codigoParceiro'),
+      [207],
+    )
+  })
+})
+
+test('a página padrão: sem limite, cada busca traz as linhas que o kit exporta e o resumo diz esse número', async () => {
+  await withDouble(async (read) => {
+    // The double holds less than a page of salespeople.
+    for (const operation of BY_NAME.filter((each) => each !== buscarVendedores)) {
+      const page = rowsOf(await read(operation, {}))
+      assert.deepEqual([page.linhas.length, page.temMais], [SEARCH_PAGE_ROWS, true], operation.id)
+    }
+    for (const operation of BY_NAME)
+      assert.match(operation.summary, new RegExp(`até ${SEARCH_PAGE_ROWS} linhas`), operation.id)
   })
 })
 
@@ -155,7 +148,6 @@ test('um texto hostil ou fora de faixa é recusado antes de qualquer chamada, e 
       assert.equal(isOneReadStatement(requestBody.sql), true, `${operation.id} ${nome}`)
     }
   }
-  // The searches build their SQL through `queryRequest`, which judges it again.
   assert.throws(() => queryRequest('DELETE FROM TGFPAR'), z.ZodError)
 })
 

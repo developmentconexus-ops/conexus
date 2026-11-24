@@ -1,10 +1,10 @@
 # Produtos
 
-Both lists start at page 0 and say with `temMais` if there is another.
+Both lists start at `page` 0 and say with `temMais` whether another follows.
 
-- `produtos`: the product catalog (code, name, reference, group, brand, active, NCM). The change date comes under the key `"dataAlteracao:"`, colon included, as the API spells it.
-- `gruposProduto`: the product groups (code, name, parent group, analytic, active). Use it to name the `codigoGrupoProduto` a product carries.
+- The catalog (`/v1/produtos`): code, name, reference, group, brand, active, NCM. The change date comes under the key `"dataAlteracao:"`, colon included, as the API spells it. It filters by nothing but the page.
+- The product groups (`/v1/grupos-produto`): code, name, parent group, analytic, active. They name the `codigoGrupoProduto` a product carries.
 
-- `buscarProdutos`: finds products in one call. Filters, all optional and combined with AND: `nome` and `referencia` (2 to 60 characters, part of the text, case and accent ignored), `codigos` (up to 100), `deCodigo` and `ateCodigo`, `grupos` (up to 50 group codes), `ativo`, and the paging: `limite` (1 to 100, 20 when absent) and `depoisDe` (the last `codigoProduto` read). Rows come in code order as `codigoProduto`, `nome`, `referencia`, `codigoGrupo`, `grupo`, `unidade`, `marca`, `ativo`. To see ten products, pass their codes or their range in one call.
+The product search finds products by `nome` and `referencia` (2 to 60 characters, part of the text), `codigos` (up to 100), `deCodigo` and `ateCodigo`, `grupos` (up to 50 group codes) and `ativo`, all combined with AND, with `limite` (1 to 100; without it, one page) and `depoisDe` (the last `codigoProduto` read). Its rows are `codigoProduto`, `nome`, `referencia`, `codigoGrupo`, `grupo`, `unidade`, `marca`, `ativo`. To see ten products, pass their codes or their range in one call.
 
 Prices are in `precos`, stock in `estoque`.

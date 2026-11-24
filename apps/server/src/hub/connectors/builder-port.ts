@@ -1,5 +1,5 @@
 import type { ListRead, Operation } from '@conexus/connectors'
-import { connectorOf } from '@conexus/connectors'
+import { connectorOf, connectorSkill } from '@conexus/connectors'
 import type { CompanyId, OfProject, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { CALL_DEADLINE_MS, ConnectionId } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
@@ -187,7 +187,7 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         connector: connector.id,
         name: row.name,
         perProject: connector.perProject,
-        skill: { name: `conexus-${connector.id}`, ...connector.skill },
+        skill: { name: `conexus-${connector.id}`, ...connectorSkill(connector) },
         reads: reads.filter((operation) => operation.class === 'read').map(readOfKit),
         writes: (connector.writes ?? []).map(listedOf),
         notes: Object.keys(Notes.parse(row.notes)),

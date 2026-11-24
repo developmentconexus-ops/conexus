@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import type { Auth } from './auth.ts'
+import { CredentialClass } from './credential-class.ts'
+import { Numbers } from './exact-json.ts'
 import type { AccountOf, Failure, Operation, OperationId, WriteOperation } from './operation.ts'
 
 export const ConnectorId = z
@@ -34,6 +36,12 @@ export type RecordedRefusal = Readonly<{
   kind: Failure['kind'] // what `operation.answer` must make of it
 }>
 
+/** A skill as Mastra's `createSkill` takes it: `SKILL.md`, and each part of `references/` by file name. */
+export type ConnectorSkill = Readonly<{
+  content: string
+  references: Readonly<Record<string, string>>
+}>
+
 const PerProject = z.enum(['one', 'many'])
 type PerProject = z.infer<typeof PerProject>
 
@@ -61,9 +69,10 @@ export type Connector = Readonly<{
   // The one read Testar sends (Nango's `verification`, n8n's credential `test`): one of
   // `operations`, reading from no earlier one; each read's own health is the platform's.
   check: Operation<unknown, unknown, 'read'>
-  // What the Builder reads (decision 0055): SKILL.md and its references by file name, the shape
-  // createSkill takes in step 20; a reference is read on demand through Mastra's skill_read.
-  skill: Readonly<{ content: string; references: Readonly<Record<string, string>> }>
+  // EXACT keeps a number a double cannot hold as its source text; DOUBLE takes JavaScript's number
+  numbers: Numbers
+  // The part of the skill a person writes; the agents read `connectorSkill`
+  skill: Readonly<{ written: ConnectorSkill }>
 }>
 
 const Version = z.string().regex(/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/)
@@ -74,13 +83,15 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, a check that is not one of its operations or needs an earlier one, or a copy model the kit no longer takes. */
+/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a login without its credential class, a `numbers` other than 'EXACT' or 'DOUBLE', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, a check that is not one of its operations or needs an earlier one, a written skill that names one of its tools, or a copy model the kit no longer takes. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
   Version.parse(connector.version)
   Origin.parse(connector.origin)
   PerProject.parse(connector.perProject)
+  CredentialClass.parse(connector.auth.credentialClass)
+  Numbers.parse(connector.numbers)
   if (connector.account.kind === 'reported' && connector.auth.kind !== 'oauth2_code')
     throw new Error(`Reported account without an OAuth login in ${connector.id}`)
   const all = inProbeOrder(connector)
@@ -101,12 +112,30 @@ export function defineConnector<A extends Auth>(
     if (!named.has(subject)) throw new Error(`Subject without operation: ${subject}`)
   assertSourcesEarlier(all)
   assertCheckStandsAlone(connector)
+  assertSkillNamesNoTool(connector, declared)
   return Object.freeze({ ...connector, id: ConnectorId.parse(connector.id) })
 }
 
 /** Every operation the connector declares: the door's, the reads and the writes. */
 function declaredOf(connector: Pick<Connector, 'operations' | 'readDoor' | 'writes'>) {
   return [...inProbeOrder(connector), ...(connector.writes ?? [])]
+}
+
+/** The agent's tool for one operation of a connector (`sankhya_pedidos`): the Builder names its typed reads by it. */
+export function toolNameOf(connector: Readonly<{ id: string }>, operation: string): string {
+  return `${connector.id}_${operation}`
+}
+
+function assertSkillNamesNoTool(
+  connector: Pick<Connector, 'skill'> & { id: string },
+  declared: readonly Operation<unknown, unknown>[],
+): void {
+  const { content, references } = connector.skill.written
+  const text = [content, ...Object.values(references)].join('\n')
+  const named = declared
+    .map((operation) => toolNameOf(connector, operation.id))
+    .filter((tool) => text.includes(tool))
+  if (named.length > 0) throw new Error(`The skill of ${connector.id} names ${named.join(', ')}`)
 }
 
 function assertWritesWrite(connector: Pick<Connector, 'writes'>): void {

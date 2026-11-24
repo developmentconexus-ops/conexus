@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { CredentialClass } from './credential-class.ts'
 import type { Native, ProviderAnswer, ProviderRequest, TokenRequest } from './operation.ts'
 import { locateOf } from './operation.ts'
 
@@ -24,6 +25,7 @@ export type AppSource = Readonly<{ from: 'installation' }>
 /** A login the person makes at the provider and comes back from with a code, exchanged for a token and renewed with a refresh token. */
 export type OAuth2CodeAuth = Readonly<{
   kind: 'oauth2_code'
+  credentialClass: CredentialClass
   app: AppSource
   authorize: Readonly<{
     url: `https://${string}` // the browser's page, never fetched

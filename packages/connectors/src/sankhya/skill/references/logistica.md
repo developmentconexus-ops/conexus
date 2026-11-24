@@ -1,8 +1,8 @@
 # Logística
 
-Both lists start at page 0 and say with `temMais` if there is another.
+Both lists start at `page` 0 and say with `temMais` whether another follows.
 
-- `transportadoras`: the carriers (code, name, CNPJ, city). `modifiedSince` (`dd/mm/aaaa hh:mm`).
-- `ordensCarga`: the load orders of one company (vehicle, driver, carrier, region, status).
+- Carriers (`/v1/parceiros/transportadoras`): code, name, CNPJ, city. `modifiedSince` (`dd/mm/aaaa hh:mm`).
+- Load orders (`/v1/logistica/ordens-carga`) of one company: vehicle, driver, carrier, region, status.
 
-Vehicles and drivers are named by code in the answer; their registers come through the read door.
+Vehicles and drivers come by code; their registers are read by SQL.

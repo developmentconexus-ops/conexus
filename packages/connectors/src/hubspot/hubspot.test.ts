@@ -28,7 +28,7 @@ test('a lista de contatos anda cada página uma vez pelo after', async () => {
     const request = requestOf(contatos, { limit: 100, after }, session.account, new Date())
     asked.push(request.query.after ?? null)
     const sent = toRequest(hubspot, request, session.accessToken)
-    const answered = contatos.answer(await answerOf(await fake.handle(sent)))
+    const answered = contatos.answer(await answerOf(await fake.handle(sent), hubspot.numbers))
     assert.equal(answered.kind, 'OK')
     if (answered.kind !== 'OK') return
     const page = Rows.parse(answered.value)

@@ -1,71 +1,62 @@
 ---
 name: conexus-sankhya
-description: Reads a company's Sankhya through the Sankhya connector. Every company configures its own Sankhya, so the skill teaches the ready operations, the two read doors, and how to find what each code and field means in this company's data before relying on it. Use before reading Sankhya or writing code that does.
+description: Reads and writes a company's Sankhya through the Sankhya connector. Every company configures its own Sankhya, so the skill teaches how its routes page, how to read the company's own tables, how to find what each code and field means in this company's data before relying on it, and how an order is placed. Use before reading Sankhya, writing to it, or writing code that does.
 ---
 
 # Sankhya
 
-The tables and columns are the same in every company. What they mean is not: which operation types (TOP) are a sale, which date counts, which status means done, which custom fields carry the real rule. Find each of these in this company's data, ask the person only what reading cannot settle, and never take a code or a meaning from other companies, public examples or a field's name alone.
+Every company has the same tables and columns, and gives them its own meaning: which operation types (TOP) are a sale, which date counts, which status means done, which custom field carries the real rule. Find each meaning in this company's data, ask the person only what the data cannot settle, and never take a code or a meaning from another company, a public example or a field's name alone.
 
-The connection is read only. Never write, never ask for values to store, and never look for a way around a refusal of access: that refusal is the answer. A read that fails with an error (a column that does not exist, an SQL the database cannot run) says in its answer what to do with it.
+## Reading
 
-## Rules for every read
+- One page per call. A list answers `{ linhas, temMais }`: `temMais` is `true` when another page follows, `false` on the last, and `null` when the route does not say (then a short or empty page is the end). A page with no rows is `linhas: []`, never a refusal. Read the next page only when the question needs it.
+- Pages start at 0 and are called `page`, except on the finance titles (start at 1) and on the prices (called `pagina`, start at 1). Each subject's part (`references/<subject>.md`, read with `skill_read`) gives each route's page and filters.
+- A row comes as Sankhya sent it. A number may come as text (`"201"`), one field may be a number in one row and text in the next, a key may be spelled oddly (`"dataAlteracao:"`), and a list of one comes as a list. Parse in your code each field it uses, and never infer a type from a name.
+- To find a record, search; to walk a whole list, list. A search takes any mix of its filters (part of a name, a code list or range, active, and its subject's own), matches a name with no regard to case or accent, answers one page of rows in code order with `temMais` (`limite` sets its size, up to 100), and gives the next rows to the same call with `depoisDe` set to the last code read. A field it does not know is refused by name.
+- A refused read has no rows. The refusal is the answer: never read it as an empty list, and never look for a way around a refusal of access.
 
-- Read only. There is no operation that writes, and a refusal is the answer, never a thing to get around.
-- One page per call. Every ready operation answers `{ linhas, temMais }`: `temMais` is `true` when another page follows, `false` when this is the last, and `null` when the route does not say (then an empty or short page is the end). A page with no rows is `linhas: []`, never a refusal. Read the next page only when the person's question needs it.
-- The first page is 0 on every ready operation but the finance titles (`contasAReceber`, `contasAPagar`) and the prices, where it is 1; the parameter is `page` on all but the prices, which take `pagina`. The part for the subject repeats it for each.
-- Each row comes as Sankhya sent it, field by field. A number may come as text (`"201"`), the same field may come as a number in one row and as text in another, a name may be spelled oddly (`"dataAlteracao:"`), and a list of one comes as a list. Parse the fields your code uses, in your code, and never assume a type from the field's name.
-- Use the ready operations before the read doors. They are the same routes for every company and cost one call.
-- To find a record, search; to walk a whole list, list. `buscarParceiros`, `buscarProdutos` and `buscarVendedores` take any mix of filters (name, code list or range, active, and the subject's own), answer up to 20 rows in code order and say `temMais`; the next rows are the same call with `depoisDe` set to the last code read. A name matches with no regard to case or accent. An unknown field is refused by name.
-- Confirm what a code or a field means in this company's dictionary before relying on it (see The dictionary).
+## The company's own tables
 
-## The ready operations, by subject
+When no published route has what the person asks (`references/tabelas.md` lists what the API lacks), read the tables:
 
-Each subject has a part you read on demand (`skill_read`, `references/<subject>.md`) with its operations, the first page, the main filters and what the documentation warns.
+- One SQL read through the DB Explorer: a single `SELECT` or `WITH`. It refuses any other statement, any comment (`--`, `/*`, `*/`, even quoted; a read never needs one), a statement word outside quotes (`INSERT`, `UPDATE`, `DELETE`, `MERGE`, `EXEC`, `INTO` and the like, so an alias with such a name needs another), a number glued to a word, and Oracle's `q'` quoting. The filter is a first layer and best effort; Sankhya's DbExplorer and the company's read only integration user stand behind it. The answer is `linhas`, each row keyed by column, and `completo`, false when Sankhya cut the list.
+- One entity by its instance name (`loadRecords`). Put every value in `criterio.parametros` with `?` in the expression: `I` integer, `S` text, `D` date `dd/mm/yyyy`, `H` date and time `dd/mm/yyyy hh:mm:ss`, `F` decimal with a dot; a date always goes as a parameter. The expression takes the same refusals as the SQL read, and no `;` at all. Every value comes back as text, and `temMais` says another page follows.
 
-- `cadastros` (Cadastros): `empresas`, `clientes`, `vendedores`, `tiposOperacao`, `naturezas`, `centrosResultado`, `buscarParceiros`, `buscarVendedores`. Companies, customers, salespeople, operation types (TOP), financial natures and result centers, and the two searches that find a partner or a salesperson by name, document or code. Read `empresas` first: other operations need a company code.
-- `produtos` (Produtos): `produtos`, `gruposProduto`, `buscarProdutos`. The catalog, its groups, and the search that finds products by name, reference, code or group.
-- `vendas` (Vendas): `pedidos`, `notasFiscais`, `notaFiscal`, `devolucoes`, `notasCanceladas`. Sales orders, invoices, returns and cancelled invoices. The taxes of an order are read through the door (`consultar`).
-- `estoque` (Estoque): `estoque`, `estoqueDoProduto`, `locaisEstoque`, `estoqueDosProdutos`. Stock balances, the stock of one product, stock locations and the stock of up to 50 products at once.
-- `financeiro` (Financeiro): `contasAReceber`, `contasAPagar`, `tiposPagamento`. Receivables, payables and payment types.
-- `precos` (Preços): `precosDoProduto`, `precosDaTabela`. Sale prices by product and by price table.
-- `logistica` (Logística): `transportadoras`, `ordensCarga`. Carriers and load orders.
-- `tabelas`: what the REST API does not have (purchases, suppliers, costs, detailed finance, bank movement, order-to-invoice links, sale price rules, stock with reservation and shelf life) and the tables to read it from through the door.
-
-## The read doors (Porta de leitura, subject `porta`)
-
-Use these when the company's own data is what the person asks about and no ready operation covers it (`tabelas` says where to look).
-
-- `consultar`: one SQL read (`SELECT` or `WITH`, one statement) through the DB Explorer. Use it to investigate the dictionary and to join tables. It refuses any other statement, any comment (`--`, `/*` or `*/`, quoted or not; a read never needs one), a statement word outside quotes (`INSERT`, `UPDATE`, `DELETE`, `MERGE`, `EXEC`, `INTO` and the like, so an alias with one of those names needs another name), and Oracle's `q'` quoting. It is for reading only, and a write is refused: first by this filter, which is best effort and not a guarantee, then by Sankhya's DbExplorer, with the company's read only integration user behind both. Never try a write. The answer is `linhas` (each row keyed by column) and `completo`; `completo: false` means Sankhya cut the list.
-- `carregar`: `loadRecords`, one entity by its instance name. Put every value in `criterio.parametros` with `?` in the expression (`I` integer, `S` text, `D` date `dd/mm/yyyy`, `H` date and time `dd/mm/yyyy hh:mm:ss`, `F` decimal with a dot; always pass a date as a parameter, never inside the expression). The expression takes the same refusals as `consultar` (no `;`, no comment, no statement word outside quotes). Every value comes back as text. `temMais` says there is another page.
-
-Decimals arrive as JSON numbers in `consultar`, which can lose precision, and dates as text. Convert both in the SQL (on Oracle, `TO_CHAR(VALUE, 'FM999999999990.00')` and `TO_CHAR(DATE, 'YYYY-MM-DD')`), and sum in SQL rather than in code.
+The SQL read answers decimals as JSON numbers and dates as text. Convert both in the SQL (on Oracle, `TO_CHAR(VALUE, 'FM999999999990.00')` and `TO_CHAR(DATE, 'YYYY-MM-DD')`), and sum in SQL rather than in code.
 
 ## The dictionary
 
-The meaning lives in the dictionary, which `consultar` reads:
+The meaning of a table lives in the dictionary, read by SQL:
 
-- `TDDTAB`: tables (`NOMETAB`).
-- `TDDCAM`: fields (`NOMETAB`, `NOMECAMPO`, `DESCRCAMPO`); `ADICIONAL` marks what the company created.
+- `TDDTAB`: the tables (`NOMETAB`).
+- `TDDCAM`: the fields (`NOMETAB`, `NOMECAMPO`, `DESCRCAMPO`); `ADICIONAL` marks what the company created.
 - `TDDOPC`: what each value of a coded field means, by `NUCAMPO`. A company can add options.
-- `TDDINS`: the instance names `carregar` takes as `entidade`.
+- `TDDINS`: the instance names an entity read takes.
 
-Search the person's word in `DESCRCAMPO`, confirm each column exists before using it, and read the options of every coded field. Custom fields start with `AD_`. Never change the dictionary.
+Search the person's word in `DESCRCAMPO`, confirm each column exists before using it, and read the options of every coded field. A custom field starts with `AD_`. Never change the dictionary.
 
 ## Investigate in stages
 
 1. Name the concept in the person's words and list the tables that may hold it.
 2. Find the engine: `SELECT 1 FROM DUAL` answers on Oracle and fails on SQL Server. Write portable SQL (`COALESCE`, `CASE`, `CAST`).
 3. Read the dictionary for each field you plan to use, and the meaning of each code.
-4. Measure what is really used: group recent documents by the fields that classify them, with counts and totals, and count how many rows have each field you need filled.
-5. Join and count safely. Versioned tables (`TGFTOP`, `TGFTPV`) are joined on the code and the version the document stored (`DHTIPOPER`, `DHTIPVENDA`). Count the rows per key before any other join. Orders and the notes made from them are separate documents; count one or the other. A document number repeats across operation types, companies and series.
+4. Measure what is really used: group recent documents by the fields that classify them, with counts and totals, and count how many rows fill each field you need.
+5. Join and count safely. A versioned table (`TGFTOP`, `TGFTPV`) joins on the code and on the version the document stored (`DHTIPOPER`, `DHTIPVENDA`). Count the rows per key before any other join. An order and the invoice made from it are separate documents: count one or the other. A document number repeats across operation types, companies and series.
 6. Settle or ask. Ask only what the data cannot settle, one decision per question, in the person's business words, never a table, a field or a code. A meaning the person does not give stays open.
 
 Record what you proved with the query that proved it, never the rows.
 
+## Placing an order
+
+An order is the one thing written to Sankhya, and a person approves each one before it is sent. It is always placed "a confirmar": someone in the company confirms it in Sankhya.
+
+- Read the stock of each product first: an item's place (`codigoLocalEstoque`) and control come from one of its lines. A place given for the whole order goes to every item.
+- The order's model note (`notaModelo`) is set by whoever configures the tool, never by you.
+- The note (`observacao`) takes up to 150 characters minus 17: Conexus adds its mark at the end, so the person finds the order.
+- The answer is the order's code (`codigoPedido`). When Sankhya's gateway times out after taking it, the order may exist with no code in the answer.
+
 ## Never
 
-- Write, update, delete or call a service that does. There is no such operation.
 - Ask for a credential, a token or a value to keep.
 - Take a code from memory: an operation type number means what this company's data says.
-- Read a refusal as an empty list. A refused read has no rows to report.
+- Write through the SQL read, or look for another way to write than placing an order.

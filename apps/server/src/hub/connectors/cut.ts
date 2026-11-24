@@ -1,7 +1,8 @@
+import { SEARCH_PAGE_ROWS } from '@conexus/connectors'
 import { z } from 'zod'
 
-// 20 whole rows show the variation in real Sankhya rows; Factory lists 25.
-const CUT_ROWS = 20
+// The page a search returns with no `limite` (20 whole rows show the variation in real Sankhya rows; Factory lists 25).
+const CUT_ROWS = SEARCH_PAGE_ROWS
 // A 50-column read measured 33 KB for 20 rows; 16 KB is about 4-5k tokens, between Mastra's 2k and Codex's 10k per tool output.
 const CUT_BYTES = 16 * 1024
 // A single row over the bytes loses its long text before any row is dropped: Mastra Factory read-tools.ts MAX_TEXT = 600 (:53, :57-59).
@@ -71,7 +72,6 @@ export function shaped(value: unknown): Shaped {
     rows = rows.slice(0, -1)
     complete = false
   }
-  // The fields besides the rows are the model's too: past 16 KB without a single row, nothing of it passes.
   if (size(build(rows)) > CUT_BYTES) return answer(null, false, 0)
   return answer(build(rows), complete, rows.length)
 }

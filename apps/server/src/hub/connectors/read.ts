@@ -1,4 +1,4 @@
-import type { Answered, Native, Operation } from '@conexus/connectors'
+import type { Answered, Native, NeedsReauth, Operation } from '@conexus/connectors'
 import { CONCURRENT_CALL } from '@conexus/connectors'
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { ConnectorId, OperationId } from '@conexus/hub-api'
@@ -7,12 +7,13 @@ import type { z } from 'zod'
 import type { Consumer } from '../access/public.ts'
 import type { Speaker } from '../identity/public.ts'
 import { roleOfSpeaker } from '../identity/public.ts'
-import type { Login, OpenedConnection } from './executor.ts'
+import type { OpenedConnection } from './executor.ts'
+import { bearerOf } from './executor.ts'
 import type { Deps, Viewer } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import { connection } from './tables.ts'
-import type { AppRefused } from './tokens.ts'
-import { accessFor } from './tokens.ts'
+import type { TokenFailure } from './tokens.ts'
+import { sessionFor } from './tokens.ts'
 
 export type ReadRequest = Readonly<{
   /** The consumer that asked, the app of a click, or a copy's run, which the Registro does not record. */
@@ -45,9 +46,7 @@ export type ReadAnswer =
   | Readonly<{ kind: 'BUSY'; waitMs: number | null }>
   | Readonly<{ kind: 'UNREACHABLE' | 'DEADLINE' }>
 
-function answerOf(
-  answered: Answered<unknown> | Exclude<Login, { kind: 'TOKEN' }> | AppRefused,
-): ReadAnswer {
+function answerOf(answered: Answered<unknown> | TokenFailure | NeedsReauth): ReadAnswer {
   switch (answered.kind) {
     case 'OK':
       return answered.empty === true
@@ -58,6 +57,7 @@ function answerOf(
     case 'UNREADABLE':
       return { kind: answered.kind, native: answered.native }
     case 'TOKEN_EXPIRED':
+    case 'NEEDS_REAUTH':
       return { kind: 'AUTH_REFUSED', native: answered.native }
     case 'BUSY':
       return { kind: 'BUSY', waitMs: answered.waitMs }
@@ -99,23 +99,14 @@ function projectOf(ids: ReadRequest['ids']): Record<string, string> {
   return ids.projectId === undefined ? {} : { projectId: ids.projectId }
 }
 
-/** A token, the read, and when the provider ended the token, one new token and one repeat; the deadline is one for all. */
-async function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) {
-  const access = accessFor(deps, a.viewer)
+function once(deps: Deps, a: ReadRequest, input: unknown, endsAt: number) {
   function left() {
     return Math.max(1, Math.floor(endsAt - performance.now()))
   }
-  const first = await access.token(a.opened, { force: false, deadlineMs: left() })
-  if (first.kind !== 'TOKEN') return first
-  const sent = await deps.executor.call(a.opened, first.token, a.operation, input, left())
-  if (sent.kind !== 'TOKEN_EXPIRED') return sent
-  const again = await access.token(a.opened, {
-    force: true,
-    refused: sent.native,
-    deadlineMs: left(),
-  })
-  if (again.kind !== 'TOKEN') return again
-  return deps.executor.call(a.opened, again.token, a.operation, input, left())
+  return sessionFor(deps, a.viewer, a.opened).call(
+    (token) => deps.executor.call(a.opened, bearerOf(token), a.operation, input, left()),
+    AbortSignal.timeout(left()),
+  )
 }
 
 function isStopped(a: ReadRequest): boolean {

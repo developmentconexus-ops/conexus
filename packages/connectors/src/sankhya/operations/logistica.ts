@@ -1,34 +1,29 @@
 import { z } from 'zod'
-import { defineOperation, get } from '../../kernel/operation.ts'
-import { rows } from '../answers.ts'
-import { empresaPage, empresas } from './cadastros.ts'
-import { Code, DateTime, Page } from './shared.ts'
+import { get } from '../../kernel/operation.ts'
+import { companyProbe, empresas } from './cadastros.ts'
+import { Code, DayAndTime, defineRoute, Page } from './route.ts'
 
-export const transportadoras = defineOperation({
+export const transportadoras = defineRoute({
   id: 'transportadoras',
-  class: 'read' as const,
   subject: 'logistica',
-  idempotent: true,
   summary:
     'Lista as transportadoras (código, nome, CNPJ, cidade); a página começa em 0. `modifiedSince` traz só o que mudou depois de uma data.',
   label: 'Transportadoras',
-  input: z.strictObject({ page: Page(0), modifiedSince: DateTime.optional() }),
-  ...rows({ list: 'transportadoras' }),
+  input: z.strictObject({ page: Page(0), modifiedSince: DayAndTime.optional() }),
+  rowsAt: 'transportadoras',
   probe: () => ({ page: 0 }),
   request: (input) => get('/v1/parceiros/transportadoras', input),
 })
 
-export const ordensCarga = defineOperation({
+export const ordensCarga = defineRoute({
   id: 'ordensCarga',
-  class: 'read' as const,
   subject: 'logistica',
-  idempotent: true,
   summary:
     'Lista as ordens de carga de uma empresa (veículo, motorista, transportadora, situação); a página começa em 0.',
   label: 'Ordens de carga',
   input: z.strictObject({ codigoEmpresa: Code, page: Page(0) }),
-  ...rows({ list: 'ordensCarga' }),
+  rowsAt: 'ordensCarga',
   from: [empresas.id],
-  probe: empresaPage(0),
+  probe: companyProbe(0),
   request: (input) => get('/v1/logistica/ordens-carga', input),
 })

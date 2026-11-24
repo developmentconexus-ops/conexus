@@ -1215,6 +1215,49 @@ sealed credential, so both rows of the card's reference table that read "remendo
 - **Revisit when** Node's `fetch` takes a body cap, or a connector library runs the call in Brazil
   with the credential outside the caller.
 
+## Connectors (O conector no padrão novo): the kit's session and the credential class
+
+Node 24.21.0 and Zod 4.6.5, the installed versions. The reference for both rows is singer-sdk 0.54.9,
+read and not installed: the copy task's Python runs it, and no Node library holds a provider session.
+
+### The session: a token reused, renewed before its end, logged out at the close
+
+- **Library line.** singer-sdk 0.54.9 `singer_sdk/authenticators.py:526-527` renews an OAuth token
+  when it is no longer valid, and `:609-619` takes its expiry from the answer's `expires_in`. It has
+  no logout, renews only on its own clock, and repeats nothing when the provider ends a token early.
+- **Hand-made piece.** `sessionOf`, `credentialsSource` and `openSession` in
+  `packages/connectors/src/kernel/session.ts`. The session reuses a token while it lives, renews it
+  `RENEW_BEFORE_MS` (60 s) before its end with the old one logged out first, opens a new token and
+  repeats once when the provider ends one (a second end is `NEEDS_REAUTH`), and logs out at `close`.
+  A token source says where tokens come from: the kit's login of pasted fields, or the Hub's leased
+  refresh of an exclusive grant (`oauthSource` in `apps/server/src/hub/connectors/tokens.ts`), whose
+  renewal serves once. The Hub keeps one session per pasted-key connection and ends each token before
+  it expires (`createSessions` in `limits.ts`).
+- **Why.** An expired Sankhya token's logout is refused and its session hangs (measured 2026-10-30),
+  so the renewal and the logout belong together; the copy task (U4) and the Hub read through the
+  same rule (decision 0077; the A of the connector).
+- **Proof.** The P2 probe (87 lines, 4 renewals in 100 s, no session left hanging).
+  `packages/connectors/src/kernel/session.test.ts` against the Sankhya double with a test clock: a
+  read longer than the token renews before its end, logs the old one out first and leaves no session
+  open after the close; an ended token is renewed without a logout and the read repeated once; a
+  second end is `NEEDS_REAUTH`. The Hub's `connections-refresh.test.ts`, `connections-sessions.test.ts`,
+  `write-lost.test.ts` and `limits.test.ts` pass through it unchanged in what they expect.
+- **Revisit when** a Node library holds a provider session with a logout, or singer-sdk adds one.
+
+### The credential class, as the login's data
+
+- **Library line.** No reference declares it as data: singer-sdk 0.54.9 and Nango assume one holder
+  per credential.
+- **Hand-made piece.** `CredentialClass` in `packages/connectors/src/kernel/credential-class.ts`,
+  required on every login (`credentialClass` on `ClientCredentialsAuth` and `OAuth2CodeAuth`), and
+  `defineConnector` refuses a login without it. SHAREABLE on the Sankhya; EXCLUSIVE on Mercado Livre,
+  whose refresh key serves once, and on HubSpot until measured.
+- **Why.** The copy task holds its own session beside the Hub's only with a shareable credential
+  (decision 0077:11-16).
+- **Proof.** The Sankhya: two logins of the same keys keep their sessions (`conexus-v17-sonda`; the
+  token ends at 300 s in use). `kernel/conformance.test.ts` "a classe da credencial".
+- **Revisit when** HubSpot's renewal is measured.
+
 ## Connectors (step 19.1): the Mercado Livre documentation check
 
 playwright-core 1.63.0, the installed version. Mercado Livre publishes no OpenAPI and no `llms.txt`
@@ -1235,28 +1278,32 @@ reference tool checks a read against its documentation.
 - **Revisit when** Mercado Livre publishes an OpenAPI document, or a read fails on a real account
   (then its answer, without company data, becomes the double's data).
 
-## Connectors (As buscas do Sankhya): the searches' SQL, with one literal we escape
+## Connectors (As buscas do Sankhya): the searches' SQL, with one literal we quote
 
 - **Library line.** Zod 4.6.5 validates the integers and the text of a search; it builds no SQL.
   The kit sends Sankhya's `DbExplorerSP.executeQuery` only `{ sql }` (`queryRequest` in
   `packages/connectors/src/sankhya/door.ts`); whether it takes bound values is not verified, because
   the step made no call to the real Sankhya. The step's study measured `TRANSLATE`,
   `LIKE ... ESCAPE` and `OFFSET/FETCH` on Oracle 19.0.0.0.0, without the `ROW_NUMBER()` window.
-- **Hand-made piece.** `packages/connectors/src/sankhya/search-sql.ts`. The text of each search is
+- **Hand-made piece.** `packages/connectors/src/sankhya/search.ts`. The text of each search is
   a constant of its read (`operations/buscas.ts`, `operations/buscas-estoque.ts`); a number enters
   only as a Zod integer; a name enters only through `SearchText` (2 to 60 characters, no control
-  character, line or paragraph separator, `--`, `/*`, `*/` or `;`) and `escaped`, which folds case
-  and accent as `TRANSLATE(UPPER(column), ...)` does, escapes `\`, `%` and `_` under `ESCAPE '\'`
-  and doubles the single quote. `queryRequest` judges the whole statement again with
+  character, line or paragraph separator, `--`, `/*`, `*/` or `;`) and `contains`, which folds case
+  and accent as `TRANSLATE(UPPER(column), ...)` does, doubles the single quote and tests the text
+  as a substring with `REPLACE(value, 'TEXT', 'TEXT~') <> value`, not `LIKE`: no character is a
+  wildcard on Oracle or on SQL Server, whose `LIKE` reads `[` as a class (#929), and Oracle refuses
+  an `ESCAPE` before `[` (ORA-01424). `queryRequest` judges the whole statement again with
   `isOneReadStatement`. The double (`fake-sales.ts`) runs the same SQL in SQLite with Oracle's
-  `TRANSLATE`, a Unicode `UPPER` and a case-sensitive `LIKE`.
+  `TRANSLATE`, a Unicode `UPPER` and SQL Server's `LIKE`, classes and all, so a search back on
+  `LIKE` finds too much.
 - **Why.** The founder's choice B, 2026-11-09: one search in the connector that the Project's
   agent, the apps and the Assistant share, and one call that returns many rows. What the model
   writes is hostile input (S2, S15).
-- **Proof.** `search.test.ts` covers the text marks, the `LIKE` escape and the doubled quote. The
-  check in `queryRequest` fails the same file's hostile-input test without it.
-- **Not proved.** On SQL Server, `[` and `]` are wildcards in `LIKE` and `escaped` leaves them
-  (https://github.com/developmentconexus-ops/conexus/issues/929).
+- **Proof.** `search.test.ts` covers the text marks, `%`, `_`, `\`, `[` and `]` as themselves ("o
+  colchete na busca") and the doubled quote; both fail with the search back on `LIKE`. The check in
+  `queryRequest` fails the same file's hostile-input test without it.
+- **Not proved.** `REPLACE` on the real Oracle and SQL Server: the study measured `TRANSLATE`,
+  `LIKE ... ESCAPE` and `OFFSET/FETCH`, not `REPLACE`.
 - **Revisit when** a read-only rehearsal on the real Sankhya shows the DbExplorer takes bound
   values (then the literal goes), or the first company runs Sankhya on SQL Server.
 
