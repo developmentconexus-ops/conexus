@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -62,14 +63,32 @@ def _settings(prefix: str, values: Mapping[str, object]) -> dict[str, str]:
     }
 
 
-def _meltano(args: list[str], env: Mapping[str, str], **kwargs: t.Any) -> int:
-    done = subprocess.run([MELTANO, *args], cwd=PROJECT, env=env, check=False, **kwargs)
-    return done.returncode
+class Stopping:
+    """The ECS stop's SIGTERM, passed on to the running Meltano as Meltano passes it on
+    (meltano/cli/utils.py:402-417); a stopped round sends no result."""
+
+    def __init__(self) -> None:
+        self.asked = False
+        self._child: subprocess.Popen[bytes] | None = None
+
+    def __call__(self, signum: int, _frame: object) -> None:
+        self.asked = True
+        if self._child is not None:
+            self._child.send_signal(signum)
+
+    def meltano(self, args: list[str], env: Mapping[str, str], **kwargs: t.Any) -> int:
+        with subprocess.Popen([MELTANO, *args], cwd=PROJECT, env=env, **kwargs) as child:
+            self._child = child
+            try:
+                return child.wait()
+            finally:
+                self._child = None
 
 
 class Round:
-    def __init__(self, spec: Spec, work: Path, base: Mapping[str, str]) -> None:
+    def __init__(self, spec: Spec, work: Path, base: Mapping[str, str], stopping: Stopping) -> None:
         self.spec = spec
+        self.meltano = stopping.meltano
         self.tap_result = work / "tap-result.json"
         self.report = work / "target-report.json"
         self.catalog = work / "catalog.json"
@@ -89,7 +108,7 @@ class Round:
 
     def discovered(self) -> dict[str, t.Any] | None:
         with self.catalog.open("w") as out:
-            code = _meltano(["invoke", "--dump=catalog", "tap-conexus"], self.env, stdout=out)
+            code = self.meltano(["invoke", "--dump=catalog", "tap-conexus"], self.env, stdout=out)
         return json.loads(self.catalog.read_text()) if code == 0 else None
 
     def run(self, catalog: dict[str, t.Any], target: Mapping[str, object]) -> int:
@@ -99,7 +118,7 @@ class Round:
             "TAP_CONEXUS__CATALOG": str(self.catalog),
             **_settings("TARGET_CONEXUS", {**target, "report_path": str(self.report)}),
         }
-        return _meltano(["run", "tap-conexus", "target-conexus"], env)
+        return self.meltano(["run", "tap-conexus", "target-conexus"], env)
 
     def tap_failure(self) -> Failed | None:
         if not self.tap_result.exists():
@@ -162,9 +181,11 @@ def _result(spec: Spec, outcome: Complete | Failed, report: Mapping[str, t.Any])
     )
 
 
-def copied(spec: Spec, work: Path, base: Mapping[str, str], catalog_of: CatalogOf) -> Result | None:
+def copied(
+    spec: Spec, work: Path, base: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
+) -> Result | None:
     try:
-        round_ = Round(spec, work, base)
+        round_ = Round(spec, work, base, stopping)
     except OSError:
         log("SECRET_NOT_WRITTEN", runId=spec["runId"])
         return None
@@ -209,6 +230,15 @@ def copied(spec: Spec, work: Path, base: Mapping[str, str], catalog_of: CatalogO
 
 
 def run(environ: Mapping[str, str], catalog_of: CatalogOf) -> int:
+    stopping = Stopping()
+    previous = signal.signal(signal.SIGTERM, stopping)
+    try:
+        return _round(environ, catalog_of, stopping)
+    finally:
+        signal.signal(signal.SIGTERM, previous)
+
+
+def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping) -> int:
     parameter, region = environ["CONEXUS_RUN_PARAMETER"], environ["AWS_REGION"]
     aws = boto3.session.Session(region_name=region)
     ssm = aws.client("ssm")
@@ -223,7 +253,10 @@ def run(environ: Mapping[str, str], catalog_of: CatalogOf) -> int:
         log("SPEC_INVALID", field=str(invalid))
         return 1
     with tempfile.TemporaryDirectory(prefix="copia-") as work:
-        result = copied(spec, Path(work), environ, catalog_of)
+        result = copied(spec, Path(work), environ, catalog_of, stopping)
+    if stopping.asked:
+        log("RUN_STOPPED", runId=spec["runId"])
+        return 1
     if result is None:
         return 1
     try:

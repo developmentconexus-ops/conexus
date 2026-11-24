@@ -1,6 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
+import signal
+import threading
+import time
+from pathlib import Path
 
 import pytest
 
@@ -79,6 +84,33 @@ def test_a_rodada_fechada_no_meio_da_copia(
     assert task.aws.sent == []
     assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows == 100
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
+
+
+def test_o_stoptask_para_o_meltano_e_nao_manda_resultado(
+    task: Task, capfd: pytest.CaptureFixture[str]
+) -> None:
+    started, stopped = task.dumps / "target.started", task.dumps / "target.stopped"
+    (task.plugins / "target-conexus").write_text(
+        "\n".join(
+            [
+                "#!/bin/sh",
+                f"trap 'touch \"{stopped}\"; exit 143' TERM",
+                f'touch "{started}"',
+                "for _ in $(seq 300); do sleep 0.1; done",
+            ]
+        )
+    )
+    threading.Thread(target=_stop_when, args=(started,), daemon=True).start()
+    assert task.run(task.spec(NOTAS)) == 1
+    assert task.aws.sent == []
+    assert stopped.exists()
+    assert '"event": "RUN_STOPPED"' in "".join(capfd.readouterr())
+
+
+def _stop_when(started: Path) -> None:
+    while not started.exists():
+        time.sleep(0.05)
+    os.kill(os.getpid(), signal.SIGTERM)
 
 
 def test_a_conferencia_recusada_e_falha_do_gravador(task: Task) -> None:

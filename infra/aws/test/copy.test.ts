@@ -30,6 +30,7 @@ test('a plataforma da cópia', () => {
         Name: 'copia',
         Image: `${ACCOUNT}.dkr.ecr.${REGION}.{AWS::URLSuffix}/conexus-copia@{CopyImageDigest}`,
         Essential: true,
+        LinuxParameters: { InitProcessEnabled: true },
         LogConfiguration: {
           LogDriver: 'awslogs',
           Options: {

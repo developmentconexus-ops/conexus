@@ -123,6 +123,7 @@ class Task:
     aws: Aws
     double: Double
     dumps: Path
+    plugins: Path
     lake: Catalog
     catalog: dict[str, str]
 
@@ -253,4 +254,4 @@ def task(aws: Aws, double: Double, tmp_path: Path, monkeypatch: pytest.MonkeyPat
     lake = load_catalog("lake", **catalog)
     for namespace in ("raw", "current"):
         lake.create_namespace(namespace)
-    return Task(aws=aws, double=double, dumps=dumps, lake=lake, catalog=catalog)
+    return Task(aws=aws, double=double, dumps=dumps, plugins=plugins, lake=lake, catalog=catalog)
