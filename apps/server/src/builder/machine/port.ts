@@ -6,6 +6,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
 import type { Sha } from '../git/public.ts'
 import type { CheckPlatformFailed } from './check.ts'
+import type { BrowserReport, ConferAt, ConferPlatformFailed } from './confer.ts'
 import type { KitFactory, MachineApi } from './kit.ts'
 import type { PackRefused, VersionFolder } from './pack.ts'
 
@@ -39,6 +40,15 @@ export type Machines = {
   check(input: {
     conversationId: ConversationId
   }): Promise<Result<CheckReport, CheckPlatformFailed>>
+  /**
+   * The app's entry screen opened in a browser inside the machine, whose network reaches the app's
+   * host alone while it runs; what the page said comes back. A machine that could not open it is
+   * `CONFER_PLATFORM_FAILED`.
+   */
+  confer(input: {
+    conversationId: ConversationId
+    at: ConferAt
+  }): Promise<Result<BrowserReport, ConferPlatformFailed>>
   /**
    * The Hub saved `version`, the commit `collect` bundled: the machine's folder is measured from it
    * from now on, so work another conversation saved after it is never taken for this machine's.
@@ -76,6 +86,7 @@ export type MachinesDeps = {
   tmp?: string
   /** The check program, `/opt/conexus/check` in the template. */
   checkProgram?: string
+  browserProgram?: string
   /** The external budget of waking or creating a machine (code C57). */
   startMs?: number
   /** The budget of each command the Hub runs in the machine, the check's own aside (code C57). */
