@@ -1,6 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { AgentsReadFailure, AreaPending } from '../../../../../builder/agents/public.ts'
-import { loadTool, ToolPage, toolParams } from '../../../../../builder/tools/public.ts'
+import {
+  AgentsReadFailure,
+  AreaPending,
+  loadTool,
+  ToolPage,
+  toolParams,
+} from '../../../../../agents/saved-agent/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
 
 // One tool of the library: its versions and Nova versão. `tools_` keeps it out of the tab's own route.

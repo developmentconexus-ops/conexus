@@ -67,7 +67,7 @@ const replies = {
 for (const viewport of [DESKTOP, PHONE, ZOOMED_PHONE]) {
   for (const [where, path] of [
     ['a caixa de começar', AREA],
-    ['a caixa da conversa', `${AREA}/construtor/${CONVERSATION}`],
+    ['a caixa da conversa', `${AREA}/agent-builder/${CONVERSATION}`],
   ] as const) {
     test(`${where} do Construtor, a ${viewport.width}px, tem o botão do modelo dentro, sem a pasta do Projeto e sem rolar para o lado`, async () => {
       const page = await harness.open(path, { viewport, replies })
@@ -94,7 +94,7 @@ for (const viewport of [DESKTOP, PHONE, ZOOMED_PHONE]) {
 // The founder, 2026-11-09: the box moved and the scroll took it along (design V54).
 for (const viewport of [LAPTOP, PHONE])
   test(`a ${viewport.width} px, na conversa do Construtor, quem rola é a conversa e a caixa fica onde estava`, async () => {
-    const page = await harness.open(`${AREA}/construtor/${CONVERSATION}`, { viewport, replies })
+    const page = await harness.open(`${AREA}/agent-builder/${CONVERSATION}`, { viewport, replies })
     await holdsColumn(page, viewport)
     await page.close()
   })

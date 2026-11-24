@@ -190,7 +190,7 @@ and metrics to Mastra's own database, without the streamed chunks
 ## The routes the browser reaches
 
 The browser talks to the controllers through `@mastra/client-js`
-(`apps/web/src/builder/conversation/session.ts`). On the server, `@mastra/fastify`'s
+(`apps/web/src/harness/room/session.ts`). On the server, `@mastra/fastify`'s
 `MastraServer` registers exactly seven of `@mastra/server`'s `SERVER_ROUTES` under
 `/api/builder`: a session's state, its stream, a new message, abort, a card's answer, a write's
 approval and the transcript (`builder/conversation/guard.ts`). The Hub refuses to start if one of

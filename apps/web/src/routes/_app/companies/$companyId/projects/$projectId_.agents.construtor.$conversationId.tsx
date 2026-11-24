@@ -1,23 +1,16 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { ConstrutorChat, loadConstrutorConversation } from '../../../../../builder/agents/public.ts'
-import { ConversationGone } from '../../../../../builder/assistant/public.ts'
-import { projectConversationParams } from '../../../../../builder/conversation/public.ts'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { projectConversationParams } from '../../../../../harness/room/public.ts'
 
-// A conversation with the Construtor, at its Projeto's address; another person's or another Projeto's is not found.
+// The address the Construtor's conversations had before the name of the code followed; old links and bookmarks reach the same conversation.
 export const Route = createFileRoute(
   '/_app/companies/$companyId/projects/$projectId_/agents/construtor/$conversationId',
 )({
-  staticData: { place: 'Agentes' },
   params: projectConversationParams,
-  loader: ({ context, params }) =>
-    loadConstrutorConversation(context.queryClient, params, params.conversationId),
-  notFoundComponent: ConversationGone,
-  component: Chat,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: '/companies/$companyId/projects/$projectId/agents/agent-builder/$conversationId',
+      params,
+      replace: true,
+    })
+  },
 })
-
-function Chat() {
-  const { companyId, projectId, conversationId } = Route.useParams()
-  return (
-    <ConstrutorChat companyId={companyId} projectId={projectId} conversationId={conversationId} />
-  )
-}

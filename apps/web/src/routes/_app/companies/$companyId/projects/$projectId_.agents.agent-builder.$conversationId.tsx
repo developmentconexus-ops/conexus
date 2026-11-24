@@ -1,0 +1,23 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { ConstrutorChat } from '../../../../../agents/agent-builder/public.ts'
+import { ConversationGone } from '../../../../../agents/assistant/public.ts'
+import { loadConstrutorConversation } from '../../../../../agents/saved-agent/public.ts'
+import { projectConversationParams } from '../../../../../harness/room/public.ts'
+
+export const Route = createFileRoute(
+  '/_app/companies/$companyId/projects/$projectId_/agents/agent-builder/$conversationId',
+)({
+  staticData: { place: 'Agentes' },
+  params: projectConversationParams,
+  loader: ({ context, params }) =>
+    loadConstrutorConversation(context.queryClient, params, params.conversationId),
+  notFoundComponent: ConversationGone,
+  component: Chat,
+})
+
+function Chat() {
+  const { companyId, projectId, conversationId } = Route.useParams()
+  return (
+    <ConstrutorChat companyId={companyId} projectId={projectId} conversationId={conversationId} />
+  )
+}

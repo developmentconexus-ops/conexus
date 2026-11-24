@@ -35,7 +35,7 @@
     "apps/server/src/platform/isolation-versions.test.ts",
     "apps/server/src/platform/isolation.test.ts",
     "apps/server/src/platform/secret.test.ts",
-    "apps/web/src/builder/assistant/refusals.test.tsx",
+    "apps/web/src/agents/assistant/refusals.test.tsx",
     "apps/web/src/hub/apps/app-refused.test.tsx",
     "apps/web/src/hub/projects/access.test.tsx",
     "apps/web/src/hub/projects/project-integrations-revoke.test.tsx",
@@ -1099,31 +1099,31 @@
       "name": "a faixa da caixa: "
     },
     {
-      "file": "apps/web/src/builder/agents/agent-page.test.tsx",
+      "file": "apps/web/src/agents/saved-agent/agent-page.test.tsx",
       "name": "um agente apagado ou de outro Projeto dá a página de não encontrado"
     },
     {
-      "file": "apps/web/src/builder/agents/area.test.tsx",
+      "file": "apps/web/src/agents/saved-agent/area.test.tsx",
       "name": "uma conversa com o Construtor de outra pessoa dá não encontrado"
     },
     {
-      "file": "apps/web/src/builder/assistant/conversation.test.tsx",
+      "file": "apps/web/src/agents/assistant/conversation.test.tsx",
       "name": "uma conversa que não existe, ou que é de outra pessoa, não é encontrada"
     },
     {
-      "file": "apps/web/src/builder/automations/proposal.test.tsx",
+      "file": "apps/web/src/agents/assistant/automations/proposal.test.tsx",
       "name": "a resposta cortada não diz que criou: o cartão pede outro toque, com a mesma chave"
     },
     {
-      "file": "apps/web/src/builder/conversation/panel.test.tsx",
+      "file": "apps/web/src/agents/app-builder/panel.test.tsx",
       "name": "a conversa de outra pessoa abre como \"não encontrado\", sem rastro dela"
     },
     {
-      "file": "apps/web/src/builder/conversation/start-failures.test.tsx",
+      "file": "apps/web/src/harness/room/start-failures.test.tsx",
       "name": "a conversa cortada depois do Projeto \\("
     },
     {
-      "file": "apps/web/src/builder/preview/preview.test.tsx",
+      "file": "apps/web/src/agents/app-builder/preview/preview.test.tsx",
       "name": "entrada: uma mensagem de outra origem, de outra janela ou que não é a entrada é ignorada"
     },
     {

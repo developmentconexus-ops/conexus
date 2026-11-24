@@ -4,7 +4,7 @@ import {
   AgentsReadFailure,
   AreaPending,
   loadArea,
-} from '../../../../../builder/agents/public.ts'
+} from '../../../../../agents/saved-agent/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
 
 // The area of a Projeto's agents: the Construtor and the agents' list, a page beside Construir (web W29, W31).

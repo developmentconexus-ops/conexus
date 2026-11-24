@@ -6,11 +6,7 @@ import { atRest } from './at-rest.ts'
 import { holdsColumn } from './chat-column.ts'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, focusDrawn, LAPTOP, PHONE } from './layout-harness.ts'
-import {
-  AgentStart,
-  recordedEvent,
-  signalStarted,
-} from './src/builder/conversation/test-recorded.ts'
+import { AgentStart, recordedEvent, signalStarted } from './src/harness/room/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
