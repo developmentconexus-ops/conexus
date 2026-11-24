@@ -125,7 +125,7 @@ One `PostgresStore` (`builder/conversation/storage.ts`) writes Mastra's tables i
 ([0010](../decisions/0010-mastra-tables-own-database.md)). Mastra creates the tables at start;
 Conexus code never writes them directly. It reads the thread state (the task list) and the
 schedules through `storage.getStore`. Which thread belongs to whom is indexed in the Hub's own
-database, outside Mastra's schema (`builder/conversation/public.ts`).
+database, outside Mastra's schema (`builder/conversation/store.ts`).
 
 Memory is one factory, `conversationMemory` (`builder/controller-kit/memory.ts`), which each ficha's
 `memory` and `threads` take: Mastra's

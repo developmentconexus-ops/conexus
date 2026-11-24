@@ -163,7 +163,7 @@ a client more than 8 MiB behind (`builder/conversation/stream.ts`).
 - **Parar.** Parar calls Mastra's abort. The run's end still saves what was written.
 - **Deleting a conversation, a Project or a company.** The Hub first stops the run from writing,
   so its end saves nothing and sends nothing. It then deletes the controller session, kills the
-  machines and deletes the thread (`builder/conversation/public.ts`).
+  machines and deletes the thread (`builder/conversation/conversations.ts`).
 - **Shutdown.** The Hub stops the scheduler, refuses new messages and waits up to 180 seconds for
   the turns in flight, never aborting one (`apps/server/src/platform/lifecycle.ts`,
   `harness/mastra/hub-mastra.ts`). What remains after that is aborted, and each aborted run still
