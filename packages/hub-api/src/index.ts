@@ -164,6 +164,7 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
+export * from './lake-copies.ts'
 export { ClientLake, createClientLake, deleteClientLake, getClientLake } from './lakes.ts'
 export * from './library-ids.ts'
 export * from './machine.ts'

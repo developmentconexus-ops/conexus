@@ -587,6 +587,10 @@
       "name": "quem saiu da empresa recebe a lista vazia e NOT_GRANTED"
     },
     {
+      "file": "apps/server/src/hub/connectors/connection-link-table.test.ts",
+      "name": "o link: a empresa o faz, o lê e o gasta, e nunca lê o resumo nem o link de outra"
+    },
+    {
       "file": "apps/server/src/hub/connectors/connections-several.test.ts",
       "name": "o id de outra empresa dá 404 no Testar, no Desligar e no getConnection"
     },

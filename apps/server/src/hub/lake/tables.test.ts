@@ -180,26 +180,63 @@ test('o operador sem papel de administrador não vê nem grava o lago', async (t
   assert.deepEqual(await asOwner(`select count(*)::int as n from lake.company_lake`), [{ n: 1 }])
 })
 
-test('a empresa não lê o lago', async (t) => {
+test('a empresa lê a sua linha', async (t) => {
   const { database, asOwner } = await seeded(t)
   await asOwner(
     `insert into lake.company_lake
-       (company_id, lake_id, state, account, region, template, since)
-     values ('${A}', 'abcdefghij12', 'creating', '${ACCOUNT}', 'us-east-2', '${SHA}', now())`,
+       (company_id, lake_id, state, account, region, template, stack_id, since)
+     values ('${A}', 'abcdefghij12', 'ready', '${ACCOUNT}', 'us-east-2', '${SHA}', 'stack-1', now()),
+            ('${B}', 'abcdefghij13', 'creating', '${ACCOUNT}', 'us-east-2', '${SHA}', null, now())`,
   )
-  await assert.rejects(
-    database.read(IN_A, (tx) => tx.execute(sql`select company_id from lake.company_lake`)),
-    refusedWith('42501'),
+  assert.deepEqual(
+    await database.read(
+      IN_A,
+      async (tx) =>
+        (
+          await tx.execute(
+            sql`select company_id, lake_id, state, account, region from lake.company_lake`,
+          )
+        ).rows,
+    ),
+    [
+      {
+        company_id: A,
+        lake_id: 'abcdefghij12',
+        state: 'ready',
+        account: ACCOUNT,
+        region: 'us-east-2',
+      },
+    ],
   )
-  await assert.rejects(
-    database.command(IN_A, (tx) => tx.execute(lakeRow(A, 'abcdefghij13', 'creating', null))),
-    refusedWith('42501'),
+  for (const read of [
+    sql`select template from lake.company_lake`,
+    sql`select stack_id from lake.company_lake`,
+    sql`select since from lake.company_lake`,
+    sql`select failure from lake.company_lake`,
+    sql`select * from lake.company_lake`,
+  ]) {
+    await assert.rejects(
+      database.read(IN_A, (tx) => tx.execute(read)),
+      refusedWith('42501'),
+    )
+  }
+  for (const write of [
+    lakeRow(A, 'abcdefghij14', 'creating', null),
+    sql`update lake.company_lake set state = 'failed' where company_id = ${A}`,
+    sql`delete from lake.company_lake where company_id = ${A}`,
+  ]) {
+    await assert.rejects(
+      database.command(IN_A, (tx) => tx.execute(write)),
+      refusedWith('42501'),
+    )
+  }
+  assert.deepEqual(
+    await asOwner(`select company_id, state from lake.company_lake order by company_id`),
+    [
+      { company_id: A, state: 'ready' },
+      { company_id: B, state: 'creating' },
+    ],
   )
-  await assert.rejects(
-    database.command(IN_A, (tx) => tx.execute(sql`delete from lake.company_lake`)),
-    refusedWith('42501'),
-  )
-  assert.deepEqual(await asOwner(`select count(*)::int as n from lake.company_lake`), [{ n: 1 }])
 })
 
 test('o catálogo do lago: as colunas, as políticas e a segurança por linha', async (t) => {
@@ -232,6 +269,7 @@ test('o catálogo do lago: as colunas, as políticas e a segurança por linha', 
       )
     ).map((row) => row.policy),
     [
+      'company_select {hub_company} SELECT',
       'operator_delete {hub_operator} DELETE',
       'operator_insert {hub_operator} INSERT',
       'operator_select {hub_operator} SELECT',
