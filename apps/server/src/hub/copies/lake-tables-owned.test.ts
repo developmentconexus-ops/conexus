@@ -56,6 +56,11 @@ test('as contagens da rodada por tabela: uma por par, não negativas, da empresa
     { code: '23503' },
     'a tabela de outra empresa',
   )
+  await assert.rejects(
+    asOwner(`update copies.lake_table set last_run_id = '${RUN_B1}' where id = '${TABLE_A1}'`),
+    { code: '23503', constraint: 'lake_table_last_run_id_fkey' },
+    'a última rodada de outra empresa',
+  )
 })
 
 test('apagar: a ligação leva a cópia, as tabelas e as rodadas; a rodada apagada solta a tabela', async (t) => {

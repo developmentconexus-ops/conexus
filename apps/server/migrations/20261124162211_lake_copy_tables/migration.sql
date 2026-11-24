@@ -41,6 +41,7 @@ CREATE TABLE "copies"."lake_run" (
 	"whole" boolean NOT NULL,
 	"code" text,
 	"failed_table" text,
+	"system_status" integer,
 	"system_code" text,
 	"system_message" text,
 	"task_arn" text,
@@ -49,6 +50,7 @@ CREATE TABLE "copies"."lake_run" (
 	CONSTRAINT "lake_run_ended" CHECK (("ended_at" IS NULL) = ("outcome" IS NULL)),
 	CONSTRAINT "lake_run_outcome" CHECK ("outcome" IS NULL OR "outcome" IN ('COMPLETE', 'ERROR', 'INTERRUPTED')),
 	CONSTRAINT "lake_run_code" CHECK ("code" IS NULL OR ("outcome" = 'ERROR' AND "code" IN ('COPY_SOURCE_NEEDS_REAUTH', 'COPY_SOURCE_REFUSED', 'COPY_SOURCE_UNREACHABLE', 'COPY_SOURCE_UNREADABLE', 'COPY_LAKE_UNAVAILABLE', 'COPY_TASK_LOST', 'COPY_LAKE_WRITE_FAILED'))),
+	CONSTRAINT "lake_run_system" CHECK (("system_status" IS NULL AND "system_code" IS NULL AND "system_message" IS NULL AND "failed_table" IS NULL) OR "outcome" = 'ERROR'),
 	CONSTRAINT "lake_run_system_code" CHECK (char_length("system_code") <= 64),
 	CONSTRAINT "lake_run_system_message" CHECK (char_length("system_message") <= 1000),
 	CONSTRAINT "lake_run_task_arn" CHECK ("task_arn" IS NULL OR "task_arn" LIKE 'arn:aws:ecs:%'),
@@ -94,7 +96,7 @@ ALTER TABLE "copies"."lake_copy" ADD CONSTRAINT "lake_copy_company_id_fkey" FORE
 ALTER TABLE "copies"."lake_copy" ADD CONSTRAINT "lake_copy_connection_fkey" FOREIGN KEY ("company_id","connector_id","connection_id") REFERENCES "connectors"."connection"("company_id","connector_id","id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "copies"."lake_run" ADD CONSTRAINT "lake_run_copy_fkey" FOREIGN KEY ("company_id","connection_id") REFERENCES "copies"."lake_copy"("company_id","connection_id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "copies"."lake_table" ADD CONSTRAINT "lake_table_copy_fkey" FOREIGN KEY ("company_id","connection_id") REFERENCES "copies"."lake_copy"("company_id","connection_id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "copies"."lake_table" ADD CONSTRAINT "lake_table_last_run_id_fkey" FOREIGN KEY ("last_run_id") REFERENCES "copies"."lake_run"("id") ON DELETE SET NULL;--> statement-breakpoint
+ALTER TABLE "copies"."lake_table" ADD CONSTRAINT "lake_table_last_run_id_fkey" FOREIGN KEY ("company_id","last_run_id") REFERENCES "copies"."lake_run"("company_id","id") ON DELETE SET NULL ("last_run_id");--> statement-breakpoint
 ALTER TABLE "copies"."lake_table_run" ADD CONSTRAINT "lake_table_run_run_fkey" FOREIGN KEY ("company_id","run_id") REFERENCES "copies"."lake_run"("company_id","id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "copies"."lake_table_run" ADD CONSTRAINT "lake_table_run_table_fkey" FOREIGN KEY ("company_id","table_id") REFERENCES "copies"."lake_table"("company_id","id") ON DELETE CASCADE;--> statement-breakpoint
 CREATE POLICY "company_all" ON "connectors"."connection_link" AS PERMISSIVE FOR ALL TO "hub_company" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint

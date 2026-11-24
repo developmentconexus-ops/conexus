@@ -164,6 +164,22 @@ test('a rodada: o código só com ERROR e da lista do contrato', async (t) => {
       outcome,
     )
   }
+  const system = [
+    'system_status = 503',
+    `system_code = 'EDGE'`,
+    `system_message = 'fora do ar'`,
+    `failed_table = 'TGFCAB'`,
+  ]
+  for (const outcome of ['COMPLETE', 'INTERRUPTED']) {
+    for (const field of system) {
+      await assert.rejects(
+        ended(`outcome = '${outcome}', ${field}`),
+        { code: '23514', constraint: 'lake_run_system' },
+        `${outcome} ${field}`,
+      )
+    }
+  }
+  await ended(`outcome = 'ERROR', ${system.join(', ')}`)
 })
 
 test('a rodada: o teto do código do sistema (#1135) e da mensagem, a tarefa e a tentativa', async (t) => {

@@ -26,9 +26,6 @@ CREATE FUNCTION connectors.link_of(secret_hash text) RETURNS TABLE (id uuid, com
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION connectors.link_of(text) FROM PUBLIC;
 --> statement-breakpoint
--- The schema's USAGE lets the login name the function; it reads no table of the schema.
-GRANT USAGE ON SCHEMA connectors TO hub_runtime;
---> statement-breakpoint
 GRANT EXECUTE ON FUNCTION connectors.link_of(text) TO hub_runtime;
 --> statement-breakpoint
 -- The function changes hands to the role that cannot log in, as connectors.sealed_of did: the owner

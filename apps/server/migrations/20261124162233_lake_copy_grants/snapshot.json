@@ -1,6 +1,6 @@
 {
-  "id": "a2b533ca-3d7a-4d24-a026-16cf3262dd9b",
-  "prevIds": ["d5eeffa9-0df0-4ddb-87af-21180d2f9784"],
+  "id": "d092fcf6-099e-4809-92a0-e56b1df858c9",
+  "prevIds": ["30d73b64-023a-4132-89a9-07f7f419c8e4"],
   "version": "8",
   "dialect": "postgres",
   "ddl": [
@@ -3510,6 +3510,19 @@
       "generated": null,
       "identity": null,
       "name": "failed_table",
+      "entityType": "columns",
+      "schema": "copies",
+      "table": "lake_run"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "system_status",
       "entityType": "columns",
       "schema": "copies",
       "table": "lake_run"
@@ -8722,10 +8735,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": ["last_run_id"],
+      "columns": ["company_id", "last_run_id"],
       "schemaTo": "copies",
       "tableTo": "lake_run",
-      "columnsTo": ["id"],
+      "columnsTo": ["company_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "name": "lake_table_last_run_id_fkey",
@@ -10386,6 +10399,13 @@
     {
       "value": "\"code\" IS NULL OR (\"outcome\" = 'ERROR' AND \"code\" IN ('COPY_SOURCE_NEEDS_REAUTH', 'COPY_SOURCE_REFUSED', 'COPY_SOURCE_UNREACHABLE', 'COPY_SOURCE_UNREADABLE', 'COPY_LAKE_UNAVAILABLE', 'COPY_TASK_LOST', 'COPY_LAKE_WRITE_FAILED'))",
       "name": "lake_run_code",
+      "entityType": "checks",
+      "schema": "copies",
+      "table": "lake_run"
+    },
+    {
+      "value": "(\"system_status\" IS NULL AND \"system_code\" IS NULL AND \"system_message\" IS NULL AND \"failed_table\" IS NULL) OR \"outcome\" = 'ERROR'",
+      "name": "lake_run_system",
       "entityType": "checks",
       "schema": "copies",
       "table": "lake_run"

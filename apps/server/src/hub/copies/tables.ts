@@ -78,6 +78,7 @@ export const lakeRun = copies.table(
     whole: boolean('whole').notNull(),
     code: text('code', { enum: LAKE_RUN_FAILURE_CODES }),
     failedTable: text('failed_table'),
+    systemStatus: integer('system_status'),
     systemCode: text('system_code'),
     systemMessage: text('system_message'),
     taskArn: text('task_arn'),
@@ -98,6 +99,10 @@ export const lakeRun = copies.table(
     check(
       'lake_run_code',
       sql`${table.code} IS NULL OR (${table.outcome} = 'ERROR' AND ${table.code} IN (${FAILURE_CODES}))`,
+    ),
+    check(
+      'lake_run_system',
+      sql`(${table.systemStatus} IS NULL AND ${table.systemCode} IS NULL AND ${table.systemMessage} IS NULL AND ${table.failedTable} IS NULL) OR ${table.outcome} = 'ERROR'`,
     ),
     check(
       'lake_run_system_code',
@@ -138,8 +143,8 @@ export const lakeTable = copies.table(
     }).onDelete('cascade'),
     foreignKey({
       name: 'lake_table_last_run_id_fkey',
-      columns: [table.lastRunId],
-      foreignColumns: [lakeRun.id],
+      columns: [table.companyId, table.lastRunId],
+      foreignColumns: [lakeRun.companyId, lakeRun.id],
     }).onDelete('set null'),
     unique('lake_table_company_id_id_key').on(table.companyId, table.id),
     unique('lake_table_source_key').on(table.companyId, table.connectionId, table.sourceTable),
