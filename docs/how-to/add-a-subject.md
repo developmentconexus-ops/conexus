@@ -3,7 +3,7 @@
 A subject is a folder that holds one product theme ([0003](../decisions/0003-repository-shape.md)):
 its routes, tables, tests and a `public.ts`. This page lists what a new Hub subject with tables, an
 agent tool and a screen touches, in order, and which part of the repository refuses a missing
-step. Start from `apps/server/src/hub/copies/`, the most recent one. `apps/server/src/hub/ontology/`
+step. Start from `apps/server/src/hub/lake/`, a complete one. `apps/server/src/hub/ontology/`
 shows a subject that stops at the tables.
 
 A step that says "nothing refuses it" is held by the review alone. Nothing refuses a subject
@@ -28,7 +28,7 @@ write those.
    `platform/isolation-ontology.test.ts` does. Nothing refuses its absence.
 7. **The door.** `hub/<subject>/public.ts` exports what other subjects may use, and
    `public-tables.ts` only when another owner needs a foreign key to a table
-   (`connectors/public-tables.ts`). dependency-cruiser refuses an import that goes around them
+   (`identity/public-tables.ts`). dependency-cruiser refuses an import that goes around them
    (`subject-only-through-public`, `table-door-only-for-foreign-keys-and-schema`).
 8. **The wiring.** `apps/server/src/main.ts` makes the subject and hands its door to the others. A job
    or a workflow is registered in `apps/server/src/conversations-of.ts` (`workflows`, `releaseFirst`).

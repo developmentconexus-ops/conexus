@@ -8,7 +8,6 @@ ALTER SCHEMA apps OWNER TO test_owner;
 ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA builder OWNER TO test_owner;
 ALTER SCHEMA connectors OWNER TO test_owner;
-ALTER SCHEMA copies OWNER TO test_owner;
 ALTER SCHEMA data OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
@@ -78,23 +77,12 @@ ALTER TABLE connectors.connection OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE connectors.connector_write OWNER TO test_owner;
 ALTER TABLE connectors.project_connection OWNER TO test_owner;
-ALTER TABLE copies.copy OWNER TO test_owner;
-ALTER TABLE copies.copy_proposal OWNER TO test_owner;
-ALTER TABLE copies.copy_proposal_source OWNER TO test_owner;
-ALTER TABLE copies.copy_reader OWNER TO test_owner;
-ALTER TABLE copies.copy_reader_turn OWNER TO test_owner;
-ALTER TABLE copies.copy_run OWNER TO test_owner;
-ALTER TABLE copies.copy_source OWNER TO test_owner;
-ALTER TABLE copies.copy_table_left OWNER TO test_owner;
-ALTER TABLE copies.project_copy OWNER TO test_owner;
 ALTER TABLE data.data_read OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
 ALTER TABLE lake.company_lake OWNER TO test_owner;
 ALTER TABLE notifications.alert_recipient OWNER TO test_owner;
-ALTER TABLE notifications.copy_follower OWNER TO test_owner;
-ALTER TABLE notifications.copy_notice OWNER TO test_owner;
 ALTER TABLE notifications.notification OWNER TO test_owner;
 ALTER TABLE notifications.request_notice OWNER TO test_owner;
 ALTER TABLE ontology.code_version OWNER TO test_owner;
@@ -149,7 +137,6 @@ GRANT USAGE ON SCHEMA connectors TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
 GRANT USAGE ON SCHEMA connectors TO hub_runtime;
-GRANT USAGE ON SCHEMA copies TO hub_company;
 GRANT USAGE ON SCHEMA data TO hub_company;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
@@ -378,65 +365,6 @@ GRANT SELECT,INSERT ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(state) ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(answer) ON TABLE connectors.connector_write TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company;
--- Capacity 2, U2, with the founder's word in the pull request of its own (data D11): a company's
--- routes and its copies' runs turn a copy on, hold its run's lease and save where its pass stands,
--- record each run and keep the newest, and release a copy to a Projeto and take it back.
--- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11):
--- Desligar ends, in the transaction that deletes the connection, the copy left with no source.
-GRANT SELECT,INSERT,DELETE ON TABLE copies.copy TO hub_company;
--- Parte 1 da camada de dados, founder 2026-11-15 ("P2 Okay"): UPDATE(definition) and UPDATE(column_state), the
--- run fills the template's descriptions the stored definition lacks and writes each source column's state.
-GRANT UPDATE(definition) ON TABLE copies.copy TO hub_company;
-GRANT UPDATE(claim_token) ON TABLE copies.copy TO hub_company;
-GRANT UPDATE(claimed_until) ON TABLE copies.copy TO hub_company;
-GRANT UPDATE(pass) ON TABLE copies.copy TO hub_company;
-GRANT UPDATE(pass_started_at) ON TABLE copies.copy TO hub_company;
-GRANT UPDATE("position") ON TABLE copies.copy TO hub_company;
-GRANT UPDATE(watermark) ON TABLE copies.copy TO hub_company;
-GRANT UPDATE(rows) ON TABLE copies.copy TO hub_company;
-GRANT UPDATE(last_run_id) ON TABLE copies.copy TO hub_company;
--- The other half of the grant above, in the order of the table's columns, which the snapshot keeps.
-GRANT UPDATE(column_state) ON TABLE copies.copy TO hub_company;
--- Capacity 3, U3, with the founder's word in the pull request of its own (data D11): the Builder's
--- run proposes a copy in a Projeto, and a company's routes list the proposals and turn one on or
--- dismiss it; the Hub never deletes one.
-GRANT SELECT,INSERT ON TABLE copies.copy_proposal TO hub_company;
-GRANT UPDATE(state) ON TABLE copies.copy_proposal TO hub_company;
-GRANT UPDATE(copy_id) ON TABLE copies.copy_proposal TO hub_company;
--- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11): the
--- Builder's run proposes a copy over several connections; a proposal's source leaves by cascade.
-GRANT SELECT,INSERT ON TABLE copies.copy_proposal_source TO hub_company;
--- A governança mínima, grupo 2, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11): a
--- company's routes read which roles read each copy, and mark and unmark them.
-GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_reader TO hub_company;
--- Every setRoleCopies counts its turn; a failed one reads the count before it puts its marks back.
-GRANT SELECT,INSERT ON TABLE copies.copy_reader_turn TO hub_company;
-GRANT UPDATE(turn) ON TABLE copies.copy_reader_turn TO hub_company;
-GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_run TO hub_company;
-GRANT UPDATE(ended_at) ON TABLE copies.copy_run TO hub_company;
-GRANT UPDATE(outcome) ON TABLE copies.copy_run TO hub_company;
-GRANT UPDATE(reason) ON TABLE copies.copy_run TO hub_company;
-GRANT UPDATE(pages) ON TABLE copies.copy_run TO hub_company;
-GRANT UPDATE(read) ON TABLE copies.copy_run TO hub_company;
-GRANT UPDATE(written) ON TABLE copies.copy_run TO hub_company;
--- A pergunta respondida com a origem, U10, founder 2026-11-15 ("A1", the seven in a pull request of their own; data D11): a
--- run closes with the message its source's system gave (status, code and message), so a company's
--- routes write the three columns once the run ends; `whole` is never changed after the run starts.
-GRANT UPDATE(system_status) ON TABLE copies.copy_run TO hub_company;
-GRANT UPDATE(system_code) ON TABLE copies.copy_run TO hub_company;
-GRANT UPDATE(system_message) ON TABLE copies.copy_run TO hub_company;
--- O Sync de qualquer conector, with the founder's word in the pull request of its own (data D11): a
--- copy's runs read and save where each of its connections stands and until when the provider asked
--- it to wait; a source leaves by cascade. Desligar writes down the table of a copy that ended while
--- the company's database did not answer, and drains the row once the table is dropped.
-GRANT SELECT,INSERT ON TABLE copies.copy_source TO hub_company;
-GRANT UPDATE(pass) ON TABLE copies.copy_source TO hub_company;
-GRANT UPDATE(pass_started_at) ON TABLE copies.copy_source TO hub_company;
-GRANT UPDATE("position") ON TABLE copies.copy_source TO hub_company;
-GRANT UPDATE(watermark) ON TABLE copies.copy_source TO hub_company;
-GRANT UPDATE(wait_until) ON TABLE copies.copy_source TO hub_company;
-GRANT SELECT,INSERT,DELETE ON TABLE copies.copy_table_left TO hub_company;
-GRANT SELECT,INSERT,DELETE ON TABLE copies.project_copy TO hub_company;
 -- A governança mínima, grupo 3, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11; E4a): a
 -- company's routes record each read of the company's data and list them; the Hub never changes or deletes one.
 GRANT SELECT,INSERT ON TABLE data.data_read TO hub_company;
@@ -450,13 +378,8 @@ GRANT UPDATE(stack_id) ON TABLE lake.company_lake TO hub_operator;
 GRANT UPDATE(since) ON TABLE lake.company_lake TO hub_operator;
 GRANT UPDATE(failure) ON TABLE lake.company_lake TO hub_operator;
 -- A pergunta respondida com a origem, U10, founder 2026-11-15 ("A1", the seven in a pull request of their own; data D11): a
--- company's routes read, add and remove who a copy's failure alerts reach, and read, add and remove
--- who follows a copy (both rows are deleted when someone is taken out or stops following); they read
--- and create the notice of a copy and mark it read. A notice leaves by cascade, never by the Hub.
+-- company's routes read, add and remove the e-mails a failure alert reaches.
 GRANT SELECT,INSERT,DELETE ON TABLE notifications.alert_recipient TO hub_company;
-GRANT SELECT,INSERT,DELETE ON TABLE notifications.copy_follower TO hub_company;
-GRANT SELECT,INSERT ON TABLE notifications.copy_notice TO hub_company;
-GRANT UPDATE(read_at) ON TABLE notifications.copy_notice TO hub_company;
 -- Step 24.2, U2, the founder's word on the card (D11, docs/approvals.md): an automation's run tells its
 -- owner, so a company's routes write a notification, list the person's own and mark them read; the row
 -- leaves by cascade, never by the Hub.

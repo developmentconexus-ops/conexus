@@ -170,7 +170,7 @@ for (const [name, statements, line, undo = []] of PLANTED) {
   })
 }
 
-// The Hub's company login (hub_company) is the one the grants of the copy alerts are for: hub_runtime
+// The Hub's company login (hub_company) is the one the grants of the alert recipients are for: hub_runtime
 // has no USAGE on those schemas, so its refusal would not say the grant is narrow.
 const COMPANY_SCOPE = {
   kind: 'COMPANY',
@@ -190,39 +190,9 @@ const REFUSED: [string, Door, ReturnType<typeof sql>][] = [
   ['DELETE de operations.client', 'installation', sql`delete from operations.client`],
   ['DDL em auth', 'installation', sql`alter table auth.session add column planted text`],
   [
-    'UPDATE de copies.copy_run.whole',
-    'company',
-    sql`update copies.copy_run set whole = true where false`,
-  ],
-  [
     'UPDATE de notifications.alert_recipient',
     'company',
     sql`update notifications.alert_recipient set email = '' where false`,
-  ],
-  [
-    'UPDATE de notifications.copy_follower',
-    'company',
-    sql`update notifications.copy_follower set created_at = now() where false`,
-  ],
-  [
-    'DELETE de notifications.copy_notice',
-    'company',
-    sql`delete from notifications.copy_notice where false`,
-  ],
-  [
-    'UPDATE de notifications.copy_notice.copy_name',
-    'company',
-    sql`update notifications.copy_notice set copy_name = '' where false`,
-  ],
-  [
-    'UPDATE de notifications.copy_notice.code',
-    'company',
-    sql`update notifications.copy_notice set code = code where false`,
-  ],
-  [
-    'UPDATE de notifications.copy_notice.run_id',
-    'company',
-    sql`update notifications.copy_notice set run_id = run_id where false`,
   ],
 ]
 for (const [name, door, statement] of REFUSED) {
@@ -241,21 +211,12 @@ for (const [name, door, statement] of REFUSED) {
   })
 }
 
-test('o login do Hub tem os verbos dos avisos de cópia', async (t) => {
+test('o login do Hub tem os verbos da lista de e-mails de aviso', async (t) => {
   const { database } = await createTestDatabase(t)
   const statements = [
-    sql`update copies.copy_run set system_status = system_status where false`,
-    sql`update copies.copy_run set system_code = system_code where false`,
-    sql`update copies.copy_run set system_message = system_message where false`,
     sql`select 1 from notifications.alert_recipient where false`,
     sql`insert into notifications.alert_recipient select * from notifications.alert_recipient where false`,
     sql`delete from notifications.alert_recipient where false`,
-    sql`select 1 from notifications.copy_follower where false`,
-    sql`insert into notifications.copy_follower select * from notifications.copy_follower where false`,
-    sql`delete from notifications.copy_follower where false`,
-    sql`select 1 from notifications.copy_notice where false`,
-    sql`insert into notifications.copy_notice select * from notifications.copy_notice where false`,
-    sql`update notifications.copy_notice set read_at = read_at where false`,
   ]
   await database.command(COMPANY_SCOPE, async (tx) => {
     for (const statement of statements) await tx.execute(statement)

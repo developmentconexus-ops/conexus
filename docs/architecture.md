@@ -136,8 +136,8 @@ and tests, and a `public.ts` with what others may use. The import law is
 [code C3 to C8](guides/code.md); the web side's tree is [web W1](guides/web.md). A new one follows
 [adding a subject](how-to/add-a-subject.md).
 
-**Other subjects.** `hub/copies` keeps only the copies' tables, until their migration drops them
-([the Sync](explanation/sync.md)); the lake takes the copies [0070].
+**Other subjects.** `hub/copies` keeps only `routes.test.ts`, the guard that the old copy routes answer 404;
+the tables left with G0c ([the Sync](explanation/sync.md)); the lake takes the copies [0070].
 `hub/ontology` has only tables and a contract. `hub/notifications` sends bell and e-mails,
 `hub/operations` keeps the Central's clients, `hub/status` each start's version. `builder/app-data`
 reads an app's data for the Builder and for the agents of `builder/agents`;
@@ -164,8 +164,9 @@ program starts ([data D9](guides/data.md)).
 the migrated database ([data D6](guides/data.md)). No image runs from
 before v0.5.0 (old test companies deleted [0039]), 14.2 (`run_event` (D30), `builder.run`,
 `companies_with_runs()`, `hub_runs`), v0.24.101 (`copies.copy.readers_set`) or the closing of A
-Prévia em endereço próprio (`apps.app_session.environment`, `apps.handoff.environment`): each drops
-what older images use. The edge goes back first. Past v0.24.53, rerun
+Prévia em endereço próprio (`apps.app_session.environment`, `apps.handoff.environment`) or v0.24.119,
+the G0b (the nine tables of the `copies` schema and the schema itself, `notifications.copy_follower`
+and `copy_notice`): each drops what older images use. The edge goes back first. Past v0.24.53, rerun
 `20261108033751_e245_active_by`'s `UPDATE`.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
