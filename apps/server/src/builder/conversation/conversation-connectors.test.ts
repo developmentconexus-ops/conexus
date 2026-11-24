@@ -191,6 +191,31 @@ test('o caderno: sem consulta é recusado; com consulta guarda o mapa e a consul
   assert.ok(!JSON.stringify(notes).includes('Empresa 0'))
 })
 
+test('quem aprova: o sim de quem deixou de gerenciar ligações entre o pedido e o sim é NOT_GRANTED no Builder também, e nada é gravado', async (t) => {
+  const on = await connecting(t, [
+    [
+      tool(SAVE, {
+        connection: 'Matriz',
+        concept: 'Empresa',
+        mapping: 'TSIEMP.CODEMP',
+        provingQuery: COUNT,
+      }),
+    ],
+  ])
+  await on.release(await on.link())
+  assert.equal((await sent(on.hub, on.ana, on.url, 'Anote a empresa')).statusCode, 200)
+  const { card } = await untilCard(on.stream, 'note')
+  await on.hub.test.asOwner(`update auth.member set role = 'member' where user_id = $1`, [
+    on.ana.id,
+  ])
+  await answerTo(on.hub, on.ana, on.url, card.toolCallId, { kind: 'note', approved: true })
+  assert.equal(endOf(await on.stream.turn()), 'complete')
+  const [row] = await on.hub.test.asOwner('select notes from connectors.connection')
+  assert.deepEqual(Object.keys(Object(Object(row).notes)), [])
+  const refused = on.hub.lines.filter((line) => line.message === 'CONNECTION_NOTE_REFUSED')
+  assert.equal(refused.length, 1)
+})
+
 test('a 51ª chamada de conector numa execução é recusada', async (t) => {
   const on = await connecting(t, [Array.from({ length: 51 }, () => reading())])
   await on.release(await on.link())

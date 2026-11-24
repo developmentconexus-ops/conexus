@@ -118,6 +118,7 @@ export {
   linkConnection,
   listConnections,
   Native,
+  NoteApproval,
   OperationEffect,
   Revocation,
   reconnectConnection,

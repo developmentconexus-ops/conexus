@@ -14,7 +14,7 @@ const NOTE: ConnectionNote = {
   provedAt: '2026-10-30T14:02:00.000Z',
   provedRows: 20,
   writtenBy: 'Bruno',
-  approvedBy: 'Ana',
+  approval: { kind: 'PERSON', name: 'Ana' },
 }
 
 function open(fields: { mayManage: boolean; notes: ConnectionNote[] }) {
@@ -67,12 +67,17 @@ test('o membro lê o Caderno sem Apagar', async () => {
   expect(notebook.queryByRole('button')).toBeNull()
 })
 
-test('quem aprovou: cada anotação diz "Aprovada por <nome>", e a de antes desta etapa diz "Gravada sem aprovação"', async () => {
+test('quem aprovou: cada anotação diz "Aprovada por <nome>", a de antes desta etapa diz "Gravada sem aprovação" e a de quem saiu da empresa não diz que ficou sem aprovação', async () => {
   open({
     mayManage: false,
-    notes: [NOTE, { ...NOTE, concept: 'Antiga', approvedBy: null }],
+    notes: [
+      NOTE,
+      { ...NOTE, concept: 'Antiga', approval: { kind: 'NONE' } },
+      { ...NOTE, concept: 'Saiu', approval: { kind: 'PERSON', name: null } },
+    ],
   })
   const notebook = within(await screen.findByRole('region', { name: 'Caderno' }))
   expect(notebook.getByText('Aprovada por Ana')).toBeTruthy()
   expect(notebook.getByText('Gravada sem aprovação')).toBeTruthy()
+  expect(notebook.getByText('Aprovada por quem já saiu da empresa')).toBeTruthy()
 })

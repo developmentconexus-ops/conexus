@@ -3,6 +3,7 @@ import type {
   ConnectionState,
   ConnectorEntry,
   Native,
+  NoteApproval,
   ProjectAccess,
   SignInCompleted,
 } from '@conexus/hub-api'
@@ -234,9 +235,11 @@ export const ERASE_NOTE_DESCRIPTION =
   'Quem conversa deixa de usar essa anotação. Ela pode ser anotada de novo.'
 export const ERASE = 'Apagar'
 
-/** "Aprovada por Ana": who said yes on the card; a note from before the yes says so. */
-export function approvedText(note: { approvedBy: string | null }) {
-  return note.approvedBy === null ? 'Gravada sem aprovação' : `Aprovada por ${note.approvedBy}`
+/** "Aprovada por Ana": who said yes on the card; a note from before the yes says so, and one whose approver left says that. */
+export function approvedText(note: { approval: NoteApproval }) {
+  const { approval } = note
+  if (approval.kind === 'NONE') return 'Gravada sem aprovação'
+  return `Aprovada por ${approval.name ?? 'quem já saiu da empresa'}`
 }
 
 /** "provado em 30/10 por Bruno, com 20 linhas": what an entry of the notebook says about its proof. */

@@ -703,7 +703,7 @@ velha, que passa ao índice do kit.
 | 103 | U10 | Numa tabela de janela, depois da passada da janela, a atual tem nos meses da janela exatamente as linhas da fonte, e a linha que saiu da janela na fonte sai da atual; os meses fora da janela ficam. Numa tabela inteira, a atual é a última passada | `test_update.py`, "a janela troca o que leu" e "a inteira troca tudo" | must |
 | 59 | U10 | Depois de cada atualização, a bruta não tem mais as linhas que já entraram na atual, nem as passadas inteiras anteriores; a atual não muda com a limpeza (decisão A) | `test_update.py`, "a limpeza"; Lab (L.7) | must |
 | 106 | U3, U4, U5 | Uma regra só, para todo conector, pelo tipo que a descoberta lê: `CLOB`, `NCLOB` e `LONG` viram texto; `BLOB`, `RAW` e `LONG RAW` viram o tipo binário do Iceberg, com os bytes iguais aos da fonte; nenhuma coluna se marca como arquivo à mão. O significado declarado de uma coluna (`NFE_XML`) vai às propriedades da tabela (`conexus.significado.<coluna>`) e não muda a cópia | `sankhya/copy-tables.test.ts`, "o tipo da coluna"; `tap.test.ts`, "o binário"; `test_target.py`, "o binário chega igual" | must |
-| 115 | U4 | Uma página que responde 5xx ou cai por erro de rede e depois responde é lida e emitida uma vez, sem `TapFailure`; a que falha cinco vezes escreve `COPY_SOURCE_UNREACHABLE` e a tabela em que parou e sai com código diferente de zero, com a espera crescendo entre as tentativas (relógio de teste); um 4xx não é repetido | `apps/extraction/tap/src/tap.test.ts`, "a página que cai e volta" | must |
+| 115 | U4 | Uma página que responde 5xx, 429 (`BUSY`, esperando o `waitMs` que o provedor pediu) ou cai por erro de rede e depois responde é lida e emitida uma vez, sem `TapFailure`; a que falha cinco vezes escreve `COPY_SOURCE_UNREACHABLE` e a tabela em que parou e sai com código diferente de zero, com a espera crescendo entre as tentativas (relógio de teste); um 4xx que não é 429 não é repetido | `apps/extraction/tap/src/tap.test.ts`, "a página que cai e volta" | must |
 | 104 | U10 | Numa tabela de histórico ligado (a dos dados da NF-e, com o XML), a limpeza não roda: depois de duas passadas que leem a mesma nota com XML diferente (a segunda forçada inteira no teste), a bruta tem as duas versões e a atual, a nova; uma nota apagada no dublê continua na bruta | `test_update.py`, "o histórico do XML", pela entrada da tarefa com o modo da declaração | must |
 | 105 | U5, U10 | Todas as colunas, atuais e futuras: uma coluna que aparece na fonte depois da primeira carga (o dublê acrescenta uma `AD_` entre duas rodadas) entra na rodada seguinte na bruta e na atual, com as linhas antigas nulas nela, e na aba **Colunas**; uma coluna que some da fonte fica no lago, nula nas linhas novas | `apps/extraction/tests/test_target.py`, "a coluna nova"; `test_update.py`, "a coluna nova na atual"; `lake-run.test.ts`, "as colunas de novo" | must |
 | 60 | U10 | O Hub pede `whole` para uma tabela recém-marcada; a tarefa lê inteira também a tabela sem ponto de parada no estado e a sem coluna de alteração, e o resultado diz `whole` por tabela; as outras leem só o que mudou ou a janela; **Rodar agora** segue o mesmo | `apps/extraction/tests/test_state.py`, "o modo por tabela"; `lake-run.test.ts`, "a tabela nova é inteira" | must |
@@ -898,8 +898,8 @@ que leram e rodaram `singer-sdk@0.54.9`, `meltano@4.4.1` e `airbyte-cdk@6.61.6`,
 `82db089b` (`AB@82db089b`, e não o `AB` abaixo) e os docs da Nekt de 2026-11-24 (`NKH:<n>` é a linha `n`
 do `llms-full.txt` baixado nesse dia; `NKT` é a página `platform-api/sources/trigger` da API). `C/` é o
 `main` em `538b0562`; as siglas são as dos estudos: `AB` airbyte `8b40981a`, `AP` airbyte-platform
-`c46502e`, `CDK` airbyte-python-cdk `bde4377`, `DLT` dlt `efaf0e3`, `TRM` tap-rest-api-msdk `071b540`,
-guardados em `data/conexus-credenciais-framework/refs/`, e `NK` o texto da Nekt guardado em 2026-11-19. A
+`c46502e`, `CDK` airbyte-python-cdk `bde4377`, `DLT` dlt `efaf0e3`, `TRM` tap-rest-api-msdk `071b540`, `M` mastra `d60ba71b`
+(`@mastra/core` 1.83.0), guardados em `data/conexus-credenciais-framework/refs/`, e `NK` o texto da Nekt guardado em 2026-11-19. A
 coluna "Muda" diz o que os estudos de 2026-11-23 mudaram: **fica**, **sai** ou **refeita**. A unidade de
 cada linha remendo (11, 12, 13, 21, 22, 28, 29, 66) acrescenta a sua entrada em
 `docs/reference/boundaries.md`, com a prova da linha, no mesmo commit.
@@ -1747,8 +1747,8 @@ e 5 do roteiro para o Mercado Livre.
 
 ### As linhas da tabela
 
-- **Linha 49.** Ler `C/apps/server/src/hub/connectors/notes.ts` (`save`, que já confere
-  `manageConnections` com `manage`; `provedAndSaved`), `C/apps/server/src/builder/connectors/connector-tools.ts:307-333`
+- **Linha 49.** Ler `C/apps/server/src/hub/connectors/notes.ts` (`save`, que confere
+  `manageConnections` de quem aprova, no Assistente e no Builder; `provedAndSaved`), `C/apps/server/src/builder/connectors/connector-tools.ts:307-333`
   (`noteSaveTool`) e `builder/company-tools/factory.ts:132-137` (quem recebe a ferramenta). Seguir a
   pergunta com o cartão: `builder/controller-kit/ask-user.ts` (`createAskUserTool`: `suspendSchema`,
   `resumeSchema`, `execute` que suspende sem `resumeData` e responde com ele) e `builder/conversation/plan-tools.ts`
@@ -1764,23 +1764,25 @@ e 5 do roteiro para o Mercado Livre.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/connectors/connector-tools.ts` | Muda: a ferramenta suspende com o pedido e grava só com o sim (`suspendSchema`, `resumeSchema`); o não devolve `NOT_SAVED` | o Assistente e o Builder |
+| `apps/server/src/builder/connectors/connector-tools.ts` | Muda: a ferramenta suspende com o pedido e grava só com o sim (`suspendSchema`, `resumeSchema`); o não devolve `NOT_SAVED`; no Builder, o sim retomado abre uma corrida só dele (`RunId` novo), porque a retomada roda antes de a corrida tomar o Projeto | o Assistente e o Builder |
 | `apps/server/src/hub/connectors/assistant-port.ts`, `builder-port.ts` | Muda: quem responde o cartão é quem aprova (`approvedBy`), e a gravação o confere | a ferramenta |
-| `apps/server/src/hub/connectors/notes.ts`, `packages/hub-api/src/project-connections.ts` (`ConnectionNote`) | Muda: `approvedBy` | a tela |
+| `apps/server/src/hub/connectors/notes.ts`, `packages/hub-api/src/connectors.ts` (`ConnectionNote`, `NoteApproval`) | Muda: `approvedBy` | a tela |
 | `apps/web/src/builder/conversation/` (o cartão: `note-card.tsx`, `note-parse.ts`, `rows.ts`), `apps/web/src/hub/connectors/notes.tsx`, `text.ts` | Muda: o cartão do Caderno, que responde pela suspensão; "Aprovada por" | — |
 
 ### Os contratos que a unidade cria
 
 ```ts
-// apps/server/src/hub/connectors/notes.ts — the stored note gains who approved; a note from before reads as null
-approvedBy: z.string().nullable().default(null)
-// packages/hub-api/src/project-connections.ts — ConnectionNote gains
-approvedBy: z.string().nullable()   // the approver's name; null: "Gravada sem aprovação"
+// apps/server/src/hub/connectors/notes.ts — the stored note gains who approved; a note from before has none
+approvedBy: z.string().optional()
+// packages/hub-api/src/connectors.ts — ConnectionNote gains who said yes, by kind (C21)
+approval: { kind: 'NONE' } | { kind: 'PERSON', name: string | null }   // NONE: "Gravada sem aprovação"; name null: the person left the company
 ```
 
 - **Quem aprova**: a pessoa que responde o cartão, dona da conversa (o guarda só deixa a dona
   responder); um membro com `manageConnections` agora, conferido na transação da gravação (T.26), e
-  não quando pediu; uma recusa é `NOT_GRANTED`, com o motivo só no registro (S8, S10).
+  não quando pediu, no Assistente e no Builder igualmente; uma recusa é `NOT_GRANTED`, com o motivo só no
+  registro (S8, S10). `approvedBy` e `writtenBy` são hoje a mesma pessoa, porque só a dona responde: o que a
+  unidade acrescenta é a conferência no momento do sim, e não um segundo papel.
 - **O cartão**: a peça `Approval` de `ui/ai/`, com o título "Gravar no Caderno?" e as frases da
   matriz em `approval-text.ts` (C26), respondido por `tool-suspension` com `{ approved }`.
 - **O arquivo modelo**: `builder/agents/tools.ts`, `writeTool` (C21: a resposta por `kind`).
@@ -2120,8 +2122,10 @@ especificação do Singer que ela cita.
    código 1. Antes dela, uma página que dá `UNREACHABLE` (um 5xx ou um erro de rede) é repetida pelo
    adaptador, e a repetição é dele, e não da sessão nem do executor do Hub: até 5 tentativas no total,
    com espera crescente de `backoff.expo(factor=2)` e jitter, como o `RESTStream` do singer-sdk
-   (`singer-sdk@0.54.9 singer_sdk/streams/rest.py:334-340`, o 5xx; `:397-409`, os erros de rede e
-   `max_tries`; `:867-875`, a espera e as 5 tentativas; `:894`, o jitter); um 4xx não é repetido
+   (`singer-sdk@0.54.9 singer_sdk/streams/rest.py:334-340`, o 5xx e o 429, pois `extra_retry_statuses` é
+   `[429]` em `:158`; `:397-409`, os erros de rede e `max_tries`; `:867-875`, a espera e as 5 tentativas;
+   `:894`, o jitter). No kit o 429 é `BUSY` (`kernel/operation.ts:76-79`): entra nas mesmas 5 tentativas,
+   esperando o que o provedor pediu (`waitMs`) quando pediu. Um 4xx que não é 429 não é repetido
    (`:341-347`). Só a quinta falha escreve o `TapFailure`. Com `STATE` por página, a rodada seguinte
    retoma do ponto, e uma página repetida não duplica dado.
    - **Testes:** `tap.test.ts` contra os dublês; `test_tap_battery.py` roda a bateria do singer-sdk.

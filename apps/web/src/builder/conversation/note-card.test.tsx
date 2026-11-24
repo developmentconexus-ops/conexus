@@ -5,10 +5,11 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
+import { wordsOf } from './connector-words.ts'
 import { NoteSaveCard } from './note-card.tsx'
 import type { NoteCardItem } from './note-parse.ts'
 import type { Room } from './room.ts'
-import { AnswerProvider, ASSISTANT_ROOM, BUILDER_ROOM, RoomContext } from './room.ts'
+import { AnswerProvider, ASSISTANT_ROOM, builderRoomOf, RoomContext } from './room.ts'
 import { invocationToItem } from './rows.ts'
 
 const server = hubServer()
@@ -86,10 +87,12 @@ test('o Caderno: quem não gerencia ligações vê o cartão sem os botões e a 
   expect(region.queryByRole('button', { name: 'Recusar' })).toBeNull()
 })
 
-test('o Caderno: no Builder, sem empresa para perguntar, os botões valem e o Hub decide', async () => {
-  show(card(), BUILDER_ROOM)
+test('o Caderno: no Builder, quem não gerencia ligações vê o cartão sem os botões, como no Assistente', async () => {
+  company(false)
+  show(card(), builderRoomOf(wordsOf([]), CompanyId.parse(COMPANY.id)))
   const region = within(await screen.findByRole('region', { name: 'Gravar no Caderno?' }))
-  expect(region.getByRole('button', { name: 'Recusar' }).hasAttribute('disabled')).toBe(false)
+  expect(await region.findByText('Peça a quem gerencia a ligação.')).toBeTruthy()
+  expect(region.queryByRole('button', { name: 'Aprovar' })).toBeNull()
 })
 
 test('o Caderno: o cartão recusado diz "Não gravado."', async () => {

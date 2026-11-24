@@ -13,14 +13,14 @@ import type { Deps, OfConnection, Viewer } from './rows.ts'
 import { admitted, ofCompany, scopeOf } from './rows.ts'
 import { connection } from './tables.ts'
 
-/** What the Builder or the Assistant proved about one concept of a company's system: names and codes, the query that proved it, never a value (founder, J1); `approvedBy` is null on a note from before the yes. */
+/** What the Builder or the Assistant proved about one concept of a company's system: names and codes, the query that proved it, never a value (founder, J1); `approvedBy` is absent on a note from before the yes. */
 const Note = z.strictObject({
   mapping: z.string().min(1).max(500),
   provingQuery: z.string().min(1).max(4000),
   provedAt: z.iso.datetime(),
   provedRows: z.int().nonnegative(),
   writtenBy: z.string(),
-  approvedBy: z.string().nullable().default(null),
+  approvedBy: z.string().optional(),
 })
 type Note = z.infer<typeof Note>
 
@@ -38,7 +38,7 @@ const Concept = z.string().min(1).max(120)
 export const Notes = z.record(Concept, Note)
 export type Notes = z.infer<typeof Notes>
 
-/** The notebook, newest first, for the page of the connection; the writer and the approver are names, null once they left the company, and the approver null on a note from before the yes. */
+/** The notebook, newest first, for the page of the connection; the writer and the approver are names, null once they left the company, and the approval `NONE` on a note from before the yes. */
 export async function notesOf(tx: ReadTx, input: OfConnection): Promise<ConnectionNote[]> {
   const [row] = await tx
     .select({ notes: connection.notes })
@@ -48,7 +48,7 @@ export async function notesOf(tx: ReadTx, input: OfConnection): Promise<Connecti
   const writers = [
     ...new Set(
       Object.values(notes).flatMap((note) =>
-        note.approvedBy === null ? [note.writtenBy] : [note.writtenBy, note.approvedBy],
+        note.approvedBy === undefined ? [note.writtenBy] : [note.writtenBy, note.approvedBy],
       ),
     ),
   ]
@@ -72,16 +72,19 @@ export async function notesOf(tx: ReadTx, input: OfConnection): Promise<Connecti
       provedAt: note.provedAt,
       provedRows: note.provedRows,
       writtenBy: names.get(note.writtenBy) ?? null,
-      approvedBy: note.approvedBy === null ? null : (names.get(note.approvedBy) ?? null),
+      approval:
+        note.approvedBy === undefined
+          ? { kind: 'NONE' }
+          : { kind: 'PERSON', name: names.get(note.approvedBy) ?? null },
     }))
 }
 
 /**
  * Writes one concept in one instruction (the row's lock): the same concept again is the last
  * writer's, two different both stay. The notebook above 32 KB is the database's refusal (23514). A
- * connection taken off between the admission and this write is `GONE`, never `SAVED`. With
- * `manage`, the `manageConnections` of who approved is checked in the same transaction (T.26), and
- * a refusal is `NOT_GRANTED` with its reason in the log alone (S8, S10).
+ * connection taken off between the admission and this write is `GONE`, never `SAVED`. The
+ * `manageConnections` of who approved is checked in the same transaction (T.26), for the Builder and
+ * the Assistant alike, and a refusal is `NOT_GRANTED` with its reason in the log alone (S8, S10).
  */
 async function save(
   deps: Deps,
@@ -91,15 +94,12 @@ async function save(
     note: Note
     approvedBy: PersonId
   },
-  manage: boolean,
 ): Promise<'SAVED' | 'NOTE_INVALID' | 'GONE' | 'NOT_GRANTED'> {
   const note = Note.parse(input.note)
   try {
     const written = await deps.database.command(scopeOf(input), async (tx) => {
-      if (manage) {
-        const approver = { person: { id: input.approvedBy }, companyId: input.companyId }
-        await admitted(deps, tx, approver, 'manageConnections')
-      }
+      const approver = { person: { id: input.approvedBy }, companyId: input.companyId }
+      await admitted(deps, tx, approver, 'manageConnections')
       return tx
         .update(connection)
         .set({
@@ -126,7 +126,7 @@ async function save(
  * The proving query run once by the opened connection's read door, then the concept written with
  * the rows it returned, never the rows, who wrote it and who approved it: the one owner of the
  * notebook's write for the Builder and the Assistant (C26), after their door admitted the call and
- * counted it and a person said yes on the card. The Assistant's approver must manage connections.
+ * counted it and a person said yes on the card. The approver must manage connections, in either seat.
  */
 export async function provedAndSaved(
   deps: Deps,
@@ -164,7 +164,7 @@ export async function provedAndSaved(
     ...{ ...viewer, connectionId: opened.id, concept: a.concept, note: note.data },
     approvedBy: a.approvedBy,
   }
-  const saved = await save(deps, target, by !== 'builder')
+  const saved = await save(deps, target)
   if (saved === 'GONE' || saved === 'NOT_GRANTED') return { kind: 'NOT_GRANTED' }
   if (saved === 'NOTE_INVALID') return { kind: 'NOTE_INVALID' }
   deps.log.info(

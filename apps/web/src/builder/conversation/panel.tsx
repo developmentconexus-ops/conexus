@@ -37,7 +37,7 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 function BuilderChat(params: Params) {
   const { companyId, projectId, conversationId } = params
   const { words } = useConnectorCatalog(companyId)
-  const room = useMemo(() => builderRoomOf(words), [words])
+  const room = useMemo(() => builderRoomOf(words, companyId), [words, companyId])
   return (
     <RoomContext.Provider value={room}>
       <Chat

@@ -221,6 +221,13 @@ export const testConnection = defineOperation({
   failures: [...READ_FAILURES, 'CONNECTION_NOT_FOUND', 'SEAL_REFUSED', 'CONNECTOR_NOT_CONFIGURED'],
 })
 
+/** Who said yes to a note: none on a note from before the yes, a person otherwise, whose name is null once they left the company. */
+export const NoteApproval = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('NONE') }),
+  z.object({ kind: z.literal('PERSON'), name: z.string().nullable() }),
+])
+export type NoteApproval = z.infer<typeof NoteApproval>
+
 /** What the Builder proved about a connection's system: names and codes, never a value (founder, J1). */
 export const ConnectionNote = z.object({
   concept: z.string().min(1).max(120),
@@ -229,8 +236,7 @@ export const ConnectionNote = z.object({
   provedRows: z.int().nonnegative(),
   // null: who wrote it has left the company.
   writtenBy: z.string().nullable(),
-  // The approver's name; null: a note from before the yes ("Gravada sem aprovação"), or they left the company.
-  approvedBy: z.string().nullable(),
+  approval: NoteApproval,
 })
 export type ConnectionNote = z.infer<typeof ConnectionNote>
 

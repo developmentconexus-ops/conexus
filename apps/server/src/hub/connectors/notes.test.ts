@@ -54,7 +54,7 @@ test('guardar: roda a consulta uma vez pela porta e guarda o mapa, a consulta, a
   ])
 })
 
-test('guardar: no Builder o membro grava, sem manageConnections', async (t) => {
+test('guardar: no Builder o membro sem manageConnections não grava, como no Assistente: NOT_GRANTED e o caderno fica vazio', async (t) => {
   const on = await builderOn(t)
   const carla = { ...on.who(), personId: PersonId.parse(on.carla.id) }
   const saved = await on.port.saveNote(on.ids, {
@@ -63,7 +63,11 @@ test('guardar: no Builder o membro grava, sem manageConnections', async (t) => {
     mapping: 'm',
     provingQuery: QUERY,
   })
-  assert.deepEqual(saved, { kind: 'SAVED', provedRows: 1 })
+  assert.deepEqual(saved, { kind: 'NOT_GRANTED' })
+  assert.deepEqual(
+    await on.hub.test.asOwner("select 1 from connectors.connection where notes <> '{}'"),
+    [],
+  )
 })
 
 test('guardar: a consulta que a porta recusa recusa a anotação; o caderno cheio é NOTE_INVALID; a 51ª chamada da execução é recusada', async (t) => {

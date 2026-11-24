@@ -180,7 +180,7 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   from: readonly OperationId[]
   // The top-level keys of `input` that only whoever configures the tool sets; the model never fills them (decision 0062).
   fixed?: readonly string[]
-  // A read that lists rows says how it pages and what it asks to read only what changed; only the list conformance reads it today (class `read` only).
+  // A read that lists rows says how it pages and what it asks to read only what changed; the Builder's port tells the model, and the list conformance walks it (class `read` only).
   list?: ListRead
   // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).

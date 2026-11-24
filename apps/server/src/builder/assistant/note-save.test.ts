@@ -72,7 +72,7 @@ test('pede o sim: a conversa para no cartão com o conceito, o mapeamento e a co
   assert.equal(note.concept, 'Empresa')
   assert.equal(note.provedRows, 1)
   assert.equal(note.writtenBy, 'Ana Lima')
-  assert.equal(note.approvedBy, 'Ana Lima')
+  assert.deepEqual(note.approval, { kind: 'PERSON', name: 'Ana Lima' })
   const [row] = await on.hub.test.asOwner('select notes from connectors.connection where id = $1', [
     on.matriz,
   ])
@@ -99,7 +99,7 @@ test('a recusa: o Recusar no cartão não prova nem grava nada, e o modelo ouve 
   )
 })
 
-test('quem aprova: o sim de quem deixou de gerenciar ligações entre o pedido e o sim é NOT_GRANTED e nada é gravado, e uma anotação de antes desta etapa lê approvedBy nulo', async (t) => {
+test('quem aprova: o sim de quem deixou de gerenciar ligações entre o pedido e o sim é NOT_GRANTED e nada é gravado, e uma anotação de antes desta etapa lê a aprovação NONE', async (t) => {
   const on = await assisting(t, SAVING)
   const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
   const url = await created(on.hub, bia, on.assistant, { connections: [on.matriz] })
@@ -128,7 +128,7 @@ test('quem aprova: o sim de quem deixou de gerenciar ligações entre o pedido e
   ])
   const [before] = await notesOf(on)
   assert.equal(before.concept, 'Antiga')
-  assert.equal(before.approvedBy, null)
+  assert.deepEqual(before.approval, { kind: 'NONE' })
 })
 
 test('a rodada de automação: a conversa que a automação abre não leva connector_note_save, a da dona leva', async (t) => {

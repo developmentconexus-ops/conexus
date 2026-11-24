@@ -215,7 +215,7 @@ export function credentialsSource<F extends Failed>(
   }
 }
 
-/** A session of a login by pasted fields, as the copy task and the kit's tests open one. */
+/** A session of a login by pasted fields, as the kit's tests open one. */
 export function openSession<F extends Failed>(
   input: CredentialsInput<F>,
 ): Session<F | LoginRefused> {

@@ -63,7 +63,7 @@ export type Room = {
   openedAgent?: AgentId
   /** What the agent's own tool `slug` does, in the words its row reads; none where the room does not know the tools. */
   toolDescription?: (slug: string) => string | undefined
-  /** The company whose connections the notebook's card asks about: whether the person manages them. None where the Hub's own refusal is the rule (the Builder's conversation). */
+  /** The company whose connections the notebook's card asks about: whether the person manages them. None where the room has no notebook card to draw. */
   notebook?: { companyId: CompanyId }
   /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it; none where the room has no writes. */
   writeOf?: (toolName: string) => WriteTool | undefined
@@ -89,8 +89,12 @@ export const BUILDER_ROOM: Room = {
 }
 
 /** The Builder's room once the catalog is read: the connectors' names, logos and way of linking, and the Builder's own refusals. */
-export function builderRoomOf(words: ConnectorWords): Room {
-  return { ...BUILDER_ROOM, connectors: { ...words, refusal: PLAIN_WORDS.refusal } }
+export function builderRoomOf(words: ConnectorWords, companyId: CompanyId): Room {
+  return {
+    ...BUILDER_ROOM,
+    connectors: { ...words, refusal: PLAIN_WORDS.refusal },
+    notebook: { companyId },
+  }
 }
 
 /** The Assistant's conversation before a connector catalog is read: its box and its rows say "Assistente". */
