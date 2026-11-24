@@ -83,7 +83,7 @@ const Origin = z
       URL.canParse(value) && new URL(value).origin === value && value.startsWith('https://'),
   )
 
-/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a login without its credential class, a `numbers` other than 'EXACT' or 'DOUBLE', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, a check that is not one of its operations or needs an earlier one, a written skill that names one of its tools, or a copy model the kit no longer takes. */
+/** Takes `id` as a plain string and brands it; throws on a `perProject` other than 'one' or 'many', a login without its credential class, a `numbers` other than 'EXACT' or 'DOUBLE', a reported account with a login that is not OAuth, a repeated operation id, a bad version or origin, a door entry that is not 'read', a list read in a connector with no `callLimit`, a write that is not 'write' or repeats an id, an operation of a subject the connector lacks, a subject with no operation, a `from` that is not an earlier operation, a check that is not one of its operations or needs an earlier one, or a written skill that names one of its tools. */
 export function defineConnector<A extends Auth>(
   connector: Omit<Connector, 'id' | 'auth'> & { id: string; auth: A },
 ): Connector & Readonly<{ auth: A }> {
@@ -99,7 +99,6 @@ export function defineConnector<A extends Auth>(
   const ids = declared.map((operation) => operation.id)
   if (new Set(ids).size !== ids.length) throw new Error(`Repeated operation id in ${connector.id}`)
   assertWritesWrite(connector)
-  assertNoCopyModels(connector)
   assertCallLimit(connector, declared)
   for (const [key, operation] of Object.entries(connector.readDoor ?? {})) {
     if (operation.class !== 'read') throw new Error(`Door entry not read: ${key}`)
@@ -152,10 +151,6 @@ function assertCallLimit(
     connector.callLimit === undefined
   )
     throw new Error(`List read without callLimit in ${connector.id}`)
-}
-
-function assertNoCopyModels(connector: object): void {
-  if ('copy' in connector) throw new Error('A connector declares no copy models')
 }
 
 function assertCheckStandsAlone(connector: Pick<Connector, 'operations' | 'check'>): void {
