@@ -9,3 +9,5 @@ Cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-cer
 Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit a9ecf3e0d472de77572030bb1b6e43592ad46fc9), a seção da U3 depois da segunda revisão, com o texto final que o fundador leu: "Aprvo"
 
 Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit 6a8ce1b16ee88863374787fd8bbde7d4f54408da), a U4 com o protótipo aprovado: no quadro da rodada Conexus "a: aprovo a emenda", e os ajustes de coerência que o fundador leu: "Aprovo"
+
+Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit 11deba25308f0f60b683a96b957b6006f15c6712), o critério 15 sem o lugar de Renomear e a linha Renomear numa lista suspensa só na U13, a opção (a) da revisão do PR 1352: "A"
