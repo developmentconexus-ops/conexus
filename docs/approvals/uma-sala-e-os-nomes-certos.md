@@ -7,3 +7,5 @@ Em 2026-11-24, no quadro da entrevista deste cartão: "1 Pode ser A Pergunte 3: 
 Cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovado em 2026-11-24 (commit 5074535ecc47a7844359697c211443ac8bc02121), na página do fundador do cartão, com as quatro correções de fato que a página das três aprovações apontou (o total do orçamento, o que o guarda confere, o que cada peça sem referência segue, o texto do botão e o tempo dos tiques do agendador): "Aprovo a página"
 
 Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit a9ecf3e0d472de77572030bb1b6e43592ad46fc9), a seção da U3 depois da segunda revisão, com o texto final que o fundador leu: "Aprvo"
+
+Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit 6a8ce1b16ee88863374787fd8bbde7d4f54408da), a U4 com o protótipo aprovado: no quadro da rodada Conexus "a: aprovo a emenda", e os ajustes de coerência que o fundador leu: "Aprovo"
