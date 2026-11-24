@@ -141,6 +141,8 @@ conferência, que só a sessão de conferência abre.
   um engano alcança é a Prévia de hoje. O estudo de segurança pôs (b) como condição; esta página
   pergunta se você a mantém.
 
+  **Respondida em 2026-11-23: "1. A".** A conferência aceita; a opção (b) não entra.
+
 - **A permissão nova no banco do Hub.** A entrada do navegador da conferência fica numa tabela nova
   do Hub. O login com que o Hub roda passa a poder ler, criar e apagar linhas dela, e nada mais,
   as mesmas três permissões que ele já tem na tabela das entradas da Prévia. A regra D11 pede a sua
@@ -151,6 +153,9 @@ conferência, que só a sessão de conferência abre.
 
   **Recomendo (a).** Veredito: nativo. É a forma da tabela das entradas da Prévia, que você já
   aprovou.
+
+  **Respondida em 2026-11-23: "2. A".** As três permissões, só na tabela nova (a palavra D11, no
+  [arquivo de aprovação](../approvals/o-builder-ve-o-que-construiu.md)).
 
 ## As unidades
 
@@ -274,7 +279,7 @@ corpo aberto, pela decisão 15 do firstmate; o código da tela não muda.
 | A sessão do navegador | a sessão de app pela passagem (`hub/apps/handoff.ts:50-119`), pendurada na sessão do Hub | — (as referências põem o navegador fora do código julgado) | — | embrulhado: `apps.check_session` (a decisão 8 do firstmate), entregue pelo `cookies set --curl <arquivo> --url` do CLI (a decisão 9) | a prova local do cookie, variantes A a H | U1, U2 | — |
 | Os conectores na conferência | `connectorCall` admite a sessão e lê a versão da Prévia (`hub/apps/handoff.ts:209-235`) | — | — | embrulhado: no ambiente `check`, as respostas que o app já trata, `NOT_GRANTED` e nenhuma conexão (a decisão 10 do firstmate) | — | U2 | — |
 | Quem decide "terminei" | `conexusCheck` (`conversation/processors.ts:86-146`), no campo `judge` da ficha do Builder, `{ scorers: [conexusCheck(...)], strategy: 'all' }` (`conversation/builder.ts:159-162`); uma exceção dentro dele vira `unchecked` com a linha `CHECK_JUDGE_FAILED` no log (`processors.ts:128-142`, pull request 1300) | Mastra 1.83.0 `isTaskComplete`; bolt.diy `353b44c` `app/lib/common/agentLoop.ts:198-210`; vibesdk `worker/agents/core/behaviors/think.ts:322-327` | por código, no fim do turno; o vibesdk só pelo prompt | nativo; o juiz passa a esperar a conferência no navegador. O campo `judge` não muda: muda o que `conexusCheck` lê de `Runs.check` | — | U3 | — |
-| O juiz da tela não ligada | `informed` não reprova (`packages/app/src/check/run.ts:37-41`) | vibesdk `browser-logs-tool.ts:16-24`, `think.ts:322-327` ("until the deploy succeeds and the console is clean") | repetir até o console limpo | nativo: o relatório do CLI decide; o cruzamento com o despachante é a decisão do fundador | — | U3 | — |
+| O juiz da tela não ligada | `informed` não reprova (`packages/app/src/check/run.ts:37-41`) | vibesdk `browser-logs-tool.ts:16-24`, `think.ts:322-327` ("until the deploy succeeds and the console is clean") | repetir até o console limpo | nativo: o relatório do CLI decide; o cruzamento com o despachante fica de fora pela palavra do fundador ("1. A", 2026-11-23) | — | U3 | — |
 
 As peças que a implementação provada riscou não entram: o `AgentBrowser` de `@mastra/agent-browser`
 0.6.0 no Hub com o proxy WebSocket (o motor 0.19.0 ignora `cdpHeaders`), `maskRequestHost` e o

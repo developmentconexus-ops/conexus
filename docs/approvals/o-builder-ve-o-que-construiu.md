@@ -15,5 +15,13 @@ Em 2026-11-22, ao estudo do harness, a ordem que põe este marco depois de Uma f
 "A: Sua recomendacao" (a etapa 1 do harness antes do `A1`; a etapa 2 depois do `A1` e antes do
 `A3`). As palavras estão também no [arquivo de aprovação da ficha](uma-ficha-por-agente.md).
 
-A aprovação da página do fundador, com o commit do cartão, entra aqui quando ele a der, com a
-palavra D11 da permissão nova (`docs/guides/data.md`), que a página pergunta à parte.
+Em 2026-11-23, às duas decisões da página do cartão (commit `205a1980`): "1. A" e "2. A".
+
+- "1. A": em quem a conferência confia, (a) aceitar. O navegador da conferência roda na máquina da
+  conversa, e o pior caso é uma versão quebrada chegar à Prévia; a porta dos apps não conta os
+  pedidos falhos do lado dela.
+- "2. A": a permissão nova, (a) aprovar. É a palavra D11 (`docs/guides/data.md`) para as três
+  permissões do login `hub_runtime` (`SELECT`, `INSERT` e `DELETE`) só na tabela
+  `apps.check_session`.
+
+A aprovação da página do fundador, com o commit do cartão, entra aqui quando ele a der.
