@@ -25,7 +25,7 @@ const ACOMPANHAMENTO = project('a', 'Acompanhamento', [1, null])
 const SEM_APP = project('s', 'Sem app', [null, null])
 
 function table(name: string, rows: object) {
-  return { schema: 'APP', name, rows }
+  return { name, rows }
 }
 function tablesOf(...tables: object[]) {
   return TablesShape.parse({ kind: 'TABLES', tables })
@@ -55,19 +55,6 @@ test('Apps: as tabelas por Projeto, com a versão e as linhas', async () => {
   const building = within(await screen.findByRole('region', { name: 'Acompanhamento' }))
   expect(building.getByText('Em construção · v1')).toBeTruthy()
   expect(building.getByText('0')).toBeTruthy()
-})
-
-test('Apps: as cópias liberadas ao Projeto ficam fora, já estão em Bruto', async () => {
-  answering({
-    [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 3 }), {
-      schema: 'COPY',
-      name: 'sankhya_vendas',
-      rows: { kind: 'EXACT', rows: 9 },
-    }),
-  })
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM])
-  await screen.findByText('clientes')
-  expect(screen.queryByText('sankhya_vendas')).toBeNull()
 })
 
 test('Apps: um Projeto sem app não aparece', async () => {

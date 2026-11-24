@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { rolesWorld } from '../copies/test-readers.ts'
-import { operationLeaf, Principal, principalFor, tableLeaf } from './public.ts'
+import { rolesWorld } from '../data/test-company.ts'
+import { operationLeaf, Principal, principalFor } from './public.ts'
 
 test('um Principal só sai de principalFor', async (t) => {
-  const w = await rolesWorld(t, 'NONE')
+  const w = await rolesWorld(t)
   const made = principalFor({
     ...{ consumer: 'assistant', companyId: w.on.companyId, personId: w.brunoId },
     ...{ place: { kind: 'COMPANY' }, choice: { kind: 'ANY' } },
@@ -24,7 +24,7 @@ test('um Principal só sai de principalFor', async (t) => {
 })
 
 test('may diz o teto e o fora do alcance', async (t) => {
-  const w = await rolesWorld(t, 'PLANTED')
+  const w = await rolesWorld(t)
   const sankhya = w.on.connectionId
   const view = await w.on.hub.access.viewOf(
     principalFor({
@@ -32,7 +32,7 @@ test('may diz o teto e o fora do alcance', async (t) => {
       ...{ place: { kind: 'COMPANY' }, choice: { kind: 'ANY' } },
     }),
   )
-  assert.deepEqual(view.may(tableLeaf('sankhya_vendas'), 'WRITE'), {
+  assert.deepEqual(view.may(operationLeaf(sankhya, 'pedidos'), 'WRITE'), {
     kind: 'REFUSED',
     reason: 'ABOVE_CEILING',
   })

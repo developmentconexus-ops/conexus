@@ -8,7 +8,6 @@ import {
   listAppRows,
   listAppTables,
   listAppVersions,
-  listCopyRows,
   publishAppVersion,
   recordAppRead,
 } from '@conexus/hub-api'
@@ -89,10 +88,7 @@ export function registerDataRoutes(app: FastifyInstance, data: AppData): void {
     answer(await data.tables({ person, ...params, signal })),
   )
   serve(app, listAppRows, async ({ person, params: { table, ...params }, query, signal }) =>
-    answer(await data.rows({ person, ...params, schema: 'APP', table, page: query.page, signal })),
-  )
-  serve(app, listCopyRows, async ({ person, params: { table, ...params }, query, signal }) =>
-    answer(await data.rows({ person, ...params, schema: 'COPY', table, page: query.page, signal })),
+    answer(await data.rows({ person, ...params, table, page: query.page, signal })),
   )
 }
 

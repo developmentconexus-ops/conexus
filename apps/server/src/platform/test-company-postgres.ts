@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import type { ProjectId, RoleId } from '@conexus/hub-api'
+import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import pg from 'pg'
 import type {
@@ -12,8 +12,6 @@ import type {
 import { answerOf, createCompanyPostgres, errorName } from './company-postgres.ts'
 import { readTestDatabase } from './config.ts'
 import type { AppLoginKey } from './config-apps.ts'
-import { roleLogin } from './copy-reader.ts'
-import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { loadMigrationRule } from './migration-rule.ts'
 import type { Lifetime } from './test-database.ts'
@@ -114,8 +112,7 @@ export function unreachableAnswer(): Promise<SqlAnswer> {
 
 /**
  * A company's database on the test server, as Neon makes one: its owner may create logins but is
- * no superuser. The apps' logins and the sync login belong to the whole server, so they go with
- * the database; one another database still uses stays for it.
+ * no superuser; the apps' logins go with it.
  */
 export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
   const serverUrl = readTestDatabase().ownerUrl
@@ -131,7 +128,7 @@ export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
       const company = new pg.Client({ connectionString: owner.reveal() })
       await company.connect()
       const roles = await company.query(
-        `select rolname from pg_roles where rolname ~ '^(app_.*_(run|migrate|read)|conexus_sync|conexus_read|conexus_role_.*)$'`,
+        `select rolname from pg_roles where rolname ~ '^app_.*_(run|migrate|read)$'`,
       )
       await company.end()
       await admin.query(`drop database ${name}`)
@@ -265,6 +262,29 @@ export async function appLoginsOf(owner: DatabaseUrl, projectId: ProjectId): Pro
   }
 }
 
+/** The app's own schema, and every other schema its run and read logins may use besides PostgreSQL's own. */
+export async function schemasOfAppLogins(owner: DatabaseUrl, projectId: ProjectId) {
+  const { schema, runLogin, readLogin } = appLogin(projectId)
+  const client = new pg.Client({ connectionString: owner.reveal() })
+  await client.connect()
+  try {
+    const used = await client.query(
+      `select r.rolname, array(select n.nspname::text from pg_namespace n
+          where has_schema_privilege(r.oid, n.oid, 'USAGE')
+            and n.nspname not in ('pg_catalog', 'information_schema') and n.nspname not like 'pg\\_%'
+          order by 1) as schemas
+        from pg_roles r where r.rolname = any($1) order by 1`,
+      [[runLogin, readLogin]],
+    )
+    return {
+      schema,
+      logins: used.rows.map((row) => ({ login: row.rolname, schemas: row.schemas })),
+    }
+  } finally {
+    await client.end()
+  }
+}
+
 /** The timeouts each of the app's logins carries, from its own settings (decision 0047). */
 export async function appLoginTimeoutsOf(owner: DatabaseUrl, projectId: ProjectId) {
   const { runLogin, migrateLogin } = appLogin(projectId)
@@ -321,32 +341,4 @@ export async function forgetReadLogin(owner: DatabaseUrl, projectId: ProjectId) 
 /** The Hub's acts on a company's database over the test server, with the test's app login key. */
 export function testCompanyPostgres(key: AppLoginKey, transport: SqlTransport = pgTransport) {
   return createCompanyPostgres({ transport, appLoginKey: key })
-}
-
-async function loginOf(owner: DatabaseUrl, key: AppLoginKey, login: string): Promise<DatabaseUrl> {
-  const url = new URL(owner.reveal())
-  url.username = login
-  url.password = await appLoginPassword({ key: key.reveal(), login })
-  return DatabaseUrl.parse(url.toString())
-}
-
-/** The sync login's address on the company's database: the owner's, with the login and its password. */
-export function syncLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
-  return loginOf(owner, key, SYNC_LOGIN)
-}
-
-/** The same address with another password: a login whose derived one is not this. */
-export function withPassword(url: DatabaseUrl, password: string): DatabaseUrl {
-  const wrong = new URL(url.reveal())
-  wrong.password = password
-  return DatabaseUrl.parse(wrong.toString())
-}
-
-/** The read login's address on the company's database, as `syncLoginOf` gives the sync login's. */
-export function readLoginOf(owner: DatabaseUrl, key: AppLoginKey): Promise<DatabaseUrl> {
-  return loginOf(owner, key, READ_LOGIN)
-}
-
-export function roleLoginOf(owner: DatabaseUrl, key: AppLoginKey, roleId: RoleId) {
-  return loginOf(owner, key, roleLogin(roleId))
 }

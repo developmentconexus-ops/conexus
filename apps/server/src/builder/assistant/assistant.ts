@@ -11,12 +11,7 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import type {
-  CompanyCopies,
-  CompanyProjects,
-  CompanyToolDeps,
-  CompanyToolScope,
-} from '../company-tools/public.ts'
+import type { CompanyProjects, CompanyToolDeps, CompanyToolScope } from '../company-tools/public.ts'
 import {
   byPrincipal,
   companyConnections,
@@ -104,8 +99,6 @@ type Deps = {
    */
   machine: ConversationMachine
   machineTuning?: MachineTuning
-  /** The copies are made after the conversations; a turn comes long after both. */
-  copies: () => CompanyCopies
   /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
   handOffs: () => HandOffDoors
   log: FailureLog
@@ -114,16 +107,16 @@ type Deps = {
 /** The company's tools of the Assistant's runs and its helper's, every call through the door as the run's principal. */
 function companyDeps(deps: Deps): CompanyToolDeps {
   return {
-    ...{ log: deps.log, copies: deps.copies, savedAt: readsFiles() },
+    ...{ log: deps.log, savedAt: readsFiles() },
     data: (run) => deps.companyData(principalOf(run), dataContextOf(run)),
     connector: byPrincipal(deps.connectors, turnKey.of),
     projects: (run) => projectsOf(deps, run),
   }
 }
 
-const FIRST: readonly string[] = [ASSISTANT_TOOL.overview, ASSISTANT_TOOL.copyRuns]
+const FIRST: readonly string[] = [ASSISTANT_TOOL.overview]
 
-/** The company's tools split as the request lists them: the overview and the copies' runs before the Assistant's own, the connectors' and the data's after. */
+/** The company's tools split as the request lists them: the overview before the Assistant's own, the connectors' and the data's after. */
 async function inRequestOrder(
   scope: CompanyToolScope<AssistantConnection> | undefined,
   tools: CompanyToolDeps,

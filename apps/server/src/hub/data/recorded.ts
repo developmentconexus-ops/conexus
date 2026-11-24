@@ -12,10 +12,8 @@ import { catalogOf } from './catalog.ts'
 import type { DataDeps, TurnBinding } from './deps.ts'
 import { funnelOf } from './funnel.ts'
 import { liveOf } from './live.ts'
-import { queryOf } from './query.ts'
 import type { ReadEntry, RecordRead, Who } from './record.ts'
 import { recordReadOf } from './record.ts'
-import { rowsOf } from './rows.ts'
 
 export type DataContext = Readonly<{
   /** The conversation the run belongs to; none in the Construtor's test of a draft. */
@@ -36,21 +34,10 @@ function entryOf({ request, answer, who, ms }: Asked): ReadEntry | undefined {
   const base = { ...who, outcome: answer.kind, ms }
   switch (request.kind) {
     case 'TABLE':
-      return {
-        ...{ ...base, ...SAMPLE, tables: [request.table] },
-        rows: answer.kind === 'TABLE' ? answer.rows.length : null,
-      }
+      return { ...base, ...SAMPLE, tables: [request.table], rows: null }
     case 'QUERY':
-      return answer.kind === 'QUERY'
-        ? {
-            ...{ ...base, ...QUERY, query: request.sql },
-            ...{ tables: answer.tables.map(({ table }) => table), rows: answer.rows.length },
-          }
-        : { ...base, ...QUERY, query: request.sql, tables: [], rows: null }
+      return { ...base, ...QUERY, query: request.sql, tables: [], rows: null }
     case 'OPERATION':
-      if (answer.kind === 'TABLE') {
-        return { ...base, ...SAMPLE, tables: [answer.table], rows: answer.rows.length }
-      }
       if (!BEFORE_THE_SYSTEM.includes(answer.kind)) return undefined
       return {
         ...{ ...base, ...LIVE },
@@ -115,10 +102,8 @@ export function sourcesFor(
   const { turn, thread } = context
   return {
     catalog: () => catalogOf(deps, principal),
-    rows: ({ table, signal }) => rowsOf(deps, principal, { table, signal }),
     live: async (a) =>
       turn === undefined ? NOT_GRANTED : liveOf(deps, principal, { turn, thread }, a),
-    query: (a) => queryOf(deps, principal, a),
     funnel: async (a) => (turn === undefined ? NOT_GRANTED : funnelOf(deps, principal, turn, a)),
   }
 }

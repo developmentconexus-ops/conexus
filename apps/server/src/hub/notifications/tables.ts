@@ -1,4 +1,4 @@
-import { AutomationFailureCode, CopyRunFailureCode } from '@conexus/hub-api'
+import { AutomationFailureCode } from '@conexus/hub-api'
 import type { AnyColumn } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import type { ExtraConfigColumn } from 'drizzle-orm/pg-core'
@@ -32,7 +32,15 @@ function listOf(codes: readonly string[]) {
 }
 
 const FAILURE_CODES = listOf(AutomationFailureCode.options)
-const COPY_FAILURE_CODES = listOf(CopyRunFailureCode.options)
+/** The codes a copy's run ended with, checked until the migration that drops its notices (U15). */
+const COPY_FAILURE_CODES = listOf([
+  'COPY_SOURCE_REFUSED',
+  'COPY_SOURCE_NEEDS_REAUTH',
+  'COPY_SOURCE_UNREACHABLE',
+  'COPY_SOURCE_UNREADABLE',
+  'COPY_SOURCE_CEILING',
+  'COPY_DATABASE_UNAVAILABLE',
+])
 
 // A notification is its person's alone: the company's routes reach only their own rows.
 const OWN = sql`company_id = ${scoped.companyId} and person_id = ${scoped.personId}`

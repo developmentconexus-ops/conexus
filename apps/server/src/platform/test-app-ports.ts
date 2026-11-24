@@ -3,13 +3,11 @@ import { testBuilderPorts } from '../builder/runs/test-runs.ts'
 import type { CompanyPostgres } from './company-postgres.ts'
 import { createCompanyPostgres } from './company-postgres.ts'
 import type { Config } from './config.ts'
-import { roleLogin } from './copy-reader.ts'
-import { READ_LOGIN, SYNC_LOGIN } from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { fakeAws } from './test-aws.ts'
 import { fakeCloudflare } from './test-cloudflare.ts'
 import { pgTransport } from './test-company-postgres.ts'
-import { silent, withRoleLock } from './test-database.ts'
+import { silent } from './test-database.ts'
 import { fakeNeon } from './test-neon.ts'
 
 async function asLogin(config: Config, owner: DatabaseUrl, login: string) {
@@ -29,16 +27,6 @@ export function heldCompanyPostgres(config: Config) {
   // The test server's databases are not Neon's: the read login's address is the owner's, as the
   // owner's last act on that Projeto gave it, with the login and its derived password.
   const owners = new Map<string, DatabaseUrl>()
-  // The sync login's address likewise, by the host the Hub recorded: the test server is one host,
-  // so a second company's owner on it makes the address unknown rather than another company's.
-  const syncOwners = new Map<string, DatabaseUrl | 'TWO_COMPANIES'>()
-  async function addressOn(host: string, login: string) {
-    const owner = syncOwners.get(host)
-    if (owner === undefined || owner === 'TWO_COMPANIES') {
-      throw new Error(`the ${login} address on the test host is ${owner ?? 'unseen'}`)
-    }
-    return asLogin(config, owner, login)
-  }
   const companyPostgres: CompanyPostgres = {
     ensureApp(owner, projectId) {
       owners.set(projectId, owner)
@@ -64,27 +52,6 @@ export function heldCompanyPostgres(config: Config) {
       return inner.migrate(owner, projectId, migrations)
     },
     dropApp: (owner, projectId) => inner.dropApp(owner, projectId),
-    ensureSync(owner) {
-      const host = new URL(owner.reveal()).hostname
-      const seen = syncOwners.get(host)
-      const same =
-        seen === undefined || (seen !== 'TWO_COMPANIES' && seen.reveal() === owner.reveal())
-      syncOwners.set(host, same ? owner : 'TWO_COMPANIES')
-      // Only the test server's share: the sync login belongs to the whole server, and another file's
-      // teardown may drop it between the look and the GRANT (42704), so the act holds the lock the
-      // drops take. Two acts on one company take turns in `ensureSync` itself (`ROLES_LOCK`).
-      return withRoleLock(() => inner.ensureSync(owner))
-    },
-    ensureReader: (owner) => withRoleLock(() => inner.ensureReader(owner)),
-    readerAddress: (host) => addressOn(host, READ_LOGIN),
-    takeReadersTicket: inner.takeReadersTicket,
-    reconcileReaders: (...input) => withRoleLock(() => inner.reconcileReaders(...input)),
-    roleAddress: (host, roleId) => addressOn(host, roleLogin(roleId)),
-    readCopies: (reader, statements, signal) => inner.readCopies(reader, statements, signal),
-    ensureCopyTable: (sync, table) => inner.ensureCopyTable(sync, table),
-    syncAddress: (host) => addressOn(host, SYNC_LOGIN),
-    grantCopy: (sync, input) => inner.grantCopy(sync, input),
-    revokeCopy: (sync, input) => inner.revokeCopy(sync, input),
   }
   return {
     companyPostgres,

@@ -1,4 +1,4 @@
-import { DATA_TOOL, DataResult } from '@conexus/hub-api'
+import { DATA_TOOL } from '@conexus/hub-api'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { REFUSED_TEXT } from './data-specs.ts'
@@ -27,8 +27,7 @@ function itemOf(inv: Parameters<typeof invocationToItem>[0]): ToolItem {
 }
 
 function catalog() {
-  const inv = recorded(DATA_TOOL.describe)
-  return { inv, result: DataResult.parse(inv.result) }
+  return recorded(DATA_TOOL.describe)
 }
 
 function table() {
@@ -37,8 +36,7 @@ function table() {
 }
 
 function query() {
-  const inv = recorded(DATA_TOOL.query)
-  return { inv, result: DataResult.parse(inv.result) }
+  return recorded(DATA_TOOL.query)
 }
 
 function running(inv: ReturnType<typeof recorded>) {
@@ -60,24 +58,17 @@ function draw(tool: ToolItem, room = BUILDER_ROOM) {
   )
 }
 
-test('o catálogo: Consultou o catálogo, 5 tabelas', () => {
-  draw(itemOf(catalog().inv))
+test('o catálogo: Consultou o catálogo, sem contar tabelas, e rodando diz Consultando o catálogo', () => {
+  const done = draw(itemOf(catalog()))
   expect(screen.getByText('Consultou o catálogo')).toBeTruthy()
-  expect(screen.getByText('5 tabelas')).toBeTruthy()
-})
-
-test('o catálogo com uma tabela diz "1 tabela", e rodando diz Consultando o catálogo', () => {
-  const { inv, result } = catalog()
-  if (result.kind !== 'CATALOG') throw new Error('the recording holds no catalog')
-  const one = draw(itemOf({ ...inv, result: { ...result, tables: result.tables.slice(0, 1) } }))
-  expect(screen.getByText('1 tabela')).toBeTruthy()
-  one.unmount()
-  draw(itemOf(running(inv)))
+  expect(screen.queryByText(/tabela/)).toBeNull()
+  done.unmount()
+  draw(itemOf(running(catalog())))
   expect(screen.getByText('Consultando o catálogo')).toBeTruthy()
 })
 
 test('o catálogo: a chamada em erro ou negada diz que não conseguiu ler o catálogo', () => {
-  const { inv } = catalog()
+  const inv = catalog()
   const { result: _result, ...call } = inv
   const failed = draw(itemOf({ ...call, state: 'output-error', errorText: 'falhou' }))
   expect(screen.getByText('Não conseguiu ler o catálogo agora.')).toBeTruthy()
@@ -86,69 +77,28 @@ test('o catálogo: a chamada em erro ou negada diz que não conseguiu ler o cat�
   expect(screen.getByText('Não conseguiu ler o catálogo agora.')).toBeTruthy()
 })
 
-test('a amostra: Viu vendas, 5 linhas, há mais', () => {
-  const inv = table()
-  draw(itemOf(inv))
+test('a tabela pedida: Viu vendas, sem amostra, e rodando diz Vendo', () => {
+  const done = draw(itemOf(table()))
   expect(screen.getByText('Viu vendas')).toBeTruthy()
-  expect(screen.getByText('5 linhas, há mais')).toBeTruthy()
-})
-
-test('a amostra: rodando diz Vendo, e uma amostra sem mais linhas não diz "há mais"', () => {
-  const inv = table()
-  const result = DataResult.parse(inv.result)
-  if (result.kind !== 'TABLE') throw new Error('the recording holds no table')
-  const done = draw(
-    itemOf({ ...inv, result: { ...result, sample: { ...result.sample, more: false } } }),
-  )
-  expect(screen.getByText('5 linhas')).toBeTruthy()
+  expect(screen.queryByText(/linha/)).toBeNull()
   done.unmount()
-  const empty = draw(itemOf({ ...inv, result: { ...result, sample: { rows: [], more: false } } }))
-  expect(screen.getByText('Nenhuma linha.')).toBeTruthy()
-  empty.unmount()
-  draw(itemOf(running(inv)))
+  draw(itemOf(running(table())))
   expect(screen.getByText('Vendo vendas')).toBeTruthy()
 })
 
 test('rodando: Consultando os dados', () => {
-  draw(itemOf(running(query().inv)))
+  draw(itemOf(running(query())))
   expect(screen.getByText('Consultando os dados')).toBeTruthy()
 })
 
-test('a consulta: Consultou vendas, 1 linha', () => {
-  draw(itemOf(query().inv))
-  expect(screen.getByText('Consultou vendas')).toBeTruthy()
-  expect(screen.getByText('1 linha')).toBeTruthy()
-})
-
-test('a consulta: n linhas, há mais quando não veio completa, e duas tabelas juntas', () => {
-  const { inv, result } = query()
-  if (result.kind !== 'ROWS') throw new Error('the recording holds no rows')
-  const [origin] = result.origin
-  if (origin === undefined) throw new Error('the recording holds no origin')
-  draw(
-    itemOf({
-      ...inv,
-      result: {
-        ...result,
-        rows: [[1], [2], [3]],
-        complete: false,
-        origin: [origin, { ...origin, table: 'sankhya_clientes' }],
-      },
-    }),
-  )
-  expect(screen.getByText('Consultou vendas, sankhya_clientes')).toBeTruthy()
-  expect(screen.getByText('3 linhas, há mais')).toBeTruthy()
-})
-
-test('um resultado fora do esquema dá a linha genérica', () => {
-  const { inv } = query()
-  draw(itemOf({ ...inv, result: { kind: 'ROWS', rows: 'não é uma lista' } }))
+test('a consulta: Consultou os dados, sem contar linhas nem nomear tabela', () => {
+  draw(itemOf(query()))
   expect(screen.getByText('Consultou os dados')).toBeTruthy()
-  expect(screen.queryByText(/linha/)).toBeNull()
+  expect(screen.queryByText(/linha|vendas/)).toBeNull()
 })
 
 test.each(Object.entries(REFUSED_TEXT))('cada recusa diz o seu texto: %s', (kind, text) => {
-  const inv = thrown(query().inv, kind)
+  const inv = thrown(query(), kind)
   const stored = draw(itemOf(inv))
   expect(screen.getByText(text)).toBeTruthy()
   expect(screen.queryByText('Consultou os dados')).toBeNull()
@@ -159,7 +109,7 @@ test.each(Object.entries(REFUSED_TEXT))('cada recusa diz o seu texto: %s', (kind
 })
 
 test('a consulta recusada pelo banco diz que a tabela não está no catálogo', () => {
-  draw(itemOf(thrown(query().inv, 'NOT_IN_ROLE')))
+  draw(itemOf(thrown(query(), 'NOT_IN_ROLE')))
   expect(screen.getByText('Essa tabela não está no catálogo.')).toBeTruthy()
   expect(screen.queryByText(/papel/)).toBeNull()
 })
@@ -170,7 +120,7 @@ test('a recusa da amostra de uma tabela diz o texto da tabela', () => {
 })
 
 test('um kind fora da lista, ou um erro que não é o JSON das ferramentas, cai na linha genérica', () => {
-  const { inv } = query()
+  const inv = query()
   const unknown = draw(itemOf(thrown(inv, 'OUTRA_RECUSA')))
   expect(screen.getByText('Não conseguiu ler a tabela agora.')).toBeTruthy()
   unknown.unmount()
@@ -191,12 +141,12 @@ function textsIn(rows: ToolItem[], room: typeof BUILDER_ROOM) {
 }
 
 test('na sala do Builder, as mesmas linhas', () => {
-  const rows = [itemOf(catalog().inv), itemOf(table()), itemOf(query().inv)]
+  const rows = [itemOf(catalog()), itemOf(table()), itemOf(query())]
   expect(textsIn(rows, BUILDER_ROOM)).toEqual(textsIn(rows, ASSISTANT_ROOM))
   expect(textsIn(rows, BUILDER_ROOM)).toEqual([
-    'Consultou o catálogo5 tabelas',
-    'Viu vendas5 linhas, há mais',
-    'Consultou vendas1 linha',
+    'Consultou o catálogo',
+    'Viu vendas',
+    'Consultou os dados',
   ])
 })
 
@@ -209,10 +159,9 @@ test('aberta, a linha mostra a consulta e Copiar a consulta põe o texto na áre
   expect(sql.length).toBeGreaterThan(800)
   const writeText = vi.fn(() => Promise.resolve())
   clipboard(writeText)
-  const { inv } = query()
-  draw(itemOf({ ...inv, args: { sql } }))
+  draw(itemOf({ ...query(), args: { sql } }))
   expect(screen.queryByText('Copiar a consulta')).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: /Consultou vendas/ }))
+  fireEvent.click(screen.getByRole('button', { name: /Consultou os dados/ }))
   expect(screen.getByText(sql)).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Copiar a consulta' }))
   expect(await screen.findByRole('button', { name: 'Consulta copiada' })).toBeTruthy()
@@ -226,8 +175,8 @@ test.each([
   const cause = new Error('negado')
   const log = vi.spyOn(console, 'error').mockReturnValue(undefined)
   if (hasClipboard) clipboard(() => Promise.reject(cause))
-  draw(itemOf({ ...query().inv, args: { sql: SQL } }))
-  fireEvent.click(screen.getByRole('button', { name: /Consultou vendas/ }))
+  draw(itemOf({ ...query(), args: { sql: SQL } }))
+  fireEvent.click(screen.getByRole('button', { name: /Consultou os dados/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Copiar a consulta' }))
   expect(await screen.findByText('Não deu para copiar. Selecione a consulta e copie.')).toBeTruthy()
   await waitFor(() =>

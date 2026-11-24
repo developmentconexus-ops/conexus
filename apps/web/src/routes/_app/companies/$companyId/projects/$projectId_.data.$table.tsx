@@ -27,7 +27,5 @@ export const Route = createFileRoute('/_app/companies/$companyId/projects/$proje
 function Rows() {
   const { companyId, projectId, table } = Route.useParams()
   const { page } = Route.useSearch()
-  return (
-    <DataRows schema="APP" companyId={companyId} projectId={projectId} table={table} page={page} />
-  )
+  return <DataRows companyId={companyId} projectId={projectId} table={table} page={page} />
 }

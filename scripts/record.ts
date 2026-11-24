@@ -1,5 +1,5 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, data-query, research, research-failed, title, title-observer, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, research, research-failed, title, title-observer, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -11,7 +11,7 @@
 // date in the first line, in apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service
 // is called and no credential is read; every prompt is invented (security S40). `reads` is the
 // Assistant's turn: a `connector_read` that runs its SQL on the Sankhya double's Padaria Sol (Matriz),
-// then an answer with its numbers (step 24.1, criterion 11a). `data-query` is the Assistant's turn on the copied data: `data_describe` twice, `data_query`, then the answer. `research` and `research-failed` are the
+// then an answer with its numbers (step 24.1, criterion 11a). `data-query` is no scenario: a frozen capture of the Assistant's turn over copied data (`data_describe` twice, `data_query`, the answer), kept so the screens still open such a conversation. `research` and `research-failed` are the
 // Assistant's helper (U12): Mastra's `subagent` tool of type `pesquisar` runs its own model call, which
 // answers in `research` and is refused by the provider in `research-failed`. `tool-error` is no scenario: its recording holds one model call and the turn asks a second.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -34,8 +34,6 @@ import * as approval from './record-approval.ts'
 import {
   APPROVAL_CALLS,
   APPROVAL_PROMPT,
-  DATA_QUERY_CALLS,
-  DATA_QUERY_PROMPT,
   FILES,
   FILES_CALLS,
   FILES_PROMPT,
@@ -80,7 +78,6 @@ const Scenario = z.enum([
   'files',
   'tasks',
   'reads',
-  'data-query',
   'handoff',
   'research',
   'research-failed',
@@ -125,7 +122,6 @@ const CALLS = {
   files: FILES_CALLS,
   tasks: TASKS_CALLS,
   reads: READS_CALLS,
-  'data-query': DATA_QUERY_CALLS,
   handoff: HANDOFF_CALLS,
   research: RESEARCH_CALLS,
   'research-failed': RESEARCH_FAILED_CALLS,
@@ -137,7 +133,6 @@ const CALLS = {
 const asked = new Map<string, string>([
   ['tasks', TASKS_PROMPT],
   ['reads', READS_PROMPT],
-  ['data-query', DATA_QUERY_PROMPT],
   ['research', RESEARCH_PROMPT],
   ['research-failed', RESEARCH_PROMPT],
   ...title.PROMPTS,

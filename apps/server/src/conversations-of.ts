@@ -20,7 +20,6 @@ import type { Access, Principal } from './hub/access/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
-import type { CopyService } from './hub/copies/public.ts'
 import type { DataContext } from './hub/data/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
@@ -97,19 +96,10 @@ function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
   }
 }
 
-/** The copies' view for the Builder's turn, reached when a turn starts: the copies are made after the conversations. */
-function copiesOf(
-  copies: () => Pick<CopyService, 'projectView'>,
-): Pick<CopyService, 'projectView'> {
-  return { projectView: (ids) => copies().projectView(ids) }
-}
-
-/** The doors the Builder's turn reaches: the connectors', the apps' data and the copies' view. */
-function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'copies'>) {
+function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps'>) {
   return {
     connectors: builderDoorOf(deps.connectors),
     data: builderDataOf(deps.apps),
-    copies: copiesOf(deps.copies),
   }
 }
 
@@ -152,8 +142,6 @@ type ConversationsDeps = {
   projects: () => Pick<ProjectPorts, 'createProject'>
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
   apps: () => Apps
-  /** The copies are made after the conversations; a run comes long after both. */
-  copies: () => Pick<CopyService, 'projectView' | 'list' | 'runs'>
   /** The company-data door is made after the conversations; each agent binds it to its own scope when a turn calls it. */
   companyData: (principal: Principal, context: DataContext) => CompanyData
   /** The access door is made after the conversations; a list of what a place offers comes long after. */
@@ -173,7 +161,7 @@ type ConversationsDeps = {
  * service and lists the automations made below.
  */
 export function conversationsOf(deps: ConversationsDeps) {
-  const { database, identity, log, copies } = deps
+  const { database, identity, log } = deps
   const storage = createMastraStorage(deps.mastraPool)
   const queue = {
     database,
@@ -184,7 +172,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   }
   const door = doorOf(deps.connectors)
   const assistant = createAssistant({
-    ...{ storage, database, identity, queue, log, copies, companyData: deps.companyData },
+    ...{ storage, database, identity, queue, log, companyData: deps.companyData },
     ...machineOf(deps),
     ...{ connectors: door, access: deps.access },
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },

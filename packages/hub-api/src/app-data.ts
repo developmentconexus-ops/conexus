@@ -21,12 +21,7 @@ export const RowCount = z.discriminatedUnion('kind', [
 ])
 export type RowCount = z.infer<typeof RowCount>
 
-/** Where a table lives: the app's own schema, or the copies released to the Projeto (`sync`). */
-export const TableSchemaName = z.enum(['APP', 'COPY'])
-export type TableSchemaName = z.infer<typeof TableSchemaName>
-
 export const AppTableSummary = z.object({
-  schema: TableSchemaName,
   name: AppTableName,
   rows: RowCount,
 })
@@ -81,16 +76,4 @@ export const listAppRows = defineOperation({
     'APP_DATABASE_UNAVAILABLE',
     'APP_TABLE_TOO_WIDE',
   ],
-})
-
-export const listCopyRows = defineOperation({
-  id: 'listCopyRows',
-  summary: 'Lists one page of a copy released to a Projeto, each cell as text, for who builds.',
-  access: 'session',
-  method: 'GET',
-  path: '/api/companies/{companyId}/projects/{projectId}/copy-tables/{table}/rows',
-  bodyLimit: 1024,
-  input: { params: OfProject.extend({ table: AppTableName }), query: Page },
-  success: { status: 200, body: AppRows },
-  failures: listAppRows.failures,
 })

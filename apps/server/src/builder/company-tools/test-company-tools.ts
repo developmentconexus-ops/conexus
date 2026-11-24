@@ -7,7 +7,6 @@ import { z } from 'zod'
 import { listing } from '../../hub/access/test-view.ts'
 import { granted, LOJA, QUIET, SANKHYA } from '../connectors/test-access.ts'
 import type { RunScope } from '../controller-kit/public.ts'
-import { CATALOG } from '../data-tools/test-world.ts'
 import type { CompanyToolDeps, CompanyToolSeat } from './public.ts'
 import { companyToolScope, companyTools } from './public.ts'
 
@@ -32,19 +31,15 @@ const OWNER = {
   personId: PersonId.parse(randomUUID()),
 }
 
-/** The door lists Matriz with its one read, and the `vendas` table; never `sankhya_clientes`. */
-export const VIEW = listing(
-  [
-    CatalogSystem.parse({
-      connection: SANKHYA,
-      connector: 'sankhya',
-      name: 'Matriz',
-      reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta' }],
-      actions: [],
-    }),
-  ],
-  CATALOG.tables.filter((each) => each.name === 'vendas'),
-)
+export const VIEW = listing([
+  CatalogSystem.parse({
+    connection: SANKHYA,
+    connector: 'sankhya',
+    name: 'Matriz',
+    reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta' }],
+    actions: [],
+  }),
+])
 
 export function runOf(
   seat: CompanyToolSeat,
@@ -71,7 +66,7 @@ export function recorded(notebooks: readonly ConnectionId[] = [SANKHYA]) {
   const reads: ConnectionId[] = []
   const notes: ConnectionId[] = []
   const saved: ConnectionId[] = []
-  const called = { runs, reads, notes, saved, listed: 0 }
+  const called = { runs, reads, notes, saved }
   const deps: CompanyToolDeps = {
     log: QUIET,
     connector: {
@@ -91,15 +86,6 @@ export function recorded(notebooks: readonly ConnectionId[] = [SANKHYA]) {
         throw new Error('a note is never saved in this test')
       },
     },
-    copies: () => ({
-      list: async () => {
-        called.listed += 1
-        return { copies: [] }
-      },
-      runs: async () => {
-        throw new Error('no copy is found to run')
-      },
-    }),
     projects: async () => ({ projects: [], moreProjects: false }),
   }
   return { called, deps }

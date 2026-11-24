@@ -14,27 +14,18 @@
     "apps/server/src/hub/access/conformance.test.ts",
     "apps/server/src/hub/access/principal.test.ts",
     "apps/server/src/hub/apps/app-access-journey.test.ts",
-    "apps/server/src/hub/apps/app-read-place.test.ts",
     "apps/server/src/hub/apps/read-notice.test.ts",
     "apps/server/src/hub/connectors/connections-oauth-logs.test.ts",
     "apps/server/src/hub/connectors/hubspot-door.test.ts",
-    "apps/server/src/hub/copies/member-data.test.ts",
-    "apps/server/src/hub/copies/readers-list.test.ts",
-    "apps/server/src/hub/copies/readers-restore.test.ts",
-    "apps/server/src/hub/copies/readers-routes.test.ts",
-    "apps/server/src/hub/copies/readers.test.ts",
     "apps/server/src/hub/data/catalog-role.test.ts",
     "apps/server/src/hub/data/conformance-project.test.ts",
     "apps/server/src/hub/data/conformance.test.ts",
     "apps/server/src/hub/data/funnel.test.ts",
     "apps/server/src/hub/data/live.test.ts",
-    "apps/server/src/hub/data/place-role.test.ts",
     "apps/server/src/hub/data/record.test.ts",
     "apps/server/src/hub/data/reads.test.ts",
     "apps/server/src/hub/projects/app-access.test.ts",
     "apps/server/src/platform/access.test.ts",
-    "apps/server/src/platform/copy-role-races.test.ts",
-    "apps/server/src/platform/copy-role-readers.test.ts",
     "apps/server/src/platform/isolation-apps.test.ts",
     "apps/server/src/platform/isolation-conversations.test.ts",
     "apps/server/src/platform/isolation-model-accounts.test.ts",
@@ -46,7 +37,6 @@
     "apps/server/src/platform/secret.test.ts",
     "apps/web/src/builder/assistant/refusals.test.tsx",
     "apps/web/src/hub/apps/app-refused.test.tsx",
-    "apps/web/src/hub/copies/copy-readers.test.tsx",
     "apps/web/src/hub/projects/access.test.tsx",
     "apps/web/src/hub/projects/project-integrations-revoke.test.tsx",
     "tests/e2e/refusals.test.ts"
@@ -205,7 +195,7 @@
       "name": "com o observador respondendo"
     },
     {
-      "file": "apps/server/src/builder/assistant/assistant.test.ts",
+      "file": "apps/server/src/builder/assistant/assistant-overview.test.ts",
       "name": "a visão da empresa com 51 Projetos: 50 pelo nome e moreProjects; o app publicado com a versão que as pessoas usam; o Projeto de outra empresa nunca \\(F21, F22\\)"
     },
     {
@@ -359,14 +349,6 @@
     {
       "file": "apps/server/src/builder/automations/run.test.ts",
       "name": "o dono virou membro"
-    },
-    {
-      "file": "apps/server/src/builder/assistant/copy-runs.test.ts",
-      "name": "a tabela que o papel não lê responde como a que não existe"
-    },
-    {
-      "file": "apps/server/src/builder/assistant/copy-runs.test.ts",
-      "name": "o desenvolvedor recebe a tabela de fora do papel como a que não existe"
     },
     {
       "file": "apps/server/src/builder/connectors/connector-tools.test.ts",

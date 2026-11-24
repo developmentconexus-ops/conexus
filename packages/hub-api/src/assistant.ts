@@ -1,9 +1,7 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
-import { CONNECTION_STATES, CONNECTIONS_MAX, ConnectionId, OfferedRead } from './connectors.ts'
+import { CONNECTIONS_MAX, ConnectionId, OfferedRead } from './connectors.ts'
 import { ConversationId, Effort, ModelChoice, ModelId } from './conversations.ts'
-import { CopyRun } from './copies.ts'
-import { CopyShown } from './copy-shown.ts'
 import type { FailureCode } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
 import { MACHINE_FILE_FAILURES, MACHINE_TOOL, MachineFileQuery, SHOWN_TEXT_MAX } from './machine.ts'
@@ -15,7 +13,6 @@ export const ASSISTANT_CONTROLLER = 'assistant'
 /** The Assistant's own tools, by name; the units after U2 add theirs. */
 export const ASSISTANT_TOOL = {
   overview: 'conexus_overview',
-  copyRuns: 'copy_runs',
   showFile: MACHINE_TOOL.showFile,
   proposeApp: 'propose_app',
   proposeAppChange: 'propose_app_change',
@@ -80,66 +77,17 @@ export function assistantFilePath(ids: {
   return `${url}?${new URLSearchParams({ path: ids.path })}`
 }
 
-/** One system a table was copied from: by the name recorded with the copy and the state of its connection, or, where the place was not given the connection, with no name. */
-export const DataSystem = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('NAMED'), name: z.string(), state: z.enum(CONNECTION_STATES) }),
-  z.object({ kind: z.literal('NOT_GIVEN') }),
-])
-export type DataSystem = z.infer<typeof DataSystem>
-
-/**
- * Where the rows of a copied table came from, as the data tools tell the model and as the screen
- * reads it back from the stored result: the systems (never a connection id), the
- * connector, the table and how the last run that ended went. `lastRun` is derived from the owner of
- * the run (`CopyRun`), plus `NONE` before the first (code C26).
- */
-export const DataOrigin = z.object({
-  systems: z.array(DataSystem).min(1),
-  connector: z.string(),
-  table: z.string(),
-  lastRunEndedAt: z.iso.datetime({ offset: true }).nullable(),
-  lastRun: z.enum([...CopyRun.shape.outcome.options.map((each) => each.shape.kind.value), 'NONE']),
+/** What `data_describe` answers the model, and the screen reads from the stored result (code C21): the systems the place reads live. */
+export const DataResult = z.object({
+  kind: z.literal('CATALOG'),
+  systems: z.array(
+    z.object({
+      name: z.string(),
+      connector: z.string(),
+      reads: z.array(OfferedRead.omit({ allowed: true })),
+    }),
+  ),
 })
-export type DataOrigin = z.infer<typeof DataOrigin>
-
-/** What the data tools answer the model, and the screen reads from the stored result (code C21). */
-export const DataResult = z.discriminatedUnion('kind', [
-  z.object({
-    kind: z.literal('CATALOG'),
-    systems: z.array(
-      z.object({
-        name: z.string(),
-        connector: z.string(),
-        reads: z.array(OfferedRead.omit({ allowed: true })),
-      }),
-    ),
-    tables: z.array(
-      DataOrigin.omit({ table: true }).extend({
-        name: z.string(),
-        label: z.string(),
-        description: z.string(),
-      }),
-    ),
-  }),
-  z.object({
-    kind: z.literal('TABLE'),
-    name: z.string(),
-    label: z.string(),
-    description: z.string(),
-    columns: CopyShown.shape.columns,
-    sample: z.object({ rows: z.array(z.record(z.string(), z.unknown())), more: z.boolean() }),
-    origin: DataOrigin,
-  }),
-  z.object({
-    kind: z.literal('ROWS'),
-    columns: z.array(z.string()),
-    rows: z.array(z.array(z.unknown())),
-    complete: z.boolean(),
-    origin: z.array(DataOrigin),
-    /** Present when `origin` is empty: the plan named no table of `sync`. */
-    reason: z.string().optional(),
-  }),
-])
 export type DataResult = z.infer<typeof DataResult>
 
 /** A read's value that is a list of rows. */

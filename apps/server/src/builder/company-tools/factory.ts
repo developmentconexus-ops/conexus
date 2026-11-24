@@ -12,12 +12,10 @@ import { connectorTools } from '../connectors/public.ts'
 import type { DataBinding, RunScope } from '../controller-kit/public.ts'
 import { dataContextOf, principalOf } from '../controller-kit/public.ts'
 import { dataTools } from '../data-tools/public.ts'
-import { copyRunsTool } from './copy-runs.ts'
 import type { Listed } from './listed.ts'
 import type { CompanyToolName, CompanyToolSeat } from './names.ts'
 import { TOOLS_OF } from './names.ts'
 import { overviewTool } from './overview.ts'
-import type { CompanyCopies } from './ports.ts'
 import type { AppDataGrant, CompanyConnection, CompanyToolScope } from './scope.ts'
 
 /** A call of the connectors' door, bound to the run it is for. */
@@ -40,7 +38,6 @@ export type CompanyToolDeps = Readonly<{
   }>
   /** With a machine: the path the turn's next read is saved whole at. */
   savedAt?: (requestContext: RequestContext) => string
-  copies?: () => Pick<CompanyCopies, 'list' | 'runs'>
   projects?: (run: RunScope) => Promise<Omit<Overview, 'connections'>>
 }>
 
@@ -184,16 +181,10 @@ export async function companyTools<C extends CompanyConnection>(
   deps: CompanyToolDeps,
 ): Promise<ToolsInput> {
   const names: readonly CompanyToolName[] = TOOLS_OF[seat]
-  const tables = scope.view.list('table').map((each) => each.name)
   const pieces = merged([
     await connectorsOf(scope, seat, deps, names),
     appDataOf(scope.grants.appData, dataContextOf(scope.run).thread),
     deps.data === undefined ? {} : dataTools({ data: deps.data(scope.run) }),
-    deps.copies === undefined
-      ? {}
-      : {
-          [ASSISTANT_TOOL.copyRuns]: copyRunsTool({ run: scope.run, tables }, deps.copies),
-        },
     deps.projects === undefined
       ? {}
       : { [ASSISTANT_TOOL.overview]: overviewTool(scope, deps.projects) },

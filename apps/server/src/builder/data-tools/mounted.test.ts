@@ -2,11 +2,9 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { DATA_TOOL } from '@conexus/hub-api'
-import { PADARIA_SOL_MATRIZ } from '../../hub/connectors/test-sales.ts'
-import { releasing } from '../../hub/copies/test-released.ts'
 import { memberOn } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import { agentsOn, publishedAgent, talkedTo } from '../agents/test-agents.ts'
+import { agentsOn, madeTool, ordersOf, publishedAgent, talkedTo } from '../agents/test-agents.ts'
 import { created, said, talking } from '../assistant/test-assistant.ts'
 import { opened } from '../construtor/test-construtor.ts'
 import { started } from '../conversation/test-conversation.ts'
@@ -35,6 +33,7 @@ async function conversationsOf(t: TestContext, on: On) {
   const agent = await publishedAgent(on.hub, on.ana, on.agents, {
     instructions: 'Responda sobre os dados.',
     connections: [on.matriz],
+    tools: [(await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))).latest.id],
   })
   const saved = await talking(
     t,
@@ -55,7 +54,7 @@ async function firstCall(on: On, conversation: { say(text: string): Promise<unkn
 }
 
 /** What the data tool returned in the turn that ended at `calls.at(-1)`. */
-function resultOf(on: On): { kind: string; tables: { name: string }[] } {
+function resultOf(on: On): { kind: string; systems: { name: string }[] } {
   const text = on.calls.at(-1)?.toolResults.at(-1)?.text
   assert.ok(text, 'the model read a tool result')
   return JSON.parse(text)
@@ -93,52 +92,44 @@ test('o Construtor não oferece data_describe nem data_query', async (t) => {
   for (const name of Object.values(DATA_TOOL)) assert.ok(!call.tools.includes(name), name)
 })
 
-test('a ordem do agente está nas instruções dos três, também num Projeto sem cópia', async (t) => {
+test('a ordem do agente está nas instruções dos três, sem sync nem cópia', async (t) => {
   const on = await agentsOn(t, [])
   const { assistant, builder, saved } = await conversationsOf(t, on)
   for (const conversation of [assistant, builder, saved]) {
     const call = await firstCall(on, conversation)
     assert.ok(call.system.includes('## Company data'))
-    assert.ok(call.system.includes('A table read is never replaced by a live read of the system.'))
+    assert.ok(call.system.includes('answer NOT_IN_CATALOG'))
+    assert.doesNotMatch(call.system, /\bsync\b|released copy/i)
   }
-})
-
-test('o bloco de dados do Builder não manda ver linhas com app_data_read', async (t) => {
-  const on = await agentsOn(t, [])
-  await releasing(t, on, { connectionId: on.matriz }, ['vendas', 'vendedores'], ['vendas'])
-  const { builder } = await conversationsOf(t, on)
-  const { system } = await firstCall(on, builder)
-  assert.ok(system.includes('## Data'))
-  assert.ok(system.includes('see the columns and a few rows of a copy with `data_describe`'))
-  assert.ok(!system.includes('see a few rows with `app_data_read`'))
 })
 
 async function describedBy(on: On, conversation: Awaited<ReturnType<typeof talking>>) {
   assert.equal(
-    (await conversation.say('Quais tabelas eu leio?')) !== undefined,
+    (await conversation.say('Quais sistemas eu leio?')) !== undefined,
     true,
     'the turn ended',
   )
   const result = resultOf(on)
   assert.equal(result.kind, 'CATALOG')
-  return result.tables.map((each) => each.name).sort()
+  assert.equal(Object(result).tables, undefined)
+  return result.systems.map((each) => each.name).sort()
 }
 
-test('data_describe responde o catálogo do lugar: o Início lista a cópia da empresa, o Projeto só a liberada', async (t) => {
+test('data_describe responde os sistemas do lugar: o Início, o Projeto e o agente salvo listam a Matriz e nunca a Filial', async (t) => {
   const on = await agentsOn(t, [...LISTING, ...LISTING, ...LISTING])
-  await releasing(t, on, { connectionId: on.matriz }, ['vendas', 'vendedores'], ['vendas'])
   const { assistant, builder, saved } = await conversationsOf(t, on)
-  assert.deepEqual(await describedBy(on, assistant), ['sankhya_vendas', 'sankhya_vendedores'])
-  assert.deepEqual(await describedBy(on, builder), ['sankhya_vendas'])
-  assert.deepEqual(await describedBy(on, saved), ['sankhya_vendas'])
+  assert.deepEqual(await describedBy(on, assistant), ['Matriz'])
+  assert.deepEqual(await describedBy(on, builder), ['Matriz'])
+  assert.deepEqual(await describedBy(on, saved), ['Matriz'])
+  assert.ok(!on.calls.at(-1)?.toolResults.at(-1)?.text.includes('Filial'), 'the Filial never shows')
 })
 
-test('o agente salvo usado por um membro lê o catálogo do Projeto, como o autor', async (t) => {
+test('o agente salvo usado por um membro lê os sistemas do Projeto, como o autor', async (t) => {
   const on = await agentsOn(t, [...LISTING, ...LISTING])
-  await releasing(t, on, { connectionId: on.matriz }, ['vendas', 'vendedores'], ['vendas'])
   const agent = await publishedAgent(on.hub, on.ana, on.agents, {
     instructions: 'Responda sobre os dados.',
     connections: [on.matriz],
+    tools: [(await madeTool(on.hub, on.ana, on.tools, ordersOf(on.matriz))).latest.id],
   })
   const member = await memberOn(on.hub, on.companyId, MEMBER, 'admin')
   const byAuthor = await talking(
@@ -155,66 +146,21 @@ test('o agente salvo usado por um membro lê o catálogo do Projeto, como o auto
   )
   const author = await describedBy(on, byAuthor)
   assert.deepEqual(await describedBy(on, byMember), author)
-  assert.deepEqual(author, ['sankhya_vendas'])
+  assert.deepEqual(author, ['Matriz'])
 })
 
-function resultsOf(on: On): { kind: string; tables?: unknown[]; origin?: unknown[] }[] {
-  const results = on.calls.at(-1)?.toolResults ?? []
-  assert.ok(results.length > 0, 'the model read tool results')
-  return results.map(({ text }) => JSON.parse(text))
-}
-
-test('no Início, a conexão à espera de nova autorização: a tabela é lida, e a origem diz o nome e o estado', async (t) => {
+test('sem cópia: data_query, no Início, volta ao modelo como NOT_IN_CATALOG depois da lista dos sistemas', async (t) => {
   const on = await agentsOn(t, [
     [DESCRIBE],
     [tool(DATA_TOOL.query, { sql: 'select count(*) as n from sync.sankhya_vendas' })],
     [said('Pronto.')],
   ])
-  await releasing(t, on, { connectionId: on.matriz }, ['vendas'])
   const { assistant } = await conversationsOf(t, on)
-  await on.hub.test.asOwner(
-    "update connectors.connection set state = 'NEEDS_REAUTH' where id = $1",
-    [on.matriz],
-  )
   await assistant.say('Quanto vendemos?')
-  const [described, queried] = resultsOf(on)
-  const origin = { name: 'Matriz', state: 'NEEDS_REAUTH' }
-  assert.equal(described?.kind, 'CATALOG')
+  const [described, queried] = on.calls.at(-1)?.toolResults.map(({ text }) => text) ?? []
   assert.deepEqual(
-    described?.tables?.map((each) => Object(each).name),
-    ['sankhya_vendas'],
+    JSON.parse(String(described)).systems.map((each: { name: string }) => each.name),
+    ['Matriz'],
   )
-  assert.deepEqual(Object(described?.tables?.[0]).systems, [{ kind: 'NAMED', ...origin }])
-  assert.equal(queried?.kind, 'ROWS')
-  assert.deepEqual(Object(queried).rows, [[String(PADARIA_SOL_MATRIZ.notas.length)]])
-  assert.deepEqual(Object(queried?.origin?.[0]).systems, [{ kind: 'NAMED', ...origin }])
-})
-
-test('o Projeto que não recebeu a conexão lê a cópia liberada e a origem diz só o conector', async (t) => {
-  const on = await agentsOn(t, LISTING)
-  await releasing(t, on, { connectionId: on.filial }, ['vendas'])
-  const { builder } = await conversationsOf(t, on)
-  await builder.say('Quais tabelas eu leio?')
-  const [described] = resultsOf(on)
-  assert.equal(described?.kind, 'CATALOG')
-  const [table] = described?.tables ?? []
-  assert.equal(Object(table).name, 'sankhya_vendas')
-  assert.deepEqual(Object(table).systems, [{ kind: 'NOT_GIVEN' }])
-  assert.equal(Object(table).connector, 'sankhya')
-  assert.ok(!JSON.stringify(described).includes('Filial'), 'o nome da conexão não sai')
-})
-
-test('o fuso que o navegador manda no cabeçalho chega à ferramenta: a hora da cópia vai no deslocamento de quem lê', async (t) => {
-  const on = await agentsOn(t, [...LISTING, ...LISTING])
-  await releasing(t, on, { connectionId: on.matriz }, ['vendas'])
-  const { assistant } = await conversationsOf(t, on)
-  async function endedAt(zone: string | undefined) {
-    await assistant.say('Quais tabelas eu leio?', [], zone)
-    const described = resultsOf(on).at(-1)
-    return Object(described?.tables?.[0]).lastRunEndedAt
-  }
-  const [utc, local] = [await endedAt(undefined), await endedAt('America/Sao_Paulo')]
-  assert.match(utc, /Z$/)
-  assert.match(local, /-03:00$/)
-  assert.equal(new Date(local).getTime(), new Date(utc).getTime())
+  assert.equal(JSON.parse(String(queried)).kind, 'NOT_IN_CATALOG')
 })

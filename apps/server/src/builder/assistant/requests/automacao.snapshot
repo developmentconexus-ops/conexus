@@ -176,14 +176,9 @@
         "type": "text",
         "text": [
           "## Company data",
-          "To answer with the company's copied data, go in this order:",
-          "1. data_describe with no table: the tables this person may read, with what each holds.",
-          "2. data_describe with the table: its columns and five rows. Read the rows before you write a query.",
-          "3. data_query with one read-only PostgreSQL SELECT. Write each table as `sync.<name>`, with the name exactly as data_describe lists it. Aggregate in SQL and add LIMIT.",
-          "State the number and where it came from: the system, the table and when it was last copied, as the answer's `origin` gives them.",
-          "When the last run was partial or failed, say that the number may be incomplete.",
-          "When no table holds what was asked, say so and name what exists that is close. That is an answer, not an error.",
-          "A table read is never replaced by a live read of the system."
+          "data_describe lists the company's systems this person may reach, each with the reads it offers.",
+          "No table of the company's data is kept yet: data_describe with a table and data_query answer NOT_IN_CATALOG.",
+          "When nothing holds what was asked, say so and name what exists that is close. That is an answer, not an error."
         ]
       },
       {
@@ -596,25 +591,6 @@
         "eager_input_streaming": true
       },
       {
-        "name": "copy_runs",
-        "description": "The latest runs of one of the company's copies, by its table name in sync: when each ran, how it ended, the Conexus sentence and what to do, whether it reread everything, and what the source system said when it refused. Use it when someone asks why a copy failed or stopped.",
-        "input_schema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
-          "type": "object",
-          "properties": {
-            "table": {
-              "type": "string",
-              "description": "constraints: minimum length 1, maximum length 63"
-            }
-          },
-          "required": [
-            "table"
-          ],
-          "additionalProperties": false
-        },
-        "eager_input_streaming": true
-      },
-      {
         "name": "show_file",
         "description": "Opens a file from /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/conversation/work beside the chat, to read (Markdown, text or CSV of up to 64 KB), view (an image) or download (any other).",
         "input_schema": {
@@ -838,7 +814,7 @@
       },
       {
         "name": "data_describe",
-        "description": "Lists the company's copied tables this person may read, or, given a table, shows its columns and its first five rows. Call it with no table first: each table comes with what it holds, the system it was copied from and how its last run ended. Then call it with the table to read its columns and rows before you write a query. Each system says its state: a state other than ACTIVE means the rows are its last copy, so say it and when the rows were copied. A system NOT_GIVEN is a connection this place was not given: name only its connector. In data_query, write a table as `sync.` followed by the name this tool lists, exactly: a table listed as `pedidos` is `sync.pedidos`, never with the system's name in front. A copy has no row count here. Instants come in ISO 8601 with their UTC offset, in the zone of the person who is reading: say them as written, at that offset, never as UTC. Without a known zone they come in UTC (Z), and you say UTC.",
+        "description": "Lists the company's systems this person may reach, each with the reads it offers. No table of the company's data is kept yet: given a table, it answers NOT_IN_CATALOG.",
         "input_schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
@@ -854,7 +830,7 @@
       },
       {
         "name": "data_query",
-        "description": "Reads the company's copied data with one PostgreSQL SELECT, on the tables data_describe lists, each written as `sync.<name>` with the name exactly as data_describe lists it, with every column in double quotes in the case the table lists. One statement only, and it cannot write. Aggregate in SQL and add LIMIT: the answer is cut to the first rows. The answer says where the rows came from in origin. Each system says its state: a state other than ACTIVE means the rows are its last copy, so say it and when the rows were copied. A system NOT_GIVEN is a connection this place was not given: name only its connector. A refusal carries PostgreSQL's SQLSTATE; fix the query and try again. Instants come in ISO 8601 with their UTC offset, in the zone of the person who is reading: say them as written, at that offset, never as UTC. Without a known zone they come in UTC (Z), and you say UTC.",
+        "description": "Reads a table of the company's data with one PostgreSQL SELECT. No table is kept yet, so every query answers NOT_IN_CATALOG: say so to the person, and never stand in for the data.",
         "input_schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",

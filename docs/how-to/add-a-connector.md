@@ -4,8 +4,8 @@ A connector is one value of `defineConnector` in `packages/connectors`, the kit.
 connector through one executor ([0056](../decisions/0056-connectors-kit-and-one-executor.md)), so a
 new connector adds a folder to the kit and two registrations, and no code to the Hub. The kit is the
 only place that names a provider ([security S36](../guides/security.md)). Start from the Mercado
-Livre folder, `packages/connectors/src/mercado-livre/`; the explanation of the capability that
-copies a connector's rows is [the Sync](../explanation/sync.md).
+Livre folder, `packages/connectors/src/mercado-livre/`; what is left of the copies of a connector's
+rows is [the Sync](../explanation/sync.md).
 
 ## Steps
 

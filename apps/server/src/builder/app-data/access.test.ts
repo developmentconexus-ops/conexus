@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { APP_DATA_TOOL, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { builderDataOn } from '../../hub/apps/test-builder-data.ts'
-import { releasing, sankhyaServed } from '../../hub/copies/test-released.ts'
 import {
   call,
   codeOf,
@@ -135,18 +134,8 @@ test('Projeto sem banco: as duas ferramentas devolvem APP_DATA_NO_APP', async (t
   )
 })
 
-/** A Projeto with no sent version, in a company whose `vendas` copy ran and is released to it. */
-async function withReleasedCopy(t: Parameters<typeof builderDataOn>[0]) {
-  const served = await sankhyaServed(t)
-  const on = await conversing(t, stepped([]), served.change)
-  const released = await releasing(t, on, served, ['vendas', 'vendedores'], ['vendas'])
-  const { companyId, personId, projectId } = released
-  return { ...on, ...released, ids: { companyId, personId, projectId } }
-}
-
-test('Projeto sem app com cópia liberada: conta e lê sem nenhuma versão enviada; sem liberação, APP_DATA_NO_APP', async (t) => {
-  const served = await sankhyaServed(t)
-  const on = await conversing(t, stepped([]), served.change)
+test('Projeto sem app, na porta do Hub: contar e ler dão APP_DATA_NO_APP', async (t) => {
+  const on = await conversing(t, stepped([]))
   const { builderData } = on.hub.apps
   const bare = {
     companyId: CompanyId.parse(on.companyId),
@@ -157,66 +146,4 @@ test('Projeto sem app com cópia liberada: conta e lê sem nenhuma versão envia
   const noApp = { kind: 'FAILED', code: 'APP_DATA_NO_APP' }
   assert.deepEqual(await builderData.check(bare, { text: 'select 1' }, signal), noApp)
   assert.deepEqual(await builderData.read(bare, { text: 'select 1' }, signal, null), noApp)
-  await releasing(t, on, served, ['vendas'])
-  const checked = await builderData.check(
-    bare,
-    { text: 'select * from sync.sankhya_vendas' },
-    signal,
-  )
-  assert.ok(checked.kind === 'COUNTED', JSON.stringify(checked))
-  assert.deepEqual(checked.rows, { kind: 'EXACT', rows: 183 })
-  const read = await builderData.read(
-    bare,
-    { text: 'select "CODVEND" from sync.sankhya_vendas' },
-    signal,
-    null,
-  )
-  assert.ok(read.kind === 'ROWS', JSON.stringify(read))
-  assert.deepEqual(read.columns, ['CODVEND'])
-})
-
-test('as cópias se leem em PostgreSQL comum: contar, ler e a cópia não liberada é 42501', async (t) => {
-  const on = await withReleasedCopy(t)
-  const { builderData } = on.hub.apps
-  const signal = AbortSignal.timeout(20_000)
-  const joined = await builderData.check(
-    on.ids,
-    { text: 'select count(*) from sync.sankhya_vendas where "CODVEND" > $1', values: [0] },
-    signal,
-  )
-  assert.ok(joined.kind === 'COUNTED')
-  const refused = await builderData.read(
-    on.ids,
-    { text: 'select * from sync.sankhya_vendedores' },
-    signal,
-    null,
-  )
-  assert.deepEqual(refused, { kind: 'REFUSED', code: 'APP_DATA_REFUSED', sqlstate: '42501' })
-})
-
-test('a coluna interna não chega ao Builder: nem de select *, nem de junção, apelido ou várias cópias', async (t) => {
-  const on = await withReleasedCopy(t)
-  const { builderData } = on.hub.apps
-  const signal = AbortSignal.timeout(20_000)
-  const reads = [
-    'select * from sync.sankhya_vendas order by "NUNOTA" limit 2',
-    'select a.*, b.* from sync.sankhya_vendas a join sync.sankhya_vendas b on a."NUNOTA" = b."NUNOTA" limit 2',
-    'select v.*, v."CODVEND" as c from sync.sankhya_vendas as v limit 2',
-  ]
-  for (const text of reads) {
-    const read = await builderData.read(on.ids, { text }, signal, null)
-    assert.ok(read.kind === 'ROWS', text)
-    assert.ok(!read.columns.includes('_pass'), text)
-    assert.ok(
-      read.rows.every((row) => row.length === read.columns.length),
-      text,
-    )
-    const checked = await builderData.check(on.ids, { text }, signal)
-    assert.ok(checked.kind === 'COUNTED', text)
-    assert.ok(!checked.columns.some(({ name }) => name === '_pass'), text)
-  }
-  const whole = await builderData.read(on.ids, { text: reads[0] ?? '' }, signal, null)
-  assert.ok(whole.kind === 'ROWS')
-  assert.deepEqual(whole.columns.slice(0, 3), ['NUNOTA', 'NUMNOTA', 'CODEMP'])
-  assert.equal(whole.columns.length, 11)
 })

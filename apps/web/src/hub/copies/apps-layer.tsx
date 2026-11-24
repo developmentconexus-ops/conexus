@@ -26,9 +26,9 @@ function hasApp(project: ProjectSummary): project is AppProject {
   return project.appVersion !== null
 }
 
-/** The tables the app keeps itself: the copies released to the Projeto are in Bruto already. */
+/** The tables the app keeps: none for a Projeto the Hub says has no app. */
 function appTablesOf(data: AppTables) {
-  return data.kind === 'NO_APP' ? [] : data.tables.filter((table) => table.schema === 'APP')
+  return data.kind === 'NO_APP' ? [] : data.tables
 }
 
 function GroupHead(props: { companyId: CompanyId; project: AppProject; title: string }) {

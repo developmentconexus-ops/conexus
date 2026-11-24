@@ -3,8 +3,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import { sankhyaFake } from '../../hub/connectors/test-sales.ts'
-import { releasing } from '../../hub/copies/test-released.ts'
-import { BRUNO, call, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { BRUNO, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { ATENDENTE } from '../../hub/identity/test-roles.ts'
 import { endOf } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
@@ -19,23 +18,14 @@ async function world(t: TestContext) {
     matriz: fake.credential,
     filial: fake.credential,
   })
-  const copies = await releasing(t, on, { connectionId: on.matriz }, ['vendas'])
-  return { on, copies }
+  return { on }
 }
 
-async function roleOf(w: Awaited<ReturnType<typeof world>>, body: object, copy?: string) {
+async function roleOf(w: Awaited<ReturnType<typeof world>>, body: object) {
   const { hub, ana, companyId } = w.on
   const made = await post(hub, ana, `/api/companies/${companyId}/roles`, body)
   assert.equal(made.statusCode, 201, made.body)
   const role = String(Object(made.json()).role.role)
-  if (copy !== undefined) {
-    const id = w.copies.ids.get(copy)
-    assert.ok(id)
-    const marked = await call(hub, ana, 'PUT', `/api/companies/${companyId}/roles/${role}/copies`, {
-      copies: [id],
-    })
-    assert.equal(marked.statusCode, 200, marked.body)
-  }
   return memberOn(hub, companyId, BRUNO, role)
 }
 
@@ -51,7 +41,7 @@ function names(seen: { connections: { name: string }[] }) {
   return seen.connections.map((each) => each.name)
 }
 
-test('o resumo não lista a conexão de um sistema que o papel não alcança: sem tabela e sem operação, nenhuma; o dono vê as duas', async (t) => {
+test('o resumo não lista a conexão de um sistema que o papel não alcança: sem operação, nenhuma; o dono vê as duas', async (t) => {
   const w = await world(t)
   const bruno = await roleOf(w, { label: 'Vazio', connectors: {} })
   assert.deepEqual(names(await overviewFor(t, w, bruno)), [])
@@ -63,12 +53,6 @@ test('o resumo lista a conexão que o papel alcança por uma operação ao vivo'
   const w = await world(t)
   const bruno = await roleOf(w, ATENDENTE)
   assert.deepEqual(names(await overviewFor(t, w, bruno)), ['Matriz', 'Filial'])
-})
-
-test('o resumo lista só a conexão de onde vem a tabela que o papel lê, sem operação ao vivo', async (t) => {
-  const w = await world(t)
-  const bruno = await roleOf(w, { label: 'Leitor', connectors: {} }, 'vendas')
-  assert.deepEqual(names(await overviewFor(t, w, bruno)), ['Matriz'])
 })
 
 test('o Hub calado: o catálogo indisponível faz a ferramenta falhar, nunca listar nenhuma conexão', async () => {
