@@ -40,7 +40,9 @@ a person ([0053](../decisions/0053-builder-tools-run-without-asking.md)). The `a
 `THE_WRITE_ASKS`, so it runs with `yolo: false`: each write tool carries its own `requireApproval`,
 and the mount copies every other tool whose rule is not a function with a rule that never asks
 (`askingOnlyByOwnRule`, `builder/controller-kit/mount.ts`; [agents and
-automations](agents-and-automations.md)).
+automations](agents-and-automations.md)). The Builder and the Assistant stay in `yolo`, which approves
+every approval gate on its own, so the notebook's `connector_note_save` asks by `suspend()`, as `ask_user`
+and `submit_plan` do, and the person's yes or no resumes it (`builder/connectors/connector-tools.ts`).
 
 ## A ficha and the mount
 

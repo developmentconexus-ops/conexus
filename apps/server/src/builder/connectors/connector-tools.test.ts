@@ -4,6 +4,7 @@ import { ConnectionId, PersonId, RunId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import type { BuilderConnectors, ConnectorAccess, GrantedConnection } from './public.ts'
 import { builderAccess, connectorTools } from './public.ts'
+import { YES } from './test-access.ts'
 
 const SANKHYA = ConnectionId.parse('11111111-1111-4111-8111-111111111111')
 const LOJA = ConnectionId.parse('22222222-2222-4222-8222-222222222222')
@@ -55,9 +56,8 @@ function tools() {
     { info: () => undefined, error: () => undefined },
   )
   const set = connectorTools(access, { noteSave: true, save })
-  function run(name: string, input: object) {
-    const found = Object(set)[name]
-    return found.execute(input, { requestContext: new RequestContext() })
+  function run(name: string, input: object, answered: object = YES) {
+    return Object(set)[name].execute(input, { requestContext: new RequestContext(), ...answered })
   }
   return { run, seen, set }
 }
@@ -86,8 +86,8 @@ test('um nome que nenhuma ligação liberada tem é recusado pelo esquema da fer
   const { run, seen } = tools()
   const note = { connection: 'Filial', concept: 'C', mapping: 'm', provingQuery: 'q' }
   for (const refused of [
-    await run('connector_notes', { connection: 'Filial' }),
-    await run('connector_note_save', note),
+    await run('connector_notes', { connection: 'Filial' }, {}),
+    await run('connector_note_save', note, {}),
   ]) {
     assert.equal(refused.error, true)
     assert.match(refused.message, /connection: Invalid input: expected "Matriz"/)

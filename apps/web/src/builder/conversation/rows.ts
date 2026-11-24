@@ -5,6 +5,8 @@ import { z } from 'zod'
 import type { ApprovalCardItem, Seen } from './approval-item.ts'
 import { approvalItem } from './approval-item.ts'
 import type { Message, Suspended } from './messages.ts'
+import type { NoteCardItem } from './note-parse.ts'
+import { noteItemOf } from './note-parse.ts'
 import { parsePlan, SubmittedPlan } from './plan-parse.ts'
 import { parseQuestions } from './question-parse.ts'
 import type { Running } from './session-state.ts'
@@ -64,7 +66,7 @@ export type PlanCardItem = {
   plan: string
   path?: string
 }
-type CardItem = QuestionCardItem | PlanCardItem | ApprovalCardItem
+type CardItem = QuestionCardItem | PlanCardItem | ApprovalCardItem | NoteCardItem
 type ConexusItem = {
   kind: 'conexus'
   id: string
@@ -176,6 +178,14 @@ export function invocationToItem(
     }
   }
 
+  const waiting = suspension !== undefined
+  const note = noteItemOf(inv, suspension, cardState(inv, waiting), stoppedBy(inv))
+  if (note !== undefined) return note
+
+  return toolRowOf(inv)
+}
+
+function toolRowOf(inv: Invocation): ToolItem {
   return {
     kind: 'tool',
     id: inv.toolCallId,
@@ -296,6 +306,8 @@ function joined(first: TranscriptItem | undefined, later: TranscriptItem): Trans
   if (first?.kind !== 'card' || later.kind !== 'card') return later
   if (first.cardKind === 'question' && later.cardKind === 'question')
     return later.questions.length > 0 ? later : { ...later, questions: first.questions }
+  if (first.cardKind === 'note' && later.cardKind === 'note')
+    return { ...later, asked: later.asked ?? first.asked }
   if (first.cardKind !== 'plan' || later.cardKind !== 'plan') return later
   return { ...later, title: later.title || first.title, plan: later.plan || first.plan }
 }

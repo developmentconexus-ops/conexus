@@ -12,6 +12,7 @@ import type { PlanResume } from '@mastra/client-js'
 import { MastraClient, MastraClientError } from '@mastra/client-js'
 import { failureOfProblem, HubFailure, hubClientFetch } from '../../platform/hub.ts'
 import type { Outgoing } from './attachments.ts'
+import type { NoteResume } from './note-parse.ts'
 
 /**
  * The conversation's session on Mastra's own routes, behind the Hub's guard (decision 0050), as the
@@ -65,9 +66,10 @@ export function sessionOf(conversationId: ConversationId, controller: Controller
       said(session.approveTool(toolCallId, approved)),
     /**
      * A card's answer: the answers of `ask_user`, one per question (ours takes a list for a
-     * multiple choice, which the client's type does not say), or the plan's decision.
+     * multiple choice, which the client's type does not say), the plan's decision, or the yes or no
+     * on the notebook's save.
      */
-    answer: (toolCallId: string, resumeData: readonly Answer[] | PlanResume) =>
+    answer: (toolCallId: string, resumeData: readonly Answer[] | PlanResume | NoteResume) =>
       said(
         session.request<{ ok: boolean }>(`${path}/tool-suspension`, {
           method: 'POST',

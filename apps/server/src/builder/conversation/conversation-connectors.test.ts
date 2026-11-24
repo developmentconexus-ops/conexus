@@ -59,7 +59,16 @@ async function connecting(t: TestContext, steps: Block[][], rows = 3) {
     assert.equal((await sent(hub, ana, url, content)).statusCode, 200)
     return stream.turn()
   }
-  return { ...on, calls, link, release, withdraw, url, stream, say }
+  /** Says `content` and answers each card of the notebook's save in order (`true` is Aprovar); the turn's events. */
+  async function sayAnswering(replies: boolean[], content = 'Veja as empresas') {
+    assert.equal((await sent(hub, ana, url, content)).statusCode, 200)
+    for (const approved of replies) {
+      const { card } = await untilCard(stream, 'note')
+      await answerTo(hub, ana, url, card.toolCallId, { kind: 'note', approved })
+    }
+    return stream.turn()
+  }
+  return { ...on, calls, link, release, withdraw, url, stream, say, sayAnswering }
 }
 
 function connectorTools(call: Sent | undefined): string[] {
@@ -156,7 +165,7 @@ test('o caderno: sem consulta é recusado; com consulta guarda o mapa e a consul
     [save({ provingQuery: COUNT })],
   ])
   await on.release(await on.link())
-  assert.equal(endOf(await on.say()), 'complete')
+  assert.equal(endOf(await on.sayAnswering([true, true])), 'complete')
   const saves = (await messagesOf(on.hub, on.ana, on.url))
     .flatMap((message) => message.parts)
     .flatMap((part) =>
@@ -172,6 +181,7 @@ test('o caderno: sem consulta é recusado; com consulta guarda o mapa e a consul
   const notes = Object(Object(row).notes)
   assert.deepEqual(Object.keys(notes), ['Empresa'])
   assert.deepEqual(Object.keys(notes.Empresa).sort(), [
+    'approvedBy',
     'mapping',
     'provedAt',
     'provedRows',
@@ -179,6 +189,31 @@ test('o caderno: sem consulta é recusado; com consulta guarda o mapa e a consul
     'writtenBy',
   ])
   assert.ok(!JSON.stringify(notes).includes('Empresa 0'))
+})
+
+test('quem aprova: o sim de quem deixou de gerenciar ligações entre o pedido e o sim é NOT_GRANTED no Builder também, e nada é gravado', async (t) => {
+  const on = await connecting(t, [
+    [
+      tool(SAVE, {
+        connection: 'Matriz',
+        concept: 'Empresa',
+        mapping: 'TSIEMP.CODEMP',
+        provingQuery: COUNT,
+      }),
+    ],
+  ])
+  await on.release(await on.link())
+  assert.equal((await sent(on.hub, on.ana, on.url, 'Anote a empresa')).statusCode, 200)
+  const { card } = await untilCard(on.stream, 'note')
+  await on.hub.test.asOwner(`update auth.member set role = 'member' where user_id = $1`, [
+    on.ana.id,
+  ])
+  await answerTo(on.hub, on.ana, on.url, card.toolCallId, { kind: 'note', approved: true })
+  assert.equal(endOf(await on.stream.turn()), 'complete')
+  const [row] = await on.hub.test.asOwner('select notes from connectors.connection')
+  assert.deepEqual(Object.keys(Object(Object(row).notes)), [])
+  const refused = on.hub.lines.filter((line) => line.message === 'CONNECTION_NOTE_REFUSED')
+  assert.equal(refused.length, 1)
 })
 
 test('a 51ª chamada de conector numa execução é recusada', async (t) => {
@@ -219,7 +254,7 @@ test('connector_notes devolve as anotações da ligação com a consulta de cada
     [tool(NOTES, { connection: 'Matriz' })],
   ])
   await on.release(await on.link())
-  assert.equal(endOf(await on.say()), 'complete')
+  assert.equal(endOf(await on.sayAnswering([true])), 'complete')
   assert.equal(endOf(await on.say()), 'complete')
   const listed = (await messagesOf(on.hub, on.ana, on.url))
     .flatMap((message) => message.parts)
@@ -254,7 +289,7 @@ test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome 
     ],
   ])
   await on.release(await on.link())
-  assert.equal(endOf(await on.say()), 'complete')
+  assert.equal(endOf(await on.sayAnswering([true])), 'complete')
   const refused = (await messagesOf(on.hub, on.ana, on.url))
     .flatMap((message) => message.parts)
     .flatMap((part) =>

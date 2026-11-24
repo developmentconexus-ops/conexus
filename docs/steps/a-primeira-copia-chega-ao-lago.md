@@ -451,7 +451,7 @@ da trilha e está na página dela. O que cada decisão faz no cartão:
 | NT4 | Os nomes sugeridos | (a) `sankhya_notas`, "Notas e pedidos"; com o completo, os 42 da mesma regra (`SK` seção 1) | A U3 |
 | NT5 | Duas ligações do mesmo sistema | (a) uma tabela por ligação | A segunda ligação vem sugerida com o nome dela, `sankhya_<ligação>_notas`, trocável (T.16) |
 | A do conector | O alcance do "refeito" | (a) refazer do zero as pastas do Sankhya e do Mercado Livre e cada peça do Hub que diverge do decidido; as que já são o decidido ficam; a Fábrica é provada no TOTVS | A U16 a U19. Veredito: embrulhado (a forma do kit, conferida pela conformidade e pelos dublês) |
-| B do conector | Quando o Caderno sai | (a) na etapa nova, gravar pede o sim de quem gerencia a ligação; o Caderno sai na etapa do Negócio | A U19. Veredito: nativo (o `requireApproval` do Mastra, como na escrita) |
+| B do conector | Quando o Caderno sai | (a) na etapa nova, gravar pede o sim de quem gerencia a ligação; o Caderno sai na etapa do Negócio | A U19. Veredito: nativo (a suspensão do Mastra, como o `ask_user` e o `submit_plan`) |
 | C do conector | Onde a troca entra no roteiro | (a) uma etapa própria entre a parte 0 e a parte 1, um pull request por conector, sem o Assistente perder as leituras ao vivo | O GC1, o GC2 e o GC3, entre o G0c e o G1 |
 
 **As emendas, uma por uma.** Cada uma muda uma decisão aceita, pela sua palavra mais nova:
@@ -629,8 +629,8 @@ velha, que passa ao índice do kit.
 | 80 | U17 | Pelo Hub, nada muda para quem usa o Sankhya: as ferramentas tipadas `sankhya_*` têm os mesmos nomes e entradas, a busca de ferramentas as acha, um app e uma ferramenta salva leem pela mesma operação, o papel `connector_sankhya` admite as mesmas, e a escrita passa pelo cartão como hoje | os testes de hoje de `apps/server/src/builder/connectors/` (`typed-reads`), `builder/company-tools/` (`search`), `hub/connectors/` (`app-calls`, `tool-door`, `write`, `approval`) e os de hoje dos papéis em `hub/identity/`, sem mudar o que esperam | must |
 | 81 | U17 | As buscas do Sankhya escapam `[` e `]` no `LIKE` do SQL Server (#929), e o 20 da página padrão tem um dono só, a busca (#930) | `packages/connectors/src/sankhya/search.test.ts`, "o colchete na busca" e "a página padrão" | must |
 | 82 | U18 | A pasta nova do Mercado Livre, lida pelo índice do kit, declara o mesmo conector de hoje: o id `mercado-livre`, o login por autorização com PKCE, a renovação de uso único, a conta informada pelo sistema, a classe exclusiva, as 27 leituras com os mesmos ids e as listas que paginam (`pedidos`, `anuncios`, `perguntas`, `reclamacoes`, `periodosDeFaturamento`). O commit apaga cada arquivo da pasta velha que não é dublê, gravação, leitura da documentação nem teste. Os testes de hoje do Mercado Livre e do Hub passam sem mudar o que esperam | `packages/connectors/src/mercado-livre/*.test.ts` de hoje, pelo índice do kit; `apps/server/src/hub/connectors/sign-ins.test.ts` e os de reconectar, sem mudar o que esperam; a lista do commit (`git show --stat`), no pull request | must |
-| 83 | U19 | `connector_note_save` pede aprovação antes de gravar: a conversa mostra o cartão com o conceito, o mapeamento e a consulta da prova, e nada é gravado no Caderno antes do sim | `apps/server/src/builder/assistant/note-save.test.ts`, "pede o sim", pela conversa com as gravações do Mastra | must |
-| 84 | U19 | O sim de um membro que gerencia ligações grava a anotação com o nome de quem aprovou; o de quem não gerencia é recusado com `NOT_GRANTED`, e nada é gravado; a recusa no cartão não grava nada; a página da ligação mostra quem aprovou, e uma anotação de antes desta etapa mostra "Gravada sem aprovação". O cartão mostra a quem não gerencia ligações a frase da matriz, sem os botões, e a ligação que saiu antes do sim dá a frase dela | `note-save.test.ts`, "quem aprova" e "a recusa"; `apps/web/src/hub/connectors/notes.test.tsx`, "quem aprovou"; `apps/web/src/builder/conversation/approval-card.test.tsx` (novo), "o Caderno" | must |
+| 83 | U19 | `connector_note_save` pede o sim antes de gravar, suspendendo a chamada como o `ask_user`: a conversa mostra o cartão com o conceito, o mapeamento e a consulta da prova, e nada é provado nem gravado no Caderno antes do sim; no Assistente e no Builder, que seguem sem pedir aprovação a nenhuma outra ferramenta (0053) | `apps/server/src/builder/assistant/note-save.test.ts`, "pede o sim"; `apps/server/src/builder/conversation/conversation-connectors.test.ts`, "o caderno"; `apps/server/src/builder/connectors/connector-tools-scope.test.ts`, "o caderno pede o sim" | must |
+| 84 | U19 | O sim de um membro que gerencia ligações grava a anotação com o nome de quem aprovou; o de quem não gerencia é recusado com `NOT_GRANTED`, e nada é gravado; a recusa no cartão não grava nada; a página da ligação mostra quem aprovou, e uma anotação de antes desta etapa mostra "Gravada sem aprovação". O cartão mostra a quem não gerencia ligações a frase da matriz, sem os botões, e a ligação que saiu antes do sim dá a frase dela | `note-save.test.ts`, "quem aprova" e "a recusa"; `apps/web/src/hub/connectors/notes.test.tsx`, "quem aprovou"; `apps/web/src/builder/conversation/note-card.test.tsx` (novo), "o Caderno" | must |
 
 ### Parte 1, a carga chega e a mudança aparece
 
@@ -703,6 +703,7 @@ velha, que passa ao índice do kit.
 | 103 | U10 | Numa tabela de janela, depois da passada da janela, a atual tem nos meses da janela exatamente as linhas da fonte, e a linha que saiu da janela na fonte sai da atual; os meses fora da janela ficam. Numa tabela inteira, a atual é a última passada | `test_update.py`, "a janela troca o que leu" e "a inteira troca tudo" | must |
 | 59 | U10 | Depois de cada atualização, a bruta não tem mais as linhas que já entraram na atual, nem as passadas inteiras anteriores; a atual não muda com a limpeza (decisão A) | `test_update.py`, "a limpeza"; Lab (L.7) | must |
 | 106 | U3, U4, U5 | Uma regra só, para todo conector, pelo tipo que a descoberta lê: `CLOB`, `NCLOB` e `LONG` viram texto; `BLOB`, `RAW` e `LONG RAW` viram o tipo binário do Iceberg, com os bytes iguais aos da fonte; nenhuma coluna se marca como arquivo à mão. O significado declarado de uma coluna (`NFE_XML`) vai às propriedades da tabela (`conexus.significado.<coluna>`) e não muda a cópia | `sankhya/copy-tables.test.ts`, "o tipo da coluna"; `tap.test.ts`, "o binário"; `test_target.py`, "o binário chega igual" | must |
+| 115 | U4 | Uma página que responde 5xx, 429 (`BUSY`, esperando o `waitMs` que o provedor pediu) ou cai por erro de rede e depois responde é lida e emitida uma vez, sem `TapFailure`; a que falha cinco vezes escreve `COPY_SOURCE_UNREACHABLE` e a tabela em que parou e sai com código diferente de zero, com a espera crescendo entre as tentativas (relógio de teste); um 4xx que não é 429 não é repetido | `apps/extraction/tap/src/tap.test.ts`, "a página que cai e volta" | must |
 | 104 | U10 | Numa tabela de histórico ligado (a dos dados da NF-e, com o XML), a limpeza não roda: depois de duas passadas que leem a mesma nota com XML diferente (a segunda forçada inteira no teste), a bruta tem as duas versões e a atual, a nova; uma nota apagada no dublê continua na bruta | `test_update.py`, "o histórico do XML", pela entrada da tarefa com o modo da declaração | must |
 | 105 | U5, U10 | Todas as colunas, atuais e futuras: uma coluna que aparece na fonte depois da primeira carga (o dublê acrescenta uma `AD_` entre duas rodadas) entra na rodada seguinte na bruta e na atual, com as linhas antigas nulas nela, e na aba **Colunas**; uma coluna que some da fonte fica no lago, nula nas linhas novas | `apps/extraction/tests/test_target.py`, "a coluna nova"; `test_update.py`, "a coluna nova na atual"; `lake-run.test.ts`, "as colunas de novo" | must |
 | 60 | U10 | O Hub pede `whole` para uma tabela recém-marcada; a tarefa lê inteira também a tabela sem ponto de parada no estado e a sem coluna de alteração, e o resultado diz `whole` por tabela; as outras leem só o que mudou ou a janela; **Rodar agora** segue o mesmo | `apps/extraction/tests/test_state.py`, "o modo por tabela"; `lake-run.test.ts`, "a tabela nova é inteira" | must |
@@ -730,7 +731,7 @@ velha, que passa ao índice do kit.
 | A ligação, a seção Tabelas no lago (U9) | Sem cópia: "Nada desta ligação é copiado para o lago." e **Escolher o que copiar** | Conector sem tabela declarada ou de credencial exclusiva: a seção não aparece | "Lendo o dicionário do <sistema>…" | O dicionário fora: as tabelas com o rótulo do kit e "Não deu para ler o dicionário agora."; `COPY_RUN_OPEN`: "A ligação está copiando agora. Desmarque quando a rodada terminar."; `COPY_NAME_TAKEN`, `COPY_NAME_INVALID` e `COPY_START_DATE_INVALID`, como na janela; a AWS fora ao desmarcar ou desligar (503): "Não deu para falar com a AWS agora. Tente de novo em alguns minutos." | A ligação desligada: a frase de hoje da página | Quem não gerencia cópias vê as tabelas copiadas, sem caixas, sem **Salvar** e sem **Rodar agora** | — |
 | Dados, a lista do lago (U9) | "Nenhuma tabela copiada. Para copiar, ligue um sistema em Integrações." | O mesmo da primeira vez | O de hoje da página | O de hoje da página | Uma tabela desmarcada noutra aba some na próxima leitura | Quem não lê a ligação não vê as tabelas dela | A última rodada com erro: o selo de hoje, com a frase do código |
 | A tabela do lago, Visão geral, Colunas, Rodadas e Detalhes (U9) | A primeira rodada aberta: "Rodando…", sem linhas | Nenhuma rodada ainda: "Esta tabela ainda não rodou." | O de hoje da página | `COPY_LAKE_UNAVAILABLE`: "A AWS não iniciou a cópia. A próxima rodada tenta de novo." `COPY_TASK_LOST`: "A cópia parou antes de terminar. A próxima rodada tenta de novo." `COPY_LAKE_WRITE_FAILED`: "Não deu para gravar no lago. A próxima rodada tenta de novo." `COPY_SOURCE_NEEDS_REAUTH`: "<sistema> recusou o login da ligação. Reconecte a ligação." `COPY_SOURCE_REFUSED`: "<sistema> recusou a leitura." `COPY_SOURCE_UNREACHABLE`: "<sistema> não respondeu. A próxima rodada tenta de novo." `COPY_SOURCE_UNREADABLE`: "<sistema> respondeu algo que o Conexus não entende. A próxima rodada tenta de novo." Uma rodada com erro diz em que tabela parou e, quando o sistema respondeu, a resposta dele por extenso | A tabela desmarcada: "Esta tabela não é mais copiada." | Quem não lê a ligação: o "não encontrado" (S10) | A rodada interrompida: "Interrompida." |
-| O cartão do Caderno na conversa (U19) | "Gravar no Caderno?", com o conceito, o mapeamento, a consulta da prova e o número de linhas, e **Aprovar** e **Recusar** | — | O de hoje do cartão de escrita | A ligação saiu antes do sim: "Esta ligação não existe mais. Nada foi gravado." | — | Quem não gerencia ligações vê o cartão sem os botões e "Peça a quem gerencia a ligação." | Recusado: "Não gravado." |
+| O cartão do Caderno na conversa (U19) | "Gravar no Caderno?", com o conceito, o mapeamento e a consulta da prova (o número de linhas só se sabe depois da prova, e a página da ligação o mostra), e **Aprovar** e **Recusar** | — | O de hoje do cartão de escrita | A ligação saiu antes do sim: "Esta ligação não existe mais. Nada foi gravado." | — | Quem não gerencia ligações vê o cartão sem os botões e "Peça a quem gerencia a ligação." | Recusado: "Não gravado." |
 | A ligação, o Caderno (U19) | A lista de hoje, com "Aprovada por <nome>" em cada anotação | O vazio de hoje | O de hoje | O de hoje | — | Como hoje | Uma anotação de antes desta etapa: "Gravada sem aprovação" |
 
 **Em dia** quer dizer que a última rodada da tabela terminou completa; "Rodando…", que há rodada aberta da
@@ -897,8 +898,8 @@ que leram e rodaram `singer-sdk@0.54.9`, `meltano@4.4.1` e `airbyte-cdk@6.61.6`,
 `82db089b` (`AB@82db089b`, e não o `AB` abaixo) e os docs da Nekt de 2026-11-24 (`NKH:<n>` é a linha `n`
 do `llms-full.txt` baixado nesse dia; `NKT` é a página `platform-api/sources/trigger` da API). `C/` é o
 `main` em `538b0562`; as siglas são as dos estudos: `AB` airbyte `8b40981a`, `AP` airbyte-platform
-`c46502e`, `CDK` airbyte-python-cdk `bde4377`, `DLT` dlt `efaf0e3`, `TRM` tap-rest-api-msdk `071b540`,
-guardados em `data/conexus-credenciais-framework/refs/`, e `NK` o texto da Nekt guardado em 2026-11-19. A
+`c46502e`, `CDK` airbyte-python-cdk `bde4377`, `DLT` dlt `efaf0e3`, `TRM` tap-rest-api-msdk `071b540`, `M` mastra `d60ba71b`
+(`@mastra/core` 1.83.0), guardados em `data/conexus-credenciais-framework/refs/`, e `NK` o texto da Nekt guardado em 2026-11-19. A
 coluna "Muda" diz o que os estudos de 2026-11-23 mudaram: **fica**, **sai** ou **refeita**. A unidade de
 cada linha remendo (11, 12, 13, 21, 22, 28, 29, 66) acrescenta a sua entrada em
 `docs/reference/boundaries.md`, com a prova da linha, no mesmo commit.
@@ -917,13 +918,13 @@ limpeza; L.8, apagar sem sobra; L.9, a cota do parâmetro.
 | 5 | O que lê o banco da empresa: o catálogo, Ler e Consultar, a Amostra, Quem lê, a liberação a Projetos e aos apps, os logins por papel, `copy_runs`, a lista e a página de uma cópia | sai na parte 0 (NT3) | `C/packages/hub-api/src/company-data.ts:48-57`; `C/apps/server/src/hub/data/rows.ts:10-43`; `query.ts:79-110`; `C/apps/server/src/platform/copy-reader.ts:219-235`, `:51-82`; `hub/copies/` (INV §3.3); `builder/company-tools/copy-runs.ts:87` | nenhuma faz: é a nossa mudança de casa (`EST/conector-estilo-novo-estudo`, linha `T15`) | nativo, ao sair: a leitura do lago das etapas 3 e 4 toma o lugar (0079) | — | NT3; D, J | U14, U15 | — |
 | 6 | O Builder propõe uma cópia (`copy_propose`) | sai na parte 0 | `C/apps/server/src/builder/connectors/copy-propose.ts`; `C/apps/server/src/hub/copies/propose.ts:215` | Nekt TOTVS RM: uma consulta da empresa como tabela, opcional (`NK:178309`) | nativo, ao sair: nenhuma referência propõe por padrão | — | volta, se pedir, na etapa 6 | U2 | — |
 | 7 | Apagar a cópia do banco, para o reajuste | fica até o reajuste; sai com a parte 0 | `deleteCopy`, `C/apps/server/src/hub/copies/leave.ts:210`; o fim e o `DROP`, `endCopies` `:166` e `dropEndedCopies` `:287` | — | embrulhado: herdado, já em produção | — | o reajuste | o reajuste; U1 | — |
-| 8 | A declaração da tabela no kit: a tabela da fonte, a chave, o modo (só o que mudou, janela por mês ou inteira), o histórico, a página | refeita | `C/packages/connectors/src/kernel/copy.ts:66-92` (`QUERY`, até 100 colunas `:73`, chave só `bigint` `:81-87`); `PAGE_ROWS = 500` `:6`; `CopyModel` `:184` | 0080, `C/docs/decisions/0080-copy-declared-per-table-raw-appends.md:10-19`; Nekt API, por tabela, `primary_keys`, `replication_key`, `sync_type` (`NK:20888-20897`); Nekt Protheus, o modo fixado pelo conector (`NK:177753`); `CDK .../declarative_component_schema.yaml:2244-2271` (`page_size` por paginador) | embrulhado: a lista do kit sobre o `--discover` | O dicionário no dublê, 286 linhas (`EST/descoberta-catalogo:75-80`); as 42 e o modo de cada uma em `SK` seção 1. Não provado: 450 colunas, a página em bytes (critérios 11, 21); as sondas P1 a P5 | Completo; F; NT1, NT4 | U3 | `packages/connectors/src/kernel/tables.ts`; `packages/connectors/src/sankhya/copy-tables.ts` |
+| 8 | A declaração da tabela no kit: a tabela da fonte, a chave, o modo (só o que mudou, janela por mês ou inteira), o histórico, a página | refeita | `C/packages/connectors/src/kernel/copy.ts:66-92` (`QUERY`, até 100 colunas `:73`, chave só `bigint` `:81-87`); `PAGE_ROWS = 500` `:6`; `CopyModel` `:184` | 0080, `C/docs/decisions/0080-copy-declared-per-table-raw-appends.md:10-19`; Nekt API, por tabela, `primary_keys`, `replication_key`, `sync_type` (`NK:20888-20897`); Nekt Protheus, o modo fixado pelo conector (`NK:177752`, "Every stream is FULL_TABLE"); `CDK .../declarative_component_schema.yaml:2244-2271` (`page_size` por paginador; lida numa cópia guardada que a estante de hoje não tem, e não conferida aqui) | embrulhado: a lista do kit sobre o `--discover` | O dicionário no dublê, 286 linhas (`EST/descoberta-catalogo:75-80`); as 42 e o modo de cada uma em `SK` seção 1. Não provado: 450 colunas, a página em bytes (critérios 11, 21); as sondas P1 a P5 | Completo; F; NT1, NT4 | U3 | `packages/connectors/src/kernel/tables.ts`; `packages/connectors/src/sankhya/copy-tables.ts` |
 | 9 | A descoberta das colunas pelo dicionário (`TDDTAB`, `TDDCAM`) | nova | nenhuma na cópia; a skill do agente já lê o dicionário (`C/packages/connectors/src/sankhya/skill/SKILL.md:49`) | o `--discover` do Singer; tap-oracle lê `all_tab_columns` (`EST/descoberta-catalogo:135`); Nekt Protheus, os nomes do dicionário (`NK:177778`) | nativo | Medido antes, no dublê (`EST/descoberta-catalogo:75-80`). Não provado no Sankhya real: a P1 e o passo 8 do roteiro | D1, 2026-11-19 | U3, U4 | — (em `copy-tables.ts`) |
 | 10 | O prefixo do conector no nome do lago | fica | `copyPrefixOf`, `C/packages/connectors/src/kernel/copy.ts:16-18` | Nekt, "`hubspot_deals`" (`NK:12217-12218`); `AP .../Mapper.kt:171-179` | nativo | — | não precisa | U3, U4, U8 | — (`lakeNameOf` em `kernel/tables.ts`) |
 | 11 | O adaptador: do kit a um leitor Singer, um só | fica | nenhum; o laço mora no Hub, `C/apps/server/src/hub/copies/source-pass.ts:194-212`, `hub/connectors/copy-port.ts:243-315` | `TRM tap.py:455`, `:506-540`; `CDK .../concurrent_declarative_source.py:165` | remendo: TypeScript que fala Singer, porque o kit é TypeScript (0074) | 344 linhas, duas classes, 34 e 24 testes da bateria do singer-sdk 0.54.9 (estudo) | 0071 | U4 | `apps/extraction/tap/src/tap.ts` |
-| 12 | A sessão do kit, no Hub e na tarefa: reusar, renovar antes do fim, deslogar | fica; vai para a etapa do conector | `C/apps/server/src/hub/connectors/limits.ts:127`; `read.ts:109-115`, `check.ts:43-48` | `singer-sdk@0.54.9 singer_sdk/authenticators.py:526-527`, `:609-619` | remendo: a peça é do kit | A P2: 87 linhas, 4 renovações em 100 s, nenhuma sessão pendurada; o autenticador lido no singer-sdk 0.54.9 | 0077; A do conector | U16 | `packages/connectors/src/kernel/session.ts` |
+| 12 | A sessão do kit, no Hub e na tarefa: reusar, renovar antes do fim, deslogar | fica; vai para a etapa do conector | `C/apps/server/src/hub/connectors/limits.ts:127`; `read.ts:109-115`, `check.ts:43-48` | `singer-sdk@0.54.9 singer_sdk/authenticators.py:526-527`, `:609-619`, que sustenta só renovar quando o token não vale mais; a margem de 60 s, o logout da velha e a repetição vêm do Sankhya medido (P2), e não dele | remendo: a peça é do kit | A P2: 87 linhas, 4 renovações em 100 s, nenhuma sessão pendurada; o autenticador lido no singer-sdk 0.54.9 | 0077; A do conector | U16 | `packages/connectors/src/kernel/session.ts` |
 | 13 | A classe da credencial, compartilhável ou exclusiva | fica; vai para a etapa do conector | nenhum | nenhuma faz como dado | remendo | O Sankhya: o token vence aos 300 s em uso, e duas sessões convivem (`docs/decisions/0077-how-a-credential-reaches-the-copy-task.md`) | 0077 | U16, U8 | — (muda `kernel/auth.ts`) |
-| 14 | O número exato, do provedor ao lago | fica; o leitor vai para a etapa do conector | `C/apps/server/src/hub/connectors/wire.ts:71`; `kernel/list.ts:53-62` | `JSON.parse` com `context.source`, do Node 24; `singer-sdk@0.54.9 singerlib/json.py:40-44`; `DLT dlt/common/arithmetics.py:18-19` | nativo nas pontas; embrulhado no meio | `1234567890123.123456` igual em `decimal(38,9)` (estudo, `numero-exato.txt`) | 0071; T.4 | U16, U5 | `packages/connectors/src/kernel/exact-json.ts` |
+| 14 | O número exato, do provedor ao lago | fica; o leitor vai para a etapa do conector | `C/apps/server/src/hub/connectors/wire.ts:71`; `kernel/list.ts:53-62` | `JSON.parse` com `context.source`, do Node 24; `singer-sdk@0.54.9 singerlib/json.py:40-44`; `DLT dlt/common/arithmetics.py:18-19` (o tipo `decimal(38, 9)` do destino: serve à U5, não ao leitor) | nativo nas pontas; embrulhado no meio | `1234567890123.123456` igual em `decimal(38,9)` (estudo, `numero-exato.txt`) | 0071; T.4 | U16, U5 | `packages/connectors/src/kernel/exact-json.ts` |
 | 15 | O gravador: só acrescenta na bruta, em Iceberg | fica | nenhum | `singer-sdk@0.54.9 target_base.py:479-492`, `sinks/core.py:135`, `:475-506`; `pyiceberg@0.12.0 table/__init__.py:1705-1724`, `:1123-1158` | embrulhado | 165 linhas, 183 e 230 linhas gravadas, soma igual (estudo). Não provado no `S3 Tables`: L.1 | 0071 | U5 | `apps/extraction/src/conexus_extraction/target.py` |
 | 16 | A marca da passada inteira | fica | `_pass`, `C/apps/server/src/platform/copy-sql.ts:287-301` | `singer-sdk@0.54.9 target_base.py:430-448`, `sinks/core.py:723-736`; `AP .../CatalogGenerationSetter.kt:36-47` | embrulhado | Local (estudo); na AWS, a fase 4 | 0080 | U4, U5 | — |
 | 17 | O projeto do Meltano e o comando da rodada, com as tabelas escolhidas | refeita (uma rodada leva as tabelas marcadas) | nenhum | `meltano@4.4.1 meltano/schemas/meltano.schema.json:335-337`; `core/plugin/singer/tap.py:147` (a seleção), `:211-214`; `cli/run.py:48-126`, `:297-311` | nativo | A P1: 30 tabelas numa tarefa, 180 s (0076) | G | U5 | `apps/extraction/meltano.yml` |
@@ -948,18 +949,18 @@ limpeza; L.8, apagar sem sobra; L.9, a cota do parâmetro.
 | 36 | O esquema `sync`, os logins `conexus_sync`, `conexus_read` e os por papel, e a D4 | sai na parte 0 (NT3) | `C/packages/hub-api/src/app-login.ts:30-40`; `C/apps/server/src/platform/copy-reader.ts:51-82` | PostgreSQL `DROP SCHEMA ... CASCADE` e `DROP ROLE` | nativo | — | D (a); NT3 | U14 (o código); o reajuste, passo 4 (as empresas) | — |
 | 37 | As gravações das formas nativas | fica | 33 gravações em `C/apps/server/src/platform/recordings/aws/` | testing T14 e T29, `C/docs/guides/testing.md:57-70`, `:85-91` | nativo | Faltam: `RunTask`, a fila, o parâmetro, o Athena | — | U5, U8, U10 | `apps/server/src/platform/recordings/aws/ecs-*.json` e os outros |
 | 38 | O método para Python | fica | nenhum | não estudado | nativo | — | 0074 | fica de fora: a mudança de método antes da construção | — |
-| 39 | O nome de uma tabela no lago: sugerido do kit, trocável ao ligar, com prefixo, fixo depois | nova | `modelCopyName` e `copyPrefixOf` (`C/apps/server/src/hub/copies/naming.ts`; `C/packages/connectors/src/kernel/copy.ts:16-18`) | Nekt: o nome sugerido com o prefixo do conector, editável na criação e fixo depois ("a table name cannot be changed after it is created", `NK:12217-12220`), mesma situação; Nekt Protheus, `SC5` vira `sales_orders` (`NK:177792-177806`) | nativo: a forma da Nekt | — | Nome ("Aprovo"); NT2, NT4 | U3, U8, U9 | — (em `kernel/tables.ts` e `hub/copies/lake-copy.ts`) |
+| 39 | O nome de uma tabela no lago: sugerido do kit, trocável ao ligar, com prefixo, fixo depois | nova | `modelCopyName` e `copyPrefixOf` (`C/apps/server/src/hub/copies/naming.ts`; `C/packages/connectors/src/kernel/copy.ts:16-18`) | Nekt: o nome sugerido com o prefixo do conector, editável na criação ("We suggest a name, but feel free to customize it", `NK:177751`) e fixo depois ("a table name cannot be changed after it is created", `NK:12217-12220`), mesma situação; Nekt Protheus, `SC5` vira `sales_orders` (`NK:177792-177806`) | nativo: a forma da Nekt | — | Nome ("Aprovo"); NT2, NT4 | U3, U8, U9 | — (em `kernel/tables.ts` e `hub/copies/lake-copy.ts`) |
 | 40 | O nome de uma tabela que o kit não declara | nova | nenhum | Nekt TOTVS RM, `dataserver_<name>` (`NK:178310`), mesma situação; Nekt Dynamics F&O, a entidade em snake_case (`NK:64505`) | nativo: o código da fonte | — | NT1 | fica de fora: etapa 6 (a regra está decidida) | — |
 | 41 | A origem ao lado do nome | nova | nenhum | Singer: `table_name` no catálogo (`singer-sdk@0.54.9 singer_sdk/singerlib/catalog.py:310-324`, `:342`), que o SDK preenche só nos conectores de banco (`sql/connector.py:1081`; um fluxo de API escreve `None`, `streams/core.py:671`); Nekt, "SC5 - Pedidos de Venda" na doc (`NK:177792-177806`) | embrulhado: o adaptador escreve `table_name` com a origem | — | não precisa | U4 | — (em `tap.ts`) |
 | 42 | O rótulo e a descrição da tabela | nova | o `label` do `CopyModel` e a `description` da v1 (`C/packages/connectors/src/kernel/copy.ts:66-79`, `:184`) | Nekt: "Add descriptions to tables and important fields" (`NK:405`); a doc de cada conector descreve cada fluxo (Protheus, `NK:177812`); Airbyte e Singer não têm descrição de tabela (`AP .../AirbyteStream.kt:35-52`) | embrulhado: do kit para as declaradas, da `DESCRTAB` para as outras | — | não precisa | U3, U8, U9 | — |
 | 43 | O nome e a descrição das colunas | nova | os nomes da consulta do modelo (`C/packages/connectors/src/sankhya/copies.ts:135-147`) | Nekt Protheus: "Column names are the Protheus field names in lower case" (`NK:177778`), mesma situação | nativo: o `TDDCAM` no `--discover` | Medido antes no dublê (`EST/descoberta-catalogo:75-80`) | D4 de 2026-11-19 | U3, U4 | — |
 | 44 | Agrupar as tabelas | nova | `subjects` das operações (`C/packages/connectors/src/sankhya/operations/index.ts:68-75`) | Nekt: pasta "by source, business domain" (`NK:76`); Airbyte agrupa por namespace (`AP .../streamUtils.ts:95-106`) | embrulhado: o `group` da tabela usa os assuntos do kit | — | não precisa | U3 | — |
 | 45 | Duas ligações do mesmo sistema | nova | `copies.copy_source`, uma cópia lendo várias contas (INV §2.1) | Airbyte: um prefixo por conexão (`AP .../Mapper.kt:171-179`); Nekt: uma fonte por conta (`NK:131385`), o nome por fonte (`NK:177751`); Fivetran: um esquema por conexão (`EST/n5-duas-ligacoes`, seção 2) | embrulhado: uma tabela por ligação; a segunda vem sugerida com o nome dela, e o repetido é recusado | — | NT5; Nome | U8 | — |
-| 46 | A definição única do conector | refeita | `C/packages/connectors/src/kernel/definition.ts:42-71` | Nango `e6c6131`, situação diferente: funções num executor (`EST/kit-vs-nango-study`, `EST/kit-nango:113-117`); "Um tap Singer é só um segundo executor das mesmas funções" (`EST/kit-nango:116`) | embrulhado (herdado, decidido) | Os 198 testes do kit (`EST/conector-estilo-novo-estudo`, seção 5) | 0056, 0069, 0071 | U16, U17, U18 | — |
+| 46 | A definição única do conector | refeita | `C/packages/connectors/src/kernel/definition.ts:42-71` | Nango `c607ff39` (o da estante; o estudo `kit-vs-nango-study` leu `d6c912eb`, e o commit `e6c6131` que esta linha citava não foi achado), situação diferente: funções num executor (`EST/kit-vs-nango-study`, `EST/kit-nango:113-117`); "Um tap Singer é só um segundo executor das mesmas funções" (`EST/kit-nango:116`) | embrulhado (herdado, decidido) | Os 198 testes do kit (`EST/conector-estilo-novo-estudo`, seção 5) | 0056, 0069, 0071 | U16, U17, U18 | — |
 | 47 | As leituras como ferramentas | fica | `C/apps/server/src/builder/connectors/typed-reads.ts:27-35`; `C/apps/server/src/builder/company-tools/search.ts:28-43` | `@mastra/core@1.83.0` `ToolSearchProcessor`, "gives the agent two meta-tools (`search_tools` and `load_tool`)", com `filter` por pedido; Nekt `discover_live_tools` e `run_live_tool` | nativo | — | não precisa | fica (a U17 e a U18 provam que as pastas novas as mantêm) | — |
 | 48 | A escrita com o cartão | fica | `C/apps/server/src/hub/connectors/write.ts`, `write-record.ts`, `approval.ts` | `@mastra/core@1.83.0` `requireApproval` (`reference-tools-create-tool.md:79-81`), mesma situação; Nekt, "your agent confirms", situação diferente: quem confirma é o agente | embrulhado (o registro é nosso) | A etapa 24.5, fechada | 0062; e245 | fica (a U17 prova `lancarPedido`) | — |
-| 49 | O Caderno | refeita: pede o sim; sai na etapa do Negócio | `C/apps/server/src/hub/connectors/notes.ts`; `C/apps/server/src/builder/connectors/connector-tools.ts:307-333` | Nekt: o agente "will typically offer to save a context document", e a pessoa aceita (`EST/ao-vivo-estudo:114`), situação diferente: a Nekt guarda o roteamento, e não um significado que todos os agentes usam | nativo: o `requireApproval` do Mastra para a ferramenta, como na escrita | — | 0064 (`:30`); B do conector | U19 | — |
-| 50 | A skill do conector | refeita em parte | `C/packages/connectors/src/kernel/skill.ts`; `sankhya/skill/SKILL.md` à mão, que diz "There is no operation that writes" (`:14`) contra `lancarPedido` (`sankhya/operations/index.ts:62`) | Nekt: os nomes das ferramentas "can change, so an agent should resolve them at run time rather than hardcoding them into a skill" (`NK:12598-12600`), mesma situação | embrulhado: a parte gerada da definição, a escrita guarda o saber | O defeito lido | técnica (T.25) | U16, U17, U18, U3 | — (muda `kernel/skill.ts`) |
+| 49 | O Caderno | refeita: pede o sim; sai na etapa do Negócio | `C/apps/server/src/hub/connectors/notes.ts`; `C/apps/server/src/builder/connectors/connector-tools.ts:307-333` | Nekt: o agente "will typically offer to save a context document", e a pessoa aceita (`EST/ao-vivo-estudo:114`), situação diferente: a Nekt guarda o roteamento, e não um significado que todos os agentes usam | nativo: a suspensão do Mastra, `suspend()` e `resumeData` da própria ferramenta, como `askUserTool` (`M/packages/core/src/tools/builtin/ask-user.ts:98-122`) e `submitPlanTool` (`submit-plan.ts:78-128`), `@mastra/core@1.83.0`. O `requireApproval` não serve ao Assistente nem ao Builder: com `yolo: true` (0053) o controlador aprova sozinho toda porta de aprovação (`M/packages/core/src/agent-controller/session.ts:4815`, `:6638-6642`; `session-run-engine.ts:910`), e ligar `yolo: false` faria pedir toda ferramenta que o Mastra injeta fora de `spec.tools` (medido: `search_tools` trava o turno) e traria de volta a perda de retomada no Postgres que a 0053 evita | — | 0064 (`:30`); B do conector; o firstmate, 2026-11-24 ("B") | U19 | — |
+| 50 | A skill do conector | refeita em parte | `C/packages/connectors/src/kernel/skill.ts`; `sankhya/skill/SKILL.md` à mão, que diz "There is no operation that writes" (`:14`) contra `lancarPedido` (`sankhya/operations/index.ts:62`) | Nekt: os nomes das ferramentas "can change, so an agent should resolve them at run time rather than hardcoding them into a skill" (`NK:12598-12600`), mesma regra: a Nekt resolve o nome na hora, e o kit gera a parte da skill | embrulhado: a parte gerada da definição, a escrita guarda o saber | O defeito lido | técnica (T.25) | U16, U17, U18, U3 | — (muda `kernel/skill.ts`) |
 | 51 | A janela Ligar com busca, acesso, testando e lendo, o que copiar, quando copiar e Ligado; o link de 30 minutos | refeita, nesta etapa | `C/apps/web/src/hub/connectors/link-dialog.tsx:272`; `integrations.tsx:94` | Nekt, o assistente e o Share link (`MAPA` 1.1, `EST/nekt-rea:83`); Databricks, "Save and run pipeline" (`MAPA` 1.2); Nango `connect_link`, 30 minutos (spec 02, `design.md:48`) | embrulhado | — | o fluxo e o link, 2026-11-23; spec 02 (`C4`, `C5`) | U9, U20 | `apps/web/src/hub/connectors/link-window.tsx`, `link-page.tsx`; `apps/server/src/hub/connectors/connection-links.ts` |
 | 52 | A segunda forma, pelo servidor MCP do fornecedor | fica de fora | nenhum; `@mastra/mcp` não instalado | AWS AgentCore Gateway, Nekt, Databricks (`EST/registro-vs-lago-e-ao-vivo:505-512`) | embrulhado, na etapa própria | — | `C1` (a), `C2` (a) de 2026-11-21 | fica de fora: a etapa "A ferramenta ao vivo, por pessoa e por MCP" | — |
 | 53 | As pastas do Sankhya e do Mercado Livre | refeita do zero | `C/packages/connectors/src/sankhya/`, `mercado-livre/` (INV §1.3, §1.4) | A Nekt tem Protheus, RM, Omie e Mercado Livre feitos por ela (`EST/connector-catalog-study:156`); nenhuma referência tem o Sankhya | embrulhado: a forma do kit | Os testes de hoje pela porta pública, sem mudar o que esperam | A do conector | U17, U18 | — (as mesmas pastas, escritas de novo) |
@@ -1746,13 +1747,16 @@ e 5 do roteiro para o Mercado Livre.
 
 ### As linhas da tabela
 
-- **Linha 49.** Ler `C/apps/server/src/hub/connectors/notes.ts` (`save`, que já confere
-  `manageConnections` com `manage`; `provedAndSaved`), `C/apps/server/src/builder/connectors/connector-tools.ts:307-333`
+- **Linha 49.** Ler `C/apps/server/src/hub/connectors/notes.ts` (`save`, que confere
+  `manageConnections` de quem aprova, no Assistente e no Builder; `provedAndSaved`), `C/apps/server/src/builder/connectors/connector-tools.ts:307-333`
   (`noteSaveTool`) e `builder/company-tools/factory.ts:132-137` (quem recebe a ferramenta). Seguir a
-  escrita com o cartão: `builder/agents/tools.ts:188-230` (`requireApproval`, `approvedCallOf`) e
-  `hub/connectors/approval.ts` (`mayApprove`). `@mastra/core@1.83.0`, `requireApproval`: "Input is
-  validated against inputSchema first: if it is invalid, the validation error is returned to the model
-  and no approval is requested" (`reference-tools-create-tool.md:79`).
+  pergunta com o cartão: `builder/controller-kit/ask-user.ts` (`createAskUserTool`: `suspendSchema`,
+  `resumeSchema`, `execute` que suspende sem `resumeData` e responde com ele) e `builder/conversation/plan-tools.ts`
+  (`createSubmitPlanTool`). `@mastra/core@1.83.0`: `ask-user.ts:98-122` e `submit-plan.ts:78-128` fazem o
+  mesmo, e o cartão responde pela rota `tool-suspension`, já na lista fixa do guarda
+  (`builder/conversation/guard.ts:38`). O `requireApproval` não é o caminho: no Assistente e no Builder
+  o controlador roda em `yolo` (0053), e `session.ts:4815` (`if (state.yolo === true) return 'allow'`)
+  aprova sozinho toda porta de aprovação.
 - **A decisão.** 0064 (`:30`): as anotações viram propostas e o Caderno sai, na etapa do Negócio.
   Até lá, gravar pede o sim (B do conector).
 
@@ -1760,24 +1764,27 @@ e 5 do roteiro para o Mercado Livre.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/connectors/connector-tools.ts` | Muda: `requireApproval` na ferramenta; o `execute` grava com quem aprovou | o Assistente e o Builder |
-| `apps/server/src/builder/conversation/` | Muda: a aprovação de `connector_note_save` confere `manageConnections` de quem aprova | a rota de aprovar |
-| `apps/server/src/hub/connectors/notes.ts`, `packages/hub-api/src/project-connections.ts` (`ConnectionNote`) | Muda: `approvedBy` | a tela |
-| `apps/web/src/builder/conversation/` (o cartão), `apps/web/src/hub/connectors/notes.tsx`, `text.ts` | Muda: o cartão do Caderno; "Aprovada por" | — |
+| `apps/server/src/builder/connectors/connector-tools.ts` | Muda: a ferramenta suspende com o pedido e grava só com o sim (`suspendSchema`, `resumeSchema`); o não devolve `NOT_SAVED`; no Builder, o sim retomado abre uma corrida só dele (`RunId` novo), porque a retomada roda antes de a corrida tomar o Projeto | o Assistente e o Builder |
+| `apps/server/src/hub/connectors/assistant-port.ts`, `builder-port.ts` | Muda: quem responde o cartão é quem aprova (`approvedBy`), e a gravação o confere | a ferramenta |
+| `apps/server/src/hub/connectors/notes.ts`, `packages/hub-api/src/connectors.ts` (`ConnectionNote`, `NoteApproval`) | Muda: `approvedBy` | a tela |
+| `apps/web/src/builder/conversation/` (o cartão: `note-card.tsx`, `note-parse.ts`, `rows.ts`), `apps/web/src/hub/connectors/notes.tsx`, `text.ts` | Muda: o cartão do Caderno, que responde pela suspensão; "Aprovada por" | — |
 
 ### Os contratos que a unidade cria
 
 ```ts
-// apps/server/src/hub/connectors/notes.ts — the stored note gains who approved; a note from before reads as null
-approvedBy: z.string().nullable().default(null)
-// packages/hub-api/src/project-connections.ts — ConnectionNote gains
-approvedBy: z.string().nullable()   // the approver's name; null: "Gravada sem aprovação"
+// apps/server/src/hub/connectors/notes.ts — the stored note gains who approved; a note from before has none
+approvedBy: z.string().optional()
+// packages/hub-api/src/connectors.ts — ConnectionNote gains who said yes, by kind (C21)
+approval: { kind: 'NONE' } | { kind: 'PERSON', name: string | null }   // NONE: "Gravada sem aprovação"; name null: the person left the company
 ```
 
-- **Quem aprova**: um membro com `manageConnections`, conferido na transação da gravação (T.26); uma
-  recusa é `NOT_GRANTED`, com o motivo só no registro (S8, S10).
-- **O cartão**: o da escrita (`approval-card.tsx`), com o título "Gravar no Caderno?" e as frases da
-  matriz em `approval-text.ts` (C26).
+- **Quem aprova**: a pessoa que responde o cartão, dona da conversa (o guarda só deixa a dona
+  responder); um membro com `manageConnections` agora, conferido na transação da gravação (T.26), e
+  não quando pediu, no Assistente e no Builder igualmente; uma recusa é `NOT_GRANTED`, com o motivo só no
+  registro (S8, S10). `approvedBy` e `writtenBy` são hoje a mesma pessoa, porque só a dona responde: o que a
+  unidade acrescenta é a conferência no momento do sim, e não um segundo papel.
+- **O cartão**: a peça `Approval` de `ui/ai/`, com o título "Gravar no Caderno?" e as frases da
+  matriz em `approval-text.ts` (C26), respondido por `tool-suspension` com `{ approved }`.
 - **O arquivo modelo**: `builder/agents/tools.ts`, `writeTool` (C21: a resposta por `kind`).
 
 ### As skills e a leitura
@@ -1787,21 +1794,28 @@ As linhas de `@mastra/core` e `react` do `stack.md`: a skill `mastra`. A securit
 ### A ordem do trabalho
 
 1. **A ferramenta pede o sim.** Critério: 83.
-   - **Mutações à mão:** `requireApproval: false`: o 83 fica vermelho.
-2. **Quem aprova e o que fica gravado.** Critério: 84.
-   - **Mutações à mão:** conferir `manageConnections` de quem pediu, e não de quem aprova: o 84 fica
+   - **Mutações à mão:** a ferramenta gravar sem suspender (o `execute` chamar `save` direto): o 83 fica
      vermelho.
+2. **Quem aprova e o que fica gravado.** Critério: 84.
+   - **Mutações à mão:** tirar a conferência de `manageConnections` da transação da gravação, ou
+     conferi-la quando o cartão abre e não quando o sim chega: o 84 fica vermelho.
 3. **A tela.** Critério: 84.
 
 ### Como se prova
 
-Por uma conversa do Assistente com as gravações do Mastra de aprovação (`platform/recordings/mastra/approval*.jsonl`)
-e um PostgreSQL local; pela tela com o Hub falso. Hoje o 83 falha: a ferramenta grava sem pedir.
+Por uma conversa do Assistente e uma do Builder com o dublê do modelo e um PostgreSQL local (a suspensão
+é a do `ask_user`, que o Mastra retoma na mesma rota); pela tela com o Hub falso. Hoje o 83 falha: a
+ferramenta grava sem pedir.
+
+O desvio do cartão: a aprovação é a suspensão do Mastra, e não o `requireApproval`. O motivo, medido: em
+`yolo` o controlador aprova toda porta de aprovação sem perguntar. Para perguntar, o Assistente e o
+Builder teriam de sair de `yolo`, e então toda ferramenta que o Mastra injeta (a busca de ferramentas, as
+leituras tipadas) pediria também. A suspensão pergunta só no Caderno e deixa a 0053 como está.
 
 ### Parar se
 
 - Uma unidade da trilha Agentes e Apps está nesses arquivos (delivery L1): espera.
-- A aprovação de hoje não distingue a ferramenta e pediria mudar a rota de aprovar para todas.
+- A suspensão de hoje não deixa a ferramenta retomar com o sim sem mudar a rota de responder.
 
 ## GC3 O ponto de conferência
 
@@ -1819,8 +1833,8 @@ tabela e a leitura que pagina, e para os três modos.
 
 - **Linhas 8, 66 e 67.** A declaração de cada tabela: 0080 (`C/docs/decisions/0080-copy-declared-per-table-raw-appends.md:10-19`,
   a descoberta "por um gancho ou por uma lista declarada", e os três modos); a forma por tabela da Nekt
-  (`NK:20888-20897`) e o modo fixado pelo conector num ERP por API (`NK:177753`); o tamanho de página
-  como dado da declaração, com padrão (`CDK .../declarative_component_schema.yaml:2244-2271`). A lista
+  (`NK:20888-20897`) e o modo fixado pelo conector num ERP por API (`NK:177752`, "Every stream is FULL_TABLE"); o tamanho de página
+  como dado da declaração, com padrão (`CDK .../declarative_component_schema.yaml:2244-2271`, lida numa cópia guardada que a estante de hoje não tem, e não conferida aqui). A lista
   é a de `SK` seção 1 (o nome sugerido, o rótulo, a origem, a chave, a coluna e o modo de cada uma),
   fechada pelas sondas P1 a P5. A janela por mês segue a A0D (`EST/a0d-sankhya-kit-mes:93-121`): as
   janelas vêm da contagem por mês, porque há datas fora do calendário.
@@ -1871,7 +1885,7 @@ export const TableColumn = z.object({ name: z.string(), type: TableColumnType, d
 export type TableSource =
   | Readonly<{ kind: 'TABLE'; table: SourceTable }>                                    // Sankhya, by the query door
   | Readonly<{ kind: 'OPERATION'; operation: OperationId; input: Readonly<Record<string, string | number | boolean>> }>  // a paged read; its origin on the wire is the operation id ('negocios')
-/** How a table is read each run, fixed by the connector (0080; NK:177753). */
+/** How a table is read each run, fixed by the connector (0080; NK:177752). */
 export type TableMode =
   | Readonly<{ kind: 'CHANGED'; column: string; registry: boolean }>                         // rows past the saved point of a column that only grows: a date (DTALTER) or a number (NUNOTA), as a Singer replication key; registry: master data, which the start date never limits (NKH:134107)
   | Readonly<{ kind: 'WINDOW'; column: string; step: 'MONTH'; reread: number }>  // rereads the last `reread` months, replaces them; the start date limits its months
@@ -2101,14 +2115,23 @@ especificação do Singer que ela cita.
    - **Testes:** `tap.test.ts`, "o catálogo é a descoberta", contra a lista esperada de
      `kernel/tables-fixture.ts`, a mesma que `lake-routes.test.ts` (U8) usa pela rota.
    - **Mutações à mão:** deixar `selected` de fora: a entrada sai marcada e o 17 fica vermelho.
-2. **A leitura.** Critérios: 18, 19, 86, 89, 106, 108, 113. A sessão do kit (U16), as tabelas escolhidas
+2. **A leitura.** Critérios: 18, 19, 86, 89, 106, 108, 113, 115. A sessão do kit (U16), as tabelas escolhidas
    em ordem, uma página por vez pela leitura de página do kit (`readTablePage`, U3), com a página do
    conector, `STATE` depois de cada página, a versão da passada, `ACTIVATE_VERSION` no fim de cada tabela.
    O filtro de cada tabela segue o modo, como acima. A recusa da fonte escreve `TapFailure` e sai com
-   código 1.
+   código 1. Antes dela, uma página que dá `UNREACHABLE` (um 5xx ou um erro de rede) é repetida pelo
+   adaptador, e a repetição é dele, e não da sessão nem do executor do Hub: até 5 tentativas no total,
+   com espera crescente de `backoff.expo(factor=2)` e jitter, como o `RESTStream` do singer-sdk
+   (`singer-sdk@0.54.9 singer_sdk/streams/rest.py:334-340`, o 5xx e o 429, pois `extra_retry_statuses` é
+   `[429]` em `:158`; `:397-409`, os erros de rede e `max_tries`; `:867-875`, a espera e as 5 tentativas;
+   `:894`, o jitter). No kit o 429 é `BUSY` (`kernel/operation.ts:76-79`): entra nas mesmas 5 tentativas,
+   esperando o que o provedor pediu (`waitMs`) quando pediu. Um 4xx que não é 429 não é repetido
+   (`:341-347`). Só a quinta falha escreve o `TapFailure`. Com `STATE` por página, a rodada seguinte
+   retoma do ponto, e uma página repetida não duplica dado.
    - **Testes:** `tap.test.ts` contra os dublês; `test_tap_battery.py` roda a bateria do singer-sdk.
    - **Mutações à mão:** emitir o `STATE` antes do `RECORD` da página: a bateria fica vermelha; comparar o
-     ponto e a data pelo menor: o 108 fica vermelho.
+     ponto e a data pelo menor: o 108 fica vermelho. Repetir também o 4xx, ou escrever o `TapFailure` na
+     primeira falha: o 115 fica vermelho.
 3. **A regra.** Critério: 20.
 
 - **A entrada em `docs/reference/boundaries.md`** da linha 11, remendo, com a prova da linha e a

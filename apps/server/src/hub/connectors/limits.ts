@@ -1,4 +1,4 @@
-import type { ConnectorId, Grant, Session } from '@conexus/connectors'
+import type { Grant, Session } from '@conexus/connectors'
 import { RENEW_BEFORE_MS, sessionOf } from '@conexus/connectors'
 import type { ConnectionId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -21,16 +21,6 @@ export type Limits = {
    */
   inTurn<T>(
     connection: ConnectionId,
-    deadlineMs: number,
-    work: (waitedMs: number) => Promise<T>,
-    signal?: AbortSignal,
-  ): Promise<T | Deadline>
-  /**
-   * The same line for the copies' calls of one connector whose provider counts its limit by the app
-   * (O Sync de qualquer conector): one copy call at a time across every company, while one process runs (0058).
-   */
-  inCopyTurn<T>(
-    connector: ConnectorId,
     deadlineMs: number,
     work: (waitedMs: number) => Promise<T>,
     signal?: AbortSignal,
@@ -120,7 +110,7 @@ type SessionDeps = Readonly<{
   now: () => Date
 }>
 
-function createSessions(deps: SessionDeps): Omit<Limits, 'inTurn' | 'inCopyTurn'> {
+function createSessions(deps: SessionDeps): Omit<Limits, 'inTurn'> {
   const { executor, inTurn, log } = deps
   const held = new Map<ConnectionId, Held>()
   function clock(): number {
@@ -204,7 +194,6 @@ export function createLimits(deps: Omit<SessionDeps, 'inTurn'>): Limits {
   const inTurn = createLanes<ConnectionId>()
   return {
     inTurn,
-    inCopyTurn: createLanes<ConnectorId>(),
     ...createSessions({ ...deps, inTurn }),
   }
 }

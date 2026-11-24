@@ -1,7 +1,8 @@
-import { listConnections } from '@conexus/hub-api'
+import { CompanyId, listConnections } from '@conexus/hub-api'
 import { screen, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { KIT_SANKHYA } from '../../platform/test-kit.ts'
 import { wordsOf } from './connector-words.ts'
@@ -53,7 +54,7 @@ test('sem o catálogo, a fonte do Builder nomeia o conector pelo id', async () =
 })
 
 test('a sala do Builder toma do catálogo o nome e a logo, e a recusa de conector segue a do Builder', () => {
-  const room = builderRoomOf(wordsOf([KIT_SANKHYA]))
+  const room = builderRoomOf(wordsOf([KIT_SANKHYA]), CompanyId.parse(COMPANY.id))
   expect(room.connectors.name('sankhya')).toBe('Sankhya')
   expect(room.connectors.logo('sankhya')).toBe(KIT_SANKHYA.logo)
   expect(room.connectors.refusal('sankhya', { kind: 'UNREACHABLE' })).toBe(

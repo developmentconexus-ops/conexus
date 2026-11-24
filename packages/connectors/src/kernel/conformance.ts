@@ -181,7 +181,7 @@ async function assertNoCredentialLeak(connector: Connector, fake: Fake): Promise
 /** What every connector passes, against its fake, with no network (node:test describe/it). */
 export function runConformance(connector: Connector, fake: Fake): void {
   describe(connector.id, () => {
-    it('declares unique ids, a semver version and subjects that each have an operation and a part of the skill', () => {
+    it('declares unique ids, a semver version and a skill under 500 lines', () => {
       assertDeclared(connector)
     })
 

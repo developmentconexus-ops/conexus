@@ -48,6 +48,9 @@ export function accessOver(
   return { access, reads, notes }
 }
 
+/** The context of a call the person answered Aprovar on the notebook's card. */
+export const YES = { agent: { resumeData: { approved: true } } }
+
 export function runOn(set: object, name: string, input: object, context: object = {}) {
   return Object(set)[name].execute(input, { requestContext: new RequestContext(), ...context })
 }

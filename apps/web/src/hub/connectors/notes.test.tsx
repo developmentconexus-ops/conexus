@@ -1,3 +1,4 @@
+import type { ConnectionNote } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -7,15 +8,16 @@ import { connectionOf } from './fixtures.ts'
 import { connectionsHub, mount, pageOf, viewOf } from './test-hub.tsx'
 
 const server = hubServer()
-const NOTE = {
+const NOTE: ConnectionNote = {
   concept: 'Vendedor do pedido',
   mapping: 'TGFCAB.AD_CODVEND → TGFVEN.CODVEND',
   provedAt: '2026-10-30T14:02:00.000Z',
   provedRows: 20,
   writtenBy: 'Bruno',
+  approval: { kind: 'PERSON', name: 'Ana' },
 }
 
-function open(fields: { mayManage: boolean; notes: (typeof NOTE)[] }) {
+function open(fields: { mayManage: boolean; notes: ConnectionNote[] }) {
   const connection = connectionOf({ name: 'Matriz', state: 'ACTIVE' })
   const view = viewOf({ connections: [connection], ...fields })
   server.use(...connectionsHub(view).handlers)
@@ -63,4 +65,19 @@ test('o membro lê o Caderno sem Apagar', async () => {
   const notebook = within(await screen.findByRole('region', { name: 'Caderno' }))
   expect(notebook.getByText('Vendedor do pedido')).toBeTruthy()
   expect(notebook.queryByRole('button')).toBeNull()
+})
+
+test('quem aprovou: cada anotação diz "Aprovada por <nome>", a de antes desta etapa diz "Gravada sem aprovação" e a de quem saiu da empresa não diz que ficou sem aprovação', async () => {
+  open({
+    mayManage: false,
+    notes: [
+      NOTE,
+      { ...NOTE, concept: 'Antiga', approval: { kind: 'NONE' } },
+      { ...NOTE, concept: 'Saiu', approval: { kind: 'PERSON', name: null } },
+    ],
+  })
+  const notebook = within(await screen.findByRole('region', { name: 'Caderno' }))
+  expect(notebook.getByText('Aprovada por Ana')).toBeTruthy()
+  expect(notebook.getByText('Gravada sem aprovação')).toBeTruthy()
+  expect(notebook.getByText('Aprovada por quem já saiu da empresa')).toBeTruthy()
 })

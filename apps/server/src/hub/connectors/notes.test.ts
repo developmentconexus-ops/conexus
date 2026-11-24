@@ -32,6 +32,7 @@ test('guardar: roda a consulta uma vez pela porta e guarda o mapa, a consulta, a
   const [row] = await on.hub.test.asOwner('select notes from connectors.connection')
   const note = Object(Object(row).notes).Empresa
   assert.deepEqual(Object.keys(note).sort(), [
+    'approvedBy',
     'mapping',
     'provedAt',
     'provedRows',
@@ -39,15 +40,21 @@ test('guardar: roda a consulta uma vez pela porta e guarda o mapa, a consulta, a
     'writtenBy',
   ])
   assert.equal(note.writtenBy, on.ana.id)
+  assert.equal(note.approvedBy, on.ana.id)
   const answered = Object((await on.read({ operation: 'consultar', input: { sql: QUERY } })).json())
   for (const value of Object.values(Object(answered.value?.linhas?.[0] ?? {})))
     assert.ok(!JSON.stringify(note).includes(String(value)) || String(value).length < 3)
   assert.deepEqual(await on.port.notes(on.ids, on.connectionId), Object(row).notes)
   const logged = on.hub.lines.find((line) => line.message === 'CONNECTION_NOTE_SAVED')
-  assert.deepEqual(Object.keys(logged?.fields ?? {}).sort(), ['by', 'connectionId', 'rows'])
+  assert.deepEqual(Object.keys(logged?.fields ?? {}).sort(), [
+    'approvedBy',
+    'by',
+    'connectionId',
+    'rows',
+  ])
 })
 
-test('guardar: no Builder o membro grava, sem manageConnections', async (t) => {
+test('guardar: no Builder o membro sem manageConnections não grava, como no Assistente: NOT_GRANTED e o caderno fica vazio', async (t) => {
   const on = await builderOn(t)
   const carla = { ...on.who(), personId: PersonId.parse(on.carla.id) }
   const saved = await on.port.saveNote(on.ids, {
@@ -56,7 +63,11 @@ test('guardar: no Builder o membro grava, sem manageConnections', async (t) => {
     mapping: 'm',
     provingQuery: QUERY,
   })
-  assert.deepEqual(saved, { kind: 'SAVED', provedRows: 1 })
+  assert.deepEqual(saved, { kind: 'NOT_GRANTED' })
+  assert.deepEqual(
+    await on.hub.test.asOwner("select 1 from connectors.connection where notes <> '{}'"),
+    [],
+  )
 })
 
 test('guardar: a consulta que a porta recusa recusa a anotação; o caderno cheio é NOTE_INVALID; a 51ª chamada da execução é recusada', async (t) => {

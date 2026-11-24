@@ -188,6 +188,7 @@ export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
           readFailure:
             read?.kind === 'FAILED' ? { text: read.text, onRetry: () => refresh?.() } : undefined,
           openWrite: openWriteOf(read, part.toolCallId, write),
+          locked: undefined,
           onApprove: () => void reply('approve'),
           onDecline: () => void reply('decline'),
         }

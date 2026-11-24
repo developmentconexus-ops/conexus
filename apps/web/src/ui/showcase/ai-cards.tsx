@@ -63,6 +63,7 @@ const APPROVAL_OPEN: ApprovalState = {
   error: undefined,
   readFailure: undefined,
   openWrite: undefined,
+  locked: undefined,
   onApprove: noop,
   onDecline: noop,
 }
@@ -160,6 +161,12 @@ export const AI_CARDS: readonly ShowcaseEntry[] = [
               readFailure: { text: 'Não foi possível ler os envios abertos.', onRetry: noop },
             }}
           />
+        ),
+      ],
+      [
+        'ApprovalState.OPEN sem permissão',
+        () => (
+          <AnApproval state={{ ...APPROVAL_OPEN, locked: 'Peça a quem gerencia a ligação.' }} />
         ),
       ],
       [

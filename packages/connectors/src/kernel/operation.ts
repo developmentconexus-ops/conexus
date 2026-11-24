@@ -44,8 +44,8 @@ export type Native = Readonly<{
 }>
 
 /**
- * A call that gave no rows. `TOKEN_EXPIRED`: the executor asks a new token once and repeats; a second time is `AUTH_REFUSED`.
- * `BUSY`: the provider answered 429 and the executor's one wait did not clear it; `waitMs` is the wait it asked for, null when it named none.
+ * A call that gave no rows. `TOKEN_EXPIRED`: the provider ended the token it was sent; the session renews it once and repeats a read (`session.call`), a second end is `NEEDS_REAUTH`, and a write is never repeated (`session.once`).
+ * `BUSY`: the provider answered 429 and a read's one wait, when it fits the deadline, did not clear it; `waitMs` is the wait the provider asked for, null when it named none.
  */
 export type Failure =
   | Readonly<{
@@ -180,7 +180,7 @@ export type Operation<I, O, C extends OperationClass = OperationClass> = Readonl
   from: readonly OperationId[]
   // The top-level keys of `input` that only whoever configures the tool sets; the model never fills them (decision 0062).
   fixed?: readonly string[]
-  // A read that lists rows says how it pages and what it asks to read only what changed; the copy engine reads it (class `read` only).
+  // A read that lists rows says how it pages and what it asks to read only what changed; the Builder's port tells the model, and the list conformance walks it (class `read` only).
   list?: ListRead
   // The smallest input, for the conformance and the check, from the values its `from` read
   // (pedidos needs a company code); null when there is nothing to read (impostos with no pedido).
