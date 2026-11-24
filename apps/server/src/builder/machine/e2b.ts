@@ -56,6 +56,7 @@ export function createE2bKit(config: Credentials): KitFactory {
             ...(signal === undefined ? {} : { signal }),
           }),
       },
+      openNetwork: (extra) => sandbox.e2b.updateNetwork(egress([...options.allowOut, ...extra])),
       closeNetwork: () => sandbox.e2b.updateNetwork(egress(options.allowOut)),
     }
   }

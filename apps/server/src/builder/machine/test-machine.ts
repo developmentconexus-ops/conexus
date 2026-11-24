@@ -24,6 +24,7 @@ import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 import { FOREGROUND, foregroundMaintenanceIn, GIT_FOREGROUND_ENV } from './test-git.ts'
+import { networkOf } from './test-machine-network.ts'
 import { slowly } from './test-machine-slow.ts'
 
 /** A seed the Git refuses to make, because its copy holds a version the disk lost. */
@@ -50,6 +51,7 @@ export type Control = {
   /** The names the Hub's machines found and attached. */
   attached: string[]
   networkClosed: number
+  networkOpenTo?: readonly string[] | undefined
   /** How long the machine takes to come up after it says it runs, as E2B's start does. */
   upMs: number
   holdUp?: Promise<void>
@@ -193,9 +195,7 @@ export function localKit(folder: string, control: Control): KitFactory {
           return control.chunkMs === 0 ? createReadStream(path) : slowly(control, path, signal)
         },
       },
-      closeNetwork: async () => {
-        control.networkClosed += 1
-      },
+      ...networkOf(control),
     }
   }
 }

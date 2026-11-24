@@ -45,6 +45,7 @@ const TOOLS = JSON.stringify({
   dependencies: {
     wrangler: versionOf('apps/edge/package.json', 'wrangler'),
     '@biomejs/biome': versionOf('package.json', '@biomejs/biome'),
+    'agent-browser': versionOf('package.json', 'agent-browser'),
   },
 })
 
@@ -52,6 +53,16 @@ const TOOLS = JSON.stringify({
 const CHECK = `#!/bin/sh
 export PLAYWRIGHT_BROWSERS_PATH=${BROWSERS} npm_config_cache=${CACHE}
 exec node ${OPT}/packages/app/src/check/main.ts --tools ${OPT}/node_modules --platform ${OPT}/packages "$@"
+`
+
+/**
+ * The browser CLI under the name Mastra recognises (`/^agent-browser\b/`), aimed at the headless shell
+ * the check installs: a template's `setEnvs` holds only while it builds, so the machine's commands
+ * never see a variable set there, and the CLI would not find a Chrome.
+ */
+const BROWSER = `#!/bin/sh
+export AGENT_BROWSER_EXECUTABLE_PATH="$(ls -d ${BROWSERS}/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell | head -n 1)"
+exec ${OPT}/node_modules/.bin/agent-browser "$@"
 `
 
 /**
@@ -89,6 +100,7 @@ const template = SDK_FOLDERS.reduce(
       `cd ${OPT} && node packages/app/src/check/declarations.ts ${OPT}/packages`,
       `cd ${OPT} && PLAYWRIGHT_BROWSERS_PATH=${BROWSERS} npx playwright-core install --with-deps chromium-headless-shell`,
       `printf '%s' '${CHECK}' > ${OPT}/check && chmod 755 ${OPT}/check`,
+      `printf '%s' '${BROWSER}' > /usr/local/bin/agent-browser && chmod 755 /usr/local/bin/agent-browser`,
       `chmod -R a+rX,go-w ${OPT}`,
       `mkdir -p ${CACHE} /home/user/app && chown user:user ${CACHE} /home/user/app`,
     ],

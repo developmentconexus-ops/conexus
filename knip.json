@@ -4,7 +4,7 @@
     ".": {
       "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"],
       "ignoreBinaries": ["openssl"],
-      "ignoreDependencies": ["jscpd"]
+      "ignoreDependencies": ["jscpd", "agent-browser"]
     },
     "apps/server": {
       "entry": ["src/**/*.check.ts"],

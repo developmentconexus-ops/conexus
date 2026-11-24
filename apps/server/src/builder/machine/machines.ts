@@ -3,6 +3,7 @@ import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { Failure } from '../../platform/failure.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
+import { BROWSER_PROGRAM, conferOn } from './confer.ts'
 import type { Kit } from './kit.ts'
 import {
   ALLOWED_HOSTS,
@@ -289,6 +290,17 @@ class BuilderMachines implements Machines {
     const program = this.deps.checkProgram ?? CHECK_PROGRAM
     const exec: TimedExec = (script, timeoutMs) => this.run(kit, script, timeoutMs)
     return checkIn({ exec, program, workdir: this.workdir, log: this.deps.log })
+  }
+
+  async confer({ conversationId, at }: Parameters<Machines['confer']>[0]) {
+    const session = this.sessions.get(conversationId)
+    if (session === undefined) return { ok: false, error: 'CONFER_PLATFORM_FAILED' } as const
+    const kit = await this.ensure(session)
+    return conferOn({
+      ...{ kit, conversationId, at, workdir: this.workdir, tmp: this.tmp, log: this.deps.log },
+      exec: (script, timeoutMs) => this.run(kit, script, timeoutMs),
+      program: this.deps.browserProgram ?? BROWSER_PROGRAM,
+    })
   }
 
   async saved({ conversationId, version }: Parameters<Machines['saved']>[0]) {
