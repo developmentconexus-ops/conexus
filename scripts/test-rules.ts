@@ -102,10 +102,26 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
   'aws-sdk-only-in-the-aws-adapter': [
     'apps/server/src/hub/a/stacks.ts',
     '@aws-sdk/client-cloudformation',
-    {},
+    Object.fromEntries(
+      ['ecs', 'sqs', 'ssm', 'athena'].map((client) => [
+        `apps/server/src/hub/a/${client}.ts`,
+        importing(`@aws-sdk/client-${client}`),
+      ]),
+    ),
   ],
   'connectors-kit-stands-alone': ['packages/connectors/src/x.ts', 'pg', {}],
   'connectors-kit-only-in-the-executor': ['apps/web/src/hub/a/kit.ts', '@conexus/connectors', {}],
+  // Criterion 20 of the first-copy card: a connector's file and a connector's name, planted in the adapter.
+  'adapter-reads-only-the-kit-index': [
+    'apps/extraction/tap/src/read.ts',
+    '../../../../packages/connectors/src/sankhya/definition.ts',
+    { 'packages/connectors/src/sankhya/definition.ts': PUBLIC },
+  ],
+  'adapter-names-no-connector': [
+    'apps/extraction/tap/src/name.ts',
+    '@conexus/connectors/hubspot',
+    {},
+  ],
   'app-reads-kit-types-only': ['packages/app/src/run.ts', '@conexus/connectors/calls', {}],
   'app-reads-only-the-kit-calls': [
     'packages/app/src/kit.ts',

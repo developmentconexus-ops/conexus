@@ -60,6 +60,7 @@ const GOOD_IMPORTS: Record<string, string> = {
   'apps/web/src/builder/a/conversation.ts': '@mastra/client-js',
   'apps/server/src/hub/connectors/executor.ts': '@conexus/connectors',
   'tests/e2e/live-hub.ts': '@conexus/connectors',
+  'apps/extraction/tap/src/ok.ts': '@conexus/connectors',
 }
 
 /** The one way an app's SDK reads the kit: its types, from the calls entry. */
@@ -115,6 +116,19 @@ for (const [file, target] of Object.entries(MASTRA_EE)) {
         (violation) => violation.rule.name === 'no-mastra-ee' && violation.from === file,
       ),
       `no-mastra-ee did not fire on ${file}; got ${JSON.stringify(violations.map((v) => `${v.rule.name} ${v.from}`))}`,
+    )
+  })
+}
+
+for (const client of ['ecs', 'sqs', 'ssm', 'athena']) {
+  test(`dependency-cruiser recusa o cliente ${client} da AWS fora do adaptador`, () => {
+    const file = `apps/server/src/hub/a/${client}.ts`
+    assert.ok(
+      violations.some(
+        (violation) =>
+          violation.rule.name === 'aws-sdk-only-in-the-aws-adapter' && violation.from === file,
+      ),
+      `aws-sdk-only-in-the-aws-adapter did not fire on ${file}`,
     )
   })
 }

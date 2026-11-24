@@ -97,9 +97,10 @@ choice of test tools.
   (`test-recordings.ts`) from a recording that `npm run record` (`scripts/record.ts`) made from the
   installed library in `apps/server/src/platform/recordings/mastra/<scenario>.jsonl`, its first line
   naming library, version, source and date, and carrying invented content only (security S40). A
-  literal of such a shape in a test is refused. Failure: every 14.2 screen Bloqueia passed on
-  hand-made `suspended`, `result.action` and event orders Mastra never produces. [GritQL
-  `scripts/library-shapes.grit`; review]
+  literal of such a shape in a test is refused. Singer and Meltano shapes follow it:
+  `apps/extraction/` tests load what installed tools wrote, first line included; review checks
+  Python. Failure: every 14.2 screen Bloqueia passed on hand-made `suspended`, `result.action` and
+  event orders Mastra never produces. [GritQL `scripts/library-shapes.grit`; review]
 - **T30.** A test world **must** send each value in the format the server sends it, read from the
   contract's schema or the server's own output, never a narrower form the screen happens to
   accept: a timestamp carries the offset the server writes. Failure: the server sent the live
