@@ -62,12 +62,25 @@ def test_a_falha_do_gravador(task: Task) -> None:
 
 
 def test_a_rodada_fechada_para_a_tarefa(task: Task, capfd: pytest.CaptureFixture[str]) -> None:
-    task.aws.delete_after_gets = 1
+    task.aws.refuse_after_gets = 1
     task.run(task.spec(NOTAS))
     assert task.aws.sent == []
     assert not task.lake.table_exists(("raw", "sankhya_notas"))
     assert not task.lake.table_exists(("current", "sankhya_notas"))
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
+
+
+def test_a_conferencia_recusada_e_falha_do_gravador(task: Task) -> None:
+    task.aws.refuse_after_gets = 1
+    task.aws.refusal = "get-parameter-recusado"
+    assert task.run(task.spec(NOTAS)) == 0
+    [result] = task.aws.sent
+    assert result["outcome"] == {
+        "kind": "ERROR",
+        "code": "COPY_LAKE_WRITE_FAILED",
+        "table": "sankhya_notas",
+        "system": None,
+    }
 
 
 def test_a_data_vai_ao_leitor(task: Task) -> None:

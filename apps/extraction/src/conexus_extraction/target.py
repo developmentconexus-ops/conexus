@@ -12,7 +12,6 @@ from pathlib import Path
 
 import boto3
 import pyarrow as pa
-from botocore.exceptions import BotoCoreError, ClientError
 from pyiceberg.catalog import Catalog, load_catalog
 from singer_sdk import BatchSink, Target
 from singer_sdk import typing as th
@@ -186,8 +185,8 @@ class TargetConexus(Target):
     def confirm_run(self) -> None:
         try:
             self._ssm.get_parameter(Name=self.config["run_parameter"])
-        except (BotoCoreError, ClientError) as error:
-            raise RunClosed from error
+        except self._ssm.exceptions.ParameterNotFound as gone:
+            raise RunClosed from gone
 
     def count(self, stream: str, *, read: int = 0, written: int = 0) -> None:
         with self._lock:

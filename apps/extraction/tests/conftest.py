@@ -39,13 +39,15 @@ class Aws:
     parameters: dict[str, str] = field(default_factory=dict)
     sent: list[dict[str, t.Any]] = field(default_factory=list)
     gets: int = 0
-    delete_after_gets: int | None = None
+    refuse_after_gets: int | None = None
+    refusal: str = "get-parameter-apagado"
 
     def answer(self, target: str, request: dict[str, t.Any]) -> tuple[dict[str, t.Any], str]:
         if target == "AmazonSSM.GetParameter":
             self.gets += 1
-            if self.delete_after_gets is not None and self.gets > self.delete_after_gets:
-                self.parameters.pop(request["Name"], None)
+            if self.refuse_after_gets is not None and self.gets > self.refuse_after_gets:
+                refused = recording(self.refusal)
+                return refused, refused["body"]
             value = self.parameters.get(request["Name"])
             if value is None:
                 gone = recording("get-parameter-apagado")
