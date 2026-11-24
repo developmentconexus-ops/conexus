@@ -69,7 +69,6 @@ export function copyPlatform(stack: Stack, place: Place): CopyPlatform {
         name: 'copia',
         image: repository.repositoryUriForDigest(digest.valueAsString),
         essential: true,
-        // The ECS init passes the stop's SIGTERM to the entry, which passes it on to Meltano.
         linuxParameters: { initProcessEnabled: true },
         logConfiguration: {
           logDriver: 'awslogs',

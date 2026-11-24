@@ -33,7 +33,6 @@ export const PLATFORM_ROLES = [HUB_ROLE, SERVICE_ROLE, RELEASE_ROLE, COPY_EXECUT
 export const BOUNDARY = 'conexus-limite'
 export const HUB_KEY_USER = 'conexus-hub-chave'
 export const CDK_EXECUTION_POLICY = 'conexus-cdk-execucao'
-/** The copy platform's half of the CDK execution, apart because one managed policy holds 6,144 characters. */
 export const CDK_COPY_EXECUTION_POLICY = 'conexus-cdk-execucao-copia'
 export const LAKE_FORMATION_ROLE = 'conexus-lf-s3tables'
 /** The role of the function that registers the table buckets and creates their catalog. */

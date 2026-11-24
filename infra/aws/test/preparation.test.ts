@@ -309,7 +309,6 @@ test('a segunda preparação', () => {
   assert.ok(!statements.flatMap(actionsOf).some((action) => action.startsWith('ecr:')))
 })
 
-// IAM counts a managed policy's characters without the whitespace, and refuses one past 6,144.
 test('cada política da execução do CDK cabe no limite do IAM', () => {
   for (const id of ['CdkExecution', 'CdkCopyExecution']) {
     const size = JSON.stringify(find(preparation, id).Properties.PolicyDocument).length

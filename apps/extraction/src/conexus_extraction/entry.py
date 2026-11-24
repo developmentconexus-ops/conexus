@@ -64,9 +64,6 @@ def _settings(prefix: str, values: Mapping[str, object]) -> dict[str, str]:
 
 
 class Stopping:
-    """The ECS stop's SIGTERM, passed on to the running Meltano as Meltano passes it on
-    (meltano/cli/utils.py:402-417); a stopped round sends no result."""
-
     def __init__(self) -> None:
         self.asked = False
         self._child: subprocess.Popen[bytes] | None = None

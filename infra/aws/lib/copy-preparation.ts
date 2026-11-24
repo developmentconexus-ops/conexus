@@ -50,7 +50,6 @@ const COPY_RULE_ACTIONS = [
   'events:ListTagsForResource',
 ]
 
-/** What the network's handlers read, and the resources they create, which have no tag before they exist. */
 const COPY_NETWORK_READS = [
   'ec2:DescribeVpcs',
   'ec2:DescribeVpcAttribute',
@@ -73,10 +72,7 @@ const COPY_NETWORK_CREATES = [
   'ec2:CreateSecurityGroup',
 ]
 
-/**
- * What changes or deletes the network, only where CloudFormation's own tag names the platform: it
- * tags each piece in the create call itself, and no one may write a tag that starts with `aws:`.
- */
+/** CloudFormation tags each piece in the create call itself, and no one else may write an `aws:` tag. */
 const COPY_NETWORK_CHANGES = [
   'ec2:DeleteVpc',
   'ec2:ModifyVpcAttribute',
@@ -160,7 +156,10 @@ export function copyPlatformStatements(stack: Stack): iam.PolicyStatement[] {
       actions: ['ec2:CreateTags'],
       resources: ['*'],
       conditions: {
-        StringEquals: { ...inRegion, 'ec2:CreateAction': COPY_NETWORK_CREATES.map(withoutService) },
+        StringEquals: {
+          ...inRegion,
+          'ec2:CreateAction': COPY_NETWORK_CREATES.map((action) => action.slice('ec2:'.length)),
+        },
       },
     }),
     new iam.PolicyStatement({
@@ -180,8 +179,4 @@ export function copyPlatformStatements(stack: Stack): iam.PolicyStatement[] {
       resources: [arn('logs', `log-group:${COPY_LOGS}`), arn('logs', `log-group:${COPY_LOGS}:*`)],
     }),
   ]
-}
-
-function withoutService(action: string): string {
-  return action.slice(action.indexOf(':') + 1)
 }
