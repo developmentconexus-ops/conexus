@@ -15,8 +15,9 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
+import { CANDIDATE_REF, Sha } from '../machine/public.ts'
 import { FOREGROUND, foregroundMaintenanceIn } from '../machine/test-git.ts'
-import { CANDIDATE_REF, openRepository, restoreGuarded, Sha } from './public.ts'
+import { openRepository, restoreGuarded } from './public.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')

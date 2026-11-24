@@ -6,32 +6,12 @@ import type { RunId } from '@conexus/hub-api'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
+import { BUILDER_IDENTITY, CANDIDATE_REF, MAX_BYTES, Sha } from '../machine/public.ts'
 import type { Context } from './context.ts'
-import {
-  COPIED,
-  git,
-  inMain,
-  MAIN,
-  MAX_BUNDLE_BYTES,
-  MAX_BYTES,
-  present,
-  readRef,
-  Sha,
-  text,
-} from './context.ts'
+import { COPIED, git, inMain, MAIN, MAX_BUNDLE_BYTES, present, readRef, text } from './context.ts'
 import { GitFault, runGit } from './exec.ts'
 import type { FileRead, SaveRefusal, TreeFile } from './tree.ts'
 import { fileOf, inspectTree, treeOf } from './tree.ts'
-
-/** The ref a machine's bundle carries its one commit under. */
-export const CANDIDATE_REF = 'refs/conexus/candidate'
-/** The author of the commits the Builder's machine and the Hub make, as `git -c` options. */
-export const BUILDER_IDENTITY = [
-  '-c',
-  'user.name=Conexus Builder',
-  '-c',
-  'user.email=builder@conexus.invalid',
-]
 
 export type Repository = {
   /**

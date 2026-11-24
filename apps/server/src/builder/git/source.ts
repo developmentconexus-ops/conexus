@@ -6,7 +6,7 @@ import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { Sha } from './context.ts'
+import { Sha } from '../machine/public.ts'
 import type { Repository } from './repository.ts'
 
 type Ids = { companyId: CompanyId; projectId: ProjectId }

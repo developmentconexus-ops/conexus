@@ -5,6 +5,7 @@ export { createConversationMachines } from './conversation.ts'
 export { locate, withFile } from './conversation-file.ts'
 export { createE2bApi, createE2bCodeMode, createE2bKit } from './e2b.ts'
 export { registerFile } from './file-route.ts'
+export { BUILDER_IDENTITY, CANDIDATE_REF, MAX_BYTES, MAX_FILES, Sha } from './git-facts.ts'
 export type { ConversationMachine, ConversationMachineApi, KitFactory } from './kit.ts'
 export {
   ALLOWED_HOSTS,

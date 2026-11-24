@@ -1,4 +1,4 @@
-import { BUILDER_IDENTITY, CANDIDATE_REF, MAX_BYTES, MAX_FILES, Sha } from '../git/public.ts'
+import { BUILDER_IDENTITY, CANDIDATE_REF, MAX_BYTES, MAX_FILES, Sha } from './git-facts.ts'
 import type { Conflicts } from './kit.ts'
 import { shellQuote } from './sandbox-filesystem/shell.ts'
 

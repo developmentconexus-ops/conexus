@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
-import { openRepository, repositoriesIn, Sha } from './public.ts'
+import { Sha } from '../machine/public.ts'
+import { openRepository, repositoriesIn } from './public.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')

@@ -19,7 +19,7 @@ import {
   title,
 } from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
-import { Sha } from '../git/public.ts'
+import { Sha } from '../machine/public.ts'
 import { INSTALLATION } from '../machine/test-machine.ts'
 
 const WRITE = 'mastra_workspace_write_file'

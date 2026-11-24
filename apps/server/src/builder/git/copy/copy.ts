@@ -8,7 +8,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { Config } from '../../../platform/config.ts'
-import { Sha } from '../context.ts'
+import { Sha } from '../../machine/public.ts'
 
 const CALL_MS = 60_000
 const DELETE_BATCH = 1_000

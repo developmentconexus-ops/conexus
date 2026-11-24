@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import type { GrantedConnection } from '../../connectors/public.ts'
-import type { Repository, Sha } from '../../git/public.ts'
+import type { Repository } from '../../git/public.ts'
+import type { Sha } from '../../machine/public.ts'
 
 /** The prompt (card of step 14, U7): Conexus OS `e0353c36` `builder.md`, as the card's table adapts it. */
 const TEMPLATE = readFileSync(new URL('./builder.md', import.meta.url), 'utf8')

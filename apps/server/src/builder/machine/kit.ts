@@ -6,7 +6,7 @@ import type {
   WorkspaceSandbox,
 } from '@mastra/core/workspace'
 import type { InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
-import { MAX_BYTES } from '../git/public.ts'
+import { MAX_BYTES } from './git-facts.ts'
 
 /** The machine's app folder, which the template makes, the file tools root in and the Builder is told of. */
 export const APP_FOLDER = '/home/user/app'
