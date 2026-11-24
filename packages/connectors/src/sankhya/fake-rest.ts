@@ -1,4 +1,5 @@
-import { EMPRESAS, json, nothingFound, retornoErro } from './fake-data.ts'
+import { json, nothingFound, retornoErro } from './fake-data.ts'
+import { EMPRESAS } from './fake-register.ts'
 import {
   CENTROS,
   CLIENTES,

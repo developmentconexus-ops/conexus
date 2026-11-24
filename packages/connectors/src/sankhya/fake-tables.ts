@@ -1,6 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { EMPRESAS } from './fake-data.ts'
-import { inserter } from './fake-register.ts'
+import { EMPRESAS, inserter } from './fake-register.ts'
 
 const OWNER = 'CONEXUS'
 

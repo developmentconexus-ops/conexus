@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { EMPRESAS } from './fake-register.ts'
 import type { QueryAnswer } from './fake-sales.ts'
 
 // Invented values only (S40).
@@ -7,11 +8,6 @@ export const CREDENTIAL = Object.freeze({
   clientSecret: 'fake-client-secret-0001',
   xToken: 'fake-x-token-0001',
 })
-
-export const EMPRESAS = [
-  { codigoEmpresa: 1, nomeFantasia: 'Empresa Alfa', razaoSocial: 'Alfa Comercial Ltda' },
-  { codigoEmpresa: 2, nomeFantasia: 'Empresa Beta', razaoSocial: 'Beta Distribuidora Ltda' },
-]
 
 /** A page of empresas above the executor's 2 MiB cap that the kit reads: only the cap can refuse it. */
 export const OVERSIZE = {
