@@ -12,6 +12,7 @@ import {
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import { MASTRA_MESSAGE_AUTHOR_KEY } from '@mastra/core/request-context'
+import type { Memory } from '@mastra/memory'
 import { SERVER_ROUTES } from '@mastra/server/server-adapter'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
@@ -20,8 +21,10 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { ControllerKind, RunMark } from '../controller-kit/public.ts'
 import { CONTROLLER_KINDS, markIn, ownerOfResource } from '../controller-kit/public.ts'
-import type { Builder } from './builder.ts'
 import { BuilderServer } from './stream.ts'
+
+/** What the guard reads of a conversation's agent: the thread that says whose it is. */
+export type Guarded = { memory: Pick<Memory, 'getThreadById'> }
 
 const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
 
@@ -171,7 +174,7 @@ export type GuardedMastra = {
  * of the person's other conversations. So is a file that is not a `data:` URL. While the Hub
  * settles before it stops, a new message is refused before Mastra starts a turn (founder E1).
  */
-async function guard(deps: { builder: Builder; hub: GuardedMastra }, request: FastifyRequest) {
+async function guard(deps: { builder: Guarded; hub: GuardedMastra }, request: FastifyRequest) {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
     throw new Failure('REQUEST_MALFORMED')
   }
@@ -262,7 +265,7 @@ async function refuseApprover(
 
 /** The person's thread of the controller the path names, marked for them and admitted now; else the 404. */
 async function held(
-  deps: { builder: Builder; hub: GuardedMastra },
+  deps: { builder: Guarded; hub: GuardedMastra },
   asked: {
     person: Person
     controllerId: z.infer<typeof Params>['controllerId']
@@ -312,7 +315,7 @@ export function registerBuilderRoutes(
   app: FastifyInstance,
   deps: {
     hub: GuardedMastra
-    builder: Builder
+    builder: Guarded
     streams: Set<ServerResponse>
     log: FailureLog
   },
