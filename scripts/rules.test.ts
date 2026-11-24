@@ -60,6 +60,7 @@ const GOOD_IMPORTS: Record<string, string> = {
   'apps/web/src/builder/a/conversation.ts': '@mastra/client-js',
   'apps/server/src/hub/connectors/executor.ts': '@conexus/connectors',
   'tests/e2e/live-hub.ts': '@conexus/connectors',
+  'apps/extraction/tap/src/ok.ts': '@conexus/connectors',
 }
 
 /** The one way an app's SDK reads the kit: its types, from the calls entry. */
