@@ -30,8 +30,20 @@ test('Dados sem cópias: cada sistema com a frase da matriz, sem lista nem pági
   const main = within(screen.getByRole('main'))
   expect(main.getByText('Mercado Livre · Loja A')).toBeTruthy()
   expect(main.getAllByText('Nenhuma tabela copiada')).toHaveLength(2)
-  expect(main.queryByRole('table')).toBeNull()
-  expect(main.queryByRole('link', { name: /Ligar uma cópia/ })).toBeNull()
+  const body = main.getByRole('heading', { name: 'Dados' }).parentElement?.parentElement
+  if (!(body instanceof HTMLElement)) throw new Error('the page under the title')
+  expect(body.textContent).toBe(
+    [
+      'Dados',
+      'O que os agentes e os apps da empresa podem ler: cada tabela, de qual sistema veio, o que guarda e de quando é.',
+      'Sankhya · Matriz',
+      'Nenhuma tabela copiada',
+      'Mercado Livre · Loja A',
+      'Nenhuma tabela copiada',
+    ].join(''),
+  )
+  expect(within(body).queryAllByRole('button')).toEqual([])
+  expect(within(body).queryAllByRole('link')).toEqual([])
   expect(
     screen
       .getAllByRole('link')

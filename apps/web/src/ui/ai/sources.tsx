@@ -70,7 +70,7 @@ function PageLine({ source }: { source: Extract<SourceView, { kind: 'PAGE' }> })
 
 /**
  * Where an answer found what it says, under the message: each page's title and domain, each
- * table's system, copy or live read. Today's shape, not shadcn's Trace recipe (card's debt).
+ * live read's system and table. Today's shape, not shadcn's Trace recipe (card's debt).
  */
 export function Sources(props: { label: string; sources: readonly SourceView[] }): ReactElement {
   const { label, sources } = props

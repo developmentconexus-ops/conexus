@@ -2,7 +2,6 @@
 export const DATA_TITLE = 'Dados'
 export const DATA_INTRO =
   'O que os agentes e os apps da empresa podem ler: cada tabela, de qual sistema veio, o que guarda e de quando é.'
-export const SEARCH_TABLES = 'Buscar tabela ou coluna'
 export const NO_SYSTEM = 'Nenhum sistema ligado ainda'
 export const NO_SYSTEM_HINT =
   'Ligue um sistema da empresa, como o Sankhya, e as tabelas copiadas dele aparecem aqui.'
