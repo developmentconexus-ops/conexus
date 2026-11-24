@@ -4,7 +4,7 @@ import {
   accountsQuery,
   CompanyDefaults,
   providersQuery,
-} from '../../../../../harness/model-accounts/public.ts'
+} from '../../../../../builder/model-accounts/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/defaults')({

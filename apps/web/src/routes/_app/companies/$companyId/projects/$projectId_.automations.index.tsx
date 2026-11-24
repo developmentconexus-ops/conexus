@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Automations, loadAutomations } from '../../../../../agents/assistant/public.ts'
+import { Automations, loadAutomations } from '../../../../../builder/automations/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
 import { RouteReadFailure } from '../../../../../ui/states.tsx'
 

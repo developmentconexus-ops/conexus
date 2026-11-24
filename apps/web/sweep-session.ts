@@ -1,6 +1,6 @@
 import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
-import type { Message } from './src/harness/room/messages.ts'
+import type { Message } from './src/builder/conversation/messages.ts'
 
 /** A message as the sweep writes it: whose, its parts, and the model that answered. */
 export type Said = {

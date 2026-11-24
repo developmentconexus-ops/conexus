@@ -1,7 +1,7 @@
 import { ProjectId } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { AgentsPage, loadAgents } from '../../../../agents/saved-agent/public.ts'
+import { AgentsPage, loadAgents } from '../../../../builder/agents/public.ts'
 import { RouteReadFailure } from '../../../../ui/states.tsx'
 
 // The company's agents at Início, filtered by the Projeto of the address (web W18, W29); a member's read is not found (S10).

@@ -141,7 +141,7 @@ async function draftSheet(page: Page) {
   return sheet
 }
 
-const CONSTRUTOR_PATH = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/agent-builder/${CHAT}`
+const CONSTRUTOR_PATH = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/construtor/${CHAT}`
 
 test('no celular, o título e o selo de estado do rascunho na folha não cruzam o Fechar da folha', async () => {
   const replies = construtor(ok(getAgent, { agent: DRAFTED }))

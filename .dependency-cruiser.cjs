@@ -1,16 +1,17 @@
 // The import law of code C3 to C8, data D19, testing T5 and web W1, W4 to W7, W13. Every rule below names
 // the guide rule it enforces; scripts/rules.test.ts plants one bad file per rule.
-// A subject is one folder of hub/ or builder/ on the server, and one folder of hub/, harness/ or agents/ on the web. Revalidate by 2027-04-13.
+// A subject is one folder of hub/ or builder/ (server and web). Revalidate by 2027-04-13.
 const { readdirSync } = require('node:fs')
 const { join } = require('node:path')
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
-// The tests of the agents and the helpers beside them drive the room's test Hub and stream, as a server test drives the test Hub (T5).
-const WEB_AGENT_TESTS = '^apps/web/src/agents/.*(test-[^/]+|\\.test)\\.tsx?$'
+// The Assistant's tests, and the automations', the tools' and the agents' beside them, drive the Builder's test Hub and stream, as a server test drives the test Hub (T5).
+const WEB_BUILDER_TESTS =
+  '^apps/web/src/builder/(assistant/(test-hub|.*\\.test)|automations/.*\\.test|tools/.*\\.test|agents/(test-hub|test-hub-tools|test-approval|.*\\.test))\\.tsx$'
 // The door of a subject is the public.ts at its root, or a public-<name>.tsx there (Node strips no types from .tsx, so public.ts cannot re-export one); a file deeper in is the inside (C4).
-const PUBLIC_DOOR = '(^|/)(hub|builder|harness|agents)/[^/]+/public(-[a-z]+\\.tsx|\\.ts)$'
+const PUBLIC_DOOR = '(^|/)(hub|builder)/[^/]+/public(-[a-z]+\\.tsx|\\.ts)$'
 // The door of a subject's tables: only a tables.ts (a foreign key) imports it (C8).
-const TABLE_DOOR = '(^|/)(hub|builder|harness|agents)/[^/]+/public-tables\\.ts$'
+const TABLE_DOOR = '(^|/)(hub|builder)/[^/]+/public-tables\\.ts$'
 // The helpers a test shares are the files named test-*.ts, in any folder of the server (T5).
 const TEST_HELPER = `${SERVER}/.*/test-[^/]+\\.ts$`
 const MASTRA_EE = 'node_modules/@mastra/(core/dist/(agent-builder|auth)/ee|editor)'
@@ -53,11 +54,11 @@ module.exports = {
         'C4, W4: another subject is reached only through its public.ts. A server test is held by T5 below, which also lets it use the test Hub.',
       severity: 'error',
       from: {
-        path: `^apps/(server|web)/src/(hub|builder|harness|agents)/([^/]+)/`,
-        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER, WEB_AGENT_TESTS],
+        path: `^apps/(server|web)/src/(hub|builder)/([^/]+)/`,
+        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER, WEB_BUILDER_TESTS],
       },
       to: {
-        path: `^apps/$1/src/(hub|builder|harness|agents)/[^/]+/`,
+        path: `^apps/$1/src/(hub|builder)/[^/]+/`,
         pathNot: [`^apps/$1/src/$2/$3/`, PUBLIC_DOOR, TABLE_DOOR],
       },
     },
@@ -128,11 +129,10 @@ module.exports = {
     },
     {
       name: 'hub-does-not-import-builder',
-      comment:
-        'C4, W4: the Hub never imports the Builder (the server) nor harness/ and agents/ (the web); main.ts hands it over.',
+      comment: 'C4, W4: the Hub never imports the Builder; main.ts hands it over.',
       severity: 'error',
       from: { path: '^apps/(server|web)/src/hub/' },
-      to: { path: '^apps/$1/src/(builder|harness|agents)/' },
+      to: { path: '^apps/$1/src/builder/' },
     },
     {
       name: 'platform-does-not-import-subject',
@@ -185,12 +185,9 @@ module.exports = {
     {
       name: 'mastra-only-in-builder',
       comment:
-        'W7, decision 0033: @mastra/* is imported only inside builder/ on the server and inside harness/ on the web.',
+        'W7, decision 0033: @mastra/* is imported only inside builder/, on the server and the web.',
       severity: 'error',
-      from: {
-        path: '^apps/(server|web)/src/',
-        pathNot: '^apps/(server/src/builder|web/src/harness)/',
-      },
+      from: { path: '^apps/(server|web)/src/', pathNot: '^apps/(server|web)/src/builder/' },
       to: { path: '(^|node_modules/)@mastra/' },
     },
     {
@@ -268,10 +265,10 @@ module.exports = {
     {
       name: 'web-tree-shape',
       comment:
-        'W1: apps/web/src holds main.tsx, the generated routeTree.gen.ts and the folders routes, hub, harness, agents, ui, platform, brand.',
+        'W1: apps/web/src holds main.tsx, the generated routeTree.gen.ts and the folders routes, hub, builder, ui, platform, brand.',
       severity: 'error',
       from: {
-        path: `${WEB}/(?!(main\\.tsx|routeTree\\.gen\\.ts|routes/|hub/|harness/|agents/|ui/|platform/|brand/))`,
+        path: `${WEB}/(?!(main\\.tsx|routeTree\\.gen\\.ts|routes/|hub/|builder/|ui/|platform/|brand/))`,
       },
       to: {},
     },
@@ -280,7 +277,7 @@ module.exports = {
       comment: 'W5, W13: ui/, platform/ and brand/ import no subject and no route.',
       severity: 'error',
       from: { path: `${WEB}/(ui|platform|brand)/` },
-      to: { path: `${WEB}/(hub|harness|agents|routes)/` },
+      to: { path: `${WEB}/(hub|builder|routes)/` },
     },
     {
       name: 'ui-ai-takes-ready-data',
@@ -295,7 +292,7 @@ module.exports = {
       comment: 'W6: routes/ reaches a subject only through its public.ts.',
       severity: 'error',
       from: { path: `${WEB}/routes/` },
-      to: { path: `${WEB}/(hub|harness|agents)/`, pathNot: PUBLIC_DOOR },
+      to: { path: `${WEB}/(hub|builder)/`, pathNot: PUBLIC_DOOR },
     },
   ],
   options: {

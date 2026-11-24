@@ -4,7 +4,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, getRouteApi, notFound, useRouter } from '@tanstack/react-router'
 import { ScrollTextIcon } from 'lucide-react'
 import { z } from 'zod'
-import { agentsQuery } from '../../../../../agents/saved-agent/public.ts'
+import { agentsQuery } from '../../../../../builder/agents/public.ts'
 import { connectionsQuery } from '../../../../../hub/connectors/public.ts'
 import {
   DATA_READS_TEXT,

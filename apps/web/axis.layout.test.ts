@@ -6,7 +6,7 @@ import {
   listAssistantConversations,
 } from '@conexus/hub-api'
 import { createHarness, DESKTOP, ok, PHONE } from './layout-harness.ts'
-import { AgentStart, recordedEvent } from './src/harness/room/test-recorded.ts'
+import { AgentStart, recordedEvent } from './src/builder/conversation/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import {
   ASSISTANT_ID,

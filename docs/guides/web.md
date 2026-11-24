@@ -22,7 +22,7 @@ routes/           one file per address: who enters, what loads, which screen ope
   _app/           route.tsx: beforeLoad checks the session; index.tsx opens the last company; the
                   company, Configurações, first entry and Central layouts each draw their frame
 hub/              public.ts and one folder per subject
-harness/ agents/  public.ts and one folder per subject
+builder/          public.ts and one folder per subject
 ui/               pieces with no subject: cn.ts, button, input, states, frame, and the rest
 platform/         jitless.ts, hub.ts (the only fetch), cache, attempt key, failure reader,
                   auth.ts (the Better Auth client), theme, dates
@@ -35,12 +35,12 @@ behavior and [testing T6](testing.md) tests beside the owner; no second file tre
 ## 2. Walls
 
 - **W4.** A subject **must** reach another only through its `public.ts`, and `hub/` **must not**
-  import `harness/` or `agents/`. [dependency-cruiser]
+  import `builder/`. [dependency-cruiser]
 - **W5.** `ui/`, `platform/` and `brand/` **must not** import a subject or a route; `ui/` **may**
   import `platform/`. [dependency-cruiser]
 - **W6.** `routes/` **must** reach a subject only through its `public.ts`. [dependency-cruiser]
-- **W7.** `@mastra/*` **must** be imported only inside `harness/`; only the room **may** import
-  Mastra's client, with the `fetch` of `platform/hub.ts`. [dependency-cruiser]
+- **W7.** `@mastra/*` **must** be imported only inside `builder/`; only the conversation **may**
+  import Mastra's client, with the `fetch` of `platform/hub.ts`. [dependency-cruiser]
 - **W8.** A screen **must** read route parameters and data through `getRouteApi`, never by importing
   the route. A piece drawn above the route that owns the parameter, such as the Workbench drawn by
   the Projeto route reading a conversation's id, reads it with `useParams({ strict: false, select })`; `getRouteApi` there would fail on the

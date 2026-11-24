@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { accountsQuery } from '../../../../../harness/model-accounts/public.ts'
+import { accountsQuery } from '../../../../../builder/model-accounts/public.ts'
 import {
   everyMemberQuery,
   invitationsQuery,

@@ -57,7 +57,7 @@ const GOOD_IMPORTS: Record<string, string> = {
   'apps/server/src/builder/machine/mastra-sandbox.ts': '@mastra/e2b',
   'infra/e2b/template.ts': 'e2b',
   'apps/server/src/builder/git/copy/bucket.ts': '@aws-sdk/client-s3',
-  'apps/web/src/harness/a/conversation.ts': '@mastra/client-js',
+  'apps/web/src/builder/a/conversation.ts': '@mastra/client-js',
   'apps/server/src/hub/connectors/executor.ts': '@conexus/connectors',
   'tests/e2e/live-hub.ts': '@conexus/connectors',
   'apps/extraction/tap/src/ok.ts': '@conexus/connectors',

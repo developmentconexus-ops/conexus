@@ -1,10 +1,10 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { BrainIcon } from 'lucide-react'
+import { accountsQuery } from '../../../../../builder/model-accounts/public.ts'
 import {
   ObservationalMemorySettings,
   observationalMemoryModelsQuery,
-} from '../../../../../harness/memory/public.ts'
-import { accountsQuery } from '../../../../../harness/model-accounts/public.ts'
+} from '../../../../../builder/observational-memory/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/observational-memory')({

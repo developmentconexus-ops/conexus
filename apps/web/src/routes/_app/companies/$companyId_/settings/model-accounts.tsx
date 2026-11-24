@@ -4,7 +4,7 @@ import {
   accountsQuery,
   ModelAccounts,
   providersQuery,
-} from '../../../../../harness/model-accounts/public.ts'
+} from '../../../../../builder/model-accounts/public.ts'
 import { everyMemberQuery } from '../../../../../hub/identity/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 import { RouteReadFailure } from '../../../../../ui/states.tsx'

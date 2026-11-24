@@ -27,7 +27,6 @@ export const PAGES = [
   '/companies/$companyId/projects/$projectId/agents/tools/$toolId',
   '/companies/$companyId/projects/$projectId/agents/$agentId',
   '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId',
-  '/companies/$companyId/projects/$projectId/agents/agent-builder/$conversationId',
   '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId',
   '/companies/$companyId/conversations/$conversationId',
   '/companies/$companyId/agents',

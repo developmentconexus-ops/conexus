@@ -33,7 +33,7 @@ the index row and creates the controller session with the conversation's model a
 
 The browser sends through `@mastra/client-js` to `POST /api/builder/agent-controller/builder/sessions/<id>/messages`,
 one of the seven Mastra routes the Hub exposes. Its client never retries, because a retried write
-would say a message twice (`apps/web/src/harness/room/session.ts`). Before Mastra sees the
+would say a message twice (`apps/web/src/builder/conversation/session.ts`). Before Mastra sees the
 request, the Hub's guard (`builder/conversation/guard.ts`):
 
 1. refuses a `requestContext` or `include` sent by the browser;
@@ -146,7 +146,7 @@ moves the Prévia pointer. The message is updated to `ready` or `failed`. The Pr
 until the send is over, then the run lets it go and Mastra emits `agent_end`.
 
 On the screen, a `ready` Prévia part refreshes the Project, and the Prévia frame loads the new
-version (`apps/web/src/harness/room/use-session.ts`). The Código tab reads the files of
+version (`apps/web/src/builder/conversation/use-session.ts`). The Código tab reads the files of
 `main` from the server's Git, not from the machine (`builder/git/source.ts`). Publishing is a
 separate act by a person.
 
@@ -154,7 +154,7 @@ separate act by a person.
 
 The browser subscribes to the session's stream and reconnects with backoff. On every connect it
 reads the transcript and the session state again, because the server does not replay what the
-stream missed (`apps/web/src/harness/room/use-session.ts`). The server's
+stream missed (`apps/web/src/builder/conversation/use-session.ts`). The server's
 `BuilderServer` slims Mastra's state events to four fields, writes at the socket's pace and drops
 a client more than 8 MiB behind (`builder/conversation/stream.ts`).
 

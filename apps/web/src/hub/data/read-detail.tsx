@@ -51,7 +51,7 @@ function conversationLink({ read, companyId }: Opened): ReactNode {
       return (
         <Link
           className={className}
-          to="/companies/$companyId/projects/$projectId/agents/agent-builder/$conversationId"
+          to="/companies/$companyId/projects/$projectId/agents/construtor/$conversationId"
           params={params}
         >
           {TEXT.openConversation}

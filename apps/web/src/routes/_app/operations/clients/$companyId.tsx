@@ -1,7 +1,7 @@
 import { CompanyId, InvitationId, listInvitations, listMembers } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
-import { AccountKinds, kindsQuery } from '../../../../harness/model-accounts/public.ts'
+import { AccountKinds, kindsQuery } from '../../../../builder/model-accounts/public.ts'
 import { invitationsQuery, membersQuery } from '../../../../hub/identity/public.ts'
 import { Client, clientLakeQuery, clientQuery } from '../../../../hub/operations/public.ts'
 import { idOrNotFound, readOrNotFound } from '../../../../platform/hub.ts'

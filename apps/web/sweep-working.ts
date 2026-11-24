@@ -5,7 +5,7 @@ import {
   READ_DONE,
   WRITE_DONE,
   WRITE_REFUSED_STORED,
-} from './src/harness/room/tool-fixtures.ts'
+} from './src/builder/conversation/tool-fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
 import type { Said } from './sweep-session.ts'

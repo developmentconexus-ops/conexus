@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { readStart, Start } from '../../../../../harness/room/public.ts'
+import { readStart, Start } from '../../../../../builder/conversation/public.ts'
 
 /** Step 4: Início's box, and the way to Início without asking for anything. */
 function Step() {

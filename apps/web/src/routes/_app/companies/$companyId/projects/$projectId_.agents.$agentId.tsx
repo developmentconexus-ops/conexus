@@ -6,7 +6,7 @@ import {
   AgentsReadFailure,
   agentParams,
   loadAgent,
-} from '../../../../../agents/saved-agent/public.ts'
+} from '../../../../../builder/agents/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
 
 // An agent's page: its conversations, its configuration and, between them, the conversation the address opens (the child route).

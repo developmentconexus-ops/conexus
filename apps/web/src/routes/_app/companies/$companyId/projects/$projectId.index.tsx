@@ -1,6 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { EmptyPanel } from '../../../../../agents/app-builder/public.ts'
-import { conversationsQuery } from '../../../../../harness/room/public.ts'
+import { conversationsQuery, EmptyPanel } from '../../../../../builder/conversation/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 
 // A Projeto opens on its latest conversation, read afresh; with none, the panel offers a new one.

@@ -5,7 +5,7 @@ import {
   RunsSearch,
   runsDeps,
   runsLoader,
-} from '../../../../../agents/assistant/public.ts'
+} from '../../../../../builder/automations/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
 import { RouteReadFailure } from '../../../../../ui/states.tsx'
 

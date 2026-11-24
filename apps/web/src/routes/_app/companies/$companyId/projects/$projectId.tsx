@@ -1,7 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
-import { Preview, Source, Workbench } from '../../../../../agents/app-builder/public.ts'
+import { Workbench } from '../../../../../builder/conversation/public.ts'
+import { Preview } from '../../../../../builder/preview/public.ts'
+import { Source } from '../../../../../builder/source/public.ts'
 import {
   Lens,
   ProjectArea,

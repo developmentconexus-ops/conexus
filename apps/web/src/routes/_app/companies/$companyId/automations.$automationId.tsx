@@ -5,7 +5,7 @@ import {
   RunsSearch,
   runsDeps,
   runsLoader,
-} from '../../../../agents/assistant/public.ts'
+} from '../../../../builder/automations/public.ts'
 import { RouteReadFailure } from '../../../../ui/states.tsx'
 
 // The history of one automation of the Início; one of the other floor, another person's or a deleted one is not found.

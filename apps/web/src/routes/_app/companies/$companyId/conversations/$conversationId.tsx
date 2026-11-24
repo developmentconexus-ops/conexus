@@ -3,8 +3,8 @@ import {
   AssistantChat,
   ConversationGone,
   loadAssistantConversation,
-} from '../../../../../agents/assistant/public.ts'
-import { conversationParams } from '../../../../../harness/room/public.ts'
+} from '../../../../../builder/assistant/public.ts'
+import { conversationParams } from '../../../../../builder/conversation/public.ts'
 
 // A conversation with the Assistant outside a Projeto, on the company's floor (web W29). One born in
 // a Projeto lives at that Projeto's address: here it is not found.
