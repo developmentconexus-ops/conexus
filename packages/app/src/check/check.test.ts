@@ -13,7 +13,14 @@ import { runCheck } from './run.ts'
 import type { CheckContext, Runner } from './step.ts'
 import { workOf } from './step.ts'
 import type { Files } from './test-app.ts'
-import { ANY_HANDLERS, appWith, contextOf, onTheMachine } from './test-app.ts'
+import {
+  ANY_HANDLERS,
+  appWith,
+  CONECTOR_NA_ENTRADA,
+  contextOf,
+  ENCOMENDAS_DEFEITO,
+  onTheMachine,
+} from './test-app.ts'
 
 async function reportOf(ctx: CheckContext): Promise<CheckReport> {
   const result = await runCheck(ctx)
@@ -304,4 +311,12 @@ test('sem Chromium ou com o passo acima de 60 s, a conferência não dá veredit
     browse: async () => ({ unavailable: 'Chromium did not start' }),
   })
   assert.deepEqual(unavailable, { state: 'platform', reason: 'Chromium did not start' })
+})
+
+test('os apps da conferência no navegador passam na da máquina: o defeito plantado e o conector na entrada só o navegador distingue (23)', async (t) => {
+  for (const files of [ENCOMENDAS_DEFEITO, CONECTOR_NA_ENTRADA]) {
+    const report = await reportOf(onTheMachine(t, files))
+    assert.equal(report.ok, true)
+    assert.ok(report.steps.every(({ state }) => state === 'passed' || state === 'informed'))
+  }
 })

@@ -1,11 +1,13 @@
 import { appContentSecurityPolicy } from '@conexus/app-contract'
 import type { AppEnvironment } from '@conexus/hub-api'
-import { APP_SESSION_HEADER } from '@conexus/hub-api'
+import { APP_SESSION_COOKIE, APP_SESSION_HEADER } from '@conexus/hub-api'
 
-/** The dispatcher's own cookies on an app's host; the app never reads nor sets one. */
+/**
+ * The dispatcher's own cookies on an app's host, `APP_SESSION_COOKIE` among them; the app never reads
+ * nor sets one.
+ */
 const COOKIE_PREFIX = '__Host-conexus-'
 export const BINDING_COOKIE = `${COOKIE_PREFIX}binding`
-export const APP_SESSION_COOKIE = `${COOKIE_PREFIX}app`
 
 /**
  * Who may frame a host: the Hub its Prévia; nobody the published app, or a host that is no app's

@@ -1,106 +1,14 @@
 import assert from 'node:assert/strict'
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { test } from 'node:test'
-import type { CheckReport } from '@conexus/app/check'
-import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
+import { CHECK_LIMITS } from '@conexus/app/check'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
-import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
+import type { Blocks } from './test-check.ts'
+import { CHECK, checkCalls, checking, FAILED, FIX, reportsIn, turnOf, WRITE } from './test-check.ts'
+import { answeredOf, asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
 import { partsOf, shownPartsOf, versionsOf } from './test-parts.ts'
 import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
-
-const WRITE = {
-  type: 'tool_use',
-  name: 'mastra_workspace_write_file',
-  input: { path: 'a.ts', content: 'x\n' },
-} as const
-const CHECK = { type: 'tool_use', name: 'conexus_check', input: {} } as const
-const FIX = {
-  type: 'tool_use',
-  name: 'mastra_workspace_execute_command',
-  input: { description: 'Rodando um teste', command: 'echo y >> a.ts' },
-} as const
-
-const PASSED: CheckReport = {
-  ok: true,
-  steps: STEP_NAMES.map((name) => ({ name, state: 'passed', problems: [] })),
-}
-/** `tipos` refuses a handler's answer (criterion 8); the steps after it are skipped. */
-const FAILED: CheckReport = {
-  ok: false,
-  steps: STEP_NAMES.map((name, at) => {
-    if (at < 2) return { name, state: 'passed', problems: [] }
-    if (at > 2) return { name, state: 'skipped', problems: [] }
-    const problem = { file: 'server/handlers.ts', line: 13, column: 5, code: 'TS2322' }
-    return { name, state: 'failed', problems: [{ ...problem, message: 'Type mismatch.' }] }
-  }),
-}
-
-/** What the machine's check does on each call, in order; past the plan, it passes. */
-type Plan = (CheckReport | 'platform')[]
-
-/**
- * The machine's check program, a script of the test's: the n-th call prints the n-th report of
- * the plan, or exits 2 as the program does when the machine fails it (Chromium absent, a step past
- * its minute). `calls` counts how many times it ran.
- */
-function checking(folder: string, plan: Plan) {
-  mkdirSync(folder, { recursive: true })
-  for (const [at, step] of plan.entries()) {
-    const file = join(folder, `check-${at + 1}`)
-    writeFileSync(file, step === 'platform' ? '' : JSON.stringify(step))
-  }
-  writeFileSync(join(folder, 'check-passed'), JSON.stringify(PASSED))
-  const program = join(folder, 'check')
-  writeFileSync(
-    program,
-    [
-      '#!/bin/sh',
-      `n=$(( $(cat '${folder}/check-count' 2>/dev/null || echo 0) + 1 ))`,
-      `echo $n > '${folder}/check-count'`,
-      `report='${folder}/check-'$n; [ -f "$report" ] || report='${folder}/check-passed'`,
-      '[ -s "$report" ] || exit 2',
-      'cat "$report"',
-    ].join('\n'),
-  )
-  chmodSync(program, 0o755)
-  function calls(): number {
-    const count = join(folder, 'check-count')
-    return existsSync(count) ? Number(readFileSync(count, 'utf8')) : 0
-  }
-  return { calls }
-}
-
-type Blocks = Extract<Reply, { kind: 'blocks' }>['blocks']
-
-/**
- * The model's turn: the first step's blocks, then text each time it is asked again; given a `fix`,
- * it answers each failed end of the turn with those blocks before it ends again.
- */
-function turnOf(blocks: Blocks, fix?: Blocks) {
-  const asked: Sent[] = []
-  function answer(call: Sent): Reply {
-    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
-    asked.push(call)
-    if (asked.length === 1 && blocks.length > 0) return { kind: 'blocks', blocks }
-    const told = reportsIn(call).length > 0 && asked.length % 2 === 1
-    if (fix !== undefined && told) return { kind: 'blocks', blocks: fix }
-    return { kind: 'text', text: 'Pronto.' }
-  }
-  return { asked, answer }
-}
-
-/** The reports the model read in one call: a tool's result, or the words of a failed end of the turn. */
-function reportsIn(call: Sent | undefined): unknown[] {
-  return (call?.texts ?? []).flatMap((text) => {
-    const at = text.indexOf('{"ok":')
-    if (at < 0) return []
-    return [JSON.parse(text.slice(at, text.lastIndexOf('}') + 1))]
-  })
-}
 
 test('conexus_check e o fim do turno dão o mesmo relatório; o fim que passa guarda a versão que montou (12, 13)', async (t) => {
   const model = turnOf([WRITE, CHECK])
@@ -198,39 +106,44 @@ test('uma pergunta encerra o turno: a versão fica sem veredito, nem a conferên
   ])
 })
 
-/** The `conexus_check` calls of a turn, each as its last `tool-invocation` part says it. */
-function checkCalls(events: Parameters<typeof partsOf>[0]) {
-  const last = new Map<
-    string,
-    Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
-  >()
-  for (const part of partsOf(events)) {
-    if (part.type === 'tool-invocation' && part.toolInvocation.toolName === 'conexus_check') {
-      last.set(part.toolInvocation.toolCallId, part.toolInvocation)
-    }
-  }
-  return [...last.values()]
-}
-
-const Reported = z.object({
-  ok: z.boolean(),
-  steps: z.array(z.object({ name: z.string(), state: z.string() })),
+const Checked = z.object({
+  kind: z.string(),
+  machine: z.object({
+    ok: z.boolean(),
+    steps: z.array(z.object({ name: z.string(), state: z.string() })),
+  }),
 })
 
-test('a chamada de conexus_check guarda o relatório como resultado; a máquina que não conferiu é um erro da chamada (33)', async (t) => {
-  const model = turnOf([WRITE, CHECK, CHECK])
+test('conexus_check que conferiu devolve o BuilderCheck, sem erro; a máquina ou o navegador que não puderam lançam CHECK_PLATFORM_FAILED (27)', async (t) => {
+  const model = turnOf([WRITE, CHECK, CHECK, CHECK])
   const { hub, ana, conversations } = await conversing(t, model.answer)
+  hub.builder.knobs.seeing = { ok: false, error: 'CONFER_PLATFORM_FAILED' }
   checking(hub.builder.folder, [FAILED, 'platform'])
-  const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
-  const [failed, unavailable] = checkCalls(events)
+  const { url, events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
+  const [failed, ...unchecked] = checkCalls(partsOf(events))
   assert.equal(failed?.state, 'result')
-  assert.deepEqual(Reported.parse(failed?.result), {
-    ok: false,
-    steps: FAILED.steps.map(({ name, state }) => ({ name, state })),
+  assert.notEqual(failed?.isError, true)
+  assert.deepEqual(Checked.parse(failed?.result), {
+    kind: 'MACHINE_FAILED',
+    machine: { ok: false, steps: FAILED.steps.map(({ name, state }) => ({ name, state })) },
   })
-  assert.equal(unavailable?.state, 'result')
-  assert.equal(Object(unavailable?.result).error, 'CHECK_PLATFORM_FAILED')
-  assert.equal(Reported.safeParse(unavailable?.result).success, false, 'no report to open')
+  const [machine, browser] = unchecked
+  assert.equal(unchecked.length, 2, 'the machine that failed and the browser that did')
+  for (const call of unchecked) {
+    assert.equal(call.state, 'result')
+    assert.equal(call.isError, true, 'live, the end of the tool is an error')
+    assert.equal(Checked.safeParse(call.result).success, false, 'no check to open')
+  }
+  assert.equal(hub.builder.knobs.conferred.browsed, 2, 'the third call and the end reached it')
+  const stored = checkCalls((await answeredOf(hub, ana, url)).flatMap((message) => message.parts))
+  assert.deepEqual(
+    stored.map((call) => call.state),
+    ['result', 'output-error', 'output-error'],
+  )
+  for (const call of [machine, browser]) {
+    const kept = stored.find((each) => each.toolCallId === call?.toolCallId)
+    assert.equal(kept?.errorText, 'CHECK_PLATFORM_FAILED')
+  }
 })
 
 const PLANNED = [

@@ -57,7 +57,8 @@ async function asLogin(owner: Owner, login: string, text: string) {
 test('banco do app: logins por SQL, nenhum superusuário; repetido após corte acha tudo e não migra duas vezes', async (t) => {
   const owner = await createCompanyDatabase(t)
   const id = projectId()
-  const { runLogin, migrateLogin } = appLogin(id)
+  const logins = appLogin(id)
+  const { runLogin, migrateLogin } = logins
   // A cut after the first login: the next run finds it and makes the rest.
   const cut = await appLoginPassword({ key: KEY.reveal(), login: migrateLogin })
   await pgTransport(
@@ -94,8 +95,8 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
     migrate: [],
   })
   const migrations = [MIGRATION]
-  assert.deepEqual(await postgres.migrate(owner, id, migrations), { kind: 'DONE', applied: 1 })
-  assert.deepEqual(await postgres.migrate(owner, id, migrations), { kind: 'DONE', applied: 0 })
+  assert.deepEqual(await postgres.migrate(owner, logins, migrations), { kind: 'DONE', applied: 1 })
+  assert.deepEqual(await postgres.migrate(owner, logins, migrations), { kind: 'DONE', applied: 0 })
   assert.deepEqual(
     await asLogin(owner, runLogin, "insert into recado (texto) values ('oi') returning id"),
     [{ id: '1' }],
@@ -104,7 +105,7 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
     refused: '42501',
   })
   const changed = [{ ...MIGRATION, statements: ['CREATE TABLE recado (texto text)'] }]
-  assert.deepEqual(await postgres.migrate(owner, id, changed), {
+  assert.deepEqual(await postgres.migrate(owner, logins, changed), {
     kind: 'CHANGED',
     id: MIGRATION.id,
   })
@@ -113,7 +114,7 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
     { id: '002_extra', statements: ['CREATE TABLE extra (v text)'] },
     { id: '003_quebrada', statements: ['INSERT INTO nada VALUES (1)'] },
   ]
-  assert.partialDeepStrictEqual(await postgres.migrate(owner, id, broken), {
+  assert.partialDeepStrictEqual(await postgres.migrate(owner, logins, broken), {
     kind: 'REFUSED',
     code: '42P01',
   })
@@ -123,8 +124,8 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
   })
   // Voltar to a version without a later migration: the repair finds nothing to do, not a change.
   const later = [MIGRATION, { id: '002_extra', statements: ['CREATE TABLE extra (v text)'] }]
-  assert.deepEqual(await postgres.migrate(owner, id, later), { kind: 'DONE', applied: 1 })
-  assert.deepEqual(await postgres.migrate(owner, id, migrations), { kind: 'DONE', applied: 0 })
+  assert.deepEqual(await postgres.migrate(owner, logins, later), { kind: 'DONE', applied: 1 })
+  assert.deepEqual(await postgres.migrate(owner, logins, migrations), { kind: 'DONE', applied: 0 })
 })
 
 test('banco do app: o login de execução corta uma instrução de 6 s com 57014; o de migração não tem prazo', async (t) => {
@@ -143,7 +144,8 @@ test('banco do app: os logins de um app não leem nem gravam no esquema de outro
   const [one, two] = [projectId(), projectId()]
   for (const id of [one, two]) {
     assert.equal((await postgres.ensureApp(owner, id)).kind, 'DONE')
-    assert.deepEqual(await postgres.migrate(owner, id, [MIGRATION]), { kind: 'DONE', applied: 1 })
+    const done = await postgres.migrate(owner, appLogin(id), [MIGRATION])
+    assert.deepEqual(done, { kind: 'DONE', applied: 1 })
   }
   const other = `"${appLogin(two).schema}".recado`
   for (const login of [appLogin(one).runLogin, appLogin(one).migrateLogin]) {
@@ -166,7 +168,8 @@ test('banco do app: os logins de um app não leem nem gravam no esquema de outro
 async function seeded(owner: Owner): Promise<ProjectId> {
   const id = projectId()
   assert.equal((await postgres.ensureApp(owner, id)).kind, 'DONE')
-  assert.deepEqual(await postgres.migrate(owner, id, [SEED]), { kind: 'DONE', applied: 1 })
+  const done = await postgres.migrate(owner, appLogin(id), [SEED])
+  assert.deepEqual(done, { kind: 'DONE', applied: 1 })
   return id
 }
 
@@ -179,7 +182,7 @@ async function outcomesOf(t: TestContext, outcome: Outcome) {
     const id = await seeded(owner)
     const before = await savedOf(owner, id)
     const migrations = [SEED, { id: '002_caso', statements: one.statements }]
-    const migrated = await postgres.migrate(owner, id, migrations)
+    const migrated = await postgres.migrate(owner, appLogin(id), migrations)
     // The names a refusal carries are proved through the send, in send-migrations.test.ts.
     const answer =
       migrated.kind === 'REFUSED' ? { kind: migrated.kind, code: migrated.code } : migrated
@@ -232,6 +235,7 @@ test('o banco recusa sozinho e nada muda', async (t) => {
 test('lista fixa: só passa o que a garantia vê', async (t) => {
   const owner = await createCompanyDatabase(t)
   const id = await seeded(owner)
+  const logins = appLogin(id)
   let calls = 0
   const counting = countingTransport(() => {
     calls++
@@ -242,7 +246,7 @@ test('lista fixa: só passa o que a garantia vê', async (t) => {
   for (const { name, statement, subject } of REFUSED_PROBES) {
     calls = 0
     const probe = { id: '002_sonda', statements: ['SELECT 1', statement] }
-    got[name] = { answer: await counted.migrate(owner, id, [SEED, probe]), calls }
+    got[name] = { answer: await counted.migrate(owner, logins, [SEED, probe]), calls }
     const rule = { migration: '002_sonda', statement: 2, subject }
     want[name] = { answer: { kind: 'REFUSED_BY_RULE', rule }, calls: 1 }
   }
@@ -251,7 +255,7 @@ test('lista fixa: só passa o que a garantia vê', async (t) => {
   for (const { name, statement } of ALLOWED_PROBES) {
     calls = 0
     const probe = { id: `003_${name.toLowerCase()}`, statements: [statement] }
-    const answer = await counted.migrate(owner, id, [SEED, probe])
+    const answer = await counted.migrate(owner, logins, [SEED, probe])
     reached[name] = answer.kind !== 'REFUSED_BY_RULE' && calls === 2
   }
   assert.deepEqual(reached, Object.fromEntries(ALLOWED_PROBES.map(({ name }) => [name, true])))
@@ -265,7 +269,7 @@ test('lista fixa: só passa o que a garantia vê', async (t) => {
     id: '003_whatsapp',
     statements: ['ALTER TABLE encomenda ADD COLUMN whatsapp text'],
   }
-  assert.deepEqual(await counted.migrate(owner, id, [SEED, view, next]), {
+  assert.deepEqual(await counted.migrate(owner, logins, [SEED, view, next]), {
     kind: 'DONE',
     applied: 1,
   })

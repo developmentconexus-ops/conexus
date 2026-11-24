@@ -9,6 +9,7 @@ import {
   signInFlows,
 } from './builder/model-accounts/public.ts'
 import type {
+  BuilderConfer,
   ConversationMachine,
   MachinesOf,
   MachineTuning,
@@ -137,6 +138,8 @@ export function subjectsOf(deps: {
   conversationMachine: ConversationMachine
   /** The tests' folder and start deadline for the conversations' machines (`test-runs.ts`). */
   machineTuning?: MachineTuning
+  /** The tests' double of the conference the check's browser opens (`test-runs.ts`); the apps' by default. */
+  confer?: BuilderConfer
   repository: RepositoryOf
   copy: GitCopy
   log: FailureLog
@@ -159,6 +162,10 @@ export function subjectsOf(deps: {
     repositories: () => repositoriesIn(config.gitRoot),
     // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
     send: (version) => apps.sendFromBuilder(version),
+    confer: deps.confer ?? {
+      open: (input) => apps.confer.open(input),
+      end: (input) => apps.confer.end(input),
+    },
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
   const { conversations, assistant, automations, agents } = conversationsOf({

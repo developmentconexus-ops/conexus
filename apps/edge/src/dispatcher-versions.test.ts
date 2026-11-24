@@ -58,3 +58,29 @@ test('o app não publicado tem a sua página: 404, sem chamar Worker algum', asy
   assert.equal(await pageText(response), '<h1>Este app ainda não foi publicado.</h1>')
   assert.equal(door.appCalls.length, 0)
 })
+
+test('conferência: o Worker c-<projectId> que o Hub nomeia recebe a chamada; outro prefixo é o Hub fora, sem Worker', async () => {
+  const check = {
+    ...VERSION_CALL,
+    version: { worker: `c-${CALLER.projectId}` },
+    database: { ...VERSION_CALL.database, login: `app_${CALLER.projectId}_check_run` },
+  }
+  const door = edge({ hub: () => Response.json(check) })
+  assert.equal((await door.fetch('/', { headers: LIVE })).status, 200)
+  assert.deepEqual(
+    door.appCalls.map((call) => call.name),
+    [`c-${CALLER.projectId}`],
+  )
+  const original = console.error
+  console.error = () => undefined
+  try {
+    const other = edge({
+      hub: () => Response.json({ ...VERSION_CALL, version: { worker: `x-${CALLER.projectId}` } }),
+    })
+    const refused = await other.fetch('/', { headers: LIVE })
+    assert.equal(refused.status, 503)
+    assert.equal(other.appCalls.length, 0)
+  } finally {
+    console.error = original
+  }
+})

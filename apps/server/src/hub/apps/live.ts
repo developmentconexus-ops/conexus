@@ -16,7 +16,10 @@ import { admitPublisher } from './send.ts'
 import { app } from './tables.ts'
 import { keptVersionOf, lockApp, versionView } from './versions.ts'
 
-/** What the connectors lack at the Projeto for the connectors and operations a manifest declares (grants.ts). */
+/**
+ * What the connectors lack at the Projeto for the connectors and operations a manifest declares
+ * (grants.ts).
+ */
 export type Ungranted = (
   tx: ReadTx,
   ids: OfProject,
@@ -38,7 +41,10 @@ export type PublishInput = {
   by: PersonId
 }
 
-/** Closes the Projeto's open request once another version, or the one asked, is published (step 24.3.4). */
+/**
+ * Closes the Projeto's open request once another version, or the one asked, is published
+ * (step 24.3.4).
+ */
 export type CloseRequests = (tx: CommandTx, input: PublishInput) => Promise<void>
 
 export type PublishDeps = { ungranted: Ungranted; closeRequests: CloseRequests; log: FailureLog }

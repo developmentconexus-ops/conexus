@@ -4,7 +4,9 @@ import { test } from 'node:test'
 import { APP_SESSION_HEADER, QUERY_SQL_MAX } from '@conexus/hub-api'
 import type { Hub } from '../identity/test-hub.ts'
 import { codeOf } from '../identity/test-hub.ts'
+import { opened } from './test-conference.ts'
 import { companyWithApps, ESTOQUE, PEDIDOS, PEDIDOS_PREVIA, sessionOf } from './test-handoff.ts'
+import { companyForVersions } from './test-versions.ts'
 
 const QUERY = 'select count(*) from sankhya_vendas'
 
@@ -137,5 +139,21 @@ test('sem linha, o aviso responde 503 e a borda manda de novo', async (t) => {
   assert.deepEqual(
     (await linesOf(hub, companyId)).map((line) => line.id),
     [body.id],
+  )
+})
+
+test('a consulta da conferência não escreve linha; a mesma na Prévia escreve a de hoje', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, companyId, projectId } = subject
+  const { session } = await opened(subject, ana)
+  const inCheck = await notice(hub, PEDIDOS, session, bodyOf())
+  assert.equal(inCheck.statusCode, 204, inCheck.body)
+  assert.deepEqual(await linesOf(hub, companyId), [])
+  const previa = await sessionOf(hub, ana, PEDIDOS_PREVIA)
+  assert.equal((await notice(hub, PEDIDOS_PREVIA, previa, bodyOf())).statusCode, 204)
+  const lines = await linesOf(hub, companyId)
+  assert.deepEqual(
+    lines.map((line) => [line.person_id, line.project_id, line.agent]),
+    [[ana.id, projectId, 'APP']],
   )
 })

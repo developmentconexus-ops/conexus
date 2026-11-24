@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import type { Manifest } from '@conexus/app-contract'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
-import type { ProjectId } from '@conexus/hub-api'
-import { appLogin, appLoginPassword } from '@conexus/hub-api'
+import type { AppLogins, ProjectId } from '@conexus/hub-api'
+import { appCheckLogin, appLogin, appLoginPassword } from '@conexus/hub-api'
 import { NeonDbError, neon, neonConfig, types } from '@neondatabase/serverless'
 import type { AppReadAnswer } from './app-read.ts'
 import { ensureReadLogin, readAddress, readApp, readGrants, readSettings } from './app-read.ts'
@@ -148,11 +148,15 @@ export type CompanyPostgres = {
   ): Promise<AppReadAnswer>
   /** The read login's address on the company's host, its password derived here and never kept. */
   readAddress(host: string, projectId: ProjectId): Promise<DatabaseUrl>
+  /** The conference's schema emptied: dropped and made again in one transaction, logins made. */
+  resetCheck(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
+  /** In the schema of `logins`: the Prévia's (`appLogin`) or the conference's (`appCheckLogin`). */
   migrate(
     owner: DatabaseUrl,
-    projectId: ProjectId,
+    logins: AppLogins,
     migrations: readonly AppMigration[],
   ): Promise<MigrateAnswer>
+  /** The app's schema and logins, and the conference's. */
   dropApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
 }
 
@@ -180,9 +184,11 @@ async function asLogin(context: Context, owner: DatabaseUrl, login: string): Pro
  * transaction timeout would cut a version's one migration transaction (decision 0046), so the
  * repair takes back the statement timeout step 9 gave it.
  */
-function schemaStatements(projectId: ProjectId): SqlStatement[] {
-  const { schema, runLogin, migrateLogin } = appLogin(projectId)
-  const [s, run, migrate] = [schema, runLogin, migrateLogin].map(quoted)
+function schemaStatements(
+  logins: AppLogins,
+  read: Readonly<{ settings: SqlStatement[]; grants: SqlStatement[] }>,
+): SqlStatement[] {
+  const [s, run, migrate] = [logins.schema, logins.runLogin, logins.migrateLogin].map(quoted)
   return [
     { text: `GRANT ${migrate} TO CURRENT_USER WITH INHERIT FALSE, SET TRUE` },
     { text: `CREATE SCHEMA IF NOT EXISTS ${s} AUTHORIZATION ${migrate}` },
@@ -191,7 +197,7 @@ function schemaStatements(projectId: ProjectId): SqlStatement[] {
     { text: `ALTER ROLE ${run} SET statement_timeout = ${APP_CALL_LIMITS.statementTimeoutMs}` },
     { text: `ALTER ROLE ${run} SET transaction_timeout = ${APP_CALL_LIMITS.transactionTimeoutMs}` },
     { text: `ALTER ROLE ${migrate} RESET statement_timeout` },
-    ...readSettings(projectId),
+    ...read.settings,
     { text: `SET LOCAL ROLE ${migrate}` },
     {
       text: `CREATE TABLE IF NOT EXISTS ${s}.${LEDGER} (id text PRIMARY KEY, sha256 text NOT NULL,
@@ -202,7 +208,7 @@ function schemaStatements(projectId: ProjectId): SqlStatement[] {
       text: `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${run}`,
     },
     { text: `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} GRANT USAGE, SELECT ON SEQUENCES TO ${run}` },
-    ...readGrants(projectId),
+    ...read.grants,
   ]
 }
 
@@ -216,7 +222,46 @@ async function ensureApp(
   const { runLogin, migrateLogin, readLogin } = appLogin(projectId)
   const created = await missingLogins(context, owner, [migrateLogin, runLogin, readLogin], signal)
   if (!Array.isArray(created)) return created
-  return context.transport(owner, [...created, ...schemaStatements(projectId)], signal)
+  const read = { settings: readSettings(projectId), grants: readGrants(projectId) }
+  const made = schemaStatements(appLogin(projectId), read)
+  return context.transport(owner, [...created, ...made], signal)
+}
+
+/** Drops the schema as its owner, the migration login, which the server's owner holds by SET. */
+function schemaDropped(logins: AppLogins): SqlStatement[] {
+  return [
+    { text: `SET LOCAL ROLE ${quoted(logins.migrateLogin)}` },
+    { text: `DROP SCHEMA IF EXISTS ${quoted(logins.schema)} CASCADE` },
+    { text: 'RESET ROLE' },
+  ]
+}
+
+/**
+ * The conference's schema empty, in one transaction: its two logins made when missing and held by
+ * the owner, so the drop can run as the migration login, then the schema made again without the
+ * read login's statements, since no agent reads it.
+ */
+async function resetCheck(
+  context: Context,
+  owner: DatabaseUrl,
+  projectId: ProjectId,
+): Promise<SqlAnswer> {
+  const signal = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
+  const logins = appCheckLogin(projectId)
+  const created = await missingLogins(
+    context,
+    owner,
+    [logins.migrateLogin, logins.runLogin],
+    signal,
+  )
+  if (!Array.isArray(created)) return created
+  const held = `GRANT ${quoted(logins.migrateLogin)} TO CURRENT_USER WITH INHERIT FALSE, SET TRUE`
+  const made = schemaStatements(logins, { settings: [], grants: [] })
+  return context.transport(
+    owner,
+    [...created, { text: held }, ...schemaDropped(logins), ...made],
+    signal,
+  )
 }
 
 /**
@@ -228,10 +273,10 @@ async function ensureApp(
  */
 async function migrate(
   context: Context,
-  input: { owner: DatabaseUrl; projectId: ProjectId; migrations: readonly AppMigration[] },
+  input: { owner: DatabaseUrl; logins: AppLogins; migrations: readonly AppMigration[] },
 ): Promise<MigrateAnswer> {
   const signal = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
-  const { schema, migrateLogin } = appLogin(input.projectId)
+  const { schema, migrateLogin } = input.logins
   const ledger = `${quoted(schema)}.${LEDGER}`
   const url = await asLogin(context, input.owner, migrateLogin)
   const read = await context.transport(url, [{ text: `SELECT id, sha256 FROM ${ledger}` }], signal)
@@ -264,30 +309,27 @@ async function migrate(
   return ran.kind === 'DONE' ? { kind: 'DONE', applied: pending.length } : ran
 }
 
-/** The schema with every table of the app, then its three logins; what is already gone is skipped. */
+/**
+ * The app's schema and the conference's, each with every table, then their five logins; what is
+ * already gone is skipped.
+ */
 async function dropApp(
   context: Context,
   owner: DatabaseUrl,
   projectId: ProjectId,
 ): Promise<SqlAnswer> {
   const signal = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
-  const { schema, runLogin, migrateLogin, readLogin } = appLogin(projectId)
-  const roles = await existingRoles(context, owner, [migrateLogin, runLogin], signal)
+  const app = appLogin(projectId)
+  const check = appCheckLogin(projectId)
+  const owned = [app, check]
+  const roles = await existingRoles(context, owner, [app.migrateLogin, check.migrateLogin], signal)
   if (roles.kind !== 'DONE') return roles
-  const schemaGone: SqlStatement[] = roles.names.has(migrateLogin)
-    ? [
-        { text: `SET LOCAL ROLE ${quoted(migrateLogin)}` },
-        { text: `DROP SCHEMA IF EXISTS ${quoted(schema)} CASCADE` },
-        { text: 'RESET ROLE' },
-      ]
-    : []
+  const logins = [app.readLogin, ...owned.flatMap((one) => [one.runLogin, one.migrateLogin])]
   return context.transport(
     owner,
     [
-      ...schemaGone,
-      { text: `DROP ROLE IF EXISTS ${quoted(readLogin)}` },
-      { text: `DROP ROLE IF EXISTS ${quoted(runLogin)}` },
-      { text: `DROP ROLE IF EXISTS ${quoted(migrateLogin)}` },
+      ...owned.filter((one) => roles.names.has(one.migrateLogin)).flatMap(schemaDropped),
+      ...logins.map((login) => ({ text: `DROP ROLE IF EXISTS ${quoted(login)}` })),
     ],
     signal,
   )
@@ -308,7 +350,8 @@ export function createCompanyPostgres(deps: {
     ensureReadLogin: (owner, projectId) => ensureReadLogin(context, owner, projectId),
     readApp: (read, statements, signal) => readApp(context, read, statements, signal),
     readAddress: (host, projectId) => readAddress(context, host, projectId),
-    migrate: (owner, projectId, migrations) => migrate(context, { owner, projectId, migrations }),
+    resetCheck: (owner, projectId) => resetCheck(context, owner, projectId),
+    migrate: (owner, logins, migrations) => migrate(context, { owner, logins, migrations }),
     dropApp: (owner, projectId) => dropApp(context, owner, projectId),
   })
 }

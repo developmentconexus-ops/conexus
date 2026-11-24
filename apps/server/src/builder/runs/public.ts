@@ -1,4 +1,4 @@
-export type { Settled } from './context.ts'
+export type { BuilderCheck, BuilderConfer, Settled } from './context.ts'
 export { conversationIn } from './keys.ts'
 export type { ConversationMachine, MachinesOf, MachineTuning, RepositoryOf } from './ports.ts'
 export { builderPortsOf } from './ports.ts'

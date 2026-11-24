@@ -1,4 +1,6 @@
+import type { CheckReport } from '@conexus/app/check'
 import type {
+  AppSessionToken,
   CompanyId,
   ConversationId,
   PersonId,
@@ -9,10 +11,17 @@ import type {
 } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { Workspace } from '@mastra/core/workspace'
+import type { Conference } from '../../hub/apps/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import type { Result } from '../../platform/result.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
-import type { Machines, VersionFolder } from '../machine/public.ts'
+import type {
+  BrowserReport,
+  ConferPlatformFailed,
+  Machines,
+  VersionFolder,
+} from '../machine/public.ts'
 
 /**
  * Sends a turn's version to the Projeto's app as the person of the turn (step 14.1): whether it
@@ -27,6 +36,34 @@ type BuilderSend = (input: {
   folder: VersionFolder
 }) => Promise<PreviewData | undefined>
 
+/**
+ * Opens the Projeto's app for the check's browser as the person of the turn, with the version the
+ * machine just built, and ends the session it gave once the browser is done.
+ */
+export type BuilderConfer = {
+  open(input: {
+    companyId: CompanyId
+    projectId: ProjectId
+    personId: PersonId
+    folder: VersionFolder
+  }): Promise<Result<Conference, ConferPlatformFailed>>
+  end(input: { session: AppSessionToken }): Promise<void>
+}
+
+/**
+ * What the check of a turn found: the machine's check failed (the browser never ran), the app did
+ * not open for the browser, the Projeto has no address to open, or the browser saw the entry screen.
+ */
+export type BuilderCheck =
+  | { kind: 'MACHINE_FAILED'; machine: CheckReport }
+  | {
+      kind: 'CONFERENCE_REFUSED'
+      machine: CheckReport
+      conference: Exclude<Conference, { kind: 'OPENED' | 'NO_ADDRESS' }>
+    }
+  | { kind: 'NO_ADDRESS'; machine: CheckReport }
+  | { kind: 'SEEN'; machine: CheckReport; browser: BrowserReport }
+
 export type RunsDeps = {
   database: Database
   machines: Machines
@@ -37,6 +74,7 @@ export type RunsDeps = {
   repositories: () => Promise<{ companyId: CompanyId; projectId: ProjectId }[]>
   log: FailureLog
   send: BuilderSend
+  confer: BuilderConfer
 }
 
 /** What the runs share: the ports and the copies' retry. */
@@ -97,6 +135,8 @@ export type Driven = {
   stopped: boolean
   /** What the run keeps open while it writes, let go when it ends. */
   ends: Array<() => void>
+  /** The run's last check: the next waits for it, as they share the machine's network and browser and the Hub's test environment. */
+  checking: Promise<unknown>
   /** The run's end in progress: its save and the machine let go. */
   saving: Promise<unknown> | undefined
 }

@@ -121,6 +121,14 @@ const PASSED: CheckReport = {
  * turn sends it. Returns once the conversation says whether it reached the app.
  */
 export async function builderSends(s: Scenario, pedidos: string, folder: string) {
+  await builderAsked(s, pedidos, folder)
+  await transcriptOf(s.owner.page)
+    .getByText(/^Prévia (pronta\.|não atualizada: )/)
+    .waitFor()
+}
+
+/** Ana's request of `builderSends`, with the machine's check set up; returns once the turn is asked. */
+export async function builderAsked(s: Scenario, pedidos: string, folder: string) {
   const machine = s.hub.machineFolder
   mkdirSync(machine, { recursive: true })
   writeFileSync(join(machine, 'check-passed.json'), JSON.stringify(PASSED))
@@ -142,9 +150,6 @@ export async function builderSends(s: Scenario, pedidos: string, folder: string)
   await page.getByRole('combobox', { name: 'Conversas' }).waitFor()
   await openConversation(page, () => page.getByRole('button', { name: 'Nova conversa' }).click())
   await ask(page, `${ASK}${folder} ${Date.now()}`)
-  await transcriptOf(page)
-    .getByText(/^Prévia (pronta\.|não atualizada: )/)
-    .waitFor()
 }
 
 /** The Hub's handoff, asked as the browser that holds Ana's Hub session would ask it. */

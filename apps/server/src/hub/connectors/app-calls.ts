@@ -44,8 +44,10 @@ function cutForApp(answered: Exclude<ReadAnswer, { kind: 'NOT_IN_ROLE' }>): Conn
   }
 }
 
+type Granting = Extract<ConnectorCall, { kind: 'CALL' }>
+
 /** The Projeto's connections of a connector that are ACTIVE, oldest first. */
-function grantedTo(call: ConnectorCall, connector: string) {
+function grantedTo(call: Granting, connector: string) {
   const { companyId, projectId } = call.ids
   const scope = scopeOf({ person: { id: call.caller.personId }, companyId })
   function rows(tx: ReadTx) {
@@ -69,13 +71,15 @@ function grantedTo(call: ConnectorCall, connector: string) {
  * The app's read through a connector (step 20): the app's session by the apps' door, then in one
  * short transaction the grant and the seal (D22), then the call with no connection held. Every
  * refusal of admission is the same NOT_GRANTED (S10): not declared by the version, not the kit's, not
- * a read, not released, ambiguous without a name, or a key that must be connected again.
+ * a read, not released, ambiguous without a name, or a key that must be connected again. A
+ * conference's call reads nothing: no connection is released to it.
  */
 export function createAppCalls(deps: Deps, door: AppDoorPort) {
   return {
     async call(input: Call): Promise<ConnectorAnswer> {
       const { body } = input
       const call = await door(input)
+      if (call.kind === 'CHECK') return NOT_GRANTED
       const declared = call.manifest.connectors?.find((one) => one.connector === body.connector)
       const connector = connectorOf(body.connector)
       const operation = connector === undefined ? undefined : readOf(connector, body.operation)
@@ -123,6 +127,7 @@ export function createAppCalls(deps: Deps, door: AppDoorPort) {
     /** The names the app may pass as `connection`; none for a connector its version did not declare. */
     async names(input: { host: AppHost; headers: Headers; connector: string }) {
       const call = await door(input)
+      if (call.kind === 'CHECK') return []
       if (call.manifest.connectors?.some((one) => one.connector === input.connector) !== true)
         return []
       const { scope, rows } = grantedTo(call, input.connector)

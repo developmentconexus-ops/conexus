@@ -1,4 +1,5 @@
 export type { CheckPlatformFailed } from './check.ts'
+export type { BrowserReport, ConferPlatformFailed } from './confer.ts'
 export type { ConversationMachines, MachineTuning } from './conversation.ts'
 export { createConversationMachines } from './conversation.ts'
 export { locate, withFile } from './conversation-file.ts'

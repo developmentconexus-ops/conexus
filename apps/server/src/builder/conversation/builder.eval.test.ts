@@ -1,15 +1,22 @@
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
+import { existsSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { CHECK_LIMITS } from '@conexus/app/check'
+import { ENCOMENDAS_DEFEITO } from '@conexus/app/check/test-app'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { MastraDBMessage } from '@mastra/core/agent'
 import { checks } from '@mastra/evals/checks'
 import type { Hub } from '../../hub/identity/test-hub.ts'
+import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { REAL_MODEL } from '../assistant/test-real-model.ts'
 import { APP_FOLDER } from '../machine/public.ts'
+import { moveMain } from '../machine/test-machine.ts'
+import { cloudHub, cloudSwitches } from './test-cloud-hub.ts'
 import { asked, conversing, endOf, title } from './test-conversation.ts'
+import { shownPartsOf, versionsOf } from './test-parts.ts'
 
 const WRITE = 'mastra_workspace_write_file'
 const PAGE = { path: 'pagina.html', content: '<h1>Padaria</h1>\n' }
@@ -134,4 +141,59 @@ test('o portão do Builder: uma senha colada na conversa não vai a arquivo nem 
   const output = await savedMessages(hub.test.mastraPool)
   assert.deepEqual(toolsCalled(output), [])
   assert.equal(existsSync(join(hub.builder.folder, 'app', 'db.ts')), false)
+})
+
+const OPT_IN =
+  "opt-in: the real-model case of the planted defect runs at the cloud checkpoint: set CONEXUS_EVAL_REAL_MODEL to the folder its report goes to, CONEXUS_EVAL_CLAUDE_CREDENTIAL to the test model account's kept Claude login (or sign in through the folder) and CONEXUS_EVAL_CLOUD_ENV to the installation's env file, all outside the repository (see cloudHub)"
+
+type CloudHub = Awaited<ReturnType<typeof cloudHub>>
+
+const REQUEST = 'Confira e entregue o app'
+
+/** The Projeto's `main` holds the app with the planted defect, as a version that came before this conversation. */
+async function seeded(hub: Hub, companyId: string, projectId: string): Promise<void> {
+  const ids = { companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) }
+  await hub.builder.repository(ids).ensure()
+  const gitDir = join(hub.config.gitRoot, companyId, `${projectId}.git`)
+  for (const [path, text] of Object.entries(ENCOMENDAS_DEFEITO)) moveMain(gitDir, path, text)
+}
+
+/** One run of the real Builder on a fresh Projeto with the planted app: what each check said, how it ended and in how many rounds. */
+async function defective(t: TestContext, cloud: CloudHub, name: string) {
+  const { hub, ana, companyId } = cloud
+  const made = await post(hub, ana, `/api/companies/${companyId}/projects`, { name })
+  assert.equal(made.statusCode, 201, made.body)
+  const projectId = String(Object(made.json()).project.id)
+  await seeded(hub, companyId, projectId)
+  const conversations = `/api/companies/${companyId}/projects/${projectId}/conversations`
+  const { events } = await asked(t, { hub, person: ana, conversations }, REQUEST)
+  const [ended] = hub.lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED').slice(-1)
+  const rounds = Number(ended?.fields.rounds)
+  const versions = versionsOf(shownPartsOf(events))
+  const said = events.flatMap((event) =>
+    event.type === 'task_complete_evaluation' ? [event.payload] : [],
+  )
+  const [saved] = versions.slice(-1)
+  const ok = saved?.check === undefined ? false : Object(saved.check).state === 'passed'
+  return { ok: ok && rounds <= CHECK_LIMITS.checks, rounds, versions, said, end: endOf(events) }
+}
+
+test('o defeito plantado: o Builder de verdade, com o pedido "Confira e entregue o app", termina com a conferência passed em até as voltas do limite, com a versão salva (18)', {
+  timeout: 7_200_000,
+}, async (t) => {
+  const switches = cloudSwitches()
+  if (REAL_MODEL === undefined || switches === undefined) {
+    t.skip(OPT_IN)
+    return
+  }
+  const cloud = await cloudHub(t, switches, REAL_MODEL)
+  const runs: Awaited<ReturnType<typeof defective>>[] = []
+  for (let attempt = 1; attempt <= 2 && !runs.some((run) => run.ok); attempt += 1) {
+    runs.push(await defective(t, cloud, `Encomendas ${attempt}`))
+  }
+  writeFileSync(join(REAL_MODEL, 'defeito-plantado.json'), JSON.stringify({ runs }, null, 2))
+  assert.ok(
+    runs.some((run) => run.ok),
+    `no run ended passed within ${CHECK_LIMITS.checks} rounds: ${JSON.stringify(runs)}`,
+  )
 })

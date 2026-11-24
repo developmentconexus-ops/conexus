@@ -22,7 +22,6 @@ import {
 
 const ROOT = resolve(import.meta.dirname, '../../../../..')
 export const TOKEN = AppSessionToken.parse(`Tok3n${'x'.repeat(38)}`)
-export const COOKIE = '__Host-conexus-app'
 export const MARK = 'marca-da-pagina-9f3c'
 
 const Browsers = z.object({

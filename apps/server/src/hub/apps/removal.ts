@@ -1,5 +1,5 @@
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import { AppVersionId, appWorkerOf } from '@conexus/hub-api'
+import type { CompanyId } from '@conexus/hub-api'
+import { AppVersionId, appCheckWorkerOf, appWorkerOf, ProjectId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { CloudflareApps } from '../../platform/cloudflare.ts'
 import { removeWorkers } from '../../platform/cloudflare.ts'
@@ -62,9 +62,10 @@ async function dropAppDatabase(deps: RemovalDeps, input: Ids & { scope: Scope })
 }
 
 /**
- * Deletes a Projeto's app outside any transaction (data D22): every version's Worker, then its
- * schema and logins, and only then its rows and the bytes no other version names. What Cloudflare
- * or Neon did not confirm leaves the Projeto marked, for the repair at start to finish.
+ * Deletes a Projeto's app outside any transaction (data D22): every version's Worker and its
+ * conference Worker, then its schema and logins and the conference's, and only then its rows and
+ * the bytes no other version names. What Cloudflare or Neon did not confirm leaves the Projeto
+ * marked, for the repair at start to finish.
  */
 export async function removeProjectApp(
   deps: RemovalDeps,
@@ -85,11 +86,13 @@ export async function removeProjectApp(
   // A Projeto never sent a version has no app: nothing in Cloudflare or its database.
   if (found === undefined) return 'DONE'
   const versions = found
-  const { left } = await removeWorkers(
+  const { left: versionsLeft } = await removeWorkers(
     deps.cloudflare,
     versions.map(({ id }) => AppVersionId.parse(id)),
     appWorkerOf,
   )
+  const { left: checkLeft } = await removeWorkers(deps.cloudflare, [projectId], appCheckWorkerOf)
+  const left = versionsLeft + checkLeft
   if (left > 0 || !(await dropAppDatabase(deps, input))) {
     deps.log.error({ companyId, projectId, workersLeft: left }, 'PROJECT_APP_DELETE_LEFT')
     return 'LEFT'
@@ -112,8 +115,9 @@ export async function removeProjectApp(
 }
 
 /**
- * Removes every Worker of a company the Central deletes, before its database in Neon goes with
- * the apps' schemas (code C8); any Worker left keeps the deletion pending.
+ * Removes every Worker of a company the Central deletes, its versions' and its Projetos'
+ * conference Workers, before its database in Neon goes with the apps' schemas (code C8); any
+ * Worker left keeps the deletion pending.
  */
 export async function removeCompanyWorkers(
   deps: RemovalDeps,
@@ -121,11 +125,15 @@ export async function removeCompanyWorkers(
 ): Promise<void> {
   // Read after the mark: a send that still holds its claim may yet upload its Worker, so the
   // deletion waits for it; any later send sees the mark and stops (code C65).
-  const { versions, sending } = await deps.database.read(input.scope, async (tx) => ({
+  const { versions, apps, sending } = await deps.database.read(input.scope, async (tx) => ({
     versions: await tx
       .select({ id: appVersion.id })
       .from(appVersion)
       .where(eq(appVersion.companyId, input.companyId)),
+    apps: await tx
+      .select({ projectId: app.projectId })
+      .from(app)
+      .where(eq(app.companyId, input.companyId)),
     sending: await tx
       .select({ projectId: app.projectId })
       .from(app)
@@ -135,7 +143,12 @@ export async function removeCompanyWorkers(
     throw new Failure('CLIENT_DELETION_PENDING', { details: { sending: sending.length } })
   }
   const ids = versions.map(({ id }) => AppVersionId.parse(id))
-  const { left } = await removeWorkers(deps.cloudflare, ids, appWorkerOf)
+  const projectIds = apps.map(({ projectId }) => ProjectId.parse(projectId))
+  const removed = [
+    await removeWorkers(deps.cloudflare, ids, appWorkerOf),
+    await removeWorkers(deps.cloudflare, projectIds, appCheckWorkerOf),
+  ]
+  const left = removed.reduce((sum, one) => sum + one.left, 0)
   if (left > 0) throw new Failure('CLIENT_DELETION_PENDING', { details: { workersLeft: left } })
 }
 

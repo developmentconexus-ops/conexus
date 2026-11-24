@@ -69,6 +69,8 @@ const LOGIN_FILES = {
 export const OPENAI_LOGIN = LOGIN_FILES.openai
 /** The file that holds an Anthropic API key, named by its switch, outside the repository; its content is never printed. */
 export const API_KEY_FILE = env.CONEXUS_EVAL_ANTHROPIC_API_KEY_FILE
+/** The installation's env file of the cloud checkpoint's case (`test-cloud-hub.ts`), outside the repository. */
+export const CLOUD_ENV_FILE = env.CONEXUS_EVAL_CLOUD_ENV
 /** A small spreadsheet of sales by seller the API key's case attaches, outside the repository. */
 export const XLSX_FILE = env.CONEXUS_EVAL_XLSX
 
@@ -287,6 +289,23 @@ async function signIn(on: {
     const linked = await post(hub, ana, `${company}/model-account-sign-ins/${signInId}`, { code })
     assert.equal(linked.statusCode, 201, linked.body)
   }
+}
+
+/** The company's Claude subscription, signed in by the routes as a person signs in, as its default model. */
+export async function claudeSubscribed(on: {
+  t: TestContext
+  hub: Hub
+  ana: Person
+  companyId: string
+  folder: string
+}) {
+  const company = `/api/companies/${on.companyId}`
+  await signIn({ ...on, company, provider: 'claude' })
+  const model = chosenIn('claude')
+  assert.equal(
+    (await call(on.hub, on.ana, 'PUT', `${company}/default-model`, model)).statusCode,
+    200,
+  )
 }
 
 /** A Hub that calls the real model, through a Claude or ChatGPT subscription signed in by the routes, as a person signs in. */

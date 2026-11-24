@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { COOKIE, confer, conferring, FAILED, stubBrowser, TOKEN } from './test-confer.ts'
+import { APP_SESSION_COOKIE } from '@conexus/hub-api'
+import { confer, conferring, FAILED, stubBrowser, TOKEN } from './test-confer.ts'
 import { CONVERSATION, world } from './test-machine.ts'
 
 test('Machines.confer: a rede abre só para o host do app durante os comandos e volta no fim, o token só no arquivo', async (t) => {
@@ -30,7 +31,7 @@ test('Machines.confer: a rede abre só para o host do app durante os comandos e 
     ],
   )
   assert.ok(commands[1]?.includes('--url https://localhost:4433/'))
-  assert.deepEqual(JSON.parse(stub.cookies()), [{ name: COOKIE, value: TOKEN }])
+  assert.deepEqual(JSON.parse(stub.cookies()), [{ name: APP_SESSION_COOKIE, value: TOKEN }])
   assert.ok(!commands.join('\n').includes(TOKEN))
   assert.ok(!machine.lines.join('\n').includes(TOKEN))
   assert.deepEqual(
@@ -86,4 +87,17 @@ test('Machines.confer: uma conversa que nenhuma volta abriu é CONFER_PLATFORM_F
   const at = { url: new URL('https://localhost:4433'), session: TOKEN }
   assert.deepEqual(await machines.confer({ conversationId: CONVERSATION, at }), FAILED)
   assert.deepEqual(control.names, [])
+})
+
+test('Machines.confer: uma rede que não fechou fecha de novo no próximo uso da máquina', async (t) => {
+  const stub = stubBrowser(t)
+  const machine = await conferring(t, stub.program)
+  const at = { url: new URL('https://localhost:4433'), session: TOKEN }
+  machine.control.closeFails = 1
+  assert.ok((await confer(machine, at)).ok)
+  assert.ok(machine.lines.join('\n').includes('MACHINE_NETWORK_CLOSE_FAILED'))
+  assert.deepEqual(machine.control.networkOpenTo, ['localhost'])
+  await machine.machines.changed({ conversationId: CONVERSATION })
+  assert.equal(machine.control.networkOpenTo, undefined)
+  assert.equal(machine.control.networkClosed, 1)
 })

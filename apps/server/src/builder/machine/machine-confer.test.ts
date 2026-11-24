@@ -4,11 +4,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { WORK_FOLDER } from '@conexus/app/check'
+import { APP_SESSION_COOKIE } from '@conexus/hub-api'
 import { z } from 'zod'
 import {
   app,
   appServer,
-  COOKIE,
   confer,
   conferring,
   FAILED,
@@ -40,7 +40,7 @@ test('Machines.confer: a tela que chama uma operação que dá 500 é DIRTY, com
   assert.equal(value.shot, `${WORK_FOLDER}/tela.png`)
   const shot = readFileSync(join(machine.folder, 'app', value.shot))
   assert.equal(shot.subarray(1, 4).toString(), 'PNG')
-  assert.equal(seen[0]?.cookie, `${COOKIE}=${TOKEN}`)
+  assert.equal(seen[0]?.cookie, `${APP_SESSION_COOKIE}=${TOKEN}`)
   assert.ok(!machine.lines.join('\n').includes(MARK))
   assert.ok(!machine.lines.join('\n').includes(TOKEN))
   assert.equal(machine.control.networkOpenTo, undefined)
@@ -57,6 +57,26 @@ test('Machines.confer: a tela que só desenha é CLEAN, mesmo com um pedido a ou
   assert.ok(result.ok, machine.lines.join('\n'))
   assert.equal(result.value.kind, 'CLEAN')
   assert.ok(result.value.console.some((line) => line.includes(MARK)))
+})
+
+test('Machines.confer: a entrada que lê um conector sem conexão mostra "Sem conexão" e é CLEAN, com a captura', async (t) => {
+  const page = app(
+    `fetch('/api/listarPedidos',{method:'POST'}).then((r)=>r.json()).then((d)=>{if(d.estado==='SEM_CONEXAO')document.body.append('Sem conexão')})`,
+  )
+  const { at, seen } = await appServer(t, (request, response) => {
+    if (request.url !== '/api/listarPedidos') return page(request, response)
+    response
+      .writeHead(200, { 'content-type': 'application/json' })
+      .end(JSON.stringify({ estado: 'SEM_CONEXAO' }))
+  })
+  const program = realBrowser(t)
+  const machine = await conferring(t, program)
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
+  assert.equal(result.value.kind, 'CLEAN')
+  assert.ok(seen.some(({ method, url }) => method === 'POST' && url === '/api/listarPedidos'))
+  const shot = readFileSync(join(machine.folder, 'app', result.value.shot))
+  assert.equal(shot.subarray(1, 4).toString(), 'PNG')
 })
 
 test('Machines.confer: reprova o pedido ao host do app com 400 ou mais, ou sem resposta; o 200 não', async (t) => {

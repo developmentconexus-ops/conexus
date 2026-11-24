@@ -26,6 +26,7 @@ export {
 } from './app-login.ts'
 export {
   APP_OPEN_PATH,
+  APP_SESSION_COOKIE,
   APP_SESSION_HEADER,
   AppCall,
   AppCaller,

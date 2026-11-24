@@ -1,5 +1,6 @@
 import type { Manifest } from '@conexus/app-contract'
 import type {
+  AppLogins,
   AppVersionFailure,
   CompanyId,
   MigrationCause,
@@ -68,15 +69,25 @@ export async function openAppDatabase(
 }
 
 /**
- * The version's pending migrations, all or none (decision 0046); a refusal keeps its code and the
- * names it carries, never a value (code C52).
+ * The version's pending migrations in the schema of `logins`, the Prévia's or the conference's, all
+ * or none (decision 0046); a refusal keeps its code and the names it carries, never a value (C52).
  */
 export async function migrateApp(
   deps: AppDatabaseDeps,
-  input: { owner: DatabaseUrl; companyId: CompanyId; projectId: ProjectId; manifest: Manifest },
+  input: {
+    owner: DatabaseUrl
+    companyId: CompanyId
+    projectId: ProjectId
+    logins: AppLogins
+    manifest: Manifest
+  },
 ): Promise<{ failure: AppVersionFailure; cause?: MigrationCause } | undefined> {
   const { companyId, projectId } = input
-  const ran = await deps.companyPostgres.migrate(input.owner, projectId, input.manifest.migrations)
+  const ran = await deps.companyPostgres.migrate(
+    input.owner,
+    input.logins,
+    input.manifest.migrations,
+  )
   switch (ran.kind) {
     case 'DONE':
       if (ran.applied > 0)

@@ -3,10 +3,12 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { connectorOf } from '@conexus/connectors'
 import { APP_SESSION_HEADER, CompanyId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
+import { opened } from '../apps/test-conference.ts'
 import { PEDIDOS_PREVIA, sessionOf } from '../apps/test-handoff.ts'
 import { folder } from '../apps/test-versions.ts'
 import { call } from '../identity/test-hub.ts'
-import { appCalls, READS, readOf } from './test-app-calls.ts'
+import { appCalls, READS, readOf, sankhyaDoor } from './test-app-calls.ts'
 import { testOf } from './test-connections.ts'
 
 test('a porta da borda: com sessão e a ligação liberada o app lê e recebe OK com as linhas', async (t) => {
@@ -155,4 +157,28 @@ test('o app lê como o Projeto: a dona da sessão sem empresas no papel ainda re
   const read = await on.read()
   assert.equal(read.statusCode, 200, read.body)
   assert.equal(Object(read.json()).kind, 'OK')
+})
+
+test('na conferência o app recebe NOT_GRANTED e nenhuma conexão, sem chamar o conector; a mesma pessoa na Prévia segue lendo', async (t) => {
+  const door = sankhyaDoor(t)
+  const on = await appCalls(t, { through: door.through })
+  await on.connect('Matriz')
+  const [neonProject] = on.hub.neon.projects()
+  assert.ok(neonProject)
+  on.hub.neon.ownedBy(neonProject.id, await createCompanyDatabase(t))
+  const { session } = await opened(on, on.ana)
+  const release = door.hold()
+  const inCheck = { [APP_SESSION_HEADER]: session }
+  assert.deepEqual((await on.read({}, inCheck)).json(), { kind: 'NOT_GRANTED' })
+  const names = await on.hub.edge.inject({
+    method: 'GET',
+    url: '/api/app-connector-calls/connections?host=pedidos--empresa-a&connector=sankhya',
+    headers: inCheck,
+  })
+  assert.deepEqual(names.json(), { names: [] })
+  assert.equal(door.open(), 0)
+  release()
+  const previa = await sessionOf(on.hub, on.ana, PEDIDOS_PREVIA)
+  const read = await on.read({ host: PEDIDOS_PREVIA }, { [APP_SESSION_HEADER]: previa })
+  assert.equal(Object(read.json()).kind, 'OK', read.body)
 })

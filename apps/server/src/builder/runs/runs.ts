@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import type { CheckReport } from '@conexus/app/check'
 import type {
   CompanyId,
   ConversationId,
@@ -16,8 +15,15 @@ import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Result } from '../../platform/result.ts'
-import type { CheckPlatformFailed, Phase, VersionFolder } from '../machine/public.ts'
 import type {
+  CheckPlatformFailed,
+  ConferPlatformFailed,
+  Phase,
+  VersionFolder,
+} from '../machine/public.ts'
+import { conferred, packed } from './confer.ts'
+import type {
+  BuilderCheck,
   Driven,
   Opened,
   Outcome,
@@ -122,7 +128,7 @@ export class Runs {
     this.#writing.set(projectId, {
       ...{ runId, companyId, projectId, personId, conversationId },
       ...{ check: undefined, rounds: { open: 0, check: 0 } },
-      ...{ stopped: false, ends: [input.onEnd], saving: undefined },
+      ...{ stopped: false, ends: [input.onEnd], saving: undefined, checking: Promise.resolve() },
     })
     this.#deps.log.info({ ...fields, runId }, 'RUN_ADMITTED')
     return { ok: true }
@@ -202,11 +208,29 @@ export class Runs {
     )
   }
 
-  /** The check of the turn's app folder (decision 0055): the one path of `conexus_check` and of the turn's end. */
-  async check(requestContext: RequestContext): Promise<Result<CheckReport, CheckPlatformFailed>> {
+  /**
+   * The check of the turn's app folder (decision 0055): the machine's, then, once
+   * it passed, the app's entry screen in a browser. The one path of `conexus_check` and of the turn's end.
+   */
+  async check(
+    requestContext: RequestContext,
+  ): Promise<Result<BuilderCheck, CheckPlatformFailed | ConferPlatformFailed>> {
     const mine = this.#mine(requestContext)
     if (mine === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' }
-    return this.#deps.machines.check({ conversationId: mine.conversationId })
+    // Two `conexus_check` calls of one step run in parallel; one at a time, a failure of the first not the second's.
+    const turn = mine.checking.then(() => this.#checked(mine))
+    mine.checking = Promise.allSettled([turn])
+    return turn
+  }
+
+  async #checked(
+    mine: Driven,
+  ): Promise<Result<BuilderCheck, CheckPlatformFailed | ConferPlatformFailed>> {
+    const machine = await this.#deps.machines.check({ conversationId: mine.conversationId })
+    if (!machine.ok) return machine
+    if (!machine.value.ok)
+      return { ok: true, value: { kind: 'MACHINE_FAILED', machine: machine.value } }
+    return conferred(this.#deps, mine, machine.value)
   }
 
   /** Keeps what the end of the turn's check said, for the version the turn saves. */
@@ -285,36 +309,17 @@ export class Runs {
       }
       const { number } = outcome.version
       input.saved({ ...settled, preview: { state: 'sending', number } })
-      const packed = await this.#pack(mine)
+      const found = await packed(this.#deps, mine)
       await letGo()
       if (mine.stopped) return settled
-      const preview: PreviewData | undefined = packed.ok
-        ? await this.#send(mine, number, packed.value)
+      const preview: PreviewData | undefined = found.ok
+        ? await this.#send(mine, number, found.value)
         : { state: 'failed', number, code: 'APP_VERSION_FAILED' }
       return preview === undefined ? settled : { ...settled, preview }
     } finally {
       await letGo()
       // Held until the send is over: a run that asks for it meanwhile waits for `saving`.
       if (this.#writing.get(projectId) === mine) this.#writing.delete(projectId)
-    }
-  }
-
-  /** The version the passing check left, read while the run still holds the machine. */
-  async #pack(mine: Driven): Promise<Result<VersionFolder, string>> {
-    const { companyId, projectId, conversationId, runId } = mine
-    const fields = { companyId, projectId, conversationId, runId }
-    try {
-      const packed = await this.#deps.machines.pack({ conversationId })
-      if (!packed.ok)
-        this.#deps.log.error({ ...fields, reason: packed.error }, 'PREVIEW_PACK_REFUSED')
-      return packed
-    } catch (error) {
-      // The machine died on the way: there is no version to send.
-      this.#deps.log.error(
-        { ...fields, reason: 'LOST', error: String(error) },
-        'PREVIEW_PACK_REFUSED',
-      )
-      return { ok: false, error: 'LOST' }
     }
   }
 

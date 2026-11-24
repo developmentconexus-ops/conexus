@@ -1,5 +1,6 @@
 import { CHECK_LIMITS, firstProblems, WORK_FOLDER } from '@conexus/app/check'
 import type { AppSessionToken, ConversationId } from '@conexus/hub-api'
+import { APP_SESSION_COOKIE } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
@@ -12,8 +13,6 @@ export const BROWSER_PROGRAM = '/usr/local/bin/agent-browser'
 
 const SHOT = `${WORK_FOLDER}/tela.png`
 
-// The dispatcher's session cookie, `APP_SESSION_COOKIE` in `apps/edge/src/headers.ts`: the edge owns the name.
-const COOKIE = '__Host-conexus-app'
 const COOKIE_FILE = 'conexus-confer-cookies.json'
 
 const ASK_MS = 20_000
@@ -108,7 +107,7 @@ class Unrunnable extends Error {
 type Conference = Readonly<{
   exec: TimedExec
   files: Readonly<{ write(path: string, text: string): Promise<void> }>
-  // `close` never throws: its owner logs a failure, and the machine's next start closes again.
+  // `close` never throws: its owner logs a failure, and the machine's next use closes again.
   network: Readonly<{ open(extra: readonly string[]): Promise<void>; close(): Promise<void> }>
   workdir: string
   tmp: string
@@ -156,7 +155,7 @@ async function looked(input: Conference, cookieFile: string): Promise<BrowserRep
   const origin = at.url.origin
   await attempted('network', () => network.open([at.url.hostname]))
   await attempted('cookie-file', () =>
-    files.write(cookieFile, JSON.stringify([{ name: COOKIE, value: at.session }])),
+    files.write(cookieFile, JSON.stringify([{ name: APP_SESSION_COOKIE, value: at.session }])),
   )
   await read('launch', Done, ['open'], PAGE_MS)
   await read('cookie', Done, ['cookies', 'set', '--curl', cookieFile, '--url', `${origin}/`])
@@ -227,9 +226,11 @@ export function conferOn(
     program: string
     at: ConferAt
     log: FailureLog
+    /** The close failed: the machine's network may still be open to the app's host. */
+    onCloseFailed: () => void
   }>,
 ): Promise<Result<BrowserReport, ConferPlatformFailed>> {
-  const { kit, conversationId, log } = input
+  const { kit, conversationId, log, onCloseFailed } = input
   return conferIn({
     ...input,
     files: { write: (path, text) => kit.transport.write(path, Buffer.from(text)) },
@@ -237,6 +238,7 @@ export function conferOn(
       open: (extra) => kit.openNetwork(extra),
       close: () =>
         kit.closeNetwork().catch((cause) => {
+          onCloseFailed()
           log.error(
             { conversationId, cause: String(cause).slice(0, 500) },
             'MACHINE_NETWORK_CLOSE_FAILED',

@@ -2,6 +2,7 @@ import { Manifest } from '@conexus/app-contract'
 import type { CompanyId } from '@conexus/hub-api'
 import {
   AppVersionId,
+  appLogin,
   appWorkerOf,
   CompanyId as CompanyIdSchema,
   ProjectId,
@@ -123,7 +124,8 @@ async function restoreWorker(
       )
       .where(eq(versionFile.versionId, live.versionId)),
   )
-  const uploaded = await uploadVersion(deps.cloudflare, { ...live, files })
+  const worker = appWorkerOf(live.versionId)
+  const uploaded = await uploadVersion(deps.cloudflare, { ...live, worker, files })
   if (uploaded.kind !== 'DONE' || uploaded.value !== 'UPLOADED') {
     throw new Failure('APP_VERSION_FAILED', { details: { reason: 'RESTORE_REFUSED' } })
   }
@@ -195,7 +197,9 @@ async function restoreLive(
     workers += restored.length
     const opened = await openAppDatabase(deps, { ...ids, databaseReady: false })
     if (opened.kind === 'FAILED') throw new Failure(opened.failure)
-    const refused = await migrateApp(deps, { ...ids, owner: opened.owner, manifest: live.manifest })
+    const { owner } = opened
+    const logins = appLogin(live.projectId)
+    const refused = await migrateApp(deps, { ...ids, owner, logins, manifest: live.manifest })
     if (refused !== undefined) throw new Failure(refused.failure)
     // A deletion marked after the read above may have removed it all before this pass made it.
     if (!(await stillLive(deps, ids)))

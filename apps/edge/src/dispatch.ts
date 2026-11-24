@@ -3,6 +3,7 @@ import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { AppCall, AppEnvironment } from '@conexus/hub-api'
 import {
   APP_OPEN_PATH,
+  APP_SESSION_COOKIE,
   AppHost,
   AppSessionToken,
   appOfHost,
@@ -14,7 +15,6 @@ import type { DbProps } from './db.ts'
 import { base64Of, sha256Of } from './digest.ts'
 import { entryPage, entryScript } from './entry.ts'
 import {
-  APP_SESSION_COOKIE,
   appPolicyOf,
   appSessionCookies,
   BINDING_COOKIE,

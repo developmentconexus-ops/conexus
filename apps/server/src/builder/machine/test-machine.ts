@@ -24,6 +24,7 @@ import { APP_FOLDER } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 import { FOREGROUND, foregroundMaintenanceIn, GIT_FOREGROUND_ENV } from './test-git.ts'
+import type { NetworkControl } from './test-machine-network.ts'
 import { networkOf } from './test-machine-network.ts'
 import { slowly } from './test-machine-slow.ts'
 
@@ -39,7 +40,7 @@ export const TEMPLATE = MachineTemplate.parse('conexus-builder:1111111')
 export const OLD_TEMPLATE = MachineTemplate.parse('conexus-builder:0000000')
 
 /** What the provider does, for a test to choose: the outcome of a start, and how the start goes. */
-export type Control = {
+export type Control = NetworkControl & {
   outcome: 'created' | 'connected'
   start: 'ok' | 'hang' | 'unreachable'
   /** The names of the machines the provider holds, which Mastra finds by name. */
@@ -50,8 +51,6 @@ export type Control = {
   replaced: string[]
   /** The names the Hub's machines found and attached. */
   attached: string[]
-  networkClosed: number
-  networkOpenTo?: readonly string[] | undefined
   /** How long the machine takes to come up after it says it runs, as E2B's start does. */
   upMs: number
   holdUp?: Promise<void>
@@ -99,6 +98,7 @@ export function newControl(): Control {
     replaced: [],
     attached: [],
     networkClosed: 0,
+    closeFails: 0,
     upMs: 0,
     restart: async () => undefined,
     restartBeforeNextCommand: false,

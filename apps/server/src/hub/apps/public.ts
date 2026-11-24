@@ -8,6 +8,7 @@ import { appDatabaseOf, readAppData } from './app-database.ts'
 import { appTablesOf } from './app-tables.ts'
 import { createAppVersions } from './app-versions.ts'
 import { createBuilderData } from './builder-data.ts'
+import { endConference, openConference } from './conference.ts'
 import type { AppDeps } from './handoff.ts'
 import { createAppDoor, endAppSessions } from './handoff.ts'
 import type { PublishDeps } from './live.ts'
@@ -37,6 +38,7 @@ export type { AppRead, SqlStatement } from '../../platform/company-postgres.ts'
 export type { AppCheck } from './app-check.ts'
 export type { AppTablesRead } from './app-tables.ts'
 export type { BuilderData } from './builder-data.ts'
+export type { Conference } from './conference.ts'
 export type { ConnectorCall } from './handoff.ts'
 export type { CloseRequests, PublishDeps, PublishInput, Ungranted } from './live.ts'
 /**
@@ -103,6 +105,11 @@ export function createApps(
     repair: () => repairApps(deps),
     /** Where a Builder turn's version goes to the Projeto's app (step 14.1). */
     sendFromBuilder: versions.sendFromBuilder,
+    /** Where a Builder turn's version opens for its browser, and its session ends. */
+    confer: Object.freeze({
+      open: (input: Parameters<typeof openConference>[1]) => openConference(deps, input),
+      end: (input: Parameters<typeof endConference>[1]) => endConference(deps, input),
+    }),
     /** What a Projeto's agents read of its app's data, and whether it has an app to read (step 24.3, U3). */
     readAppData: (
       input: Parameters<typeof readAppData>[1] & {

@@ -54,7 +54,7 @@ test('versões: o membro lista (200), com a marca da Prévia e a da publicada', 
   )
 })
 
-test('envio: a pasta que a máquina deixa fora do contrato ou acima do teto não guarda nada', async (t) => {
+test('envio: a pasta fora do contrato ou acima do teto não passa do empacotamento da conferência: nada sobe e nada se guarda', async (t) => {
   const subject = await companyForVersions(t)
   const { hub, ana } = subject
   const base = folder()
@@ -71,8 +71,8 @@ test('envio: a pasta que a máquina deixa fora do contrato ou acima do teto não
     },
   ]
   for (const version of refused) {
-    const { number, preview } = await send(subject, ana, version)
-    assert.deepEqual(preview, { state: 'failed', number, code: 'APP_VERSION_FAILED' })
+    const { preview } = await send(subject, ana, version)
+    assert.equal(preview, undefined)
   }
   assert.deepEqual(await hub.test.asOwner('select id from apps.app_version'), [])
   assert.deepEqual(hub.cloudflare.calls, [])
