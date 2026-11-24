@@ -36,7 +36,7 @@ function stored(controller: string) {
 }
 
 test('a conversa do Construtor lê "Leu Sankhya · Matriz"', async () => {
-  at(`${AREA}/construtor/${BUILDER_CHAT}`, {
+  at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
     agents: [],
     construtor: [{ id: BUILDER_CHAT, title: 'x', createdAt: UPDATED, updatedAt: UPDATED }],
   })

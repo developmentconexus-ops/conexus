@@ -206,7 +206,7 @@ test('o Construtor de agentes cria pela rota dele e abre a conversa na área Age
       attemptKey: expect.any(String),
     },
   ])
-  expect(router.state.location.pathname).toBe(`${PROJECT}/agents/construtor/${SECOND}`)
+  expect(router.state.location.pathname).toBe(`${PROJECT}/agents/agent-builder/${SECOND}`)
 })
 
 test('o Testar do agente salvo cria a conversa do rascunho e abre na página do agente', async () => {

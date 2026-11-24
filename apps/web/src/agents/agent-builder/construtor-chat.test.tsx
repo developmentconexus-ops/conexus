@@ -10,12 +10,12 @@ const server = hubServer()
 const { at } = agentScreens(server)
 
 test('uma conversa com o Construtor de outra pessoa dá não encontrado', async () => {
-  at(`${AREA}/construtor/${BUILDER_CHAT}`, { agents: [], construtor: [] })
+  at(`${AREA}/agent-builder/${BUILDER_CHAT}`, { agents: [], construtor: [] })
   expect(await screen.findByText('Esta conversa não existe mais.')).toBeTruthy()
 })
 
 test('na conversa, trocar o modelo manda o PUT do Construtor e o botão mostra o que o Hub guardou', async () => {
-  const { writes } = at(`${AREA}/construtor/${BUILDER_CHAT}`, {
+  const { writes } = at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
     agents: [],
     construtor: [
       {
@@ -48,7 +48,7 @@ test('a conversa com o Construtor sumir do Hub faz a lista ser lida de novo', as
   }
   let reads = 0
   let atGone = Number.POSITIVE_INFINITY
-  at(`${AREA}/construtor/${BUILDER_CHAT}`, { agents: [], construtor: [row] })
+  at(`${AREA}/agent-builder/${BUILDER_CHAT}`, { agents: [], construtor: [row] })
   server.use(
     http.get('*/construtor/conversations', () => {
       reads += 1

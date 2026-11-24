@@ -103,7 +103,7 @@ test('a conversa de teste fica na folha branca', async () => {
 })
 
 test('a conversa com o Construtor fica na folha branca, com o botão do modelo na caixa e sem o Projeto', async () => {
-  at(`${AREA}/construtor/${BUILDER_CHAT}`, {
+  at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
     agents: [],
     construtor: [
       {

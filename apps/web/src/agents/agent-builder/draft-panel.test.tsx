@@ -43,7 +43,7 @@ function conversation(...messages: ReturnType<typeof toolSaid>[]) {
   )
 }
 
-const OPEN = `${AREA}/construtor/${BUILDER_CHAT}`
+const OPEN = `${AREA}/agent-builder/${BUILDER_CHAT}`
 
 test('o rascunho aparece ao lado da conversa, com o que o agente tem, e a conversa não tem outro Publicar', async () => {
   at(OPEN, { agents: [agent()], construtor: [CONVERSATION], versions: [] })

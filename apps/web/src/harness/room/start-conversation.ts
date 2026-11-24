@@ -122,7 +122,7 @@ const STARTS: { [K in ConversationKind]: Start<K> } = {
         id: conversation.id,
         go: (navigate, state) =>
           navigate({
-            to: '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId',
+            to: '/companies/$companyId/projects/$projectId/agents/agent-builder/$conversationId',
             params: { companyId, projectId, conversationId: conversation.id },
             state,
           }),

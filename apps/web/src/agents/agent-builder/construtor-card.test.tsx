@@ -42,7 +42,7 @@ function stored(result?: unknown) {
 }
 
 function open() {
-  return at(`${AREA}/construtor/${BUILDER_CHAT}`, {
+  return at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
     agents: [],
     construtor: [
       {

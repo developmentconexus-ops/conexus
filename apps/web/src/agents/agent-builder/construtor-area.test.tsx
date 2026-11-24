@@ -15,7 +15,7 @@ test('mandar o primeiro pedido abre uma conversa com o Construtor e leva a ela',
     'quero um agente de vendas',
   )
   await waitFor(() =>
-    expect(conexus.router.state.location.pathname).toBe(`${AREA}/construtor/${BUILDER_CHAT}`),
+    expect(conexus.router.state.location.pathname).toBe(`${AREA}/agent-builder/${BUILDER_CHAT}`),
   )
   expect(writes()[0]?.path).toMatch(/construtor\/conversations$/)
   expect(writes()[0]?.body).toMatchObject({ model: 'anthropic/claude-sonnet-4' })
@@ -35,7 +35,7 @@ test('as conversas anteriores com o Construtor aparecem em lista', async () => {
     ],
   })
   const link = await screen.findByRole('link', { name: /^Agente de vendas/ })
-  expect(link.getAttribute('href')).toBe(`${AREA}/construtor/${BUILDER_CHAT}`)
+  expect(link.getAttribute('href')).toBe(`${AREA}/agent-builder/${BUILDER_CHAT}`)
 })
 
 test('uma conversa com o Construtor sem título leva o dia e a hora em que começou, não os da última mudança', async () => {
@@ -51,7 +51,7 @@ test('uma conversa com o Construtor sem título leva o dia e a hora em que come�
     ],
   })
   const link = await screen.findByRole('link', { name: /^Conversa de 01\/11\/2026, 12:00/ })
-  expect(link.getAttribute('href')).toBe(`${AREA}/construtor/${BUILDER_CHAT}`)
+  expect(link.getAttribute('href')).toBe(`${AREA}/agent-builder/${BUILDER_CHAT}`)
 })
 
 test('abrir a conversa com o Construtor sem conta para o modelo diz a frase com o caminho das contas', async () => {

@@ -92,7 +92,7 @@ export function ConstrutorConversations(scope: Scope) {
         {read.data?.conversations.map((conversation) => (
           <li key={conversation.id}>
             <Link
-              to="/companies/$companyId/projects/$projectId/agents/construtor/$conversationId"
+              to="/companies/$companyId/projects/$projectId/agents/agent-builder/$conversationId"
               params={{ ...scope, conversationId: conversation.id }}
               className={`${blockRow} hover:bg-surface-3`}
             >
