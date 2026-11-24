@@ -1,32 +1,8 @@
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
 import { after, test } from 'node:test'
+import { check, HEADER, removeChecked, row } from './test-check-docs.ts'
 
-const SCRIPT = resolve(import.meta.dirname, 'check-docs.ts')
-const dirs: string[] = []
-after(() => {
-  for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
-})
-
-const CLEAN: Record<string, string> = {
-  'AGENTS.md': 'Instructions.\n',
-  'docs/index.md': '- [code](guides/code.md): rules.\n- [steps](steps/): the card.\n',
-  'docs/guides/code.md': '- **C1.** A rule.\n',
-  'docs/steps/.keep': '',
-}
-
-function check(changes: Record<string, string>) {
-  const dir = mkdtempSync(join(tmpdir(), 'conexus-docs-'))
-  dirs.push(dir)
-  for (const [path, content] of Object.entries({ ...CLEAN, ...changes })) {
-    mkdirSync(dirname(join(dir, path)), { recursive: true })
-    writeFileSync(join(dir, path), content)
-  }
-  return spawnSync('node', [SCRIPT, dir], { encoding: 'utf8', timeout: 120_000 })
-}
+after(removeChecked)
 
 function words(count: number): string {
   return 'word '.repeat(count)
@@ -75,12 +51,6 @@ const REFUSALS: [string, Record<string, string>][] = [
     },
   ],
 ]
-
-const HEADER =
-  '## A tabela de referência\n\n| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n'
-function row(piece: string, verdict: string, proof: string) {
-  return `| ${piece} | U1 | \`a.ts:f\` | \`mastra@1.79.0\`, \`x.ts:1\` | uma linha | ${verdict} | ${proof} | não precisa | \`b.ts\` |\n`
-}
 
 test('aceita o card com a tabela de referência', () => {
   const table = `${HEADER}${row('Git', 'nativo', '—')}${row('Fila', 'embrulhado, soma o prazo', '—')}${row('Contas', 'remendo', 'medição, boundaries: pg 8.16.3')}\n## As unidades\n`
@@ -227,109 +197,3 @@ for (const title of ['"t"', "'t'", '(t)']) {
     assert.equal(fine.status, 0, fine.stderr)
   })
 }
-
-const STACK_TREE: Record<string, string> = {
-  'package.json': JSON.stringify({
-    workspaces: ['apps/*'],
-    devDependencies: { yaml: '1' },
-  }),
-  'apps/a/package.json': JSON.stringify({
-    name: '@x/a',
-    dependencies: { fastify: '1', '@x/b': '1' },
-  }),
-  'apps/b/package.json': JSON.stringify({ name: '@x/b', devDependencies: { yaml: '1' } }),
-  'docs/index.md':
-    '- [code](guides/code.md): rules.\n- [steps](steps/): the card.\n- [stack](reference/stack.md): pieces.\n',
-}
-
-function stack(...pieces: string[]): string {
-  const rows = pieces.map((piece) => `| \`${piece}\` | x |`)
-  return ['| Piece | Used in |', '| --- | --- |', ...rows, ''].join('\n')
-}
-
-const OTHER = ['PostgreSQL', 'Node', 'Docker', 'cloudflared', 'CLIProxyAPI']
-
-test('o mapa com uma linha por dependência e por peça fora do npm passa; um pacote do próprio repositório não pede linha', () => {
-  const run = check({
-    ...STACK_TREE,
-    'docs/reference/stack.md': stack('fastify', 'yaml', ...OTHER),
-  })
-  assert.equal(run.status, 0, run.stderr)
-})
-
-test('recusa stack-row-missing: uma dependência de um workspace sem linha', () => {
-  const run = check({ ...STACK_TREE, 'docs/reference/stack.md': stack('yaml', ...OTHER) })
-  assert.equal(run.status, 1)
-  assert.match(run.stderr, /^stack-row-missing: docs\/reference\/stack\.md: fastify$/m)
-  assert.equal(run.stderr.match(/^stack-row-missing: /gm)?.length, 1)
-})
-
-test('recusa stack-row-missing: uma peça fora do npm sem linha', () => {
-  const run = check({
-    ...STACK_TREE,
-    'docs/reference/stack.md': stack('fastify', 'yaml', ...OTHER.slice(1)),
-  })
-  assert.match(run.stderr, /^stack-row-missing: docs\/reference\/stack\.md: PostgreSQL$/m)
-})
-
-test('recusa stack-row-missing para cada dependência quando o mapa falta', () => {
-  const run = check(STACK_TREE)
-  assert.equal(run.status, 1)
-  assert.equal(run.stderr.match(/^stack-row-missing: /gm)?.length, 2 + OTHER.length)
-})
-
-test('recusa stack-row-unknown: uma linha que nenhum package.json declara', () => {
-  const run = check({
-    ...STACK_TREE,
-    'docs/reference/stack.md': stack('fastify', 'yaml', 'left-pad', ...OTHER),
-  })
-  assert.equal(run.status, 1)
-  assert.match(run.stderr, /^stack-row-unknown: docs\/reference\/stack\.md: left-pad$/m)
-})
-
-test('uma tabela dentro de um bloco de código não conta como linha do mapa', () => {
-  const run = check({
-    ...STACK_TREE,
-    'docs/reference/stack.md': `${stack('fastify', 'yaml', ...OTHER)}\n\`\`\`\n| Piece |\n| --- |\n| left-pad |\n\`\`\`\n`,
-  })
-  assert.equal(run.status, 0, run.stderr)
-})
-
-test('lê packages/*, uma pasta nomeada e cada seção de dependências', () => {
-  const tree = {
-    ...STACK_TREE,
-    'package.json': JSON.stringify({ workspaces: ['apps/*', 'packages/*', 'tools/c'] }),
-    'packages/d/package.json': JSON.stringify({ name: '@x/d', devDependencies: { vite: '1' } }),
-    'tools/c/package.json': JSON.stringify({
-      name: '@x/c',
-      peerDependencies: { react: '1' },
-      optionalDependencies: { esbuild: '1' },
-    }),
-    'packages/sem-manifesto/.keep': '',
-  }
-  const run = check({ ...tree, 'docs/reference/stack.md': stack('fastify', 'yaml', ...OTHER) })
-  assert.equal(run.status, 1)
-  const missing = [
-    ...run.stderr.matchAll(/^stack-row-missing: docs\/reference\/stack\.md: (.+)$/gm),
-  ]
-  assert.deepEqual(missing.map((match) => match[1]).sort(), ['esbuild', 'react', 'vite'])
-})
-
-test('recusa stack-row-twice: uma peça com duas linhas', () => {
-  const run = check({
-    ...STACK_TREE,
-    'docs/reference/stack.md': stack('fastify', 'yaml', 'yaml', ...OTHER),
-  })
-  assert.equal(run.status, 1)
-  assert.match(run.stderr, /^stack-row-twice: docs\/reference\/stack\.md: yaml$/m)
-})
-
-test('recusa stack-workspace-unread: um padrão de workspace que o check não sabe ler', () => {
-  const run = check({
-    ...STACK_TREE,
-    'package.json': JSON.stringify({ workspaces: ['apps/**'], devDependencies: { yaml: '1' } }),
-    'docs/reference/stack.md': stack('yaml', ...OTHER),
-  })
-  assert.equal(run.status, 1)
-  assert.match(run.stderr, /^stack-workspace-unread: package\.json: apps\/\*\*$/m)
-})

@@ -42,7 +42,7 @@ module.exports = [
     severity: 'error',
     from: { pathNot: `${SERVER}/platform/aws\\.ts$` },
     to: {
-      path: '(^|node_modules/)(@aws-sdk/(client-cloudformation|client-s3tables|credential-providers)|@smithy/node-http-handler)(/|$)',
+      path: '(^|node_modules/)(@aws-sdk/(client-cloudformation|client-s3tables|client-ecs|client-sqs|client-ssm|client-athena|credential-providers)|@smithy/node-http-handler)(/|$)',
     },
   },
 ]
