@@ -119,7 +119,7 @@ function ConnectionRows({ companyId }: { companyId: CompanyId }) {
 }
 
 /**
- * What Início of an owner or an administrator holds under the box (step 13.3, U3): Continuar, the
+ * What Início holds under the box, the same for every role (step 13.3, U3; W30): Continuar, the
  * five latest conversations, then Projetos beside Ligações, each state in words, on the one axis.
  */
 export function AssistantDay({ companyId }: { companyId: CompanyId }) {
