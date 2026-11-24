@@ -15,3 +15,5 @@ Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primei
 Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-24 (commit 2b0316a2c681adef5a8deb4c65f500d8c4443f49), com o Caderno que pergunta por suspensão (U19), as citações que a auditoria do kit corrigiu e a repetição de 5xx da U4: "Aprovo as emendas".
 
 Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-24 (commit a101650955ea0b98c78a5f8b094eecce39b4c47d), com o Caderno que pergunta por suspensão (U19), as citações que a auditoria do kit corrigiu e a repetição de 5xx e 429 da U4: "Aprovo as emendas".
+
+Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-24 (commit 18ef23cc80d7ef43766f3eb9013f2cf4a9d5f255), o depósito de imagens na preparação (opção A), com o texto final que o fundador leu: "Aprovo"
