@@ -95,13 +95,13 @@ divide em `harness/` (o que é comum às conversas) e `agents/` (um por agente),
 servidor. O que **não** muda: o que cada agente responde, as conversas guardadas e o pedido que
 cada agente manda ao modelo, que segue igual byte a byte, como na etapa 1. Duas exceções, as duas
 na parte do servidor (a U15): a frase da ferramenta do Assistente que cita o botão "Mandar ao
-Builder" passa a citar o botão "Mandar ao Construtor de apps", o texto que a U4 põe no botão
+Builder" passa a citar o botão "Mandar para Construir", o texto que a U4 põe no botão
 (`Wb/assistant/text.ts:105`; a decisão 6 do firstmate); e o agendador das automações deixa de
 apagar sozinho uma automação cujo fluxo ele não acha registrado na terceira falta seguida, e só
 apaga na quinta. Cada tique do agendador dura 10 segundos (`DEFAULT_TICK_INTERVAL_MS` da 1.83.0),
 então são uns 30 segundos hoje e uns 50 depois. Hoje isso acontece quando um fluxo muda de nome.
 Entre a parte da tela e a U15, o Assistente ainda cita o botão pelo nome velho; o botão que a
-pessoa toca já diz "Mandar ao Construtor de apps".
+pessoa toca já diz "Mandar para Construir".
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página. Depois: vê o protótipo
 dos nomes, do menu do Projeto e do lugar de Renomear, a 1366 e a 390 px, e o aprova (a sua
@@ -218,7 +218,7 @@ A Pergunte 3: b", e antes 1 a ("Mas queria detalhes e exemplos para entender mel
 | G8 | U14 | O fechamento: DOC-1 e MACH-8 da auditoria, `docs/explanation/harness.md`, `boundaries.md`, as regras W1, W4 e W7 do guia da web com a árvore nova, a página da trilha sem "a área Estúdio", o cartão apagado | `docs/` | delivery | o uso |
 
 G1, G2 e G3 correm em sequência: a U3 move os arquivos que a U1 e a U2 mudam, e a U4 escreve já
-nas pastas novas (`names.test.ts` e `AGENT_NAMES` moram em `apps/web/src/harness/`). O G3 espera
+nas pastas novas (`names.test.ts` e `CONEXUS` moram em `apps/web/src/harness/`). O G3 espera
 também o protótipo, que pode ser feito enquanto G1 e G2 andam. G4 junta U5, U6 e U15, antes do
 movimento (Subtract Before You Add, a ordem da auditoria): U5 e U6 só apagam, a U15 muda duas
 coisas pequenas, e as três tocam pastas diferentes e correm em paralelo. Os seis pull requests do G5 só movem, cada um provado
@@ -257,7 +257,7 @@ conta, porque cada arquivo movido sai igual.
 | 11 | U4 | Nenhum texto da tela diz "Builder", "Construtor" ou "Assistente" como quem fala: os textos de `apps/web/src` e as frases de `packages/hub-api/src/*-failures.ts`. Os ids, os caminhos e os nomes no código não contam | `apps/web/src/harness/names.test.ts`, que lê os módulos de texto e as frases de falha e recusa as três palavras | must |
 | 12 | U4 | O menu do Projeto tem quatro grupos com título, nesta ordem: "O app" (Construir), "Agentes" (Conversas, Agentes, Automações), "Dados" (Integrações, Dados) e "O Projeto" (Quem usa o app, Sobre). Um membro sem `manageAgents`, `manageAutomations` e `viewAppData` vê "Agentes" só com Conversas e "Dados" só com Integrações; nenhum título aparece sem item | `apps/web/src/hub/projects/project-rail.test.tsx`, um caso de dono e um de membro | must |
 | 13 | U4 | Os textos das contas de modelo dizem que os agentes tentam as contas, não "o Builder": a fila, a reserva e a página de Configurações | `names.test.ts` (critério 11); `model-accounts.test.ts` do e2e, sem mudar a jornada | must |
-| 14 | U15 | O pedido do Assistente ao modelo muda só na frase da ferramenta que cita o botão: o retrato regravado mostra "Mandar ao Construtor de apps" no lugar de "Mandar ao Builder" e nada mais; os retratos dos outros três agentes não mudam | `B/assistant/request.test.ts` com `--test-update-snapshots` no commit da U15; `B/assistant/propose.test.ts:95,110` e `instructions.test.ts:165` com a frase nova; o diff do retrato no pull request | must |
+| 14 | U15 | O pedido do Assistente ao modelo muda só na frase da ferramenta que cita o botão: o retrato regravado mostra "Mandar para Construir" no lugar de "Mandar ao Builder" e nada mais; os retratos dos outros três agentes não mudam | `B/assistant/request.test.ts` com `--test-update-snapshots` no commit da U15; `B/assistant/propose.test.ts:95,110` e `instructions.test.ts:165` com a frase nova; o diff do retrato no pull request | must |
 | 15 | U4 | A tela de cada parte bate com o protótipo aprovado, elemento por elemento, a 1366 e a 390 px, nos dois temas: o menu do Projeto, a cabeça das quatro respostas e o lugar de Renomear | QA (testing T25) | must |
 | 16 | U5 | A máquina da conversa roda só pelo caminho nativo do Mastra: o caminho por shell, a opção `instructions` nunca lida e os donos repetidos de `quoted`, `CANDIDATE_REF` e `IDENTITY` saem; os testes da máquina passam com `native: true` como padrão do dublê; os quatro retratos não mudam | `B/machine/machine*.test.ts`; `request.test.ts` dos quatro | must |
 | 17 | U6 | A ficha não tem `base`, `ended`, nem os campos que só repassam o que o `AgentConfig` do Mastra já tem; o Construtor de apps ganha os sinais de tarefa pela própria ficha; os quatro retratos não mudam | `controller-kit/spec.test.ts`; `request.test.ts` dos quatro | must |
@@ -285,12 +285,11 @@ com os testes de tela de hoje.
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | O menu do Projeto | os quatro grupos, com Construir marcado num Projeto novo | não existe: Construir, Conversas, Sobre, Quem usa o app e Integrações aparecem sempre | sem mudança: o menu não espera leitura, só `may` | sem mudança | sem mudança (o Projeto que não existe) | o membro vê os grupos sem os itens que não pode (critério 12); nenhum título sozinho | sem mudança |
-| A cabeça da resposta, nas quatro conversas | o nome do agente na primeira resposta | não existe sem resposta | "Construtor de apps trabalhando" e a linha de cada agente com o nome dele | a falha do turno de hoje, com o nome do agente | sem mudança | sem mudança | sem mudança |
+| A cabeça da resposta, nas quatro conversas | o nome do agente na primeira resposta | não existe sem resposta | "Conexus trabalhando" e a linha de cada agente com o nome dele | a falha do turno de hoje, com o nome do agente | sem mudança | sem mudança | sem mudança |
 | O menu da conversa, nas quatro listas | aparece na primeira conversa | uma lista vazia não tem menu | o botão desligado enquanto Renomear grava, como no Assistente hoje | a frase de `writeFailureText` de hoje, no diálogo; uma resposta que não chega diz `UNCONFIRMED_WRITE` | a conversa que já foi apagada fecha o diálogo e some da lista, como o Assistente faz hoje com `CONVERSATION_NOT_FOUND` | outra pessoa nunca vê a conversa na lista; a rota recusa com 404 (critério 25) | um título vazio ou com mais de 120 caracteres fica no campo com a recusa do formulário, antes de ir ao Hub |
 
-O desenho de caixas, a 1280 e a 390 px, e as capturas que ele segue saem do protótipo (a decisão B
-do fundador), que vem antes da U4 e entra neste cartão como emenda quando ele o aprovar. As
-capturas que o protótipo segue para o menu são a Nekt (`home-3.png`, os grupos Context e Activate)
+O desenho de caixas, a 1280 e a 390 px, é o do protótipo que o fundador aprovou (a decisão B dele),
+na seção "O protótipo aprovado" logo abaixo. As capturas que o protótipo segue para o menu são a Nekt (`home-3.png`, os grupos Context e Activate)
 e o Databricks (`app-genie-3.png`, os grupos Analytics, Lakehouse e Data Engineering), que este
 cartão comparou peça por peça com o menu de hoje:
 
@@ -375,7 +374,7 @@ título aparece sem item.
     └──────────────────────────────────┘
 
 **O lugar de Renomear (a U13 liga).** Numa lista, o "⋮" de cada linha, como o Assistente hoje
-(`ConversationMenu` na linha): a coluna e a página do Assistente, o bloco "Conversas com o Construtor de agentes"
+(`ConversationMenu` na linha): a coluna e a página do Assistente, o bloco "Conversas sobre agentes"
 (a idade some no hover, como em `conversation-row.tsx`) e a lista do Construtor de apps que sobe de
 baixo no celular. Numa lista suspensa (o topo da conversa do Construtor de apps a partir de 768 px e
 o Testar do agente salvo), um "⋮" ao lado da lista, que age na conversa aberta: o mesmo
@@ -397,6 +396,17 @@ o Testar do agente salvo), um "⋮" ao lado da lista, que age na conversa aberta
 O "⋮" dentro de cada opção da lista suspensa foi construído e recusado: a `ComboboxItem` não aceita
 controle dentro dela (o clique não abre o menu, e o botão cai sobre o ✓). Ele pediria uma peça nova.
 Apagar segue só no Assistente; quando vier para as outras, entra no mesmo menu.
+
+**A cabeça da resposta e os textos (a rodada do Conexus).** A cabeça da resposta tem o sinal, o nome
+em `label` 600 e o modelo numa pílula, como hoje. Nas três conversas da plataforma o sinal é a marca
+e o nome é "Conexus"; no agente salvo, o ícone de agente (`BotIcon`, o do item Agentes) e o nome dele.
+
+    ▣ Conexus              (Claude Sonnet 4)    ← Construir, Agentes, Conversas
+    ☺ Conferente de metas  (Claude Sonnet 4)    ← um agente salvo
+
+A linha `mark` do `DESIGN.md` passa a dizer: "the Conexus mark on the rail and beside "Conexus" at
+the head of an answer in the platform's three conversations (Construir, Agentes, Conversas); nothing
+else. A company's agent signs with its own name and the agent icon in `text-2`".
 
 Onde um texto citava o Construtor de apps, o Construtor de agentes ou o Assistente, ele passa a dizer
 "Conexus" e, quando o lugar importa, o lugar (Construir, Agentes, Conversas). Nenhum texto cita
@@ -474,10 +484,10 @@ não toca.
 | Começar uma conversa | seis começos: `Wb/conversation/start.tsx:99` e `:267`, `first-message.tsx:36`, `conversation-switch.tsx:33-58`, `Wb/assistant/home.tsx:61`, `Wb/agents/area.tsx:55`, `Wb/agents/open-conversation.ts:16-19` | Factory, **situação parecida** (sem Projeto, sem arquivos passados adiante): `FU/hooks/useAgentControllerThreadMutations.ts:26-34` | uma mutação de criar, `session.createThread(title)` | embrulhado: uma peça com o tipo de conversa como parâmetro; criar segue pelas rotas nossas, porque gravam as marcas e o Projeto | critérios 5 e 6 | U2 | `apps/web/src/harness/room/start-conversation.ts` (escrito em `Wb/conversation/` e movido pela U3) |
 | Listar as conversas | quatro famílias: `conversation-switch.tsx:158`, `Wb/assistant/sidebar-conversations.tsx:115` e `home.tsx:181`, `Wb/agents/area.tsx:105`, `Wb/agents/test-panel.tsx:30` | Factory, **situação parecida**: `FU/hooks/useAgentControllerThreads.ts:21-44`, `listThreads` com filtro por marca | uma leitura por agente; a lista é um componente do lugar | nativo da forma: cada lista fica no seu lugar (a decisão 5 do firstmate) | — | nenhuma | — |
 | O menu da conversa | `Wb/assistant/conversation-menu.tsx:136`, único uso em `conversation-row.tsx:55` | Factory, **mesma situação** na forma: `FU/ui/domains/workspaces/components/SessionMenuItems.tsx:54-72`, num menu suspenso e num menu de contexto (`SessionNavRow.tsx:220-251`). A Factory não tem Renomear digitado ("Regenerate title" e "Delete"); a referência de Renomear é a linha abaixo | os mesmos itens nos dois menus; cada item existe só se a ação dele existe | nativo da forma | — | U2, U13 | `apps/web/src/harness/room/conversation-menu.tsx` (movido) |
-| Renomear numa lista suspensa | o Construtor de apps e o agente salvo trocam de conversa por `Combobox` (`conversation-switch.tsx:192-220`, `test-panel.tsx:50-74`) | **sem referência**: nenhuma lista suspensa com menu nas referências lidas | — | nativo da peça (o item do menu suspenso de hoje); o lugar não tem referência: o protótipo decide, e o fundador aprova com ele | critério 15 | U4, U13 | — |
+| Renomear numa lista suspensa | o Construtor de apps e o agente salvo trocam de conversa por `Combobox` (`conversation-switch.tsx:192-220`, `test-panel.tsx:50-74`) | **sem referência**: nenhuma lista suspensa com menu nas referências lidas | — | nativo da peça: o `ConversationMenu` de hoje com o gatilho ao lado da lista; o lugar foi aprovado com o protótipo em 2026-11-24 | critério 15 | U4, U13 | — |
 | Renomear | só o Assistente, pela rota nossa `PATCH` (`B/assistant/routes.ts:227-241`, operação `packages/hub-api/src/assistant.ts:254`) | Mastra Code, **mesma situação**: `TUI/setup.ts:450-451` (`/name`, `/rename`), `TUI/commands/name.ts:3-15`; a sessão remota chama a rota nativa (`mastracode/sdk/src/factory/remote-session.ts:259-261`). `@mastra/server` 1.83.0 `dist/server/handlers/agent-controller.js:1243-1269` (`PUT …/sessions/:sessionId/threads/:threadId`, corpo `{ title }` em `:237`); `@mastra/core` 1.83.0 `agent-controller-BhkzVgCi.js:2592-2615` (`rename` grava `title` e `titlePinned` e emite `thread_title_updated`); `@mastra/client-js` 1.60.0 `renameThread` (`dist/index.js:7576-7581`) | a rota recupera a sessão (`getSession`, `agent-controller.js:94-106`, que numa sessão fria a prende à conversa de mesmo id), troca a conversa ativa se o `threadId` for outro (`:1259-1262`) e renomeia a ativa | embrulhado: a rota nativa atrás do guarda. Duas diferenças, as duas do guarda: ele já recusa um `threadId` diferente da sessão (`B/conversation/guard.ts:185-187`), então a troca de conversa nunca roda; e confere o título de 1 a 120 caracteres depois de aparar (`CONVERSATION_TITLE_MAX`, `packages/hub-api/src/assistant.ts:252`), que o corpo nativo não confere | critério 25 | U13 | nenhum: muda `guard.ts` |
 | Trocar o modelo | três rotas `…/model` (`B/conversation/routes.ts:113-128`, `B/assistant/routes.ts:295-316`, `B/construtor/routes.ts:85-109`), o molde `answerModelChange` (`B/controller-kit/routes.ts:16-36`) e `changeModel` (`B/controller-kit/open.ts:95-117`) | Factory, **mesma situação**: `FU/hooks/useAgentControllerStateMutations.ts:43-61`. `@mastra/server` 1.83.0 `agent-controller.js:869-890` (corpo `:224-233`); `@mastra/client-js` 1.60.0 `switchModel` (`dist/index.js:7533-7541`) | `session.switchModel(modelId, { thinkingLevel })` e invalida duas leituras | embrulhado: a rota nativa atrás do guarda, que confere a conta e o esforço (`conversationModel`, `B/model-accounts/queue.ts:144-157`) | o estudo de rotas, P1 a P4, **provado**: as recusas pela porta do Hub e os quatro retratos iguais | U12 | nenhum: muda `guard.ts` |
-| Quem assina a resposta | "Conexus" para o Construtor de apps e o nome para os outros (`Wb/conversation/builder-turn.tsx:128`) | LibreChat, **mesma situação**: `LC/packages/chat/src/components/messages/MessageParts.tsx:51-62`, `AuthorHeader.tsx:11-29`. Factory, **situação diferente**: a resposta não tem cabeça com nome, só o modelo (`FU/.../MessageBubble.tsx:182-196`, `:129-138`) | o nome do agente na cabeça de cada resposta | nativo da forma do LibreChat (a resposta 2 do fundador) | — | U4 | — |
+| Quem assina a resposta | "Conexus" para o Construtor de apps e o nome para os outros (`Wb/conversation/builder-turn.tsx:128`) | LibreChat, **mesma situação**: `LC/packages/chat/src/components/messages/MessageParts.tsx:51-62`, `AuthorHeader.tsx:11-29`. Factory, **situação diferente**: a resposta não tem cabeça com nome, só o modelo (`FU/.../MessageBubble.tsx:182-196`, `:129-138`) | o nome do agente na cabeça de cada resposta | nativo: a marca do produto no agente padrão (Onyx, `AgentAvatar.tsx:25-41`) e o nome do agente salvo (LibreChat, `MessageParts.tsx:57-58`); a decisão 2 foi trocada em 2026-11-24 | — | U4 | — |
 | Os nomes dos construtores | "Builder" e "Construtor" | n8n, **mesma situação no nome**: `packages/frontend/@n8n/i18n/src/locales/en.json:599-604` ("AI Builder"); LibreChat: `client/src/locales/en/translation.json:1284-1285` ("Agent Builder", "Assistant Builder") | o construtor se chama pelo que constrói | nativo (a decisão B do fundador) | — | U4 | — |
 | O menu do Projeto em grupos | oito itens numa lista sem título (`apps/web/src/hub/projects/project-rail.tsx:84-152`) | Nekt (`data/conexus-refs/nekt/rea/home-3.png`) e Databricks (`databricks/app-genie-3.png`), **mesma situação**, vistas; Dify (`web/app/components/main-nav/routes.ts:44-116`) e LibreChat (`client/src/hooks/Nav/useSideNavLinks.ts:122-243`), **situação diferente**: listas sem título | grupos com título pequeno acima dos itens | nativo: a peça já existe em `ui/` (`SidebarGroupLabel`, `apps/web/src/ui/sidebar.tsx:252`) | — | U4 | — |
 | O endereço antigo leva ao novo | `…/agents/construtor/$conversationId` (`routes/_app/companies/$companyId/projects/$projectId_.agents.construtor.$conversationId.tsx:8`) | `@tanstack/router-core` (instalado com `@tanstack/react-router` 1.170.44) `src/redirect.ts:102-122`, `src/route.ts:1020-1025`, `src/load-client.ts:1723-1755` (o `followRedirect` navega com `replace: true` em todo redirect); o mesmo caso no Conexus, `routes/_app/companies/$companyId/data.$copyId.tsx:3-10` | `beforeLoad` lança `redirect({ to, params })`; a opção `replace` não se repete, porque o router já a força | nativo | — | U3 | o arquivo da rota nova; o antigo fica só com o `beforeLoad` |
@@ -515,7 +525,7 @@ não toca.
 | 8 | A caixa de começar lê só o nome do agente e o tipo de arquivo (`BoxWords`), e não a sala inteira | os dois lugares que montam uma sala só para a caixa (`area.tsx:85`, `home.tsx:111`) não têm conversa; com a sala tipada, teriam de inventar os campos de uma sala | um quinto tipo de sala, "antes da conversa" |
 | 9 | Renomear nas três conversas novas entra na parte do servidor (U13), e não na da tela | a rota nativa e a conferência do título são do servidor; a resposta 4 do fundador põe o servidor depois do `A1`. Até a U13, só o Assistente renomeia, como hoje | uma rota nossa de renomear por agente, na parte da tela, que a U13 apagaria |
 | 10 | A linha de log de Renomear passa a `CONVERSATION_RENAMED`, com o tipo de agente, no lugar de `ASSISTANT_CONVERSATION_RENAMED` | uma rota para os quatro; o guarda grava a linha como já grava as da troca de modelo | uma linha por agente, pela ficha |
-| 11 | O registro de leituras de dados (`apps/web/src/hub/data/text.ts:14-15`) diz "Construtor de apps" e "Construtor de agentes" | é texto que a pessoa lê; os ids `BUILDER` e `CONSTRUTOR` que ele traduz ficam | — |
+| 11 | O registro de leituras de dados (`apps/web/src/hub/data/text.ts:14-15`) diz "Conexus em Conversas", "Conexus em Construir" e "Conexus em Agentes" | é texto que a pessoa lê; os ids `BUILDER` e `CONSTRUTOR` que ele traduz ficam | — |
 | 12 | O agendador só apaga uma automação cujo fluxo não está registrado na quinta falta seguida (`MISSES_BEFORE_DELETE = 5`), e a U15 entra antes do codemod | é o número do teste da auditoria (FERR-7); três faltas, o padrão do Mastra, são uns 30 segundos (um tique dura 10), menos que um reinício com um fluxo renomeado, e cinco são uns 50; e a mudança é de comportamento, então não vai num pull request que só move (G5a) | voltar ao padrão do Mastra, tirando a opção |
 
 ## U1 O registro inteiro e a sala por agente
@@ -933,13 +943,8 @@ antigo.
 
 **Base e modelo.** O commit de G2 no `main`. Sonnet: textos e um menu em grupos.
 
-**Antes da unidade: o protótipo.** A decisão B do fundador pede o protótipo antes do código. Ele
-mostra, a 1366 e a 390 px e nos dois temas: o menu do Projeto em grupos, a cabeça da resposta das
-quatro conversas, a linha de trabalho do Construtor de apps, o bloco "Conversas com o Construtor de
-agentes" e o lugar de **Renomear** nas quatro listas (o da lista suspensa é a linha sem referência
-desta etapa). O firstmate o faz pelo `shape` do Impeccable, com as perguntas ao fundador em
-português ([Impeccable](../reference/impeccable.md)), e o desenho de caixas aprovado entra neste
-cartão como emenda.
+**O protótipo.** Feito e aprovado pelo fundador em 2026-11-24 (a seção "O protótipo aprovado", na
+matriz de estados). A U4 refaz as telas pelo cartão, e o QA as compara com as capturas aprovadas.
 
 ### As linhas da tabela
 
@@ -996,12 +1001,13 @@ V62) e [Impeccable](../reference/impeccable.md).
 ### A ordem do trabalho
 
 1. **Os nomes num lugar.** Critérios: 10, 11.
-   - **Arquivos:** `AGENT_NAMES`; os textos da lista acima; `builder-turn.tsx:128` passa a mostrar
-     `room.agent` sem o caso do "Conexus".
+   - **Arquivos:** `CONEXUS`; os textos da lista acima e da tabela aprovada; `builder-turn.tsx:128`
+     passa a mostrar `room.agent` sem o caso do "Conexus", e a cabeça da resposta escolhe a marca ou o
+     ícone de agente pelo `kind`; a linha `mark` do `DESIGN.md`.
    - **Testes:** a cabeça da resposta, um caso por sala; `names.test.ts`, que lê os módulos de texto
-     da web e as frases de falha e recusa "Builder" e "Construtor" sem "de apps" ou "de agentes".
-   - **Mutações à mão:** devolver o `agent === 'Builder' ? 'Conexus'` deixa vermelho o caso do
-     Construtor de apps; deixar um "Builder" em `app-failures.ts` deixa `names.test.ts` vermelho.
+     da web e as frases de falha e recusa "Builder", "Construtor" e "Assistente".
+   - **Mutações à mão:** pôr a marca no lugar do ícone de agente no `SAVED_AGENT` deixa vermelho o
+     caso do agente salvo; deixar um "Builder" em `app-failures.ts` deixa `names.test.ts` vermelho.
 2. **As contas de modelo.** Critérios: 13.
    - **Arquivos:** os três textos dizem "os agentes" (a decisão 7 do firstmate).
 3. **O menu em grupos.** Critérios: 12, 15.
@@ -1168,7 +1174,8 @@ pequenas, cada uma num commit, com um retrato regravado.
 ### As linhas da tabela
 
 - **A frase da ferramenta do Assistente.** `B/assistant/propose.ts:36-42`: as duas descrições
-  citam o botão "Mandar ao Builder" (`description` e `next` de `change`). Só o nome do botão muda;
+  citam o botão "Mandar ao Builder" (`description` e `next` de `change`). Só o nome do botão muda,
+  para o texto novo, "Mandar para Construir";
   o resto do texto que o modelo lê, "Builder" incluído, fica igual byte a byte (a etapa não muda o
   pedido de nenhum agente, e o nome do agente no pedido é do `A3`). Os testes que afirmam a frase:
   `B/assistant/propose.test.ts:95,110`, `B/assistant/instructions.test.ts:165`.
@@ -1187,7 +1194,7 @@ pequenas, cada uma num commit, com um retrato regravado.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `B/assistant/propose.ts` | Muda: "Mandar ao Builder" vira "Mandar ao Construtor de apps", nas duas frases de `change` | o Assistente |
+| `B/assistant/propose.ts` | Muda: "Mandar ao Builder" vira "Mandar para Construir", nas duas frases de `change` | o Assistente |
 | `B/assistant/requests/*.snapshot` | Muda: regravados | `B/assistant/request.test.ts` |
 | `B/assistant/propose.test.ts`, `instructions.test.ts` | Muda: a frase afirmada | — |
 | `B/mastra/mastra.ts` | Muda: `schedulerOf` passa `missesBeforeDelete` | `createMastra` |
