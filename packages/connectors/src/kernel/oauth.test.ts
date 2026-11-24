@@ -18,6 +18,7 @@ import { toRequest } from './request.ts'
 
 /** A provider that is not Mercado Livre: another exchange route, a `scope` in the params, other lists of refusals. */
 const invented = oauth2Code({
+  credentialClass: 'EXCLUSIVE',
   app: { from: 'installation' },
   authorize: {
     url: 'https://login.exemplo.test/oauth/consent',
@@ -91,13 +92,15 @@ function connectorWith(changes: { auth: OAuth2CodeAuth | typeof sankhya.auth }) 
     subjects: { ping: 'Ping' },
     operations: [ping],
     check: ping,
-    skill: { content: '', references: {} },
+    numbers: 'DOUBLE',
+    skill: { written: { content: '', references: {} } },
     ...changes,
   })
 }
 
 describe('a declaração recusa', () => {
   const declared = {
+    credentialClass: 'EXCLUSIVE' as const,
     app: { from: 'installation' } as const,
     authorize: { url: 'https://login.exemplo.test/c' as const, pkce: 'S256' as const, params: {} },
     token: { path: '/token' as const },

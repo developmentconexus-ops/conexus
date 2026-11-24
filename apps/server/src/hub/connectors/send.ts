@@ -4,7 +4,7 @@ import type { ConnectionId, ConnectionSignInId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { retryAfterMs } from '../../platform/retry-after.ts'
-import type { Redaction, Unreadable } from './wire.ts'
+import type { Reading, Unreadable } from './wire.ts'
 import { answerOf, bodyOf, nativeOf, unreadable } from './wire.ts'
 
 /**
@@ -50,24 +50,33 @@ export type ExecutorDeps = {
  * keeps what it said. What is logged is scalars: the connection, the status or the error's name
  * and cause code; never a body.
  */
-export async function send(
+export function send(
   deps: ExecutorDeps,
   request: Request,
   where: Where,
-  redaction: Redaction,
+  reading: Reading,
   deadlineMs: number,
 ): Promise<ProviderAnswer | Unreadable | Unreachable> {
   // Outside the `try`: a deadline the timer refuses is the caller's mistake, not the provider down.
-  const signal = AbortSignal.timeout(deadlineMs)
+  return sendUntil(deps, request, where, reading, AbortSignal.timeout(deadlineMs))
+}
+
+export async function sendUntil(
+  deps: ExecutorDeps,
+  request: Request,
+  where: Where,
+  reading: Reading,
+  signal: AbortSignal,
+): Promise<ProviderAnswer | Unreadable | Unreachable> {
   try {
     const response = await deps.fetch(request, { signal })
     const { status } = response
     const bytes = await bodyOf(response)
     const wait =
       status === 429 ? retryAfterMs(Object.fromEntries(response.headers), Date.now()) : undefined
-    const answer = bytes === null ? null : answerOf(status, bytes, redaction, wait)
+    const answer = bytes === null ? null : answerOf(status, bytes, reading, wait)
     if (status >= 500) return unreachableAt(deps, where, status, answer?.body ?? null)
-    return answer ?? unreadable(status, bytes, redaction)
+    return answer ?? unreadable(status, bytes, reading)
   } catch (error) {
     const cause = unreachableCause(error)
     if (cause === undefined) throw error
@@ -88,17 +97,17 @@ export async function sendRead(
   deps: ExecutorDeps,
   requestFor: () => Request,
   where: Where,
-  redaction: Redaction,
+  reading: Reading,
   a: Readonly<{ deadlineMs: number; repeat: boolean }>,
 ): Promise<ProviderAnswer | Unreadable | Unreachable> {
   const started = performance.now()
-  const sent = await send(deps, requestFor(), where, redaction, a.deadlineMs)
+  const sent = await send(deps, requestFor(), where, reading, a.deadlineMs)
   if (!a.repeat || 'kind' in sent || sent.status !== 429 || sent.retryAfterMs === undefined)
     return sent
   if (sent.retryAfterMs >= a.deadlineMs - (performance.now() - started) - 1) return sent
   await sleep(sent.retryAfterMs)
   const remaining = Math.floor(a.deadlineMs - (performance.now() - started))
-  return send(deps, requestFor(), where, redaction, remaining)
+  return send(deps, requestFor(), where, reading, remaining)
 }
 
 export function unreachableAt(

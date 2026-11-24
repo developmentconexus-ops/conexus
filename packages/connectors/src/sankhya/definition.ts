@@ -26,6 +26,7 @@ export const sankhya = defineConnector({
   version: '1.0.0',
   origin: 'https://api.sankhya.com.br',
   auth: clientCredentials({
+    credentialClass: 'SHAREABLE',
     fields: {
       clientId: { label: 'Client ID', maxLength: 200, help: INTEGRATION_KEYS, visible: true },
       clientSecret: {
@@ -75,6 +76,7 @@ export const sankhya = defineConnector({
   category: 'ERP',
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
   logo: LOGO,
+  numbers: 'EXACT', // the DbExplorer answers decimals as JSON numbers past a double's digits
   perProject: 'one', // a Projeto reads one Sankhya (founder, 2026-10-29)
   subjects: { porta: 'Porta de leitura', ...sankhyaSubjects },
   operations: sankhyaOperations,
@@ -83,5 +85,5 @@ export const sankhya = defineConnector({
   check: empresas,
   readDoor: sankhyaDoor,
   callLimit: { countedBy: 'ACCOUNT' }, // each company has its own Sankhya and its own keys
-  skill: readSkill(SKILL),
+  skill: { written: readSkill(SKILL) },
 })

@@ -3,17 +3,12 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type { Connector, Operation } from '../../hub/connectors/public.ts'
-import { CONNECTORS } from '../../hub/connectors/public.ts'
+import { CONNECTORS, toolNameOf } from '../../hub/connectors/public.ts'
 import type { ConnectorAccess } from './connector-tools.ts'
 import { answerWords, NOT_GRANTED, readOn } from './connector-tools.ts'
 
 type Read = Operation<unknown, unknown, 'read'>
 type TypedRead = Readonly<{ connector: Connector; operation: Read }>
-
-/** The tool's name for one read of a connector: `sankhya_pedidos`. */
-function typedReadName(connector: string, operation: string): string {
-  return `${connector}_${operation}`
-}
 
 function isRead(operation: Operation<unknown, unknown>): operation is Read {
   return operation.class === 'read'
@@ -28,7 +23,7 @@ function readsIn(connector: Connector): readonly Read[] {
 const CATALOG: ReadonlyMap<string, TypedRead> = new Map(
   CONNECTORS.flatMap((connector) =>
     readsIn(connector).map((operation) => [
-      typedReadName(connector.id, operation.id),
+      toolNameOf(connector, operation.id),
       { connector, operation },
     ]),
   ),

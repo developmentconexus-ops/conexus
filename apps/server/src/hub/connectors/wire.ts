@@ -1,6 +1,5 @@
-import type { Native, ProviderAnswer, Unread } from '@conexus/connectors'
-import { locateOf } from '@conexus/connectors'
-import { z } from 'zod'
+import type { Native, Numbers, ProviderAnswer, Unread } from '@conexus/connectors'
+import { locateOf, parseJson } from '@conexus/connectors'
 
 /**
  * A provider's answer is read up to this many bytes and no further. Measured on a real Sankhya
@@ -36,8 +35,11 @@ export async function bodyOf(response: Response): Promise<Uint8Array | null> {
 
 const REDACTED = '[redacted]'
 
-/** The request's secrets, replaced in what comes back; `whole2xx`: a 2xx reaches the kit unchanged. */
-export type Redaction = Readonly<{ secrets: readonly string[]; whole2xx: boolean }>
+/**
+ * How an answer is read: the request's secrets replaced in what comes back; `whole2xx`, a 2xx
+ * reaches the kit unchanged; `numbers`, the connector's JSON numbers (the kit's reader).
+ */
+export type Reading = Readonly<{ secrets: readonly string[]; whole2xx: boolean; numbers: Numbers }>
 
 /** The text with every secret of the request replaced, as it is and as JSON writes it (Nango's `buildValuesToFilter`). */
 function redacted(text: string, secrets: readonly string[]): string {
@@ -60,15 +62,15 @@ export function isOk(status: number): boolean {
 export function answerOf(
   status: number,
   bytes: Uint8Array,
-  redaction: Redaction,
+  reading: Reading,
   waitMs?: number,
 ): ProviderAnswer | null {
   const wait = waitMs === undefined ? {} : { retryAfterMs: waitMs }
   if (bytes.byteLength === 0) return { status, body: undefined, ...wait }
   const text = Buffer.from(bytes).toString('utf8')
-  const safe = redaction.whole2xx && isOk(status) ? text : redacted(text, redaction.secrets)
+  const safe = reading.whole2xx && isOk(status) ? text : redacted(text, reading.secrets)
   try {
-    return { status, body: z.unknown().parse(JSON.parse(safe)), ...wait }
+    return { status, body: parseJson(safe, reading.numbers), ...wait }
   } catch (error) {
     if (!(error instanceof SyntaxError)) throw error
     return isOk(status) ? null : { status, body: safe, ...wait }
@@ -80,11 +82,7 @@ export function nativeOf(status: number, body: unknown): Native {
 }
 
 /** An answer the kit never sees: past the cap (`bytes` null, nothing kept), or a 2xx in text that is not JSON; the screen says which. */
-export function unreadable(
-  status: number,
-  bytes: Uint8Array | null,
-  redaction: Redaction,
-): Unreadable {
+export function unreadable(status: number, bytes: Uint8Array | null, reading: Reading): Unreadable {
   const native = nativeOf(status, null)
   if (bytes === null)
     return {
@@ -95,6 +93,6 @@ export function unreadable(
     kind: 'SHAPE',
     issues: [{ path: '', expected: 'json', received: 'text' }],
   }
-  const text = redacted(Buffer.from(bytes).toString('utf8'), redaction.secrets)
+  const text = redacted(Buffer.from(bytes).toString('utf8'), reading.secrets)
   return { kind: 'UNREADABLE', native: { ...native, reason }, text }
 }

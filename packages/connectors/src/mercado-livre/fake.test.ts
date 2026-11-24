@@ -130,7 +130,10 @@ test('as respostas gravadas: o dublê responde as quatro formas com as chaves, o
   async function ask(id: string, input: Record<string, unknown>) {
     const operation = mercadoLivre.operations.find((each) => each.id === id) ?? assert.fail(id)
     const request = requestOf(operation, input, ACCOUNT, SENT_AT)
-    const answered = await answerOf(await fake.handle(toRequest(mercadoLivre, request, token)))
+    const answered = await answerOf(
+      await fake.handle(toRequest(mercadoLivre, request, token)),
+      mercadoLivre.numbers,
+    )
     return { request, answered }
   }
   const first = await ask('anuncios', { ...SCAN, limit: 100 })

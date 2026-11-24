@@ -18,6 +18,7 @@ import {
   executorWithBrokenLogout,
   NO_EXECUTOR,
   OPENED,
+  tokenOf,
 } from './test-limits.ts'
 
 test('uma por vez: dez leituras na mesma ligação fazem um login e nunca duas chamadas abertas; outra ligação anda ao lado', async (t) => {
@@ -66,15 +67,15 @@ test('o dono do token: reusa enquanto vale; perto do fim faz o logout do velho e
   const events: string[] = []
   const limits = createLimits({ executor: executorOf(events, 300) })
   const opened = OPENED
-  const first = await limits.token(opened, 1000)
-  assert.deepEqual(await limits.token(opened, 1000), first)
+  const first = await tokenOf(limits, opened, 1000)
+  assert.deepEqual(await tokenOf(limits, opened, 1000), first)
   assert.deepEqual(events, ['login1'])
   await limits.closeAll(1000)
   assert.deepEqual(events, ['login1', 'logout t1'])
   const short: string[] = []
   const renewing = createLimits({ executor: executorOf(short, 30) })
-  await renewing.token(opened, 1000)
-  await renewing.token(opened, 1000)
+  await tokenOf(renewing, opened, 1000)
+  await tokenOf(renewing, opened, 1000)
   assert.deepEqual(short, ['login1', 'logout t1', 'login2'])
 })
 
@@ -148,7 +149,7 @@ test('nenhum token vence aberto: perto do fim, o logout sai sozinho, uma vez, e 
   const clock = clockOf(t)
   const events: string[] = []
   const limits = createLimits({ executor: executorOf(events, 61) })
-  await limits.token(OPENED, 1000)
+  await tokenOf(limits, OPENED, 1000)
   assert.deepEqual(events, ['login1'])
   clock.tick(999)
   await clock.settled()
@@ -156,7 +157,7 @@ test('nenhum token vence aberto: perto do fim, o logout sai sozinho, uma vez, e 
   clock.tick(1)
   await clock.settled()
   assert.deepEqual(events, ['login1', 'logout t1'], 'logged out at its end minus the margin')
-  await limits.token(OPENED, 1000)
+  await tokenOf(limits, OPENED, 1000)
   assert.deepEqual(events, ['login1', 'logout t1', 'login2'])
   await limits.closeAll(1000)
   clock.tick(1000)
@@ -172,7 +173,7 @@ test('o logout do fim espera a vez da ligação: com uma leitura aberta no token
   const clock = clockOf(t)
   const events: string[] = []
   const limits = createLimits({ executor: executorOf(events, 61) })
-  await limits.token(OPENED, 1000)
+  await tokenOf(limits, OPENED, 1000)
   const read = Promise.withResolvers<void>()
   const reading = limits.inTurn(OPENED.id, 1000, async () => {
     await read.promise
@@ -200,7 +201,7 @@ test('o logout do fim com defeito vai ao registro e não derruba o processo', as
   }
   process.on('unhandledRejection', hear)
   try {
-    await limits.token(OPENED, 1000)
+    await tokenOf(limits, OPENED, 1000)
     clock.tick(1000)
     await clock.settled()
   } finally {

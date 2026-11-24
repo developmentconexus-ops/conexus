@@ -18,7 +18,8 @@ import { Credential, open, seal } from '../../platform/seal.ts'
 import type { OAuthConnector } from './apps.ts'
 import { appKeysOf, isOAuth } from './apps.ts'
 import { subjectsOf } from './catalog-subjects.ts'
-import type { BearerToken, OpenedConnection } from './executor.ts'
+import type { OpenedConnection } from './executor.ts'
+import { bearerOf } from './executor.ts'
 import { notesOf } from './notes.ts'
 import type { Deps, OfConnection, Viewer } from './rows.ts'
 import {
@@ -33,7 +34,7 @@ import {
 } from './rows.ts'
 import { connection } from './tables.ts'
 import { opened } from './testing.ts'
-import { accessFor, statusOf } from './tokens.ts'
+import { sessionFor, statusOf } from './tokens.ts'
 
 const NAME_KEY = 'connection_name_key'
 
@@ -263,31 +264,42 @@ async function revoked(deps: Deps, input: OfConnection): Promise<Revocation> {
 /** The failures after which Desligar cannot send the revoke but still removes the connection. */
 const NOT_SENDABLE: ReadonlySet<string> = new Set(['SEAL_REFUSED', 'CONNECTOR_NOT_CONFIGURED'])
 
-type Sent =
-  | NonNullable<Awaited<ReturnType<Deps['executor']['revoke']>>>
-  | { kind: 'NONE' }
-  | { kind: 'NO_TOKEN'; native: Native }
+type Revoke = Awaited<ReturnType<Deps['executor']['revoke']>>
+type Sent = NonNullable<Revoke> | { kind: 'NONE' } | { kind: 'NO_TOKEN'; native: Native }
 
-/** The revoke sent with the connection's live token; an expired one the provider refuses is asked again, forced, once (as Testar does). */
 async function revokeWithToken(
   deps: Deps,
   input: OfConnection,
   a: { open: OpenedConnection; declared: OAuthConnector; app: AppKeys },
 ): Promise<Sent> {
-  const access = accessFor(deps, input)
-  function send(token: BearerToken) {
-    return deps.executor.revoke(a.open, a.declared, token, a.app, deps.callDeadlineMs)
-  }
-  const login = await access.token(a.open, { force: false })
-  if (login.kind === 'UNREACHABLE') return { kind: 'UNREACHABLE', native: login.native }
-  if (login.kind !== 'TOKEN') return { kind: 'NO_TOKEN', native: login.native }
-  const answered = await send(login.token)
+  const answered = await sessionFor(deps, input, a.open).call<Revoke>(async (token) => {
+    const sent = await deps.executor.revoke(
+      a.open,
+      a.declared,
+      bearerOf(token),
+      a.app,
+      deps.callDeadlineMs,
+    )
+    return sent?.kind === 'REFUSED' && sent.native.status === 401
+      ? { kind: 'TOKEN_EXPIRED' as const, native: sent.native }
+      : sent
+  }, AbortSignal.timeout(deps.callDeadlineMs))
   if (answered === null) return { kind: 'NONE' }
-  if (answered.kind !== 'REFUSED' || answered.native.status !== 401) return answered
-  const again = await access.token(a.open, { force: true, refused: answered.native })
-  if (again.kind === 'UNREACHABLE') return again
-  if (again.kind !== 'TOKEN') return { kind: 'NO_TOKEN', native: again.native }
-  return (await send(again.token)) ?? { kind: 'NONE' }
+  switch (answered.kind) {
+    case 'REVOKED':
+    case 'REFUSED':
+    case 'UNREACHABLE':
+      return answered
+    case 'TOKEN_EXPIRED':
+    case 'NEEDS_REAUTH':
+      return { kind: 'REFUSED', native: answered.native }
+    case 'AUTH_REFUSED':
+    case 'UNREADABLE':
+    case 'APP_REFUSED':
+      return { kind: 'NO_TOKEN', native: answered.native }
+    default:
+      return answered satisfies never
+  }
 }
 
 function whereOf(input: OfConnection, connector: Connector) {

@@ -1,12 +1,12 @@
-import type { ConnectorId } from '@conexus/connectors'
+import type { ConnectorId, Grant, Session } from '@conexus/connectors'
+import { RENEW_BEFORE_MS, sessionOf } from '@conexus/connectors'
 import type { ConnectionId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import type { BearerToken, Executor, Login, OpenedConnection } from './executor.ts'
+import type { Executor, LoginFailure, OpenedConnection } from './executor.ts'
 
-// A token this close to its end is renewed before a call, with room left for the old one's logout:
-// an expired Sankhya token's logout is refused, and its session hangs (measured 2026-10-30).
-const EARLY_MS = 60_000
+type PastedSession = Session<LoginFailure>
+
 const LOGOUT_DEADLINE_MS = 3_000
 // The scheduled logout waits for its turn up to this, well inside the margin before the token's end.
 const ENDING_TURN_MS = 30_000
@@ -14,7 +14,6 @@ const ENDING_TURN_MS = 30_000
 /** What `inTurn` answers to a waiter whose deadline passed in the queue. */
 type Deadline = Readonly<{ kind: 'DEADLINE' }>
 
-/** One per Hub process (0058): each connection's calls one at a time, and a pasted-key connection's token reused, renewed with a logout first. */
 export type Limits = {
   /**
    * Runs `work` when the connection's turn comes; DEADLINE when `deadlineMs` passes in the queue, or
@@ -36,28 +35,16 @@ export type Limits = {
     work: (waitedMs: number) => Promise<T>,
     signal?: AbortSignal,
   ): Promise<T | Deadline>
-  /** The live token, or one login (the old token logged out first, while it lives). */
-  token(opened: OpenedConnection, deadlineMs: number): Promise<Login>
-  /** A 401 on `token`: dropped when it is still the current one. */
-  invalidate(opened: OpenedConnection, token: BearerToken): void
+  /** The connection's session, one per process: its token reused, renewed with the old one's logout first, and logged out before it expires. */
+  session(opened: OpenedConnection): PastedSession
   /** Desligar, Conectar de novo: log out and forget. */
   forget(connection: ConnectionId): Promise<void>
   /** The Hub's end: log out every live token, never throwing, within `deadlineMs`. */
   closeAll(deadlineMs: number): Promise<void>
 }
 
-type Seat = Pick<OpenedConnection, 'id' | 'connector'>
-type TokenState =
-  | Readonly<{ kind: 'NONE' }>
-  | Readonly<{ kind: 'LIVE'; token: BearerToken; expiresAt: number }>
-  | Readonly<{ kind: 'RENEWING'; done: Promise<Login> }>
-
 /** The calls of one connection: `busy` while one runs, the rest waiting in arrival order. */
 type Lane = { busy: boolean; waiting: Set<() => void> }
-type Held = { seat: Seat; state: TokenState }
-
-const NONE = { kind: 'NONE' } as const
-
 type InLane<K> = <T>(
   key: K,
   deadlineMs: number,
@@ -123,122 +110,80 @@ function createLanes<K>(): InLane<K> {
   }
 }
 
-/** Each live token's own end: logged out before it expires, since an expired token's logout is refused. */
-function createEndings(
-  held: Map<ConnectionId, Held>,
-  executor: Executor,
-  inTurn: Limits['inTurn'],
-  log: FailureLog,
-) {
-  const timers = new Map<ConnectionId, NodeJS.Timeout>()
+type Ending = { grant: Grant | null; timer: NodeJS.Timeout | undefined }
+type Held = Readonly<{ session: PastedSession; ending: Ending }>
 
-  function stop(id: ConnectionId): void {
-    clearTimeout(timers.get(id))
-    timers.delete(id)
-  }
-
-  return {
-    stop,
-    stopAll(): void {
-      for (const id of [...timers.keys()]) stop(id)
-    },
-    schedule(opened: OpenedConnection, token: BearerToken, expiresAt: number): void {
-      stop(opened.id)
-      const timer = setTimeout(
-        () => {
-          timers.delete(opened.id)
-          // In the connection's turn, like every call: a logout on a token with a read open is refused.
-          // A turn not had in time leaves the token to the next call's renewal, which logs out first.
-          // No one awaits it: a defect in it is logged, never an unhandled rejection that ends the Hub.
-          inTurn(opened.id, ENDING_TURN_MS, async () => {
-            const now = held.get(opened.id)?.state
-            if (now?.kind !== 'LIVE' || now.token !== token) return
-            held.set(opened.id, { seat: opened, state: NONE })
-            await executor.logout(opened, token, LOGOUT_DEADLINE_MS)
-          }).catch((error: unknown) =>
-            logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error }), {
-              connection: opened.id,
-            }),
-          )
-        },
-        Math.max(0, expiresAt - EARLY_MS - Date.now()),
-      )
-      timer.unref()
-      timers.set(opened.id, timer)
-    },
-  }
-}
-
-/** The one token of each pasted-key connection: reused while it lives, renewed with the old one's logout first. */
-function createTokens(
+function createSessions(
   executor: Executor,
   inTurn: Limits['inTurn'],
   log: FailureLog,
 ): Omit<Limits, 'inTurn' | 'inCopyTurn'> {
   const held = new Map<ConnectionId, Held>()
-  const endings = createEndings(held, executor, inTurn, log)
 
-  async function login(opened: OpenedConnection, deadlineMs: number): Promise<Login> {
-    const answered = await executor.login(opened, deadlineMs)
-    if (answered.kind !== 'TOKEN') {
-      held.set(opened.id, { seat: opened, state: NONE })
-      return answered
-    }
-    const expiresAt = Date.now() + answered.expiresInSeconds * 1000
-    held.set(opened.id, { seat: opened, state: { kind: 'LIVE', token: answered.token, expiresAt } })
-    endings.schedule(opened, answered.token, expiresAt)
-    return { kind: 'TOKEN', token: answered.token }
+  function stop(ending: Ending): void {
+    clearTimeout(ending.timer)
+    ending.timer = undefined
   }
 
-  async function renew(
-    opened: OpenedConnection,
-    old: BearerToken | null,
-    deadlineMs: number,
-  ): Promise<Login> {
-    try {
-      if (old !== null) await executor.logout(opened, old, Math.min(deadlineMs, LOGOUT_DEADLINE_MS))
-      return await login(opened, deadlineMs)
-    } finally {
-      // A login that threw leaves no half-renewal for the next caller to wait on.
-      if (held.get(opened.id)?.state.kind === 'RENEWING')
-        held.set(opened.id, { seat: opened, state: NONE })
-    }
+  function close(entry: Held, deadlineMs: number): Promise<void> {
+    stop(entry.ending)
+    return entry.session.close(AbortSignal.timeout(deadlineMs))
+  }
+
+  /** The end of `grant`, in the connection's turn like every call: a logout on a token with a read open is refused. */
+  function schedule(id: ConnectionId, ending: Ending, grant: Grant): void {
+    stop(ending)
+    ending.grant = grant
+    const timer = setTimeout(
+      () => {
+        ending.timer = undefined
+        inTurn(id, ENDING_TURN_MS, async () => {
+          const entry = held.get(id)
+          if (entry?.ending !== ending || ending.grant !== grant) return
+          held.delete(id)
+          await close(entry, LOGOUT_DEADLINE_MS)
+        }).catch((error: unknown) =>
+          logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error }), { connection: id }),
+        )
+      },
+      Math.max(0, grant.expiresAt - RENEW_BEFORE_MS - Date.now()),
+    )
+    timer.unref()
+    ending.timer = timer
   }
 
   return {
-    token(opened, deadlineMs) {
-      const now = held.get(opened.id)?.state ?? NONE
-      if (now.kind === 'LIVE' && now.expiresAt - EARLY_MS > Date.now())
-        return Promise.resolve({ kind: 'TOKEN', token: now.token })
-      if (now.kind === 'RENEWING') return now.done
-      const done = renew(opened, now.kind === 'LIVE' ? now.token : null, deadlineMs)
-      held.set(opened.id, { seat: opened, state: { kind: 'RENEWING', done } })
-      return done
-    },
-
-    invalidate(opened, token) {
-      const now = held.get(opened.id)?.state
-      if (now?.kind === 'LIVE' && now.token === token) {
-        endings.stop(opened.id)
-        held.set(opened.id, { seat: opened, state: NONE })
-      }
+    session(opened) {
+      const found = held.get(opened.id)
+      if (found !== undefined) return found.session
+      const source = executor.pasted(opened)
+      const ending: Ending = { grant: null, timer: undefined }
+      const session = sessionOf<LoginFailure>(
+        {
+          ...source,
+          async open(a) {
+            const opening = await source.open(a)
+            if (opening.kind === 'TOKEN') schedule(opened.id, ending, opening)
+            return opening
+          },
+        },
+        Date.now,
+      )
+      held.set(opened.id, { session, ending })
+      return session
     },
 
     async forget(connection) {
-      const now = held.get(connection)
-      endings.stop(connection)
+      const entry = held.get(connection)
+      if (entry === undefined) return
       held.delete(connection)
-      if (now?.state.kind === 'LIVE')
-        await executor.logout(now.seat, now.state.token, LOGOUT_DEADLINE_MS)
+      await close(entry, LOGOUT_DEADLINE_MS)
     },
 
     async closeAll(deadlineMs) {
-      const live = [...held.values()].flatMap((entry) =>
-        entry.state.kind === 'LIVE' ? [{ seat: entry.seat, token: entry.state.token }] : [],
-      )
+      const live = [...held.values()]
       held.clear()
-      endings.stopAll()
-      await Promise.all(live.map((one) => executor.logout(one.seat, one.token, deadlineMs)))
+      await Promise.all(live.map((entry) => close(entry, deadlineMs)))
     },
   }
 }
@@ -248,6 +193,6 @@ export function createLimits(deps: { executor: Executor; log: FailureLog }): Lim
   return {
     inTurn,
     inCopyTurn: createLanes<ConnectorId>(),
-    ...createTokens(deps.executor, inTurn, deps.log),
+    ...createSessions(deps.executor, inTurn, deps.log),
   }
 }

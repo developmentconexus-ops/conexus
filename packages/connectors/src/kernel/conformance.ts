@@ -20,6 +20,7 @@ import { authorizeUrl, codeRequest } from './oauth.ts'
 import type { Account, Operation, OperationId } from './operation.ts'
 import { OPERATION_CLASSES, requestOf } from './operation.ts'
 import { toRequest } from './request.ts'
+import { connectorSkill } from './skill.ts'
 
 /** Every request the probes build, as text: the URL, the headers and the body. */
 async function textOf(request: Request): Promise<string> {
@@ -68,23 +69,13 @@ async function answerInOrder(connector: Connector, fake: Fake): Promise<void> {
   })
 }
 
-/** The ids, the version and the skill: one part per subject, naming each of its operations. */
 function assertDeclared(connector: Connector): void {
   const all = inProbeOrder(connector)
   assert.equal(new Set(all.map((operation) => operation.id)).size, all.length)
   assert.match(connector.version, /^\d+\.\d+\.\d+$/)
-  const { content, references } = connector.skill
-  for (const [subject, label] of Object.entries(connector.subjects)) {
+  const { content } = connectorSkill(connector)
+  for (const [subject, label] of Object.entries(connector.subjects))
     assert.ok(content.includes(subject) && content.includes(label), `SKILL.md names ${subject}`)
-    const operations = connector.operations.filter((operation) => operation.subject === subject)
-    if (operations.length === 0) continue // the door's entries are named in SKILL.md itself
-    const part = references[`${subject}.md`]
-    assert.ok(part, `${subject} has a part of the skill`)
-    for (const operation of operations)
-      assert.ok(part.includes(operation.id), `${subject}.md names ${operation.id}`)
-  }
-  for (const operation of Object.values(connector.readDoor ?? {}))
-    assert.ok(content.includes(operation.id), operation.id)
   assert.ok(
     content.split('\n').length < 500,
     'SKILL.md stays under the 500 lines Mastra recommends',

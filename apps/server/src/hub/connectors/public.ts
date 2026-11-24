@@ -31,7 +31,7 @@ import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
 export type { Connector, Native, Operation } from '@conexus/connectors'
-export { CONNECTORS, deniesAccess } from '@conexus/connectors'
+export { CONNECTORS, deniesAccess, toolNameOf } from '@conexus/connectors'
 export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
 export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { WriteShape } from './assistant-port.ts'

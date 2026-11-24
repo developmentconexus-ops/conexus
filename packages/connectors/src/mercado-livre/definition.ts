@@ -23,6 +23,7 @@ export const mercadoLivre = defineConnector({
   // redirect address is fixed and https; the body goes in the form (autenticacao-e-autorizacao,
   // desenvolvimento-seguro). The scopes (read, offline access) are marked on the app, not here.
   auth: oauth2Code({
+    credentialClass: 'EXCLUSIVE',
     app: { from: 'installation' },
     authorize: { url: 'https://auth.mercadolivre.com.br/authorization', pkce: 'S256', params: {} },
     token: { path: '/oauth/token' },
@@ -48,10 +49,11 @@ export const mercadoLivre = defineConnector({
   category: 'Marketplace',
   summary: 'O marketplace onde a loja vende: anúncios, pedidos, envios, perguntas e reclamações.',
   logo: LOGO,
+  numbers: 'DOUBLE',
   perProject: 'many', // a Projeto may read several stores
   callLimit: { countedBy: 'APP' }, // "per Client ID (application)": one Conexus app serves every company
   subjects: mercadoLivreSubjects,
   operations: mercadoLivreOperations,
   check: conta,
-  skill: readSkill(SKILL),
+  skill: { written: readSkill(SKILL) },
 })

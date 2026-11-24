@@ -7,18 +7,17 @@ import type {
   Connector,
   codeRequest,
   GrantAnswered,
+  LoggedOut,
   Native,
   Operation,
+  TokenSource,
   WriteOperation,
 } from '@conexus/connectors'
 import {
-  loggedOutBy,
-  logoutRequest,
+  credentialsSource,
   readGrant,
-  readToken,
   requestOf,
   revokeRequest,
-  tokenRequest,
   toRequest,
 } from '@conexus/connectors'
 import type { ConnectionId } from '@conexus/hub-api'
@@ -28,7 +27,7 @@ import type { Credential } from '../../platform/seal.ts'
 import { Secret } from '../../platform/secret.ts'
 import type { OAuthConnector } from './apps.ts'
 import type { ExecutorDeps, Where } from './send.ts'
-import { send, sendRead, unreachableAt, whereOf } from './send.ts'
+import { send, sendRead, sendUntil, unreachableAt, whereOf } from './send.ts'
 import type { Unreadable } from './wire.ts'
 import { isOk, nativeOf } from './wire.ts'
 import type { Wrote } from './wrote.ts'
@@ -36,6 +35,10 @@ import { wroteOf } from './wrote.ts'
 
 /** A bearer token inside the program: printed, it shows only its name, as a sealed credential. */
 export type BearerToken = Secret<'BearerToken'>
+
+export function bearerOf(token: string): BearerToken {
+  return new Secret('BearerToken', token)
+}
 
 /**
  * A connection whose sealed credential was opened for this call; the values live only here (S36).
@@ -60,22 +63,20 @@ type Revoked =
   | Readonly<{ kind: 'REVOKED' }>
   | Readonly<{ kind: 'REFUSED'; native: Native }>
   | Unreachable
-/** What the provider answered to ending a token's session: done, refused, or not reached. */
-type LoggedOut = 'LOGGED_OUT' | 'REFUSED' | 'UNREACHABLE'
-export type Login =
-  | Readonly<{ kind: 'TOKEN'; token: BearerToken }>
+export type LoginFailure =
   | Readonly<{ kind: 'AUTH_REFUSED'; native: Native }>
   | Unreadable
   | Unreachable
-/** A pasted-key login: the token and how long the provider says it lives. */
-type PastedLogin =
-  | Readonly<{ kind: 'TOKEN'; token: BearerToken; expiresInSeconds: number }>
-  | Exclude<Login, { kind: 'TOKEN' }>
 
 /** The one place the Hub opens a connector's credential and talks to its provider (decision 0056). */
 export type Executor = {
-  /** A new token for an opened connection: the login, sent once (`limits.ts` owns when), given up on after `deadlineMs`. */
-  login(connection: OpenedConnection, deadlineMs: number): Promise<PastedLogin>
+  /**
+   * The tokens of a pasted-key connection: the kit's login and logout of the connector, sent with the
+   * opened values (S36); each logout is logged by name and never thrown. The kit's session (`limits.ts`) says when.
+   */
+  pasted(
+    connection: OpenedConnection,
+  ): TokenSource<LoginFailure, LoggedOut<Unreadable | Unreachable>>
   /**
    * Calls one operation with that token, given up on after `deadlineMs`; never logs input, output
    * or credential (S41). Transport, deadline, redirect and 5xx are UNREACHABLE; the kit's Answered
@@ -101,17 +102,6 @@ export type Executor = {
     input: I,
     deadlineMs: number,
   ): Promise<Wrote<O>>
-  /**
-   * Ends the session of a pasted-key connection's token at the provider, as the connector declares
-   * it, while the token lives (an expired token's logout is refused). Nothing is sent, and null
-   * comes back, when the connector declares none; a refusal or a connector that cannot be reached
-   * is logged by name and never thrown.
-   */
-  logout(
-    connection: Pick<OpenedConnection, 'id' | 'connector'>,
-    token: BearerToken,
-    deadlineMs: number,
-  ): Promise<LoggedOut | null>
   /**
    * Sends an OAuth exchange or renewal and reads it by the kit. A 429 is UNREACHABLE, as a 5xx. A
    * refusal's body comes back with `secrets` replaced; a 2xx reaches the kit whole, since it may
@@ -178,12 +168,12 @@ async function revoked(
   })
   if (request === null) return null
   const where = whereOf(connection)
-  const redaction = { secrets: [token.reveal()], whole2xx: false }
+  const reading = { secrets: [token.reveal()], whole2xx: false, numbers: connector.numbers }
   const sent = await send(
     deps,
     toRequest(connector, request, token.reveal(), origin),
     where,
-    redaction,
+    reading,
     deadlineMs,
   )
   if ('kind' in sent)
@@ -194,64 +184,47 @@ async function revoked(
     : { kind: 'REFUSED', native: nativeOf(sent.status, sent.body) }
 }
 
-/** The pasted-key login, sent once to the connector's token path with the opened values. */
-async function loggedIn(
+function logEnded(
   deps: ExecutorDeps,
-  a: Readonly<{ connection: OpenedConnection; origin: string }>,
-  deadlineMs: number,
-): Promise<PastedLogin> {
-  const { connection } = a
-  const { connector } = connection
-  const auth = connector.auth
-  if (auth.kind !== 'client_credentials') throw new Error(`No pasted login for ${auth.kind}`)
-  const values = valuesOf(connection, auth)
-  const request = toRequest(connector, tokenRequest(auth, values), null, a.origin)
-  const redaction = { secrets: Object.values(values), whole2xx: false }
-  const sent = await send(deps, request, whereOf(connection), redaction, deadlineMs)
-  if ('kind' in sent) return sent
-  const token = readToken(auth, sent)
-  if (token.kind !== 'OK') return token
-  return {
-    kind: 'TOKEN',
-    token: new Secret('BearerToken', token.accessToken),
-    expiresInSeconds: token.expiresInSeconds,
-  }
+  where: Where,
+  ended: LoggedOut<Unreadable | Unreachable>,
+): void {
+  if (ended.kind === 'LOGGED_OUT') deps.log.info(where, 'CONNECTOR_LOGGED_OUT')
+  else if (ended.kind === 'REFUSED')
+    deps.log.info({ ...where, status: ended.answer.status }, 'CONNECTOR_LOGOUT_FAILED')
+  else if (ended.kind === 'FAILED') deps.log.info(where, 'CONNECTOR_LOGOUT_FAILED')
 }
 
-/** The connector's declared logout, sent with the token while it lives; null when it declares none. */
-async function loggedOut(
-  deps: ExecutorDeps,
-  a: Readonly<{
-    connection: Pick<OpenedConnection, 'id' | 'connector'>
-    token: BearerToken
-    origin: string
-  }>,
-  deadlineMs: number,
-): Promise<LoggedOut | null> {
-  const { connection, token } = a
-  const { auth } = connection.connector
-  if (auth.kind !== 'client_credentials') return null
-  const request = logoutRequest(auth)
-  if (request === null) return null
+function pastedSource(deps: ExecutorDeps, connection: OpenedConnection, origin: string) {
+  const { connector } = connection
+  const { auth } = connector
+  if (auth.kind !== 'client_credentials') throw new Error(`No pasted login for ${auth.kind}`)
+  const values = valuesOf(connection, auth)
   const where = whereOf(connection)
-  const redaction = { secrets: [token.reveal()], whole2xx: false }
-  const sent = await send(
-    deps,
-    toRequest(connection.connector, request, token.reveal(), a.origin),
-    where,
-    redaction,
-    deadlineMs,
-  )
-  if ('kind' in sent) {
-    deps.log.info(where, 'CONNECTOR_LOGOUT_FAILED')
-    return sent.kind === 'UNREACHABLE' ? 'UNREACHABLE' : 'REFUSED'
+  const source = credentialsSource<Unreadable | Unreachable>({
+    auth,
+    credential: values,
+    now: () => deps.now().getTime(),
+    send(request, a) {
+      const secrets = [...Object.values(values), ...(a.token === null ? [] : [a.token])]
+      const reading = { secrets, whole2xx: false, numbers: connector.numbers }
+      return sendUntil(
+        deps,
+        toRequest(connector, request, a.token, origin),
+        where,
+        reading,
+        a.signal,
+      )
+    },
+  })
+  return {
+    ...source,
+    async end(grant: Parameters<typeof source.end>[0], signal: AbortSignal) {
+      const ended = await source.end(grant, signal)
+      logEnded(deps, where, ended)
+      return ended
+    },
   }
-  if (!loggedOutBy(auth, sent)) {
-    deps.log.info({ ...where, status: sent.status }, 'CONNECTOR_LOGOUT_FAILED')
-    return 'REFUSED'
-  }
-  deps.log.info(where, 'CONNECTOR_LOGGED_OUT')
-  return 'LOGGED_OUT'
 }
 
 function originFor(deps: ExecutorDeps, connector: Connector): string {
@@ -284,11 +257,12 @@ function sentFor<I, O>(
   const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
   // A read's 2xx reaches the kit whole: no door returns it, the kit nulls an unreadable one and the check keeps none.
   // A write's answer goes back to the model and the record whole (`Returned`), so its secrets are replaced too.
-  const redaction = {
+  const reading = {
     secrets: [...Object.values(pasted), token.reveal()],
     whole2xx: operation.class !== 'write',
+    numbers: connector.numbers,
   }
-  return sendRead(deps, requestFor, whereOf(connection), redaction, {
+  return sendRead(deps, requestFor, whereOf(connection), reading, {
     deadlineMs,
     repeat: operation.idempotent,
   })
@@ -300,8 +274,8 @@ export function createExecutor(deps: ExecutorDeps): Executor {
   }
 
   return {
-    login(connection, deadlineMs) {
-      return loggedIn(deps, { connection, origin: originOf(connection.connector) }, deadlineMs)
+    pasted(connection) {
+      return pastedSource(deps, connection, originOf(connection.connector))
     },
 
     async call(connection, token, operation, input, deadlineMs) {
@@ -314,20 +288,12 @@ export function createExecutor(deps: ExecutorDeps): Executor {
       return wroteOf(sent, operation)
     },
 
-    logout(connection, token, deadlineMs) {
-      return loggedOut(
-        deps,
-        { connection, token, origin: originOf(connection.connector) },
-        deadlineMs,
-      )
-    },
-
     async grant(where, connector, request, secrets, deadlineMs) {
       const sent = await send(
         deps,
         toRequest(connector, request, null, originOf(connector)),
         where,
-        { secrets, whole2xx: true },
+        { secrets, whole2xx: true, numbers: connector.numbers },
         deadlineMs,
       )
       if ('kind' in sent) return sent
@@ -348,8 +314,8 @@ export function createExecutor(deps: ExecutorDeps): Executor {
         token.reveal(),
         originOf(connector),
       )
-      const redaction = { secrets: [token.reveal()], whole2xx: false }
-      const sent = await send(deps, request, where, redaction, deadlineMs)
+      const reading = { secrets: [token.reveal()], whole2xx: false, numbers: connector.numbers }
+      const sent = await send(deps, request, where, reading, deadlineMs)
       if ('kind' in sent) return sent
       if (sent.status === 429) return unreachableAt(deps, where, sent.status, sent.body)
       if (!isOk(sent.status))

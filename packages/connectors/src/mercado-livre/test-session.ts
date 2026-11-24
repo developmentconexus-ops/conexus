@@ -25,7 +25,7 @@ export async function grant(
 ): Promise<GrantAnswered> {
   return readGrant(
     mercadoLivre.auth,
-    await answerOf(await fake.handle(toRequest(mercadoLivre, request, null))),
+    await answerOf(await fake.handle(toRequest(mercadoLivre, request, null)), mercadoLivre.numbers),
   )
 }
 
@@ -85,7 +85,10 @@ export async function probeAll(fake: Fake): Promise<
     if (input === null) continue
     const request = requestOf(operation, input, ACCOUNT, SENT_AT)
     const answered = operation.answer(
-      await answerOf(await fake.handle(toRequest(mercadoLivre, request, granted.accessToken))),
+      await answerOf(
+        await fake.handle(toRequest(mercadoLivre, request, granted.accessToken)),
+        mercadoLivre.numbers,
+      ),
     )
     assert.equal(answered.kind, 'OK', operation.id)
     if (answered.kind !== 'OK') continue
@@ -102,5 +105,5 @@ export async function getWith(
   key: string,
 ): Promise<ProviderAnswer> {
   const request = { method: 'GET', path, query: {}, body: undefined } as const
-  return answerOf(await fake.handle(toRequest(mercadoLivre, request, key)))
+  return answerOf(await fake.handle(toRequest(mercadoLivre, request, key)), mercadoLivre.numbers)
 }

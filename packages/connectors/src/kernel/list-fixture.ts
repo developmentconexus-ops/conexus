@@ -65,6 +65,7 @@ export function listingConnector(list: ListRead) {
     version: '1.0.0',
     origin: 'https://listing.test',
     auth: clientCredentials({
+      credentialClass: 'SHAREABLE',
       fields: {
         key: {
           label: 'Key',
@@ -88,7 +89,8 @@ export function listingConnector(list: ListRead) {
     operations: [things],
     callLimit: { countedBy: 'ACCOUNT' },
     check: things,
-    skill: { content: 'things Coisas', references: { 'things.md': 'things' } },
+    numbers: 'DOUBLE',
+    skill: { written: { content: '---\nname: listing\n---\nthings', references: {} } },
   })
 }
 
