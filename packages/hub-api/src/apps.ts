@@ -82,6 +82,7 @@ export type AppVersionId = z.infer<typeof AppVersionId>
  * conference Worker, named by the Projeto.
  */
 export const AppWorker = z.string().regex(/^[vc]-[A-Za-z0-9]{32}$/)
+export type AppWorker = z.infer<typeof AppWorker>
 export function appWorkerOf(versionId: AppVersionId) {
   return AppWorker.parse(`v-${versionId}`)
 }

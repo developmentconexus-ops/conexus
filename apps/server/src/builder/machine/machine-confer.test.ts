@@ -59,6 +59,26 @@ test('Machines.confer: a tela que só desenha é CLEAN, mesmo com um pedido a ou
   assert.ok(result.value.console.some((line) => line.includes(MARK)))
 })
 
+test('Machines.confer: a entrada que lê um conector sem conexão mostra "Sem conexão" e é CLEAN, com a captura', async (t) => {
+  const page = app(
+    `fetch('/api/listarPedidos',{method:'POST'}).then((r)=>r.json()).then((d)=>{if(d.estado==='SEM_CONEXAO')document.body.append('Sem conexão')})`,
+  )
+  const { at, seen } = await appServer(t, (request, response) => {
+    if (request.url !== '/api/listarPedidos') return page(request, response)
+    response
+      .writeHead(200, { 'content-type': 'application/json' })
+      .end(JSON.stringify({ estado: 'SEM_CONEXAO' }))
+  })
+  const program = realBrowser(t)
+  const machine = await conferring(t, program)
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
+  assert.equal(result.value.kind, 'CLEAN')
+  assert.ok(seen.some(({ method, url }) => method === 'POST' && url === '/api/listarPedidos'))
+  const shot = readFileSync(join(machine.folder, 'app', result.value.shot))
+  assert.equal(shot.subarray(1, 4).toString(), 'PNG')
+})
+
 test('Machines.confer: reprova o pedido ao host do app com 400 ou mais, ou sem resposta; o 200 não', async (t) => {
   const { at } = await appServer(
     t,

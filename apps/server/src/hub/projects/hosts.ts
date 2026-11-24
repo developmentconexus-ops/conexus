@@ -164,14 +164,14 @@ export function admitToApp(
 
 /**
  * The Projeto of the company, unless deleted or marked for deletion: what a version is sent to and
- * put back on (code C4).
+ * put back on, with the label its app's host has, none before addresses (code C4).
  */
 export async function liveProjectOf(
   tx: ReadTx,
   input: { companyId: CompanyId; projectId: ProjectId },
-): Promise<{ name: string } | undefined> {
+): Promise<{ name: string; hostLabel: HostLabel | null } | undefined> {
   const [row] = await tx
-    .select({ name: project.name })
+    .select({ name: project.name, hostLabel: project.hostLabel })
     .from(project)
     .where(
       and(
@@ -180,7 +180,9 @@ export async function liveProjectOf(
         isNull(project.deletingSince),
       ),
     )
-  return row
+  if (row === undefined) return undefined
+  const hostLabel = row.hostLabel === null ? null : HostLabelSchema.parse(row.hostLabel)
+  return { name: row.name, hostLabel }
 }
 
 /** The names of the company's live Projetos among `ids`, by id; a Projeto deleted or marked is left out. */

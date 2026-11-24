@@ -6,6 +6,7 @@ import { appLoginsOf, appTablesOf } from '../../platform/test-company-postgres.t
 import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
 import { neonServer } from '../../platform/test-neon.ts'
+import { checkDatabaseOf, opened } from '../apps/test-conference.ts'
 import { companyForVersions, send, versionNumbered } from '../apps/test-versions.ts'
 import {
   ANA_OWNER,
@@ -229,7 +230,7 @@ test('apagar com app: Workers, esquema e logins antes das linhas; a marca dá 40
   assert.deepEqual(left, [{ projects: 0, versions: 0, blobs: 0 }])
   // Twice refused, then by each repair: a Worker already gone is removed again, at no cost.
   const removed = hub.cloudflare.calls.filter(({ call: kind }) => kind === 'remove')
-  assert.equal(removed.length, 4)
+  assert.equal(removed.filter(({ worker }) => worker === `v-${version.id}`).length, 4)
 })
 
 test('apagar: o envio vencido vê a marca, falha e tira o próprio Worker', async (t) => {
@@ -244,4 +245,32 @@ test('apagar: o envio vencido vê a marca, falha e tira o próprio Worker', asyn
   held.release()
   assert.equal((await sent).preview, undefined)
   assert.deepEqual(hub.cloudflare.workers(), [])
+})
+
+test('apagar o Projeto que só conferiu leva o Worker c-, o esquema e os logins de conferência', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, projectId, owner, projects } = subject
+  await opened(subject, ana)
+  assert.deepEqual(hub.cloudflare.workers(), [`c-${projectId}`])
+  const url = `${projects}/${projectId}`
+  assert.equal((await call(hub, ana, 'DELETE', url, { name: 'Pedidos' })).statusCode, 204)
+  assert.deepEqual(hub.cloudflare.workers(), [])
+  assert.deepEqual(await checkDatabaseOf(owner, projectId), { schema: false, logins: [] })
+  assert.deepEqual(await appLoginsOf(owner, ProjectId.parse(projectId)), [])
+  assert.deepEqual(await hub.test.asOwner('select count(*)::int as n from apps.app'), [{ n: 0 }])
+})
+
+test('apagar o Projeto com Prévia que também conferiu leva os Workers da versão e de conferência e os dois esquemas', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, projectId, owner, projects } = subject
+  const version = await versionNumbered(subject, (await send(subject, ana)).number)
+  await opened(subject, ana)
+  assert.deepEqual(hub.cloudflare.workers(), [`c-${projectId}`, `v-${version.id}`])
+  const url = `${projects}/${projectId}`
+  assert.equal((await call(hub, ana, 'DELETE', url, { name: 'Pedidos' })).statusCode, 204)
+  assert.deepEqual(hub.cloudflare.workers(), [])
+  const id = ProjectId.parse(projectId)
+  assert.deepEqual(await checkDatabaseOf(owner, projectId), { schema: false, logins: [] })
+  assert.deepEqual(await appTablesOf(owner, id), { tables: [], ledger: [] })
+  assert.deepEqual(await appLoginsOf(owner, id), [])
 })

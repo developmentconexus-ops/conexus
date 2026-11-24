@@ -42,14 +42,14 @@ export function heldCompanyPostgres(config: Config) {
       if (owner === undefined) throw new Error('no owner address was seen for the Projeto')
       return asLogin(config, owner, appLogin(projectId).readLogin)
     },
-    async migrate(owner, projectId, migrations) {
-      owners.set(projectId, owner)
+    resetCheck: (owner, projectId) => inner.resetCheck(owner, projectId),
+    async migrate(owner, logins, migrations) {
       const held = holds.shift()
       if (held !== undefined) {
         held.arrived.resolve()
         await held.released.promise
       }
-      return inner.migrate(owner, projectId, migrations)
+      return inner.migrate(owner, logins, migrations)
     },
     dropApp: (owner, projectId) => inner.dropApp(owner, projectId),
   }

@@ -3,13 +3,14 @@ import { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
 import type {
   AppVersionFailure,
   AppVersionId,
+  AppWorker,
   CompanyId,
   MigrationCause,
   Person,
   PersonId,
   ProjectId,
 } from '@conexus/hub-api'
-import { appWorkerOf, AppVersionId as VersionId } from '@conexus/hub-api'
+import { appLogin, appWorkerOf, AppVersionId as VersionId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import type { CloudflareApps, WorkerFile } from '../../platform/cloudflare.ts'
 import type { CommandTx, ReadTx, Scope } from '../../platform/database.ts'
@@ -60,6 +61,12 @@ async function admitTo(
   await deps.identity.admitMember({ tx, personId, companyId, action })
   const found = await deps.projects.liveProjectOf(tx, input)
   if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })
+  return found
+}
+
+/** Admits the person of a Builder turn as a send does, holding the membership (S8); the Projeto. */
+export function admitSender(deps: Admitting, tx: CommandTx, input: Ids & { personId: PersonId }) {
+  return admitTo(deps, tx, { ...input, action: SEND_ACTION })
 }
 
 /** Admits a member to publish a version, holding their membership (S8). */
@@ -88,10 +95,10 @@ export function admitConversant(deps: Admitting, tx: ReadTx, input: Ids & { pers
  */
 export function uploadVersion(
   cloudflare: CloudflareApps,
-  input: Ids & { versionId: AppVersionId; manifest: Manifest; files: readonly WorkerFile[] },
+  input: Ids & { worker: AppWorker; manifest: Manifest; files: readonly WorkerFile[] },
 ) {
   return cloudflare.upload({
-    worker: appWorkerOf(input.versionId),
+    worker: input.worker,
     mainModule: input.manifest.entry,
     compatibilityDate: APP_COMPATIBILITY_DATE[input.manifest.contract],
     files: input.files,
@@ -137,7 +144,8 @@ async function prepare(
   }
   const before = await stopped()
   if (before !== undefined) return before
-  const uploaded = await uploadVersion(deps.cloudflare, { ...sending, ...received })
+  const worker = appWorkerOf(sending.versionId)
+  const uploaded = await uploadVersion(deps.cloudflare, { ...sending, ...received, worker })
   if (uploaded.kind !== 'DONE') return { kind: 'FAILED', failure: 'APP_VERSION_FAILED' }
   if (uploaded.value === 'NOT_STARTING') {
     return { kind: 'FAILED', failure: 'APP_VERSION_NOT_STARTING' }
@@ -150,7 +158,10 @@ async function prepare(
   const openedThen = await stopped()
   if (openedThen !== undefined) return openedThen
   const owner = opened.owner
-  const refused = await migrateApp(deps, { ...sending, owner, manifest: received.manifest })
+  const refused = await migrateApp(deps, {
+    ...{ ...sending, owner, logins: appLogin(projectId) },
+    manifest: received.manifest,
+  })
   return refused === undefined ? { kind: 'READY' } : { kind: 'FAILED', ...refused }
 }
 
