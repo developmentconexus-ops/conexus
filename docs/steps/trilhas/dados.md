@@ -111,10 +111,11 @@ A etapa 1 deixa às seguintes o que o estudo dela achou e o cartão não constru
 
 Depois da etapa 7 vêm duas frentes, cada etapa com estudo e cartão próprios:
 
-- **Os conectores por classe**, nesta ordem: o TOTVS, criado pela Fábrica, como fonte do lago; o
-  Gmail com a Agenda e o Drive como ferramenta do agente, que é o `D1`; a planilha do Drive no lago;
-  o e-mail e a agenda do Outlook; o SharePoint; a NF-e; e o Sicoob. O TOTVS espera o fundador dizer
-  qual e de que empresa vem o acesso; o Google e a Microsoft esperam o app de login de cada um.
+- **Os conectores por classe**, no cartão [os-conectores-por-classe](../os-conectores-por-classe.md)
+  (2026-11-24): o Gmail com a Agenda, a caixa de um setor e o Drive; o HubSpot; o e-mail e a agenda
+  do Outlook e o SharePoint; o TOTVS, criado pela Fábrica; e o Sicoob. O HubSpot e o TOTVS nascem
+  pela documentação, sem conta, e esperam o acesso para gravar. A NF-e saiu e fica em espera, por
+  palavra do fundador em 2026-11-24. O Google, a Microsoft e o Sicoob esperam o acesso que ele cria.
 - **A porta de fora**, para sistemas e agentes de fora lerem o lago pelo Hub (2026-11-21: "P3
   sim"). Ela é desenhada quando chegar; chave de API, por ora, não entra.
 

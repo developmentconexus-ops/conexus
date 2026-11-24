@@ -1,0 +1,1 @@
+# Os conectores por classe
