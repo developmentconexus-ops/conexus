@@ -1,13 +1,10 @@
-import type { CompanyId, ConversationId } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, PreviewData } from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
 import type { AgentControllerEvent, KnownAgentControllerEvent } from '@mastra/client-js'
 import { isKnownAgentControllerEvent, MastraClientError } from '@mastra/client-js'
 import type { QueryClient } from '@tanstack/react-query'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useEffectEvent, useMemo, useReducer, useState } from 'react'
 import { failureOfProblem } from '../../platform/hub.ts'
-import { previewChanged } from '../preview/public.ts'
-import { sourceChanged } from '../source/public.ts'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
 import type { BuilderSession, Place } from './session.ts'
@@ -15,7 +12,7 @@ import { sessionOf } from './session.ts'
 import type { Action } from './session-state.ts'
 import { OPENED, session } from './session-state.ts'
 
-type Ids = { companyId: CompanyId; conversationId: ConversationId } & Place
+type Ids = { conversationId: ConversationId } & Place
 
 const FIRST_RETRY_MS = 1000
 const LAST_RETRY_MS = 15_000
@@ -37,6 +34,7 @@ type Hooks = {
   onEnded: () => void
   onTitled: () => void
   onFollowing: () => void
+  onHeard: (event: KnownAgentControllerEvent) => void
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -76,37 +74,11 @@ function resync(hooks: Hooks): void {
   })
 }
 
-/** A version the run saved changes the Projeto's files: their reads are asked again. */
-function savesVersion(event: KnownAgentControllerEvent): boolean {
-  return (
-    event.type === 'message_start' &&
-    event.message.content.parts.some((part) => part.type === 'data-conexus-version')
-  )
-}
-
-/** The run put its version on the app: the Prévia loads it. */
-function readiesPreview(event: KnownAgentControllerEvent): boolean {
-  return (
-    event.type === 'message_start' &&
-    event.message.content.parts.some(
-      (part) =>
-        part.type === 'data-conexus-preview' &&
-        PreviewData.safeParse(part.data).data?.state === 'ready',
-    )
-  )
-}
-
 function heard(hooks: Hooks, event: AgentControllerEvent): void {
   if (!isKnownAgentControllerEvent(event)) return
   hooks.dispatch({ type: 'event', event })
   if (event.type === 'task_updated') tasksHeard(hooks, event.tasks)
-  const { ids, queryClient } = hooks
-  // Only the Builder's runs change a Projeto's files and Prévia.
-  if (ids.controller === BUILDER_CONTROLLER) {
-    const { companyId, projectId } = ids
-    if (savesVersion(event)) void sourceChanged(queryClient, { companyId, projectId })
-    if (readiesPreview(event)) void previewChanged(queryClient, { companyId, projectId })
-  }
+  hooks.onHeard(event)
   // Mastra saves an errored run's messages a moment after its end: the read catches them up.
   if (event.type === 'agent_end') reread(hooks)
   // Mastra names the conversation after the answer ended, and the observer renames it later. The
@@ -184,6 +156,8 @@ export function useSession(
     ended: () => void
     /** Mastra named the conversation, or the observer renamed it: the caller reads its title again. */
     titled: () => void
+    /** What the agent does with an event beyond the transcript, as its room says; nothing by default. */
+    heard?: (event: KnownAgentControllerEvent) => void
   },
 ) {
   const queryClient = useQueryClient()
@@ -193,6 +167,7 @@ export function useSession(
   const gone = useEffectEvent(on.gone)
   const ended = useEffectEvent(on.ended)
   const titled = useEffectEvent(on.titled)
+  const heard = useEffectEvent((event: KnownAgentControllerEvent) => on.heard?.(event))
   const { conversationId, controller } = ids
   const builder = useMemo(() => sessionOf(conversationId, controller), [conversationId, controller])
   // The window of messages read grows by a page for each load of older messages; `Screen` remounts
@@ -231,6 +206,7 @@ export function useSession(
       onEnded: ended,
       onTitled: titled,
       onFollowing: () => setFollowing(true),
+      onHeard: heard,
     }
     void follow(hooks, stop.signal)
     return () => stop.abort()

@@ -7,6 +7,7 @@ import type {
   ProposedCompanyMemory,
   ShownFile,
 } from '@conexus/hub-api'
+import type { KnownAgentControllerEvent } from '@mastra/client-js'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import type { WritesRead } from './approval-item.ts'
@@ -72,7 +73,12 @@ type AssistantProposals = {
  * the chat's `Place`.
  */
 export type Room =
-  | (RoomBase & Notebook & { kind: 'APP_BUILDER' })
+  | (RoomBase &
+      Notebook & {
+        kind: 'APP_BUILDER'
+        /** What an event of the Builder's run changes beyond the transcript: a saved version, the Projeto's files; a ready one, its Prévia. */
+        heard: (event: KnownAgentControllerEvent) => void
+      })
   | (RoomBase & Opened & Notebook & { kind: 'ASSISTANT'; proposals: AssistantProposals })
   | (RoomBase &
       AgentTools & {
@@ -117,7 +123,11 @@ export function agentWords(agent: string): BoxWords {
 }
 
 /** The room of the Builder's conversation once the catalog is read: the connectors' names, logos and way of linking, and the Builder's own refusals. */
-export function appBuilderRoom(words: ConnectorWords, companyId: CompanyId): RoomOf<'APP_BUILDER'> {
+export function appBuilderRoom(
+  words: ConnectorWords,
+  companyId: CompanyId,
+  heard: RoomOf<'APP_BUILDER'>['heard'],
+): RoomOf<'APP_BUILDER'> {
   return {
     kind: 'APP_BUILDER',
     ...APP_BUILDER_WORDS,
@@ -125,6 +135,7 @@ export function appBuilderRoom(words: ConnectorWords, companyId: CompanyId): Roo
     overrides: {},
     failures: {},
     notebook: { companyId },
+    heard,
   }
 }
 

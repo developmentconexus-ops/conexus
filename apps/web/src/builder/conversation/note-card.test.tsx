@@ -90,7 +90,10 @@ test('o Caderno: quem não gerencia ligações vê o cartão sem os botões e a 
 
 test('o Caderno: no Builder, quem não gerencia ligações vê o cartão sem os botões, como no Assistente', async () => {
   company(false)
-  show(card(), appBuilderRoom(wordsOf([]), CompanyId.parse(COMPANY.id)))
+  show(
+    card(),
+    appBuilderRoom(wordsOf([]), CompanyId.parse(COMPANY.id), () => undefined),
+  )
   const region = within(await screen.findByRole('region', { name: 'Gravar no Caderno?' }))
   expect(await region.findByText('Peça a quem gerencia a ligação.')).toBeTruthy()
   expect(region.queryByRole('button', { name: 'Aprovar' })).toBeNull()

@@ -763,8 +763,9 @@ As da U1, mais `router-core` (`auth-and-guards` para o `beforeLoad`).
 1. **A sessão sem o ramo do Construtor de apps.** Um commit antes do movimento, sem mudar o
    comportamento. Critérios: 8.
    - **Arquivos:** `use-session.ts`, `room.ts`, `chat.tsx`, `panel.tsx`.
-   - **Testes:** os de hoje que provam que uma versão salva relê os arquivos e uma Prévia pronta
-     relê a Prévia (`panel-sources.test.tsx`, `preview.test.tsx`), sem mudar.
+   - **Testes:** o de hoje que prova que uma Prévia pronta relê o Projeto
+     (`preview-line.test.tsx`), sem mudar, e um caso novo em `workbench.test.tsx`: a versão que a
+     resposta salva relê o código do Projeto, que nenhum teste provava.
    - **Mutações à mão:** a sessão sem a chamada de `heard` deixa esses casos vermelhos.
 2. **A divisão por dono.** Um commit antes do movimento, sem mudar o comportamento. Critérios: 8.
    - **Arquivos:** os que o raio marca "antes do movimento", fora os do passo 1.

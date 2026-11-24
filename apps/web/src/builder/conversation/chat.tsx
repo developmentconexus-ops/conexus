@@ -220,13 +220,13 @@ export function Chat(props: ChatProps) {
   const queryClient = useQueryClient()
   const session = useSuspenseQuery(sessionReadQuery(conversationId, place.controller)).data
   const accounts = useSuspenseQuery(accountsQuery(companyId)).data
-  const usable = useMemo(() => new Set(accounts.usableProviders), [accounts.usableProviders])
-  const canAnswer = usable.size > 0
+  const canAnswer = accounts.usableProviders.length > 0
   const [gone, setGone] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
   const draft = useDraft(conversationId)
+  const room = useRoom()
   const { state, dispatch, builder, older, following } = useSession(
-    { companyId, conversationId, ...place },
+    { conversationId, ...place },
     {
       gone: () => {
         for (const queryKey of props.listKeys) void queryClient.invalidateQueries({ queryKey })
@@ -237,6 +237,7 @@ export function Chat(props: ChatProps) {
         for (const queryKey of [props.conversationKey, ...props.listKeys])
           void queryClient.invalidateQueries({ queryKey })
       },
+      heard: room.kind === 'APP_BUILDER' ? room.heard : undefined,
     },
   )
   const { error, setError, send, halt } = useSending(props, builder, field, dispatch, () =>
@@ -246,7 +247,6 @@ export function Chat(props: ChatProps) {
   useEffect(() => field.current?.focus(), [])
   useHandedOver({ conversationId, draft, send, setError, following })
 
-  const room = useRoom()
   const writes = room.kind === 'SAVED_AGENT' ? room.writes : undefined
   const turns = useMemo(() => shownOf(state, approvedCalls(writes)), [state, writes])
   const waiting = Object.keys(state.suspended).length > 0 || Object.keys(state.approvals).length > 0

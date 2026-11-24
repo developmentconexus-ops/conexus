@@ -1,8 +1,11 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
 import { hubServer, PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
+import { AGENT_START, RUNNING, stepStarted } from './test-events.ts'
 import { conversationOf, FIRST, PROJECT, SECOND, screens, typed, view } from './test-hub.tsx'
 
 const server = hubServer()
@@ -128,4 +131,23 @@ test('no celular, "App | Conversa" mostra uma região por vez, as duas montadas,
   fireEvent.click(screen.getByRole('button', { name: /^App$/ }))
   expect(regions()).toEqual(['true', 'false'])
   expect(typed(field)).toBe('rascunho')
+})
+
+test('a versão que a resposta salva faz o Código ser lido de novo', async () => {
+  let reads = 0
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/source`, () => {
+      reads += 1
+      return HttpResponse.json({ version: 0, commit: null, savedAt: null, files: [] })
+    }),
+  )
+  const hub = openProject(`${PROJECT}/conversations/${FIRST}?lens=code`)
+  await waitFor(() => expect(hub.lines.length).toBe(1))
+  await waitFor(() => expect(reads).toBeGreaterThan(0))
+  const before = reads
+  const line = hub.line()
+  line.emit(AGENT_START)
+  line.emit(RUNNING)
+  line.emit(stepStarted('m-version', [{ type: 'data-conexus-version', data: { number: 1 } }]))
+  await waitFor(() => expect(reads).toBeGreaterThan(before))
 })

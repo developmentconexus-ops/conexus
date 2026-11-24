@@ -1,11 +1,14 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER } from '@conexus/hub-api'
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { BUILDER_CONTROLLER, PreviewData } from '@conexus/hub-api'
+import type { QueryClient } from '@tanstack/react-query'
+import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useLocation } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
+import { previewChanged } from '../preview/public.ts'
+import { sourceChanged } from '../source/public.ts'
 import { Chat } from './chat.tsx'
 import { useConnectorCatalog } from './connector-catalog.ts'
 import type { Item } from './conversation-switch.tsx'
@@ -13,6 +16,7 @@ import { ConversationSwitch } from './conversation-switch.tsx'
 import { FirstMessage } from './first-message.tsx'
 import { ModelChoice } from './model-choice.tsx'
 import { allConversationsQueryKey, conversationQuery, sendModel } from './queries.ts'
+import type { RoomOf } from './room.ts'
 import { appBuilderRoom, RoomContext } from './room.ts'
 import { EMPTY_CONVERSATION, REQUEST_NOT_SENT, titleOf, WRITE_AGAIN } from './text.ts'
 
@@ -33,11 +37,34 @@ function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
 
 type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
 
+/** What a Builder's run changes beyond the transcript: a version it saved, the Projeto's files; a version put on the app, its Prévia. */
+function heardOnProjeto(
+  queryClient: QueryClient,
+  scope: Pick<Params, 'companyId' | 'projectId'>,
+): RoomOf<'APP_BUILDER'>['heard'] {
+  return (event) => {
+    if (event.type !== 'message_start') return
+    const { parts } = event.message.content
+    if (parts.some((part) => part.type === 'data-conexus-version'))
+      void sourceChanged(queryClient, scope)
+    const ready = parts.some(
+      (part) =>
+        part.type === 'data-conexus-preview' &&
+        PreviewData.safeParse(part.data).data?.state === 'ready',
+    )
+    if (ready) void previewChanged(queryClient, scope)
+  }
+}
+
 /** The Builder's conversation: the screen of `chat.tsx` on the Builder's controller, with the model's button. */
 function BuilderChat(params: Params) {
   const { companyId, projectId, conversationId } = params
+  const queryClient = useQueryClient()
   const { words } = useConnectorCatalog(companyId)
-  const room = useMemo(() => appBuilderRoom(words, companyId), [words, companyId])
+  const room = useMemo(
+    () => appBuilderRoom(words, companyId, heardOnProjeto(queryClient, { companyId, projectId })),
+    [words, companyId, projectId, queryClient],
+  )
   return (
     <RoomContext.Provider value={room}>
       <Chat

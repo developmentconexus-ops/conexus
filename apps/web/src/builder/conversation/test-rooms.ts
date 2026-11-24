@@ -6,7 +6,11 @@ import type { ConnectorWords } from './tool-spec.ts'
 
 export const ROOM_COMPANY = CompanyId.parse('a'.repeat(32))
 
-export const BUILDER_ROOM: RoomOf<'APP_BUILDER'> = appBuilderRoom(PLAIN_WORDS, ROOM_COMPANY)
+export const BUILDER_ROOM: RoomOf<'APP_BUILDER'> = appBuilderRoom(
+  PLAIN_WORDS,
+  ROOM_COMPANY,
+  () => undefined,
+)
 
 export function assistantRoomOf(
   held: Partial<Parameters<typeof assistantRoom>[0]> = {},

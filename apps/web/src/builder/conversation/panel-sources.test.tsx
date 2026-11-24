@@ -54,7 +54,7 @@ test('sem o catálogo, a fonte do Builder nomeia o conector pelo id', async () =
 })
 
 test('a sala do Builder toma do catálogo o nome e a logo, e a recusa de conector segue a do Builder', () => {
-  const room = appBuilderRoom(wordsOf([KIT_SANKHYA]), CompanyId.parse(COMPANY.id))
+  const room = appBuilderRoom(wordsOf([KIT_SANKHYA]), CompanyId.parse(COMPANY.id), () => undefined)
   expect(room.connectors.name('sankhya')).toBe('Sankhya')
   expect(room.connectors.logo('sankhya')).toBe(KIT_SANKHYA.logo)
   expect(room.connectors.refusal('sankhya', { kind: 'UNREACHABLE' })).toBe(
