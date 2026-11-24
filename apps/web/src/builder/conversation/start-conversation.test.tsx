@@ -6,7 +6,7 @@ import {
   createRouter,
   RouterProvider,
 } from '@tanstack/react-router'
-import { render, waitFor } from '@testing-library/react'
+import { cleanup, render, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { z } from 'zod'
@@ -79,7 +79,7 @@ function creations(answer?: () => Response) {
  * The piece mounted under a router of its own, which goes wherever it is sent; with `hears`, also
  * the conversation's own screen, which takes the request handed over to SECOND.
  */
-function mounted<K extends ConversationKind>(kind: K, hears = false) {
+function mounted<K extends ConversationKind>(kind: K, hears = false, at = '/') {
   const held: { start?: ReturnType<typeof useStartConversation<K>>['start'] } = {}
   const heard: Outgoing[] = []
   const conversation = {
@@ -96,7 +96,7 @@ function mounted<K extends ConversationKind>(kind: K, hears = false) {
   }
   const router = createRouter({
     routeTree: createRootRoute({ component: Probe }),
-    history: createMemoryHistory({ initialEntries: ['/'] }),
+    history: createMemoryHistory({ initialEntries: [at] }),
   })
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -155,6 +155,17 @@ test('Nova conversa do Construtor de apps manda o corpo vazio e abre sem pedido'
   expect(sent.map((one) => one.body)).toEqual([{}])
   expect(router.state.location.pathname).toBe(`${PROJECT}/conversations/${SECOND}`)
   expect(router.state.location.state).not.toHaveProperty('handoff')
+})
+
+test('Nova conversa mantém a busca da tela, e o pedido abre a conversa sem ela', async () => {
+  creations()
+  const kept = mounted('APP_BUILDER', false, '/?x=1')
+  await kept.start({ companyId: COMPANY_ID, projectId: PROJECT_ID, picked: undefined }, undefined)
+  expect(kept.router.state.location.search).toEqual({ x: 1 })
+  cleanup()
+  const handed = mounted('APP_BUILDER', false, '/?x=1')
+  await handed.start({ companyId: COMPANY_ID, projectId: PROJECT_ID, picked: PICKED }, HANDOFF)
+  expect(handed.router.state.location.search).toEqual({})
 })
 
 test('o Assistente de um Projeto cria pela rota do Assistente e abre no endereço do Projeto', async () => {

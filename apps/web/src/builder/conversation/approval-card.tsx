@@ -16,7 +16,7 @@ import {
 } from './approval-text.ts'
 import { DEADLINE_TEXT, LOCAL_REFUSALS } from './connector-specs.ts'
 import type { WriteTool } from './room.ts'
-import { isRoom, useApprove, useRoom } from './room.ts'
+import { useApprove, useRoom } from './room.ts'
 import { refusedLabelText } from './text.ts'
 import type { ConnectorWords } from './tool-spec.ts'
 import { WaitingOnPhone } from './working-line.tsx'
@@ -157,7 +157,7 @@ function endedState(
 export function ApprovalCard({ part }: { part: ApprovalCardItem }) {
   const room = useRoom()
   const { reply, sending, error } = useReply(ToolCallId.parse(part.toolCallId))
-  const saved = isRoom(room, ['SAVED_AGENT']) ? room : undefined
+  const saved = room.kind === 'SAVED_AGENT' ? room : undefined
   const write = saved?.writeOf(part.toolName)
   const refresh = saved?.refreshWrites
   const open = part.state === 'open'

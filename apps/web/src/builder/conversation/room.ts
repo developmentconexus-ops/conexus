@@ -106,6 +106,12 @@ export function isRoom<K extends RoomKind>(room: Room, kinds: readonly K[]): roo
 export const APP_BUILDER_WORDS: BoxWords = { agent: 'Builder', files: 'MODEL' }
 export const ASSISTANT_WORDS: BoxWords = { agent: 'Assistente', files: 'MACHINE' }
 
+/** What the Assistant, the Construtor de agentes and a saved agent draw alike: the Assistant's rows, and no model to choose when there is no account. */
+const ASSISTANT_STYLE: Pick<RoomBase, 'overrides' | 'failures'> = {
+  overrides: ASSISTANT_OVERRIDES,
+  failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+}
+
 export function agentWords(agent: string): BoxWords {
   return { agent, files: 'MODEL' }
 }
@@ -131,8 +137,7 @@ export function assistantRoom(
   return {
     kind: 'ASSISTANT',
     ...ASSISTANT_WORDS,
-    overrides: ASSISTANT_OVERRIDES,
-    failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+    ...ASSISTANT_STYLE,
     ...held,
   }
 }
@@ -147,8 +152,7 @@ export function agentBuilderRoom(
   return {
     kind: 'AGENT_BUILDER',
     ...agentWords(agent),
-    overrides: ASSISTANT_OVERRIDES,
-    failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+    ...ASSISTANT_STYLE,
     ...held,
   }
 }
@@ -170,8 +174,7 @@ export function savedAgentRoom(
   return {
     kind: 'SAVED_AGENT',
     ...agentWords(agent),
-    overrides: ASSISTANT_OVERRIDES,
-    failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+    ...ASSISTANT_STYLE,
     ...held,
   }
 }

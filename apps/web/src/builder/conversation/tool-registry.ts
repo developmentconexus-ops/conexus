@@ -123,7 +123,7 @@ const AGENT_TOOL_PREFIX = 'tool_'
 export function specOf(toolName: string, room: Room): ToolSpec | undefined {
   if (isRowTool(toolName)) return room.overrides[toolName] ?? TOOLS[toolName]
   if (!toolName.startsWith(AGENT_TOOL_PREFIX)) return undefined
-  const write = isRoom(room, ['SAVED_AGENT']) ? room.writeOf(toolName) : undefined
+  const write = room.kind === 'SAVED_AGENT' ? room.writeOf(toolName) : undefined
   if (write !== undefined) return writeToolSpec(write.label, room.connectors.name(write.connector))
   const slug = toolName.slice(AGENT_TOOL_PREFIX.length)
   const described = isRoom(room, ['AGENT_BUILDER', 'SAVED_AGENT'])

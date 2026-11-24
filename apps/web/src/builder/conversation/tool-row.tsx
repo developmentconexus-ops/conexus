@@ -5,7 +5,6 @@ import type { ToolLineBeside, ToolLineState } from '../../ui/ai/tool-line.tsx'
 import { ToolLine } from '../../ui/ai/tool-line.tsx'
 import { cn } from '../../ui/cn.ts'
 import { TraceDescription } from '../../ui/trace.tsx'
-import { failureDetail } from './connector-specs.ts'
 import { useSecondsSince } from './elapsed.ts'
 import type { Room } from './room.ts'
 import { useRoom } from './room.ts'
@@ -17,6 +16,7 @@ import {
   Answer,
   asksToReconnect,
   BLOCK,
+  failureDetail,
   Generic,
   Library,
   Program,

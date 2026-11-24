@@ -5,14 +5,15 @@ import { ConnectorLogo } from '../../hub/connectors/public.ts'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
-import { failureDetail, thrownOf } from './connector-specs.ts'
+import { writtenBy } from './approval-item.ts'
+import { thrownOf } from './connector-specs.ts'
 import { ProgramSuccess } from './machine-specs.ts'
 import { Markdown } from './markdown.tsx'
 import { Researched, STOPPED } from './research-specs.ts'
 import type { Room } from './room.ts'
 import { useRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
-import { calledText, READY_TOOL } from './text.ts'
+import { calledText, READY_TOOL, readRefusedText, refusedLabelText } from './text.ts'
 import { shown } from './tool-args.ts'
 import { specOf } from './tool-registry.ts'
 
@@ -192,6 +193,38 @@ function reasonOf(tool: ToolItem, room: Room): string {
   const code = text.trim()
   if (!isFailureCode(code)) return text
   return specOf(tool.toolName, room)?.thrownText?.[code] ?? sentenceOfCode(code)
+}
+
+/** What an open row of a failed call says: a label and the system's message as it came. */
+type FailureDetail = { label: string; message: string | undefined }
+
+/**
+ * What a failed agent tool says when opened, never the JSON it threw: a write the system refused says
+ * so from the record's row (the outcome is the record's, never the model's text), and a read the system
+ * refused says the system did, with its message. `null`: a failure with nothing to add to the line;
+ * `undefined`: the call did not fail with a Hub failure, and the row keeps its own words.
+ */
+export function failureDetail(
+  tool: Pick<ToolItem, 'toolName' | 'toolCallId' | 'errorText' | 'result' | 'isError'>,
+  room: Room,
+): FailureDetail | null | undefined {
+  const saved = room.kind === 'SAVED_AGENT' ? room : undefined
+  const write = saved?.writeOf(tool.toolName)
+  if (saved !== undefined && write !== undefined) {
+    const row = writtenBy(saved.writes, tool.toolCallId)
+    if (row?.state === 'REFUSED') {
+      return {
+        label: refusedLabelText(room.connectors.name(write.connector)),
+        message: row.message ?? undefined,
+      }
+    }
+  }
+  const thrown = thrownOf(tool)
+  if (thrown === undefined) return undefined
+  if (write !== undefined || thrown.status === null) return null
+  const connector = saved?.connectorOf(tool.toolName)
+  const system = connector === undefined ? 'sistema' : room.connectors.name(connector)
+  return { label: readRefusedText(system), message: thrown.message ?? undefined }
 }
 
 /** Whether the agent's read failed with a kind that asks the person to link the connection again. */
