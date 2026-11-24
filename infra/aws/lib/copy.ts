@@ -127,7 +127,7 @@ function copyQueue(stack: Stack, place: Place, cluster: ecs.Cluster): sqs.Queue 
     enforceSSL: true,
     deadLetterQueue: { queue: deadLetters, maxReceiveCount: 3 },
   })
-  new events.Rule(stack, 'CopyStopped', {
+  const stopped = new events.Rule(stack, 'CopyStopped', {
     eventPattern: {
       source: ['aws.ecs'],
       detailType: ['ECS Task State Change'],
@@ -142,6 +142,19 @@ function copyQueue(stack: Stack, place: Place, cluster: ecs.Cluster): sqs.Queue 
       actions: ['sqs:SendMessage'],
       resources: [queue.queueArn],
       conditions: { ArnLike: { 'aws:PrincipalArn': place.writers } },
+    }),
+  )
+  queue.addToResourcePolicy(
+    new iam.PolicyStatement({
+      sid: 'OnlyTheRuleAndTheWriters',
+      effect: iam.Effect.DENY,
+      principals: [new iam.AnyPrincipal()],
+      actions: ['sqs:SendMessage'],
+      resources: [queue.queueArn],
+      conditions: {
+        ArnNotLike: { 'aws:PrincipalArn': place.writers },
+        ArnNotEquals: { 'aws:SourceArn': stopped.ruleArn },
+      },
     }),
   )
   return queue

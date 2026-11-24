@@ -136,4 +136,15 @@ test('a fila da cópia ouve só a regra e os que escrevem, e passa a de mortos n
       [{ AWS: `arn:aws:iam::${ACCOUNT}:root` }, { ArnLike: { 'aws:PrincipalArn': WRITERS } }],
     ],
   )
+  assert.deepEqual(bySid(queuePolicy, 'OnlyTheRuleAndTheWriters'), {
+    Sid: 'OnlyTheRuleAndTheWriters',
+    Effect: 'Deny',
+    Principal: { AWS: '*' },
+    Action: 'sqs:SendMessage',
+    Resource: '<CopyQueue.Arn>',
+    Condition: {
+      ArnNotLike: { 'aws:PrincipalArn': WRITERS },
+      ArnNotEquals: { 'aws:SourceArn': '<CopyStopped.Arn>' },
+    },
+  })
 })
