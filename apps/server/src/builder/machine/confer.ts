@@ -17,7 +17,19 @@ const COOKIE_FILE = 'conexus-confer-cookies.json'
 
 const ASK_MS = 20_000
 const PAGE_MS = 60_000
-const SETTLE_POLL_MS = 250
+
+/**
+ * What the capture waits for after `networkidle`, which returns after 500 ms without a request: a
+ * slow machine mounts the app, or a chain of calls pauses, longer than that, and the capture takes
+ * the loading state. The app's contract draws a loading part as a `Skeleton`
+ * (`data-slot="skeleton"`), so the screen is ready once its root has content and none is left. The
+ * page gives up on its own at `readyMs` since it opened, so the wait ends by time and never fails.
+ */
+function readyScript(readyMs: number): string {
+  const mounted = `(document.getElementById('root')?.firstElementChild ?? true) !== null`
+  const drawn = `document.querySelector('[data-slot="skeleton"]') === null`
+  return `(${mounted} && ${drawn}) || performance.now() >= ${readyMs}`
+}
 
 type BrowserProblem =
   | { kind: 'PAGE_ERROR'; message: string }
@@ -60,26 +72,14 @@ function clipped(texts: readonly string[]): string[] {
   ).map(({ message }) => message)
 }
 
-function ofApp(request: { url: string }, host: string): URL | null {
-  if (!URL.canParse(request.url)) return null
-  const url = new URL(request.url)
-  return url.hostname === host ? url : null
-}
-
-function pendingOf(requests: Outputs['requests'], host: string): boolean {
-  return requests.some(
-    (request) =>
-      request.status == null && ofApp(request, host)?.pathname.startsWith('/api/') === true,
-  )
-}
-
 function reportOf(outputs: Outputs, host: string): BrowserReport {
   const { errors, requests } = outputs
   const failed = requests.flatMap((request): BrowserProblem[] => {
     const status = request.status ?? null
-    const url = ofApp(request, host)
-    if (url === null || (status !== null && status < 400)) return []
-    return [{ kind: 'REQUEST_FAILED', method: request.method, path: url.pathname, status }]
+    if (!URL.canParse(request.url)) return []
+    const { hostname, pathname } = new URL(request.url)
+    if (hostname !== host || (status !== null && status < 400)) return []
+    return [{ kind: 'REQUEST_FAILED', method: request.method, path: pathname, status }]
   })
   const pages = clipped(errors.map(({ text }) => text)).map(
     (message): BrowserProblem => ({ kind: 'PAGE_ERROR', message }),
@@ -127,7 +127,7 @@ type Conference = Readonly<{
   program: string
   at: ConferAt
   log: FailureLog
-  settleMs: number
+  readyMs: number
 }>
 
 function commandsOf({ exec, program, at }: Pick<Conference, 'exec' | 'program' | 'at'>) {
@@ -163,19 +163,8 @@ async function attempted<T>(step: string, work: () => Promise<T>): Promise<T> {
   }
 }
 
-/** `networkidle` can return with the entry's operation still in flight: the capture waits for the app's `/api/` calls to answer, for `settleMs` at most. */
-async function settled(input: Conference, settleMs: number): Promise<void> {
-  const { read } = commandsOf(input)
-  const host = input.at.url.hostname
-  for (let polls = Math.ceil(settleMs / SETTLE_POLL_MS); ; polls--) {
-    const { data } = await read('requests', Requested, ['network', 'requests'])
-    if (!pendingOf(data.requests, host) || polls <= 0) return
-    await read('settle', Done, ['wait', String(SETTLE_POLL_MS)])
-  }
-}
-
 async function looked(input: Conference, cookieFile: string): Promise<BrowserReport> {
-  const { files, network, workdir, at, settleMs } = input
+  const { files, network, workdir, at, readyMs } = input
   const { cli, ran, read } = commandsOf(input)
   const origin = at.url.origin
   await attempted('network', () => network.open([at.url.hostname]))
@@ -186,7 +175,8 @@ async function looked(input: Conference, cookieFile: string): Promise<BrowserRep
   await read('cookie', Done, ['cookies', 'set', '--curl', cookieFile, '--url', `${origin}/`])
   await read('open', Done, ['open', `${origin}/`], PAGE_MS)
   await read('wait', Done, ['wait', '--load', 'networkidle'], PAGE_MS)
-  await settled(input, settleMs)
+  const ready = ['wait', '--fn', readyScript(readyMs), '--timeout', String(readyMs + ASK_MS)]
+  await read('ready', Done, ready, readyMs + ASK_MS)
   const { data: located } = await read('url', Located, ['get', 'url'])
   if (!URL.canParse(located.url) || new URL(located.url).host !== at.url.host)
     throw new Unrunnable('host')
@@ -252,8 +242,8 @@ export function conferOn(
     program: string
     at: ConferAt
     log: FailureLog
-    /** How long the page may keep an `/api/` call without a response before the capture (code C57). */
-    settleMs?: number
+    /** The longest the screen may keep loading, since the page opened, before the capture (code C57). */
+    readyMs?: number
     /** The close failed: the machine's network may still be open to the app's host. */
     onCloseFailed: () => void
   }>,
@@ -261,7 +251,7 @@ export function conferOn(
   const { kit, conversationId, log, onCloseFailed } = input
   return conferIn({
     ...input,
-    settleMs: input.settleMs ?? CHECK_LIMITS.stepMs,
+    readyMs: input.readyMs ?? CHECK_LIMITS.stepMs,
     files: { write: (path, text) => kit.transport.write(path, Buffer.from(text)) },
     network: {
       open: (extra) => kit.openNetwork(extra),

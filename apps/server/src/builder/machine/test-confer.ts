@@ -115,7 +115,7 @@ function status500(response: ServerResponse) {
   response.writeHead(500).end('x')
 }
 
-export async function conferring(t: TestContext, program: string, settleMs = 1_500) {
+export async function conferring(t: TestContext, program: string, readyMs = 4_000) {
   const lines: string[] = []
   const log: FailureLog = {
     info: (fields, message) => lines.push(JSON.stringify([message, fields])),
@@ -132,7 +132,7 @@ export async function conferring(t: TestContext, program: string, settleMs = 1_5
       workdir: join(machine.folder, 'app'),
       tmp: machine.folder,
       browserProgram: program,
-      settleMs,
+      readyMs,
     },
   })
   await machines.workspaceFor({
@@ -165,24 +165,12 @@ export const FAILED = { ok: false, error: 'CONFER_PLATFORM_FAILED' }
 
 export function stubBrowser(
   t: TestContext,
-  options: Readonly<{
-    failOn?: string
-    text?: string
-    host?: string
-    /** The first `network requests` shows an `/api/` call without a response; the next ones show its 500. */
-    pendingFirst?: boolean
-    neverAnswers?: boolean
-  }> = {},
+  options: Readonly<{ failOn?: string; text?: string; host?: string }> = {},
 ) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-stub-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))
   const program = join(folder, 'agent-browser')
   const [calls, cookies] = [join(folder, 'calls'), join(folder, 'cookies.json')]
-  const reads = join(folder, 'network-reads')
-  function call(status: string): string {
-    return `{"method":"POST","url":"https://${options.host ?? 'localhost:4433'}/api/listarEncomendas"${status}}`
-  }
-  const answered = options.neverAnswers === true ? '' : ',"status":500'
   const here = options.host ?? 'localhost:4433'
   writeFileSync(
     program,
@@ -195,9 +183,7 @@ export function stubBrowser(
       `  get) echo '{"success":true,"data":{"url":"https://${here}/"}}' ;;`,
       `  console) echo '{"success":true,"data":{"messages":[]}}' ;;`,
       `  errors) echo '{"success":true,"data":{"errors":[]}}' ;;`,
-      options.pendingFirst === true
-        ? `  network) n=$(cat '${reads}' 2>/dev/null || echo 0); echo $((n+1)) > '${reads}'; if [ "$n" = 0 ] || [ -z '${answered}' ]; then echo '{"success":true,"data":{"requests":[${call('')}]}}'; else echo '{"success":true,"data":{"requests":[${call(answered)}]}}'; fi ;;`
-        : `  network) echo '{"success":true,"data":{"requests":[]}}' ;;`,
+      `  network) echo '{"success":true,"data":{"requests":[]}}' ;;`,
       `  *) echo '${options.text ?? '{"success":true,"data":{}}'}' ;;`,
       'esac',
       '',

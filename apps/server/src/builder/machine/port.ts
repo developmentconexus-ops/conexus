@@ -87,8 +87,8 @@ export type MachinesDeps = {
   /** The check program, `/opt/conexus/check` in the template. */
   checkProgram?: string
   browserProgram?: string
-  /** How long the conference waits for the page's `/api/` calls to answer before it looks (code C57). */
-  settleMs?: number
+  /** The longest the conference waits for the screen to stop loading before it looks (code C57). */
+  readyMs?: number
   /** The external budget of waking or creating a machine (code C57). */
   startMs?: number
   /** The budget of each command the Hub runs in the machine, the check's own aside (code C57). */

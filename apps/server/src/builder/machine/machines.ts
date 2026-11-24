@@ -318,7 +318,7 @@ class BuilderMachines implements Machines {
     return conferOn({
       ...{ kit, conversationId, at, workdir: this.workdir, tmp: this.tmp, log: this.deps.log },
       exec: (script, timeoutMs) => this.run(kit, script, timeoutMs),
-      ...{ program: this.deps.browserProgram ?? BROWSER_PROGRAM, settleMs: this.deps.settleMs },
+      ...{ program: this.deps.browserProgram ?? BROWSER_PROGRAM, readyMs: this.deps.readyMs },
       onCloseFailed: () => {
         session.networkOpen = true
       },
