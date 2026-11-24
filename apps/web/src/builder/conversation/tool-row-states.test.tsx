@@ -81,3 +81,25 @@ test.each([
   const detail = 'sqlstate' in result ? result.sqlstate : result.code
   expect(screen.getByText(new RegExp(detail))).toBeTruthy()
 })
+
+test('conexus_check que não pôde conferir diz, aberta, a frase do meio do turno, sem "guardado" (27)', () => {
+  render(
+    <ToolRow
+      tool={itemOf({
+        state: 'output-error',
+        toolCallId: 'toolu_c1',
+        toolName: 'conexus_check',
+        args: {},
+        errorText: 'CHECK_PLATFORM_FAILED',
+      })}
+    />,
+  )
+  expect(screen.getByText('Não conseguiu conferir o app')).toBeTruthy()
+  open(/Não conseguiu conferir o app/)
+  expect(
+    screen.getByText(
+      'Não consegui conferir o app agora. Isso não diz nada sobre o app; o Builder tenta de novo neste turno.',
+    ),
+  ).toBeTruthy()
+  expect(screen.queryByText(/guardado/)).toBeNull()
+})

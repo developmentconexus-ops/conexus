@@ -5,6 +5,7 @@ import type {
   ClosedTool,
   CONSTRUTOR_TOOL,
   ConnectorEntry,
+  FailureCode,
   MACHINE_TOOL,
   SUBAGENT_TOOL,
   TASK_TOOLS,
@@ -111,6 +112,8 @@ export type ToolSpec = {
   groups: boolean
   /** A tool that answers a refusal as a result, not as an error of the call (the Assistant's, the Construtor's, the agent's): the row reads it. */
   refusal?: (result: unknown) => Refusal | undefined
+  /** The sentence a code the call threw says when opened, where the failure table's is for another place (a tool's line is mid-turn, the table's sentence is the turn's end). */
+  thrownText?: Readonly<Partial<Record<FailureCode, string>>>
   /** The kinds of a failure the call threw that ask the person to link the connection again (the agent's reads). */
   reconnects?: readonly string[]
   /** The row's own icon and words, instead of the table's by status. */

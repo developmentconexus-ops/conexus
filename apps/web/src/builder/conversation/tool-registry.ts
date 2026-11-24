@@ -17,6 +17,7 @@ import { MACHINE_SPECS } from './machine-specs.ts'
 import { RESEARCH_SPECS } from './research-specs.ts'
 import type { Room } from './room.ts'
 import type { ToolItem } from './rows.ts'
+import { CHECK_UNAVAILABLE } from './text.ts'
 import { stringArg } from './tool-args.ts'
 import type { Presented, RowTool, ToolSpec, ToolStatus } from './tool-spec.ts'
 import { headOf } from './tool-spec.ts'
@@ -67,6 +68,7 @@ export const TOOLS: Record<RowTool, ToolSpec> = {
     verb: 'conferiu',
     body: 'generic',
     groups: true,
+    thrownText: { CHECK_PLATFORM_FAILED: CHECK_UNAVAILABLE },
   },
   ...WORKSPACE_SPECS,
   ...DATA_SPECS,
