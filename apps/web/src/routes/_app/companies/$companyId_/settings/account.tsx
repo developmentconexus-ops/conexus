@@ -11,7 +11,7 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/accou
       icon: UserRoundIcon,
       summary: 'Seu nome, seu e-mail, seu cargo e sua área.',
       order: 10,
-      keywords: ['nome', 'e-mail', 'cargo', 'área', 'memória', 'Assistente'],
+      keywords: ['nome', 'e-mail', 'cargo', 'área', 'memória', 'Conexus'],
     },
   },
   component: Account,

@@ -22,7 +22,7 @@ function programRow(change: Partial<ToolItem>): ToolItem {
 
 function drawn(tool: ToolItem) {
   return render(
-    <RoomContext.Provider value={agentRoom('Vendas')}>
+    <RoomContext.Provider value={agentRoom()}>
       <ToolRow tool={tool} />
     </RoomContext.Provider>,
   )

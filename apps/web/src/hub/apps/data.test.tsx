@@ -14,8 +14,13 @@ test('Dados: o menu e quem não vê', async () => {
   const links = within(menu)
     .getAllByRole('link')
     .map((link) => link.textContent)
-  expect(links.slice(links.indexOf('Integrações'))).toEqual(['Integrações', 'Dados'])
-  expect(await screen.findByRole('heading', { name: 'Dados' })).toBeTruthy()
+  expect(links.slice(links.indexOf('Integrações'))).toEqual([
+    'Integrações',
+    'Dados',
+    'Quem usa o app',
+    'Sobre',
+  ])
+  expect(await screen.findByRole('heading', { name: 'Dados', level: 1 })).toBeTruthy()
 })
 
 test('Dados do Projeto: o membro não tem a entrada e o endereço dá "não encontrado" no conteúdo', async () => {
@@ -64,7 +69,7 @@ test('Dados: acima do teto a linha diz só "mais de 10.000"; o teto está no ró
 test('Dados: a lista, um Projeto sem app e um app sem tabelas dizem cada um a sua frase', async () => {
   open(`${PROJECT}/data`, { tables: () => TablesShape.parse({ kind: 'NO_APP' }) })
   expect(
-    await screen.findByText('Este Projeto ainda não tem app. Peça um ao Builder.'),
+    await screen.findByText('Este Projeto ainda não tem app. Peça um ao Conexus em Construir.'),
   ).toBeTruthy()
   expect(screen.queryByRole('navigation', { name: 'Tabelas' })).toBeNull()
 })
@@ -158,7 +163,7 @@ test('Dados: o banco do app não respondeu, uma tabela larga demais não tem o q
   })
   expect(
     await screen.findByText(
-      'Esta tabela tem colunas demais para mostrar aqui. Peça ao Builder o que você quer ver dela.',
+      'Esta tabela tem colunas demais para mostrar aqui. Peça ao Conexus o que você quer ver dela.',
     ),
   ).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()

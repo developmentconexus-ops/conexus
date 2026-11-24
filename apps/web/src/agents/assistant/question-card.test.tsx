@@ -45,7 +45,7 @@ test.each([
     const hub = at(path, {
       conversations: [assistantConversation({ projectId, messages: [asked] })],
     })
-    await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
+    await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
     await waitFor(() => expect(hub.stream()).toBeDefined())
     hub.stream()?.emit(
       displayOf({

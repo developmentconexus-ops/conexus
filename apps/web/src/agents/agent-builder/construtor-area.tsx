@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import type { Outgoing } from '../../harness/room/public.ts'
 import {
-  agentWords,
+  AGENT_BUILDER_WORDS,
   StartBox,
   StartWithoutAccount,
   UNCONFIRMED_CREATION,
@@ -20,7 +20,6 @@ import { construtorConversationsQuery } from './construtor-queries.ts'
 import {
   CONSTRUTOR_EXAMPLES,
   CONSTRUTOR_FIRST,
-  CONSTRUTOR_NAME,
   CONSTRUTOR_PLACEHOLDER,
   NO_CONSTRUTOR_CONVERSATIONS,
 } from './construtor-text.ts'
@@ -57,7 +56,7 @@ function AskBox(
     <>
       <p className="text-text-2">{CONSTRUTOR_FIRST}</p>
       <StartBox
-        words={agentWords(CONSTRUTOR_NAME)}
+        words={AGENT_BUILDER_WORDS}
         draft={draft}
         placeholder={CONSTRUTOR_PLACEHOLDER}
         examples={CONSTRUTOR_EXAMPLES}
@@ -79,7 +78,7 @@ export function ConstrutorConversations(scope: Scope) {
   const read = useQuery(construtorConversationsQuery(scope))
   const now = new Date()
   return (
-    <Block title="Conversas com o Construtor">
+    <Block title="Conversas sobre agentes">
       {read.isPending && <Skeleton className="h-16 w-full" />}
       {read.isError && (
         <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />

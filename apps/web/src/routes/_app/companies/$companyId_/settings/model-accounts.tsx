@@ -15,7 +15,8 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/model
       group: 'you',
       label: 'Contas de modelo',
       icon: KeyRoundIcon,
-      summary: 'As contas que o Builder usa, na ordem em que tenta cada uma.',
+      summary:
+        'As contas que o Conexus e os agentes da empresa usam, na ordem em que tentam cada uma.',
       order: 20,
       keywords: ['modelo', 'chave', 'assinatura', 'claude', 'google', 'troca automática'],
     },

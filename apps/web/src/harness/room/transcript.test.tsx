@@ -37,7 +37,7 @@ test('o turno do Builder leva a marca, "Conexus" e o modelo; o da pessoa, a bolh
   const said = personSaid('Oi', 'p1')
   const createdAt = String(said.createdAt)
   await openConversation(conversationOf({ id: FIRST, messages: [said, builderSaid('Olá')] }))
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   const [person, builder] = within(log)
     .getAllByText(/^(Oi|Olá)$/)
     .map((text) => text.closest<HTMLElement>('[data-slot="message"]'))

@@ -88,12 +88,12 @@ test('a lista e o filtro no endereço', async () => {
   await screen.findByRole('table', { name: 'Registro de dados' })
   const rows = rowTexts().map(([_, ...cells]) => cells)
   expect(rows).toEqual([
-    ['Bruno Reis', 'Assistenteno Projeto Pedidos', 'sankhya_vendas', 'Lida', '1'],
-    ['Bruno Reis', 'Assistente', 'sankhya_clientes', 'Não encontrada', '–'],
-    ['Bruno Reis', 'Builder', 'Consulta', 'Recusada', '–'],
+    ['Bruno Reis', 'Conexus em Conversasno Projeto Pedidos', 'sankhya_vendas', 'Lida', '1'],
+    ['Bruno Reis', 'Conexus em Conversas', 'sankhya_clientes', 'Não encontrada', '–'],
+    ['Bruno Reis', 'Conexus em Construir', 'Consulta', 'Recusada', '–'],
     ['Bruno Reis', 'Resumo semanal', 'sankhya_vendas', 'Recusada', '–'],
     ['Bruno Reis', 'Agente apagadonum Projeto apagado', 'sankhya_vendas', 'Lida', '1'],
-    ['Bruno Reis', 'Construtor', 'Matriz · lerPedidos', 'Não lida', '–'],
+    ['Bruno Reis', 'Conexus em Agentes', 'Matriz · lerPedidos', 'Não lida', '–'],
     ['Bruno Reis', 'App', 'Consulta', 'Recusada', '–'],
     ['Bruno Reis', 'App', 'Consulta', 'Não lida', '–'],
   ])

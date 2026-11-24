@@ -12,7 +12,7 @@ import { agentScreens } from './test-hub.tsx'
 const server = hubServer()
 const { at } = agentScreens(server)
 const PAGE = `${AREA}/${AGENT}`
-const OLD = 'Outra pessoa ou o Construtor mudou este rascunho. Recarregue.'
+const OLD = 'Outra pessoa ou o Conexus mudou este rascunho. Recarregue.'
 
 function textOf(field: HTMLElement) {
   if (!(field instanceof HTMLTextAreaElement)) throw new Error('the field is a textarea')

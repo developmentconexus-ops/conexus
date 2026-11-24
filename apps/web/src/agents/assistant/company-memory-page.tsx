@@ -198,7 +198,7 @@ function Note(props: { companyId: CompanyId; note: CompanyMemoryNote; may: boole
             <Removal
               what={`a nota: ${note.body}`}
               title="Apagar esta nota?"
-              description="O Assistente deixa de ler esta nota nas conversas da empresa."
+              description="O Conexus deixa de ler esta nota nas conversas da empresa."
               write={remove}
               remove={(close) => remove.mutate({ params: { companyId, noteId: note.id } }, close)}
             />
@@ -237,7 +237,7 @@ function Shown(props: { companyId: CompanyId; page: CompanyMemoryPage; may: bool
           <Removal
             what={page.name}
             title={`Apagar a página ${page.name}?`}
-            description="O Assistente deixa de ler esta página e as notas dela nas conversas da empresa."
+            description="O Conexus deixa de ler esta página e as notas dela nas conversas da empresa."
             write={remove}
             remove={(close) => remove.mutate({ params, query: { version: page.version } }, close)}
           />

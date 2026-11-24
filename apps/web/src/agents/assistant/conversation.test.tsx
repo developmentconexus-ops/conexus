@@ -29,7 +29,7 @@ const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
 const OF_PROJECT = `${COMPANY_ROOT}/projects/${PEDIDOS_ID}/assistant/${ASKED}`
 
 async function field() {
-  return screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
+  return screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
 }
 
 /** The tools button of the box's row, by its count. */
@@ -143,7 +143,7 @@ describe('não encontrado', () => {
   test('a conversa de um Projeto no endereço da empresa não é encontrada', async () => {
     at(OPEN, { conversations: [assistantConversation({ projectId: PEDIDOS_ID })] })
     expect(await screen.findByText('Voltar ao início')).toBeTruthy()
-    expect(screen.queryByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeNull()
+    expect(screen.queryByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeNull()
   })
 
   test('a conversa da empresa no endereço de um Projeto não é encontrada', async () => {

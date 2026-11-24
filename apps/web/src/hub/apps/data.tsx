@@ -10,7 +10,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '../../ui/tooltip.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { appTablesQuery } from './queries.ts'
 
-const NO_APP = 'Este Projeto ainda não tem app. Peça um ao Builder.'
+const NO_APP = 'Este Projeto ainda não tem app. Peça um ao Conexus em Construir.'
 const NO_TABLES = 'O app ainda não criou tabelas.'
 
 const CAP_NOTE = 'teto da contagem'

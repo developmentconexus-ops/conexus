@@ -100,7 +100,7 @@ test('em um Projeto, se a leitura do Projeto também cai a frase é a da falha, 
       refusal('DATABASE_UNAVAILABLE'),
     ),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Mandar ao Builder' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Mandar para Construir' }))
   expect(await screen.findByRole('alert')).toBeTruthy()
   expect(screen.queryByText('Este Projeto não existe mais.')).toBeNull()
 })

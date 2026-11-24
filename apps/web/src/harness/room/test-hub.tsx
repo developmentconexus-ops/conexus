@@ -299,7 +299,7 @@ export function screens(server: ReturnType<typeof setupServer>) {
   async function openConversation(conversation: Opened, shown = view(), answers: Answers = {}) {
     shown.conversations = [conversation]
     const hub = open(shown, `${PROJECT}/conversations/${conversation.id}`, answers)
-    const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+    const field = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
     await waitFor(() => expect(hub.lines.length).toBe(1))
     await waitFor(() => expect(hub.reads.length).toBeGreaterThan(0))
     return { ...hub, field, shown }

@@ -2,7 +2,7 @@ import type { ToolEffect } from '@conexus/hub-api'
 import { AND_LIST } from '../../../platform/lists.ts'
 
 export const NO_TOOLS_YET =
-  'Nenhuma ferramenta ainda. O Construtor faz as primeiras quando monta um agente.'
+  'Nenhuma ferramenta ainda. O Conexus faz as primeiras quando monta um agente.'
 export const NOBODY_USES = 'ninguém'
 
 /** The effect of a tool in the list's Efeito column. */

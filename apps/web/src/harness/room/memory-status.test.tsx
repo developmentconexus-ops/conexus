@@ -58,8 +58,8 @@ test('o clique abre as duas memórias (Critério 16)', async () => {
   expect(screen.getByText('2,1 de 40k')).toBeTruthy()
   expect(screen.getByText('Mensagens')).toBeTruthy()
   expect(screen.getByRole('meter', { name: 'Memória' })).toBeTruthy()
-  expect(screen.getByText(/Quando encher, o Builder resume a conversa/)).toBeTruthy()
-  expect(screen.getByText(/Quando encher, o Builder junta as observações/)).toBeTruthy()
+  expect(screen.getByText(/Quando encher, o Conexus resume a conversa/)).toBeTruthy()
+  expect(screen.getByText(/Quando encher, o Conexus junta as observações/)).toBeTruthy()
 })
 
 test('marca de falha sem o texto bruto do fornecedor (C48, C51)', () => {

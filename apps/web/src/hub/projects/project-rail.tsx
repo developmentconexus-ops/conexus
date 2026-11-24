@@ -1,6 +1,8 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
-import { getRouteApi, Link, useMatches, useNavigate } from '@tanstack/react-router'
+import type { LinkProps } from '@tanstack/react-router'
+import { getRouteApi, useMatches, useNavigate } from '@tanstack/react-router'
+import type { LucideIcon } from 'lucide-react'
 import {
   BotIcon,
   DatabaseIcon,
@@ -12,7 +14,7 @@ import {
   UsersIcon,
 } from 'lucide-react'
 import { FrameLink } from '../../ui/frame.tsx'
-import { SidebarGroup, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '../../ui/sidebar.tsx'
+import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem } from '../../ui/sidebar.tsx'
 import { SidebarSwitch } from '../../ui/sidebar-selector.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ProjectPicker } from './project-picker.tsx'
@@ -68,87 +70,116 @@ export function ProjectRailHead({ companyId, projectId }: Scope) {
   )
 }
 
+type RailItem = {
+  to: LinkProps['to']
+  label: string
+  icon: LucideIcon
+  needs?: 'manageAgents' | 'manageAutomations' | 'viewAppData'
+  holdsConversations?: true
+}
+
+const RAIL: readonly {
+  group: 'O app' | 'Agentes' | 'Dados' | 'O Projeto'
+  items: readonly RailItem[]
+}[] = [
+  {
+    group: 'O app',
+    items: [
+      {
+        to: '/companies/$companyId/projects/$projectId',
+        label: 'Construir',
+        icon: HammerIcon,
+        holdsConversations: true,
+      },
+    ],
+  },
+  {
+    group: 'Agentes',
+    items: [
+      {
+        to: '/companies/$companyId/projects/$projectId/assistant',
+        label: 'Conversas',
+        icon: MessagesSquareIcon,
+      },
+      {
+        to: '/companies/$companyId/projects/$projectId/agents',
+        label: 'Agentes',
+        icon: BotIcon,
+        needs: 'manageAgents',
+      },
+      {
+        to: '/companies/$companyId/projects/$projectId/automations',
+        label: 'Automações',
+        icon: TimerIcon,
+        needs: 'manageAutomations',
+      },
+    ],
+  },
+  {
+    group: 'Dados',
+    items: [
+      {
+        to: '/companies/$companyId/projects/$projectId/integrations',
+        label: 'Integrações',
+        icon: PlugIcon,
+      },
+      {
+        to: '/companies/$companyId/projects/$projectId/data',
+        label: 'Dados',
+        icon: DatabaseIcon,
+        needs: 'viewAppData',
+      },
+    ],
+  },
+  {
+    group: 'O Projeto',
+    items: [
+      {
+        to: '/companies/$companyId/projects/$projectId/access',
+        label: 'Quem usa o app',
+        icon: UsersIcon,
+      },
+      { to: '/companies/$companyId/projects/$projectId/about', label: 'Sobre', icon: InfoIcon },
+    ],
+  },
+]
+
 /**
- * The entries of the Projeto's list, beside the rail that carries the way back to the company:
- * Construir, Conversas, Agentes, Automações, Sobre, Quem usa o app, Integrações, Dados. Each later one is added by its step, never as "em breve" (web W31). The
- * address of Construir is the Projeto's own, with its conversations below it: it is the current
- * place while the route it lives under is among the matches.
+ * The entries of the Projeto's list, beside the rail that carries the way back to the company. Each
+ * later entry is added by its step, never as "em breve" (web W31). The address of Construir is the
+ * Projeto's own, with its conversations below it: it is the current place while the route it lives
+ * under is among the matches.
  */
 export function ProjectRailNav(scope: Scope) {
-  const params = scope
   const { may } = company.useRouteContext()
   const building = useMatches({
     select: (matches) => matches.some((match) => match.routeId === BUILD_ROUTE),
   })
   return (
-    <SidebarGroup>
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            tooltip="Construir"
-            aria-current={building ? 'page' : undefined}
-            data-status={building ? 'active' : undefined}
-            render={
-              <Link
-                to="/companies/$companyId/projects/$projectId"
-                params={params}
-                activeOptions={{ exact: true }}
-              />
-            }
-          >
-            <HammerIcon aria-hidden="true" />
-            <span>Construir</span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <FrameLink
-          to="/companies/$companyId/projects/$projectId/assistant"
-          params={params}
-          icon={MessagesSquareIcon}
-          label="Conversas"
-        />
-        {may.manageAgents && (
-          <FrameLink
-            to="/companies/$companyId/projects/$projectId/agents"
-            params={params}
-            icon={BotIcon}
-            label="Agentes"
-          />
-        )}
-        {may.manageAutomations && (
-          <FrameLink
-            to="/companies/$companyId/projects/$projectId/automations"
-            params={params}
-            icon={TimerIcon}
-            label="Automações"
-          />
-        )}
-        <FrameLink
-          to="/companies/$companyId/projects/$projectId/about"
-          params={params}
-          icon={InfoIcon}
-          label="Sobre"
-        />
-        <FrameLink
-          to="/companies/$companyId/projects/$projectId/access"
-          params={params}
-          icon={UsersIcon}
-          label="Quem usa o app"
-        />
-        <FrameLink
-          to="/companies/$companyId/projects/$projectId/integrations"
-          params={params}
-          icon={PlugIcon}
-          label="Integrações"
-        />
-        {may.viewAppData && (
-          <FrameLink
-            to="/companies/$companyId/projects/$projectId/data"
-            params={params}
-            icon={DatabaseIcon}
-            label="Dados"
-          />
-        )}
-      </SidebarMenu>
-    </SidebarGroup>
+    <>
+      {RAIL.map(({ group, items }) => {
+        const seen = items.filter((item) => item.needs === undefined || may[item.needs])
+        if (seen.length === 0) return null
+        const label = `rail-group-${group}`
+        return (
+          <SidebarGroup key={group} aria-labelledby={label}>
+            <SidebarGroupLabel id={label}>{group}</SidebarGroupLabel>
+            <SidebarMenu>
+              {seen.map((item) => (
+                <FrameLink
+                  key={item.label}
+                  to={item.to}
+                  params={scope}
+                  icon={item.icon}
+                  label={item.label}
+                  activeOptions={item.holdsConversations && { exact: true }}
+                  current={item.holdsConversations && building}
+                />
+              ))}
+            </SidebarMenu>
+          </SidebarGroup>
+        )
+      })}
+    </>
   )
 }

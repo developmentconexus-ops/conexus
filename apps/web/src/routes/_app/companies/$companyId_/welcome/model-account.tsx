@@ -17,7 +17,7 @@ function Step() {
   return (
     <>
       <p className="text-text-2">
-        O Builder usa a conta da empresa para trabalhar. Ela fica em Configurações, Contas de
+        O Conexus usa a conta da empresa para trabalhar. Ela fica em Configurações, Contas de
         modelo.
       </p>
       {accounts.data && providers.data && (

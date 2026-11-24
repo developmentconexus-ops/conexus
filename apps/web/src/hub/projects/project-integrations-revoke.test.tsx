@@ -92,7 +92,7 @@ test('Tirar pede a confirmação com o que deixa de funcionar no Projeto, e Canc
   expect(within(dialog).getByText('Tirar Matriz deste Projeto?')).toBeTruthy()
   expect(
     within(dialog).getByText(
-      'O app, o Builder e os agentes deste Projeto deixam de usar o Sankhya da empresa. O que dependia dele para de funcionar até alguém liberar de novo.',
+      'O app, o Conexus e os agentes deste Projeto deixam de usar o Sankhya da empresa. O que dependia dele para de funcionar até alguém liberar de novo.',
     ),
   ).toBeTruthy()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))

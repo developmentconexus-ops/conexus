@@ -24,7 +24,7 @@ test('o anel do compositor só gira enquanto o Builder trabalha; Enter envia e E
   line().emit(RUNNING)
   await screen.findByRole('button', { name: 'Parar' })
   expect(ring()?.hasAttribute('data-busy')).toBe(true)
-  expect(field.getAttribute('placeholder')).toBe('Escreva para orientar o Builder')
+  expect(field.getAttribute('placeholder')).toBe('Escreva para orientar o Conexus')
   say(field, 'Só eu cadastro.')
   await waitFor(() => expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(2))
   fireEvent.keyDown(field, { key: 'Escape', isComposing: true })
@@ -230,7 +230,7 @@ test('a busca do seletor estreita os modelos', async () => {
   )
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'zzz' } })
   expect(await screen.findByText('Nenhum modelo encontrado.')).toBeTruthy()
-  expect(typed(screen.getByLabelText('Mensagem para o Builder'))).toBe('')
+  expect(typed(screen.getByLabelText('Mensagem para o Conexus'))).toBe('')
 })
 
 test('o que se digita enquanto o envio está no ar fica no campo; o texto enviado sai', async () => {

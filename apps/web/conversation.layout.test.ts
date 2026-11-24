@@ -193,14 +193,14 @@ test('quem envia lendo mais acima vai para o fim da conversa, e o campo mostra o
       events: [recordedEvent('abort', AgentStart), signalStarted(sent.id, 'E o terceiro app?')],
     }),
   )
-  const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = page.getByRole('textbox', { name: 'Mensagem para o Conexus' })
   await field.fill('E o terceiro app?')
   await field.press('Enter')
   await page.getByText('E o terceiro app?', { exact: true }).waitFor()
   await page.locator('[data-slot=input-group][data-busy]').waitFor()
   await atEnd(page)
   assert.equal(await page.locator('[data-slot=input-group][data-busy]').count(), 1)
-  assert.equal(await focusDrawn(page), 'Mensagem para o Builder halo')
+  assert.equal(await focusDrawn(page), 'Mensagem para o Conexus halo')
   assert.deepEqual(page.problems, [])
   await page.close()
 })
@@ -233,7 +233,7 @@ test('no controle de raciocínio cada parada fica sob o centro do botão, e na p
 // A disabled Enviar dimmed the whole group, and the 2px outline sat on the field inside the frame.
 test('o compositor vazio não esmaece; o foco do compositor e do título é a borda ipê de cada um, sem contorno por fora', async () => {
   const page = await open(PROJECT, DESKTOP)
-  const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = page.getByRole('textbox', { name: 'Mensagem para o Conexus' })
   function frame(locator: Locator) {
     return locator.evaluate((element) => {
       const group = getComputedStyle(element.closest('[data-slot=input-group]') ?? element)
@@ -244,7 +244,7 @@ test('o compositor vazio não esmaece; o foco do compositor e do título é a bo
   await field.focus()
   assert.deepEqual(
     { ...(await frame(field)), focus: await focusDrawn(page) },
-    { opacity: '1', radius: '16px', focus: 'Mensagem para o Builder halo' },
+    { opacity: '1', radius: '16px', focus: 'Mensagem para o Conexus halo' },
   )
   const title = page.getByRole('combobox', { name: 'Conversas' })
   await title.focus()

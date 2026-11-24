@@ -14,7 +14,7 @@ import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
 import type { FilesGo } from './attachments.ts'
 import { PLAIN_WORDS } from './connector-specs.ts'
 import type { BuilderSession } from './session.ts'
-import { START_NO_ACCOUNT } from './text.ts'
+import { CONEXUS, START_NO_ACCOUNT } from './text.ts'
 import type { ConnectorWords, RowTool, ToolSpec } from './tool-spec.ts'
 
 /** A file the Assistant shows beside the chat: the text to read, or the file to download. */
@@ -109,8 +109,9 @@ export function isRoom<K extends RoomKind>(room: Room, kinds: readonly K[]): roo
   return kinds.some((kind) => kind === room.kind)
 }
 
-export const APP_BUILDER_WORDS: BoxWords = { agent: 'Builder', files: 'MODEL' }
-export const ASSISTANT_WORDS: BoxWords = { agent: 'Assistente', files: 'MACHINE' }
+export const APP_BUILDER_WORDS: BoxWords = { agent: CONEXUS, files: 'MODEL' }
+export const ASSISTANT_WORDS: BoxWords = { agent: CONEXUS, files: 'MACHINE' }
+export const AGENT_BUILDER_WORDS: BoxWords = { agent: CONEXUS, files: 'MODEL' }
 
 /** What the Assistant, the Construtor de agentes and a saved agent draw alike: the Assistant's rows, and no model to choose when there is no account. */
 const ASSISTANT_STYLE: Pick<RoomBase, 'overrides' | 'failures'> = {
@@ -118,7 +119,7 @@ const ASSISTANT_STYLE: Pick<RoomBase, 'overrides' | 'failures'> = {
   failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
 }
 
-export function agentWords(agent: string): BoxWords {
+function agentWords(agent: string): BoxWords {
   return { agent, files: 'MODEL' }
 }
 
@@ -154,7 +155,6 @@ export function assistantRoom(
 }
 
 export function agentBuilderRoom(
-  agent: string,
   held: Pick<
     RoomOf<'AGENT_BUILDER'>,
     'connectors' | 'toolDescription' | 'openAgent' | 'openedAgent'
@@ -162,7 +162,7 @@ export function agentBuilderRoom(
 ): RoomOf<'AGENT_BUILDER'> {
   return {
     kind: 'AGENT_BUILDER',
-    ...agentWords(agent),
+    ...AGENT_BUILDER_WORDS,
     ...ASSISTANT_STYLE,
     ...held,
   }

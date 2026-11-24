@@ -41,7 +41,7 @@ export function PreviewLine({
           <>
             <span className="block">Motivo: {reasonOf(cause)}.</span>
             <Button className="mt-xs" onClick={() => onAsk(askOf(data.number, cause))}>
-              Pedir ao Builder para corrigir
+              Pedir ao Conexus para corrigir
             </Button>
           </>
         )}

@@ -35,7 +35,7 @@ async function open(view: { versions: ReturnType<typeof versionView>[] }, mayDel
 }
 
 const EMPTY =
-  'Nenhuma versão ainda. Cada versão que o Builder monta aparece aqui, e o app abre no endereço depois do primeiro Publicar.'
+  'Nenhuma versão ainda. Cada versão que o Conexus monta aparece aqui, e o app abre no endereço depois do primeiro Publicar.'
 
 test('vazio: de onde vêm as versões e o app de exemplo no endereço, sem "Enviar versão" (35)', async () => {
   await open({ versions: [] })

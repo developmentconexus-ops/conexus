@@ -11,7 +11,7 @@ const { at } = agentScreens(hubServer())
 test('mandar o primeiro pedido abre uma conversa com o Construtor e leva a ela', async () => {
   const { conexus, writes } = at(AREA, { agents: [] })
   say(
-    await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' }),
+    await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' }),
     'quero um agente de vendas',
   )
   await waitFor(() =>
@@ -19,7 +19,7 @@ test('mandar o primeiro pedido abre uma conversa com o Construtor e leva a ela',
   )
   expect(writes()[0]?.path).toMatch(/construtor\/conversations$/)
   expect(writes()[0]?.body).toMatchObject({ model: 'anthropic/claude-sonnet-4' })
-  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })).toBeTruthy()
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
 })
 
 test('as conversas anteriores com o Construtor aparecem em lista', async () => {
@@ -57,7 +57,7 @@ test('uma conversa com o Construtor sem título leva o dia e a hora em que come�
 test('abrir a conversa com o Construtor sem conta para o modelo diz a frase com o caminho das contas', async () => {
   at(AREA, { agents: [], answers: { openConstrutor: () => refusal('MODEL_NO_ACCOUNT') } })
   say(
-    await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' }),
+    await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' }),
     'quero um agente de vendas',
   )
   expect(
@@ -72,13 +72,13 @@ test('o modelo escolhido na caixa vai com o pedido que abre a conversa', async (
   const { writes } = at(AREA, { agents: [] })
   fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo e raciocínio' }))
   fireEvent.click(await screen.findByRole('option', { name: 'Claude Opus 4' }))
-  say(await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' }), 'um pedido')
+  say(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' }), 'um pedido')
   await waitFor(() => expect(writes()[0]?.body).toMatchObject({ model: 'anthropic/claude-opus-4' }))
 })
 
 test('a caixa do Construtor tem o botão do modelo e do raciocínio e não mostra o Projeto', async () => {
   at(AREA, { agents: [] })
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   const form = box.closest('form')
   if (form === null) throw new Error('the box has no form')
   expect(await within(form).findByRole('combobox', { name: 'Modelo e raciocínio' })).toBeTruthy()

@@ -31,7 +31,7 @@ const CHAT = '[data-slot=resizable-panel]:last-of-type'
 
 test('o trilho no Projeto: o trilho continua com Projetos marcado, a lista é a do Projeto, e sair devolve Conversas', async () => {
   const page = await open(PROJECT, DESKTOP)
-  await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).waitFor()
+  await page.getByRole('textbox', { name: 'Mensagem para o Conexus' }).waitFor()
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   const list = nav.locator('[data-sidebar=sidebar]')
   await atRest(page)
@@ -62,7 +62,7 @@ test('o trilho no Projeto: o trilho continua com Projetos marcado, a lista é a 
 
 test('o divisor da conversa: 380px, arrastado vale de 320px a 60%, e a página lembra', async () => {
   const page = await open(PROJECT, DESKTOP)
-  await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).waitFor()
+  await page.getByRole('textbox', { name: 'Mensagem para o Conexus' }).waitFor()
   const chat = page.locator(CHAT)
   const handle = page.getByRole('separator', { name: 'Redimensionar a conversa' })
   async function dragBy(dx: number) {
@@ -80,7 +80,7 @@ test('o divisor da conversa: 380px, arrastado vale de 320px a 60%, e a página l
   const wide = await dragBy(-200)
   const widest = await dragBy(-1000)
   await page.reload()
-  await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).waitFor()
+  await page.getByRole('textbox', { name: 'Mensagem para o Conexus' }).waitFor()
   const remembered = Math.round(await widthOf(chat))
   const narrowest = await dragBy(1500)
   assert.deepEqual(
@@ -95,7 +95,7 @@ test('no celular, "App | Conversa" troca de região sem perder o rascunho nem a 
   // The chat is short enough that the transcript scrolls only in a low window.
   const page = await open(PROJECT, { ...PHONE, height: 320 })
   await page.getByRole('button', { name: 'Conversa', exact: true }).click()
-  const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = page.getByRole('textbox', { name: 'Mensagem para o Conexus' })
   await field.fill('meio da frase')
   const body = page.locator(`${CHAT} .overflow-y-auto`)
   await body.evaluate((element) => {

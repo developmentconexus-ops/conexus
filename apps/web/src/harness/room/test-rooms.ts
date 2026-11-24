@@ -27,11 +27,8 @@ export function assistantRoomOf(
 
 export const ASSISTANT_ROOM: RoomOf<'ASSISTANT'> = assistantRoomOf()
 
-export function agentRoom(
-  agent: string,
-  connectors: ConnectorWords = PLAIN_WORDS,
-): RoomOf<'AGENT_BUILDER'> {
-  return agentBuilderRoom(agent, {
+export function agentRoom(connectors: ConnectorWords = PLAIN_WORDS): RoomOf<'AGENT_BUILDER'> {
+  return agentBuilderRoom({
     connectors,
     toolDescription: () => undefined,
     openAgent: () => undefined,
@@ -58,6 +55,6 @@ export function savedRoom(
 export const ROOMS_OF_EVERY_KIND: readonly Room[] = [
   BUILDER_ROOM,
   ASSISTANT_ROOM,
-  agentRoom('Construtor'),
+  agentRoom(),
   savedRoom('Compras'),
 ]

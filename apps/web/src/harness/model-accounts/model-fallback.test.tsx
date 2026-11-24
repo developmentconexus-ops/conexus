@@ -124,7 +124,9 @@ test('Troca automática: a resposta cortada diz que não confirmou e volta ao sa
 test('Troca automática: uma frase liga a fila das contas à fila da troca', async () => {
   open(view())
   const section = await screen.findByRole('region', { name: 'Troca automática' })
-  expect(section.textContent).toContain('O Builder tenta as contas nesta ordem')
+  expect(section.textContent).toContain(
+    'O Conexus e os agentes da empresa tentam as contas nesta ordem',
+  )
   expect(section.textContent).toContain(
     'quando as contas de um modelo acabam, a conversa segue com o próximo modelo da fila',
   )

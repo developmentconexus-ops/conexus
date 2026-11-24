@@ -333,7 +333,7 @@ export async function running(
   hub: ReturnType<ReturnType<typeof assistantScreens>['at']>,
   text = 'Compare',
 ) {
-  say(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' }), text)
+  say(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' }), text)
   await waitFor(() =>
     expect(hub.writes().filter((one) => one.path.endsWith('/messages'))).toHaveLength(1),
   )

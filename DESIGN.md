@@ -596,8 +596,8 @@ which shadcn file it was copied from; the front matter holds their values. Their
   hover raised; its rows keep the table display at every width. A markdown table in a message has
   a raised header and a full hairline grid.
 - **Chat messages.** The person's bubble: raised, `rounded.object`, right, 80% at most, the time as
-  a fact under it. The assistant's turn is plain text on the sheet, headed by the mark,
-  "Assistente" and the model badge, on the axis.
+  a fact under it. The assistant's turn is plain text on the sheet, headed by its sign (the mark, or
+  the agent icon of a saved agent), its name and the model badge, on the axis.
 - **Tool row.** A collapsed row with icon, sentence, duration in tabular figures and a chevron;
   it opens on what the tool received and returned (V39).
 - **AI pieces.** `apps/web/src/ui/ai/` holds what the agent did and asks, on `Trace` and shadcn's

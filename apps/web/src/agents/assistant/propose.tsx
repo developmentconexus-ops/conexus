@@ -232,7 +232,7 @@ function Buttons(props: {
 
 /**
  * The app the Assistant proposed (step 24.3.2, U3): on the Início **Criar app** with the name of
- * the Projeto and the connections to release, in a Projeto **Mandar ao Builder**; both hand the
+ * the Projeto and the connections to release, in a Projeto **Mandar para Construir**; both hand the
  * proposal to the Builder and open the conversation it answers. **Continuar aqui** says so to the
  * Assistant as the person's own message. A closed proposal shows what it said and no button.
  */

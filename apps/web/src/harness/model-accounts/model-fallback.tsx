@@ -80,7 +80,7 @@ export function ModelFallbackSection(props: {
       ref={section}
       id="fallback"
       title="Troca automática"
-      description="O Builder tenta as contas nesta ordem; quando as contas de um modelo acabam, a conversa segue com o próximo modelo da fila."
+      description="O Conexus e os agentes da empresa tentam as contas nesta ordem; quando as contas de um modelo acabam, a conversa segue com o próximo modelo da fila."
     >
       <div className="flex items-center gap-sm">
         <Switch

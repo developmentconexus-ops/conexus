@@ -9,7 +9,7 @@ const ROOMS: Record<RoomKind, Room> = {
   ASSISTANT: assistantRoomOf({
     proposals: { app: () => 'app', automation: () => 'automation', companyMemory: () => 'memory' },
   }),
-  AGENT_BUILDER: agentRoom('Construtor'),
+  AGENT_BUILDER: agentRoom(),
   SAVED_AGENT: savedRoom('Compras'),
 }
 

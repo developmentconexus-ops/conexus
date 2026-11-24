@@ -108,7 +108,7 @@ const REASONS = {
   SLUG_TAKEN: 'Já existe uma ferramenta com este nome.',
   NOT_USABLE: 'O Projeto não pode usar esta ferramenta.',
   SAME_TOOL_TWICE: 'A mesma ferramenta não entra duas vezes.',
-  CODE_BY_CONSTRUTOR: 'Uma ferramenta em código só o Construtor muda.',
+  CODE_BY_CONSTRUTOR: 'Uma ferramenta em código só o Conexus muda, numa conversa em Agentes.',
   MODULE_STATE: 'O código guarda estado fora da função.',
   STALE_VERSION: 'Há uma versão mais nova desta ferramenta.',
 } satisfies Record<ProblemReason, string>

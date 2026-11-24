@@ -8,6 +8,7 @@ import {
   agentBuilderRoom,
   Beside,
   Chat,
+  CONEXUS,
   ModelChoice,
   RoomContext,
   START_NO_ACCOUNT,
@@ -17,12 +18,7 @@ import {
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { agentQuery, toolsQuery } from '../saved-agent/public.ts'
 import { construtorConversationsQuery, sendConstrutorModel } from './construtor-queries.ts'
-import {
-  CONSTRUTOR_FIRST,
-  CONSTRUTOR_NAME,
-  CONSTRUTOR_PLACEHOLDER,
-  DRAFT_PANEL,
-} from './construtor-text.ts'
+import { CONSTRUTOR_FIRST, CONSTRUTOR_PLACEHOLDER, DRAFT_PANEL } from './construtor-text.ts'
 import { DraftPanel } from './draft-panel.tsx'
 
 /** The strip over the conversation: the way back to Agentes and the conversation's title. */
@@ -43,7 +39,7 @@ function Heading(props: {
         <ArrowLeftIcon aria-hidden="true" className="size-4" />
       </Link>
       <h1 className="max-w-full truncate font-display text-title">
-        {here === undefined ? CONSTRUTOR_NAME : titleOf(here)}
+        {here === undefined ? CONEXUS : titleOf(here)}
       </h1>
     </div>
   )
@@ -64,7 +60,7 @@ function useConstrutorRoom(
   const library = useQuery(toolsQuery(scope)).data?.tools
   return useMemo(
     () =>
-      agentBuilderRoom(CONSTRUTOR_NAME, {
+      agentBuilderRoom({
         connectors: words,
         toolDescription: (slug: string) => library?.find((one) => one.slug === slug)?.description,
         openAgent: (id: AgentId, by: 'CALL' | 'TAP') => {

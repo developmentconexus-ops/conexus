@@ -20,7 +20,7 @@ export const AGENT_FAILURES = {
     category: 'USER',
     settles: true,
     status: 409,
-    phrase: 'Outra pessoa ou o Construtor mudou este rascunho.',
+    phrase: 'Outra pessoa ou o Conexus mudou este rascunho.',
     action: 'Recarregue.',
     actionKind: 'NONE',
   },

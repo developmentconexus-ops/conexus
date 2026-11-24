@@ -18,7 +18,7 @@ import { COMPANY_ACCESS_NONE } from '../../platform/test-hub-access.tsx'
 const server = hubServer()
 const ACCOUNT = `/companies/${COMPANY.id}/settings/account`
 const PEOPLE = `/companies/${COMPANY.id}/settings/people`
-const HINT = 'Ajuda o Assistente a entender o seu trabalho.'
+const HINT = 'Ajuda o Conexus a entender o seu trabalho.'
 const TOO_LONG = 'Escreva até 80 caracteres.'
 const DAVI = { personId: 'person-davi', name: 'Davi Costa', email: 'davi@example.test' }
 const UNSAVED =

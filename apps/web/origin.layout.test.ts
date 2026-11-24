@@ -11,14 +11,16 @@ after(async () => {
   assert.deepEqual(harness.unanswered, [], 'the page asked the Hub for something no reply covers')
 })
 
-test('o pedido do Assistente cabe a 195px, a 200% de ampliação: "via Assistente" e a hora à vista, sem rolagem lateral (24.3.2)', async () => {
+test('o pedido do Assistente cabe a 195px, a 200% de ampliação: "via Conversas" e a hora à vista, sem rolagem lateral (24.3.2)', async () => {
   const state = CONVERSATION_STATES.find(
     (one) => one.name === 'Conversa, com o pedido do Assistente',
   )
   assert.ok(state, 'the sweep has no such state')
   const page = await harness.open(state.path, { viewport: ZOOMED_PHONE, replies: state.replies })
   await state.settle(page)
-  const mark = await page.getByRole('note', { name: 'Enviado pelo Assistente' }).boundingBox()
+  const mark = await page
+    .getByRole('note', { name: 'Enviado de uma conversa com o Conexus' })
+    .boundingBox()
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth)
   assert.deepEqual(
     {

@@ -10,9 +10,9 @@ import { clockOf, dayAndHour, dayGroupOf } from '../../platform/dates.ts'
 
 /** Each agent of a read, as the filter and a row without the saved agent's name say it. */
 export const AGENT_WORD: Record<DataReadAgent, string> = {
-  ASSISTANT: 'Assistente',
-  BUILDER: 'Builder',
-  CONSTRUTOR: 'Construtor',
+  ASSISTANT: 'Conexus em Conversas',
+  BUILDER: 'Conexus em Construir',
+  CONSTRUTOR: 'Conexus em Agentes',
   AGENT: 'Agentes',
   APP: 'App',
 }

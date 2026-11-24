@@ -36,7 +36,7 @@ test('o primeiro pedido pela caixa do Builder: a caixa, o nome, e a conversa abr
     await chooseDefaultModel(page, ids.companyA)
     // The Builder's box is the first entry's last step: Início asks the Assistant.
     await page.goto(`${TEST_ORIGIN}/companies/${ids.companyA}/welcome/build`)
-    await page.getByLabel('Mensagem para o Builder').waitFor()
+    await page.getByLabel('Mensagem para o Conexus').waitFor()
     await ask(page, REQUEST)
     await page.getByLabel('Nome do projeto').fill('Encomendas')
     await page.getByRole('button', { name: 'Criar e começar', exact: true }).click()

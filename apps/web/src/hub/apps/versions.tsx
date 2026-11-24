@@ -89,7 +89,7 @@ export function Versions({ project, ...scope }: Scope & Access) {
       )}
       {read.data?.versions.length === 0 && (
         <Empty>
-          Nenhuma versão ainda. Cada versão que o Builder monta aparece aqui, e o app abre no
+          Nenhuma versão ainda. Cada versão que o Conexus monta aparece aqui, e o app abre no
           endereço depois do primeiro Publicar.
         </Empty>
       )}

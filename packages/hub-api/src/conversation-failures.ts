@@ -63,7 +63,7 @@ export const CONVERSATION_FAILURES = {
     settles: true,
     status: 502,
     phrase: 'O modelo recusou este pedido.',
-    action: 'Reescreva a mensagem de outro jeito ou peça outra coisa ao Builder.',
+    action: 'Reescreva a mensagem de outro jeito ou peça outra coisa ao Conexus.',
     actionKind: 'NONE',
   },
   MODEL_ANSWER_CUT: {
@@ -71,14 +71,14 @@ export const CONVERSATION_FAILURES = {
     settles: true,
     status: 502,
     phrase: 'A resposta do modelo ficou grande demais e foi cortada.',
-    action: 'Peça ao Builder uma parte de cada vez.',
+    action: 'Peça ao Conexus uma parte de cada vez.',
     actionKind: 'NONE',
   },
   RUN_BUSY: {
     category: 'USER',
     settles: true,
     status: 409,
-    phrase: 'O Builder está mudando este app para {person}.',
+    phrase: 'O Conexus está mudando este app para {person}.',
     action: 'Tente de novo quando ele terminar.',
     actionKind: 'RETRY',
   },
@@ -103,7 +103,7 @@ export const CONVERSATION_FAILURES = {
     settles: true,
     status: 500,
     phrase: 'Não consegui guardar esta versão.',
-    action: 'O trabalho continua na conversa. Peça de novo ao Builder.',
+    action: 'O trabalho continua na conversa. Peça de novo ao Conexus.',
     actionKind: 'NONE',
   },
   GIT_RESTORE_NEEDED: {
@@ -119,7 +119,7 @@ export const CONVERSATION_FAILURES = {
     settles: true,
     status: 409,
     phrase: 'Esta pergunta já foi respondida ou não espera mais.',
-    action: 'Veja a conversa para saber como o Builder seguiu.',
+    action: 'Veja a conversa para saber como o Conexus seguiu.',
     actionKind: 'NONE',
   },
   QUESTION_ANSWERS_INVALID: {
@@ -135,7 +135,7 @@ export const CONVERSATION_FAILURES = {
     settles: true,
     status: 502,
     phrase: 'A máquina caiu no meio do turno.',
-    action: 'O que não foi guardado se perdeu. Peça de novo ao Builder.',
+    action: 'O que não foi guardado se perdeu. Peça de novo ao Conexus.',
     actionKind: 'NONE',
   },
   // Founder, 2026-10-22, the step 14 texts: "Aprovo" and "Aprovookay".
@@ -144,7 +144,7 @@ export const CONVERSATION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'O app não passou na conferência depois de 4 tentativas.',
-    action: 'O código ficou guardado. Peça ao Builder para corrigir.',
+    action: 'O código ficou guardado. Peça ao Conexus para corrigir.',
     actionKind: 'NONE',
   },
   CHECK_PLATFORM_FAILED: {
@@ -152,7 +152,7 @@ export const CONVERSATION_FAILURES = {
     settles: true,
     status: 502,
     phrase: 'Não consegui conferir o app.',
-    action: 'O código ficou guardado sem conferência. Peça de novo ao Builder.',
+    action: 'O código ficou guardado sem conferência. Peça de novo ao Conexus.',
     actionKind: 'NONE',
   },
 } as const satisfies Record<string, FailureRow>

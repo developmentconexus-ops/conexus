@@ -59,7 +59,7 @@ export function Queue(props: Props) {
           className="whitespace-normal px-sm py-sm text-label text-text-2"
         >
           <h3 className="inline font-medium text-text">{providerName}</h3>
-          {` · ${accounts.length === 1 ? '1 conta' : `${accounts.length} contas`} · o Builder tenta nesta ordem`}
+          {` · ${accounts.length === 1 ? '1 conta' : `${accounts.length} contas`} · o Conexus e os agentes tentam nesta ordem`}
           <p role="status" className="sr-only">
             {feedback.said}
           </p>

@@ -34,7 +34,7 @@ test('a resposta cortada pela atualização diz a frase da tabela (0c)', async (
   }
   opened.shown.conversations[0]?.messages.push(cut)
   opened.line().emit(agentEnd('aborted'))
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   await waitFor(() =>
     expect(
       within(log)

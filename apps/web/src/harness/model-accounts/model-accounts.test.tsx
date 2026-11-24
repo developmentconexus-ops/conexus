@@ -143,16 +143,18 @@ test('uma linha por conta, só o que muda: o lugar, o nome, a chave, a etiqueta 
     expect(table.queryByRole('columnheader', { name: column })).toBeNull()
 })
 
-test('o cabeçalho do fornecedor diz o nome, a contagem e que o Builder tenta nesta ordem', async () => {
+test('o cabeçalho do fornecedor diz o nome, a contagem e que o Conexus e os agentes tentam nesta ordem', async () => {
   open(view({ company: queue() }))
   const header = (await screen.findByRole('heading', { name: 'Anthropic' })).closest('td')
-  expect(header?.textContent).toContain('Anthropic · 4 contas · o Builder tenta nesta ordem')
+  expect(header?.textContent).toContain(
+    'Anthropic · 4 contas · o Conexus e os agentes tentam nesta ordem',
+  )
 })
 
 test('com uma só conta, o cabeçalho diz "1 conta"', async () => {
   open(view({ company: [accountOf({ label: 'Time 1' })] }))
   const header = (await screen.findByRole('heading', { name: 'Anthropic' })).closest('td')
-  expect(header?.textContent).toContain('Anthropic · 1 conta · o Builder')
+  expect(header?.textContent).toContain('Anthropic · 1 conta · o Conexus e os agentes')
 })
 
 function tone(label: string) {

@@ -103,7 +103,7 @@ test('outro arquivo mostra nome, tipo e tamanho, e só se baixa', async () => {
 
 test('um arquivo recusado não desenha painel nenhum', async () => {
   showing('../segredo', { kind: 'SHOW_REFUSED', reason: 'OUTSIDE' })
-  await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
+  await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   await screen.findByText(/Não conseguiu mostrar o arquivo/)
   expect(screen.queryByRole('button', { name: 'Baixar' })).toBeNull()
 })

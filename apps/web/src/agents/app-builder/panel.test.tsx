@@ -50,7 +50,7 @@ async function pick(name: string) {
 test('um Projeto sem conversa abre numa conversa vazia, pronta para escrever, sem criar nada', async () => {
   const { sent } = open(view(), PROJECT)
   expect(await screen.findByText(EMPTY_CONVERSATION)).toBeTruthy()
-  expect(screen.getByRole('textbox', { name: 'Mensagem para o Builder' })).toBeTruthy()
+  expect(screen.getByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
   expect(sent).toHaveLength(0)
 })
 
@@ -64,7 +64,7 @@ test('o Projeto abre na conversa mais recente, e a caixa lista as da pessoa', as
     }),
     `${PROJECT}?lens=code`,
   )
-  await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   expect(conexus.router.state.location.pathname).toBe(`${PROJECT}/conversations/${FIRST}`)
   expect(conexus.router.state.location.search).toEqual({ lens: 'code' })
   expect(box()).toHaveProperty('value', 'Apps de padaria')
@@ -81,7 +81,7 @@ test('"Nova conversa" cria com a chave da tentativa e abre a conversa com o foco
   fireEvent.click(await screen.findByRole('button', { name: 'Nova conversa' }))
   await waitFor(() => expect(sent).toHaveLength(1))
   await waitFor(() => expect(box()).toHaveProperty('value', expect.stringMatching(/^Conversa de /)))
-  const field = screen.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = screen.getByRole('textbox', { name: 'Mensagem para o Conexus' })
   await waitFor(() => expect(document.activeElement).toBe(field))
   expect(sent[0]?.attemptKey).toMatch(/^[0-9a-f-]{36}$/)
   expect(sent[0]?.body).toEqual({})
@@ -90,7 +90,7 @@ test('"Nova conversa" cria com a chave da tentativa e abre a conversa com o foco
 
 test('a primeira mensagem do Projeto sem conversa cria a conversa e a abre enviando o pedido', async () => {
   const { sent, conexus } = open(view(), PROJECT)
-  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   fireEvent.change(field, { target: { value: 'Um app de encomendas' } })
   fireEvent.keyDown(field, { key: 'Enter' })
   await waitFor(() => expect(sent).toHaveLength(1))
@@ -100,7 +100,7 @@ test('a primeira mensagem do Projeto sem conversa cria a conversa e a abre envia
 
 test('a recusa do modelo no primeiro envio do Projeto sem conversa devolve o texto e diz o que fazer', async () => {
   open(view(), PROJECT, { create: () => refusal('MODEL_NO_ACCOUNT') })
-  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   fireEvent.change(field, { target: { value: 'Um app de encomendas' } })
   fireEvent.keyDown(field, { key: 'Enter' })
   expect((await screen.findByRole('status')).textContent).toBe(
@@ -127,15 +127,15 @@ test('trocar de conversa e voltar guarda o rascunho de cada uma', async () => {
     }),
     `${PROJECT}/conversations/${FIRST}`,
   )
-  fireEvent.change(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }), {
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' }), {
     target: { value: 'meio da frase' },
   })
   await pick('Segunda')
   await waitFor(() => expect(box()).toHaveProperty('value', 'Segunda'))
-  expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe('')
+  expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' }))).toBe('')
   await pick('Primeira')
   await waitFor(() => expect(box()).toHaveProperty('value', 'Primeira'))
-  expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe(
+  expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' }))).toBe(
     'meio da frase',
   )
 })
@@ -157,7 +157,7 @@ test('A→B→A não repete a mensagem: o envio tira texto e arquivos da caixa n
       },
     },
   )
-  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   attach(PDF)
   await screen.findByRole('button', { name: 'Tirar tabela.pdf' })
   say(field, 'já enviada')
@@ -166,11 +166,11 @@ test('A→B→A não repete a mensagem: o envio tira texto e arquivos da caixa n
   await waitFor(() => expect(box()).toHaveProperty('value', 'Segunda'))
   await pick('Primeira')
   await waitFor(() => expect(box()).toHaveProperty('value', 'Primeira'))
-  expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe('')
+  expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' }))).toBe('')
   expect(screen.queryByRole('button', { name: 'Tirar tabela.pdf' })).toBeNull()
   gate.resolve()
   await waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
-  expect(typed(screen.getByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe('')
+  expect(typed(screen.getByRole('textbox', { name: 'Mensagem para o Conexus' }))).toBe('')
   expect(screen.queryByRole('button', { name: 'Tirar tabela.pdf' })).toBeNull()
 })
 
@@ -191,7 +191,7 @@ test('recarregar guarda o texto e tira os arquivos (12)', async () => {
       )}
     />,
   )
-  const again = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  const again = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   expect(typed(again)).toBe('meio da frase')
   expect(screen.queryByRole('button', { name: 'Tirar tabela.pdf' })).toBeNull()
 })
@@ -202,13 +202,13 @@ test('a conversa de outra pessoa abre como "não encontrado", sem rastro dela', 
     `${PROJECT}/conversations/${SECOND}`,
   )
   expect(await screen.findByText(FAILURES.NOT_FOUND.phrase)).toBeTruthy()
-  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
+  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeNull()
   // The company's frame around the page still reads its companies; the test ends once it has.
   await waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
 })
 
 const STEER = 'Só eu cadastro.'
-const PENDING = 'Vai ao Builder no próximo passo'
+const PENDING = 'Vai ao Conexus no próximo passo'
 
 /** The Hub's answer to the sends after the first, which enter the running run. */
 function afterFirst(reply: () => Response | Promise<Response>) {
@@ -234,14 +234,14 @@ function messagesOf(sent: { path: string; body: unknown }[]) {
   return sent.filter((one) => one.path.endsWith('/messages'))
 }
 
-test('a mensagem enviada durante a resposta aparece embaixo com "Vai ao Builder no próximo passo" e entra na volta quando o stream a confirma (45)', async () => {
+test('a mensagem enviada durante a resposta aparece embaixo com "Vai ao Conexus no próximo passo" e entra na volta quando o stream a confirma (45)', async () => {
   const { field, line, sent } = await answering()
   say(field, STEER)
   const steer = await screen.findByText(STEER)
   await waitFor(() => expect(messagesOf(sent)).toHaveLength(2))
   expect(messagesOf(sent)[1]?.body).toEqual({ message: STEER })
   expect(screen.getByText(PENDING)).toBeTruthy()
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   expect(steer.compareDocumentPosition(screen.getByText('Vou começar'))).toBe(
     Node.DOCUMENT_POSITION_PRECEDING,
   )
@@ -269,7 +269,7 @@ test('a mensagem que o stream não confirmou e a releitura traz sai da espera, u
   await screen.findByText(PENDING)
   hub.line().emit(agentEnd('complete'))
   await waitFor(() => expect(screen.queryByText(PENDING)).toBeNull())
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   expect(within(log).getAllByText(STEER)).toHaveLength(1)
 })
 

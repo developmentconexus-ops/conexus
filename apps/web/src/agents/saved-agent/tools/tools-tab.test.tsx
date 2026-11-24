@@ -108,7 +108,7 @@ test('sem ferramenta, a aba diz que nenhuma existe ainda', async () => {
   at(TABS, { agents: [], tools: [] })
   expect(
     await screen.findByText(
-      'Nenhuma ferramenta ainda. O Construtor faz as primeiras quando monta um agente.',
+      'Nenhuma ferramenta ainda. O Conexus faz as primeiras quando monta um agente.',
     ),
   ).toBeTruthy()
 })

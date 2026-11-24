@@ -29,7 +29,7 @@ function heard(id: string, agentId: string, name: string): ToolItem {
 function Host() {
   const [opened, setOpened] = useState<AgentId>()
   const room = useMemo(
-    () => ({ ...agentRoom('Construtor'), openAgent: setOpened, openedAgent: opened }),
+    () => ({ ...agentRoom(), openAgent: setOpened, openedAgent: opened }),
     [opened],
   )
   return (

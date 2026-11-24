@@ -232,7 +232,7 @@ async function tookBy(files: 'MODEL' | 'MACHINE', picked: File[]) {
 
 test('o Assistente aceita planilha, documento e csv; o Builder e os agentes não', async () => {
   expect(BUILDER_ROOM.files).toBe('MODEL')
-  expect(agentRoom('Compras').files).toBe('MODEL')
+  expect(agentRoom().files).toBe('MODEL')
   expect(ASSISTANT_ROOM.files).toBe('MACHINE')
   for (const extension of ['.xlsx', '.docx', '.csv']) {
     expect(acceptOf('MACHINE')).toContain(extension)
@@ -255,7 +255,7 @@ test('o Assistente aceita planilha, documento e csv; o Builder e os agentes não
       ['observacoes.md', 'application/octet-stream'],
     ],
   })
-  for (const room of [BUILDER_ROOM, agentRoom('Compras')]) {
+  for (const room of [BUILDER_ROOM, agentRoom()]) {
     expect(await tookBy(room.files, [sheet, word, csv, bare])).toEqual({
       refused: 'type',
       sent: [],
