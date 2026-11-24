@@ -133,18 +133,57 @@ test('recusa stack-row-unknown: uma linha de Python que o pyproject não declara
   assert.match(run.stderr, /^stack-row-unknown: docs\/reference\/stack\.md: boto3$/m)
 })
 
-test('recusa stack-python-unread: uma dependência que o check não sabe ler', () => {
-  const run = check({
-    ...STACK_TREE,
-    'apps/extraction/pyproject.toml': '[project]\ndependencies = some_function()\n',
-    'docs/reference/stack.md': stack('fastify', 'yaml', ...OTHER),
+const TOML_FORMS: Record<string, string> = {
+  'uma linha indentada': '[project]\n  dependencies = ["requests-toolbelt"]\n',
+  'uma chave entre aspas': '[dependency-groups]\n"dev" = ["requests-toolbelt"]\n',
+  'uma chave com ponto': '[project]\noptional-dependencies.s3 = ["requests-toolbelt"]\n',
+  'uma tabela em linha': '[project]\noptional-dependencies = { s3 = ["requests-toolbelt"] }\n',
+  'uma chave com ponto na raiz': 'project.dependencies = ["requests-toolbelt"]\n',
+  'um cabeçalho entre aspas': '[ "project" ]\ndependencies = ["requests-toolbelt"]\n',
+  'o backend de build': '[build-system]\nrequires = ["requests-toolbelt"]\n',
+  'um grupo que inclui outro': [
+    '[dependency-groups]',
+    'all = [{include-group = "dev"}, "requests-toolbelt"]',
+    'dev = ["pytest"]',
+    '',
+  ].join('\n'),
+}
+
+for (const [form, toml] of Object.entries(TOML_FORMS)) {
+  test(`lê o TOML como ele diz: ${form} pede a linha`, () => {
+    const run = check({
+      ...STACK_TREE,
+      'apps/extraction/pyproject.toml': toml,
+      'docs/reference/stack.md': stack('fastify', 'yaml', ...OTHER),
+    })
+    assert.equal(run.status, 1)
+    assert.match(run.stderr, /^stack-row-missing: docs\/reference\/stack\.md: requests-toolbelt$/m)
+    assert.doesNotMatch(run.stderr, /stack-python-unread/)
   })
-  assert.equal(run.status, 1)
-  assert.match(
-    run.stderr,
-    /^stack-python-unread: apps\/extraction\/pyproject\.toml: project\.dependencies$/m,
-  )
-})
+}
+
+const UNREAD: [string, string, string][] = [
+  ['um valor que não é lista', '[project]\ndependencies = "x"\n', 'project.dependencies'],
+  ['uma lista com um número', '[project]\ndependencies = [1]\n', 'project.dependencies.0'],
+  ['o dev-dependencies do uv', '[tool.uv]\ndev-dependencies = ["x"]\n', 'tool.uv.dev-dependencies'],
+  ['um texto que não é TOML', '[project]\ndependencies = some_function()\n', 'not valid TOML'],
+  ['uma exigência sem nome', '[project]\ndependencies = ["==1"]\n', 'requirement "==1"'],
+]
+
+for (const [form, toml, where] of UNREAD) {
+  test(`recusa stack-python-unread: ${form}`, () => {
+    const run = check({
+      ...STACK_TREE,
+      'apps/extraction/pyproject.toml': toml,
+      'docs/reference/stack.md': stack('fastify', 'yaml', ...OTHER),
+    })
+    assert.equal(run.status, 1)
+    assert.ok(
+      run.stderr.includes(`stack-python-unread: apps/extraction/pyproject.toml: ${where}\n`),
+      run.stderr,
+    )
+  })
+}
 
 const THE_CARD = `# Etapa\n\n${HEADER}${row('Git', 'nativo', '—')}`
 const AHEAD_ROW = '| `meltano` | `apps/extraction` ahead of the-card |\n'
@@ -159,7 +198,10 @@ test('uma linha adiantada de um cartão vale enquanto o cartão existe e se recu
   assert.equal(held.status, 0, held.stderr)
   const gone = check({ ...STACK_TREE, 'docs/reference/stack.md': AHEAD_STACK })
   assert.equal(gone.status, 1)
-  assert.match(gone.stderr, /^stack-row-unknown: docs\/reference\/stack\.md: meltano$/m)
+  assert.match(
+    gone.stderr,
+    /^stack-row-ahead-stale: docs\/reference\/stack\.md: meltano: docs\/steps\/the-card\.md is gone$/m,
+  )
 })
 
 test('recusa stack-row-unknown: uma linha sem o adiantado de um cartão', () => {
@@ -170,4 +212,18 @@ test('recusa stack-row-unknown: uma linha sem o adiantado de um cartão', () => 
   })
   assert.equal(run.status, 1)
   assert.match(run.stderr, /^stack-row-unknown: docs\/reference\/stack\.md: meltano$/m)
+})
+
+test('recusa stack-row-ahead-stale: a marca de um cartão que saiu, mesmo com a peça já declarada', () => {
+  const run = check({
+    ...STACK_TREE,
+    'apps/extraction/pyproject.toml': '[project]\ndependencies = ["meltano"]\n',
+    'docs/reference/stack.md': AHEAD_STACK,
+  })
+  assert.equal(run.status, 1)
+  assert.match(
+    run.stderr,
+    /^stack-row-ahead-stale: docs\/reference\/stack\.md: meltano: docs\/steps\/the-card\.md is gone$/m,
+  )
+  assert.doesNotMatch(run.stderr, /stack-row-unknown/)
 })

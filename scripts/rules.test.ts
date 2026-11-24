@@ -120,6 +120,19 @@ for (const [file, target] of Object.entries(MASTRA_EE)) {
   })
 }
 
+for (const client of ['ecs', 'sqs', 'ssm', 'athena']) {
+  test(`dependency-cruiser recusa o cliente ${client} da AWS fora do adaptador`, () => {
+    const file = `apps/server/src/hub/a/${client}.ts`
+    assert.ok(
+      violations.some(
+        (violation) =>
+          violation.rule.name === 'aws-sdk-only-in-the-aws-adapter' && violation.from === file,
+      ),
+      `aws-sdk-only-in-the-aws-adapter did not fire on ${file}`,
+    )
+  })
+}
+
 test('dependency-cruiser recusa o driver de PostgreSQL por outro caminho de importação', () => {
   assert.ok(
     violations.some(

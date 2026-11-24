@@ -102,7 +102,12 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
   'aws-sdk-only-in-the-aws-adapter': [
     'apps/server/src/hub/a/stacks.ts',
     '@aws-sdk/client-cloudformation',
-    {},
+    Object.fromEntries(
+      ['ecs', 'sqs', 'ssm', 'athena'].map((client) => [
+        `apps/server/src/hub/a/${client}.ts`,
+        importing(`@aws-sdk/client-${client}`),
+      ]),
+    ),
   ],
   'connectors-kit-stands-alone': ['packages/connectors/src/x.ts', 'pg', {}],
   'connectors-kit-only-in-the-executor': ['apps/web/src/hub/a/kit.ts', '@conexus/connectors', {}],

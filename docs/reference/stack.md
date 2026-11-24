@@ -6,8 +6,10 @@ not a source. No report lists the rows it read. This file owns where to read abo
 guides own what we decided about it; [boundaries](boundaries.md) owns what we wrote over it.
 
 `check-docs` refuses a dependency of any workspace without a row here, and a row that names
-nothing the repository uses. The version is the one `package.json` and the lockfile pin; "the
-reference pins X" marks a reference on another major. "Read first" names, in order, docs or skills
+nothing the repository uses. It reads the extraction project's pyproject.toml too, so a Python dependency
+needs its row, and a row marked "ahead of <card>" in its second cell holds while that card exists,
+for the code the card has yet to build. The version is the one `package.json` and the lockfile pin
+(`uv.lock` for Python); "the reference pins X" marks a reference on another major. "Read first" names, in order, docs or skills
 inside `node_modules`, the maintainers' skill, `llms.txt` or `.md` pages, the README. Mastra is
 read in `node_modules` at the pin, and its own products (Mastra Code, Factory) at the reference shelf's tag for it; Cloudflare's vibesdk (`github.com/cloudflare/vibesdk`), the main reference
 for Cloudflare and the AI build flow, at `9da158d8` from its own checkout; Conexus OS only with `git show e0353c36:<path>`, because a checkout's HEAD
@@ -118,6 +120,7 @@ change.
 | `mypy` | `apps/extraction` ahead of a-primeira-copia-chega-ao-lago | `mypy.readthedocs.io` | none | — | 0074 | The version `apps/extraction/uv.lock` pins; the CI job runs it over the project |
 | `pytest` | `apps/extraction` ahead of a-primeira-copia-chega-ao-lago | `docs.pytest.org` | none | — | 0074, T26 | The version `apps/extraction/uv.lock` pins; the CI job runs it |
 | uv | `apps/extraction` ahead of a-primeira-copia-chega-ao-lago, CI | `docs.astral.sh/uv` | none | — | 0074 | Manages the project on Python 3.13: `uv sync --locked` installs what `uv.lock` pins and fails when the lock is stale |
+| `smol-toml` | `scripts/check-docs-python.ts` | `node_modules/smol-toml/README.md` | none | — | L20, C75 | Parses TOML 1.1 as the spec says, so `check-docs` reads the extraction project's pyproject.toml whatever the key's form (quoted, dotted, an inline table); it comes with `knip`, declared here because a script of ours imports it |
 | `yaml` | `scripts` | README | none | — | — | — |
 | PostgreSQL | everything; CI and `docs/how-to/local-database.md` | `postgresql.org/docs/18/` | `neon:neon-postgres` (Neon's) | — | 0020, 0037, data | — |
 | Node | everything | `nodejs.org/llms.txt` | `node` | — | 0002 | — |

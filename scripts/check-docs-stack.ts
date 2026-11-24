@@ -3,7 +3,7 @@
 // Python project file is one the check cannot read.
 // A row marked "ahead of <card>" in its second cell is held while docs/steps/<card>.md exists: a
 // method change lands the row before the code its card builds, and the card leaves at the step's
-// closing (delivery L17), so the row then asks for its declaration.
+// closing (delivery L17), and a mark whose card is gone is refused, so the closing takes it off.
 // Refusals are proved by planting each one in check-docs-stack.test.ts.
 // Revalidate by 2027-04-13, or when the repository's dependencies move out of package.json and pyproject.toml.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -56,7 +56,7 @@ function manifests(root: string, fail: Fail): Manifest[] {
 const TABLE_RULE = /^\|(?:\s*:?-+:?\s*\|)+\s*$/
 const AHEAD = /\bahead of ([a-z0-9-]+)\b/
 
-type StackRow = { piece: string; ahead: boolean }
+type StackRow = { piece: string; card?: string; ahead: boolean }
 
 /** Each table row of the map: its first cell, code marks gone, and whether a card still holds it ahead; a header is the line above a rule. */
 function stackRows(root: string, text: string): StackRow[] {
@@ -71,6 +71,7 @@ function stackRows(root: string, text: string): StackRow[] {
       const card = usedIn.match(AHEAD)?.[1]
       return {
         piece: piece.replace(/`/g, '').trim(),
+        card,
         ahead: card !== undefined && existsSync(join(root, 'docs/steps', `${card}.md`)),
       }
     })
@@ -103,7 +104,9 @@ function rowProblems(listed: StackRow[], pieces: Set<string>, fail: Fail) {
     if (!rows.has(piece)) fail('stack-row-missing', STACK, piece)
   }
   for (const row of listed) {
-    if (!pieces.has(row.piece) && !row.ahead) fail('stack-row-unknown', STACK, row.piece)
+    if (row.card !== undefined && !row.ahead) {
+      fail('stack-row-ahead-stale', STACK, `${row.piece}: docs/steps/${row.card}.md is gone`)
+    } else if (!pieces.has(row.piece) && !row.ahead) fail('stack-row-unknown', STACK, row.piece)
   }
 }
 
