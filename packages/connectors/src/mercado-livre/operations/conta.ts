@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
-import { readOf } from './shared.ts'
+import { defineRoute } from './route.ts'
 
-export const conta = readOf({
+export const conta = defineRoute({
   id: 'conta',
   subject: 'conta',
   docs: 'usuarios-e-aplicativos',
@@ -10,7 +10,7 @@ export const conta = readOf({
     'Mostra a conta do vendedor que autorizou o app: id, apelido, país, tipo e data de cadastro.',
   label: 'Conta',
   input: z.object({}),
-  list: null,
+  rowsAt: null,
   probe: () => ({}),
   request: () => get('/users/me'),
 })

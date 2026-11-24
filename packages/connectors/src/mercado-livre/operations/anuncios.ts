@@ -2,19 +2,19 @@ import { z } from 'zod'
 import { get } from '../../kernel/operation.ts'
 import {
   chain,
+  defineRoute,
   ids,
   Limit,
   Offset,
   PathId,
-  readOf,
   SCROLL_TTL_MS,
   Scan,
   scanAlone,
   searchTypeOf,
   sellerOf,
-} from './shared.ts'
+} from './route.ts'
 
-export const anuncios = readOf({
+export const anuncios = defineRoute({
   id: 'anuncios',
   subject: 'anuncios',
   docs: 'itens-e-buscas',
@@ -32,8 +32,8 @@ export const anuncios = readOf({
       limit: Limit(100),
     })
     .refine(scanAlone.check, scanAlone.issue),
-  list: 'results',
-  paged: {
+  rowsAt: 'results',
+  list: {
     paging: {
       ...{ kind: 'CURSOR', cursor: 'scrollId', limit: 'limit', max: 100 },
       ...{ start: { scan: true }, ttlMs: SCROLL_TTL_MS },
@@ -52,7 +52,7 @@ export const anuncios = readOf({
     }),
 })
 
-export const anunciosDetalhe = readOf({
+export const anunciosDetalhe = defineRoute({
   id: 'anunciosDetalhe',
   subject: 'anuncios',
   docs: 'itens-e-buscas',
@@ -60,7 +60,7 @@ export const anunciosDetalhe = readOf({
     'Mostra o detalhe de até 20 anúncios de uma vez: título, preço, estoque, vendidos, status, categoria e tipo. Cada item vem com o seu código; um 404 num item é daquele id.',
   label: 'Detalhe dos anúncios',
   input: z.object({ ids: z.array(PathId).min(1).max(20) }),
-  list: null,
+  rowsAt: null,
   from: [anuncios.id],
   probe: (earlier) => {
     const found = ids(earlier, anuncios.id, 'id', 20)
@@ -69,15 +69,14 @@ export const anunciosDetalhe = readOf({
   request: (input) => get('/items/bulk', { ids: input.ids.join(',') }),
 })
 
-/** What a read of one listing shares: its id, taken from the listing search. */
 const ofItem = {
   input: z.object({ itemId: PathId }),
-  list: null,
+  rowsAt: null,
   from: [anuncios.id],
   probe: chain(anuncios.id, 'id', (itemId) => ({ itemId })),
 }
 
-export const descricao = readOf({
+export const descricao = defineRoute({
   id: 'descricao',
   subject: 'anuncios',
   docs: 'descricao-de-produtos',
@@ -87,7 +86,7 @@ export const descricao = readOf({
   request: (input) => get(`/items/${input.itemId}/description`),
 })
 
-export const estoque = readOf({
+export const estoque = defineRoute({
   id: 'estoque',
   subject: 'anuncios',
   docs: 'convivencia-full-e-flex',
@@ -95,13 +94,15 @@ export const estoque = readOf({
     'Mostra o estoque de um produto do usuário por depósito (próprio, Full, ...). O limite é de 100 chamadas por minuto.',
   label: 'Estoque',
   input: z.object({ userProductId: PathId }),
-  list: null,
+  rowsAt: null,
   from: [anunciosDetalhe.id],
-  probe: chain(anunciosDetalhe.id, 'body.user_product_id', (userProductId) => ({ userProductId })),
+  probe: chain(anunciosDetalhe.id, 'body.user_product_id', (userProductId) => ({
+    userProductId,
+  })),
   request: (input) => get(`/user-products/${input.userProductId}/stock`),
 })
 
-export const qualidade = readOf({
+export const qualidade = defineRoute({
   id: 'qualidade',
   subject: 'anuncios',
   docs: 'qualidade-das-publicacoes',

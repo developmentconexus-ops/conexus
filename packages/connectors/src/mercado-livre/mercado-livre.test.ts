@@ -4,16 +4,16 @@ import { z } from 'zod'
 import { connectorOf } from '../index.ts'
 import { runConformance } from '../kernel/conformance.ts'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
-import { inProbeOrder } from '../kernel/definition.ts'
+import { inProbeOrder, toolNameOf } from '../kernel/definition.ts'
 import { authorizeUrl, codeRequest, refreshRequest } from '../kernel/oauth.ts'
 import { AccountRef, requestOf } from '../kernel/operation.ts'
 import { toRequest } from '../kernel/request.ts'
 import { Rows } from '../kernel/rows.ts'
-import { readSkill } from '../kernel/skill.ts'
+import { connectorSkill, readSkill } from '../kernel/skill.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
-import { docsOf } from './operations/shared.ts'
-import { authorize, getWith, grant, startSignIn } from './test-session.ts'
+import { docsOf } from './operations/route.ts'
+import { authorize, getWith, grant, probeAll, startSignIn } from './test-session.ts'
 
 runConformance(mercadoLivre, mercadoLivreFake())
 
@@ -178,4 +178,23 @@ test('um pedido que o Mercado Livre devolve parcial (206) é lido e diz que veio
   const rows = Rows.parse(answered.value)
   assert.equal(rows.parcial, true)
   assert.equal(rows.linhas.length, 1)
+})
+
+test('a skill: diz que a ligação só lê pela parte gerada, e nunca nomeia ferramenta', () => {
+  const { content, references } = connectorSkill(mercadoLivre)
+  const text = [content, ...Object.values(references)].join('\n')
+  assert.ok(content.includes('Esta ligação só lê.'))
+  assert.ok(!content.includes('lê e escreve'))
+  assert.ok(!text.includes('this connection only reads'))
+  for (const operation of mercadoLivre.operations)
+    assert.ok(!text.includes(toolNameOf(mercadoLivre, operation.id)), operation.id)
+})
+
+test('o número exato: o valor com centavos passa como o texto que o Mercado Livre escreveu, e a tarifa o lê', async () => {
+  const sent = await probeAll(mercadoLivreFake())
+  const orders = sent.find(({ operation }) => operation.id === 'pedidos')
+  const rows = Rows.parse(orders?.value).linhas
+  assert.match(z.string().parse(rows[0]?.total_amount), /^\d+\.\d+$/)
+  const fee = sent.find(({ operation }) => operation.id === 'tarifaDeVenda')
+  assert.equal(typeof z.object({ price: z.number() }).parse(fee?.input).price, 'number')
 })
