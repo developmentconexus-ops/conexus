@@ -66,7 +66,7 @@ approves each write on the approval card: `approval.ts` decides whether and whom
 
 A write is never idempotent and never repeats, not even on `TOKEN_EXPIRED`. Step 24.5 closed this
 path; the approval-card reference is Mastra's `requireApproval`, and the Nekt lets the agent
-confirm instead of a person (card row 48).
+confirm instead of a person (the card's reference table, row 48).
 
 ## What the Hub never holds
 

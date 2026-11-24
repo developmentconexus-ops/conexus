@@ -52,9 +52,9 @@ One line per document.
 
 - [conexus-study](../.agents/skills/conexus-study/SKILL.md), [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [sources](../.agents/skills/conexus-study/references/sources.md), [lens](../.agents/skills/conexus-study/references/lens.md): study, with its references.
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), [card](../.agents/skills/conexus-scope/references/card.md), [pattern card](../.agents/skills/conexus-scope/references/pattern-card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): cards.
-- [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md), [brief](../.agents/skills/conexus-build/references/brief.md): building a unit, old code, defects, screens, the brief.
+- [conexus-build](../.agents/skills/conexus-build/SKILL.md), [bring](../.agents/skills/conexus-build/references/bring.md), [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md), [brief](../.agents/skills/conexus-build/references/brief.md): building a unit, old code, defects, screens, the brief.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
-- [conexus-connector](../.agents/skills/conexus-connector/): connectors.
+- [conexus-connector](../.agents/skills/conexus-connector/SKILL.md), [references](../.agents/skills/conexus-connector/references/): connectors.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [compare](../.agents/skills/conexus-review/references/compare.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
 - [conexus-eval](../.agents/skills/conexus-eval/SKILL.md), [rounds](../.agents/skills/conexus-eval/references/rounds.md): evals.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step.

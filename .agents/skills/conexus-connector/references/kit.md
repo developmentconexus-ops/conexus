@@ -38,9 +38,11 @@ failure (`REFUSED`, `AUTH_REFUSED`, `TOKEN_EXPIRED`, `UNREADABLE`, `BUSY`), each
   situation. `failedBy` never returns `TOKEN_EXPIRED`, the only failure the session renews on: each
   connector maps its own expiry answer first (401 in `mercado-livre/answers.ts` and
   `hubspot/operations/shared.ts`; 401 and a 403 with `GTW3403` in `sankhya/answers.ts`).
-- `BUSY` after one wait: Nango retries 5xx, 429 and 401 by itself
-  (packages/shared/lib/services/proxy/retry.ts:56-64). Different situation: Nango's consumer is an
-  engine; ours is an agent that decides, so the kit hands it the failure.
+- `BUSY` with the wait the provider named (`waitMs`); the Hub waits once (`send.ts`), and the kit
+  never retries. Nango marks 5xx, 429 and 401 as retryable
+  (packages/shared/lib/services/proxy/retry.ts:56-64) but retries only when the caller sets
+  `retries`, default 0 (packages/shared/lib/services/proxy/utils.ts:308). Same situation by default:
+  both hand the failure back. Nango differs only when its caller asks for retries.
 - `list` with `ListPaging` (`OFFSET`, `CURSOR`, `NONE`) and `changed`: dlt `OffsetPaginator`
   (dlt/sources/helpers/rest_client/paginators.py:489-499) is the same situation, with `max` as its
   `limit` and `ceiling` as its `maximum_offset`. For a cursor, dlt declares where the cursor sits
@@ -53,8 +55,10 @@ failure (`REFUSED`, `AUTH_REFUSED`, `TOKEN_EXPIRED`, `UNREADABLE`, `BUSY`), each
 ## The request
 
 `request.ts`, `toRequest`. The one place a URL is built: the connector's origin, no redirect, and a
-path with `..`, `@` or `\` refused. Nango builds the URL from the connection's base and follows
-redirects by policy (packages/shared/lib/services/proxy/utils.ts:440-490). Different situation: the
+path with `..`, `@` or `\` refused. Nango builds the URL from the connection's base
+(packages/shared/lib/services/proxy/utils.ts:440-490) and follows redirects up to a policy's
+`maxRedirects` (packages/shared/lib/utils/http.ts:18, :67;
+packages/shared/lib/services/proxy/outbound-policy.ts:146). Different situation: the
 credential travels on a live call, so the kit is stricter (S36). The `origin` parameter exists only
 for the local double.
 
@@ -77,10 +81,13 @@ ends without a logout.
 
 `oauth.ts`, `oauth2Code`. PKCE `S256` page, code exchange, refresh, revoke, and two refusal lists:
 `grant` (the person must sign in again) and `app` (our app is wrong). Same situation as Nango
-(PKCE at packages/server/lib/controllers/oauth.controller.ts:735-745; the bodies at
-packages/shared/lib/clients/provider.client.ts:458 and :479) and n8n
-(packages/cli/src/oauth/oauth.service.ts:1282-1287). Differences: PKCE is mandatory here, optional
-in Nango; the refusals split in two, like Airbyte's `refresh_token_error_*`. The app's keys come
+(PKCE at packages/server/lib/controllers/oauth.controller.ts:735-745; the `authorization_code` and
+`refresh_token` bodies in its Agiloft exchange, packages/shared/lib/clients/provider.client.ts:458
+and :479) and n8n (packages/cli/src/oauth/oauth.service.ts:1282-1287). Differences: PKCE is
+mandatory here; Nango has it on by default and off per template with `disable_pkce` (:737), and
+n8n uses it when `shouldUsePkce` says so. Airbyte declares which refresh answers mean a bad grant
+(`refresh_token_error_*`, source-strava/manifest.yaml:90-97); the split into `grant` and `app` is
+ours. The app's keys come
 from one file the founder holds ([0057](../../../../docs/decisions/0057-connections-by-oauth.md)).
 
 ## The credential class
@@ -102,7 +109,7 @@ on `TOKEN_EXPIRED`, never repeat a write (`once`), log out at `close`. The Hub's
 and `write.ts` call only `session.call` and `session.once`.
 
 Reference: the singer-sdk renews before a request when the token is no longer valid
-(authenticators.py:526-529) and has no margin; Nango keeps a 15-minute margin for OAuth refresh,
+(authenticators.py:526-529, from the studies, not reread at the source) and has no margin; Nango keeps a 15-minute margin for OAuth refresh,
 with no logout (packages/shared/lib/services/connections/utils.ts:12). Only "renew when no longer
 valid" is the same situation. The margin, the logout before renewal, the single repeat and `once`
 come from the measured Sankhya (a 300 s token that ends in use). A remendo with its boundaries entry.
@@ -112,7 +119,7 @@ come from the measured Sankhya (a 300 s token that ends in use). A remendo with 
 `exact-json.ts`, `parseExact`, `parseJson`, and `numbers: 'EXACT' | 'DOUBLE'` per connector. With
 `EXACT`, a number a double cannot hold, a fraction or an integer past 2^53, comes back as its source
 text; the Hub's `wire.ts` reads every answer through `parseJson`. The singer-sdk reads floats as
-`Decimal` (singerlib/json.py:40-44, through the studies). Same situation at the ends; the kit also
+`Decimal` (singerlib/json.py:40-44, from the studies, not reread at the source). Same situation at the ends; the kit also
 keeps the large integer. Consequence: an app receives `"12.5"`, not `12.5`, so the written skill and
 the release note say it.
 
@@ -123,7 +130,7 @@ generated from the definition (reads only, or reads and writes with approval, an
 label), then the written body. Neither part names a tool or lists the operations. Nekt states the
 rule: live tool names "can change, so an agent should resolve them at run time rather than
 hardcoding them into a skill" (NK:12598-12600). Mastra's `ToolSearchProcessor` gives the agent
-`search_tools` and `load_tool` (packages/core/src/processors/processors/tool-search.ts:44). Same
+`search_tools` and `load_tool` (packages/core/src/processors/processors/tool-search.ts:171). Same
 rule, different mechanism: Nekt resolves at run time; the kit generates the part that changes and
 refuses the tool name at load.
 

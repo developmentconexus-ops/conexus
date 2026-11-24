@@ -60,15 +60,16 @@ reads a `CopyTaskResult`.
   instant: the `OPERATION` source reads it.
 - Keep `numbers: 'EXACT'` when the provider sends amounts with decimals.
 - Measure the credential class, or leave it `EXCLUSIVE`. An exclusive connector, every OAuth login
-  so far, stays live only until stage 5 of the roadmap designs how the task asks the Hub.
+  so far, is read live only, and copies nothing, until stage 5 of the roadmap designs how the task
+  asks the Hub.
 - Declare no table and add no copy code: U3 owns the shape.
 
 ## Known holes in the plan
 
 The kit audit of 2026-11-24 found three the card does not settle yet:
 
-- The task does not retry a passing 5xx. The singer-sdk retries 429 and 5xx, Nango retries 5xx, 429
-  and 401; with `STATE` per page the next run resumes, so the cost is one lost run. The audit asks
+- The task does not retry a passing 5xx. The singer-sdk retries 429 and 5xx (from the studies, not
+  reread at the source); with `STATE` per page the next run resumes, so the cost is one lost run. The audit asks
   for a line in U4 on who retries and how many times.
 - The `OPERATION` source declares its columns by hand, and HubSpot, a spreadsheet, a SharePoint list
   and TOTVS need them discovered (K4 in [gaps](gaps.md)).
