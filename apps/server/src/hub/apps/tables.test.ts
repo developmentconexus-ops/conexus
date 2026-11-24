@@ -63,6 +63,10 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
       'version_file.media_type text NO',
     ],
   )
+})
+
+test('catálogo: as restrições do esquema apps, cada sessão presa ao que a encerra', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
   const constraints = await asOwner(
     `select conname as name, contype as type, confdeltype as "onDelete" from pg_constraint
       where connamespace = 'apps'::regnamespace and contype <> 'n' order by conname`,
