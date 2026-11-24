@@ -188,7 +188,7 @@ test('o logout do fim espera a vez da ligação: com uma leitura aberta no token
   assert.deepEqual(events, ['login1', 'read done', 'logout t1'])
 })
 
-test('o logout do fim com defeito vai ao registro e não derruba o processo', async (t) => {
+test('o logout com defeito vai ao registro e não derruba o processo: nem o do fim do token, nem o closeAll do fim do Hub', async (t) => {
   const clock = clockOf(t)
   const lines: string[] = []
   const limits = createLimits({
@@ -209,6 +209,10 @@ test('o logout do fim com defeito vai ao registro e não derruba o processo', as
   }
   assert.deepEqual(lines, ['INTERNAL_UNEXPECTED'])
   assert.deepEqual(unhandled, [])
+  await tokenOf(limits, OPENED, 1000)
+  await tokenOf(limits, { ...OPENED, id: B }, 1000)
+  await limits.closeAll(1000)
+  assert.deepEqual(lines, Array(3).fill('INTERNAL_UNEXPECTED'), 'every connection is let go')
 })
 
 test('o Assistente na fila: uma leitura do Assistente e uma do Builder na mesma ligação não abrem duas chamadas juntas', async (t) => {

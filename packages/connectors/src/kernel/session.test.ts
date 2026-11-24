@@ -117,3 +117,37 @@ test('a sessão fechada no meio de uma leitura não abre outro token: a resposta
   assert.equal(fake.logins(), 1)
   assert.equal(fake.open(), 0)
 })
+
+test('a margem: o token serve até faltarem 60 s para o fim, e aos 60 s renova', async () => {
+  const fake = sankhyaFake()
+  const on = sessionOn(fake)
+  const signal = AbortSignal.timeout(5_000)
+  const end = on.clock.at + fake.switches.expiresInSeconds * 1000
+  const first = await on.session.token(signal)
+  on.clock.at = end - 60_001
+  assert.equal(await on.session.token(signal), first)
+  assert.equal(fake.logins(), 1)
+  on.clock.at = end - 60_000
+  assert.notEqual(await on.session.token(signal), first)
+  assert.equal(fake.logins(), 2)
+})
+
+test('a escrita vai uma vez: o token que o fornecedor encerrou não é repetido, e a chamada seguinte abre outro sem logout', async () => {
+  const fake = sankhyaFake()
+  const on = sessionOn(fake)
+  const signal = AbortSignal.timeout(5_000)
+  const sent: string[] = []
+  const expired = {
+    kind: 'TOKEN_EXPIRED' as const,
+    native: { status: 403, code: null, message: null, body: null },
+  }
+  const answered = await on.session.once(async (token) => {
+    sent.push(token)
+    return expired
+  }, signal)
+  assert.deepEqual(answered, expired)
+  assert.equal(sent.length, 1, 'never repeated')
+  const next = await on.session.token(signal)
+  assert.notEqual(next, sent[0])
+  assert.deepEqual([fake.logins(), fake.logouts()], [2, 0])
+})

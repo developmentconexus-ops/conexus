@@ -11,7 +11,7 @@ import { estoqueDosProdutos } from './operations/buscas-estoque.ts'
 import { isOneReadStatement } from './read-only-sql.ts'
 import { codes, rowsOf, withDouble } from './test-search.ts'
 
-const TOTAL_PARCEIROS = 4 + 7 + 45
+const TOTAL_PARCEIROS = 4 + 8 + 45
 
 test('parceiro por parte do nome: com ou sem acento, em qualquer caixa, em nome ou razão social', async () => {
   await withDouble(async (read) => {
@@ -65,6 +65,10 @@ test('o colchete na busca: [ e ] procuram esse texto, nunca uma classe do SQL Se
           [],
           `${operation.id} ${nome}`,
         )
+    assert.deepEqual(
+      codes(await read(buscarParceiros, { nome: '[centro]' }), 'codigoParceiro'),
+      [207],
+    )
   })
 })
 

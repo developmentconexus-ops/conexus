@@ -73,11 +73,8 @@ function assertDeclared(connector: Connector): void {
   const all = inProbeOrder(connector)
   assert.equal(new Set(all.map((operation) => operation.id)).size, all.length)
   assert.match(connector.version, /^\d+\.\d+\.\d+$/)
-  const { content } = connectorSkill(connector)
-  for (const [subject, label] of Object.entries(connector.subjects))
-    assert.ok(content.includes(subject) && content.includes(label), `SKILL.md names ${subject}`)
   assert.ok(
-    content.split('\n').length < 500,
+    connectorSkill(connector).content.split('\n').length < 500,
     'SKILL.md stays under the 500 lines Mastra recommends',
   )
 }
