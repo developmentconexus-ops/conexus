@@ -79,8 +79,8 @@ export async function readCapped(
 
 /** What the machine's provider gives the Builder: a Mastra sandbox, how bytes cross, and the network. */
 export type Kit = {
-  /** The provider's own file API, when it has one, is what the file tools use. */
-  sandbox: WorkspaceSandbox & { readonly filesystem?: WorkspaceFilesystem }
+  /** The provider's own file API is what the file tools use: E2B's sandbox always has one. */
+  sandbox: WorkspaceSandbox & { readonly filesystem: WorkspaceFilesystem }
   transport: Transport
   /** Opens a running machine to the allowed hosts and `extra`, and nothing else: the list is replaced, not added to. */
   openNetwork(extra: readonly string[]): Promise<void>
@@ -99,8 +99,6 @@ type KitOptions = {
   onStart: SandboxStartHook
   /** Where a command starts when it names no folder: the app folder. */
   workingDirectory: string
-  /** What the model is told of the machine, in place of the provider's own words. */
-  instructions: string
 }
 
 /**

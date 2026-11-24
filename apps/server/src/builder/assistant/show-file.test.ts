@@ -124,7 +124,6 @@ test('show_file: na máquina com API de arquivos própria, o link para fora feit
     [show('a.md')],
     [said('Pronto.')],
   ])
-  on.hub.assistantMachines.control.native = true
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Mostre')), 'complete')

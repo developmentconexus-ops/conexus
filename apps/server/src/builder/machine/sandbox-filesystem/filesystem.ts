@@ -2,9 +2,10 @@
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
 // concern: the class (source :1-45, 201-298, 391-482, 575-614, 755-784, 1045-1116). Changed: `type` for
-// `interface`; no `!` and no assignment in an expression; the shell parts are in the files beside
-// this one and take the class as `Host`; `exec` and the symlink fields are public for them; a path that leaves the root throws
-// `PathEscapesError`.
+// `interface`; no `!` and no assignment in an expression; the sandbox's own file API serves every
+// file operation (the shell path of the source is not carried: E2B's sandbox always has one), and
+// `walk` and `grep` are in the files beside this one and take the class as `Host`; `exec` and the
+// symlink fields are public for them; a path that leaves the root throws `PathEscapesError`.
 
 import { posix as posixPath } from 'node:path'
 import type {
@@ -24,19 +25,11 @@ import type {
   WorkspaceFilesystem,
   WriteOptions,
 } from '@mastra/core/workspace'
-import {
-  assertContainedDest,
-  assertContainedRealpath,
-  execOk,
-  PathEscapesError,
-  verifyNative,
-} from './containment.ts'
-import { copyShell, moveShell } from './copy.ts'
-import { deleteShell, probeSearchTools, readShell, statShell, writeShell } from './files.ts'
+import { assertContainedRealpath, execOk, PathEscapesError, verifyNative } from './containment.ts'
 import { grep } from './grep.ts'
-import { readdirShell, walk } from './listing.ts'
 import type { Host, SandboxCommandResult, SandboxExec, SearchTools } from './shell.ts'
-import { COMMAND_TIMEOUT_MS, shellQuote, toBuffer } from './shell.ts'
+import { COMMAND_TIMEOUT_MS, probeSearchTools, shellQuote } from './shell.ts'
+import { walk } from './walk.ts'
 
 export type { SandboxCommandResult, SandboxExec } from './shell.ts'
 
@@ -59,8 +52,7 @@ export type SandboxFilesystemOptions = {
    * symlinks, and inside a sandbox the agent can read anything with a command
    * anyway. Turn it on when files are served to someone other than the agent.
    *
-   * Each path is checked once per instance, so keep such instances
-   * short-lived. Without a native filesystem the shell path always checks.
+   * Each path is checked once per instance, so keep such instances short-lived.
    */
   verifySymlinks?: boolean
 }
@@ -181,117 +173,62 @@ export class SandboxFilesystem implements WorkspaceFilesystem, Host {
 
   async readFile(path: string, options?: ReadOptions): Promise<string | Buffer> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'target', abs, path)
-      return native.readFile(abs, options)
-    }
-    return readShell(this, abs, path, options)
+    await verifyNative(this, 'target', abs, path)
+    return this.sandbox.filesystem.readFile(abs, options)
   }
 
   async writeFile(path: string, content: FileContent, options?: WriteOptions): Promise<void> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'dest', abs, path)
-      return native.writeFile(abs, content, options)
-    }
-    return writeShell(this, abs, path, content, options)
+    await verifyNative(this, 'dest', abs, path)
+    return this.sandbox.filesystem.writeFile(abs, content, options)
   }
 
   async appendFile(path: string, content: FileContent): Promise<void> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'dest', abs, path)
-      return native.appendFile(abs, content)
-    }
-    await assertContainedDest(this, abs, path)
-    const b64 = toBuffer(content).toString('base64')
-    await execOk(
-      this,
-      `mkdir -p ${shellQuote(posixPath.dirname(abs))} && printf %s ${shellQuote(b64)} | base64 -d >> ${shellQuote(abs)}`,
-      `appendFile ${path}`,
-    )
+    await verifyNative(this, 'dest', abs, path)
+    return this.sandbox.filesystem.appendFile(abs, content)
   }
 
   async deleteFile(path: string, options?: RemoveOptions): Promise<void> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'parent', abs, path)
-      return native.deleteFile(abs, options)
-    }
-    return deleteShell(this, abs, path, options)
+    await verifyNative(this, 'parent', abs, path)
+    return this.sandbox.filesystem.deleteFile(abs, options)
   }
 
   async copyFile(src: string, dest: string, options?: CopyOptions): Promise<void> {
     const srcAbs = await this.resolveAsync(src)
     const destAbs = await this.resolveAsync(dest)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'target', srcAbs, src)
-      await verifyNative(this, 'dest', destAbs, dest)
-      return native.copyFile(srcAbs, destAbs, options)
-    }
-    return copyShell(this, { src, dest, srcAbs, destAbs }, options)
+    await verifyNative(this, 'target', srcAbs, src)
+    await verifyNative(this, 'dest', destAbs, dest)
+    return this.sandbox.filesystem.copyFile(srcAbs, destAbs, options)
   }
 
   async moveFile(src: string, dest: string, options?: CopyOptions): Promise<void> {
     const srcAbs = await this.resolveAsync(src)
     const destAbs = await this.resolveAsync(dest)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'target', srcAbs, src)
-      await verifyNative(this, 'dest', destAbs, dest)
-      return native.moveFile(srcAbs, destAbs, options)
-    }
-    return moveShell(this, { src, dest, srcAbs, destAbs }, options)
+    await verifyNative(this, 'target', srcAbs, src)
+    await verifyNative(this, 'dest', destAbs, dest)
+    return this.sandbox.filesystem.moveFile(srcAbs, destAbs, options)
   }
 
   // ── Directory operations ───────────────────────────────────────────────
 
   async mkdir(path: string, options?: { recursive?: boolean }): Promise<void> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'dest', abs, path)
-      return native.mkdir(abs, options)
-    }
-    await assertContainedDest(this, abs, path)
-    const flag = options?.recursive === false ? '' : '-p '
-    await execOk(this, `mkdir ${flag}${shellQuote(abs)}`, `mkdir ${path}`)
+    await verifyNative(this, 'dest', abs, path)
+    return this.sandbox.filesystem.mkdir(abs, options)
   }
 
   async rmdir(path: string, options?: RemoveOptions): Promise<void> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'parent', abs, path)
-      return native.rmdir(abs, options)
-    }
-    // Same parent containment as deleteFile — `rm -r` through a symlinked
-    // parent would otherwise delete outside the workspace.
-    await assertContainedRealpath(this, posixPath.dirname(abs), path)
-    if (options?.recursive) {
-      const force = options?.force ? '-f ' : ''
-      await execOk(this, `rm -r ${force}${shellQuote(abs)}`, `rmdir ${path}`)
-      return
-    }
-    const result = await this.exec(`rmdir ${shellQuote(abs)}`)
-    if (result.exitCode !== 0 && !options?.force) {
-      throw new Error(`Directory not empty or not found: ${path}`)
-    }
+    await verifyNative(this, 'parent', abs, path)
+    return this.sandbox.filesystem.rmdir(abs, options)
   }
 
   async readdir(path: string, options?: ListOptions): Promise<FileEntry[]> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'target', abs, path)
-      return native.readdir(abs, options)
-    }
-    return readdirShell(this, abs, path, options)
+    await verifyNative(this, 'target', abs, path)
+    return this.sandbox.filesystem.readdir(abs, options)
   }
 
   // ── Native walk / grep capabilities ────────────────────────────────────
@@ -321,25 +258,18 @@ export class SandboxFilesystem implements WorkspaceFilesystem, Host {
 
   async exists(path: string): Promise<boolean> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) return native.exists(abs)
-    const result = await this.exec(`test -e ${shellQuote(abs)}`)
-    return result.exitCode === 0
+    return this.sandbox.filesystem.exists(abs)
   }
 
   async stat(path: string): Promise<FileStat> {
     const abs = await this.resolveAsync(path)
-    const native = this.sandbox.filesystem
-    if (native) {
-      await verifyNative(this, 'target', abs, path)
-      const info = await native.stat(abs)
-      return {
-        ...info,
-        name: posixPath.basename(abs),
-        path: `/${posixPath.relative(this.basePath, abs)}`,
-      }
+    await verifyNative(this, 'target', abs, path)
+    const info = await this.sandbox.filesystem.stat(abs)
+    return {
+      ...info,
+      name: posixPath.basename(abs),
+      path: `/${posixPath.relative(this.basePath, abs)}`,
     }
-    return statShell(this, abs, path)
   }
 
   // ── Lifecycle ──────────────────────────────────────────────────────────

@@ -68,11 +68,7 @@ export async function assertContainedRealpath(
  * of its nearest existing ancestor directory, since a symlinked parent is the
  * escape vector (e.g. `link -> /etc` then writing `link/passwd`).
  */
-export async function assertContainedDest(
-  host: Host,
-  abs: string,
-  inputPath: string,
-): Promise<boolean> {
+async function assertContainedDest(host: Host, abs: string, inputPath: string): Promise<boolean> {
   // First check the target itself (covers overwriting an existing symlink).
   const exists = await assertContainedRealpath(host, abs, inputPath)
   // Then check the parent directory's realpath; readlink -f resolves the
@@ -85,8 +81,8 @@ export async function assertContainedDest(
 }
 
 /**
- * Before a native filesystem call, run the containment check the shell path
- * runs for that operation, when `verifySymlinks` is on. A pass is remembered
+ * Before a native filesystem call, run the containment check that operation needs,
+ * when `verifySymlinks` is on. A pass is remembered
  * only for an entry that exists: a missing path may later appear as a
  * symlink that leads outside the workdir.
  */

@@ -44,7 +44,6 @@ export function createE2bKit(config: Credentials): KitFactory {
       metadata: options.metadata,
       onStart: options.onStart,
       workingDirectory: options.workingDirectory,
-      instructions: options.instructions,
     })
     return {
       sandbox,

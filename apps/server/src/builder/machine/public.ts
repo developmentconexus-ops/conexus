@@ -10,7 +10,6 @@ export {
   ALLOWED_HOSTS,
   APP_FOLDER,
   MARK,
-  machineInstructions,
   PACKAGE_HOSTS,
 } from './kit.ts'
 export { createMachines } from './machines.ts'

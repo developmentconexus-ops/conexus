@@ -2,7 +2,7 @@ import { CHECK_LIMITS, CheckReport, STEP_NAMES } from '@conexus/app/check'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
 import { parsedWith } from './pack.ts'
-import { quoted } from './scripts.ts'
+import { shellQuote } from './sandbox-filesystem/shell.ts'
 
 /** Where the template puts the check program (decision 0055): a tool of the machine, read only. */
 export const CHECK_PROGRAM = '/opt/conexus/check'
@@ -35,7 +35,7 @@ export async function checkIn(
   }>,
 ): Promise<Result<CheckReport, CheckPlatformFailed>> {
   const { exec, program, workdir, log } = input
-  const script = `${quoted(program)} --root ${quoted(workdir)}`
+  const script = `${shellQuote(program)} --root ${shellQuote(workdir)}`
   const failed = { ok: false, error: 'CHECK_PLATFORM_FAILED' } as const
   let ran: Awaited<ReturnType<TimedExec>>
   try {

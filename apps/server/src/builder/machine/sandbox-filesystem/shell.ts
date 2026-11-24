@@ -2,12 +2,10 @@
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
 // concern: the shell vocabulary (source :46-199). Changed: `type` for `interface`; no `!`; the
-// `Host` type is new, for the files that were class methods; `isFileContentString` is folded into
-// `toBuffer`.
+// `Host` type is new, for the files that were class methods.
 
 import { posix as posixPath } from 'node:path'
 import type {
-  FileContent,
   FilesystemGrepMatch,
   FilesystemGrepResult,
   WorkspaceFilesystem,
@@ -18,8 +16,6 @@ import type {
  * so shell failures can be mapped to typed filesystem errors.
  */
 export const EXIT_NOT_FOUND = 20
-export const EXIT_IS_DIRECTORY = 21
-export const EXIT_EXISTS = 22
 export const EXIT_NOT_DIRECTORY = 23
 
 /** Minimal command result shape we depend on. */
@@ -32,11 +28,8 @@ export type SandboxCommandResult = {
 /** Minimal sandbox surface the filesystem needs. */
 export type SandboxExec = {
   readonly id: string
-  /**
-   * The sandbox's own file API, when it has one (`WorkspaceSandbox.filesystem`).
-   * File operations go through it instead of shell commands.
-   */
-  readonly filesystem?: WorkspaceFilesystem
+  /** The sandbox's own file API (`WorkspaceSandbox.filesystem`): every file operation goes through it. */
+  readonly filesystem: WorkspaceFilesystem
   executeCommand(
     command: string,
     args?: string[],
@@ -83,7 +76,7 @@ export type SearchTools = {
 }
 
 /** One command that reports which search tools the sandbox has, one name per line. */
-export const SEARCH_TOOLS_PROBE =
+const SEARCH_TOOLS_PROBE =
   'command -v rg >/dev/null 2>&1 && echo rg; ' +
   "grep --version 2>/dev/null | head -n 1 | grep -q 'GNU grep' && echo gnu-grep; " +
   "printf 'a1\\n' | grep -qP '\\d(?=)' 2>/dev/null && echo grep-pcre; " +
@@ -143,7 +136,16 @@ export function toGrepResults(
   return results
 }
 
-export function toBuffer(content: FileContent): Buffer {
-  if (typeof content === 'string') return Buffer.from(content, 'utf8')
-  return Buffer.from(content)
+/** Runs the probe once: which search tools the sandbox has. */
+export async function probeSearchTools(host: Host): Promise<SearchTools> {
+  const result = await host.exec(SEARCH_TOOLS_PROBE)
+  if (result.exitCode !== 0) throw new Error(`search tool probe exited with ${result.exitCode}`)
+  const found = new Set(result.stdout.split('\n').map((line) => line.trim()))
+  const git = found.has('git')
+  return {
+    rg: found.has('rg'),
+    gnuGrep: found.has('gnu-grep'),
+    git,
+    pcre: found.has('grep-pcre') && (!git || found.has('git-pcre')),
+  }
 }

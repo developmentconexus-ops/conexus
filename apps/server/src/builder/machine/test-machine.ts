@@ -73,8 +73,6 @@ export type Control = NetworkControl & {
   stops: number
   /** How long a pause takes, as the provider's. */
   stopMs: number
-  /** The machine has its own file API that follows links, as E2B's: the file tools go through it, not through the shell. */
-  native: boolean
   /** The provider killed the machine: pausing it fails as E2B's does, until a start makes a new one. */
   killed: boolean
   /** What another process in the machine does right after each command the Hub runs there. */
@@ -108,7 +106,6 @@ export function newControl(): Control {
     sandbox: undefined,
     stops: 0,
     stopMs: 0,
-    native: false,
     killed: false,
     afterCommand: () => undefined,
     beforeRead: () => undefined,
@@ -125,10 +122,9 @@ export function newControl(): Control {
 export function localKit(folder: string, control: Control): KitFactory {
   return (options): Kit => {
     let made = false
-    const sandbox = new LocalSandbox({
+    const local = new LocalSandbox({
       workingDirectory: options.workingDirectory,
       env: GIT_FOREGROUND_ENV,
-      instructions: options.instructions,
       onStart: async (started) => {
         // E2B's template makes the app folder and no other: a working folder this start made is
         // taken away again, so a command run there before anything makes it fails as on E2B.
@@ -141,10 +137,10 @@ export function localKit(folder: string, control: Control): KitFactory {
         await options.onStart({ ...started, outcome })
       },
     })
-    if (control.native) {
-      const filesystem = new LocalFilesystem({ basePath: '/', contained: false })
-      Object.defineProperty(sandbox, 'filesystem', { value: filesystem })
-    }
+    // E2B's own file API follows links, and the file tools go through it.
+    const sandbox = Object.assign(local, {
+      filesystem: new LocalFilesystem({ basePath: '/', contained: false }),
+    })
     const execute = sandbox.executeCommand?.bind(sandbox)
     if (execute !== undefined) {
       sandbox.executeCommand = async (...args) => {

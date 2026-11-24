@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { LocalFilesystem } from '@mastra/core/workspace'
 import { SandboxFilesystem } from '../public.ts'
 
 test('a frase diz a regra dos caminhos', () => {
@@ -7,6 +8,7 @@ test('a frase diz a regra dos caminhos', () => {
   const files = new SandboxFilesystem({
     sandbox: {
       id: 'sb-1',
+      filesystem: new LocalFilesystem({ basePath: base }),
       executeCommand: async () => {
         throw new Error('the phrase runs no command')
       },

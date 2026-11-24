@@ -1,80 +1,15 @@
 // Copyright (c) 2025 Kepler Software, Inc. Licensed under the Apache License, Version 2.0; a copy is
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
-// concern: `readdir`'s shell path, the list readers and `walk` (source :608-754). Changed: functions
-// that take the filesystem (`Host`) in place of methods; `walk` split into its script and its reader.
+// concern: `walk` (source :608-754). Changed: a function that takes the filesystem (`Host`) in place
+// of a method; split into its script and its reader.
 
 import { posix as posixPath } from 'node:path'
-import type { FileEntry, ListOptions, WalkEntry, WalkOptions } from '@mastra/core/workspace'
+import type { WalkEntry, WalkOptions } from '@mastra/core/workspace'
 import { DirectoryNotFoundError, NotDirectoryError } from '@mastra/core/workspace'
 import { assertContainedRealpath } from './containment.ts'
 import type { Host } from './shell.ts'
 import { EXIT_NOT_DIRECTORY, EXIT_NOT_FOUND, shellQuote } from './shell.ts'
-
-function matchesExtension(name: string, extension?: string | string[]): boolean {
-  if (!extension) return true
-  const exts = Array.isArray(extension) ? extension : [extension]
-  return exts.some((ext) => name.endsWith(ext))
-}
-
-function parseListOutput(stdout: string, options?: ListOptions): FileEntry[] {
-  const entries: FileEntry[] = []
-  for (const line of stdout.split('\n')) {
-    if (!line) continue
-    const tab = line.indexOf('\t')
-    if (tab < 0) continue
-    const type = line.slice(0, tab) === 'd' ? 'directory' : 'file'
-    const name = line.slice(tab + 1)
-    if (!name || name === '.' || name === '..') continue
-    if (type === 'file' && !matchesExtension(name, options?.extension)) continue
-    entries.push({ name, type })
-  }
-  return entries
-}
-
-function parseFindOutput(stdout: string, base: string, options?: ListOptions): FileEntry[] {
-  const entries: FileEntry[] = []
-  for (const line of stdout.split('\n')) {
-    if (!line) continue
-    const tab = line.indexOf('\t')
-    if (tab < 0) continue
-    const type = line.slice(0, tab) === 'd' ? 'directory' : 'file'
-    const fullPath = line.slice(tab + 1)
-    const name = posixPath.relative(base, fullPath)
-    if (!name) continue
-    if (type === 'file' && !matchesExtension(name, options?.extension)) continue
-    entries.push({ name, type })
-  }
-  return entries
-}
-
-/** `readdir` without a native filesystem: the listing is a shell loop. */
-export async function readdirShell(
-  host: Host,
-  abs: string,
-  path: string,
-  options?: ListOptions,
-): Promise<FileEntry[]> {
-  await assertContainedRealpath(host, abs, path)
-  if (options?.recursive) {
-    // Recursive listing emitting "type\tpath". `find -printf` is GNU-only
-    // (fails on macOS/BSD hosts backing a local sandbox), so classify each
-    // entry with a portable shell loop instead.
-    const result = await host.exec(
-      `test -d ${shellQuote(abs)} && find ${shellQuote(abs)} -mindepth 1 ${options.maxDepth ? `-maxdepth ${Number(options.maxDepth)} ` : ''}2>/dev/null | while IFS= read -r f; do if [ -d "$f" ]; then printf 'd\\t%s\\n' "$f"; else printf 'f\\t%s\\n' "$f"; fi; done`,
-    )
-    if (result.exitCode !== 0) throw new Error(`Directory not found: ${path}`)
-    return parseFindOutput(result.stdout, abs, options)
-  }
-  // Non-recursive: list with name + type via a portable loop. Use printf,
-  // not echo — bash-as-/bin/sh (macOS local sandboxes) does not expand \t
-  // in echo arguments.
-  const result = await host.exec(
-    `cd ${shellQuote(abs)} 2>/dev/null && for f in * .[!.]*; do [ -e "$f" ] || continue; if [ -d "$f" ]; then printf 'd\\t%s\\n' "$f"; else printf 'f\\t%s\\n' "$f"; fi; done`,
-  )
-  if (result.exitCode !== 0) throw new Error(`Directory not found: ${path}`)
-  return parseListOutput(result.stdout, options)
-}
 
 function walkScript(abs: string, options?: WalkOptions): string {
   const maxDepth =

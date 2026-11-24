@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
@@ -82,4 +82,33 @@ test('locate: sem a conferência de links o nativo segue o link para fora — é
   const on = folderWith(t, false)
   symlinkSync(join(on.root, 'segredo.txt'), join(on.folder, 'a.md'))
   assert.equal((await locate(on.files(), 'a.md')).kind, 'FILE', 'the check is what refuses it')
+})
+
+test('cada operação de arquivo recusa o link para fora pelo caminho nativo, e nenhuma chega ao E2B (19)', async (t) => {
+  const on = folderWith(t)
+  mkdirSync(join(on.root, 'fora'))
+  writeFileSync(join(on.root, 'fora', 'x.txt'), 'SECRET OUTSIDE')
+  symlinkSync(join(on.root, 'segredo.txt'), join(on.folder, 'a.md'))
+  symlinkSync(join(on.root, 'fora'), join(on.folder, 'pasta'))
+  writeFileSync(join(on.folder, 'normal.md'), 'dentro')
+  const files = on.files()
+  const attempts: [string, () => Promise<unknown>][] = [
+    ['readFile', () => files.readFile('a.md')],
+    ['writeFile', () => files.writeFile('a.md', 'x')],
+    ['appendFile', () => files.appendFile('a.md', 'x')],
+    ['copyFile da origem', () => files.copyFile('a.md', 'b.md')],
+    ['copyFile de dentro da pasta com link', () => files.copyFile('pasta/x.txt', 'c.md')],
+    ['copyFile ao destino', () => files.copyFile('normal.md', 'pasta/y.txt')],
+    ['moveFile da origem', () => files.moveFile('a.md', 'b.md')],
+    ['moveFile ao destino', () => files.moveFile('normal.md', 'pasta/y.txt')],
+    ['stat', () => files.stat('a.md')],
+    ['readdir', () => files.readdir('pasta')],
+    ['mkdir', () => files.mkdir('pasta/nova')],
+    ['deleteFile', () => files.deleteFile('pasta/x.txt')],
+    ['rmdir', () => files.rmdir('pasta/nova')],
+  ]
+  for (const [operation, attempt] of attempts) {
+    await assert.rejects(attempt(), { message: /^Path escapes workspace root/ }, operation)
+  }
+  assert.equal(readFileSync(join(on.root, 'segredo.txt'), 'utf8'), 'SECRET OUTSIDE')
 })

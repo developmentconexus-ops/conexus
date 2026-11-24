@@ -1,5 +1,6 @@
-import { MAX_BYTES, MAX_FILES, Sha } from '../git/public.ts'
+import { BUILDER_IDENTITY, CANDIDATE_REF, MAX_BYTES, MAX_FILES, Sha } from '../git/public.ts'
 import type { Conflicts } from './kit.ts'
+import { shellQuote } from './sandbox-filesystem/shell.ts'
 
 /** Where the Hub puts the bundle of `main` and where the machine leaves the bundle of its turn. */
 export function seedFile(tmp: string): string {
@@ -14,14 +15,8 @@ export function outFile(tmp: string): string {
 export const PLAN_DIR = '.conexus/plans'
 const PLANS_OUT = `':(exclude)${PLAN_DIR}'`
 
-const CANDIDATE_REF = 'refs/conexus/candidate'
-
-export function quoted(value: string): string {
-  return `'${value.replaceAll("'", "'\\''")}'`
-}
-
 const BASE_REF = 'refs/conexus/base'
-const IDENTITY = `-c user.name='Conexus Builder' -c user.email='builder@conexus.invalid'`
+const IDENTITY = BUILDER_IDENTITY.map(shellQuote).join(' ')
 
 /**
  * A new machine's app folder holds `main` as the Hub has it: fetched from the seed bundle and
@@ -32,13 +27,13 @@ export function seedScript(workdir: string, tmp: string): string {
   const seed = seedFile(tmp)
   return [
     'set -e',
-    `mkdir -p ${quoted(workdir)}`,
-    `cd ${quoted(workdir)}`,
+    `mkdir -p ${shellQuote(workdir)}`,
+    `cd ${shellQuote(workdir)}`,
     'test -d .git || git init --quiet -b main',
-    `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:${BASE_REF}'`,
+    `git fetch --quiet --no-tags ${shellQuote(seed)} '+refs/heads/main:${BASE_REF}'`,
     `git checkout --quiet --force -B main ${BASE_REF}`,
     `git clean -fdq -e node_modules -e ${PLAN_DIR}`,
-    `rm -f ${quoted(seed)}`,
+    `rm -f ${shellQuote(seed)}`,
     ...markedFiles(),
   ].join('\n')
 }
@@ -58,7 +53,7 @@ function markedFiles(): string[] {
 
 /** The files of the app folder that hold conflict markers now, printed as a start prints them. */
 export function markersScript(workdir: string): string {
-  return ['set -e', `cd ${quoted(workdir)}`, ...markedFiles()].join('\n')
+  return ['set -e', `cd ${shellQuote(workdir)}`, ...markedFiles()].join('\n')
 }
 
 /** What the commit of work the Hub has not saved says, on the machine where it is brought onto `main`. */
@@ -82,20 +77,20 @@ export function syncScript(workdir: string, tmp: string): string {
   const unsaved = 'refs/conexus/unsaved'
   return [
     'set -e',
-    `if ! { cd ${quoted(workdir)} 2>/dev/null && test -d .git && git rev-parse --quiet --verify ${BASE_REF} >/dev/null; }; then echo UNSEEDED; exit 0; fi`,
+    `if ! { cd ${shellQuote(workdir)} 2>/dev/null && test -d .git && git rev-parse --quiet --verify ${BASE_REF} >/dev/null; }; then echo UNSEEDED; exit 0; fi`,
     // No git of an earlier turn lives at a start: a lock one left (killed on its timeout) would fail every checkout below, for ever.
     'rm -f .git/index.lock',
-    `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:${main}'`,
-    `rm -f ${quoted(seed)}`,
+    `git fetch --quiet --no-tags ${shellQuote(seed)} '+refs/heads/main:${main}'`,
+    `rm -f ${shellQuote(seed)}`,
     ...treeIn(BASE_REF, 'conexus-sync-index'),
     `target=${main}`,
     'conflicted=',
     `if ! ${sameTree(BASE_REF)}; then`,
-    `  git update-ref ${unsaved} "$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m ${quoted(UNSAVED_MESSAGE)})"`,
+    `  git update-ref ${unsaved} "$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m ${shellQuote(UNSAVED_MESSAGE)})"`,
     // Exit 1 is a merge with conflicts; any other failure ends the script.
     `  merged=$(git -c core.quotePath=false merge-tree --write-tree --name-only --no-messages ${main} ${unsaved}) || test $? -eq 1`,
     `  conflicted=$(printf '%s\\n' "$merged" | tail -n +2)`,
-    `  target=$(git ${IDENTITY} commit-tree "$(printf '%s\\n' "$merged" | head -n 1)" -p ${main} -m ${quoted(UNSAVED_MESSAGE)})`,
+    `  target=$(git ${IDENTITY} commit-tree "$(printf '%s\\n' "$merged" | head -n 1)" -p ${main} -m ${shellQuote(UNSAVED_MESSAGE)})`,
     // The tree's size and count as the Hub reads them: a tree it refuses stays refused until it is smaller.
     `  git ls-tree -r -l "$target" | awk -v files=${MAX_FILES} -v bytes=${MAX_BYTES} '{ n++; size += $4 } END { if (n > files) print "TOO_MANY_FILES"; if (size > bytes) print "TOO_LARGE" }'`,
     'fi',
@@ -119,8 +114,8 @@ export function syncScript(workdir: string, tmp: string): string {
 export function savedScript(workdir: string, version: Sha): string {
   return [
     'set -e',
-    `cd ${quoted(workdir)}`,
-    `git update-ref ${BASE_REF} ${quoted(version)}`,
+    `cd ${shellQuote(workdir)}`,
+    `git update-ref ${BASE_REF} ${shellQuote(version)}`,
     `git checkout --quiet --force -B main ${BASE_REF}`,
   ].join('\n')
 }
@@ -150,7 +145,7 @@ function sameTree(base: string): string {
 function treeOf(workdir: string, base: string, index: string): string[] {
   return [
     'set -e',
-    `cd ${quoted(workdir)}`,
+    `cd ${shellQuote(workdir)}`,
     ...treeIn(base, index),
     `if ${sameTree(base)}; then echo UNCHANGED; exit 0; fi`,
   ]
@@ -176,9 +171,9 @@ export function collectScript(workdir: string, tmp: string): string {
     `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${BASE_REF} "$tree" -- . ${PLANS_OUT} | wc -l)"`,
     `commit=$(git ${IDENTITY} commit-tree "$tree" -p ${BASE_REF} -m 'Conexus Builder')`,
     `git update-ref ${CANDIDATE_REF} "$commit"`,
-    `rm -f ${quoted(out)}`,
-    `git bundle create --quiet ${quoted(out)} ${CANDIDATE_REF} ^${BASE_REF}`,
-    `echo "size=$(stat -c %s ${quoted(out)})"`,
+    `rm -f ${shellQuote(out)}`,
+    `git bundle create --quiet ${shellQuote(out)} ${CANDIDATE_REF} ^${BASE_REF}`,
+    `echo "size=$(stat -c %s ${shellQuote(out)})"`,
   ].join('\n')
 }
 

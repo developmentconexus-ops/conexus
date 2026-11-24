@@ -7,7 +7,7 @@ import type { Result } from '../../platform/result.ts'
 import type { TimedExec } from './check.ts'
 import type { Kit } from './kit.ts'
 import { parsedWith } from './pack.ts'
-import { quoted } from './scripts.ts'
+import { shellQuote } from './sandbox-filesystem/shell.ts'
 
 export const BROWSER_PROGRAM = '/usr/local/bin/agent-browser'
 
@@ -132,7 +132,7 @@ type Conference = Readonly<{
 
 function commandsOf({ exec, program, at }: Pick<Conference, 'exec' | 'program' | 'at'>) {
   function cli(...args: string[]): string {
-    return `${quoted(program)} --json ${args.map(quoted).join(' ')}`
+    return `${shellQuote(program)} --json ${args.map(shellQuote).join(' ')}`
   }
   async function ran(step: string, script: string, timeoutMs: number): Promise<string> {
     const done = await attempted(step, () => exec(script, timeoutMs))
@@ -182,7 +182,7 @@ async function looked(input: Conference, cookieFile: string): Promise<BrowserRep
     throw new Unrunnable('host')
   await ran(
     'shot',
-    `mkdir -p ${quoted(`${workdir}/${WORK_FOLDER}`)} && ${cli('screenshot', `${workdir}/${SHOT}`)}`,
+    `mkdir -p ${shellQuote(`${workdir}/${WORK_FOLDER}`)} && ${cli('screenshot', `${workdir}/${SHOT}`)}`,
     ASK_MS,
   )
   const messages = await read('console', Consoled, ['console'])
@@ -227,7 +227,7 @@ async function conferIn(input: Conference): Promise<Result<BrowserReport, Confer
     return { ok: false, error: 'CONFER_PLATFORM_FAILED' }
   } finally {
     await cleaned('close', cli('close'))
-    await cleaned('cookie-file', `rm -f ${quoted(cookieFile)}`)
+    await cleaned('cookie-file', `rm -f ${shellQuote(cookieFile)}`)
     await network.close()
   }
 }

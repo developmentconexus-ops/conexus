@@ -3,7 +3,7 @@ import { APP_LIMITS, Manifest, mediaTypeOf, versionFiles } from '@conexus/app-co
 import type { VersionFileInput } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { Result } from '../../platform/result.ts'
-import { quoted } from './scripts.ts'
+import { shellQuote } from './sandbox-filesystem/shell.ts'
 
 /** The version a passing check left, as the send takes it (security S2). */
 export type VersionFolder = { manifest: Manifest; files: VersionFileInput[] }
@@ -99,7 +99,7 @@ export async function packIn(
   workdir: string,
 ): Promise<Result<VersionFolder, PackRefused>> {
   const limits = `${APP_LIMITS.files} ${APP_LIMITS.bytes}`
-  const script = `node -e ${quoted(PACK_PROGRAM)} ${quoted(workdir)} ${quoted(VERSION_FOLDER)} ${limits}`
+  const script = `node -e ${shellQuote(PACK_PROGRAM)} ${shellQuote(workdir)} ${shellQuote(VERSION_FOLDER)} ${limits}`
   const ran = await exec(script)
   if (ran.exitCode !== 0) throw new Error(`pack failed: ${ran.stderr.slice(-500)}`)
   const reply = parsedWith(Packed, ran.stdout)

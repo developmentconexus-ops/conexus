@@ -25,7 +25,13 @@ import { fileOf, inspectTree, treeOf } from './tree.ts'
 
 /** The ref a machine's bundle carries its one commit under. */
 export const CANDIDATE_REF = 'refs/conexus/candidate'
-const IDENTITY = ['-c', 'user.name=Conexus Builder', '-c', 'user.email=builder@conexus.invalid']
+/** The author of the commits the Builder's machine and the Hub make, as `git -c` options. */
+export const BUILDER_IDENTITY = [
+  '-c',
+  'user.name=Conexus Builder',
+  '-c',
+  'user.email=builder@conexus.invalid',
+]
 
 export type Repository = {
   /**
@@ -83,7 +89,7 @@ async function ensure(context: Context): Promise<Sha> {
     const tree = await text(building, ['write-tree'])
     await rm(join(building.dir, 'index'))
     const first = Sha.parse(
-      await text(building, [...IDENTITY, 'commit-tree', tree, '-m', 'Start the app']),
+      await text(building, [...BUILDER_IDENTITY, 'commit-tree', tree, '-m', 'Start the app']),
     )
     await git(building, ['update-ref', MAIN, first])
     const started = await rename(building.dir, context.dir).then(
