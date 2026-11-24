@@ -10,10 +10,14 @@ import { BuilderLogger } from './logger.ts'
 /** The messages of a step the trace keeps whole. */
 const MESSAGES_KEPT = 500
 
+/** Ticks an automation whose workflow is missing survives before Mastra deletes it. */
+const MISSES_BEFORE_DELETE = 5
+
 /** Mastra's scheduler, its publish failures (after its own retries) in the central log under a code of ours. */
 export function schedulerOf(log: FailureLog, tickMs: number | undefined) {
   const config = {
     ...(tickMs === undefined ? {} : { tickIntervalMs: tickMs }),
+    missesBeforeDelete: MISSES_BEFORE_DELETE,
     onError: (_error, context) =>
       log.error({ scheduleId: context.scheduleId }, 'SCHEDULE_PUBLISH_FAILED'),
   } satisfies SchedulerConfig

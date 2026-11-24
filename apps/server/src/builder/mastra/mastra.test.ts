@@ -45,3 +45,29 @@ test('nenhum relógio de cópia', async (t) => {
     [],
   )
 })
+
+test('o agendador: a agenda de um fluxo que ninguém registra sobrevive a quatro tiques seguidos e é apagada no quinto', async (t) => {
+  const on = await conversing(t, stepped([]), (config) => ({
+    ...config,
+    automationClock: { schedulerTickMs: 3_600_000, turnMs: 60_000 },
+  }))
+  const { scheduler } = on.hub.mastra
+  const store = await on.hub.mastra.getStorage()?.getStore('schedules')
+  assert.ok(scheduler && store, 'the scheduler runs, over the one store')
+  const now = Date.now()
+  await store.createSchedule({
+    id: 'schedule_orphan',
+    target: { type: 'workflow', workflowId: 'conexus-renamed-flow' },
+    cron: '0 0 1 1 *',
+    status: 'active',
+    nextFireAt: now - 1,
+    createdAt: now,
+    updatedAt: now,
+  })
+  for (const tick of [1, 2, 3, 4]) {
+    await scheduler.tick()
+    assert.notEqual(await store.getSchedule('schedule_orphan'), null, `alive after tick ${tick}`)
+  }
+  await scheduler.tick()
+  assert.equal(await store.getSchedule('schedule_orphan'), null, 'deleted on the fifth miss')
+})
