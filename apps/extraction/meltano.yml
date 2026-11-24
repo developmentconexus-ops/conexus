@@ -30,5 +30,8 @@ plugins:
     - name: report_path
     - name: add_record_metadata
       kind: boolean
+    - name: batch_size_rows
+      kind: integer
     config:
       add_record_metadata: true
+      batch_size_rows: 1000

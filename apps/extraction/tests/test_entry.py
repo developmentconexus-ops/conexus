@@ -70,6 +70,17 @@ def test_a_rodada_fechada_para_a_tarefa(task: Task, capfd: pytest.CaptureFixture
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
 
 
+def test_a_rodada_fechada_no_meio_da_copia(
+    task: Task, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("TARGET_CONEXUS_BATCH_SIZE_ROWS", "100")
+    task.aws.refuse_after_gets = 3
+    task.run(task.spec(NOTAS))
+    assert task.aws.sent == []
+    assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows == 100
+    assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
+
+
 def test_a_conferencia_recusada_e_falha_do_gravador(task: Task) -> None:
     task.aws.refuse_after_gets = 1
     task.aws.refusal = "get-parameter-recusado"
