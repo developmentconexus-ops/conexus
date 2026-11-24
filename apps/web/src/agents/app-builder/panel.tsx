@@ -45,7 +45,6 @@ function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
 
 type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
 
-/** What a Builder's run changes beyond the transcript: a version it saved, the Projeto's files; a version put on the app, its Prévia. */
 function heardOnProjeto(
   queryClient: QueryClient,
   scope: Pick<Params, 'companyId' | 'projectId'>,

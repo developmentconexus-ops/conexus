@@ -75,7 +75,6 @@ function AskBox(
   )
 }
 
-/** The earlier conversations with the Construtor in this Projeto. */
 export function ConstrutorConversations(scope: Scope) {
   const read = useQuery(construtorConversationsQuery(scope))
   const now = new Date()

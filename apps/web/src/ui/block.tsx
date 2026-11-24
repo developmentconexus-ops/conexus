@@ -12,7 +12,6 @@ export const listRow =
 /** A row of a block: the list row with a hairline under it. */
 export const blockRow = `${listRow} border-b border-line`
 
-/** A row to choose from, in a menu or a chooser: the list row, rounded, lit under the pointer. */
 export const choiceRow = cn(
   listRow,
   'shrink-0 gap-sm rounded-control text-left text-text hover:bg-surface-3',

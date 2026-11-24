@@ -67,7 +67,6 @@ export function graphOf(files: readonly string[]): Graph {
   return graph
 }
 
-/** The files a reference reaches, name by name through a door, in the order of its names. */
 export function reached(graph: Graph, ref: Ref): string[] {
   const door = graph.doors.get(ref.target)
   if (door === undefined) return [ref.target]
@@ -84,7 +83,6 @@ function rowOf(inside: string): string | undefined {
     .sort((a, b) => b.length - a.length)[0]
 }
 
-/** Where each file of builder/ goes; a file no row takes stops the plan, listed. */
 export function plan(files: readonly string[]): Move[] {
   const moves: Move[] = []
   const homeless: string[] = []
@@ -104,7 +102,6 @@ export function plan(files: readonly string[]): Move[] {
   return moves.sort((a, b) => a.from.localeCompare(b.from))
 }
 
-/** The harness, or the agent, that owns a file of the new tree; undefined for the rest of the web. */
 function ownerOf(file: string): string | undefined {
   const [top, agent] = file.slice(SRC.length + 1).split('/')
   if (top === 'harness') return 'harness'
@@ -115,7 +112,6 @@ function isHelper(file: string): boolean {
   return isTest(file) || /\/test-[^/]+$/.test(file)
 }
 
-/** Each import of code the new tree would hold against the direction: the harness reads no agent, and an agent reads only the door READS names. */
 export function againstDirection(graph: Graph, newOf: (file: string) => string): string[] {
   const found: string[] = []
   for (const [file, refs] of graph.refs) {
@@ -142,7 +138,6 @@ export function refuseCollisions(moves: readonly Move[]): void {
   }
 }
 
-/** The folder rows, as paths: a document that cites a folder of builder/ cites its owner. */
 export function folderMoves(): ReadonlyMap<string, string> {
   return new Map(
     [...OWNERS]
