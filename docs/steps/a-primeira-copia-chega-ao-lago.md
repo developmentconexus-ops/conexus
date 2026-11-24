@@ -6,7 +6,7 @@ mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados?" E
 parte 1 deste cartão corre a etapa **O conector no padrão novo**, que o roteiro nomeia como etapa
 própria (decisão C do conector, T.21).
 
-Os estudos ficam fora do repositório (delivery L21). São dez, todos de 2026-11-23:
+Os estudos ficam fora do repositório (delivery L21). São doze, dez de 2026-11-23 e dois de 2026-11-24:
 
 - o estudo `conexus-lago2-estudo` e o reestudo `conexus-lago2-reestudo`;
 - o estudo do conector no estilo novo, `conexus-conector-estilo-novo-estudo` (os nomes NT1 a NT4 e o
@@ -19,9 +19,11 @@ Os estudos ficam fora do repositório (delivery L21). São dez, todos de 2026-11
   primeira carga);
 - os arquivos no lago, `conexus-arquivos-no-lago` (o XML da NF-e);
 - o relógio das cópias, `conexus-agendador-copias`;
-- o lakehouse com arquivos, `conexus-lakehouse-arquivos` (as perguntas F1 e F2 de lá).
+- o lakehouse com arquivos, `conexus-lakehouse-arquivos` (as perguntas F1 e F2 de lá);
+- a data inicial da cópia, `conexus-lago2-data-inicial-estudo`, e a conferência dela,
+  `conexus-lago2-data-certeza` (as linhas 71 a 73 da tabela de referência), de 2026-11-24.
 
-O fundador decidiu nas palavras da página abaixo, todas de uma entrevista em 2026-11-23. Este cartão
+O fundador decidiu nas palavras da página abaixo, todas de uma entrevista em 2026-11-23, menos as da Data, de 2026-11-24. Este cartão
 cita dos estudos só o que a construção precisa. O código de hoje entra só como inventário do que
 sai. A página ainda não está aprovada.
 
@@ -145,6 +147,15 @@ o mapa do desenho, entrevistou você, e você confirmou o desenho. O cartão mud
   parte gerada da skill usa os nomes reais.
 - **O Sankhya completo** ("Sim, núcleo+fiscal+contábil"): 42 tabelas, cada uma num modo que o
   conector fixa: só o que mudou, janela por mês ou inteira.
+- **A data inicial** (2026-11-24: "A bem estudado"; as respostas "1. Okay", "2. Ver referencia e ter
+  certeza", "3. Como Nekt faz, mas ter certeza"). Em **O que copiar**, ao lado do prefixo, você escolhe
+  **Desde**: a data a partir da qual a cópia lê. Vazio, o padrão, é todo o histórico, como antes. Como na
+  Nekt, a data compara com a coluna pela qual cada tabela segue: nas de movimento, a de alteração ("as
+  linhas criadas ou alteradas desde essa data"); nas de janela, os meses. Os cadastros (parceiros,
+  produtos, vendedores, tabelas de preço) e as tabelas inteiras vêm sempre inteiros. Na seção **Tabelas
+  no lago** você muda a data: ela vale das próximas rodadas e nada roda sozinho. Para trazer o passado
+  de uma data mais antiga, ou tirar do lago o que ficou antes de uma mais nova (nas tabelas de janela, os
+  meses anteriores ficam), você clica **Ler de novo desde a data**, como o "full sync" da Nekt.
 - **O XML da NF-e** entra já, como na Nekt ("Já no Lago 2, como a Nekt"), como uma coluna de texto da
   tabela dos dados da NF-e, `sankhya_notas_nfe` (a `TGFNFE`), e não numa tabela própria ("E, não,
   beleza"). Vale para todo conector uma regra só, pelo tipo que a descoberta lê: texto longo vira texto,
@@ -175,7 +186,7 @@ parte tem os seus pull requests e é usada por você quando entra no ar.
 
 - A parte 0 tem umas 8.000 linhas mudadas, quase todas tiradas, em três pull requests.
 - A etapa do conector tem umas 3.300, um pull request por conector e um para o Caderno.
-- A parte 1 tem umas 6.300, em cinco pull requests. Ela passa das ~4.000 linhas que a delivery L2
+- A parte 1 tem umas 6.550, em cinco pull requests. Ela passa das ~4.000 linhas que a delivery L2
   pede de uma parte usada sozinha, porque a janela e o "só o que mudou" vêm juntos, como no desenho
   que você confirmou, para a primeira ligação já poder rodar de 15 min a 24 h. Nenhum pull request
   passa de ~4.000 (T.9).
@@ -217,23 +228,29 @@ hoje do Sankhya e do Mercado Livre.
    uma traz o rótulo, a origem ao lado (**Notas e pedidos**, `TGFCAB`), a descrição e o número de
    colunas do dicionário da sua instalação, o nome sugerido no lago (`sankhya_notas`) e o modo que o
    conector fixa: "só o que mudou", "janela por mês" ou "inteira". Em cima, o prefixo `sankhya_`
-   vale para todas. Marque, por exemplo, **Notas e pedidos**, **EFD: média diária do ICMS-ST** e
-   **Dados da NF-e**, uma de cada modo; a última traz o XML de cada nota. Troque o nome sugerido de uma
-   delas.
+   vale para todas, e **Desde** vem vazio, "todo o histórico". Ponha uma data de cinco anos atrás: as
+   tabelas que ela limita dizem "desde <data>". Marque, por exemplo, **Notas e pedidos**, **EFD: média
+   diária do ICMS-ST** e **Dados da NF-e**, uma de cada modo; a última traz o XML de cada nota e não é
+   limitada. Troque o nome sugerido de uma delas.
 9. **Quando copiar.** Vem 24 h escolhido; há de 15 min a 24 h e **Só manual**. Embaixo, a revisão:
-   as tabelas marcadas, com o nome de cada uma no lago, e o intervalo. Clique **Ligar e copiar
+   as tabelas marcadas, com o nome de cada uma no lago, o intervalo e a data inicial. Clique **Ligar e copiar
    agora**. Os e-mails do aviso de parada entram neste passo com o cartão do aviso, logo depois deste
    (T.30).
 10. **Ligado.** A janela diz que a primeira carga começou, com **Ver em Dados**. Em **Dados**, cada
     tabela marcada aparece pelo rótulo, com o nome no lago e a origem embaixo, e "Rodando…"; quando a
     carga termina, **Em dia**, com as linhas e a hora. Em **Rodadas**, "Completa · inteira"; em
-    **Colunas**, todas as da sua instalação, as criadas pela sua empresa (`ad_…`) incluídas. Quanto a
+    **Detalhes**, a de **Notas e pedidos** diz "Desde <data>" e a de **Dados da NF-e**, "Todo o histórico";
+    em **Colunas**, todas as da sua instalação, as criadas pela sua empresa (`ad_…`) incluídas. Quanto a
     primeira carga leva no seu Sankhya não foi medido: a das 42 juntas foi estimada entre 6 e 17
     horas (`SK` 3.3).
 11. Quando a primeira carga terminar (**Em dia**), abra a página da ligação: a seção **Tabelas no
     lago** mostra o que a ligação copia. Marque **Parceiros**, com o nome sugerido ou outro, e salve:
     ela começa inteira na hora, numa rodada só dela. O nome das que já existem não muda mais. Mude o
-    intervalo para 15 min. Os e-mails do aviso entram nesta seção com o cartão do aviso.
+    intervalo para 15 min. Mude **Desde** para dez anos atrás e salve: nada roda, e a seção diz que as
+    próximas rodadas continuam de onde pararam. Clique **Ler de novo desde a data**: o diálogo lista
+    **Notas e pedidos** e as outras que a data limita, e não **Parceiros**. Confirme: em **Rodadas**,
+    "Completa · inteira" só nessas tabelas, e **Notas e pedidos** tem mais linhas que antes. Os
+    e-mails do aviso entram nesta seção com o cartão do aviso.
 12. Quando a rodada de **Parceiros** terminar, lance ou altere uma nota no Sankhya e clique **Rodar
     agora**. A rodada diz "Completa · só o que
     mudou" e mostra poucas linhas lidas. Passe a ligação a **Só manual**: ela não roda mais sozinha, e
@@ -333,6 +350,10 @@ Nada cruza a visão.
 - **O que sumiu da fonte some do lago** (etapa 7). As tabelas inteiras já trocam tudo a cada rodada, e
   as de janela trocam a janela; numa tabela só do que mudou, a linha apagada no Sankhya fica no lago
   até a etapa 7. A passada inteira de domingo do motor de hoje não vem (T.17).
+- **A data pela emissão, os títulos abertos fora da data e a data nas tabelas inteiras** (T.43). A data
+  compara com a coluna pela qual a tabela segue, como no SAP Business One da Nekt; a emissão e os
+  abertos são a forma de quem não tem coluna de alteração (WK Radar, Protheus).
+- **Reler sozinho ao gravar uma data mais antiga** (T.45). Nenhuma referência de extração de ERP faz.
 - **O binário muito grande no depósito** (imagem, PDF anexado): a regra de tamanho entra na 3a
   (`LAK` 1.1). Nesta etapa o binário fica na linha, no tipo binário do Iceberg, abaixo do limite de
   32 MB do Athena (PS4), e abaixo do teto que sai da PS1 (T.41).
@@ -371,7 +392,8 @@ Nada cruza a visão.
     - a #994 e a #895, das dívidas do Assistente e do cartão da 24.6, que são da outra trilha;
     - a #1175, das gravações do Mastra de versões antigas, que a U19 não regrava.
 
-**As suas decisões nesta etapa.** Nenhuma nova: todas estão respondidas, em 2026-11-23:
+**As suas decisões nesta etapa.** Uma nova, a Data (2026-11-24); as outras estão respondidas, em
+2026-11-23:
 
 - ao reestudo: "Lago 2 aprovo os recomendados";
 - aos nomes: "okay", "okay", "sim" e "sim", às letras que aqui são NT1 a NT4 (o estudo as chama pela
@@ -383,7 +405,12 @@ Nada cruza a visão.
   "Aprovo", "Já no Lago 2", "Por ligação, na janela", "Não, eu confirmo o desenho", "(a) Hub, só o
   'quando'", "Na hora, com prova antes", "Seguir como está", "Já no Lago 2, como a Nekt", "Etapa
   própria, depois da 3" e "Okay";
-- ao estudo do lakehouse com arquivos (`conexus-lakehouse-arquivos`): "F1. A F2. A".
+- ao estudo do lakehouse com arquivos (`conexus-lakehouse-arquivos`): "F1. A F2. A";
+- à data inicial da cópia, em 2026-11-24: a pergunta dele, "eu poderia escolher se quero um sync
+  completo ou não? Nekt tem isso? Entende meu ponto? Vamos supor que quero de 5 anos, por exemplo."; a
+  escolha, "A bem estudado, baseado em nosso metodo, /pstack:poteto-mode e repositórios referencia"; e
+  as respostas às três perguntas do estudo, "1. Okay", "2. Ver referencia e ter certeza" e "3. Como
+  Nekt faz, mas ter certeza".
 
 A lista dos onze sistemas do `D3` ("Conector eu quero: - Sankhya - Mercado Livre - Hubspot - TOTVS -
 Gmail com Agenda - Outlook email - Outlook Calendar - google drive - Sharepoint - NF-e - Sicoob") é
@@ -396,6 +423,7 @@ da trilha e está na página dela. O que cada decisão faz no cartão:
 | Intervalo | O padrão e as escolhas | "24 h, como a Nekt"; de 15 min a 24 h, ou **Só manual** | A U8 e a U9; a parte 2 de antes entra na parte 1. Veredito: nativo (o gatilho Schedule e o Manual da Nekt) |
 | Nome | Quem dá o nome da tabela no lago | "Aprovo": sugerido do kit, trocável ao ligar, com prefixo, fixo depois; a origem e o rótulo no catálogo; a skill com os nomes reais; repetido recusado | A U3, a U5, a U8 e a U9. **Emenda a NT1**: o nome do kit é sugestão, não regra. Veredito: nativo (a Nekt, `NK:12217-12220`) |
 | Completo | Quais tabelas do Sankhya o kit declara | "So as que o kit declara [...] vamos fazer ele completo"; "Sim, núcleo+fiscal+contábil" | As 42 tabelas da U3, cada uma com o modo. **Emenda a F (a)**: a `TGFCAB` continua a tabela que prova, e o kit declara as 42. Veredito: embrulhado (a lista do kit sobre o `--discover`) |
+| Data | Se a cópia lê todo o histórico ou desde uma data, onde se escolhe, o que mudar faz e que data conta | "A bem estudado" (2026-11-24, à pergunta dele: "eu poderia escolher se quero um sync completo ou não? Nekt tem isso? [...] Vamos supor que quero de 5 anos, por exemplo."); "1. Okay" (em O que copiar); "2. Ver referencia e ter certeza": mudar só grava, e **Ler de novo desde a data** relê as tabelas que ela limita, como o full sync da Nekt, o Refresh do Airbyte e o `--full-refresh` do Meltano, e nenhuma relê sozinha; "3. Como Nekt faz, mas ter certeza": a data compara com a coluna pela qual a tabela segue, a de alteração no movimento, como os documentos do SAP Business One da Nekt | A U3 (o cadastro na declaração), a U4 (a `start_date` do tap), a U5, a U7, a U8 (gravar, recusar, reler pela porta do **Rodar agora**), a U9 (o campo, o aviso, o botão), a U10 (a releitura troca). Veredito: nativo (a `start_date` do Singer, `singer-sdk@0.54.9 singer_sdk/streams/_state.py:156-167`), embrulhado na janela por mês (linha 66) e no botão (linha 73) |
 | XML | O XML da NF-e e as colunas de arquivo | "Já no Lago 2, como a Nekt"; "Etapa própria, depois da 3"; o histórico: "Okay"; sem tabela própria: "E, não, beleza" | O XML como coluna de texto da `sankhya_notas_nfe`, com o histórico ligado nela (U3, U10); a regra pelo tipo para todo conector (U3, U4, U5); a leitura em linhas na etapa nova da trilha. **Emenda a regra de 2026-11-19**: sai a parte dos anexos; índices, logs e cópias de backup datadas continuam fora. Veredito: nativo (o tipo que a descoberta lê, a forma da Nekt e do Airbyte para o Oracle, `NK:132602`) |
 | Arquivos | Em que etapa os arquivos entram (F1) e os poderes de `S3` que eles pedem (F2) | "F1. A F2. A" | Nada constrói os arquivos nesta etapa; a PS1 antes da U3 e a T.41 guardam a porta. A trilha ganha a etapa 3a, e os poderes de `S3` só no depósito de cada empresa entram nela. **O registro 0082 emenda a 0070, a 0071, a 0073, a 0078 e a 0080**. Veredito: fica de fora (a 3a); o desenho é o volume da Nekt e do Databricks (`LAK` 1.7) |
 | Máquina | O tamanho da tarefa | "2 vCPU na primeira carga"; 1 vCPU e 2 GB nas seguintes | A U6 e a U8 (T.6). A 0076 fica como está, e a linha das seguintes se acrescenta |
@@ -457,15 +485,15 @@ os critérios novos, do 88. A U11, a U12 e a U13 e os critérios 62 a 69 vão pa
 | GC1 | U17 A pasta do Sankhya, refeita | A pasta nova na forma do kit, com os mesmos ids; a pasta velha sai no mesmo commit | o raio da U17 | testing (T5) | U16 |
 | GC2 O Mercado Livre no padrão novo (um PR, etapa do conector) | U18 A pasta do Mercado Livre, refeita | A pasta nova, com a classe exclusiva; a velha sai no mesmo commit | o raio da U18 | testing (T5) | GC1 mesclado |
 | GC3 O Caderno pede o sim (um PR, etapa do conector) | U19 O Caderno pede o sim | Gravar no Caderno pede, no cartão da conversa, o sim de quem gerencia a ligação | o raio da U19 | testing (T5); security (S8) | GC1 mesclado |
-| G1 O kit declara tabelas (um PR, parte 1) | U3 O kit declara as tabelas | A declaração por tabela, com o nome sugerido, o rótulo, a descrição, o grupo, a origem, a chave, o modo e o histórico; as 42 tabelas do Sankhya, com o XML como coluna de texto e o binário pelo tipo; a descoberta única; a página em linhas e bytes; a skill com os nomes reais; os dublês que mudam um registro | o raio da U3 | testing (T5, T29) | a etapa do conector usada; as sondas do Sankhya completo |
-| G1 | U4 O adaptador | `apps/extraction/tap/`, o leitor Singer único, que lê só a declaração do kit e copia numa rodada as tabelas escolhidas, nos três modos | o raio da U4 | testing (T26) | U3; a mudança de método |
-| G2 A tarefa e a plataforma (um PR, parte 1) | U5 A tarefa | `apps/extraction/`: o projeto `uv`, o `meltano.yml`, o gravador do lago (com a origem e o rótulo nas propriedades da tabela), a entrada da tarefa, a imagem; o L.1, o L.3 e o L.5 | o raio da U5 | security (S31, S41) | G1 e G3 mesclados; a mudança de método |
+| G1 O kit declara tabelas (um PR, parte 1) | U3 O kit declara as tabelas | A declaração por tabela, com o nome sugerido, o rótulo, a descrição, o grupo, a origem, a chave, o modo e o histórico; as 42 tabelas do Sankhya, com o XML como coluna de texto e o binário pelo tipo; a descoberta única; a página em linhas e bytes; a skill com os nomes reais; os dublês que mudam um registro; o cadastro na declaração de uma tabela só do que mudou (a data não o limita) | o raio da U3 | testing (T5, T29) | a etapa do conector usada; as sondas do Sankhya completo |
+| G1 | U4 O adaptador | `apps/extraction/tap/`, o leitor Singer único, que lê só a declaração do kit e copia numa rodada as tabelas escolhidas, nos três modos; a `start_date` da rodada, como o Singer a lê | o raio da U4 | testing (T26) | U3; a mudança de método |
+| G2 A tarefa e a plataforma (um PR, parte 1) | U5 A tarefa | `apps/extraction/`: o projeto `uv`, o `meltano.yml`, o gravador do lago (com a origem e o rótulo nas propriedades da tabela), a entrada da tarefa, a imagem; o L.1, o L.3 e o L.5; a data da cópia na configuração do tap | o raio da U5 | security (S31, S41) | G1 e G3 mesclados; a mudança de método |
 | G2 | U6 A plataforma da cópia | Em `infra/aws/`: a fila, a regra, o cluster, a tarefa de 1 vCPU e 2 GB, o depósito de imagens e a rede; o papel que escreve; o teto; os poderes do Hub; a preparação; a Release monta a imagem; o L.2 e o L.6 | o raio da U6 | security (S36, S40) | U5; a segunda preparação (E) |
-| G3 As tabelas da cópia do lago (um PR, data D11, parte 1) | U7 A migração e a permissão | `lake_copy`, `lake_table`, `lake_run`, `lake_table_run`, `connection_link`; os ids e códigos do fio da cópia; a leitura da linha do lago pela empresa (H) | o raio da U7 | data (D6, D10, D11, D15) | a etapa do conector usada |
-| G4 A cópia pelo Hub e a janela (um PR, parte 1) | U8 O disparo e o fim | A lista da ligação com os nomes sugeridos; gravar a cópia com os nomes e o intervalo; o relógio que só diz "quando"; `iniciarRodada`, uma partida por vez; o tamanho da máquina por rodada; a poda do rastro do Mastra; o fim pela fila; a varredura; desmarcar e apagar o lago com tabela; as rotas de Dados; a #1265, a #1266 e a #1267 | o raio da U8 | data (D25, D27); security (S8, S41) | G2 e G3 mesclados |
+| G3 As tabelas da cópia do lago (um PR, data D11, parte 1) | U7 A migração e a permissão | `lake_copy`, `lake_table`, `lake_run`, `lake_table_run`, `connection_link`; os ids e códigos do fio da cópia; a leitura da linha do lago pela empresa (H); a data inicial em `lake_copy` | o raio da U7 | data (D6, D10, D11, D15) | a etapa do conector usada |
+| G4 A cópia pelo Hub e a janela (um PR, parte 1) | U8 O disparo e o fim | A lista da ligação com os nomes sugeridos; gravar a cópia com os nomes e o intervalo; o relógio que só diz "quando"; `iniciarRodada`, uma partida por vez; o tamanho da máquina por rodada; a poda do rastro do Mastra; o fim pela fila; a varredura; desmarcar e apagar o lago com tabela; as rotas de Dados; gravar a data, recusar a de depois de hoje e pedir `whole` das tabelas que a data limita pelo **Rodar agora**; a #1265, a #1266 e a #1267 | o raio da U8 | data (D25, D27); security (S8, S41) | G2 e G3 mesclados |
 | G4 | U20 O link de 30 minutos | Criar o link, a página pública dele e o envio que cria a ligação | o raio da U20 | security (S10, S41) | U8 |
-| G4 | U9 A janela e a tela | A janela Ligar com Acesso, Testando e lendo, O que copiar, Quando copiar e Ligado; a seção **Tabelas no lago** como o lugar de mudar; a lista e a página de uma tabela do lago em Dados | o raio da U9 | web, design | U8, U20 |
-| G5 A mudança aparece (um PR, parte 1) | U10 Só o que mudou | O ponto de parada do Meltano no `S3`; o modo incremental e a janela por mês; o atualizar; a limpeza da bruta (A), menos na dos dados da NF-e; o L.4 e o L.7 | o raio da U10 | data (D25) | G4 mesclado |
+| G4 | U9 A janela e a tela | A janela Ligar com Acesso, Testando e lendo, O que copiar, Quando copiar e Ligado; a seção **Tabelas no lago** como o lugar de mudar; a lista e a página de uma tabela do lago em Dados; o campo **Desde** na janela e na seção, o aviso do efeito e **Ler de novo desde a data** | o raio da U9 | web, design | U8, U20 |
+| G5 A mudança aparece (um PR, parte 1) | U10 Só o que mudou | O ponto de parada do Meltano no `S3`; o modo incremental e a janela por mês; o atualizar; a limpeza da bruta (A), menos na dos dados da NF-e; o L.4 e o L.7; a releitura desde a data troca a tabela pela passada inteira de sempre | o raio da U10 | data (D25) | G4 mesclado |
 
 São onze grupos, um pull request cada ([delivery L9](../guides/delivery.md)), com um commit por
 unidade. No G0a, a U2 entra antes da U1, que apaga o que a U2 deixa sem chamador. No GC1, a U16
@@ -526,19 +554,19 @@ parênteses.
 | A etapa do conector | U17 | ~1.700, sobre as 1.698 da pasta de hoje sem a cópia, os dublês e os testes |
 | A etapa do conector | U18 | ~990, sobre as 990 de hoje |
 | A etapa do conector | U19 | ~150 |
-| 1 | U3 | ~750: o dicionário, sobre a sonda de 286; as 42 declarações, ~260; os três modos e a janela por mês, ~120 |
-| 1 | U4 | ~480 (344, mais os modos) |
-| 1 | U5 | ~600 (o gravador, 165) |
+| 1 | U3 | ~780: o dicionário, sobre a sonda de 286; as 42 declarações, ~260; os três modos e a janela por mês, ~120; o cadastro e a data, ~30 |
+| 1 | U4 | ~520 (344, mais os modos e a data, ~40) |
+| 1 | U5 | ~610 (o gravador, 165; a data na configuração, ~10) |
 | 1 | U6 | ~490 |
-| 1 | U7 | ~260 |
-| 1 | U8 | ~1.250 (os fechadores, de 172 a 312; as rotas de Dados; o relógio ancorado, a fila de partidas e a poda, ~200) |
+| 1 | U7 | ~265 |
+| 1 | U8 | ~1.300 (os fechadores, de 172 a 312; as rotas de Dados; o relógio ancorado, a fila de partidas e a poda, ~200; a data e a releitura, ~50) |
 | 1 | U20 | ~400: as rotas, ~200, sobre a forma de `sign-ins.ts:145-193`; a página pública, ~200 |
-| 1 | U9 | ~1.500: a janela ~600 (`EST/ao-vivo-estudo:185`), a seção de mudar ~380, Dados refeita ~520 |
-| 1 | U10 | ~560 (o atualizar, 144; a janela por mês) |
+| 1 | U9 | ~1.620: a janela ~640 (`EST/ao-vivo-estudo:185`), a seção de mudar ~460 (a data, o aviso e o botão com o diálogo), Dados refeita ~520 |
+| 1 | U10 | ~565 (o atualizar, 144; a janela por mês; a releitura da data, ~5) |
 
-O total da etapa é de cerca de 17.600 linhas, das quais umas 8.000 são tiradas na parte 0. Por
-parte: a parte 0, ~8.050; a etapa do conector, ~3.240; a parte 1, ~6.290. Por pull request da parte
-1: o G1, ~1.230; o G2, ~1.090; o G3, ~260; o G4, ~3.150; o G5, ~560. Nenhum pull request de
+O total da etapa é de cerca de 17.840 linhas, das quais umas 8.000 são tiradas na parte 0. Por
+parte: a parte 0, ~8.050; a etapa do conector, ~3.240; a parte 1, ~6.550. Por pull request da parte
+1: o G1, ~1.300; o G2, ~1.100; o G3, ~265; o G4, ~3.320; o G5, ~565. Nenhum pull request de
 construção passa de ~4.000 (delivery L2). A razão de não cortar em cartões está no T.9.
 
 Três gatilhos dizem quando o plano muda:
@@ -601,16 +629,16 @@ velha, que passa ao índice do kit.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 9 | U3 | O Sankhya declara as tabelas que as sondas fecharam (as 42 de `SK` seção 1 e as candidatas que a P1 achou), cada uma com o nome sugerido, o rótulo, a descrição, o grupo, a origem, a chave e o modo. `notas`: `sankhya_notas`, "Notas e pedidos", o grupo `vendas`, a origem `TGFCAB`, a chave `NUNOTA`, só o que mudou por `DTALTER`. `efd_st_media_diaria`: janela por mês de `DTREF`. `notas_nfe`: inteira, com o histórico ligado, a coluna do XML descoberta como texto e o significado dela declarado como metadado (`NFE_XML`). O gancho `descobrirTabelas` devolve, do dicionário do dublê, a descrição da tabela e cada coluna com nome, tipo e descrição; uma tabela que o dicionário não tem volta ausente, nunca inventada | `packages/connectors/src/sankhya/copy-tables.test.ts`, com o dublê | must |
+| 9 | U3 | O Sankhya declara as tabelas que as sondas fecharam (as 42 de `SK` seção 1 e as candidatas que a P1 achou), cada uma com o nome sugerido, o rótulo, a descrição, o grupo, a origem, a chave e o modo. `notas`: `sankhya_notas`, "Notas e pedidos", o grupo `vendas`, a origem `TGFCAB`, a chave `NUNOTA`, só o que mudou por `DTALTER`. `parceiros`: só o que mudou por `DTALTER`, cadastro (a data inicial não a limita); o mesmo para `produtos`, `vendedores` e `precos_tabelas`. A data inicial compara com a coluna pela qual cada tabela segue: `DTALTER` em `notas`, `notas_itens` e `financeiro`, `DHALTER` em `notas_impostos`, a coluna da janela nas de janela. `efd_st_media_diaria`: janela por mês de `DTREF`. `notas_nfe`: inteira, com o histórico ligado, a coluna do XML descoberta como texto e o significado dela declarado como metadado (`NFE_XML`). O gancho `descobrirTabelas` devolve, do dicionário do dublê, a descrição da tabela e cada coluna com nome, tipo e descrição; uma tabela que o dicionário não tem volta ausente, nunca inventada | `packages/connectors/src/sankhya/copy-tables.test.ts`, com o dublê | must |
 | 10 | U3 | A conformidade recusa: dois nomes sugeridos iguais num conector; um nome fora do padrão (português, minúsculas, até 40); a mesma origem duas vezes com uma coluna em comum que não seja da chave; uma chave, coluna de alteração ou coluna de janela fora das colunas; uma janela sem coluna de data; uma tabela de colunas descobertas num conector sem gancho; uma tabela de operação sem colunas; um grupo que não é assunto do conector; uma coluna declarada que começa por `_`, que é do motor (T.41) | `packages/connectors/src/kernel/conformance.test.ts` (novo), "a declaração por tabela" | must |
 | 11 | U3 | A leitura de uma tabela pede no máximo as linhas da página do conector; quando a resposta passa dos bytes da página, a próxima página pede menos linhas; uma tabela de 450 colunas do dublê lê inteira, sem teto de colunas | `packages/connectors/src/sankhya/copy-tables.test.ts`, "a página em bytes" | must |
 | 16 | U3 | Entre duas leituras, o dublê do Sankhya altera, cria e apaga uma nota e muda o XML de uma NF-e, e o do HubSpot altera e remove um negócio, por rotas que só o dublê tem; o modo real não as tem | `packages/connectors/src/sankhya/fake.test.ts` e `hubspot/fake.test.ts` (novo), "o registro muda entre duas leituras" | must |
 | 86 | U3 | `readTablePage` lê uma página de qualquer tabela declarada, pelas duas origens: a da tabela, pela leitura do conector (o Sankhya), e a da operação, pela paginação `list` da operação (o negócio do HubSpot); a última página diz que acabou, e uma recusa da fonte volta como um dos quatro códigos de `TABLE_SOURCE_FAILURES`, nunca o corpo | `packages/connectors/src/kernel/tables.test.ts` (novo), contra os dublês do Sankhya e do HubSpot | must |
-| 85 | U3, U8 | A parte gerada da skill de uma ligação lista as tabelas que ela copia com o nome que a empresa deu (`sankhya_vendas`, se a pessoa trocou), o rótulo, a descrição e a origem; uma tabela não marcada não aparece; a frase diz que a tabela traz só aquela ligação | `packages/connectors/src/kernel/skill.test.ts` (novo), "as tabelas com o nome da empresa"; `apps/server/src/hub/copies/lake-routes.test.ts`, "a skill com os nomes reais" | must |
+| 85 | U3, U8 | A parte gerada da skill de uma ligação lista as tabelas que ela copia com o nome que a empresa deu (`sankhya_vendas`, se a pessoa trocou), o rótulo, a descrição e a origem; numa tabela que a data limita, "desde <data>"; uma tabela não marcada não aparece; a frase diz que a tabela traz só aquela ligação | `packages/connectors/src/kernel/skill.test.ts` (novo), "as tabelas com o nome da empresa"; `apps/server/src/hub/copies/lake-routes.test.ts`, "a skill com os nomes reais" | must |
 | 88 | U3, U4, U8 | Uma descoberta só: a lista que a janela mostra (`GET .../lake-tables`) e o catálogo do `tap --discover` saem da mesma função do kit, `discoverTables`, com as mesmas tabelas, origens, chaves, modos e colunas, no dublê do Sankhya e no do HubSpot | Uma lista esperada em comum, em `packages/connectors/src/kernel/tables-fixture.ts` (novo): `lake-routes.test.ts`, "a lista da ligação é a descoberta", pela rota; `apps/extraction/tap/src/tap.test.ts`, "o catálogo é a descoberta", pela linha de comando | must |
 | 17 | U4 | `tap --about` e `tap --discover` respondem para todo conector que declara uma tabela. No `--discover`, cada entrada tem `stream` com o nome no lago, `table_name` com a origem (`TGFCAB`; numa tabela por operação, o id da operação, `negocios`), nos metadados o modo, a chave, o histórico e o rótulo, e `selected: false`; as colunas vêm com o nome da fonte em minúsculas e a descrição, as do Sankhya pelo dicionário, as do HubSpot pela declaração. A bateria padrão do singer-sdk passa sobre a saída crua dos dois | `apps/extraction/tap/src/tap.test.ts`; `apps/extraction/tests/test_tap_battery.py` | must |
 | 18 | U4 | Uma rodada com duas tabelas escolhidas no catálogo lê as duas, uma depois da outra, e só elas, cada uma com o nome que o catálogo dá; cada uma emite SCHEMA, RECORD com a versão da passada, STATE a cada página e ACTIVATE_VERSION no fim; a primeira passada lê tudo, a linha sem `DTALTER` incluída (#940); nenhum campo da credencial aparece na saída | `apps/extraction/tap/src/tap.test.ts`, "duas tabelas numa rodada", "a linha sem data" e "nada do segredo na saída" | must |
-| 89 | U3, U4 | A primeira passada de uma tabela de janela lê mês a mês os meses que a contagem por mês acha, as datas fora do calendário incluídas; a passada seguinte relê só o mês corrente e o anterior; uma tabela inteira lê tudo a cada rodada | `apps/extraction/tap/src/tap.test.ts`, "a janela por mês" e "a inteira"; `sankhya/copy-tables.test.ts`, "os meses da contagem" | must |
+| 89 | U3, U4 | A primeira passada de uma tabela de janela lê mês a mês os meses que a contagem por mês acha, as datas fora do calendário incluídas; com a data inicial, só os meses a partir do mês dela, e o mês fora do calendário anterior a ela fica fora. A passada seguinte relê só o mês corrente e o anterior, nunca um mês anterior ao da data. Uma tabela inteira lê tudo a cada rodada, com ou sem data | `apps/extraction/tap/src/tap.test.ts`, "a janela por mês", "a janela desde a data" e "a inteira"; `sankhya/copy-tables.test.ts`, "os meses da contagem" | must |
 | 19 | U4 | Um login recusado faz o adaptador sair com código diferente de zero e escrever no arquivo de resultado o código da fonte (`COPY_SOURCE_NEEDS_REAUTH`, `COPY_SOURCE_REFUSED`, `COPY_SOURCE_UNREACHABLE` ou `COPY_SOURCE_UNREADABLE`) e a tabela em que parou, nunca o corpo | `apps/extraction/tap/src/tap.test.ts`, "a fonte recusa" | must |
 | 20 | U4 | A regra de máquina da mudança de método recusa um import de `packages/connectors/src/sankhya/` e um nome de conector plantados no adaptador | o check da regra, em `npm run deps`, com o caso plantado no teste da regra | must |
 | 21 | U5 | Pelo `meltano run`, o gravador acrescenta numa tabela Iceberg local as linhas do dublê do Sankhya, com `_sdc_sequence` e `_sdc_table_version`, o dinheiro em `decimal(38,9)`, e a soma bate com a da fonte; `1234567890123.123456` chega igual; as 450 colunas do dublê chegam | `apps/extraction/tests/test_target.py`, "a passada inteira chega à bruta" e "a tabela larga" | must |
@@ -628,11 +656,11 @@ velha, que passa ao índice do kit.
 | 32 | U6 | O papel do Hub pode iniciar e parar só a tarefa da cópia, entregar só papéis `conexus-*-escritor` às tarefas do ECS, gravar e apagar só parâmetros `/conexus/copia/*`, ler e apagar mensagens só da fila da cópia, e listar e apagar tabelas só de depósitos `conexus-*`; nada além | `infra/aws/test/platform.test.ts`, "os poderes do Hub" | must |
 | 33 | U6 | Na AWS (L.2), uma tarefa faz o login e lê uma página do Sankhya do fundador. Se o gateway recusar, a etapa para e volta ao fundador | Lab, no pull request do G2, com a imagem e a plataforma da U6; o L.2 à mão já rodou antes da parte 1 | must |
 | 34 | U6 | A preparação deixa a Release criar as peças do 29 e nada além do que já deixava; a Release monta a imagem, publica-a e só então publica a plataforma, com a tarefa apontando para a imagem pelo digest | `infra/aws/test/preparation.test.ts`, "a segunda preparação"; `scripts/workflows.test.ts`, "a imagem da cópia antes da plataforma" | must |
-| 35 | U7 | As quatro tabelas da cópia existem com as conferências do banco: uma cópia por ligação, com o intervalo em `LakeInterval` (`MANUAL` incluído); uma tabela marcada por fonte e ligação, e um nome por empresa, qualquer que seja a caixa; uma rodada aberta por ligação; o código do sistema com teto (#1135) | `apps/server/src/hub/copies/lake-tables.test.ts`; `catalog.test.ts` | must |
+| 35 | U7 | As quatro tabelas da cópia existem com as conferências do banco: uma cópia por ligação, com o intervalo em `LakeInterval` (`MANUAL` incluído); a data inicial nula ou uma data; uma tabela marcada por fonte e ligação, e um nome por empresa, qualquer que seja a caixa; uma rodada aberta por ligação; o código do sistema com teto (#1135) | `apps/server/src/hub/copies/lake-tables.test.ts`; `catalog.test.ts` | must |
 | 36 | U7 | O login da empresa lê, da linha do lago, só a da própria empresa e só as colunas nomeadas; gravar, mudar ou apagar é recusado; a foto do catálogo muda só nisso e nas tabelas novas | `apps/server/src/hub/lake/tables.test.ts`, "a empresa lê a sua linha"; `catalog.test.ts` | must |
 | 91 | U7 | `connectors.connection_link` existe com as conferências da spec 02 (`C5`): o resumo do segredo, nunca o segredo; os campos pedidos; os selados com a chave; o prazo; a política da empresa | `apps/server/src/hub/connectors/tables.test.ts`, "o link"; `catalog.test.ts` | must |
-| 37 | U8 | `GET` das tabelas no lago de uma ligação do Sankhya devolve as tabelas declaradas, desmarcadas, cada uma com a origem, o rótulo, a descrição, o grupo, o modo, o número de colunas do dicionário e o nome sugerido: o do kit (`sankhya_notas`) ou, se outra ligação da empresa já usa esse nome, `sankhya_<ligação>_notas`, cortado para caber. Numa ligação de credencial exclusiva ou de um conector sem tabela declarada, o campo `lake` é `UNAVAILABLE`, com o motivo. Para quem não lê a ligação, 404 (S10). Com o dicionário fora do ar, as tabelas vêm com o rótulo e a descrição do kit, sem o número de colunas | `apps/server/src/hub/copies/lake-routes.test.ts`, "a lista da ligação" e "a segunda ligação" | must |
-| 38 | U8 | Gravar a cópia da ligação (`PUT .../lake-copy`) com as tabelas, o nome de cada uma no lago e o intervalo cria a cópia, uma linha por tabela com o nome dado e a origem, o relógio (menos em `MANUAL`) e dispara a primeira rodada, inteira; gravar de novo o mesmo conjunto não muda nada. Recusas, sem gravar nada: empresa sem lago pronto, 409 `COPY_LAKE_NOT_READY`; tabela que o kit não declara, 422 `COPY_TABLE_NOT_DECLARED`; nome fora do padrão, 422 `COPY_NAME_INVALID`; nome que outra tabela da empresa já tem, em qualquer caixa, 409 `COPY_NAME_TAKEN`; outro nome para uma tabela já marcada, 409 `COPY_NAME_FIXED`; quem não gerencia cópias, 403 | `lake-routes.test.ts`, "gravar a cópia" e "o nome" | must |
+| 37 | U8 | `GET` das tabelas no lago de uma ligação do Sankhya devolve as tabelas declaradas, desmarcadas, cada uma com a origem, o rótulo, a descrição, o grupo, o modo, se a data inicial a limita, o número de colunas do dicionário e o nome sugerido: o do kit (`sankhya_notas`) ou, se outra ligação da empresa já usa esse nome, `sankhya_<ligação>_notas`, cortado para caber. Numa ligação de credencial exclusiva ou de um conector sem tabela declarada, o campo `lake` é `UNAVAILABLE`, com o motivo. Para quem não lê a ligação, 404 (S10). Com o dicionário fora do ar, as tabelas vêm com o rótulo e a descrição do kit, sem o número de colunas. A resposta traz a data inicial da cópia, nula sem cópia ou sem data | `apps/server/src/hub/copies/lake-routes.test.ts`, "a lista da ligação" e "a segunda ligação" | must |
+| 38 | U8 | Gravar a cópia da ligação (`PUT .../lake-copy`) com as tabelas, o nome de cada uma no lago, o intervalo e a data inicial (nula, todo o histórico) cria a cópia, uma linha por tabela com o nome dado e a origem, o relógio (menos em `MANUAL`) e dispara a primeira rodada, inteira; gravar de novo o mesmo conjunto não muda nada. Recusas, sem gravar nada: empresa sem lago pronto, 409 `COPY_LAKE_NOT_READY`; tabela que o kit não declara, 422 `COPY_TABLE_NOT_DECLARED`; nome fora do padrão, 422 `COPY_NAME_INVALID`; nome que outra tabela da empresa já tem, em qualquer caixa, 409 `COPY_NAME_TAKEN`; outro nome para uma tabela já marcada, 409 `COPY_NAME_FIXED`; data inicial depois de hoje, no fuso de São Paulo, 422 `COPY_START_DATE_INVALID`; quem não gerencia cópias, 403 | `lake-routes.test.ts`, "gravar a cópia" e "o nome" | must |
 | 96 | U8 | Na cópia que existe, gravar com uma tabela a mais cria a linha dela com o nome dado e dispara na hora uma rodada que pede `whole` só para ela; as outras ficam como estavam; mudar o intervalo não muda o horário de partida | `lake-routes.test.ts`, "marcar depois" | must |
 | 39 | U8 | Todo disparo, do relógio ou de **Rodar agora** (`POST .../lake-copy/run`), passa por `iniciarRodada`: abre uma rodada da ligação, lê o dicionário para as colunas da tela, grava o parâmetro e inicia a tarefa com o papel da empresa e o `clientToken` de rodada e tentativa, levando as tabelas marcadas com o nome de cada uma e o seu `whole`. A tarefa pede 2 vCPU e 4 GB quando a rodada leva uma tabela na primeira carga, e 1 vCPU e 2 GB nas outras. Com rodada aberta, o disparo responde "já está rodando" e não grava nada | `apps/server/src/hub/copies/lake-run.test.ts`, "o disparo" e "o tamanho da máquina", pela rota e pelo passo do relógio, contra as gravações da AWS | must |
 | 92 | U8 | O relógio conta da hora em que a cópia da ligação nasceu, no fuso de São Paulo: uma cópia de 10:07 roda a 15 min em `7,22,37,52 * * * *` e a 24 h em `7 10 * * *`; uma de 11:07 roda a 2 h em `7 1-23/2 * * *`. `MANUAL` não deixa linha do relógio; **Rodar agora** funciona nela; voltar a um intervalo recria a linha com o mesmo horário | `apps/server/src/builder/copy-clock/clock.test.ts` (novo), pela rota de gravar e por `mastra.schedules` | must |
@@ -658,10 +686,10 @@ velha, que passa ao índice do kit.
 | 98 | U20 | Abrir o link, sem sessão, mostra quem pediu, o sistema e só os campos pedidos, nunca um valor que quem pediu já preencheu; um link gasto, vencido ou de segredo errado responde 404 e registra `CONNECTION_LINK_REFUSED` sem o segredo; o segredo não está em linha do banco do Hub nem do registro (S41) | `connection-links.test.ts`, "abrir o link" e "o segredo fica fora" | must |
 | 99 | U20 | Enviar pelo link junta os campos com os já selados, cria a ligação em nome de quem pediu e testa uma vez; se o sistema recusa as chaves, a resposta dele volta por extenso e o link vale até o prazo; se o teste lança, a ligação sai (`CONNECTION_LINK_UNDONE`); dois envios ao mesmo tempo criam uma ligação só; o mesmo endereço além do limite de tentativas recebe 429 `SIGN_IN_ATTEMPTS_EXCEEDED`; quem pediu e perdeu `manageConnections` faz o envio responder 404, sem ligação (spec 02, 5.3, 5.7, 5.11 e 5.12) | `connection-links.test.ts`, "enviar pelo link", "dois envios", "as tentativas" e "quem pediu saiu" | must |
 | 54 | U9 | A janela Ligar: em **Integrações**, a busca filtra os sistemas para ligar pelo nome; **Ligar** num sistema de acesso por campos mostra os campos e **Enviar link**; **Continuar** mostra "Testando a ligação…" e, com o teste aprovado, "Lendo o que o <sistema> oferece"; a chave recusada mostra "O <sistema> recusou as chaves", com a resposta por extenso e os campos; o sistema que não responde mostra a frase da matriz | `apps/web/src/hub/connectors/link-window.test.tsx` (novo), "acesso", "testando" e "a recusa" | must |
-| 100 | U9 | **O que copiar** mostra as tabelas agrupadas por assunto, nada marcado, cada uma com o rótulo, a origem, a descrição, as colunas, o modo sem escolha e o nome sugerido, que se troca; o prefixo vale para todas; um nome recusado mostra a frase do código ao lado da tabela. **Quando copiar** vem em 24 h, com os seis intervalos e **Só manual**, e a revisão lista as tabelas com o nome no lago e o intervalo. **Ligar e copiar agora** grava a cópia num pedido só e mostra **Ligado**, com "A primeira carga começou." e **Ver em Dados**. Na ligação de credencial exclusiva ou sem tabela, a janela vai do teste ao **Ligado**. Fechar antes de **Ligar e copiar agora** deixa a ligação sem cópia | `link-window.test.tsx`, "o que copiar", "quando copiar", "ligado", "a exclusiva" e "fechar no meio" | must |
-| 101 | U9 | Na página da ligação, a seção **Tabelas no lago** mostra as tabelas copiadas com o nome fixo, o intervalo, a última rodada e **Rodar agora**; marcar outra mostra o nome sugerido, que se troca; desmarcar e mudar o intervalo, **Só manual** incluído, gravam por **Salvar**. Numa ligação sem cópia, a seção mostra **Escolher o que copiar**, que abre a janela em **O que copiar**. Quem não gerencia cópias vê a lista sem caixas, sem **Salvar** e sem **Rodar agora**; sem lago pronto, a frase da matriz | `apps/web/src/hub/connectors/lake-tables.test.tsx` | must |
+| 100 | U9 | **O que copiar** mostra as tabelas agrupadas por assunto, nada marcado, cada uma com o rótulo, a origem, a descrição, as colunas, o modo sem escolha e o nome sugerido, que se troca; o prefixo vale para todas; **Desde** vem vazio, com "Todo o histórico", e uma data mostra "desde <data>" em cada tabela que ela limita e nada nas outras; a data depois de hoje mostra a frase do código; um nome recusado mostra a frase do código ao lado da tabela. **Quando copiar** vem em 24 h, com os seis intervalos e **Só manual**, e a revisão lista as tabelas com o nome no lago, o intervalo e a data inicial. **Ligar e copiar agora** grava a cópia num pedido só e mostra **Ligado**, com "A primeira carga começou." e **Ver em Dados**. Na ligação de credencial exclusiva ou sem tabela, a janela vai do teste ao **Ligado**. Fechar antes de **Ligar e copiar agora** deixa a ligação sem cópia | `link-window.test.tsx`, "o que copiar", "quando copiar", "ligado", "a exclusiva" e "fechar no meio" | must |
+| 101 | U9 | Na página da ligação, a seção **Tabelas no lago** mostra as tabelas copiadas com o nome fixo, o intervalo, a última rodada e **Rodar agora**; marcar outra mostra o nome sugerido, que se troca; desmarcar, mudar o intervalo (**Só manual** incluído) e mudar **Desde** gravam por **Salvar**; **Ler de novo desde a data** pede a releitura (114). Numa ligação sem cópia, a seção mostra **Escolher o que copiar**, que abre a janela em **O que copiar**. Quem não gerencia cópias vê a lista sem caixas, sem **Salvar** e sem **Rodar agora**; sem lago pronto, a frase da matriz | `apps/web/src/hub/connectors/lake-tables.test.tsx` | must |
 | 102 | U9 | A página do link mostra quem pediu, o sistema e os campos pedidos, e **Enviar**; o sistema que recusa mostra a resposta dele; o link vencido ou gasto mostra a frase da matriz; a página cabe a 390 px sem rolagem lateral | `apps/web/src/hub/connectors/link-page.test.tsx` (novo) | must |
-| 55 | U9 | Em **Dados**, a tabela aparece pelo rótulo, com o nome no lago e "<sistema> · <origem>" embaixo, e **Em dia** quando a última rodada dela terminou completa. A página dela tem **Visão geral**, **Colunas** (o nome e a descrição de cada uma), **Rodadas** e **Detalhes**. Em **Rodadas**, cada rodada diz, para aquela tabela, "Completa · inteira" ou "Completa · só o que mudou"; uma rodada com erro diz a frase do código e, quando o sistema respondeu, a resposta dele por extenso; em **Detalhes**, o modo e "As linhas ficam no lago da empresa."; não há **Amostra**, **Quem lê** nem Projetos, que chegam nas etapas 3 e 4 | `apps/web/src/hub/copies/lake-list.test.tsx` e `lake-detail.test.tsx` | must |
+| 55 | U9 | Em **Dados**, a tabela aparece pelo rótulo, com o nome no lago e "<sistema> · <origem>" embaixo, e **Em dia** quando a última rodada dela terminou completa. A página dela tem **Visão geral**, **Colunas** (o nome e a descrição de cada uma), **Rodadas** e **Detalhes**. Em **Rodadas**, cada rodada diz, para aquela tabela, "Completa · inteira" ou "Completa · só o que mudou"; uma rodada com erro diz a frase do código e, quando o sistema respondeu, a resposta dele por extenso; em **Detalhes**, o modo, "Desde <data>" numa tabela que a data limita ou "Todo o histórico", e "As linhas ficam no lago da empresa."; não há **Amostra**, **Quem lê** nem Projetos, que chegam nas etapas 3 e 4 | `apps/web/src/hub/copies/lake-list.test.tsx` e `lake-detail.test.tsx` | must |
 | 56 | U10 | Pelo `meltano run`, a segunda rodada de uma ligação do Sankhya lê, de cada tabela só do que mudou, só o que mudou desde o ponto de parada dela, guardado no depósito do estado com o prefixo da empresa; uma tabela sem coluna de alteração (o negócio do HubSpot) lê tudo | `apps/extraction/tests/test_state.py`, "a segunda rodada" | must |
 | 57 | U10 | Na AWS (L.4): uma rodada morta no meio retoma lendo menos que o total; o estado salvo nunca está adiante das linhas gravadas; o papel de A não lê o prefixo de B | Lab, no pull request do G5 | must |
 | 58 | U10 | Pela entrada da tarefa (`meltano run` e a atualização depois), depois de uma rodada inteira e uma só do que mudou, a atual tem uma linha por chave, igual à fonte, com o valor de hoje; o `MERGE` roda um caso por instrução e passa com as 450 colunas do dublê | `apps/extraction/tests/test_update.py`, pela entrada, contra as gravações do Athena; Lab (L.7) | must |
@@ -672,6 +700,14 @@ velha, que passa ao índice do kit.
 | 105 | U5, U10 | Todas as colunas, atuais e futuras: uma coluna que aparece na fonte depois da primeira carga (o dublê acrescenta uma `AD_` entre duas rodadas) entra na rodada seguinte na bruta e na atual, com as linhas antigas nulas nela, e na aba **Colunas**; uma coluna que some da fonte fica no lago, nula nas linhas novas | `apps/extraction/tests/test_target.py`, "a coluna nova"; `test_update.py`, "a coluna nova na atual"; `lake-run.test.ts`, "as colunas de novo" | must |
 | 60 | U10 | O Hub pede `whole` para uma tabela recém-marcada; a tarefa lê inteira também a tabela sem ponto de parada no estado e a sem coluna de alteração, e o resultado diz `whole` por tabela; as outras leem só o que mudou ou a janela; **Rodar agora** segue o mesmo | `apps/extraction/tests/test_state.py`, "o modo por tabela"; `lake-run.test.ts`, "a tabela nova é inteira" | must |
 | 61 | U10 | Desmarcar uma tabela apaga também o ponto de parada dela | `lake-routes.test.ts`, "o ponto de parada sai" | must |
+| 107 | U3 | O Sankhya declara cada tabela só do que mudou como cadastro ou movimento: `parceiros`, `produtos`, `vendedores` e `precos_tabelas` são cadastro; `notas`, `notas_itens`, `financeiro` e `notas_impostos` são movimento. Pelo índice do kit, as tabelas que a data inicial limita são as de movimento e as de janela, e nenhuma inteira; a coluna que a data compara é a do modo, e a declaração não tem outra | `packages/connectors/src/sankhya/copy-tables.test.ts`, "o que a data limita" | must |
+| 108 | U4 | Com `start_date` na configuração, a primeira passada de uma tabela de movimento lê só as linhas com a coluna do modo a partir da data; com o ponto salvo depois da data, lê do ponto; com o ponto salvo antes da data, lê da data (o maior dos dois); uma data anterior ao ponto não muda o início. Um cadastro e uma tabela inteira leem tudo. Sem `start_date`, a primeira passada lê tudo, a linha sem `DTALTER` incluída (#940); com ela, essa linha fica fora | `apps/extraction/tap/src/tap.test.ts`, "a data inicial", "o ponto e a data" e "o cadastro inteiro" | must |
+| 109 | U5 | A entrada passa a data da rodada ao tap como `start_date`, e a configuração não a tem quando a data é nula | `apps/extraction/tests/test_entry.py`, "a data vai ao leitor" | must |
+| 110 | U8 | Gravar a cópia mudando só a data só grava: nenhuma rodada começa, e a resposta traz a data; a mesma data não muda nada. `POST .../lake-copy/run` com `whole: true` abre a rodada pela porta de sempre, com `whole` só nas tabelas marcadas que `startDateLimits` limita e a data da cópia na especificação; sem `whole`, é o **Rodar agora** de hoje, que com rodada aberta responde "já está rodando"; com `whole` e rodada aberta, 409 `COPY_RUN_OPEN` e nada muda; quem não gerencia cópias recebe 403 | `apps/server/src/hub/copies/lake-routes.test.ts`, "a data só grava" e "ler de novo desde a data"; `lake-run.test.ts`, "a data na tarefa" | must |
+| 111 | U9 | Na seção **Tabelas no lago**, **Desde** mostra a data da cópia ou "Todo o histórico" e grava por **Salvar**. Depois de salvar uma data mais nova, a seção diz "A data nova vale a partir da próxima rodada. As linhas de antes dela continuam no lago até você ler de novo desde a data."; uma mais antiga, ou vazia, "As próximas rodadas continuam de onde pararam. Para trazer as linhas desde <data>, clique **Ler de novo desde a data**." Quem não gerencia cópias vê a data sem o campo e sem o botão | `apps/web/src/hub/connectors/lake-tables.test.tsx`, "a data inicial" | must |
+| 112 | U10 | Pela entrada da tarefa: depois de uma rodada desde uma data e outra, inteira, desde uma data mais antiga, a atual é igual à fonte desde a data mais antiga, uma linha por chave; depois de uma inteira desde uma data mais nova, as linhas anteriores a ela saíram da atual; depois de uma só do que mudou com a data mais nova, nenhuma linha sai; numa tabela de janela, só os meses desde o mês da data se trocam, e os anteriores ficam | `apps/extraction/tests/test_update.py`, "a data mais antiga relida", "a data mais nova relida", "a data mais nova não apaga" e "a janela relida desde a data" | must |
+| 113 | U3, U4, U8 | A data inicial tem um dono de cada lado: a regra do que ela limita, só em `kernel/tables.ts` (`startDateLimits`); a data da cópia, só em `lake_copy.start_date`; a lista que a janela mostra (a marca "desde") e o filtro do tap saem da mesma `startDateLimits` | `packages/connectors/src/kernel/tables.test.ts`, "o que a data limita"; o caso da lista em `kernel/tables-fixture.ts`, lido por `lake-routes.test.ts` e por `tap.test.ts` | must |
+| 114 | U9 | **Ler de novo desde a data** abre um diálogo que lista as tabelas marcadas que a data limita, diz a data ("desde o começo" sem data) e que, numa tabela só do que mudou, "o que é anterior a ela, ou foi apagado no <sistema>, sai do lago"; **Ler de novo** chama a rota do 110 com `whole: true` e mostra "Rodando…" nessas tabelas; **Cancelar** não chama nada; sem tabela que a data limite, o botão não aparece; `COPY_RUN_OPEN` mostra "A ligação está copiando agora. Leia de novo quando a rodada terminar." | `apps/web/src/hub/connectors/lake-tables.test.tsx`, "ler de novo desde a data" | must |
 
 ## A matriz de estados
 
@@ -680,18 +716,26 @@ velha, que passa ao índice do kit.
 | Dados, a página (U1, U14) | Parte 0: a árvore dos sistemas e a camada dos apps; "Nenhuma tabela copiada." | O mesmo da primeira vez | O de hoje | O de hoje | O endereço antigo de uma cópia leva à página Dados | Como hoje | — |
 | Integrações, a lista para ligar (U9) | As ligadas e os sistemas para ligar, com o campo de busca | A busca sem sistema: "Nenhum sistema com esse nome." | O de hoje | O de hoje | — | Membro: "Só o dono ou um administrador liga, testa e desliga.", sem **Ligar** (spec 02, 4.15) | — |
 | A janela Ligar, Acesso e Testando (U9) | O nome da ligação (o do sistema sugerido, como hoje), os campos do kit, "Onde achar" de cada um, **Enviar link** (só no acesso por campos) e **Continuar**; no acesso por autorização, **Entrar com <sistema>** | — | "Testando a ligação…", depois "Lendo o que o <sistema> oferece" | "O <sistema> não respondeu. Tente de novo em alguns minutos."; o dicionário fora: a lista segue com o rótulo do kit e "Não deu para ler o dicionário agora." | — | — | "O <sistema> recusou as chaves", com a resposta por extenso, os campos e **Enviar link** |
-| A janela Ligar, O que copiar (U9) | As tabelas por assunto, nada marcado; o prefixo; **Continuar** desligado até marcar uma | Nenhuma tabela declarada ou credencial exclusiva: a janela pula para **Ligado** | — | `COPY_NAME_INVALID`: "Use letras minúsculas sem acento, números e _, até 60."; `COPY_NAME_TAKEN`: "Outra tabela da empresa já tem este nome." | — | — | — |
+| A janela Ligar, O que copiar (U9) | As tabelas por assunto, nada marcado; o prefixo; **Desde** vazio, com "Todo o histórico"; **Continuar** desligado até marcar uma | Nenhuma tabela declarada ou credencial exclusiva: a janela pula para **Ligado** | — | `COPY_NAME_INVALID`: "Use letras minúsculas sem acento, números e _, até 60."; `COPY_NAME_TAKEN`: "Outra tabela da empresa já tem este nome."; `COPY_START_DATE_INVALID`: "A data não pode ser depois de hoje." | — | — | — |
 | A janela Ligar, Quando copiar e Ligado (U9) | 24 h escolhido; a revisão com as tabelas, os nomes e o intervalo; **Ligar e copiar agora** | — | "Ligando…" no botão | `COPY_LAKE_NOT_READY`: "O lago desta empresa não está pronto. Peça ao operador do Conexus." A ligação fica feita, sem cópia | — | Quem gerencia ligações e não gerencia cópias: a janela vai do teste ao **Ligado**, com "Peça a quem gerencia as cópias para escolher o que copiar." | — |
 | O envio do link, na janela (U9, U20) | Os campos para marcar o que a outra pessoa preenche e **Gerar o link** | — | "Gerando…" | A frase de hoje de tentar de novo | — | — | Depois de gerado: o endereço, **Copiar** e "Vale até <hora>." |
 | A página do link, sem sessão (U9, U20) | "<pessoa> pediu o acesso do <sistema> para <empresa>.", os campos pedidos e **Enviar** | — | "Testando a ligação…" | O sistema recusou: a resposta dele por extenso, e os campos de novo | Gasto, vencido ou segredo errado: "Este link venceu ou já foi usado. Peça um novo a quem enviou." | — | — |
-| A ligação, a seção Tabelas no lago (U9) | Sem cópia: "Nada desta ligação é copiado para o lago." e **Escolher o que copiar** | Conector sem tabela declarada ou de credencial exclusiva: a seção não aparece | "Lendo o dicionário do <sistema>…" | O dicionário fora: as tabelas com o rótulo do kit e "Não deu para ler o dicionário agora."; `COPY_RUN_OPEN`: "A ligação está copiando agora. Desmarque quando a rodada terminar."; `COPY_NAME_TAKEN` e `COPY_NAME_INVALID`, como na janela; a AWS fora ao desmarcar ou desligar (503): "Não deu para falar com a AWS agora. Tente de novo em alguns minutos." | A ligação desligada: a frase de hoje da página | Quem não gerencia cópias vê as tabelas copiadas, sem caixas, sem **Salvar** e sem **Rodar agora** | — |
+| A ligação, a seção Tabelas no lago (U9) | Sem cópia: "Nada desta ligação é copiado para o lago." e **Escolher o que copiar** | Conector sem tabela declarada ou de credencial exclusiva: a seção não aparece | "Lendo o dicionário do <sistema>…" | O dicionário fora: as tabelas com o rótulo do kit e "Não deu para ler o dicionário agora."; `COPY_RUN_OPEN`: "A ligação está copiando agora. Desmarque quando a rodada terminar."; `COPY_NAME_TAKEN`, `COPY_NAME_INVALID` e `COPY_START_DATE_INVALID`, como na janela; `COPY_RUN_OPEN` ao ler de novo: "A ligação está copiando agora. Leia de novo quando a rodada terminar."; a AWS fora ao desmarcar ou desligar (503): "Não deu para falar com a AWS agora. Tente de novo em alguns minutos." | A ligação desligada: a frase de hoje da página | Quem não gerencia cópias vê as tabelas copiadas, sem caixas, sem **Salvar** e sem **Rodar agora** | — |
 | Dados, a lista do lago (U9) | "Nenhuma tabela copiada. Para copiar, ligue um sistema em Integrações." | O mesmo da primeira vez | O de hoje da página | O de hoje da página | Uma tabela desmarcada noutra aba some na próxima leitura | Quem não lê a ligação não vê as tabelas dela | A última rodada com erro: o selo de hoje, com a frase do código |
 | A tabela do lago, Visão geral, Colunas, Rodadas e Detalhes (U9) | A primeira rodada aberta: "Rodando…", sem linhas | Nenhuma rodada ainda: "Esta tabela ainda não rodou." | O de hoje da página | `COPY_LAKE_UNAVAILABLE`: "A AWS não iniciou a cópia. A próxima rodada tenta de novo." `COPY_TASK_LOST`: "A cópia parou antes de terminar. A próxima rodada tenta de novo." `COPY_LAKE_WRITE_FAILED`: "Não deu para gravar no lago. A próxima rodada tenta de novo." `COPY_SOURCE_NEEDS_REAUTH`: "<sistema> recusou o login da ligação. Reconecte a ligação." `COPY_SOURCE_REFUSED`: "<sistema> recusou a leitura." `COPY_SOURCE_UNREACHABLE`: "<sistema> não respondeu. A próxima rodada tenta de novo." `COPY_SOURCE_UNREADABLE`: "<sistema> respondeu algo que o Conexus não entende. A próxima rodada tenta de novo." Uma rodada com erro diz em que tabela parou e, quando o sistema respondeu, a resposta dele por extenso | A tabela desmarcada: "Esta tabela não é mais copiada." | Quem não lê a ligação: o "não encontrado" (S10) | A rodada interrompida: "Interrompida." |
 | O cartão do Caderno na conversa (U19) | "Gravar no Caderno?", com o conceito, o mapeamento, a consulta da prova e o número de linhas, e **Aprovar** e **Recusar** | — | O de hoje do cartão de escrita | A ligação saiu antes do sim: "Esta ligação não existe mais. Nada foi gravado." | — | Quem não gerencia ligações vê o cartão sem os botões e "Peça a quem gerencia a ligação." | Recusado: "Não gravado." |
 | A ligação, o Caderno (U19) | A lista de hoje, com "Aprovada por <nome>" em cada anotação | O vazio de hoje | O de hoje | O de hoje | — | Como hoje | Uma anotação de antes desta etapa: "Gravada sem aprovação" |
 
 **Em dia** quer dizer que a última rodada da tabela terminou completa; "Rodando…", que há rodada
-aberta da ligação. Os modos na tela: "Só o que mudou, por <coluna>", "Janela por mês, por <coluna>" e "Inteira". Os
+aberta da ligação. Os modos na tela: "Só o que mudou, por <coluna>", "Janela por mês, por <coluna>" e "Inteira". A data na tela: "Desde <data>", ao lado do modo de cada
+tabela que ela limita, e "Todo o histórico" sem data. Depois de salvar outra data, a seção diz o efeito:
+se for mais nova, "A data nova vale a partir da próxima rodada. As linhas de antes dela continuam no lago
+até você ler de novo desde a data."; se for mais antiga, ou vazia onde havia data, "As próximas rodadas
+continuam de onde pararam. Para trazer as linhas desde <data>, clique **Ler de novo desde a data**."
+(vazia: "desde o começo"). O diálogo de **Ler de novo desde a data**: "Ler de novo, desde <data>, as tabelas
+que a data limita (<lista>)? Cada uma é lida desde essa data e troca o que o lago tem dela: numa só do que
+mudou, o que é anterior à data, ou foi apagado no <sistema>, sai do lago; numa de janela, trocam-se só os
+meses desde o mês da data. As outras tabelas seguem como sempre.", com **Ler de novo** e **Cancelar**. Os
 intervalos: "15 min", "30 min", "1 h", "2 h", "6 h", "24 h" e "Só manual".
 
 A etapa do conector não muda tela para quem usa, além do cartão e do Caderno da U19: as telas de
@@ -714,6 +758,7 @@ Projetos a usam, quando cada cópia rodou", `C/docs/reference/telas.md:392`) e o
 | Ligar Sankhya · Lago            3 de 4   [x]     |  | Sankhya · Lago      3 de 4   |
 | O que copiar                                     |  | O que copiar                 |
 | Prefixo [sankhya_      ]                         |  | Prefixo [sankhya_    ]       |
+| Desde [  /  /    ]  Todo o histórico             |  | Desde [  /  /    ]           |
 | Vendas                                           |  | Vendas                       |
 |  [ ] Notas e pedidos  TGFCAB  450 colunas        |  | [ ] Notas e pedidos          |
 |      Cabeçalho de toda nota e pedido ...         |  |     TGFCAB · 450 colunas     |
@@ -742,7 +787,9 @@ Projetos a usam, quando cada cópia rodou", `C/docs/reference/telas.md:392`) e o
 |  [x] Notas e pedidos   sankhya_notas   Em dia    |  | [x] Notas e pedidos  Em dia  |
 |  [ ] Parceiros         [sankhya_parceiros   ]    |  |     sankhya_notas            |
 |  Intervalo [24 h v]   Rodar agora   [Salvar]     |  | Intervalo [24 h v]           |
-| Caderno ...                                      |  | Rodar agora      [Salvar]    |
+|  Desde [24/11/2021]   Ler de novo desde a data   |  | Desde [24/11/2021]           |
+| Caderno ...                                      |  | Ler de novo desde a data     |
+|                                                  |  | Rodar agora      [Salvar]    |
 +--------------------------------------------------+  +------------------------------+
 1280 px, Dados                                        390 px, Dados
 +--------------------------------------------------+  +------------------------------+
@@ -765,19 +812,24 @@ Impeccable roda na QA da parte 1 ([Impeccable](../reference/impeccable.md)).
 | A parte gerada da skill (os assuntos, a escrita, as tabelas com os nomes reais) | U16 e U3, `kernel/skill.ts`, da definição e das tabelas da ligação que a U8 passa | o Assistente, o Builder e os agentes, pela skill da ligação |
 | `Note.approvedBy` no Caderno | U19, `hub/connectors/notes.ts`, depois do sim | U19, `notes.tsx`; os agentes, pelo `connector_notes` |
 | `LakeTablesOfConnection.lake` (`READY`, `NOT_READY` ou `UNAVAILABLE` com o motivo) | U8, `hub/copies/lake-routes.ts`, da linha do lago e da classe da credencial | U9, a janela e `lake-tables.tsx` |
-| `LakeTablesOfConnection.tables[]` (`source`, `label`, `description`, `group`, `mode`, `columns`, e `copy`: `UNMARKED` com o `suggested`, ou `MARKED` com o `name` e o `lastRun`) | U8, da descoberta do kit (U3), do dicionário e de `lake_table` | U9 |
-| `LakeTablesOfConnection.interval` e `lastRun` | U8, de `lake_copy` e `lake_run` | U9 |
+| `LakeTablesOfConnection.tables[]` (`source`, `label`, `description`, `group`, `mode`, `columns`, e `limited`, e `copy`: `UNMARKED` com o `suggested`, ou `MARKED` com o `name` e o `lastRun`) | U8, da descoberta do kit (U3), do dicionário, de `lake_table` e de `startDateLimits` | U9 |
+| `LakeTablesOfConnection.interval`, `startDate` e `lastRun` | U8, de `lake_copy` e `lake_run` | U9 |
 | `TableDeclaration.group` | U3, a declaração do kit | U3, a parte gerada da skill; U9, a janela e a seção agrupam por assunto |
 | `TableDeclaration.mode` | U3, a declaração do kit | U4, a leitura; U10, a atualização; U8, a lista; U9, a frase do modo |
 | `TableDeclaration.history` | U3, a declaração do kit | U10, a limpeza |
 | `LakeTableSummary.next` | U8, a próxima hora do relógio da ligação | U9, a Visão geral ("Próxima rodada") |
 | `LakeRun.failedTable` e `system` | U8, de `lake_run.failed_table`, `system_code` e `system_message`, que o resultado da U5 traz | U9, a frase da rodada com erro e a resposta do sistema por extenso |
-| `SetLakeCopy` (`tables[]` com `source` e `name`, `interval`) | U9, a janela e `lake-tables.tsx` | U8, `lake-copy.ts` |
-| As falhas `COPY_LAKE_NOT_READY`, `COPY_RUN_OPEN`, `COPY_NAME_TAKEN`, `COPY_NAME_INVALID`, `COPY_NAME_FIXED`, `COPY_TABLE_NOT_DECLARED` | U8 | U9, `text.ts` |
-| `LakeTableSummary` (`connection`, `label`, `name`, `source`, `mode`, `interval`, `rows`, `columns`, o último resultado) | U8, `hub/copies/lake-list.ts`, de `lake_table` e `lake_run`, e o `mode` da declaração do kit | U9, `lake-list.tsx`, `lake-detail.tsx` |
+| `SetLakeCopy` (`tables[]` com `source` e `name`, `interval`, `startDate`) | U9, a janela e `lake-tables.tsx` | U8, `lake-copy.ts` |
+| `RunLakeCopy.whole` (`POST .../lake-copy/run`) | U9, **Ler de novo desde a data** | U8, `lake-run.ts`: `whole` nas tabelas que `startDateLimits` limita |
+| As falhas `COPY_LAKE_NOT_READY`, `COPY_RUN_OPEN`, `COPY_NAME_TAKEN`, `COPY_NAME_INVALID`, `COPY_NAME_FIXED`, `COPY_TABLE_NOT_DECLARED`, `COPY_START_DATE_INVALID` | U8 | U9, `text.ts` |
+| `LakeTableSummary` (`connection`, `label`, `name`, `source`, `mode`, `interval`, `startDate`, `rows`, `columns`, o último resultado) | U8, `hub/copies/lake-list.ts`, de `lake_table` e `lake_run`, o `mode` da declaração do kit e, de `lake_copy` e `startDateLimits`, a `startDate` (nula numa tabela que a data não limita) | U9, `lake-list.tsx`, `lake-detail.tsx` |
 | `LakeRun.whole` e as contagens da tabela | U8; U10 pelo modo | U9, a coluna Resultado |
 | `LakeRunFailureCode` | U7 (a lista); U8 no fim; U5 no resultado | U9, `text.ts`; o cartão do aviso |
 | `CopyTaskSpec`, no parâmetro da rodada | U8, `lake-run.ts` | U5, `entry.py` |
+| `CopyTaskSpec.startDate` | U8, `lake-run.ts`, em toda rodada | U5, `entry.py`, que a escreve como `start_date` na configuração do tap |
+| `TableMode.CHANGED.registry` | U3, a declaração do kit | U3, `startDateLimits`; U4, o filtro; U8, a lista; U9, a marca "desde" |
+| `startDateLimits(mode)` | U3, `kernel/tables.ts` | U4, o filtro; U8, a lista e a releitura com `whole` |
+| `lake_copy.start_date` | U8, `lake-copy.ts`, pelo `PUT` | U8, a lista, a especificação e a releitura |
 | `CopyTaskResult`, na fila | U5, `entry.py` | U8, `lake-queue.ts` |
 | O evento de parada do ECS, na fila | a regra do EventBridge (U6) | U8, `lake-queue.ts` |
 | `lake_run.task_arn`, `lake_run.attempt` | U8, no disparo | U8, a varredura e o fim |
@@ -798,7 +850,8 @@ Impeccable roda na QA da parte 1 ([Impeccable](../reference/impeccable.md)).
 | Tirar o `sync` e os logins de uma empresa (o passo 4 do reajuste) | Cada instrução tem `IF EXISTS`: a segunda vez não acha nada e termina | Um login tirado e o esquema não: repetir termina | O banco da empresa fora: a empresa fica para depois; a consulta do passo 4 diz qual | a saída do `psql` do firstmate, fora do repositório (S40) | 77 |
 | Gravar no Caderno depois do sim (U19) | Duas aprovações da mesma chamada: o Mastra retoma a chamada uma vez; o mesmo conceito duas vezes fica com a última, como hoje | A ligação saiu entre o sim e a gravação: `GONE`, nada gravado | O banco fora: a ferramenta responde a falha de hoje, e nada é gravado | `CONNECTION_NOTE_SAVED`, com quem aprovou; `CONNECTION_NOTE_REFUSED` | 83, 84 |
 | A sessão do kit renova (U16) | Duas leituras da mesma ligação usam a mesma sessão; a renovação é uma por vez, pela fila de hoje da ligação | A renovação recusada: a sessão fecha, e a leitura termina em `NEEDS_REAUTH` | O sistema fora: a leitura termina com a recusa de hoje da ligação | `CONNECTION_SESSION_RENEWED`, sem o token | 12, 13 |
-| Gravar a cópia da ligação, com os nomes (`PUT`, da janela ou da seção) | A chave da ligação: as duas gravam o mesmo conjunto, o último vence, e cada uma devolve o que ficou; duas ligações que dão o mesmo nome ao mesmo tempo: o índice do nome por empresa recusa a segunda, 409 `COPY_NAME_TAKEN` | A transação desfaz as linhas; o relógio é criado depois dela, e o próximo salvar o cria se faltar | O lago lido em outro estado: 409 `COPY_LAKE_NOT_READY`; o dicionário fora: a marca grava, sem colunas | `LAKE_COPY_SET` com as tabelas e os nomes | 38, 47, 96 |
+| Gravar a cópia da ligação, com os nomes (`PUT`, da janela ou da seção) | A chave da ligação: as duas gravam o mesmo conjunto, o último vence, e cada uma devolve o que ficou; duas ligações que dão o mesmo nome ao mesmo tempo: o índice do nome por empresa recusa a segunda, 409 `COPY_NAME_TAKEN` | A transação desfaz as linhas; o relógio é criado depois dela, e o próximo salvar o cria se faltar | O lago lido em outro estado: 409 `COPY_LAKE_NOT_READY`; o dicionário fora: a marca grava, sem colunas | `LAKE_COPY_SET` com as tabelas, os nomes e a data | 38, 47, 96, 110 |
+| Ler de novo desde a data (`POST .../lake-copy/run` com `whole`) | O índice da rodada aberta deixa uma só; a segunda recebe 409 `COPY_RUN_OPEN`, e não o "já está rodando" do **Rodar agora**, porque a releitura pedida não pode sumir calada | A rodada e a tarefa seguem as de sempre: a que falha no meio fecha pela fila e pela varredura, e clicar de novo pede de novo; a troca da atual é o atualizar da passada inteira de hoje (linha 28) | O banco fora: a frase de hoje de tentar de novo, nada muda | `COPY_RUN_QUEUED` com `whole` | 110, 114 |
 | O relógio da ligação, criado, mudado e apagado (`mastra.schedules`; `MANUAL` apaga a linha) | O id do relógio é o da ligação: a criação que perde a corrida acha o relógio feito, como fazia o relógio de hoje (`C/apps/server/src/builder/copy-clock/clock.ts:70-79`, no histórico); o horário sai de `lake_copy.created_at`, que não muda | Linhas gravadas e relógio não: o próximo salvar cria; **Rodar agora** funciona sem ele | O banco fora: o salvar responde a frase de hoje | `LAKE_CLOCK_FAILED` | 38, 47, 92 |
 | Abrir a rodada (`INSERT` em `lake_run`) | O índice de uma rodada aberta por ligação recusa a segunda: "já está rodando" | — (uma instrução) | Banco fora: o disparo não abre nada; o próximo tenta | `COPY_RUN_SKIPPED` com o motivo | 39, 40 |
 | Gravar o parâmetro da rodada (`PutParameter`) | Um nome por rodada, sem disputa | A rodada fecha `COPY_LAKE_UNAVAILABLE` | Cota (3 por segundo): a fila de partidas não passa dela; uma recusa por cota é refeita com espera, depois `COPY_LAKE_UNAVAILABLE` | `COPY_LAKE_START_FAILED` com o código da AWS | 45, 46, 95 |
@@ -830,7 +883,12 @@ Impeccable roda na QA da parte 1 ([Impeccable](../reference/impeccable.md)).
 A tabela dos estudos, com a unidade e o arquivo novo de cada linha. As linhas 1 a 38 são do estudo e
 do reestudo; as 39 a 45, do estudo do conector no estilo novo e do das duas ligações (`T<n>` lá); as
 46 a 55, do estudo do ao vivo (`R<n>` e a seção 1.3 lá); as 56 a 69, do mapa do desenho e dos três
-estudos que ele chamou (`MAPA`, `SK`, `ARQ`, `REL`); a 70, do estudo do lakehouse com arquivos (`LAK`). `C/` é o `main` em `538b0562`; as siglas são
+estudos que ele chamou (`MAPA`, `SK`, `ARQ`, `REL`); a 70, do estudo do lakehouse com arquivos (`LAK`); as 71 a 73, do estudo da data inicial
+(`EST/lago2-data-inicial-estudo`) e da conferência dele (`EST/lago2-data-certeza`), que leram e rodaram
+`singer-sdk@0.54.9`, `meltano@4.4.1` e `airbyte-cdk@6.61.6`, e leram o Airbyte em `82db089b`
+(`AB@82db089b`, e não o `AB` abaixo) e os docs da Nekt de 2026-11-24 (`NKH:<n>` é a linha `n` do
+`llms-full.txt` baixado nesse dia; `NKT` é a página `platform-api/sources/trigger` da API). `C/` é o `main`
+em `538b0562`; as siglas são
 as dos estudos: `AB` airbyte `8b40981a`, `AP` airbyte-platform `c46502e`,
 `CDK` airbyte-python-cdk `bde4377`, `DLT` dlt `efaf0e3`, `TRM` tap-rest-api-msdk `071b540`,
 guardados em `data/conexus-credenciais-framework/refs/`, e `NK` o texto da Nekt guardado em
@@ -915,6 +973,9 @@ limpeza; L.8, apagar sem sobra; L.9, a cota do parâmetro.
 | 68 | Ler o XML em linhas (`nfe_notas`, `nfe_itens`) | fica de fora | nenhum | Databricks, `read_files(format => 'xml')` (`ARQ` seção 7) | embrulhado, na etapa nova, com uma biblioteca do XSD oficial | — | XML: "Etapa própria, depois da 3" | fica de fora: a etapa nova da trilha | — |
 | 69 | Todas as colunas, atuais e futuras | nova | nenhum | Databricks: "By default, managed connectors in Lakeflow Connect ingest all current and future columns" (`MAPA` 1.2); Nekt, "Auto-add fields" ligado (`MAPA` 1.1); `pyiceberg@0.12.0`, `update_schema().union_by_name`; o `SCHEMA` novo do Singer a cada rodada | nativo | — | o desenho, área 4; K3 | U5, U10 | — (em `target.py` e `update.py`) |
 | 70 | O arquivo no lago, ligado à sua linha | fica de fora | nenhum | Nekt, o volume ao lado das tabelas (`NK:441-460`) e a tabela de metadados por fonte; Databricks, o volume e `binaryFile`; Airbyte, `file_reference` (`LAK` 1.7, 2.2) | embrulhado, na etapa 3a | PF1 a PF6 e PM1 (`LAK` seção 5); a PS1 nesta etapa | Arquivos: "F1. A F2. A" | fica de fora: a etapa 3a | — |
+| 71 | A data inicial da cópia: vazia é todo o histórico; onde se escolhe | nova | nenhum: o `main` não tem data inicial; o cartão de antes copiava tudo | Nekt: vazio é todo o histórico nos ERPs (`NK:177729`, `NK:152856`); a data no passo do acesso (`NK:177721-177729`); Airbyte: na especificação da fonte (`AB@82db089b source-netsuite/source_netsuite/spec.yaml:54-60`, `source-xero/manifest.yaml:505-530`); as fontes de banco do Airbyte não têm data (`source-postgres/.../PostgresSourceConfigurationSpecification.kt:69-482`) | embrulhado: a data é da cópia, e não da ligação, e fica em O que copiar, porque o acesso vai pelo link (U20) e a ligação serve também às leituras ao vivo (T.42) | — | Data | U7, U8, U9 | — (`lake_copy.start_date`) |
+| 72 | O que a data limita e por qual coluna | nova | nenhum | `singer-sdk@0.54.9 singer_sdk/streams/_state.py:145-150` (a passada inteira ignora), `:156-167` (a semente da chave), `sql/stream.py:195-206` (`>=`); Nekt SAP Business One, a mesma situação: documentos "created or changed on or after", pagamentos e lançamentos "posted on or after" porque "have no update date" (`NKH:156072`, `:156133`); a alteração em Omie, Nomus, BomControle, Sienge, Bling, Varejo Online (`NKH:134107`, `:127753`, `:39735`, `:162837`, `:38373`, `:186780`); a data do documento só sem coluna de alteração: WK Radar (`NKH:192194`), Protheus inteiro (`NKH:180968`); Omie, os cadastros inteiros (`NKH:134107`) | nativo (a `start_date` do Singer, na coluna do modo), com o cadastro da Nekt; a janela por mês desde a data segue a linha 66 | — | Data | U3, U4 | — (`startDateLimits` em `kernel/tables.ts`) |
+| 73 | Mudar a data numa ligação que copia, e ler de novo desde ela | nova | nenhum | `singer-sdk@0.54.9 streams/core.py:441-462` (o maior; rodado: a mais antiga não muda o início); `meltano@4.4.1 meltano/core/plugin/singer/tap.py:276-281` (`--full-refresh`), `cli/state.py:439-470` (`state clear`), e o guia: "you need to perform a full refresh"; `AB@82db089b docs/platform/using-airbyte/getting-started/add-a-source.md:32-42` (editar só testa), `operator-guides/refreshes.md:7`, `:26`, `:36-48`, `docs/integrations/sources/linear-migrations.md:25`; `airbyte-cdk@6.61.6 .../concurrent/state_converters/datetime_stream_state_converter.py:79-94` (rodado: o estado sequencial não relê; o Salesforce, não sequencial, relê a fatia, `source-salesforce/source_salesforce/streams.py:99`); Nekt: "moving it back changes nothing while a newer bookmark exists. To backfill older data, run a **Full Sync**" (`NKH:150766`), o full sync troca a tabela (`NKH:22494`, `:117134`), o disparo com `full_sync` e `selected_streams` (`NKT:92-102`) | embrulhado: gravar só grava; **Ler de novo desde a data** pede `whole` das tabelas que a data limita pela porta do **Rodar agora** (T.39); a passada inteira troca a atual (linha 28) | — | Data | U8, U9, U10 | — |
 
 **A medida do transplante.** Nenhum código do repositório antigo entra, e nenhum código de hoje
 das pastas que saem é trazido (o fundador, 2026-11-23: "Eu quero refazer, eu não quero utilizar nada
@@ -963,14 +1024,14 @@ que está feito como atual").
 | T.6 | A tarefa em sub-redes públicas, IP público, sem NAT; x86. A definição tem 1 vCPU e 2 GB; o Hub pede 2 vCPU e 4 GB pelos `overrides` do `RunTask` quando a rodada leva uma tabela recém-marcada; uma tabela cujo ponto de parada se perdeu relê inteira com 1 vCPU, porque o Hub não lê o estado | A 0076: "2 vCPU starts the first load"; o fundador: "2 vCPU na primeira carga", e 1 vCPU e 2 GB nas seguintes, o tamanho da Nekt. A forma medida: 30 tabelas em 180 s com 2 vCPU, 588 s com 1 (P1). A cota de vCPU do Fargate da conta de laboratório é 4 (`EST/fases-2a4:66`): duas primeiras cargas de uma vez | Trocar a sub-rede, a arquitetura ou os números na definição e em `lake-run.ts` |
 | T.7 | O gravador sobre a base do singer-sdk | A base já dá o laço, o lote, o estado depois de gravar, as colunas `_sdc_*` e o decimal | Voltar ao laço escrito à mão das provas |
 | T.8 | O `clientToken` é a rodada e a tentativa, até 64 caracteres; o `startedBy` leva a rodada | O limite de 36 é de `StartTask` (`@aws-sdk/client-ecs@3.1175.0 dist-types/models/models_1.d.ts:3315`, `:3330`, `:3407`) | — |
-| T.9 | Um cartão em três partes, cada uma usada pelo fundador, e não três cartões; a parte 1 inteira se publica junta, no fim do G5 | O total, ~17.600, passa a delivery L2 ("should"), mas ~8.000 são linhas tiradas na parte 0 e nenhum pull request de construção passa de ~4.000. A parte 1, ~6.290, passa das ~4.000 de uma parte usada sozinha: o desenho confirmado põe a janela e o "só o que mudou" juntos, para a primeira ligação já rodar de 15 min a 24 h, e a janela sozinha mostraria uma cópia que relê tudo a cada rodada. O aviso sai para o cartão seguinte (T.30). As decisões valem para as três, respondidas juntas em 2026-11-23 | Dividir o arquivo em cartões, com as mesmas unidades; os gatilhos estão no orçamento |
+| T.9 | Um cartão em três partes, cada uma usada pelo fundador, e não três cartões; a parte 1 inteira se publica junta, no fim do G5 | O total, ~17.840, passa a delivery L2 ("should"), mas ~8.000 são linhas tiradas na parte 0 e nenhum pull request de construção passa de ~4.000. A parte 1, ~6.550, passa das ~4.000 de uma parte usada sozinha: o desenho confirmado põe a janela e o "só o que mudou" juntos, para a primeira ligação já rodar de 15 min a 24 h, e a janela sozinha mostraria uma cópia que relê tudo a cada rodada. O aviso sai para o cartão seguinte (T.30). As decisões valem para as três, respondidas juntas em 2026-11-23 | Dividir o arquivo em cartões, com as mesmas unidades; os gatilhos estão no orçamento |
 | T.10 | O adaptador mora em `apps/extraction/tap/`, um pacote TypeScript do espaço de trabalho, ao lado do projeto Python | A trilha diz que `apps/extraction/` guarda "o tap gerado do kit" (`C/docs/steps/trilhas/dados.md:135-136`) | Mover para `packages/` |
 | T.11 | O parâmetro da rodada leva a especificação inteira (`CopyTaskSpec`), com o nível `Intelligent-Tiering` do Parameter Store: padrão até 4 KB, avançado até 8 KB; as colunas, a chave, o modo e o rótulo não vão nele, a tarefa os descobre | Um lugar só para o que a tarefa recebe, cifrado. Com as 42 tabelas marcadas, a especificação vai de ~3,0 a ~4,7 KB (a leitura independente fez a conta); o nível que escolhe sozinho é a forma nativa, e o parâmetro avançado vive só durante a rodada | Passar a lista das tabelas pelo ambiente da tarefa e só o segredo pelo parâmetro |
 | T.12 | Uma rodada aberta há mais de 48 horas é fechada pela varredura como `COPY_TASK_LOST`, mesmo sem resposta da AWS | A primeira carga das 42 tabelas foi estimada entre 5,7 e 17,2 h, com um pior caso de ~42 h (`SK` 3.3); 48 h é teto de folga (code C26), e a varredura fecha antes pelo estado da tarefa na AWS | Mudar a constante |
-| T.13 | Os códigos novos: de rodada, `COPY_LAKE_UNAVAILABLE`, `COPY_TASK_LOST`, `COPY_LAKE_WRITE_FAILED`; de gravar a cópia, `COPY_LAKE_NOT_READY`, `COPY_RUN_OPEN`, `COPY_NAME_TAKEN`, `COPY_NAME_INVALID`, `COPY_NAME_FIXED`, `COPY_TABLE_NOT_DECLARED`; do link, `LINK_NOT_FOR_SIGN_IN` (spec 02) | Cada um tem uma frase diferente na tela e um dono diferente | Fundir códigos |
+| T.13 | Os códigos novos: de rodada, `COPY_LAKE_UNAVAILABLE`, `COPY_TASK_LOST`, `COPY_LAKE_WRITE_FAILED`; de gravar a cópia, `COPY_LAKE_NOT_READY`, `COPY_RUN_OPEN`, `COPY_NAME_TAKEN`, `COPY_NAME_INVALID`, `COPY_NAME_FIXED`, `COPY_TABLE_NOT_DECLARED`, `COPY_START_DATE_INVALID`; do link, `LINK_NOT_FOR_SIGN_IN` (spec 02) | Cada um tem uma frase diferente na tela e um dono diferente | Fundir códigos |
 | T.14 | A mensagem que falha três vezes vai à fila de mortos, lida só pelo firstmate | A forma da P4; um fim perdido é fechado pela varredura | Mudar o `maxReceiveCount` |
 | T.16 | O nome sugerido é o do kit com o prefixo do conector (`sankhya_notas`); se outra tabela da empresa já tem esse nome, a sugestão leva o nome da ligação, `<conector>_<ligação>_<nome>`, com a ligação em minúsculas sem acento e cortada para o todo caber em 60. A pessoa troca a parte depois do prefixo; o prefixo vale para todas as tabelas novas da janela | O fundador: "a segunda ligação já vem sugerida com o nome dela e nome repetido é recusado" (2026-11-23). O corte que o estudo das duas ligações não provou (`EST/n5-duas-ligacoes`, seção 5) deixa de pesar, porque o nome é sugestão e a pessoa o troca. A recusa da segunda ligação até a etapa 5 cai | Mudar a regra da sugestão em `lakeNameOf` |
-| T.17 | Sem a passada inteira de domingo: a tabela só do que mudou lê inteira só na primeira vez, quando o estado se perdeu e quando ela não tem coluna de alteração; a de janela relê o mês corrente e o anterior; a inteira lê tudo a cada rodada (0080) | A passada de domingo existe só porque o motor de hoje a tinha (`clock.ts:24-25`); o que sumiu da fonte numa tabela só do que mudou é a pergunta da etapa 7 | Um relógio semanal da ligação com `whole` |
+| T.17 | Sem a passada inteira de domingo: a tabela só do que mudou lê inteira, desde a data inicial quando há uma e a tabela é de movimento, só na primeira vez, quando o estado se perdeu, quando ela não tem coluna de alteração e quando alguém clica **Ler de novo desde a data** (T.45); a de janela relê o mês corrente e o anterior; a inteira lê tudo a cada rodada (0080) | A passada de domingo existe só porque o motor de hoje a tinha (`clock.ts:24-25`); o que sumiu da fonte numa tabela só do que mudou é a pergunta da etapa 7 | Um relógio semanal da ligação com `whole` |
 | T.18 | Desmarcar com a rodada aberta é recusado (`COPY_RUN_OPEN`), em vez de parar a rodada das outras tabelas | Uma rodada leva as tabelas da ligação (G); parar uma para tirar outra perde a carga das que ficam | Parar a tarefa e reabrir a rodada sem a tabela |
 | T.19 | A linha do lago em `ready` é relida da AWS antes de marcar a primeira tabela de uma empresa, pelo estado da pilha | É a primeira etapa que usa o lago, e a trilha manda escolher quando reler (`C/docs/steps/trilhas/dados.md:84-88`); reler antes de agir é a forma do exemplo serverless da AWS | Reler por um relógio |
 | T.20 | As tabelas das cópias de hoje saem num pull request próprio, o G0c, depois de a versão do G0b estar no ar | Um `DROP` só entra quando nenhum código no ar lê a tabela (data D6), e a mudança de permissões vai num pull request só dela, com a palavra do fundador (data D11). A NT3 manda tirá-las na parte 0 | Deixar as tabelas vazias até a etapa 4 |
@@ -993,6 +1054,10 @@ que está feito como atual").
 | T.39 | Gravar a cópia com uma tabela nova dispara na hora uma rodada da ligação, que lê inteira só a nova; a página de uma tabela mostra o tipo da rodada daquela tabela (`lake_table_run.whole`) | A Nekt aplica a tabela nova na fonte viva, e ela começa lendo tudo (`MAPA` 1.3); disparar na hora é o "a primeira carga sai na hora" da janela, para a tabela nova | Esperar o relógio |
 | T.40 | A U3 acrescenta ao Sankhya os assuntos `fiscal` e `contabil`, com o rótulo e a parte da skill; as tabelas usam os assuntos de hoje (`cadastros`, `produtos`, `vendas`, `estoque`, `financeiro`, `precos`, `logistica`, `C/packages/connectors/src/sankhya/operations/index.ts:68-75`) e esses dois | O grupo de uma tabela é um assunto do conector (critério 10), e o completo traz o fiscal e o contábil ("Sim, núcleo+fiscal+contábil") | Agrupar as fiscais e contábeis num assunto de hoje |
 | T.41 | Esta etapa não fecha porta para os arquivos. Antes da U3, o firstmate fixa o teto da coluna binária na linha, do maior valor que a PS1 medir e do limite de 32 MB da PS4. Uma coluna acima do teto, uma `BFILE` ou a coluna do XML que não for de texto param a U3 naquela tabela, e o firstmate leva ao fundador a coluna e o maior valor, como na T.34; o cartão não decide. A tabela de anexos do Sankhya fica para a 3a. O resto deixa a porta aberta: as colunas `_` continuam do motor (`C/packages/connectors/src/kernel/copy.ts:145-151`, que a U3 leva para `tables.ts`, critério 10); as propriedades `conexus.*` já estão no catálogo; a 3a acrescenta `parent?` e `file?` à `TableDeclaration` sem tocar `TableMode` (a U3 não os cria), e as colunas `_arquivo_*` entram como coluna nova (critério 105). O depósito de arquivos entra na pilha de cada lago pela 3a: hoje o Hub não tem `UpdateStack` (T.5, `C/infra/aws/lib/hub.ts:13-19`), e somar o depósito a um lago que existe não foi provado (`LAK` PF4); se não der, os lagos da etapa 2 são criados de novo e refazem a primeira carga | Uma coluna binária grande na linha é a única porta que esta etapa pode fechar: acima do teto, o arquivo mora no depósito, e trocar a forma de uma coluna que já tem linhas pede refazer a tabela (`LAK` 1.1, seção 4, inferido). Abaixo do teto, o binário na linha é a regra do fundador ("E, não, beleza"); o fundador, "F1. A F2. A" | Declarar a coluna grande na linha; na 3a, apagar a tabela das duas áreas e refazer a primeira carga dela |
+| T.42 | A data inicial é da cópia da ligação (`lake_copy.start_date`) e se escolhe em **O que copiar**, ao lado do prefixo, e na seção **Tabelas no lago**; não no Acesso, onde a Nekt a pede | A ligação serve também às leituras ao vivo, o Acesso vai pelo link a quem tem a senha (U20), e uma ligação de credencial exclusiva não tem O que copiar. A Nekt pede no passo das chaves porque a fonte dela só extrai (`NK:177721-177729`). A palavra do fundador: "1. Okay" | Mover o campo para o passo Acesso e a coluna para a ligação |
+| T.43 | A data compara com a coluna pela qual a tabela segue: a de alteração numa só do que mudou de movimento, a da janela numa de janela; um cadastro e uma tabela inteira a ignoram. Não há segunda coluna de data | A regra dos ERPs da Nekt: o SAP Business One, a mesma situação, compara documentos com a alteração e pagamentos e lançamentos com o lançamento porque "have no update date" (`NKH:156072`, `:156133`); onze conectores comparam com a alteração; os que usam a data do documento não têm a de alteração (WK Radar `NKH:192194`; Protheus, inteiro, `NKH:180968`). A palavra do fundador: "3. Como Nekt faz, mas ter certeza" | Acrescentar `startColumn` à declaração e trocar de coluna no tap entre a passada inteira e a incremental |
+| T.44 | Uma data inicial depois de hoje é recusada (`COPY_START_DATE_INVALID`); a data é um dia, sem hora, no fuso de São Paulo, o do relógio (`clock.ts:12-13`) | A Nekt aceita e entrega a tabela vazia (`NK:25794`); recusar poupa a rodada vazia e a pergunta "por que está vazia" | Aceitar e deixar a primeira passada vazia |
+| T.45 | Gravar outra data só grava; ler de novo desde ela é **Ler de novo desde a data**, que a pessoa clica, e pede `whole` só para as tabelas que a data limita, pela porta do **Rodar agora**. Com a rodada aberta, essa chamada responde 409 `COPY_RUN_OPEN`, e não o "já está rodando" do **Rodar agora** | Nenhuma referência de extração relê ao gravar: o singer-sdk e o CDK usam o maior entre o ponto e a data (rodado), o Meltano manda usar `--full-refresh`, o Airbyte relê por Refresh pedido na tela, a Nekt por full sync pedido (`NKH:150766`). O 409 porque uma releitura pedida que respondesse "já está rodando" sumiria sem a pessoa saber. A palavra do fundador: "2. Ver referencia e ter certeza" | Disparar a releitura ao gravar uma data mais antiga |
 
 ## O reajuste, os passos do firstmate
 
@@ -1768,6 +1833,12 @@ tabela e a leitura que pagina, e para os três modos.
   `hubspot/fake-data.ts:13-68`: hoje não deixam mudar um registro. O dublê do Sankhya ganha a `TGFCAB`
   larga, de 450 colunas inventadas, algumas `AD_`, o dicionário dela, uma tabela de janela com datas
   fora do calendário, a `TGFNFE` com um XML de 1 MiB numa coluna de texto e uma coluna `BLOB` pequena.
+- **Linha 72.** O cadastro e a data: `singer-sdk@0.54.9 singer_sdk/streams/_state.py:145-167` (a passada
+  inteira ignora a data; a chave a recebe como semente) e o cadastro inteiro da Nekt (`NKH:134107`). A
+  coluna que a data compara é a do modo, como nos documentos do SAP Business One da Nekt
+  (`NKH:156072`): `DTALTER` em `notas`, `notas_itens` e `financeiro`, `DHALTER` em `notas_impostos`, a
+  da janela nas de janela. Os cadastros (`parceiros`, `produtos`, `vendedores`, `precos_tabelas`) e as
+  inteiras não.
 
 ### O raio da mudança
 
@@ -1795,9 +1866,11 @@ export type TableSource =
   | Readonly<{ kind: 'OPERATION'; operation: OperationId; input: Readonly<Record<string, string | number | boolean>> }>  // a paged read; its origin on the wire is the operation id ('negocios')
 /** How a table is read each run, fixed by the connector (0080; NK:177753). */
 export type TableMode =
-  | Readonly<{ kind: 'CHANGED'; column: string }>                         // rows past the saved point of a column that only grows: a date (DTALTER) or a number (NUNOTA), as a Singer replication key
-  | Readonly<{ kind: 'WINDOW'; column: string; step: 'MONTH'; reread: number }>  // rereads the last `reread` months, replaces them
-  | Readonly<{ kind: 'FULL' }>                                           // the whole table every run
+  | Readonly<{ kind: 'CHANGED'; column: string; registry: boolean }>                         // rows past the saved point of a column that only grows: a date (DTALTER) or a number (NUNOTA), as a Singer replication key; registry: master data, which the start date never limits (NKH:134107)
+  | Readonly<{ kind: 'WINDOW'; column: string; step: 'MONTH'; reread: number }>  // rereads the last `reread` months, replaces them; the start date limits its months
+  | Readonly<{ kind: 'FULL' }>                                           // the whole table every run; the start date never limits it (singer-sdk _state.py:145-150)
+/** The one owner of what a start date limits (T.43): a CHANGED table that is not a registry, and a WINDOW table. */
+export function startDateLimits(mode: TableMode): boolean
 export type TableDeclaration = Readonly<{
   name: TableName            // 'notas' -> suggested sankhya_notas
   label: string              // 'Notas e pedidos'
@@ -1840,7 +1913,7 @@ export function readTablePage(
   input: Readonly<{ connector: Connector; table: TableDeclaration; columns: readonly TableColumn[]; filter: TableFilter; after: TablePosition | null; session: Session; signal: AbortSignal }>,
 ): Promise<{ kind: 'PAGE'; rows: readonly Record<string, string | null>[]; next: TablePosition | null } | ({ kind: 'FAILED' } & TableSourceFailure)>
 // Connector gains: tables?: ConnectorTables
-// kernel/skill.ts: connectorSkill(definition, tables: readonly { name: string; label: string; description: string; source: string }[])
+// kernel/skill.ts: connectorSkill(definition, tables: readonly { name: string; label: string; description: string; source: string; since: string | null }[])  // since: the start date, only on a table it limits (criterion 85)
 ```
 
 - **Cada estado** como união: `columns`, `source`, `mode` e o filtro por `kind` (C21).
@@ -1860,7 +1933,9 @@ export function readTablePage(
     gateway (`C/docs/decisions/0080-copy-declared-per-table-raw-appends.md:17`), e 1 MiB, a regra de
     parada da 0063 (`C/docs/decisions/0063-copy-models-proof.md:22`), abaixo do teto de 2 MiB do
     executor (0056);
-  - a regra do nome no lago, só em `lakeNameOf` e `suggestedLakeName`.
+  - a regra do nome no lago, só em `lakeNameOf` e `suggestedLakeName`;
+  - o que a data inicial limita, só em `startDateLimits`; `registry: true` em `parceiros`, `produtos`,
+    `vendedores` e `precos_tabelas`, e `false` nas outras só do que mudou.
 - **A leitura de uma página tem um dono**, `readTablePage`, que o adaptador (U4) chama para as duas
   origens e os três filtros. A de operação segue a paginação `list` da operação
   (`kernel/operation.ts:148-167`, `ListPaging`, `ListRead`), escrita de novo aqui; `kernel/list.ts` e
@@ -1890,11 +1965,11 @@ As linhas de `packages/connectors` do `stack.md`. O guia de testes, T5 e T29.
 
 ### A ordem do trabalho
 
-1. **A declaração, a descoberta, a leitura de página e a conformidade.** Critérios: 10, 86, 88.
+1. **A declaração, a descoberta, a leitura de página e a conformidade.** Critérios: 10, 86, 88, 113.
    - **Arquivos:** cria `kernel/tables.ts`; muda `definition.ts`, `conformance.ts`; apaga o resto de
      `copy.ts`.
    - **Testes:** `conformance.test.ts`, "a declaração por tabela"; `tables.test.ts`.
-2. **O Sankhya.** Critérios: 9, 11, 89, 106.
+2. **O Sankhya.** Critérios: 9, 11, 89, 106, 107.
    - **Arquivos:** cria `sankhya/copy-tables.ts`: a lista, `descobrirTabelas` (uma consulta a
      `TDDTAB` e `TDDCAM` pela porta de consulta), `contarMeses` (a contagem por mês de uma coluna),
      `lerTabela` (a página pela porta de consulta da pasta nova, com o filtro).
@@ -1904,7 +1979,7 @@ As linhas de `packages/connectors` do `stack.md`. O guia de testes, T5 e T29.
      com o XML e uma tabela que o dicionário não tem.
    - **Mutações à mão:** tirar a redução da página: a resposta larga passa dos bytes e o 11 fica
      vermelho; enumerar os meses do mínimo ao máximo: o mês fora do calendário some e o 89 fica
-     vermelho.
+     vermelho; fazer `startDateLimits` devolver verdadeiro para um cadastro: o 107 fica vermelho.
 3. **A skill.** Critério: 85. As tabelas entram na parte gerada, com os nomes que a U8 passa.
 4. **Os dublês.** Critério: 16. O HubSpot declara `negocios` por operação, com as colunas
    declaradas, para a bateria da U4.
@@ -1914,7 +1989,7 @@ As linhas de `packages/connectors` do `stack.md`. O guia de testes, T5 e T29.
 
 ### Como se prova
 
-O 9, o 11 e o 89 pelo índice do kit contra o dublê; o 10 pela conformidade; o 85 pela skill gerada;
+O 9, o 11, o 89 e o 107 pelo índice do kit contra o dublê; o 10 pela conformidade; o 113 por `tables.test.ts`; o 85 pela skill gerada;
 o 16 pelas rotas de teste; o 88 junto com a U4. Hoje nada disso existe.
 
 ### Parar se
@@ -1956,6 +2031,10 @@ quer sem nome de conector.
   `singer-sdk@0.54.9 singer_sdk/target_base.py:430-448`.
 - **Linha 17.** A seleção do catálogo: o Meltano entrega o catálogo com as tabelas escolhidas
   (`meltano@4.4.1 meltano/core/plugin/singer/tap.py:147`); o adaptador lê só as escolhidas.
+- **Linha 72.** A `start_date` na configuração, como o Singer a lê: `singer-sdk@0.54.9
+  singer_sdk/streams/_state.py:156-167` (sem ponto, a data; com ponto, o maior dos dois,
+  `streams/core.py:441-462`) e o filtro `>=` (`sql/stream.py:195-206`). O Meltano a entrega como
+  qualquer configuração (`meltano@4.4.1 meltano/core/plugin/singer/base.py:126-138`).
 
 ### O raio da mudança
 
@@ -1970,6 +2049,7 @@ quer sem nome de conector.
 // apps/extraction/tap/src/tap.ts — the command line, Singer's
 //   tap --about | --discover --config <file> | --config <file> --catalog <file> [--state <file>]
 // config: { connector: ConnectorId, account: AccountRef | null, secret_path: string, result_path: string,
+//           start_date: string | null,   // 'YYYY-MM-DD', São Paulo; null: the whole history (Singer's name)
 //           tables: { source: SourceTable; name: string; whole: boolean }[] }   // the run's names and whole, from CopyTaskSpec
 // apps/extraction/tap/src/messages.ts
 export type SingerMessage =
@@ -1985,9 +2065,11 @@ export type TapFailure = TableSourceFailure & { table: string }   // the lake na
   adaptador não monta nome. O `table_name` de cada entrada é a origem (`TGFCAB`, ou o id da operação),
   e os metadados da entrada levam o modo, a chave, o histórico e o rótulo, que a entrada da tarefa
   passa ao gravador (U5).
-- **O filtro de cada tabela** sai do modo e do estado: `CHANGED` com ponto de parada lê `SINCE`;
-  `WINDOW` lê `MONTH` mês a mês (todos os meses da contagem na passada inteira, os `reread` últimos
-  depois); `FULL`, e toda passada inteira de `CHANGED`, lê `ALL`.
+- **O filtro de cada tabela** sai do modo, do estado e da data (só onde `startDateLimits` diz que ela
+  limita): `CHANGED` com ponto de parada lê `SINCE` do maior entre o ponto e a data; a passada inteira
+  de `CHANGED` lê `SINCE` da data, ou `ALL` sem data ou num cadastro; `WINDOW` lê `MONTH` mês a mês
+  (os meses da contagem a partir do mês da data na passada inteira, os `reread` últimos depois, nunca
+  um anterior ao da data); `FULL` lê `ALL`.
 - **O esquema Zod de cada entrada externa** (C27): a configuração, o catálogo e o estado que o
   Meltano entrega em arquivos.
 - **O dono do fato**: os nomes das mensagens Singer, só em `messages.ts`; os códigos de falha são os
@@ -2007,12 +2089,12 @@ especificação do Singer que ela cita.
    - **Testes:** `tap.test.ts`, "o catálogo é a descoberta", contra a lista esperada de
      `kernel/tables-fixture.ts`, a mesma que `lake-routes.test.ts` (U8) usa pela rota.
    - **Mutações à mão:** deixar `selected` de fora: a entrada sai marcada e o 17 fica vermelho.
-2. **A leitura.** Critérios: 18, 19, 86, 89, 106. A sessão do kit (U16), as tabelas escolhidas em ordem, uma
+2. **A leitura.** Critérios: 18, 19, 86, 89, 106, 108, 113. A sessão do kit (U16), as tabelas escolhidas em ordem, uma
    página por vez pela leitura de página do kit (`readTablePage`, U3), com a página do conector, `STATE` depois de cada página, a versão da passada,
    `ACTIVATE_VERSION` no fim de cada tabela. O filtro de cada tabela segue o modo, como acima.
    A recusa da fonte escreve `TapFailure` e sai com código 1.
    - **Testes:** `tap.test.ts` contra os dublês; `test_tap_battery.py` roda a bateria do singer-sdk.
-   - **Mutações à mão:** emitir o `STATE` antes do `RECORD` da página: a bateria fica vermelha.
+   - **Mutações à mão:** emitir o `STATE` antes do `RECORD` da página: a bateria fica vermelha; comparar o ponto e a data pelo menor: o 108 fica vermelho.
 3. **A regra.** Critério: 20.
 
 - **A entrada em `docs/reference/boundaries.md`** da linha 11, remendo, com a prova da linha e a
@@ -2074,6 +2156,7 @@ export const CopyTaskSpec = z.object({
   version: z.literal(1),
   runId: LakeRunId, attempt: z.int().min(1), companyId: CompanyId,
   connector: ConnectorId, connectionId: ConnectionId, account: AccountRef.nullable(),
+  startDate: z.iso.date().nullable(),   // lake_copy.start_date; entry.py writes it as the tap's start_date
   credential: z.record(z.string(), z.string()),   // the opened seal; only here
   tables: z.array(z.object({ source: SourceTableId, name: LakeTableName, whole: z.boolean() })).min(1),  // whole: asked by the Hub
   lake: z.object({ bucketArn: z.string(), region: AwsRegion }),
@@ -2122,7 +2205,7 @@ acrescenta ao `stack.md`; as de `@aws-sdk/client-sqs` e `client-ssm`. A security
    uma coluna que sumiu fica. O binário em base64 vira bytes. Regras: C50, C26. Critérios: 90, 105, 106.
    - **Mutações à mão:** ignorar a coluna que não está na tabela: o 105 fica vermelho.
    - **Mutações à mão:** gravar o número por `float`: a soma fica diferente e o 21 fica vermelho.
-3. **A entrada.** Critérios: 23, 24, 25. Lê o parâmetro, valida, grava o segredo num arquivo `0600`,
+3. **A entrada.** Critérios: 23, 24, 25, 109. Lê o parâmetro, valida, grava o segredo num arquivo `0600`,
    monta o catálogo com as tabelas da especificação escolhidas, chama `meltano run` (sem o estado
    das tabelas com `whole`), lê o resultado do leitor e as contagens do gravador por fluxo,
    manda um `CopyTaskResult`. O gravador confere o parâmetro antes de cada `append`. Regras: S31,
@@ -2270,7 +2353,7 @@ permissão nomeada, e os ids do fio da cópia.
 
 | Tabela | Coluna | Tipo | Restrição | Ao apagar |
 | --- | --- | --- | --- | --- |
-| `copies.lake_copy` | `company_id`, `connector_id`, `connection_id`, `interval`, `created_at` | `text`, `text`, `uuid`, `text`, `timestamptz` | chave `(company_id, connection_id)`; `interval` em `LakeInterval`, `MANUAL` incluído; `created_at` é a hora de partida do relógio (T.38); política da empresa | a ligação (`company_id, connector_id, connection_id`): `cascade`; a empresa: `cascade` |
+| `copies.lake_copy` | `company_id`, `connector_id`, `connection_id`, `interval`, `start_date`, `created_at` | `text`, `text`, `uuid`, `text`, `date`, `timestamptz` | chave `(company_id, connection_id)`; `interval` em `LakeInterval`, `MANUAL` incluído; `start_date` nula (todo o histórico) ou um dia (T.42); `created_at` é a hora de partida do relógio (T.38); política da empresa | a ligação (`company_id, connector_id, connection_id`): `cascade`; a empresa: `cascade` |
 | `copies.lake_table` | `id`, `company_id`, `connection_id`, `source_table`, `name`, `label`, `columns`, `rows`, `last_run_id` | `uuid`, `text`, `uuid`, `text`, `text`, `text`, `jsonb`, `bigint`, `uuid` | `UNIQUE (company_id, connection_id, source_table)`; índice único `(company_id, lower(name))`; `name` pelo padrão de `LakeTableName`; `columns` um array JSON | a cópia da ligação (`company_id, connection_id`): `cascade`; `last_run_id`: `set null` |
 | `copies.lake_run` | `id`, `company_id`, `connection_id`, `started_at`, `ended_at`, `outcome`, `whole`, `code`, `failed_table`, `system_code`, `system_message`, `task_arn`, `attempt` | `uuid`, `text`, `uuid`, `timestamptz`, `timestamptz`, `text`, `boolean`, `text`, `text`, `text`, `text`, `text`, `integer` | `ended_at` e `outcome` nulos juntos; `outcome` em `COMPLETE`, `ERROR`, `INTERRUPTED`; código só com `ERROR`; `system_code` até `SYSTEM_CODE_MAX`; `task_arn` nulo ou `arn:aws:ecs:%`; `attempt >= 1`; índice único `lake_run_open_key` em `connection_id` onde `ended_at IS NULL` | a cópia da ligação: `cascade` |
 | `copies.lake_table_run` | `run_id`, `table_id`, `company_id`, `read`, `written`, `rows`, `whole` | `uuid`, `uuid`, `text`, `integer`, `integer`, `bigint`, `boolean` | chave `(run_id, table_id)`; contagens `>= 0` | a rodada: `cascade`; a tabela: `cascade` |
@@ -2401,7 +2484,7 @@ export const LakeRun = z.discriminatedUnion('outcome', [
   z.object({ ...LakeRunBase, ...LakeRunCounts, outcome: z.literal('INTERRUPTED') }),
 ])
 const LakeMode = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('CHANGED'), column: z.string() }),
+  z.object({ kind: z.literal('CHANGED'), column: z.string(), registry: z.boolean() }),
   z.object({ kind: z.literal('WINDOW'), column: z.string() }),
   z.object({ kind: z.literal('FULL') }),
 ])
@@ -2412,9 +2495,10 @@ export const LakeTablesOfConnection = z.object({
     z.object({ kind: z.literal('UNAVAILABLE'), reason: z.enum(['NO_TABLES', 'EXCLUSIVE_CREDENTIAL']) }),
   ]),
   interval: LakeInterval.nullable(),
+  startDate: z.iso.date().nullable(),   // the copy's; null: the whole history
   tables: z.array(z.object({
     source: SourceTableId, label: z.string(), description: z.string().nullable(), group: z.string(),
-    mode: LakeMode, columns: z.int().min(0).nullable(),
+    mode: LakeMode, columns: z.int().min(0).nullable(), limited: z.boolean(),   // limited: startDateLimits
     copy: z.discriminatedUnion('kind', [
       z.object({ kind: z.literal('UNMARKED'), suggested: LakeTableName }),   // the kit's, or with the connection's name when taken (T.16)
       z.object({ kind: z.literal('MARKED'), name: LakeTableName, lastRun: LakeRun.nullable() }),  // the name is fixed
@@ -2425,21 +2509,25 @@ export const LakeTablesOfConnection = z.object({
 export const SetLakeCopy = z.object({
   tables: z.array(z.object({ source: SourceTableId, name: LakeTableName })).max(60),
   interval: LakeInterval,
+  startDate: z.iso.date().nullable(),   // null: the whole history; after today: 422 COPY_START_DATE_INVALID; saving never starts a run (T.45)
 })
+export const RunLakeCopy = z.object({ whole: z.boolean().default(false) })  // true: Ler de novo desde a data, whole only where startDateLimits (T.45)
 export const LakeTableSummary = z.object({
   id: LakeTableId, connection: z.object({ id: ConnectionId, name: z.string(), connector: z.string() }),
   name: LakeTableName, label: z.string(), source: SourceTableId, mode: LakeMode, interval: LakeInterval,
+  startDate: z.iso.date().nullable(),   // null when the date does not limit the table
   rows: z.int().min(0).nullable(), columns: z.array(z.object({ name: z.string(), type: z.string(), description: z.string().nullable() })),
   lastRun: LakeRun.nullable(), next: z.iso.datetime().nullable(),
 })
 // GET  /api/companies/{companyId}/connections/{connectionId}/lake-tables     -> LakeTablesOfConnection
 // PUT  /api/companies/{companyId}/connections/{connectionId}/lake-copy        SetLakeCopy -> LakeTablesOfConnection
-//      409 COPY_LAKE_NOT_READY | COPY_RUN_OPEN | COPY_NAME_TAKEN | COPY_NAME_FIXED; 422 COPY_TABLE_NOT_DECLARED | COPY_NAME_INVALID; 403 FORBIDDEN (manageCopies)
-// POST /api/companies/{companyId}/connections/{connectionId}/lake-copy/run    -> 202 | 200 { already: true }   (works under MANUAL)
+//      409 COPY_LAKE_NOT_READY | COPY_RUN_OPEN | COPY_NAME_TAKEN | COPY_NAME_FIXED; 422 COPY_TABLE_NOT_DECLARED | COPY_NAME_INVALID | COPY_START_DATE_INVALID; 403 FORBIDDEN (manageCopies)
+// POST /api/companies/{companyId}/connections/{connectionId}/lake-copy/run    RunLakeCopy -> 202 | 200 { already: true }   (works under MANUAL)
+//      whole: true with a run open: 409 COPY_RUN_OPEN, not the 200
 
 // apps/server/src/hub/copies/lake-run.ts — the one start, for the clock and for Rodar agora (Relógio)
 export function iniciarRodada(
-  at: CompanyScope, connection: ConnectionId, cause: 'CLOCK' | 'NOW',
+  at: CompanyScope, connection: ConnectionId, cause: 'CLOCK' | 'NOW', whole = false,   // whole: only from Ler de novo desde a data (T.45)
 ): Promise<{ kind: 'QUEUED'; run: LakeRunId } | { kind: 'ALREADY_RUNNING' } | { kind: 'NO_COPY' }>
 // apps/server/src/builder/copy-clock/clock.ts — only "when"
 export function cronOf(interval: Exclude<LakeInterval, 'MANUAL'>, anchor: Date): string   // São Paulo; 10:07 + '15m' -> '7,22,37,52 * * * *'
@@ -2497,6 +2585,13 @@ export const CopyQueueMessage = z.discriminatedUnion('type', [
   apaga as tabelas da AWS primeiro e a linha depois. O `GET` da ligação passa a lista de
   `discoverTables` (U3) pelo esquema do fio, com a sugestão de `suggestedLakeName` contra os nomes da
   empresa.
+- **A data inicial** (T.42, T.45): o `PUT` grava `lake_copy.start_date` como grava o intervalo, sem
+  disparar nada. Uma data depois de hoje é recusada, 422 `COPY_START_DATE_INVALID`; o dono do "hoje" é
+  `lake-copy.ts`, no fuso de `clock.ts:12-13`. `POST .../lake-copy/run` com `whole: true` (**Ler de novo
+  desde a data**) chama `iniciarRodada` com `whole`, que marca `whole` nas tabelas marcadas que
+  `startDateLimits` limita, e as outras seguem como sempre; com a rodada aberta responde 409
+  `COPY_RUN_OPEN`, e não o `already` do **Rodar agora**, porque uma releitura pedida não pode sumir
+  calada. A especificação da rodada leva `startDate` em toda rodada.
 - **As rodadas de uma tabela** (`GET .../lake-tables/{id}/runs`) trazem o `whole` e as contagens
   daquela tabela, de `lake_table_run`; a rodada que uma tabela nova dispara lê inteira só ela (T.39).
 - **A poda do rastro**: a política `triggers` do domínio `schedules` na poda diária; as execuções do
@@ -2542,11 +2637,12 @@ As linhas de `@aws-sdk/client-ecs`, `client-sqs`, `client-ssm`, `client-s3tables
    `DescribeStackEvents` e o `S3 Tables` (#1265); as gravações sem leitor ganham o seu ou saem, e os
    ids de laboratório saem delas (#1266).
 2. **A lista da ligação e gravar a cópia.** Critérios: 37, 38, 52, 85, 88, 96, 105 (as colunas
-   relidas do dicionário a cada disparo).
+   relidas do dicionário a cada disparo), 110.
    - **Arquivos:** cria `lake-copy.ts`, `lake-routes.ts`.
    - **Testes:** `lake-routes.test.ts`, "a lista da ligação", "marcar", "a tabela do lago fica fora do
-     banco".
-3. **O relógio, o disparo e a varredura.** Critérios: 39, 40, 43, 45, 46, 87, 92, 93, 95.
+     banco", "a data só grava" e "ler de novo desde a data".
+   - **Mutações à mão:** disparar uma rodada ao gravar uma data mais antiga: o 110 fica vermelho.
+3. **O relógio, o disparo e a varredura.** Critérios: 39, 40, 43, 45, 46, 87, 92, 93, 95, 110.
    - **Arquivos:** cria `builder/copy-clock/` (o relógio da ligação, `cronOf`) e `lake-run.ts`
      (`iniciarRodada` e a fila de partidas).
    - **O que entra:** a varredura das rodadas abertas da ligação; o `INSERT` recusado pelo índice; o
@@ -2684,7 +2780,7 @@ ligação ganha uma seção, e Dados é escrita de novo sobre o contrato da U8.
 ### Os contratos que a unidade cria
 
 - Nenhum contrato novo: a tela lê `LakeTablesOfConnection`, `LakeTableSummary` e `LakeRun` da U8,
-  grava `SetLakeCopy` e chama as rotas da U20.
+  grava `SetLakeCopy`, pede a releitura por `RunLakeCopy` e chama as rotas da U20.
 - **A janela é uma só**, com o passo no estado dela, como uma união pelo passo (C21): `ACCESS`,
   `TESTING`, `REFUSED`, `CHOOSE`, `WHEN`, `LINKED`. Ela abre em `CHOOSE` pela seção de uma ligação sem
   cópia (T.33).
@@ -2696,6 +2792,10 @@ ligação ganha uma seção, e Dados é escrita de novo sobre o contrato da U8.
   "Tabelas no lago", "Salvar", "Rodar agora", "Completa · inteira", "Completa · só o que mudou", "As
   linhas ficam no lago da empresa.", "Próxima rodada", as frases dos modos e as da matriz de estados,
   as dos códigos `COPY_SOURCE_*` incluídas.
+- Os textos da data, também em `text.ts`: "Desde", "Todo o histórico", "desde <data>", "desde o começo",
+  "A data não pode ser depois de hoje.", os dois avisos do 111, "Ler de novo desde a data", o texto do
+  diálogo do 114, "Ler de novo" e "A ligação está copiando agora. Leia de novo quando a rodada
+  terminar.". O campo de data e o diálogo são os de hoje de `ui/`, nenhuma peça nova.
 - **O arquivo modelo**: `apps/web/src/hub/connectors/link-dialog.tsx`, a janela de hoje, na forma;
   `connection-page.tsx`, a seção `Facts` (`:207-222`), para a seção.
 
@@ -2711,7 +2811,9 @@ de web e o de desenho; o `DESIGN.md`.
 2. **O que copiar, Quando copiar e Ligado.** Critério: 100. As tabelas por assunto, o nome e o
    prefixo, o modo, o intervalo, a revisão, um `PUT` só, o **Ligado**; a exclusiva pula.
    - **Mutações à mão:** marcar a primeira tabela por padrão: o 100 fica vermelho.
-3. **A seção de mudar.** Critério: 101.
+3. **A seção de mudar.** Critérios: 101, 111, 114. O campo **Desde**, o aviso do efeito e **Ler de novo
+   desde a data** com o diálogo.
+   - **Mutações à mão:** chamar a rota sem `whole`: o 114 fica vermelho.
 4. **A página do link.** Critério: 102.
 5. **Dados.** Critério: 55. A lista agrupada pela ligação, a página da tabela com as quatro abas, o
    tipo da rodada pelo `whole` e a frase do lugar.
@@ -2734,7 +2836,7 @@ Pela tela com o Hub falso; na QA, pelo Hub local com o servidor de respostas gra
 
 Depois da U9: o Hub local com o servidor de respostas gravadas; a janela inteira com o dublê do
 Sankhya, do **Ligar** ao **Ligado**; trocar um nome e ver o repetido recusado; o link criado, aberto
-e vencido; a seção de mudar, **Rodar agora** e **Só manual**; o fim pela fila, a varredura de uma
+e vencido; a seção de mudar, a data e **Ler de novo desde a data**, **Rodar agora** e **Só manual**; o fim pela fila, a varredura de uma
 rodada antiga, a lista e a página da tabela em Dados, desmarcar, apagar o lago. A versão ainda não se
 publica: espera o G5.
 
@@ -2777,8 +2879,11 @@ instruções a tabela fica num estado do meio.
   forma do Meltano, com o ponto de cada fluxo; só o papel da empresa lê e escreve o prefixo dela.
 - **`CopyTaskResult.tables[].rows`** passa a ser a contagem da atual depois da atualização.
 - **`CopyTaskSpec.tables[].whole`**: o Hub o pede verdadeiro só na primeira rodada de uma tabela
-  recém-marcada; a tarefa lê inteira também a tabela sem ponto de parada no estado (o Hub não lê o
+  recém-marcada e em **Ler de novo desde a data**, nas tabelas que a data limita (T.45); a tarefa lê inteira também a tabela sem ponto de parada no estado (o Hub não lê o
   estado) e a sem coluna de alteração, e diz no resultado, por tabela, se a passada foi inteira (T.17).
+- **A releitura desde a data** é a passada inteira de sempre, lida desde a data: numa tabela só do que
+  mudou, o `DELETE` troca a atual, e o que é anterior à data, ou foi apagado na fonte, sai; numa de
+  janela, os meses desde o mês da data se trocam, e os anteriores ficam.
 - `update.py`: `update(table, mode, whole, history) -> UpdateCounts` com as três instruções, o
   `DELETE` da passada inteira, a troca dos meses da janela e a limpeza, que não roda numa tabela de
   histórico; uma falha termina a rodada `COPY_LAKE_WRITE_FAILED`.
@@ -2795,7 +2900,7 @@ D25.
 2. **A atual e a limpeza.** Critérios: 58, 59.
    - **Mutações à mão:** limpar antes do `MERGE`: a atual perde as linhas da rodada e o 58 fica
      vermelho.
-3. **O modo por tabela.** Critérios: 60, 103. O Hub pede; a tarefa decide pelo estado e pelo modo e
+3. **O modo por tabela.** Critérios: 60, 103, 112. O Hub pede; a tarefa decide pelo estado e pelo modo e
    diz.
    - **Mutações à mão:** trocar só as linhas lidas da janela sem o `DELETE` dos meses: a linha que
      saiu da fonte fica e o 103 fica vermelho.
