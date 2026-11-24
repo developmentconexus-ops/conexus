@@ -1,6 +1,6 @@
 import type { ProjectId } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
-import { cn } from '../../ui/cn.ts'
+import { cn } from './cn.ts'
 
 /**
  * The column of an Automações page, or of the Início's Agentes page. The company's Início sits in a

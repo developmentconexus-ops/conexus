@@ -696,7 +696,7 @@ emendada; a árvore de topo (a decisão 2 do firstmate) fica.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `Wb/conversation/use-session.ts`, `room.ts`, `chat.tsx`, `panel.tsx` | Muda, antes do movimento: a sessão perde o ramo `BUILDER_CONTROLLER`; a variante `APP_BUILDER` ganha `heard`, que o painel do Construtor de apps preenche | as quatro conversas |
-| `Wb/agents/construtor-queries.ts`, `construtor-loader.ts`, `construtor-text.ts`, `construtor-area.tsx`, `construtor-area.test.tsx` | Cria, antes do movimento, com o que sai de `queries.ts`, `loader.ts`, `text.ts`, `area.tsx` e `area.test.tsx` | a conversa do Construtor, a rota da área |
+| `Wb/agents/construtor-queries.ts`, `construtor-loader.ts`, `construtor-text.ts`, `construtor-area.tsx`, `construtor-area.test.tsx`, `construtor-chat.test.tsx` | Cria, antes do movimento, com o que sai de `queries.ts`, `loader.ts`, `text.ts`, `area.tsx` e `area.test.tsx` (os casos da caixa e das conversas anteriores, e os da conversa do Construtor no seu endereço) | a conversa do Construtor, a rota da área |
 | `routes/.../$projectId_.agents.index.tsx` | Muda, antes do movimento: passa a caixa e as conversas do Construtor à área como encaixe | — |
 | `apps/web/src/ui/block.tsx` | Muda, antes do movimento: recebe `ROW` de `choice-list.tsx`, como `choiceRow`, ao lado de `listRow` e `blockRow`: uma classe sem assunto (W5) | o Assistente, o agente salvo |
 | `apps/web/src/ui/page.tsx` | Cria, antes do movimento, por `git mv` de `Wb/automations/page.tsx`: a coluna de uma página do Início ou de um Projeto, sem assunto | Automações, Agentes do Início |

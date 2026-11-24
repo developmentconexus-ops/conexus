@@ -2,11 +2,11 @@ import type { AgentDetail, CompanyId, ProjectId } from '@conexus/hub-api'
 import { ComputerIcon, GlobeIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { choiceRow } from '../../ui/block.tsx'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { DialogBody, DialogFooter } from '../../ui/dialog.tsx'
 import { Switch } from '../../ui/switch.tsx'
-import { ROW } from '../assistant/public.ts'
 import { COMPUTER_TOOL, CONEXUS_TOOLS, WEB_TOOL } from './text.ts'
 import type { Saving } from './use-draft-save.ts'
 
@@ -22,7 +22,7 @@ function ChoiceRow(props: {
   onChange: () => void
 }) {
   return (
-    <li className={cn(ROW, 'justify-between')}>
+    <li className={cn(choiceRow, 'justify-between')}>
       <label htmlFor={props.id} className="flex min-w-0 flex-1 items-center gap-sm">
         {props.leading}
         <span className="flex min-w-0 flex-col">

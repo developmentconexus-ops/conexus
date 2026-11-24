@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { MoreHorizontalIcon } from 'lucide-react'
 import { useState } from 'react'
+import { PlaceName } from '../../hub/projects/public.ts'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
@@ -16,12 +17,12 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
+import { Page } from '../../ui/page.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { cadenceText } from './cadence-text.ts'
-import { Page } from './page.tsx'
-import { PlaceName, readNames } from './place.tsx'
+import { readNames } from './place.tsx'
 import {
   automationsQuery,
   sendAutomationDeletion,

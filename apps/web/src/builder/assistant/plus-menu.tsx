@@ -8,7 +8,7 @@ import type {
 import { Link } from '@tanstack/react-router'
 import { PaperclipIcon, PlusIcon } from 'lucide-react'
 import { useState } from 'react'
-import { ConnectorLogo } from '../../hub/connectors/public.ts'
+import { choiceRow } from '../../ui/block.tsx'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Drawer, DrawerContent, DrawerTrigger } from '../../ui/drawer.tsx'
@@ -17,9 +17,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
 import { SearchField } from '../../ui/search-field.tsx'
 import { Switch } from '../../ui/switch.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { COMPOSER_SOFT } from '../conversation/public.ts'
-import { LIST, ROW } from './choice-list.tsx'
-import { useConnectorCatalog } from './connector-names.ts'
+import { COMPOSER_SOFT, Logo, useConnectorCatalog } from '../conversation/public.ts'
+import { LIST } from './choice-list.tsx'
 import type { DraftChoice } from './draft-choice.ts'
 import {
   ATTACH_FILE,
@@ -89,7 +88,7 @@ function ToolSwitches(props: { place: ComposerPlace; choice: Choice }) {
       )}
       <ul className={LIST}>
         {shown.map((one) => (
-          <li key={one.connectionId} className={cn(ROW, 'justify-between')}>
+          <li key={one.connectionId} className={cn(choiceRow, 'justify-between')}>
             <label
               htmlFor={`connection-${one.connectionId}`}
               className="flex min-w-0 items-center gap-sm"
@@ -111,15 +110,6 @@ function ToolSwitches(props: { place: ComposerPlace; choice: Choice }) {
   )
 }
 
-/** The connector's logo plate, or its empty place before the catalog is read. */
-export function Logo({ logo }: { logo: string | undefined }) {
-  return logo === undefined ? (
-    <span className="size-5 shrink-0" />
-  ) : (
-    <ConnectorLogo small entry={{ logo }} />
-  )
-}
-
 /** Where to link another system: Integrações, or a Projeto's own. */
 function Another({ words }: { words: string }) {
   return (
@@ -136,7 +126,7 @@ function LinkAnother({ place }: { place: ComposerPlace }) {
     <Link
       to="/companies/$companyId/integrations"
       params={{ companyId: place.companyId }}
-      className={ROW}
+      className={choiceRow}
     >
       <Another words={LINK_ANOTHER_TOOL} />
     </Link>
@@ -144,7 +134,7 @@ function LinkAnother({ place }: { place: ComposerPlace }) {
     <Link
       to="/companies/$companyId/projects/$projectId/integrations"
       params={{ companyId: place.companyId, projectId }}
-      className={ROW}
+      className={choiceRow}
     >
       <Another words={RELEASE_ANOTHER_TOOL} />
     </Link>
@@ -156,7 +146,7 @@ function PlusMenuBody(props: { place: ComposerPlace; choice: Choice; onAttach: (
   const { offered } = props.choice
   return (
     <div className="flex flex-col gap-xs">
-      <button type="button" className={cn(ROW, 'justify-between')} onClick={props.onAttach}>
+      <button type="button" className={cn(choiceRow, 'justify-between')} onClick={props.onAttach}>
         <span className="flex items-center gap-sm">
           <PaperclipIcon aria-hidden="true" className="size-4 text-text-2" />
           {ATTACH_FILE}

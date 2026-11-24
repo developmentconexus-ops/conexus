@@ -19,8 +19,9 @@ import { cn } from '../../ui/cn.ts'
 import { SHEET_CLOSE_ROOM } from '../../ui/sheet.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
-import { useConnectorCatalog } from '../assistant/public.ts'
+import { useConnectorCatalog } from '../conversation/public.ts'
 import { modelLabel } from '../model-accounts/public.ts'
+import { DRAFT_PANEL } from './construtor-text.ts'
 import { useOpenAgentConversation } from './open-conversation.ts'
 import { publishFailureText, usePublish, usePublishLabel } from './publish.tsx'
 import { agentQuery } from './queries.ts'
@@ -29,7 +30,6 @@ import {
   AGENT_GONE,
   connectionOf,
   DRAFT_CHANGED,
-  DRAFT_PANEL,
   GONE_CONNECTION,
   memoryText,
   SAME_MODEL,

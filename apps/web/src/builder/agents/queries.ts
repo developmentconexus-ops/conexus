@@ -7,12 +7,10 @@ import {
   listAgentConversations,
   listAgents,
   listAgentVersions,
-  listConstrutorConversations,
   listTools,
   listWrites,
   publishAgent,
   saveAgentDraft,
-  setConstrutorModel,
 } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
@@ -45,10 +43,6 @@ export function writesQuery(scope: Scope, agentId: AgentId, conversationId: Conv
   return hubQuery(listWrites, { params: { ...scope, agentId, conversationId } })
 }
 
-export function construtorConversationsQuery(scope: Scope) {
-  return hubQuery(listConstrutorConversations, { params: scope })
-}
-
 /** Every read of the company's agent lists, whichever Projeto it names (the lists are keyed by company and Projeto). */
 export function agentsPrefix(scope: Pick<Scope, 'companyId'>) {
   return hubQueryPrefix(listAgents, { companyId: scope.companyId })
@@ -58,7 +52,6 @@ export const sendDraft = hubMutation(saveAgentDraft)
 export const sendPublish = hubMutation(publishAgent)
 export const sendActivation = hubMutation(activateAgentVersion)
 export const sendDeletion = hubMutation(deleteAgent)
-export const sendConstrutorModel = hubMutation(setConstrutorModel)
 export const sendTool = hubMutation(createTool)
 
 /** After a write that returns the agent: the page reads it as answered, and the versions and the list are read again. */

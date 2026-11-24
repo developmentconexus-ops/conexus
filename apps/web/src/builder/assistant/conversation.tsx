@@ -19,9 +19,9 @@ import {
   RoomContext,
   START_NO_ACCOUNT,
   titleOf,
+  useConnectorCatalog,
 } from '../conversation/public.ts'
 import { useComposerTools } from './composer-tools.tsx'
-import { useConnectorCatalog } from './connector-names.ts'
 import { CompanyMemoryProposal } from './memory-proposal.tsx'
 import { AppProposalCard } from './propose.tsx'
 import { assistantConversationQuery, sendAssistantModel } from './queries.ts'

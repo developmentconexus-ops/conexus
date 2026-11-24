@@ -2,10 +2,10 @@ import type { AgentDetail } from '@conexus/hub-api'
 import { ComputerIcon, GlobeIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { choiceRow } from '../../ui/block.tsx'
 import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Dialog, DialogContent } from '../../ui/dialog.tsx'
-import { ROW } from '../assistant/public.ts'
 import { Chooser } from './chooser.tsx'
 import { Creator } from './creator.tsx'
 import type { Part } from './section.tsx'
@@ -17,7 +17,7 @@ import { useDraftSave } from './use-draft-save.ts'
 /** A tool of Conexus's own that the draft chose: the web search, the Computador. */
 function ConexusRow(props: { icon: ReactNode; title: string; onRemove: () => void }) {
   return (
-    <li className={cn(ROW, 'justify-between')}>
+    <li className={cn(choiceRow, 'justify-between')}>
       <span className="flex min-w-0 flex-1 items-center gap-sm">
         {props.icon}
         <span className="truncate">{props.title}</span>

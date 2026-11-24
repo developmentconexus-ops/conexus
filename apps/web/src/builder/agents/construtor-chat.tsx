@@ -5,7 +5,6 @@ import { Link } from '@tanstack/react-router'
 import { ArrowLeftIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { useConnectorCatalog } from '../assistant/public.ts'
 import {
   agentBuilderRoom,
   Beside,
@@ -14,15 +13,17 @@ import {
   RoomContext,
   START_NO_ACCOUNT,
   titleOf,
+  useConnectorCatalog,
 } from '../conversation/public.ts'
-import { DraftPanel } from './draft-panel.tsx'
+import { construtorConversationsQuery, sendConstrutorModel } from './construtor-queries.ts'
 import {
-  agentQuery,
-  construtorConversationsQuery,
-  sendConstrutorModel,
-  toolsQuery,
-} from './queries.ts'
-import { CONSTRUTOR_FIRST, CONSTRUTOR_NAME, CONSTRUTOR_PLACEHOLDER, DRAFT_PANEL } from './text.ts'
+  CONSTRUTOR_FIRST,
+  CONSTRUTOR_NAME,
+  CONSTRUTOR_PLACEHOLDER,
+  DRAFT_PANEL,
+} from './construtor-text.ts'
+import { DraftPanel } from './draft-panel.tsx'
+import { agentQuery, toolsQuery } from './queries.ts'
 
 /** The strip over the conversation: the way back to Agentes and the conversation's title. */
 function Heading(props: {

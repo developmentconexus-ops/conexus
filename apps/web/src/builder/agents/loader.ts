@@ -1,20 +1,11 @@
 import type { AgentId, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
-import {
-  AGENTS_CONTROLLER,
-  AgentId as AgentIdSchema,
-  CONSTRUTOR_CONTROLLER,
-} from '@conexus/hub-api'
+import { AGENTS_CONTROLLER, AgentId as AgentIdSchema } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
 import { projectQuery } from '../../hub/projects/public.ts'
 import { HubFailure, idOrNotFound, readOrNotFound } from '../../platform/hub.ts'
 import { sessionReadQuery } from '../conversation/public.ts'
-import {
-  agentConversationsQuery,
-  agentQuery,
-  agentsQuery,
-  construtorConversationsQuery,
-} from './queries.ts'
+import { agentConversationsQuery, agentQuery, agentsQuery } from './queries.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -71,21 +62,6 @@ export async function loadAgentConversation(
     ]),
   )
   if (!listed.conversations.some((one) => one.id === ids.conversationId)) throw notFound()
-}
-
-/** A conversation with the Construtor: the person's own, in this Projeto. */
-export async function loadConstrutorConversation(
-  queryClient: QueryClient,
-  scope: Scope,
-  conversationId: ConversationId,
-) {
-  const [listed] = await readOrGone(
-    Promise.all([
-      queryClient.query(construtorConversationsQuery(scope)),
-      queryClient.ensureQueryData(sessionReadQuery(conversationId, CONSTRUTOR_CONTROLLER)),
-    ]),
-  )
-  if (!listed.conversations.some((one) => one.id === conversationId)) throw notFound()
 }
 
 /**

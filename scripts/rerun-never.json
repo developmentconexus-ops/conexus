@@ -1103,7 +1103,7 @@
       "name": "um agente apagado ou de outro Projeto dá a página de não encontrado"
     },
     {
-      "file": "apps/web/src/builder/agents/area.test.tsx",
+      "file": "apps/web/src/builder/agents/construtor-chat.test.tsx",
       "name": "uma conversa com o Construtor de outra pessoa dá não encontrado"
     },
     {

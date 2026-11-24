@@ -3,6 +3,8 @@ import {
   AgentsArea,
   AgentsReadFailure,
   AreaPending,
+  ConstrutorAsk,
+  ConstrutorConversations,
   loadArea,
 } from '../../../../../builder/agents/public.ts'
 import { projectParams } from '../../../../../hub/projects/public.ts'
@@ -19,5 +21,12 @@ export const Route = createFileRoute('/_app/companies/$companyId/projects/$proje
 
 function Area() {
   const { companyId, projectId } = Route.useParams()
-  return <AgentsArea companyId={companyId} projectId={projectId} />
+  const scope = { companyId, projectId }
+  return (
+    <AgentsArea
+      {...scope}
+      ask={<ConstrutorAsk {...scope} />}
+      earlier={<ConstrutorConversations {...scope} />}
+    />
+  )
 }

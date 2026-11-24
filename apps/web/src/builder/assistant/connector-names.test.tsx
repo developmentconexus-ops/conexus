@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { useConnectorCatalog } from './connector-names.ts'
+import { useConnectorCatalog } from '../conversation/public.ts'
 import { SANKHYA } from './test-hub.tsx'
 
 const server = hubServer()

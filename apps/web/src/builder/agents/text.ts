@@ -6,16 +6,6 @@ import { unconfirmedText } from '../../platform/hub.ts'
 export const AREA_TITLE = 'Agentes'
 /** What a tool's operation is called in its form, by what the operation does to the system's data. */
 export const OPERATION_LABEL: Record<ToolEffect, string> = { READ: 'Leitura', WRITE: 'Escrita' }
-export const CONSTRUTOR_NAME = 'Construtor'
-export const CONSTRUTOR_FIRST = 'Conte o que você quer que um agente faça.'
-export const CONSTRUTOR_PLACEHOLDER = 'Peça ao Construtor…'
-export const CONSTRUTOR_EXAMPLES = [
-  { label: 'Um agente de vendas', text: 'Quero um agente de vendas' },
-  {
-    label: 'Conferir as metas',
-    text: 'Quero um agente que confere as vendas de ontem com as metas',
-  },
-] as const
 export const NO_AGENTS = 'Nenhum agente ainda.'
 export const NO_AGENTS_COMPANY = 'Nenhum agente ainda. Os agentes nascem num Projeto.'
 export const NO_AGENTS_IN_PROJECT = 'Nenhum agente neste Projeto.'
@@ -31,7 +21,6 @@ export function lastRunText(lastRunAt: string | null, now: Date): string {
   if (lastRunAt === null) return 'Nunca rodou'
   return `Rodou ${agoOf(lastRunAt, now)}`
 }
-export const NO_CONSTRUTOR_CONVERSATIONS = 'Nenhuma conversa com o Construtor ainda.'
 export const MEMBERS_CANNOT =
   'Só o dono, os administradores e os desenvolvedores usam os agentes do Projeto.'
 export const UNCONFIRMED_SAVE = unconfirmedText('a gravação', 'Confira o painel e tente de novo.')
@@ -66,7 +55,6 @@ export const GONE_CONNECTION = 'O Projeto não oferece mais'
 export const DRAFT_CHANGED = 'O rascunho mudou. Abra o agente para ver.'
 export const VERSIONS_TITLE = 'Versões'
 export const ACTIVE_VERSION = 'Ativa'
-export const DRAFT_PANEL = 'Rascunho do agente'
 export const SAME_MODEL = 'O modelo de quem conversa'
 /** The notice of a tool whose library has a version the draft does not hold. */
 export function newVersionText(number: number): string {

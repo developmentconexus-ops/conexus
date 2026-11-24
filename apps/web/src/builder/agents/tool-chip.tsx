@@ -1,5 +1,5 @@
 import type { AgentTool } from '@conexus/hub-api'
-import { Logo } from '../assistant/public.ts'
+import { Logo } from '../conversation/public.ts'
 
 /** A tool the draft chose: its connector's logo, the name a person reads and the version the agent holds. */
 export function ToolChip(props: { logo: string | undefined; title: string; tool: AgentTool }) {

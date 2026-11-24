@@ -10,7 +10,6 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import { useConnectorCatalog } from '../assistant/public.ts'
 import type { OpenedFile, WritesRead, WriteTool } from '../conversation/public.ts'
 import {
   Beside,
@@ -19,6 +18,7 @@ import {
   RoomContext,
   START_NO_ACCOUNT,
   savedAgentRoom,
+  useConnectorCatalog,
 } from '../conversation/public.ts'
 import { FileWidth } from './file-width.ts'
 import { agentConversationsQuery, agentQuery, writesQuery } from './queries.ts'
