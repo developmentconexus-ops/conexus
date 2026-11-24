@@ -34,6 +34,8 @@ export const mercadoLivre = defineConnector({
       params: {},
     },
     token: { path: '/oauth/token' },
+    // Revokes the app's permission for the user, with the seller's own bearer
+    // (developers.mercadolivre.com.br/pt_br/gerenciamento-de-vendas/usuarios-e-aplicativos).
     revoke: { method: 'DELETE', path: '/users/{account}/applications/{app}' },
     answer: rfc6749Answer,
     refusals: {
@@ -48,6 +50,7 @@ export const mercadoLivre = defineConnector({
   },
   category: 'Marketplace',
   summary: 'O marketplace onde a loja vende: anúncios, pedidos, envios, perguntas e reclamações.',
+  // The provider's official symbol, without the written name (founder, 2026-10-29).
   logo: readFileSync(new URL('./logo.svg', import.meta.url), 'utf8'),
   numbers: 'EXACT',
   perProject: 'many',

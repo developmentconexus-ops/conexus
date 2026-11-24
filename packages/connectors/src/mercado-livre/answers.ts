@@ -10,6 +10,7 @@ function nativeOf(answer: ProviderAnswer): Native {
     status: answer.status,
     code: located.code ?? error ?? null,
     message: located.message,
+    // A 2xx body is the seller's data: it never rides along on an unreadable answer.
     body: answer.status >= 200 && answer.status < 300 ? null : answer.body,
   }
 }

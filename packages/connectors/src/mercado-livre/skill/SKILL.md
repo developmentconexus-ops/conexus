@@ -13,7 +13,6 @@ The connection is one seller's account, authorized by the store itself. Every re
 - A number comes as Mercado Livre wrote it when a double could not hold it: a price, a fee or any amount with decimals comes as text (`"199.9"`), and so does a whole number past 2^53. A whole number a double holds stays a number. Convert an amount before you sum or compare it.
 - One page per call. A list ends when `offset + limit` reaches `total` (`paging`, or the same counts at the top of the answer), and `temMais` says so. Read the next page only when the question needs it.
 - A scan (the listings and the questions) has no total: its answer gives the next page's cursor in `seguinte`, and the page with no rows is the end.
-- Orders, listings, questions, claims and billing periods can become a copy the Conexus keeps in the company's database: for data an app reads again and again, propose the copy instead of paging live.
 - Each list has its own page size cap and its own window; the part for the subject gives them.
 - A refusal comes with what Mercado Livre answered. A permission the app lacks (`PA_UNAUTHORIZED_RESULT_FROM_POLICIES`) refuses only that group of reads; the others still work.
 - An answer Mercado Livre could not fill whole (a partial `206`, on an order) is read, and carries `parcial: true`: some fields are missing, and Mercado Livre says the rest usually suffices. Say so when a missing field matters to the question.

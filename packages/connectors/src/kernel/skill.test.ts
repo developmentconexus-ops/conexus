@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CONNECTORS, connectorSkill, toolNameOf } from '../index.ts'
+import { mercadoLivre } from '../mercado-livre/definition.ts'
 import { sankhya } from '../sankhya/definition.ts'
 import { defineConnector } from './definition.ts'
 
@@ -25,6 +26,18 @@ test('a parte gerada: depois do cabeçalho, se a ligação escreve ou só lê, e
     assert.deepEqual(references, connector.skill.written.references)
   }
   assert.ok(connectorSkill(sankhya).content.includes(WRITES), 'the Sankhya writes')
+})
+
+test('a parte escrita não lista as operações: nenhum id nu de operação que não seja também assunto', () => {
+  for (const connector of [sankhya, mercadoLivre]) {
+    const { content, references } = connector.skill.written
+    const text = [content, ...Object.values(references)].join('\n')
+    const door = Object.keys(connector.readDoor ?? {})
+    const ids = [...connector.operations, ...(connector.writes ?? [])].map(({ id }) => String(id))
+    for (const id of [...ids, ...door])
+      if (!(id in connector.subjects))
+        assert.ok(!text.includes(`\`${id}\``), `${connector.id} lists \`${id}\``)
+  }
 })
 
 test('a conformidade recusa uma parte escrita que nomeia uma ferramenta do conector', () => {
