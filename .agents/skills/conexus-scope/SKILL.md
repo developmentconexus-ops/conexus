@@ -28,8 +28,9 @@ each unit will need.
    adds, with its ambiguous replies and the client's response; each row
    yields criteria.
 4. Design from zero (pstack `poteto-mode`). Split the step into units that each end green on their
-   own, grouped by pull request: a contract lands with its first implementer, and a migration that
-   changes the catalog snapshot lands with the unit that owns `database-grants.sql`.
+   own, grouped into pull requests by [delivery L9](../../../docs/guides/delivery.md), usually two
+   or three units each: a contract lands with its first implementer, and a migration that changes
+   the catalog snapshot lands with the unit that owns `database-grants.sql`.
    Shape a contract that crosses a module with pstack `architect` (`arena` if shapes compete);
    else compare two shapes in writing. Copy the study's reference table and give every row its unit,
    or "fica de fora" with its reason, and its new file ([card](references/card.md)). A row
@@ -52,8 +53,7 @@ each unit will need.
    does not fit one context; never the session that will build it.
 8. Give the card, at the exact commit the founder will approve, to a reader of another model who
    did not write it, with [the template](references/card.md)'s questions. The reader reads
-   the whole card once before any build, opening every reference table cell and cited line at the
-   installed version.
+   the whole card once before any build.
 
 ## What it produces
 

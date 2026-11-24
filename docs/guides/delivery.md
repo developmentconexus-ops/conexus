@@ -33,7 +33,7 @@ product decision, security boundary or operational prohibition.
 ## 2. The card
 
 - **L5.** `docs/steps/` **must** hold one file per track: the card in construction. A track's
-  page in `docs/steps/trilhas/` is not a card. The `processo` check reads a card's track from its old marks (`scripts/cli.ts`). The next card of a track waits in its own draft pull request, its units built on branches once
+  page in `docs/steps/trilhas/` is not a card. The next card of a track waits in its own draft pull request, its units built on branches once
   approved, and enters when the track's step closes; the `processo` check stays red on it only when the pull request is not a draft. [processo]
 - **L6.** The founder **must** approve the card's page in Portuguese, with his words, the date and
   the card's commit in its approval file, named as the card in `docs/approvals/`, with its
@@ -53,20 +53,20 @@ product decision, security boundary or operational prohibition.
 
 ## 3. Build and review
 
-- **L9.** Review **should** follow the approved protocol. The build is one pull request per
-  step or group of units, one commit per unit. From its opening, beside CI, one Opus reviewer
+- **L9.** Review **should** follow the approved protocol. The build groups units into the fewest pull
+  requests L2 allows, usually two or three, one commit per unit; each costs a CI run, a review and
+  a merge, so a unit never spans two and a group splits only past L2, never to run in parallel what
+  one builder builds. From its opening, beside CI, one Opus reviewer
   reads it commit by commit; a changed commit gets a delta. After the last unit, QA
   ([testing T25](testing.md)) and one whole-step reviewer start together: Claude on Opus, no builder
   of the step, following [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md). It reads only
   what no unit review could see: the whole reference table row by row ([code C75](code.md)) and the
-  seams between pull requests; it runs the refusal criteria, reads CI logs and never rereads an
-  approved diff.
+  seams between pull requests, and never rereads an approved diff.
   Nobody waits for QA; a review left incomplete is finished by its reviewer. QA and review findings
   form one fix round, split into fronts that share no file, built at once, one commit each, as one
   pull request into `main`; a Bloqueia that needs a contract the card lacks follows L7, then is one
   more front with its own delta. One reader checks each front's delta for closed Bloqueia and new
-  defects, while QA reruns the screens it touched. The card's reader checks the reference table
-  before any build. Founder, 2026-10-25: "2. A", "3. A"; 2026-11-15.
+  defects, while QA reruns the screens it touched. Founder, 2026-10-25: "2. A", "3. A"; 2026-11-15.
   Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
   deltas. Founder, 2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
@@ -88,7 +88,7 @@ product decision, security boundary or operational prohibition.
 
 - **L13.** Each build pull request **must** enter `main` as one merge, by firstmate, after the tests
   pass and its review approves the same commit. The card's pull request and a proof's decision record carry
-  documents only; the step's last pull request adds the closing (L19). One founder merge word
+  documents only. One founder merge word
   covers a step's units; review and CI still gate each.
   Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim".
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
