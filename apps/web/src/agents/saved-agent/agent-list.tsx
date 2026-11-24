@@ -177,7 +177,7 @@ function ProjectFilter({ companyId, projectId }: Place) {
 export function AgentsPage(props: Place) {
   const { companyId, projectId } = props
   return (
-    <Page projectId={undefined} gap="xl">
+    <Page scrolls={false} gap="xl">
       <PageHeader title={AREA_TITLE} actions={<NewAgent companyId={companyId} />} />
       <ProjectFilter companyId={companyId} projectId={projectId} />
       <AgentList companyId={companyId} projectId={projectId} inicio />

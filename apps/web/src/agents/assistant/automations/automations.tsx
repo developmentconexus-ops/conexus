@@ -247,7 +247,7 @@ export function Automations(props: Place) {
   const { companyId, projectId } = props
   const read = useQuery(automationsQuery(companyId, projectId))
   return (
-    <Page projectId={projectId} gap="xl">
+    <Page scrolls={projectId !== undefined} gap="xl">
       <PageTitle>{AUTOMATIONS_TITLE}</PageTitle>
       {read.isPending && <Skeleton className="h-24 w-full" />}
       {read.isError && (

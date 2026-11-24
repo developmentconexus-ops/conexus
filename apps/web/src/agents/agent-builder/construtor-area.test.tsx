@@ -1,7 +1,7 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { say } from '../../harness/room/test-hub.tsx'
-import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { AREA, BUILDER_CHAT } from '../saved-agent/test-agents.ts'
 import { agentScreens } from '../saved-agent/test-hub.tsx'
 
@@ -74,4 +74,13 @@ test('o modelo escolhido na caixa vai com o pedido que abre a conversa', async (
   fireEvent.click(await screen.findByRole('option', { name: 'Claude Opus 4' }))
   say(await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' }), 'um pedido')
   await waitFor(() => expect(writes()[0]?.body).toMatchObject({ model: 'anthropic/claude-opus-4' }))
+})
+
+test('a caixa do Construtor tem o botão do modelo e do raciocínio e não mostra o Projeto', async () => {
+  at(AREA, { agents: [] })
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
+  const form = box.closest('form')
+  if (form === null) throw new Error('the box has no form')
+  expect(await within(form).findByRole('combobox', { name: 'Modelo e raciocínio' })).toBeTruthy()
+  expect(within(form).queryByText(PEDIDOS.name)).toBeNull()
 })

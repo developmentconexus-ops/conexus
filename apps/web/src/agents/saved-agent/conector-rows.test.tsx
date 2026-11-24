@@ -1,18 +1,13 @@
-import {
-  AGENTS_CONTROLLER,
-  BUILDER_ROUTES,
-  BUILDER_TOOL,
-  CONSTRUTOR_CONTROLLER,
-} from '@conexus/hub-api'
+import { AGENTS_CONTROLLER, BUILDER_ROUTES, BUILDER_TOOL } from '@conexus/hub-api'
 import { screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { SANKHYA, toolSaid } from '../assistant/test-hub.tsx'
-import { AGENT, AREA, agent, BUILDER_CHAT, CHAT } from './test-agents.ts'
+import { AGENT, AREA, agent, CHAT } from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
 
-// F-A2 (step 24.3): the Construtor's and the agent's conversations name a connector by the catalog's words.
+// F-A2 (step 24.3): the agent's conversation names a connector by the catalog's words.
 const server = hubServer()
 const { at } = agentScreens(server)
 const READ = { operation: 'sankhya.consultar', connection: 'Matriz' }
@@ -34,15 +29,6 @@ function stored(controller: string) {
     ),
   )
 }
-
-test('a conversa do Construtor lê "Leu Sankhya · Matriz"', async () => {
-  at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
-    agents: [],
-    construtor: [{ id: BUILDER_CHAT, title: 'x', createdAt: UPDATED, updatedAt: UPDATED }],
-  })
-  stored(CONSTRUTOR_CONTROLLER)
-  expect(await screen.findByText('Leu Sankhya · Matriz')).toBeTruthy()
-})
 
 test('a conversa do agente lê "Leu Sankhya · Matriz"', async () => {
   at(`${AREA}/${AGENT}/${CHAT}`, {

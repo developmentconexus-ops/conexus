@@ -3,8 +3,7 @@ import {
   ConstrutorChat,
   loadConstrutorConversation,
 } from '../../../../../agents/agent-builder/public.ts'
-import { ConversationGone } from '../../../../../agents/assistant/public.ts'
-import { projectConversationParams } from '../../../../../harness/room/public.ts'
+import { ConversationGone, projectConversationParams } from '../../../../../harness/room/public.ts'
 
 // A conversation with the Construtor, at its Projeto's address; another person's or another Projeto's is not found.
 export const Route = createFileRoute(

@@ -1,12 +1,9 @@
-import { CompanyId, listConnections } from '@conexus/hub-api'
+import { listConnections } from '@conexus/hub-api'
 import { screen, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
-import { wordsOf } from '../../harness/room/connector-words.ts'
-import { appBuilderRoom } from '../../harness/room/room.ts'
 import { conversationOf, FIRST, screens } from '../../harness/room/test-hub.tsx'
 import { recordedRun } from '../../harness/room/test-recorded.ts'
-import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { KIT_SANKHYA } from '../../platform/test-kit.ts'
 
@@ -51,13 +48,4 @@ test('sem o catálogo, a fonte do Builder nomeia o conector pelo id', async () =
   const sources = await askedIn([])
   await within(sources).findByText('sankhya · Matriz')
   expect(sources.querySelector('img')).toBeNull()
-})
-
-test('a sala do Builder toma do catálogo o nome e a logo, e a recusa de conector segue a do Builder', () => {
-  const room = appBuilderRoom(wordsOf([KIT_SANKHYA]), CompanyId.parse(COMPANY.id), () => undefined)
-  expect(room.connectors.name('sankhya')).toBe('Sankhya')
-  expect(room.connectors.logo('sankhya')).toBe(KIT_SANKHYA.logo)
-  expect(room.connectors.refusal('sankhya', { kind: 'UNREACHABLE' })).toBe(
-    'Não conseguiu ler o sistema da empresa.',
-  )
 })

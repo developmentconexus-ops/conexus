@@ -237,7 +237,7 @@ export function Chat(props: ChatProps) {
         for (const queryKey of [props.conversationKey, ...props.listKeys])
           void queryClient.invalidateQueries({ queryKey })
       },
-      heard: room.kind === 'APP_BUILDER' ? room.heard : undefined,
+      changed: room.kind === 'APP_BUILDER' ? room.changed : undefined,
     },
   )
   const { error, setError, send, halt } = useSending(props, builder, field, dispatch, () =>

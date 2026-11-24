@@ -8,10 +8,12 @@ export { useConnectorCatalog } from './connector-catalog.ts'
 export type { ConversationActions } from './conversation-menu.tsx'
 export { ConversationMenu } from './conversation-menu.tsx'
 export { useDraft } from './draft.ts'
+export { ConversationGone } from './gone.tsx'
 export type { AssistantHandOff, ModelRefusal } from './handoff.ts'
 export { assistantHandOffTo, handoffTo, hasInterruptedHandoff, isModelRefusal } from './handoff.ts'
 export { Logo } from './logo.tsx'
 export { Markdown } from './markdown.tsx'
+export type { Stored } from './messages.ts'
 export { ComposerModelPicker, ModelChoice, NoAccount } from './model-choice.tsx'
 export { conversationParams, projectConversationParams } from './params.ts'
 export { CONTINUE_HERE } from './proposals.ts'
@@ -48,6 +50,7 @@ export {
   titleOf,
   toolsText,
   UNCONFIRMED_CREATION,
+  UNCONFIRMED_SEND,
   UNCONFIRMED_WRITE,
   WRITE_AGAIN,
 } from './text.ts'

@@ -7,7 +7,6 @@ import type {
   ProposedCompanyMemory,
   ShownFile,
 } from '@conexus/hub-api'
-import type { KnownAgentControllerEvent } from '@mastra/client-js'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
 import type { WritesRead } from './approval-item.ts'
@@ -67,6 +66,9 @@ type AssistantProposals = {
   companyMemory: (proposal: { proposed: ProposedCompanyMemory; toolCallId: string }) => ReactNode
 }
 
+/** What a run changed beyond the transcript: a saved version, the Projeto's files; a ready Prévia, the app it shows. */
+export type RunChange = 'VERSION_SAVED' | 'PREVIEW_READY'
+
 /**
  * Whose conversation the rows are drawn in, one variant per agent: each has only the fields its own
  * agent has, so a card of one agent cannot be drawn by the code of another. Whose session it is, is
@@ -76,8 +78,8 @@ export type Room =
   | (RoomBase &
       Notebook & {
         kind: 'APP_BUILDER'
-        /** What an event of the Builder's run changes beyond the transcript: a saved version, the Projeto's files; a ready one, its Prévia. */
-        heard: (event: KnownAgentControllerEvent) => void
+        /** What the Builder does when its run changes something beyond the transcript. */
+        changed: (change: RunChange) => void
       })
   | (RoomBase & Opened & Notebook & { kind: 'ASSISTANT'; proposals: AssistantProposals })
   | (RoomBase &
@@ -126,7 +128,7 @@ export function agentWords(agent: string): BoxWords {
 export function appBuilderRoom(
   words: ConnectorWords,
   companyId: CompanyId,
-  heard: RoomOf<'APP_BUILDER'>['heard'],
+  changed: RoomOf<'APP_BUILDER'>['changed'],
 ): RoomOf<'APP_BUILDER'> {
   return {
     kind: 'APP_BUILDER',
@@ -135,7 +137,7 @@ export function appBuilderRoom(
     overrides: {},
     failures: {},
     notebook: { companyId },
-    heard,
+    changed,
   }
 }
 

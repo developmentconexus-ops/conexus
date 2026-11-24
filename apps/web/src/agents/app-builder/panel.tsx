@@ -1,5 +1,5 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, PreviewData } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useLocation } from '@tanstack/react-router'
@@ -45,21 +45,21 @@ function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
 
 type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
 
-function heardOnProjeto(
+function rereadOnChange(
   queryClient: QueryClient,
   scope: Pick<Params, 'companyId' | 'projectId'>,
-): RoomOf<'APP_BUILDER'>['heard'] {
-  return (event) => {
-    if (event.type !== 'message_start') return
-    const { parts } = event.message.content
-    if (parts.some((part) => part.type === 'data-conexus-version'))
-      void sourceChanged(queryClient, scope)
-    const ready = parts.some(
-      (part) =>
-        part.type === 'data-conexus-preview' &&
-        PreviewData.safeParse(part.data).data?.state === 'ready',
-    )
-    if (ready) void previewChanged(queryClient, scope)
+): RoomOf<'APP_BUILDER'>['changed'] {
+  return (change) => {
+    switch (change) {
+      case 'VERSION_SAVED':
+        return void sourceChanged(queryClient, scope)
+      case 'PREVIEW_READY':
+        return void previewChanged(queryClient, scope)
+      default: {
+        const _exhaustive: never = change
+        return _exhaustive
+      }
+    }
   }
 }
 
@@ -69,7 +69,7 @@ function BuilderChat(params: Params) {
   const queryClient = useQueryClient()
   const { words } = useConnectorCatalog(companyId)
   const room = useMemo(
-    () => appBuilderRoom(words, companyId, heardOnProjeto(queryClient, { companyId, projectId })),
+    () => appBuilderRoom(words, companyId, rereadOnChange(queryClient, { companyId, projectId })),
     [words, companyId, projectId, queryClient],
   )
   return (

@@ -90,7 +90,7 @@ export const DATA: readonly ShowcaseEntry[] = [
     </>
   )),
   entry('page.tsx', 'Dados', 'A coluna de uma página do Início ou de um Projeto.', () => (
-    <Page projectId={undefined} gap="lg">
+    <Page scrolls={false} gap="lg">
       <PageTitle>Automações</PageTitle>
       <List>
         <Row>Resumo das vendas da semana</Row>

@@ -2,8 +2,8 @@ import { OperationId } from '@conexus/hub-api'
 import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { onPhone } from '../../harness/room/test-hub.tsx'
-import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
-import { AGENT, AREA, agent, BUILDER_CHAT, MATRIZ, TEST_CHAT, toolSummary } from './test-agents.ts'
+import { hubServer } from '../../platform/test-hub.tsx'
+import { AGENT, AREA, agent, MATRIZ, TEST_CHAT, toolSummary } from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
 import { TEST_BANNER } from './text.ts'
 
@@ -11,15 +11,6 @@ import { TEST_BANNER } from './text.ts'
 const server = hubServer()
 const { at } = agentScreens(server)
 const PAGE = `${AREA}/${AGENT}`
-
-/** The form of the Construtor's box: its model button sits inside it, and no Projeto (the person is already in one). */
-async function construtorBox() {
-  const form = (await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })).closest(
-    'form',
-  )
-  if (form === null) throw new Error('the box has no form')
-  return form
-}
 
 function ready(operation: string, label: string) {
   return {
@@ -102,40 +93,12 @@ test('a conversa de teste fica na folha branca', async () => {
   expect(root?.className).not.toContain('bg-canvas')
 })
 
-test('a conversa com o Construtor fica na folha branca, com o botão do modelo na caixa e sem o Projeto', async () => {
-  at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
-    agents: [],
-    construtor: [
-      {
-        id: BUILDER_CHAT,
-        title: 'Meu agente',
-        createdAt: '2026-11-02T12:00:00.000Z',
-        updatedAt: '2026-11-02T12:00:00.000Z',
-      },
-    ],
-  })
-  const title = await screen.findByRole('heading', { level: 1, name: 'Meu agente' })
-  const root = title.parentElement?.parentElement
-  expect(root?.className).toContain('bg-surface')
-  expect(root?.className).not.toContain('bg-canvas')
-  const form = await construtorBox()
-  expect(await within(form).findByRole('combobox', { name: 'Modelo e raciocínio' })).toBeTruthy()
-  expect(within(form).queryByText(PEDIDOS.name)).toBeNull()
-})
-
 test('o formulário Criar usa os seletores da Pauta, não os do navegador', async () => {
   at(PAGE, { agents: [agent({ tools: [] })] })
   fireEvent.click(await screen.findByRole('button', { name: 'Criar' }))
   const dialog = await screen.findByRole('dialog')
   expect(within(dialog).getByRole('combobox', { name: 'Ligação' })).toBeTruthy()
   expect(dialog.querySelector('select')).toBeNull()
-})
-
-test('a caixa do Construtor tem o botão do modelo e do raciocínio e não mostra o Projeto', async () => {
-  at(AREA, { agents: [] })
-  const form = await construtorBox()
-  expect(await within(form).findByRole('combobox', { name: 'Modelo e raciocínio' })).toBeTruthy()
-  expect(within(form).queryByText(PEDIDOS.name)).toBeNull()
 })
 
 test('no celular, Apagar também fica no menu ⋯', async () => {

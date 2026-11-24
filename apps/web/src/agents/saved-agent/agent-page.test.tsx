@@ -3,22 +3,20 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { choose, onPhone } from '../../harness/room/test-hub.tsx'
-import { connectionOf } from '../../hub/connectors/fixtures.ts'
 import { COMPANY, problemOf } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { SANKHYA } from '../assistant/test-hub.tsx'
 import {
   AGENT,
   AREA,
   agent,
   CHAT,
-  MATRIZ,
   OTHER_AGENT,
   TEST_CHAT,
   toolSummary,
   version,
 } from './test-agents.ts'
 import { agentScreens } from './test-hub.tsx'
+import { catalogRoute } from './test-hub-tools.tsx'
 
 // A página do agente (step 24.3, U5, criteria 27 and 28).
 const server = hubServer()
@@ -234,15 +232,7 @@ test('com a leitura das ligações recusada, Ligações diz a falha em vez de ca
 
 test('a ligação mostra Funcionando', async () => {
   at(PAGE, { agents: [agent()] })
-  server.use(
-    http.get('*/api/companies/:companyId/connections', () =>
-      HttpResponse.json({
-        connectors: [SANKHYA],
-        connections: [connectionOf({ id: MATRIZ, name: 'Matriz', state: 'ACTIVE' })],
-        mayManage: true,
-      }),
-    ),
-  )
+  server.use(catalogRoute())
   const connections = await screen.findByRole('region', { name: 'Ligações' })
   expect(await within(connections).findByText('Funcionando')).toBeTruthy()
 })

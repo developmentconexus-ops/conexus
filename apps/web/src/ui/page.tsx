@@ -1,23 +1,17 @@
-import type { ProjectId } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { cn } from './cn.ts'
 
 /**
- * The column of an Automações page, or of the Início's Agentes page. The company's Início sits in a
- * frame that pads and scrolls it (as the Projetos list does); a Projeto's frame is compact, so
- * there the page pads and scrolls itself, as the Projeto's Conversas does.
+ * A page's column, as wide as a page reads. Inside a frame that pads and scrolls it, the column only stacks its
+ * children; `scrolls` is for a compact frame, where the column pads and scrolls itself.
  */
-export function Page(props: {
-  projectId: ProjectId | undefined
-  gap: 'lg' | 'xl'
-  children: ReactNode
-}) {
+export function Page(props: { scrolls: boolean; gap: 'lg' | 'xl'; children: ReactNode }) {
   return (
     <div
       className={cn(
         'mx-auto flex w-full max-w-page flex-col',
         props.gap === 'xl' ? 'gap-xl' : 'gap-lg',
-        props.projectId !== undefined && 'min-h-0 flex-1 overflow-y-auto p-xl',
+        props.scrolls && 'min-h-0 flex-1 overflow-y-auto p-xl',
       )}
     >
       {props.children}

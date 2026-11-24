@@ -5,8 +5,8 @@ const { readdirSync } = require('node:fs')
 const { join } = require('node:path')
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
-// The tests of the agents and the helpers beside them drive the room's test Hub and stream, as a server test drives the test Hub (T5).
-const WEB_AGENT_TESTS = '^apps/web/src/agents/.*(test-[^/]+|\\.test)\\.tsx?$'
+// The helpers a web test shares are the files named test-*, in any folder of the web: they drive a subject's inside, and a test of another subject reads them (T5).
+const WEB_TEST_HELPER = `${WEB}/.*/test-[^/]+\\.tsx?$`
 // The door of a subject is the public.ts at its root, or a public-<name>.tsx there (Node strips no types from .tsx, so public.ts cannot re-export one); a file deeper in is the inside (C4).
 const PUBLIC_DOOR = '(^|/)(hub|builder|harness|agents)/[^/]+/public(-[a-z]+\\.tsx|\\.ts)$'
 // The door of a subject's tables: only a tables.ts (a foreign key) imports it (C8).
@@ -54,11 +54,11 @@ module.exports = {
       severity: 'error',
       from: {
         path: `^apps/(server|web)/src/(hub|builder|harness|agents)/([^/]+)/`,
-        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER, WEB_AGENT_TESTS],
+        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER, WEB_TEST_HELPER],
       },
       to: {
         path: `^apps/$1/src/(hub|builder|harness|agents)/[^/]+/`,
-        pathNot: [`^apps/$1/src/$2/$3/`, PUBLIC_DOOR, TABLE_DOOR],
+        pathNot: [`^apps/$1/src/$2/$3/`, PUBLIC_DOOR, TABLE_DOOR, WEB_TEST_HELPER],
       },
     },
     {

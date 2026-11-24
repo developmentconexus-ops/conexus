@@ -168,4 +168,5 @@ export const DELETE_TEXT =
   'Isto não se desfaz. As mensagens e os arquivos da máquina dela vão junto. O app e as versões do Projeto ficam.'
 export const DELETE_CONFIRM = 'Apagar conversa'
 export const CANCEL = 'Cancelar'
+export const CONVERSATION_GONE = 'Esta conversa não existe mais.'
 export const UNCONFIRMED_WRITE = unconfirmedText(undefined, 'Veja a lista.')

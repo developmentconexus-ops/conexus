@@ -1,4 +1,5 @@
 import type { ConversationId } from '@conexus/hub-api'
+import { PreviewData } from '@conexus/hub-api'
 import type { AgentControllerEvent, KnownAgentControllerEvent } from '@mastra/client-js'
 import { isKnownAgentControllerEvent, MastraClientError } from '@mastra/client-js'
 import type { QueryClient } from '@tanstack/react-query'
@@ -7,6 +8,7 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useReducer, useState }
 import { failureOfProblem } from '../../platform/hub.ts'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
+import type { RunChange } from './room.ts'
 import type { BuilderSession, Place } from './session.ts'
 import { sessionOf } from './session.ts'
 import type { Action } from './session-state.ts'
@@ -34,7 +36,7 @@ type Hooks = {
   onEnded: () => void
   onTitled: () => void
   onFollowing: () => void
-  onHeard: (event: KnownAgentControllerEvent) => void
+  onChanged: (change: RunChange) => void
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {
@@ -74,11 +76,26 @@ function resync(hooks: Hooks): void {
   })
 }
 
+/** What the run changed beyond the transcript, as the message it starts carries it: a saved version, a ready Prévia. */
+function changesOf(event: KnownAgentControllerEvent): RunChange[] {
+  if (event.type !== 'message_start') return []
+  const { parts } = event.message.content
+  const changes: RunChange[] = []
+  if (parts.some((part) => part.type === 'data-conexus-version')) changes.push('VERSION_SAVED')
+  const ready = parts.some(
+    (part) =>
+      part.type === 'data-conexus-preview' &&
+      PreviewData.safeParse(part.data).data?.state === 'ready',
+  )
+  if (ready) changes.push('PREVIEW_READY')
+  return changes
+}
+
 function heard(hooks: Hooks, event: AgentControllerEvent): void {
   if (!isKnownAgentControllerEvent(event)) return
   hooks.dispatch({ type: 'event', event })
   if (event.type === 'task_updated') tasksHeard(hooks, event.tasks)
-  hooks.onHeard(event)
+  for (const change of changesOf(event)) hooks.onChanged(change)
   // Mastra saves an errored run's messages a moment after its end: the read catches them up.
   if (event.type === 'agent_end') reread(hooks)
   // Mastra names the conversation after the answer ended, and the observer renames it later. The
@@ -156,8 +173,8 @@ export function useSession(
     ended: () => void
     /** Mastra named the conversation, or the observer renamed it: the caller reads its title again. */
     titled: () => void
-    /** What the agent does with an event beyond the transcript, as its room says; nothing by default. */
-    heard?: (event: KnownAgentControllerEvent) => void
+    /** What the agent does when its run changes something beyond the transcript, as its room says; nothing by default. */
+    changed?: (change: RunChange) => void
   },
 ) {
   const queryClient = useQueryClient()
@@ -167,7 +184,7 @@ export function useSession(
   const gone = useEffectEvent(on.gone)
   const ended = useEffectEvent(on.ended)
   const titled = useEffectEvent(on.titled)
-  const heard = useEffectEvent((event: KnownAgentControllerEvent) => on.heard?.(event))
+  const changed = useEffectEvent((change: RunChange) => on.changed?.(change))
   const { conversationId, controller } = ids
   const builder = useMemo(() => sessionOf(conversationId, controller), [conversationId, controller])
   // The window of messages read grows by a page for each load of older messages; `Screen` remounts
@@ -206,7 +223,7 @@ export function useSession(
       onEnded: ended,
       onTitled: titled,
       onFollowing: () => setFollowing(true),
-      onHeard: heard,
+      onChanged: changed,
     }
     void follow(hooks, stop.signal)
     return () => stop.abort()

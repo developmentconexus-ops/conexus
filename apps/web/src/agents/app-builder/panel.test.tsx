@@ -3,6 +3,7 @@ import { createMemoryHistory } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
+import { EMPTY_CONVERSATION, UNCONFIRMED_SEND } from '../../harness/room/public.ts'
 import {
   AGENT_START,
   agentEnd,
@@ -23,7 +24,6 @@ import {
   view,
 } from '../../harness/room/test-hub.tsx'
 import { attach, displayOf, parkedOf } from '../../harness/room/test-stream.tsx'
-import { EMPTY_CONVERSATION, UNCONFIRMED_SEND } from '../../harness/room/text.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 
 const { open, openConversation } = screens(hubServer())

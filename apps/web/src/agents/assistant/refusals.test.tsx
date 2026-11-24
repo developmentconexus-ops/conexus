@@ -2,7 +2,7 @@ import { BUILDER_TOOL, DATA_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { describe, expect, test, vi } from 'vitest'
-import type { Stored } from '../../harness/room/messages.ts'
+import type { Stored } from '../../harness/room/public.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
 import {
   ASKED,

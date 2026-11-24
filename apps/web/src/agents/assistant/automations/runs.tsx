@@ -127,7 +127,7 @@ export function AutomationRuns(props: {
         })
   }
   return (
-    <Page projectId={projectId} gap="lg">
+    <Page scrolls={projectId !== undefined} gap="lg">
       <div>
         {projectId === undefined ? (
           <Link

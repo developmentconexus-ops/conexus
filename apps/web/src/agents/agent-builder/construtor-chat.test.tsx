@@ -1,7 +1,9 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { BUILDER_ROUTES, BUILDER_TOOL, CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
-import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { SANKHYA, toolSaid } from '../assistant/test-hub.tsx'
 import { AREA, BUILDER_CHAT } from '../saved-agent/test-agents.ts'
 import { agentScreens } from '../saved-agent/test-hub.tsx'
 
@@ -61,4 +63,51 @@ test('a conversa com o Construtor sumir do Hub faz a lista ser lida de novo', as
     }),
   )
   await waitFor(() => expect(reads).toBeGreaterThan(atGone))
+})
+
+test('a conversa com o Construtor fica na folha branca, com o botão do modelo na caixa e sem o Projeto', async () => {
+  at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
+    agents: [],
+    construtor: [
+      {
+        id: BUILDER_CHAT,
+        title: 'Meu agente',
+        createdAt: '2026-11-02T12:00:00.000Z',
+        updatedAt: '2026-11-02T12:00:00.000Z',
+      },
+    ],
+  })
+  const title = await screen.findByRole('heading', { level: 1, name: 'Meu agente' })
+  const root = title.parentElement?.parentElement
+  expect(root?.className).toContain('bg-surface')
+  expect(root?.className).not.toContain('bg-canvas')
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
+  const form = box.closest('form')
+  if (form === null) throw new Error('the box has no form')
+  expect(await within(form).findByRole('combobox', { name: 'Modelo e raciocínio' })).toBeTruthy()
+  expect(within(form).queryByText(PEDIDOS.name)).toBeNull()
+})
+
+test('a conversa do Construtor lê "Leu Sankhya · Matriz" (F-A2, step 24.3)', async () => {
+  const updated = '2026-11-02T12:00:00.000Z'
+  at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
+    agents: [],
+    construtor: [{ id: BUILDER_CHAT, title: 'x', createdAt: updated, updatedAt: updated }],
+  })
+  const read = { operation: 'sankhya.consultar', connection: 'Matriz' }
+  server.use(
+    http.get('*/api/companies/:companyId/connections', () =>
+      HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: false }),
+    ),
+    http.get(
+      `*${BUILDER_ROUTES}/agent-controller/${CONSTRUTOR_CONTROLLER}/sessions/:id/threads/:t/messages`,
+      () =>
+        HttpResponse.json({
+          messages: [
+            toolSaid(BUILDER_TOOL.connectorRead, read, { kind: 'OK', value: {}, complete: true }),
+          ],
+        }),
+    ),
+  )
+  expect(await screen.findByText('Leu Sankhya · Matriz')).toBeTruthy()
 })
