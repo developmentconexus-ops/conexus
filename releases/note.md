@@ -1,25 +1,27 @@
-# v0.24.121
+# v0.24.122
 
-Esta versão publica o que entrou no `main` em 24/11: o Sankhya e o Mercado Livre refeitos no padrão
-novo dos conectores, e o Builder conferindo o app no navegador antes de dizer que ficou pronto.
+Esta versão publica o que entrou no `main` em 24/11 depois da v0.24.121: o Caderno de uma ligação
+passa a só gravar com o sim de uma pessoa, e a conferência do Builder espera a tela terminar de
+carregar antes de olhar o app.
 
-**Sankhya e Mercado Livre.** As duas ligações funcionam como antes e respondem as mesmas perguntas,
-com as mesmas leituras. O Sankhya segue lendo e escrevendo, e cada escrita continua pedindo a
-aprovação de uma pessoa. O Mercado Livre segue só lendo. Mudam dois pontos:
+**O Caderno pede o sim.** Quando o Assistente ou o Builder quer guardar uma anotação no Caderno de uma
+ligação, a conversa mostra o cartão "Gravar no Caderno?" com o conceito, o mapeamento e a consulta, e
+nada é provado nem gravado antes da resposta.
 
-- Os valores com fração passam a chegar como texto, por exemplo `"12.5"` no Sankhya e `"32.05"` no
-  Mercado Livre, para não perder casas decimais. O Assistente, as ferramentas salvas e os apps
-  recebem o texto e convertem o que usam. Um app que soma dois desses valores precisa convertê-los
-  antes de somar, senão junta os textos em vez de somar os números.
-- No Sankhya, a busca por um nome com colchetes, como `EMPORIO [CENTRO]`, acha o texto que a pessoa
-  escreveu.
+- Com o sim, a anotação é provada e gravada, e a página da ligação mostra "Aprovada por" e o nome de
+  quem aprovou. As anotações de antes mostram "Gravada sem aprovação".
+- Com o não, nada é gravado e a conversa segue.
+- Só quem gerencia as ligações pode aprovar. Para quem não gerencia, o cartão mostra "Peça a quem
+  gerencia a ligação." e não tem botões. Um membro de um Projeto sem esse direito deixa de gravar no
+  Caderno pelo Builder.
+- Se a ligação saiu, ou se a anotação foi recusada, o cartão diz isso em vez de gravar.
 
-**Builder.** Ao fim de cada turno, o Builder abre o app que construiu num navegador, na máquina dele,
-e confere a tela de entrada antes de dizer que a versão ficou pronta. Uma tela que dá erro, ou que
-quebra ao abrir, devolve o turno ao Builder para ele corrigir. Uma versão que não inicia é recusada
-no fim do turno, em vez de aparecer em Versões como "Falhou: O app não inicia.". Nesse caso a conversa
-termina dizendo que a versão foi guardada e não montou, e a versão seguinte aparece em Versões já
-como a que está na Prévia. Se a conferência não puder rodar, o Builder avisa que não conseguiu
-conferir o app.
+**Builder.** Ao conferir o app no fim do turno, o Builder agora espera a tela sair do carregando antes
+de capturá-la. Antes, um app que montava devagar podia ser fotografado ainda no esqueleto, e um erro
+que chegava depois não entrava no relatório. Uma tela que nunca sai do carregando não reprova a
+conferência: a captura sai como está, dentro do mesmo limite de tempo de antes. No meio do turno, a
+linha da conferência que não pôde rodar passa a dizer "Não consegui conferir o app agora. Isso não diz
+nada sobre o app.", em vez de dizer que o código ficou guardado sem conferência, o que só vale no fim
+do turno.
 
 Segue a etapa O conector no padrão novo.
