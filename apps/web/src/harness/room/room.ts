@@ -66,7 +66,6 @@ type AssistantProposals = {
   companyMemory: (proposal: { proposed: ProposedCompanyMemory; toolCallId: string }) => ReactNode
 }
 
-/** What a run changed beyond the transcript: a saved version, the Projeto's files; a ready Prévia, the app it shows. */
 export type RunChange = 'VERSION_SAVED' | 'PREVIEW_READY'
 
 /**
@@ -78,7 +77,6 @@ export type Room =
   | (RoomBase &
       Notebook & {
         kind: 'APP_BUILDER'
-        /** What the Builder does when its run changes something beyond the transcript. */
         changed: (change: RunChange) => void
       })
   | (RoomBase & Opened & Notebook & { kind: 'ASSISTANT'; proposals: AssistantProposals })

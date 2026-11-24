@@ -76,7 +76,6 @@ function resync(hooks: Hooks): void {
   })
 }
 
-/** What the run changed beyond the transcript, as the message it starts carries it: a saved version, a ready Prévia. */
 function changesOf(event: KnownAgentControllerEvent): RunChange[] {
   if (event.type !== 'message_start') return []
   const { parts } = event.message.content
@@ -173,7 +172,6 @@ export function useSession(
     ended: () => void
     /** Mastra named the conversation, or the observer renamed it: the caller reads its title again. */
     titled: () => void
-    /** What the agent does when its run changes something beyond the transcript, as its room says; nothing by default. */
     changed?: (change: RunChange) => void
   },
 ) {
