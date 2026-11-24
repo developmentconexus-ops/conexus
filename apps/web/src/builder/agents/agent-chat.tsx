@@ -13,12 +13,12 @@ import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useConnectorCatalog } from '../assistant/public.ts'
 import type { OpenedFile, WritesRead, WriteTool } from '../conversation/public.ts'
 import {
-  agentRoom,
   Beside,
   Chat,
   fileSide,
   RoomContext,
   START_NO_ACCOUNT,
+  savedAgentRoom,
 } from '../conversation/public.ts'
 import { FileWidth } from './file-width.ts'
 import { agentConversationsQuery, agentQuery, writesQuery } from './queries.ts'
@@ -38,17 +38,18 @@ function useAgentRoom(
 ) {
   const { file, setFile, writes, fixed } = held
   return useMemo(
-    () => ({
-      ...agentRoom(agent.name, words),
-      toolDescription: (slug: string) =>
-        agent.tools.find((one) => one.slug === slug)?.version.description,
-      writeOf: (toolName: string) => writeOf(agent, toolName, fixed),
-      connectorOf: (toolName: string) => connectorOf(agent, toolName),
-      writes: writes.read,
-      refreshWrites: writes.refresh,
-      openFile: setFile,
-      openedPath: file?.path,
-    }),
+    () =>
+      savedAgentRoom(agent.name, {
+        connectors: words,
+        toolDescription: (slug: string) =>
+          agent.tools.find((one) => one.slug === slug)?.version.description,
+        writeOf: (toolName: string) => writeOf(agent, toolName, fixed),
+        connectorOf: (toolName: string) => connectorOf(agent, toolName),
+        writes: writes.read,
+        refreshWrites: writes.refresh,
+        openFile: setFile,
+        openedPath: file?.path,
+      }),
     [agent, words, file?.path, setFile, writes, fixed],
   )
 }

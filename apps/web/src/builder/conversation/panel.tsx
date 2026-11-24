@@ -13,7 +13,7 @@ import { ConversationSwitch } from './conversation-switch.tsx'
 import { FirstMessage } from './first-message.tsx'
 import { ModelChoice } from './model-choice.tsx'
 import { allConversationsQueryKey, conversationQuery, sendModel } from './queries.ts'
-import { builderRoomOf, RoomContext } from './room.ts'
+import { appBuilderRoom, RoomContext } from './room.ts'
 import { EMPTY_CONVERSATION, REQUEST_NOT_SENT, titleOf, WRITE_AGAIN } from './text.ts'
 
 const route = getRouteApi(
@@ -37,7 +37,7 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 function BuilderChat(params: Params) {
   const { companyId, projectId, conversationId } = params
   const { words } = useConnectorCatalog(companyId)
-  const room = useMemo(() => builderRoomOf(words, companyId), [words, companyId])
+  const room = useMemo(() => appBuilderRoom(words, companyId), [words, companyId])
   return (
     <RoomContext.Provider value={room}>
       <Chat

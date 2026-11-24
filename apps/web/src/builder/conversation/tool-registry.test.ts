@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ASSISTANT_ROOM, BUILDER_ROOM } from './room.ts'
 import { recordedPart, SubagentPart } from './test-recorded.ts'
+import { ASSISTANT_ROOM, BUILDER_ROOM } from './test-rooms.ts'
 import { presentTool, toolStatus } from './tool-registry.ts'
 
 const COMMAND = 'mastra_workspace_execute_command'

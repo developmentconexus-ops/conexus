@@ -20,8 +20,7 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AutomationBadge } from '../automations/public.ts'
 import {
-  ASSISTANT_ROOM,
-  RoomContext,
+  ASSISTANT_WORDS,
   START_COLUMN,
   StartBox,
   StartWithoutAccount,
@@ -107,11 +106,7 @@ export function Ask(props: {
 }) {
   const { picked, setPicked, providers } = usePicked(props.companyId)
   if (picked === null) return <StartWithoutAccount companyId={props.companyId} />
-  return (
-    <RoomContext.Provider value={ASSISTANT_ROOM}>
-      <AskBox {...props} picked={picked} onPick={setPicked} providers={providers} />
-    </RoomContext.Provider>
-  )
+  return <AskBox {...props} picked={picked} onPick={setPicked} providers={providers} />
 }
 
 function AskBox(props: {
@@ -143,6 +138,7 @@ function AskBox(props: {
   })
   return (
     <StartBox
+      words={ASSISTANT_WORDS}
       draft={draft}
       placeholder={HOME_PLACEHOLDER}
       examples={props.chooseProject ? ASSISTANT_EXAMPLES : []}

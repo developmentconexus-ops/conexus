@@ -13,6 +13,7 @@ import { useDraft } from './draft.ts'
 import { isModelRefusal, stashHandoffFiles } from './handoff.ts'
 import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
 import { sendCreation } from './queries.ts'
+import { APP_BUILDER_WORDS } from './room.ts'
 import { usePicked } from './start.tsx'
 import {
   CHOOSE_ANOTHER_MODEL,
@@ -78,6 +79,7 @@ export function FirstMessage(props: { companyId: CompanyId; projectId: ProjectId
       )}
       <div className="px-md">
         <Composer
+          words={APP_BUILDER_WORDS}
           placement="docked"
           answering={false}
           canSend={usable}

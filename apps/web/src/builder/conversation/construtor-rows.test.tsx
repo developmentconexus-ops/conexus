@@ -1,9 +1,9 @@
 import { AGENT_TOOL, BUILDER_TOOL, CONSTRUTOR_TOOL, ConnectionId } from '@conexus/hub-api'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { wordsOf } from './connector-words.ts'
-import { agentRoom, RoomContext } from './room.ts'
 import type { ToolItem } from './rows.ts'
+import { agentRoom, RoomContext, render } from './test-render.tsx'
 import { ToolRow } from './tool-row.tsx'
 
 // As linhas do Construtor (step 24.3, U5): a pessoa lê o que foi feito ao agente, nunca o nome da ferramenta.

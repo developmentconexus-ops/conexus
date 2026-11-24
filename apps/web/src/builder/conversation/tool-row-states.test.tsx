@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { ToolItem } from './rows.ts'
 import { invocationToItem } from './rows.ts'
+import { render } from './test-render.tsx'
 import type { Invocation } from './tool-fixtures.ts'
 import { ToolRow } from './tool-row.tsx'
 

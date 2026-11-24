@@ -17,7 +17,7 @@ import { MemoryStatus } from './memory-status.tsx'
 import { NoAccount } from './model-choice.tsx'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
-import { AnswerProvider, ApproveProvider, SayProvider, useRoom } from './room.ts'
+import { AnswerProvider, ApproveProvider, isRoom, SayProvider, useRoom } from './room.ts'
 import type { BuilderSession, Place } from './session.ts'
 import type { Action, SessionState } from './session-state.ts'
 import { TaskPanel } from './task-panel.tsx'
@@ -113,9 +113,11 @@ function ChatComposer(props: {
   waiting: boolean
 }) {
   const { chat, session, state, draft, field, canAnswer } = props
+  const words = useRoom()
   return (
     <div className="axis px-md">
       <Composer
+        words={words}
         placement="docked"
         answering={state.running || props.waiting}
         canSend={canAnswer}
@@ -244,7 +246,8 @@ export function Chat(props: ChatProps) {
   useEffect(() => field.current?.focus(), [])
   useHandedOver({ conversationId, draft, send, setError, following })
 
-  const { writes } = useRoom()
+  const room = useRoom()
+  const writes = isRoom(room, ['SAVED_AGENT']) ? room.writes : undefined
   const turns = useMemo(() => shownOf(state, approvedCalls(writes)), [state, writes])
   const waiting = Object.keys(state.suspended).length > 0 || Object.keys(state.approvals).length > 0
   if (gone) return <NotFound />

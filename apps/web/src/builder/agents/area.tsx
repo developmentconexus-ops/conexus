@@ -9,8 +9,7 @@ import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import {
-  agentRoom,
-  RoomContext,
+  agentWords,
   START_COLUMN,
   StartBox,
   StartWithoutAccount,
@@ -82,9 +81,10 @@ function AskBox(
   }
 
   return (
-    <RoomContext.Provider value={agentRoom(CONSTRUTOR_NAME)}>
+    <>
       <p className="text-text-2">{CONSTRUTOR_FIRST}</p>
       <StartBox
+        words={agentWords(CONSTRUTOR_NAME)}
         draft={draft}
         placeholder={CONSTRUTOR_PLACEHOLDER}
         examples={CONSTRUTOR_EXAMPLES}
@@ -98,7 +98,7 @@ function AskBox(
           )
         }
       />
-    </RoomContext.Provider>
+    </>
   )
 }
 

@@ -16,6 +16,7 @@ import { DATA_SPECS } from './data-specs.ts'
 import { MACHINE_SPECS } from './machine-specs.ts'
 import { RESEARCH_SPECS } from './research-specs.ts'
 import type { Room } from './room.ts'
+import { isRoom } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { CHECK_UNAVAILABLE } from './text.ts'
 import { stringArg } from './tool-args.ts'
@@ -122,10 +123,11 @@ const AGENT_TOOL_PREFIX = 'tool_'
 export function specOf(toolName: string, room: Room): ToolSpec | undefined {
   if (isRowTool(toolName)) return room.overrides[toolName] ?? TOOLS[toolName]
   if (!toolName.startsWith(AGENT_TOOL_PREFIX)) return undefined
-  const write = room.writeOf?.(toolName)
+  const write = isRoom(room, ['SAVED_AGENT']) ? room.writeOf(toolName) : undefined
   if (write !== undefined) return writeToolSpec(write.label, room.connectors.name(write.connector))
   const slug = toolName.slice(AGENT_TOOL_PREFIX.length)
-  return slugToolSpec(slug, room.toolDescription?.(slug))
+  const described = isRoom(room, ['AGENT_BUILDER', 'SAVED_AGENT'])
+  return slugToolSpec(slug, described ? room.toolDescription(slug) : undefined)
 }
 
 /** One status per call (Factory `terminalInvocationStatus`); a command that exited non-zero is an error. */

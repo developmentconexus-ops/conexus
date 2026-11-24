@@ -1,5 +1,5 @@
 import { ModelId } from '@conexus/hub-api'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { PersonBubble } from './person-turn.tsx'
@@ -7,6 +7,7 @@ import { OPENED, session } from './session-state.ts'
 import { AGENT_START, RUNNING, stepStarted, textDelta } from './test-events.ts'
 import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
 import { recordedRun } from './test-recorded.ts'
+import { render } from './test-render.tsx'
 import { NO_OLDER, shownOf, Transcript } from './transcript.tsx'
 
 const { openConversation } = screens(hubServer())

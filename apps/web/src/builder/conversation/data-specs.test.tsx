@@ -2,10 +2,12 @@ import { DATA_TOOL } from '@conexus/hub-api'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { REFUSED_TEXT } from './data-specs.ts'
-import { ASSISTANT_ROOM, BUILDER_ROOM, RoomContext } from './room.ts'
+import type { Room } from './room.ts'
+import { RoomContext } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { invocationToItem } from './rows.ts'
 import { DataPart, recordedPart } from './test-recorded.ts'
+import { ASSISTANT_ROOM, BUILDER_ROOM } from './test-rooms.ts'
 import { ToolRow } from './tool-row.tsx'
 
 const SQL = 'select sum("VLRNOTA") as total from sync.vendas where "DTNEG" >= \'2026-10-01\''
@@ -50,7 +52,7 @@ function thrown(inv: ReturnType<typeof recorded>, kind: string) {
   return { ...call, state: 'output-error' as const, errorText }
 }
 
-function draw(tool: ToolItem, room = BUILDER_ROOM) {
+function draw(tool: ToolItem, room: Room = BUILDER_ROOM) {
   return render(
     <RoomContext.Provider value={room}>
       <ToolRow tool={tool} />
@@ -131,7 +133,7 @@ test('um kind fora da lista, ou um erro que não é o JSON das ferramentas, cai 
   expect(screen.getByText('Não conseguiu ler a tabela agora.')).toBeTruthy()
 })
 
-function textsIn(rows: ToolItem[], room: typeof BUILDER_ROOM) {
+function textsIn(rows: ToolItem[], room: Room) {
   return rows.map((row) => {
     const view = draw(row, room)
     const said = view.container.textContent

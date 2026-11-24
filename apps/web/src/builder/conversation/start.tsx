@@ -21,6 +21,8 @@ import { chipOf } from './messages.ts'
 import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
 import { FileChip } from './person-turn.tsx'
 import { sendCreation } from './queries.ts'
+import type { BoxWords } from './room.ts'
+import { APP_BUILDER_WORDS } from './room.ts'
 import { EXAMPLES, START_NO_ACCOUNT, START_PLACEHOLDER } from './text.ts'
 
 type Phase =
@@ -188,6 +190,7 @@ function Naming(props: Parameters<typeof NamingBody>[0]) {
  * in the draft until its conversation opens (criterion 12).
  */
 export function StartBox(props: {
+  words: BoxWords
   draft: ReturnType<typeof useDraft>
   placeholder: string
   /** Chips under the bar; none draws nothing. */
@@ -212,6 +215,7 @@ export function StartBox(props: {
     <div className={`${START_COLUMN} gap-md`}>
       <div className="md:[&_textarea]:min-h-20 [&_textarea]:min-h-16">
         <Composer
+          words={props.words}
           placement="inline"
           answering={false}
           canSend={props.canSend ?? true}
@@ -284,6 +288,7 @@ export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
 
   return (
     <StartBox
+      words={APP_BUILDER_WORDS}
       draft={draft}
       placeholder={START_PLACEHOLDER}
       examples={EXAMPLES}

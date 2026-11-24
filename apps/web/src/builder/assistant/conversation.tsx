@@ -9,9 +9,9 @@ import { useMemo, useState } from 'react'
 import { hubQueryPrefix } from '../../platform/hub.ts'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { AutomationBadge, ProposalCard } from '../automations/public.ts'
-import type { OpenedFile, Room } from '../conversation/public.ts'
+import type { OpenedFile } from '../conversation/public.ts'
 import {
-  ASSISTANT_ROOM,
+  assistantRoom,
   Beside,
   Chat,
   fileSide,
@@ -35,42 +35,44 @@ function useAssistantRoom(held: {
   conversation: AssistantConversation
   file: OpenedFile | undefined
   setFile: (file: OpenedFile) => void
-}): Room {
+}) {
   const { companyId, conversation, file, setFile } = held
   const { words } = useConnectorCatalog(companyId)
   return useMemo(
-    () => ({
-      ...ASSISTANT_ROOM,
-      connectors: words,
-      openFile: setFile,
-      openedPath: file?.path,
-      notebook: { companyId },
-      appCard: ({ proposed, toolCallId, closed }) => (
-        <AppProposalCard
-          companyId={companyId}
-          conversation={conversation}
-          proposed={proposed}
-          toolCallId={toolCallId}
-          closed={closed}
-        />
-      ),
-      automationCard: ({ proposed, toolCallId }) => (
-        <ProposalCard
-          companyId={companyId}
-          conversation={conversation}
-          proposed={proposed}
-          toolCallId={toolCallId}
-        />
-      ),
-      companyMemoryCard: ({ proposed, toolCallId }) => (
-        <CompanyMemoryProposal
-          companyId={companyId}
-          conversation={conversation}
-          proposed={proposed}
-          toolCallId={toolCallId}
-        />
-      ),
-    }),
+    () =>
+      assistantRoom({
+        connectors: words,
+        openFile: setFile,
+        openedPath: file?.path,
+        notebook: { companyId },
+        proposals: {
+          app: ({ proposed, toolCallId, closed }) => (
+            <AppProposalCard
+              companyId={companyId}
+              conversation={conversation}
+              proposed={proposed}
+              toolCallId={toolCallId}
+              closed={closed}
+            />
+          ),
+          automation: ({ proposed, toolCallId }) => (
+            <ProposalCard
+              companyId={companyId}
+              conversation={conversation}
+              proposed={proposed}
+              toolCallId={toolCallId}
+            />
+          ),
+          companyMemory: ({ proposed, toolCallId }) => (
+            <CompanyMemoryProposal
+              companyId={companyId}
+              conversation={conversation}
+              proposed={proposed}
+              toolCallId={toolCallId}
+            />
+          ),
+        },
+      }),
     [companyId, words, conversation, file?.path, setFile],
   )
 }

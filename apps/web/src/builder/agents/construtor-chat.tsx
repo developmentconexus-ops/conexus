@@ -7,7 +7,7 @@ import { useMemo, useState } from 'react'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useConnectorCatalog } from '../assistant/public.ts'
 import {
-  agentRoom,
+  agentBuilderRoom,
   Beside,
   Chat,
   ModelChoice,
@@ -48,6 +48,38 @@ function Heading(props: {
   )
 }
 
+function useConstrutorRoom(
+  scope: { companyId: CompanyId; projectId: ProjectId },
+  held: {
+    agentId: AgentId | undefined
+    setAgentId: (agentId: AgentId) => void
+    setCovering: (covering: boolean) => void
+  },
+) {
+  const { agentId, setAgentId, setCovering } = held
+  const { companyId, projectId } = scope
+  const queryClient = useQueryClient()
+  const { words } = useConnectorCatalog(companyId)
+  const library = useQuery(toolsQuery(scope)).data?.tools
+  return useMemo(
+    () =>
+      agentBuilderRoom(CONSTRUTOR_NAME, {
+        connectors: words,
+        toolDescription: (slug: string) => library?.find((one) => one.slug === slug)?.description,
+        openAgent: (id: AgentId, by: 'CALL' | 'TAP') => {
+          setAgentId(id)
+          if (by === 'TAP') setCovering(true)
+          // Each save of the answer fills the draft the panel reads.
+          void queryClient.invalidateQueries({
+            queryKey: agentQuery({ companyId, projectId }, id).queryKey,
+          })
+        },
+        openedAgent: agentId,
+      }),
+    [words, library, agentId, setAgentId, setCovering, queryClient, companyId, projectId],
+  )
+}
+
 /** A conversation with the Construtor: the conversation of the 24.1 over the `construtor` controller (criterion 26). */
 export function ConstrutorChat(props: {
   companyId: CompanyId
@@ -56,30 +88,12 @@ export function ConstrutorChat(props: {
 }) {
   const { companyId, projectId, conversationId } = props
   const scope = { companyId, projectId }
-  const queryClient = useQueryClient()
-  const { words } = useConnectorCatalog(companyId)
   const listKey = construtorConversationsQuery(scope).queryKey
-  const library = useQuery(toolsQuery(scope)).data?.tools
   const [agentId, setAgentId] = useState<AgentId>()
   // On a phone the draft covers the chat, so a call of the answer only keeps the agent and a tap shows it.
   const [covering, setCovering] = useState(false)
   const phone = useIsMobile()
-  const room = useMemo(
-    () => ({
-      ...agentRoom(CONSTRUTOR_NAME, words),
-      toolDescription: (slug: string) => library?.find((one) => one.slug === slug)?.description,
-      openAgent: (id: AgentId, by: 'CALL' | 'TAP') => {
-        setAgentId(id)
-        if (by === 'TAP') setCovering(true)
-        // Each save of the answer fills the draft the panel reads.
-        void queryClient.invalidateQueries({
-          queryKey: agentQuery({ companyId, projectId }, id).queryKey,
-        })
-      },
-      openedAgent: agentId,
-    }),
-    [words, library, agentId, queryClient, companyId, projectId],
-  )
+  const room = useConstrutorRoom(scope, { agentId, setAgentId, setCovering })
   return (
     <RoomContext.Provider value={room}>
       <div key={conversationId} className="flex h-full min-h-0 flex-col bg-surface">

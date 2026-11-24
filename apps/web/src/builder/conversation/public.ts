@@ -18,8 +18,16 @@ export {
   sendAssistantHandOff,
   sessionReadQuery,
 } from './queries.ts'
-export type { OpenedFile, Room, WriteTool } from './room.ts'
-export { ASSISTANT_ROOM, agentRoom, RoomContext, useSay } from './room.ts'
+export type { OpenedFile, WriteTool } from './room.ts'
+export {
+  ASSISTANT_WORDS,
+  agentBuilderRoom,
+  agentWords,
+  assistantRoom,
+  RoomContext,
+  savedAgentRoom,
+  useSay,
+} from './room.ts'
 export { fileSide } from './shown-file.tsx'
 export {
   START_COLUMN,
