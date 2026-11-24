@@ -212,7 +212,7 @@ A Pergunte 3: b", e antes 1 a ("Mas queria detalhes e exemplos para entender mel
 | G6 | U8 | As marcas da conversa por um esquema só (U-e: SPEC-4) | `harness/spec/` | testing | G5d |
 | G6 | U9 | A máquina como campo da ficha (U-f: MACH-3, AGT-1) | `harness/machine/`, `harness/spec/`, `agents/*/` | testing | G5c, G5f, U8 |
 | G6 | U10 | Uma lista de ferramentas e um "nunca pergunta" (U-g: FERR-3, FERR-9) | `harness/tools/`, `harness/spec/`, `harness/machine/`, `agents/app-builder/`, `agents/saved-agent/`, `packages/hub-api/src/tools.ts` | testing | G5d, G5e, G5f |
-| G6 | U11 | O turno sem ler texto de erro (U-h: TURN-3, TURN-4) | `harness/turn/`, `agents/app-builder/` | testing | G5d, G5f |
+| G6 | U11 | O turno sem ler texto de erro (U-h: TURN-3, TURN-4) | `agents/app-builder/` | testing | G5d, G5f |
 | G7 | U12 | A troca de modelo pela rota nativa (U-a), e uma `ModelChoice` só na web | `harness/routes/`, `agents/*/`, `packages/hub-api/src/`, `apps/web/src/harness/` | testing | G5d |
 | G7 | U13 | Renomear nas quatro conversas pela rota nativa (U-b e a sua resposta 3): o guarda abre `PUT …/threads/:threadId`; a rota do Assistente sai; o menu da conversa liga Renomear nas outras três | `harness/routes/`, `agents/assistant/`, `packages/hub-api/src/assistant.ts`, `apps/web/src/harness/`, `apps/web/src/agents/` | testing | U12, U2 |
 | G8 | U14 | O fechamento: DOC-1 e MACH-8 da auditoria, `docs/explanation/harness.md`, `boundaries.md`, as regras W1, W4 e W7 do guia da web com a árvore nova, a página da trilha sem "a área Estúdio", o cartão apagado | `docs/` | delivery | o uso |
@@ -1286,9 +1286,9 @@ falham na base.
 | G5a | `B/mastra/` para `harness/mastra/` | nada além dos caminhos: o agendador mudou antes, na U15 |
 | G5b | `B/model-accounts/` para `harness/model-accounts/` | os caminhos do MA-8; `Turn` vira `AccountTurn` |
 | G5c | `B/machine/` para `harness/machine/` | o dublê `assistantMachines` vira `conversationMachines` (issue 808) |
-| G5d | `B/controller-kit/`, `B/controller-context/` e o comum de `B/conversation/` (o guarda, o stream, o turno, a memória, o prompt) para `harness/spec/`, `turn/`, `memory/`, `prompt/`, `routes/`; `B/schema/` (o `pgSchema('builder')` e os escopos das tabelas) para `harness/schema/` | `BUILDER_ROUTES` e `BuilderSession` com nomes novos |
+| G5d | `B/controller-kit/`, `B/controller-context/` e o comum de `B/conversation/` (o guarda, o stream, o turno, a memória, o prompt) para `harness/spec/`, `turn/`, `memory/`, `prompt/`, `routes/`; `B/schema/` (o `pgSchema('builder')` e os escopos das tabelas) para `harness/schema/`. `B/conversation/end.ts` divide-se num commit antes do movimento: o que é comum aos quatro (o vigia, a falha comum, o pensamento, a fase, a espera do desligamento) e `turn-line.ts` vão para `harness/turn/end.ts`, com a porta `TurnEnds` que o agente preenche | `BUILDER_ROUTES` e `BuilderSession` com nomes novos |
 | G5e | `B/company-tools/`, `B/data-tools/`, `B/connectors/` e `B/app-data/` para `harness/tools/` (a árvore aprovada: "as ferramentas em comum"); `B/tools/`, a biblioteca dos agentes salvos, vai com o agente salvo no G5f | — |
-| G5f | os quatro agentes para `agents/app-builder/` (com `runs/` e `git/`), `agents/assistant/` (com `automations/`), `agents/agent-builder/`, `agents/saved-agent/` (com `tools/`) | o item 2 do 753 (`handoff.test.ts:285-288`), num commit à parte |
+| G5f | os quatro agentes para `agents/app-builder/` (com `runs/` e `git/`, e o `end.ts` com `builderEnds`, o que preenche a porta `TurnEnds`), `agents/assistant/` (com `automations/`), `agents/agent-builder/`, `agents/saved-agent/` (com `tools/`) | o item 2 do 753 (`handoff.test.ts:285-288`), num commit à parte |
 
 Cada pull request muda também `.dependency-cruiser.cjs`, `biome.json` (`:180-184`, `:198-214`) e
 os documentos que citam o caminho que ele move (47 arquivos de documento e configuração citam
@@ -1298,9 +1298,10 @@ importam mudam no mesmo pull request, só no nome importado.
 
 ### Os contratos que a unidade cria
 
-Nenhum tipo novo. O script: `node scripts/codemod-server.ts <área>` lê a tabela da área, move
-com `git mv`, reescreve as importações e os caminhos citados em `docs/`; rodado duas vezes, dá a
-mesma árvore. Ele segue a regra da divisão da U3: cada arquivo vai para o dono do seu assunto, um
+Um tipo novo: a porta `TurnEnds` de `harness/turn/end.ts`, que o commit de divisão do G5d cria
+antes do movimento e que o Construtor de apps preenche com `builderEnds(runs)`. O script:
+`node scripts/codemod-server.ts <área>` lê a tabela da área, move com `git mv`, reescreve as
+importações e os caminhos citados em `docs/`; rodado duas vezes, dá a mesma árvore. Ele segue a regra da divisão da U3: cada arquivo vai para o dono do seu assunto, um
 arquivo que mistura dois donos se divide num commit antes do movimento, e o grafo das importações
 é lido nome a nome pelo compilador do TypeScript.
 
@@ -1513,7 +1514,6 @@ Os cinco retratos sem regravar e o teste da 1286.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `agents/app-builder/turn-of.ts`, `end.ts` | Muda: um registro de recusa por conversa, gravado pelo processador, lido pelo fim do turno; sai `busyIn` e o prefixo | o turno do Construtor de apps |
-| `harness/turn/` | Muda, se o registro servir também aos outros três | — |
 
 ### Os contratos que a unidade cria
 
