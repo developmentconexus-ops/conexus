@@ -3,7 +3,6 @@ import { ConnectionId, listConnections } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { hubServer } from '../../platform/test-hub.tsx'
@@ -57,23 +56,4 @@ export function openData(
     ...projectsRead({ projects, databaseReady: true, mayDelete: false, role }),
   )
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [path] }))} />)
-}
-
-/** A phone: narrow, and a finger for a pointer, for the length of one test. */
-export async function onPhone<T>(run: () => Promise<T>): Promise<T> {
-  const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
-    Object.assign(new EventTarget(), {
-      matches: media.includes('767') || media.includes('coarse'),
-      media,
-      onchange: null,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      dispatchEvent: () => true,
-    }),
-  )
-  try {
-    return await run()
-  } finally {
-    phone.mockRestore()
-  }
 }

@@ -4,7 +4,7 @@ import { z } from 'zod'
 export const FIXED_ROLES = ['owner', 'admin', 'developer', 'member'] as const
 export type FixedRole = (typeof FIXED_ROLES)[number]
 
-/** The fixed roles that read every copy and use every operation, in the order the screens list them. */
+/** The fixed roles that use every operation, in the order the screens list them. */
 export const READS_ALL = ['owner', 'admin'] as const satisfies readonly FixedRole[]
 
 /** A role's stored name, fixed or the company's own; the server checks it against the company. */
@@ -32,7 +32,7 @@ export function fixedNameOf(role: string): FixedRole | undefined {
   return FIXED_ROLES.find((fixed) => fixed === role)
 }
 
-/** Whether the role reads every copy and uses every operation: the owner or the administrator, never by the label. */
+/** Whether the role uses every operation: the owner or the administrator, never by the label. */
 export function readsAll(role: string): boolean {
   const fixed = fixedNameOf(role)
   return READS_ALL.some((one) => one === fixed)

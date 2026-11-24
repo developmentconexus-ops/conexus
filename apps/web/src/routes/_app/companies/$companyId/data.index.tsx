@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DataLayer, DataPage, DataSearch } from '../../../../hub/copies/public.ts'
 
-// The company's data, its layer and the tree's search in the address (web W18).
+// The company's data and its layer in the address (web W18).
 export const Route = createFileRoute('/_app/companies/$companyId/data/')({
   staticData: { place: 'Dados' },
   validateSearch: DataSearch,

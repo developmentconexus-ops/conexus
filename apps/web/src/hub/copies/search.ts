@@ -6,5 +6,4 @@ export type DataLayer = z.infer<typeof DataLayer>
 
 export const DataSearch = z.object({
   layer: DataLayer.optional().catch(undefined),
-  q: z.string().optional().catch(undefined),
 })

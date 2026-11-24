@@ -96,13 +96,8 @@ const ACTIONS = {
   // The same three create, change and remove automations (step 24.3.4, C1). They live in Mastra's
   // schedules and are admitted in a read-only transaction, which cannot hold the role.
   manageAutomations: { by: 'MEMBER', statement: MANAGE_AUTOMATIONS, locks: false },
-  // The company's copies are an owner's or an administrator's (founder, 2026-11-16: "1."): reading
-  // holds no row, a change the role.
-  readCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: false },
+  // The company's copies are an owner's or an administrator's (founder, 2026-11-16: "1.").
   manageCopies: { by: 'MEMBER', statement: MANAGE_COPIES, locks: true },
-  // Every member sees the copies their role reads, their runs and who reads each (data, part 4);
-  // the company's database decides the rows, and a read holds no row.
-  seeData: { by: 'MEMBER', statement: undefined, locks: false },
   // Creating, changing and deleting the company's roles is the owner's and the administrator's
   // (step Papéis da empresa, U1); the library's own routes then check the same statements.
   manageRoles: { by: 'MEMBER', statement: MANAGE_ROLES, locks: true },

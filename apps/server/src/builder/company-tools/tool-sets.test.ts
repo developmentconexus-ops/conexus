@@ -15,7 +15,6 @@ import {
 import { building } from '../construtor/test-construtor.ts'
 import { endOf, started } from '../conversation/test-conversation.ts'
 import { stepped } from '../conversation/test-questions.ts'
-import { SEATS, seatOf } from './test-company-tools.ts'
 
 /** What every seat of the Assistant gets beside the company's tools: the web, the machine, the memories and the controller's own. */
 const ASSISTANT_REST = [
@@ -235,13 +234,9 @@ test('os nomes de hoje: o agente salvo, sem e com os dados do app', async (t) =>
   assert.deepEqual(seen, [company, ['app_data_read', ...company]])
 })
 
-test('sem copy_runs: nenhum assento da empresa tem uma ferramenta com esse nome', async () => {
-  for (const seat of SEATS) {
-    const { tools } = await seatOf(seat)
-    assert.deepEqual(
-      Object.keys(tools).filter((name) => name.includes('copy')),
-      [],
-      seat,
-    )
+test('sem copy_runs: o Assistente, no Início e num Projeto, recebe pela ligação do Hub nenhuma ferramenta de cópia', async (t) => {
+  for (const inProject of [false, true]) {
+    const copies = (await assistantAt(t, inProject)).filter((name) => name.includes('copy'))
+    assert.deepEqual(copies, [], inProject ? 'num Projeto' : 'no Início')
   }
 })

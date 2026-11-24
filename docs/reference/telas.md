@@ -420,12 +420,12 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 #### TD5. Dados, o índice com a árvore (`data.index.tsx`)
 
 - **Para que serve.** Ver o dado da empresa num catálogo. Desde a U14 do lago (cartão `a-primeira-copia-chega-ao-lago`) as cópias do banco da empresa saíram, e as tabelas do lago chegam na U9. `C2`, e o lugar de `C3` pela pasta Negócio.
-- **Conteúdo obrigatório.** "Dados" e a frase do que é (`hub/copies/text.ts`); Bruto: quem gerencia vê cada sistema que as ligações da empresa ligam, com "Nenhuma tabela copiada" (`data-page.tsx`); quem não gerencia vê que o papel não lê tabela (`text.ts`). Negócio: "Nenhum conceito aprovado ainda" (`text.ts`). Apps: por Projeto, só leitura (`apps-layer.tsx`). Árvore com busca.
-- **Ações.** Abrir e buscar, todo membro, no limite do papel.
+- **Conteúdo obrigatório.** "Dados" e a frase do que é (`hub/copies/text.ts`); Bruto: quem gerencia vê cada sistema que as ligações da empresa ligam, com "Nenhuma tabela copiada" (`data-page.tsx`); quem não gerencia vê que o papel não lê tabela (`text.ts`). Negócio: "Nenhum conceito aprovado ainda" (`text.ts`). Apps: por Projeto, só leitura (`apps-layer.tsx`). Árvore com as três camadas (`data-tree.tsx`).
+- **Ações.** Abrir cada camada, todo membro, no limite do papel.
 - **Ação principal.** Nenhuma até a U9.
 - **Estados.** "Nenhum sistema ligado ainda", com o caminho para Integrações; papel sem tabela (`text.ts`); esqueleto; erro de leitura com tentar de novo (`data-page.tsx`).
 - **Faixa de dados.** Sistemas até 10 (hipótese).
-- **Hoje falta.** As tabelas do lago (U9); "Negócio 0" sem uso (`data-tree.tsx`).
+- **Hoje falta.** As tabelas do lago e a busca sobre elas (U9); "Negócio 0" sem uso (`data-tree.tsx`).
 - **Referência.** Plataformas de dados mostram fixados e recentes, caminho completo e abas.
 - **Princípios.** E3 P. E4 P. E5 P.
 
@@ -439,7 +439,7 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 - **Conteúdo obrigatório.** Nenhum.
 - **Ações.** Nenhuma.
 - **Ação principal.** Não há.
-- **Estados.** Redireciona com a busca preservada.
+- **Estados.** Redireciona para Dados, sem os parâmetros antigos.
 - **Faixa de dados.** Não se aplica.
 - **Hoje falta.** Nada.
 - **Referência.** Nenhuma; a união é da resposta E1a (`docs/steps/trilhas/dados.md`).

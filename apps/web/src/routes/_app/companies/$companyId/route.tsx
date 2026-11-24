@@ -1,5 +1,5 @@
 import type { CompanyId, CompanyMay } from '@conexus/hub-api'
-import { createFileRoute, Outlet, useMatches, useParams, useSearch } from '@tanstack/react-router'
+import { createFileRoute, Outlet, useMatches, useParams } from '@tanstack/react-router'
 import {
   BotIcon,
   DatabaseIcon,
@@ -104,10 +104,6 @@ function HouseFrame() {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
   const inData = useMatches({ select: (matches) => matches.at(-1)?.staticData.place === 'Dados' })
-  const q = useSearch({
-    strict: false,
-    select: (search) => (typeof search.q === 'string' ? search.q : undefined),
-  })
   const bounded = useMatches({ select: (matches) => matches.at(-1)?.staticData.bounded === true })
   const menuNote = unreadNote(useUnread(companyId))
   const foot = (
@@ -137,7 +133,7 @@ function HouseFrame() {
         projectId !== undefined ? (
           <ProjectRailNav companyId={companyId} projectId={projectId} />
         ) : inData ? (
-          <DataTree companyId={companyId} q={q} />
+          <DataTree companyId={companyId} />
         ) : (
           <SidebarGroup>
             <NewConversation companyId={companyId} />
