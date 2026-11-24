@@ -22,7 +22,7 @@ import { readServedOf, servesModel } from './served.ts'
 import type { Renewal } from './subscription-store.ts'
 import { subscriptionAccess } from './subscription-store.ts'
 import { modelAccount } from './tables.ts'
-import type { Picked, Turn } from './turn.ts'
+import type { AccountTurn, Picked } from './turn.ts'
 
 export type QueueDeps = {
   database: Database
@@ -56,13 +56,13 @@ export function providerName(provider: string): string {
   return Object.entries(PROVIDER_REGISTRY).find(([id]) => id === provider)?.[1].name ?? provider
 }
 
-function scopeOf(turn: Turn): Scope {
+function scopeOf(turn: AccountTurn): Scope {
   return { kind: 'COMPANY', companyId: turn.companyId, personId: turn.personId }
 }
 
 export type Asker = {
-  companyId: Turn['companyId']
-  personId: Turn['personId']
+  companyId: AccountTurn['companyId']
+  personId: AccountTurn['personId']
   tried: ReadonlySet<ModelAccountId>
 }
 
@@ -99,7 +99,7 @@ async function accessIn(tx: ReadTx, asker: Asker, model: ModelId): Promise<Acces
 }
 
 /** The access at the turn's end, read in a transaction that admits the person (security S32). */
-export function accessNow(deps: QueueDeps, turn: Turn, model: ModelId): Promise<Access> {
+export function accessNow(deps: QueueDeps, turn: AccountTurn, model: ModelId): Promise<Access> {
   return deps.database.read(scopeOf(turn), async (tx) => {
     await admitted(deps, tx, turn)
     return accessIn(tx, turn, model)
@@ -119,7 +119,7 @@ export function admitted(deps: Pick<QueueDeps, 'identity'>, tx: ReadTx, asker: A
  * The next account of the provider for this turn, its credential opened in the transaction that
  * admits the person (security S32). Nothing is called and no key is read from the environment.
  */
-async function nextRow(deps: QueueDeps, turn: Turn, model: ModelId) {
+async function nextRow(deps: QueueDeps, turn: AccountTurn, model: ModelId) {
   return deps.database.read(scopeOf(turn), async (tx) => {
     await admitted(deps, tx, turn)
     const [first] = await queuedRows(tx, turn, model)
@@ -143,7 +143,7 @@ export async function hasAccount(tx: ReadTx, who: Asker, model: ModelId): Promis
  */
 export async function conversationModel(
   deps: QueueDeps,
-  asker: { companyId: Turn['companyId']; personId: Turn['personId'] },
+  asker: { companyId: AccountTurn['companyId']; personId: AccountTurn['personId'] },
   asked: ModelId,
 ): Promise<ModelId> {
   const scope: Scope = { kind: 'COMPANY', ...asker }
@@ -167,7 +167,7 @@ async function byScope(build: (scope: PromptCacheScope) => MastraModelConfig) {
 
 async function pickedOf(
   deps: QueueDeps,
-  turn: Turn,
+  turn: AccountTurn,
   found: { row: AccountRow; credential: Credential },
   modelId: ModelId,
 ): Promise<Picked> {
@@ -221,7 +221,7 @@ async function pickedOf(
  */
 export async function pickAccount(
   deps: QueueDeps,
-  turn: Turn,
+  turn: AccountTurn,
   modelId: ModelId,
 ): Promise<Picked | undefined> {
   for (;;) {
@@ -248,7 +248,7 @@ export async function pickAccount(
  */
 export async function markAccount(
   deps: QueueDeps,
-  turn: Turn,
+  turn: AccountTurn,
   accountId: ModelAccountId,
   failure: AccountFailure,
 ): Promise<void> {
@@ -277,7 +277,7 @@ export async function markAccount(
  * again with the account's credential. The account is not marked; the models it serves now decide
  * whether the queue keeps it for this one.
  */
-async function readServedAgain(deps: QueueDeps, turn: Turn, accountId: ModelAccountId) {
+async function readServedAgain(deps: QueueDeps, turn: AccountTurn, accountId: ModelAccountId) {
   await readServedOf(deps, scopeOf(turn), turn.companyId, accountId, (tx) =>
     admitted(deps, tx, turn),
   )

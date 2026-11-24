@@ -12,9 +12,9 @@ import type { QueueDeps } from './queue.ts'
 import { admitted, hasAccount, providerOf } from './queue.ts'
 import { companyModel, personModelDefault } from './tables.ts'
 import { effortFor } from './thinking.ts'
-import type { Turn } from './turn.ts'
+import type { AccountTurn } from './turn.ts'
 
-type Who = { companyId: Turn['companyId']; personId: Turn['personId'] }
+type Who = { companyId: AccountTurn['companyId']; personId: AccountTurn['personId'] }
 type Step = ModelDefault & { from: ConversationStart['from'] }
 
 /** The company's default and the person's own, as saved; either may be none. */

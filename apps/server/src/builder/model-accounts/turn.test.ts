@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CompanyId, ModelAccountId, ModelId, PersonId } from '@conexus/hub-api'
 import { resolveModelConfig } from '@mastra/core/llm'
-import { Turn } from './public.ts'
+import { AccountTurn } from './public.ts'
 
 const OWNER = {
   companyId: CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA'),
   personId: PersonId.parse(crypto.randomUUID()),
 }
 
-type Picked = NonNullable<Awaited<ReturnType<Parameters<Turn['account']>[0]>>>
+type Picked = NonNullable<Awaited<ReturnType<Parameters<AccountTurn['account']>[0]>>>
 
 async function picked(): Promise<Picked> {
   const id = 'anthropic/claude-sonnet-4-6'
@@ -25,7 +25,7 @@ async function picked(): Promise<Picked> {
 }
 
 test('o turno que acabou enquanto uma conta era escolhida continua acabado, e ninguém recebe a conta', async () => {
-  const turn = new Turn(OWNER)
+  const turn = new AccountTurn(OWNER)
   const choice = Promise.withResolvers<Picked | undefined>()
   const asking = turn.account(() => choice.promise)
   turn.finish('exhausted')

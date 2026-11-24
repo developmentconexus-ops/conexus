@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { companyModelFallback } from './tables.ts'
-import type { Turn } from './turn.ts'
+import type { AccountTurn } from './turn.ts'
 
 /**
  * The models the company's automatic switch tries after `modelId` in this turn (founder, card
@@ -12,7 +12,7 @@ import type { Turn } from './turn.ts'
  */
 export async function nextModels(
   deps: { database: Database },
-  turn: Turn,
+  turn: AccountTurn,
   modelId: ModelId,
 ): Promise<ModelId[]> {
   const scope = { kind: 'COMPANY' as const, companyId: turn.companyId, personId: turn.personId }

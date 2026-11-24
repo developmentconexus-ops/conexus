@@ -31,7 +31,7 @@ import type { SideCall } from './side-calls.ts'
 import { noAccountModel, watched } from './side-calls.ts'
 import type { ProviderOptions } from './thinking.ts'
 import { providerOptionsOf } from './thinking.ts'
-import type { Notice, Picked, Turn } from './turn.ts'
+import type { AccountTurn, Notice, Picked } from './turn.ts'
 import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
@@ -66,7 +66,7 @@ export function emit(args: Notifier, event: QueueEvent) {
  * chunk is dropped (`session-run-engine.ts:1580`), as Mastra Code does
  * (`account-rotation-processor.ts:390-406`), and kept on the turn for its answer (`keepNotices`).
  */
-function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) {
+function notify(args: Notifier, turn: AccountTurn, kind: Notice['kind'], text: string) {
   turn.notices.push({ kind, text })
   emit(args, { type: 'info', message: text })
 }
@@ -74,7 +74,7 @@ function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) 
 async function exhaust(
   deps: QueueDeps,
   args: Notifier,
-  turn: Turn,
+  turn: AccountTurn,
   modelId: ModelId,
   reason: string | undefined,
 ) {
@@ -96,7 +96,7 @@ function refusedText(label: string) {
  * back with what was written in it (`rollbackToStepBoundary`), so the attempt that answers, or the
  * one that ends the turn, writes them again: the answer holds each notice once, in order.
  */
-async function keepNotices(args: { writer?: Writer; messageList: MessageList }, turn: Turn) {
+async function keepNotices(args: { writer?: Writer; messageList: MessageList }, turn: AccountTurn) {
   const kept = args.messageList.get.response
     .db()
     .flatMap((message) => message.content.parts)
@@ -107,7 +107,7 @@ async function keepNotices(args: { writer?: Writer; messageList: MessageList }, 
 }
 
 /** The accounts refused as they were opened (a subscription's refresh), said with the next one. */
-function sayRefused(args: Notifier, turn: Turn, next: Picked) {
+function sayRefused(args: Notifier, turn: AccountTurn, next: Picked) {
   for (const label of turn.unsaid.splice(0)) {
     const text = `${refusedText(label)}; continuei pela ${next.label}.`
     notify(args, turn, 'account-switched', text)
@@ -119,7 +119,7 @@ function sayRefused(args: Notifier, turn: Turn, next: Picked) {
  * company's automatic switch, with its notice; none left, the turn ends with the notice that the
  * accounts ended.
  */
-async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
+async function chooseAccount(deps: QueueDeps, turn: AccountTurn, args: Notifier) {
   const chosen = turn.modelId(args.requestContext)
   const picked = await pickAccount(deps, turn, chosen)
   if (picked !== undefined) return picked
@@ -141,7 +141,11 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
  * The turn's account, picked once for all who ask meanwhile: the agent's step, its error lane, the
  * title and the observer await the same pick, so none overwrites another's or opens it twice.
  */
-function accountOf(deps: QueueDeps, turn: Turn, args: Notifier): Promise<Picked | undefined> {
+function accountOf(
+  deps: QueueDeps,
+  turn: AccountTurn,
+  args: Notifier,
+): Promise<Picked | undefined> {
   return turn.account(() => chooseAccount(deps, turn, args))
 }
 
@@ -232,7 +236,7 @@ function accountQueue(deps: QueueDeps): ErrorProcessor {
 }
 
 /** The queue's answer to a failed call: the next account's attempt, or the turn's end. */
-async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Turn) {
+async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: AccountTurn) {
   const account = turn.calling()
   if (account === undefined) return { retry: false }
   const failure = callFailureOf(args.error)
@@ -281,7 +285,7 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
 
 /**
  * The model of Mastra's own calls in a turn: the title's is the turn's account. The observer's and
- * the reflector's are the company's choice, read when the turn opened (`Turn.memoryModels`), picked
+ * the reflector's are the company's choice, read when the turn opened (`AccountTurn.memoryModels`), picked
  * once for the turn beside the queue and never through it: no rotation, no notice, a failure is
  * the memory's own (`failurePolicy: 'continue'`) and is logged by `watched`. A choice with no
  * account left follows the conversation's model. A call before the run read its input (the
@@ -291,7 +295,7 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
 export function accountModel(
   deps: QueueDeps,
   call: Exclude<SideCall, 'subagent'>,
-  turnFor: (requestContext: RequestContext) => Promise<Turn | undefined>,
+  turnFor: (requestContext: RequestContext) => Promise<AccountTurn | undefined>,
 ) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
     const running = turnIn(requestContext)
@@ -311,7 +315,7 @@ export function accountModel(
 async function modelOf(
   deps: QueueDeps,
   call: Exclude<SideCall, 'subagent'>,
-  turn: Turn,
+  turn: AccountTurn,
   requestContext: RequestContext | undefined,
 ) {
   const choice =

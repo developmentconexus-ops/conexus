@@ -101,7 +101,7 @@ shares `agentDefaults` (`builder/controller-kit/factories.ts`): the same process
 Model accounts live in processors, not in the agents
 ([0049](../decisions/0049-model-accounts-keys-sign-ins-queues.md)). The input processors are
 the turn processor (`turnProcessor`, `builder/controller-kit/turns.ts`), the same for every agent, which
-builds the person's `Turn` for the account queue and puts it on the request context, then `accountPick` (`builder/model-accounts/processors.ts`), which picks the account, the
+builds the person's `AccountTurn` for the account queue and puts it on the request context, then `accountPick` (`builder/model-accounts/processors.ts`), which picks the account, the
 model and the thinking effort for each step. What differs is the ficha's `turn`: a `SESSION` turn is
 held until the session's `agent_end`; a `RUN` turn is taken by the run alone. The Builder's is the
 Project's lock as a named step, its `take` (`builder/conversation/turn-of.ts`): the run takes the

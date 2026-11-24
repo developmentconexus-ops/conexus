@@ -35,7 +35,7 @@ export { callModel, conversationModel, providerOf } from './queue.ts'
 export { AnthropicPage, GooglePage, listRequest, OpenAiList } from './served.ts'
 export { subagentModel, TURN_ACCOUNT } from './side-calls.ts'
 export { effortFor, effortsOf, providerOptionsOf } from './thinking.ts'
-export { chosenModel, setTurn, Turn, turnContext, turnIn } from './turn.ts'
+export { AccountTurn, chosenModel, setTurn, turnContext, turnIn } from './turn.ts'
 
 /**
  * The model accounts of each company and of its people (decision 0049). It reaches identity only

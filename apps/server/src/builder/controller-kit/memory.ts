@@ -4,7 +4,7 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Memory } from '@mastra/memory'
 import { controllerIn } from '../controller-context/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { accountModel, memoryModelsFor, Turn } from '../model-accounts/public.ts'
+import { AccountTurn, accountModel, memoryModelsFor } from '../model-accounts/public.ts'
 import { MODEL_TIMEOUT } from './factories.ts'
 import type { Owner, ResourceOwner } from './kinds.ts'
 import { ownerOfResource } from './kinds.ts'
@@ -15,14 +15,14 @@ export function ownerIn(requestContext: RequestContext): ResourceOwner | undefin
 }
 
 /** The turn of a conversation's owner, in the accounts' queue (step 11). */
-export async function turnOfOwner(queue: QueueDeps, owner: Owner): Promise<Turn> {
+export async function turnOfOwner(queue: QueueDeps, owner: Owner): Promise<AccountTurn> {
   const { companyId, personId } = owner
-  return new Turn({ companyId, personId, memoryModels: await memoryModelsFor(queue, owner) })
+  return new AccountTurn({ companyId, personId, memoryModels: await memoryModelsFor(queue, owner) })
 }
 
 /** A turn for a side call made before the run read its input: the observer's (`accountModel`). */
 function sideTurn(queue: QueueDeps) {
-  return async (requestContext: RequestContext): Promise<Turn | undefined> => {
+  return async (requestContext: RequestContext): Promise<AccountTurn | undefined> => {
     const owner = ownerIn(requestContext)
     return owner === undefined ? undefined : turnOfOwner(queue, owner)
   }

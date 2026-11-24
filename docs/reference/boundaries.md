@@ -1062,7 +1062,7 @@ changes, reread the line it names.
   Factory has the piece (searched in both).
 - **Hand-made piece.** `turnProcessor` and `sessionTurns` in
   `apps/server/src/builder/controller-kit/turns.ts`: the one input processor that takes a run's
-  `Turn` for the account queue and puts it on the request context, and the way a session holds that
+  `AccountTurn` for the account queue and puts it on the request context, and the way a session holds that
   turn until `agent_end`. Each agent's ficha chooses by its `turn` field: `SESSION` (the Assistant,
   the Construtor, a Project agent's conversation) or `RUN` (the Builder, and the version the
   Construtor tests, which have no session to hold it). Before the step it was three copies.

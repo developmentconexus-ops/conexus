@@ -5,7 +5,7 @@ import { Failure } from '../../platform/failure.ts'
 import { callFailureOf } from './errors.ts'
 import type { QueueDeps } from './queue.ts'
 import { callModel, providerOf } from './queue.ts'
-import type { Picked, Turn } from './turn.ts'
+import type { AccountTurn, Picked } from './turn.ts'
 import { chosenModel, turnIn } from './turn.ts'
 
 /** A model the queue answers with when no account is left: it fails here and calls no one. */
@@ -36,7 +36,7 @@ export type SideCall = 'title' | 'observer' | 'reflection' | 'subagent'
  */
 export function watched(
   deps: QueueDeps,
-  turn: Turn,
+  turn: AccountTurn,
   account: Picked,
   call: SideCall,
   stepMs?: number,

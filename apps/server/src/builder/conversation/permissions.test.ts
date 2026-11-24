@@ -10,7 +10,7 @@ import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { initialStateOf } from '../controller-kit/public.ts'
-import { accountPick, callModel, Turn, turnContext } from '../model-accounts/public.ts'
+import { AccountTurn, accountPick, callModel, turnContext } from '../model-accounts/public.ts'
 import { TOOL_CLOSURE } from './public.ts'
 import { asked, conversing, endOf, MODEL, title } from './test-conversation.ts'
 import { partsOf } from './test-parts.ts'
@@ -200,7 +200,7 @@ function secondModel() {
 }
 
 /** The turn after the company's automatic switch: its account is given, so no database is asked. */
-class SwitchedTurn extends Turn {
+class SwitchedTurn extends AccountTurn {
   override get switched() {
     return true
   }

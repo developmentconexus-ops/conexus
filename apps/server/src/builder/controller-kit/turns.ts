@@ -6,14 +6,14 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { TurnKey } from '../../hub/connectors/public.ts'
 import { Failure } from '../../platform/failure.ts'
 import { controllerIn } from '../controller-context/public.ts'
-import type { QueueDeps, Turn } from '../model-accounts/public.ts'
+import type { AccountTurn, QueueDeps } from '../model-accounts/public.ts'
 import { setTurn, turnIn } from '../model-accounts/public.ts'
 import type { Owner } from './kinds.ts'
 import { turnOfOwner } from './memory.ts'
 
 /** What a run's take answers (C21 on `kind`): its turn; no conversation of this controller; or a refusal with its reason. */
 export type Taken =
-  | Readonly<{ kind: 'TAKEN'; turn: Turn }>
+  | Readonly<{ kind: 'TAKEN'; turn: AccountTurn }>
   | Readonly<{ kind: 'NONE' }>
   | Readonly<{ kind: 'REFUSED'; reason: string }>
 
@@ -75,9 +75,9 @@ export function turnProcessor(options: {
  */
 export function sessionTurns(options: {
   id: string
-  take: (requestContext: RequestContext) => Promise<Turn | undefined>
+  take: (requestContext: RequestContext) => Promise<AccountTurn | undefined>
 }) {
-  const held = new Map<ConversationId, { turn: Turn; requestContext: RequestContext }>()
+  const held = new Map<ConversationId, { turn: AccountTurn; requestContext: RequestContext }>()
   const deleted = new WeakSet<RequestContext>()
 
   function letGo(sessionId: ConversationId): void {
@@ -163,7 +163,7 @@ export function takeOfScope(deps: {
   scopeOf: (requestContext: RequestContext) => Promise<Owner | undefined>
   turnKey: ReturnType<typeof turnKeyOn>
 }) {
-  return async (requestContext: RequestContext): Promise<Turn | undefined> => {
+  return async (requestContext: RequestContext): Promise<AccountTurn | undefined> => {
     const scope = await deps.scopeOf(requestContext)
     if (scope === undefined) return undefined
     const turn = await turnOfOwner(deps.queue, scope)

@@ -7,7 +7,7 @@ import type {
 import type { MastraMemory } from '@mastra/core/memory'
 import type { InputProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
-import type { Turn } from '../model-accounts/public.ts'
+import type { AccountTurn } from '../model-accounts/public.ts'
 import type { controllerOf } from './factories.ts'
 import type { ControllerKind } from './kinds.ts'
 import type { routedModel } from './model.ts'
@@ -53,7 +53,7 @@ export type Approval = Readonly<{ kind: 'NOTHING_ASKS' }> | Readonly<{ kind: 'TH
 type SessionTurn = Readonly<{
   kind: 'SESSION'
   id: string
-  take: (requestContext: RequestContext) => Promise<Turn | undefined>
+  take: (requestContext: RequestContext) => Promise<AccountTurn | undefined>
 }>
 
 /**

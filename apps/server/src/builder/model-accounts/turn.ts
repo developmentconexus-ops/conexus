@@ -41,7 +41,7 @@ export type Outcome = 'exhausted' | 'failed'
 
 /**
  * Where the queue stands in a turn: no account yet (or the last one failed), one being picked,
- * one taking the calls, or the turn ended. Only `Turn`'s methods move it (code C21).
+ * one taking the calls, or the turn ended. Only `AccountTurn`'s methods move it (code C21).
  */
 type Stage =
   | { name: 'unpicked' }
@@ -72,11 +72,11 @@ function chosenEffort(context: RequestContext | undefined): Effort {
 }
 
 /**
- * One turn of a conversation: one Mastra run, its `Turn` made as the run reads its input. The queue
+ * One turn of a conversation: one Mastra run, its `AccountTurn` made as the run reads its input. The queue
  * keeps in it the model, the accounts it tried, the one each attempt goes through, and how it ended
  * the turn, if it did. Every step of the run sees the object set on its request context.
  */
-export class Turn {
+export class AccountTurn {
   readonly companyId: CompanyId
   readonly personId: PersonId
   readonly memoryModels: MemoryModels
@@ -231,18 +231,18 @@ export class Turn {
 }
 
 /** Puts the run's turn on its request context: the only way the queue learns whose turn it is. */
-export function setTurn(context: RequestContext, turn: Turn): void {
+export function setTurn(context: RequestContext, turn: AccountTurn): void {
   context.set(TURN_KEY, turn)
 }
 
 /** A request context holding only `turn`. */
-export function turnContext(turn: Turn): RequestContext {
+export function turnContext(turn: AccountTurn): RequestContext {
   const context = new RequestContext()
   setTurn(context, turn)
   return context
 }
 
-export function turnIn(context: RequestContext | undefined): Turn | undefined {
+export function turnIn(context: RequestContext | undefined): AccountTurn | undefined {
   const turn = context?.get(TURN_KEY)
-  return turn instanceof Turn ? turn : undefined
+  return turn instanceof AccountTurn ? turn : undefined
 }
