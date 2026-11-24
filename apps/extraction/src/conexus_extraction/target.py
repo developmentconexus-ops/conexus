@@ -94,6 +94,7 @@ class LakeSink(BatchSink):
         self._arrow = arrow_schema(self.schema)
         properties = self.lake.properties_of(self.stream_name)
         with self.lake.writing(self.stream_name):
+            self.lake.confirm_run()
             catalog = self.lake.catalog
             for namespace in (CURRENT, RAW):
                 catalog.create_table_if_not_exists(

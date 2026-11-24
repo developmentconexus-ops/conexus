@@ -65,7 +65,8 @@ def test_a_rodada_fechada_para_a_tarefa(task: Task, capfd: pytest.CaptureFixture
     task.aws.delete_after_gets = 1
     task.run(task.spec(NOTAS))
     assert task.aws.sent == []
-    assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows == 0
+    assert not task.lake.table_exists(("raw", "sankhya_notas"))
+    assert not task.lake.table_exists(("current", "sankhya_notas"))
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
 
 
