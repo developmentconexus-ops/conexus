@@ -15,4 +15,5 @@ Em 2026-11-22, ao estudo do harness, a ordem que põe este marco depois de Uma f
 "A: Sua recomendacao" (a etapa 1 do harness antes do `A1`; a etapa 2 depois do `A1` e antes do
 `A3`). As palavras estão também no [arquivo de aprovação da ficha](uma-ficha-por-agente.md).
 
-A aprovação da página do fundador, com o commit do cartão, entra aqui quando ele a der.
+A aprovação da página do fundador, com o commit do cartão, entra aqui quando ele a der, com a
+palavra D11 da permissão nova (`docs/guides/data.md`), que a página pergunta à parte.
