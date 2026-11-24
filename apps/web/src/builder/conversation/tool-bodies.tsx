@@ -186,11 +186,12 @@ function isFailureCode(code: string): code is FailureCode {
 }
 
 /** A tool that failed with the Hub's own code (the machine that would not start) says the code's sentence, not the code. */
-function reasonOf(tool: ToolItem): string {
+function reasonOf(tool: ToolItem, room: Room): string {
   const text = tool.errorText ?? textOf(tool.result)
   if (text === undefined) return 'Ocorreu um erro ao executar a ferramenta.'
   const code = text.trim()
-  return isFailureCode(code) ? sentenceOfCode(code) : text
+  if (!isFailureCode(code)) return text
+  return specOf(tool.toolName, room)?.thrownText?.[code] ?? sentenceOfCode(code)
 }
 
 /** Whether the agent's read failed with a kind that asks the person to link the connection again. */
@@ -200,10 +201,11 @@ export function asksToReconnect(tool: ToolItem, room: Room): boolean {
 }
 
 export function Reason({ tool }: { tool: ToolItem }) {
-  const detail = failureDetail(tool, useRoom())
+  const room = useRoom()
+  const detail = failureDetail(tool, room)
   if (detail === null) return null
   if (detail === undefined)
-    return <pre className={cn(BLOCK, 'text-danger')}>{shown(reasonOf(tool))}</pre>
+    return <pre className={cn(BLOCK, 'text-danger')}>{shown(reasonOf(tool, room))}</pre>
   return (
     <>
       <p className="font-semibold text-danger">{detail.label}</p>

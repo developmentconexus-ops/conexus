@@ -18,6 +18,19 @@ const COOKIE_FILE = 'conexus-confer-cookies.json'
 const ASK_MS = 20_000
 const PAGE_MS = 60_000
 
+/**
+ * What the capture waits for after `networkidle`, which returns after 500 ms without a request: a
+ * slow machine mounts the app, or a chain of calls pauses, longer than that, and the capture takes
+ * the loading state. The app's contract draws a loading part as a `Skeleton`
+ * (`data-slot="skeleton"`), so the screen is ready once its root has content and none is left. The
+ * page gives up on its own at `readyMs` since it opened, so the wait ends by time and never fails.
+ */
+function readyScript(readyMs: number): string {
+  const mounted = `(document.getElementById('root') === null || document.getElementById('root').firstElementChild !== null)`
+  const drawn = `document.querySelector('[data-slot="skeleton"]') === null`
+  return `(${mounted} && ${drawn}) || performance.now() >= ${readyMs}`
+}
+
 type BrowserProblem =
   | { kind: 'PAGE_ERROR'; message: string }
   | { kind: 'REQUEST_FAILED'; method: string; path: string; status: number | null }
@@ -114,6 +127,7 @@ type Conference = Readonly<{
   program: string
   at: ConferAt
   log: FailureLog
+  readyMs: number
 }>
 
 function commandsOf({ exec, program, at }: Pick<Conference, 'exec' | 'program' | 'at'>) {
@@ -150,7 +164,7 @@ async function attempted<T>(step: string, work: () => Promise<T>): Promise<T> {
 }
 
 async function looked(input: Conference, cookieFile: string): Promise<BrowserReport> {
-  const { files, network, workdir, at } = input
+  const { files, network, workdir, at, readyMs } = input
   const { cli, ran, read } = commandsOf(input)
   const origin = at.url.origin
   await attempted('network', () => network.open([at.url.hostname]))
@@ -161,6 +175,8 @@ async function looked(input: Conference, cookieFile: string): Promise<BrowserRep
   await read('cookie', Done, ['cookies', 'set', '--curl', cookieFile, '--url', `${origin}/`])
   await read('open', Done, ['open', `${origin}/`], PAGE_MS)
   await read('wait', Done, ['wait', '--load', 'networkidle'], PAGE_MS)
+  const ready = ['wait', '--fn', readyScript(readyMs), '--timeout', String(readyMs + ASK_MS)]
+  await read('ready', Done, ready, readyMs + ASK_MS)
   const { data: located } = await read('url', Located, ['get', 'url'])
   if (!URL.canParse(located.url) || new URL(located.url).host !== at.url.host)
     throw new Unrunnable('host')
@@ -226,6 +242,8 @@ export function conferOn(
     program: string
     at: ConferAt
     log: FailureLog
+    /** The longest the screen may keep loading, since the page opened, before the capture (code C57). */
+    readyMs?: number
     /** The close failed: the machine's network may still be open to the app's host. */
     onCloseFailed: () => void
   }>,
@@ -233,6 +251,7 @@ export function conferOn(
   const { kit, conversationId, log, onCloseFailed } = input
   return conferIn({
     ...input,
+    readyMs: input.readyMs ?? CHECK_LIMITS.stepMs,
     files: { write: (path, text) => kit.transport.write(path, Buffer.from(text)) },
     network: {
       open: (extra) => kit.openNetwork(extra),

@@ -5,6 +5,7 @@ import { createServer } from 'node:https'
 import { homedir, tmpdir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
 import type { TestContext } from 'node:test'
+import { inflateSync } from 'node:zlib'
 import { AppSessionToken } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -114,7 +115,7 @@ function status500(response: ServerResponse) {
   response.writeHead(500).end('x')
 }
 
-export async function conferring(t: TestContext, program: string) {
+export async function conferring(t: TestContext, program: string, readyMs = 4_000) {
   const lines: string[] = []
   const log: FailureLog = {
     info: (fields, message) => lines.push(JSON.stringify([message, fields])),
@@ -127,7 +128,12 @@ export async function conferring(t: TestContext, program: string) {
     seedOf: () => machine.repository.bundleOfMain(),
     mark: { conexus_origin: INSTALLATION },
     ...{ installation: INSTALLATION, template: TEMPLATE, log, startMs: 5_000 },
-    ...{ workdir: join(machine.folder, 'app'), tmp: machine.folder, browserProgram: program },
+    ...{
+      workdir: join(machine.folder, 'app'),
+      tmp: machine.folder,
+      browserProgram: program,
+      readyMs,
+    },
   })
   await machines.workspaceFor({
     ...{ companyId: COMPANY, projectId: PROJECT, conversationId: CONVERSATION },
@@ -140,6 +146,19 @@ export type Conferring = Awaited<ReturnType<typeof conferring>>
 
 export function confer({ machines }: Conferring, at: Awaited<ReturnType<typeof appServer>>['at']) {
   return machines.confer({ conversationId: CONVERSATION, at })
+}
+
+/** The first pixel of a PNG's first row: raw in every filter, so no row has to be unfiltered. */
+export function firstPixel(png: Buffer): [number, number, number] {
+  const chunks: Buffer[] = []
+  for (let at = 8; at < png.length; ) {
+    const length = png.readUInt32BE(at)
+    if (png.toString('latin1', at + 4, at + 8) === 'IDAT')
+      chunks.push(png.subarray(at + 8, at + 8 + length))
+    at += 12 + length
+  }
+  const rows = inflateSync(Buffer.concat(chunks))
+  return [rows[1] ?? -1, rows[2] ?? -1, rows[3] ?? -1]
 }
 
 export const FAILED = { ok: false, error: 'CONFER_PLATFORM_FAILED' }

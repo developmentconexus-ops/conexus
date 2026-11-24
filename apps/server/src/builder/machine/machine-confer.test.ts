@@ -12,6 +12,7 @@ import {
   confer,
   conferring,
   FAILED,
+  firstPixel,
   MARK,
   realBrowser,
   TOKEN,
@@ -44,6 +45,47 @@ test('Machines.confer: a tela que chama uma operação que dá 500 é DIRTY, com
   assert.ok(!machine.lines.join('\n').includes(MARK))
   assert.ok(!machine.lines.join('\n').includes(TOKEN))
   assert.equal(machine.control.networkOpenTo, undefined)
+})
+
+/** The app mounts and calls its operation 1.5 s after it opened, longer than the browser's 500 ms of quiet. */
+const SLOW_SCREEN = `document.body.insertAdjacentHTML('beforeend','<div id="root"></div>');
+  setTimeout(()=>{
+    document.body.style.background='white';
+    document.getElementById('root').innerHTML='<div data-slot="skeleton"></div>';
+    fetch('/api/listarEncomendas',{method:'POST'}).then((r)=>{
+      document.getElementById('root').innerHTML='<p>fim</p>';
+      if(!r.ok)document.body.style.background='rgb(255,0,0)'})},1500)`
+
+test('Machines.confer: a tela que chama a operação depois do quieto do navegador e recebe 500 é DIRTY, com a captura do erro e não do esqueleto', async (t) => {
+  const page = app(SLOW_SCREEN)
+  const { at } = await appServer(t, (request, response) => {
+    if (request.url !== '/api/listarEncomendas') return page(request, response)
+    setTimeout(() => response.writeHead(500).end('x'), 900)
+  })
+  const machine = await conferring(t, realBrowser(t))
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
+  assert.ok(result.value.kind === 'DIRTY')
+  assert.deepEqual(result.value.problems, [
+    { kind: 'REQUEST_FAILED', method: 'POST', path: '/api/listarEncomendas', status: 500 },
+  ])
+  const shot = readFileSync(join(machine.folder, 'app', result.value.shot))
+  assert.deepEqual(firstPixel(shot), [255, 0, 0])
+})
+
+test('Machines.confer: a tela que nunca sai do esqueleto não prende a conferência: ela espera o limite e tira a captura', async (t) => {
+  const { at } = await appServer(
+    t,
+    app(
+      `document.body.insertAdjacentHTML('beforeend','<div id="root"><div data-slot="skeleton"></div></div>')`,
+    ),
+  )
+  const machine = await conferring(t, realBrowser(t), 2_500)
+  const started = performance.now()
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
+  assert.equal(result.value.kind, 'CLEAN')
+  assert.ok(performance.now() - started < 15_000)
 })
 
 test('Machines.confer: a tela que só desenha é CLEAN, mesmo com um pedido a outro host e um erro no console', async (t) => {

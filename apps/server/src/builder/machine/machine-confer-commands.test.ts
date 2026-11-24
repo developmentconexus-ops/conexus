@@ -22,6 +22,7 @@ test('Machines.confer: a rede abre só para o host do app durante os comandos e 
       'cookies',
       'open',
       'wait',
+      'wait',
       'get',
       'screenshot',
       'console',
