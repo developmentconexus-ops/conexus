@@ -6,6 +6,8 @@ import { readToken, tokenRequest } from './auth.ts'
 import { SENT_AT } from './conformance-declared.ts'
 import type { Connector } from './definition.ts'
 import { inProbeOrder } from './definition.ts'
+import type { Numbers } from './exact-json.ts'
+import { parseJson } from './exact-json.ts'
 import type { AppKeys, OAuth2CodeAuth } from './oauth.ts'
 import { authorizeUrl, codeRequest, readGrant } from './oauth.ts'
 import type { Account, Operation, OperationId, ProviderAnswer } from './operation.ts'
@@ -25,11 +27,11 @@ export type OAuthFake = Serving & Readonly<{ app: AppKeys; redirectUri: string }
 
 export type Fake = CredentialFake | OAuthFake
 
-export async function answerOf(response: Response): Promise<ProviderAnswer> {
+export async function answerOf(response: Response, numbers: Numbers): Promise<ProviderAnswer> {
   const text = await response.text()
   return {
     status: response.status,
-    body: text === '' ? undefined : z.unknown().parse(JSON.parse(text)),
+    body: text === '' ? undefined : z.unknown().parse(parseJson(text, numbers)),
   }
 }
 
@@ -40,7 +42,7 @@ export async function loginWith(
   credential: Readonly<Record<string, string>>,
 ) {
   const request = toRequest(connector, tokenRequest(auth, credential), null)
-  return readToken(auth, await answerOf(await fake.handle(request)))
+  return readToken(auth, await answerOf(await fake.handle(request), connector.numbers))
 }
 
 export function verifierAndChallenge() {
@@ -82,7 +84,7 @@ export async function exchange(
     codeRequest(auth, fake.app, { ...a, redirectUri: fake.redirectUri }),
     null,
   )
-  return readGrant(auth, await answerOf(await fake.handle(request)))
+  return readGrant(auth, await answerOf(await fake.handle(request), connector.numbers))
 }
 
 /** The access token and the account every read is built with. */
@@ -112,6 +114,7 @@ export async function signIn(connector: Connector, fake: Fake): Promise<Session 
         granted.accessToken,
       ),
     ),
+    connector.numbers,
   )
   assert.equal(who.status, 200)
   const reported = account.who.answer.parse(who.body)
@@ -153,7 +156,7 @@ export async function askOf(
     requestOf(a.operation, a.input, session.account, SENT_AT),
     session.accessToken,
   )
-  return answerOf(await fake.handle(request))
+  return answerOf(await fake.handle(request), connector.numbers)
 }
 
 /**

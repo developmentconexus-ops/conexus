@@ -21,6 +21,7 @@ export const hubspot = defineConnector({
   // the refusals and where the call limit is counted. The shelf gives the pages and the origin
   // (nango providers.yaml:13028-13045) and the answer is RFC 6749 §5.1.
   auth: oauth2Code({
+    credentialClass: 'EXCLUSIVE',
     app: { from: 'installation' },
     authorize: {
       url: 'https://app.hubspot.com/oauth/authorize',
@@ -48,11 +49,12 @@ export const hubspot = defineConnector({
   category: 'CRM',
   summary: 'O CRM onde a empresa guarda contatos, empresas e negócios.',
   logo: LOGO,
+  numbers: 'DOUBLE',
   perProject: 'many',
   callLimit: { countedBy: 'ACCOUNT' },
   subjects: hubspotSubjects,
   operations: hubspotOperations,
   writes: [notaNoContato],
   check: contatos,
-  skill: readSkill(SKILL),
+  skill: { written: readSkill(SKILL) },
 })

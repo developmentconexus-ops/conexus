@@ -1,7 +1,25 @@
 import { DatabaseSync } from 'node:sqlite'
+import { z } from 'zod'
 import { inserter, registerOn } from './fake-register.ts'
 
 // Invented values only (S40): a bakery, its sellers, customers and products, September and October 2026.
+
+/** Node 24's `JSON.rawJSON` (TC39 JSON.parse source text access): raw JSON text for `JSON.stringify`, which TypeScript's lib lacks. */
+const rawJSON = z
+  .custom<(text: string) => unknown>((value) => typeof value === 'function')
+  .parse(Reflect.get(JSON, 'rawJSON'))
+
+/**
+ * The declared type of a decimal column: text affinity keeps every digit, and the DbExplorer answers
+ * it as a JSON number past a double's (Oracle's `NUMBER`).
+ */
+const DECIMAL = 'DECIMAL_TEXT'
+
+export const EXACT_NOTE = {
+  nunotaOffset: 99_000,
+  dtneg: '2026-08-31',
+  vlrnota: '1234567890123.123456',
+}
 
 type Seller = { codvend: number; apelido: string }
 type Item = { codprod: number; qtdneg: number; vlrunit: number; vlrtot: number }
@@ -128,7 +146,7 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
     CREATE TABLE TGFPRO (CODPROD INTEGER PRIMARY KEY, DESCRPROD TEXT, REFERENCIA TEXT, CODGRUPOPROD INTEGER,
       CODVOL TEXT DEFAULT 'UN', MARCA TEXT, ATIVO TEXT DEFAULT 'S', DTALTER DATE DEFAULT '${REGISTER_CHANGED}');
     CREATE TABLE TGFCAB (NUNOTA INTEGER PRIMARY KEY, CODEMP INTEGER, DTNEG DATE, CODVEND INTEGER,
-      CODPARC INTEGER, TIPMOV TEXT, VLRNOTA REAL, NUMNOTA INTEGER, CODTIPOPER INTEGER DEFAULT 3200,
+      CODPARC INTEGER, TIPMOV TEXT, VLRNOTA ${DECIMAL}, NUMNOTA INTEGER, CODTIPOPER INTEGER DEFAULT 3200,
       STATUSNOTA TEXT DEFAULT 'L', DTALTER DATE);
     CREATE TABLE TGFITE (NUNOTA INTEGER, SEQUENCIA INTEGER, CODPROD INTEGER, QTDNEG REAL,
       VLRUNIT REAL, VLRTOT REAL, CODVOL TEXT DEFAULT 'UN');
@@ -160,6 +178,23 @@ function tablesOf(database: DatabaseSync, set: SalesSet): void {
       changedOn(nota.dtneg),
     ]),
   )
+  const exact = set.codemp * 100_000 + EXACT_NOTE.nunotaOffset
+  insert(
+    'INSERT INTO TGFCAB (NUNOTA, CODEMP, DTNEG, CODVEND, CODPARC, TIPMOV, VLRNOTA, NUMNOTA, DTALTER) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [
+      [
+        exact,
+        set.codemp,
+        EXACT_NOTE.dtneg,
+        set.vendedores[0]?.codvend ?? 0,
+        PARCEIROS[0]?.codparc ?? 0,
+        'V',
+        EXACT_NOTE.vlrnota,
+        exact % 100_000,
+        changedOn(EXACT_NOTE.dtneg),
+      ],
+    ],
+  )
   insert(
     'INSERT INTO TGFITE (NUNOTA, SEQUENCIA, CODPROD, QTDNEG, VLRUNIT, VLRTOT) VALUES (?, ?, ?, ?, ?, ?)',
     set.notas.flatMap((nota) =>
@@ -187,6 +222,28 @@ function asSankhyaDate(value: unknown): unknown {
   return year === undefined ? value : `${day}${month}${year} ${time ?? '00:00:00'}`
 }
 
+function literal(text: string): string {
+  return text.replace(/[\\^$.*+?()[\]{}|/]/g, '\\$&')
+}
+
+/** One piece of a `LIKE` pattern as a regular expression: an escaped character, a class, `%`, `_` or itself. */
+function likePart(part: string, escapeMark: unknown): string {
+  if (part.length === 2 && part[0] === escapeMark) return literal(part[1] ?? '')
+  if (part === '%') return '[\\s\\S]*'
+  if (part === '_') return '[\\s\\S]'
+  if (part.length === 1) return literal(part)
+  const negated = part[1] === '^'
+  const members = part.slice(negated ? 2 : 1, -1).replace(/[\\\]^[]/g, '\\$&')
+  return `[${negated ? '^' : ''}${members}]`
+}
+
+/** A `LIKE` pattern as a regular expression: `%` any text, `_` one character, `[...]` or `[^...]` a class, and the escape character's next one as itself. */
+function likeOf(pattern: string, escapeMark: unknown): RegExp {
+  const escaped = typeof escapeMark === 'string' ? `${literal(escapeMark)}[\\s\\S]|` : ''
+  const pieces = pattern.match(new RegExp(`${escaped}\\[\\^?[^\\]]+\\]|[\\s\\S]`, 'gu')) ?? []
+  return new RegExp(`^${pieces.map((part) => likePart(part, escapeMark)).join('')}$`, 'u')
+}
+
 /** The answer of a read query: the columns by name and the rows in their order. */
 export type QueryAnswer = { fields: string[]; rows: unknown[][] }
 
@@ -203,7 +260,7 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
       .map((letter) => pairs.find(([of]) => of === letter)?.[1] ?? letter)
       .join('')
   })
-  // Oracle's `UPPER` folds every letter and its `LIKE` heeds case; SQLite's `UPPER` folds only ASCII and its `LIKE` ignores ASCII case.
+  // Oracle's `UPPER` folds every letter; SQLite's folds only ASCII.
   database.function('UPPER', { deterministic: true }, (text) =>
     text === null ? null : String(text).toUpperCase(),
   )
@@ -213,7 +270,10 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
       throw new DoubleRefusal('The double reads only TO_DATE(day, YYYY-MM-DD).')
     return String(text)
   })
-  database.exec('PRAGMA case_sensitive_like = ON')
+  // `LIKE` as SQL Server reads it, case and all: there `[...]` is a class besides `%` and `_` (#929).
+  database.function('like', { deterministic: true, varargs: true }, (pattern, text, escapeMark) =>
+    text === null ? null : Number(likeOf(String(pattern), escapeMark).test(String(text))),
+  )
   tablesOf(database, set)
   registerOn(database)
   return (sql) => {
@@ -230,6 +290,7 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
     const columns = statement.columns()
     const fields = columns.map((column) => column.name)
     const dated = columns.map((column) => column.type === 'DATE')
+    const decimal = columns.map((column) => column.type === DECIMAL)
     let read: ReturnType<typeof statement.all>
     try {
       read = statement.all()
@@ -241,9 +302,10 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
     return {
       fields,
       rows: read.map((row) =>
-        Object.values(row).map((cell, at) =>
-          dated[at] && cell !== null ? asSankhyaDate(cell) : cell,
-        ),
+        Object.values(row).map((cell, at) => {
+          if (dated[at] && cell !== null) return asSankhyaDate(cell)
+          return decimal[at] && typeof cell === 'string' ? rawJSON(cell) : cell
+        }),
       ),
     }
   }

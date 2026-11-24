@@ -156,6 +156,7 @@ async function twoPages(
         await fake.handle(
           toRequest(mercadoLivre, request, granted.kind === 'OK' ? granted.accessToken : ''),
         ),
+        mercadoLivre.numbers,
       ),
     )
     assert.equal(answered.kind, 'OK', id)

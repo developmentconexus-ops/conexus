@@ -19,7 +19,7 @@ import {
   viewOf,
 } from './rows.ts'
 import { connection } from './tables.ts'
-import { accessFor } from './tokens.ts'
+import { sessionFor } from './tokens.ts'
 
 /**
  * Testar's first step (the failure table): a short command that admits and opens the seal, so no
@@ -104,7 +104,7 @@ export async function test(deps: Deps, input: OfConnection): Promise<TestResult>
   const open = await opened(deps, input)
   // The connection's turn: an app's call on it finishes first, and the Testar never shares its token with one.
   const turn = await deps.limits.inTurn(open.id, deps.callDeadlineMs, () =>
-    checked({ ...deps, access: accessFor(deps, input) }, open),
+    checked({ ...deps, session: sessionFor(deps, input, open) }, open),
   )
   if ('kind' in turn)
     deps.log.info(

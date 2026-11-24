@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { CredentialClass } from './credential-class.ts'
 import type { OAuth2CodeAuth } from './oauth.ts'
 import type { Native, ProviderAnswer, ProviderRequest, TokenRequest } from './operation.ts'
 import { locateOf } from './operation.ts'
@@ -15,11 +16,12 @@ type Fields = Readonly<
     }>
   >
 >
-type Credential = Readonly<Record<string, string>>
+export type Credential = Readonly<Record<string, string>>
 
 /** A login by fields the company pastes, exchanged for a bearer token (Sankhya). */
 export type ClientCredentialsAuth = Readonly<{
   kind: 'client_credentials'
+  credentialClass: CredentialClass
   fields: Fields
   credential: z.ZodType<Credential> // strict, from `fields`
   token: Readonly<{

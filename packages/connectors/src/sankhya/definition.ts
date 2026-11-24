@@ -8,16 +8,11 @@ import { empresas } from './operations/cadastros.ts'
 import { sankhyaOperations, sankhyaSubjects, sankhyaWrites } from './operations/index.ts'
 import { refusals } from './refusals.ts'
 
-const SKILL = new URL('./skill/', import.meta.url)
+const GATEWAY_SERVICE = '/gateway/v1/mge/service.sbr'
 
-// The official logo, from Sankhya's brand page ("Nossas Marcas", sankhya.com.br).
-const LOGO = readFileSync(new URL('./logo.svg', import.meta.url), 'utf8')
-
-const KEYS_GUIDE =
-  'https://developer.sankhya.com.br/reference/guia-de-conversao-do-componente-de-integracao-appkey-oauth2'
-const INTEGRATION_KEYS = {
+const DEVELOPER_AREA = {
   text: 'Gerado na Área do Desenvolvedor do Sankhya, no Componente de Integração (Gerar novas chaves).',
-  url: KEYS_GUIDE,
+  url: 'https://developer.sankhya.com.br/reference/guia-de-conversao-do-componente-de-integracao-appkey-oauth2',
 } as const
 
 export const sankhya = defineConnector({
@@ -26,12 +21,13 @@ export const sankhya = defineConnector({
   version: '1.0.0',
   origin: 'https://api.sankhya.com.br',
   auth: clientCredentials({
+    credentialClass: 'SHAREABLE',
     fields: {
-      clientId: { label: 'Client ID', maxLength: 200, help: INTEGRATION_KEYS, visible: true },
+      clientId: { label: 'Client ID', maxLength: 200, help: DEVELOPER_AREA, visible: true },
       clientSecret: {
         label: 'Client Secret',
         maxLength: 200,
-        help: INTEGRATION_KEYS,
+        help: DEVELOPER_AREA,
         visible: false,
       },
       xToken: {
@@ -53,12 +49,12 @@ export const sankhya = defineConnector({
       },
       headers: { 'X-Token': { field: 'xToken' } },
     },
-    // Ends the MGE session the login opened; idempotent, and refused (403) once the token expired.
+    // Ends the MGE session the login opened: idempotent, and refused (403) once the token expired.
     logout: {
-      path: '/gateway/v1/mge/service.sbr',
+      path: GATEWAY_SERVICE,
       query: { serviceName: 'MobileLoginSP.logout', outputType: 'json' },
       body: { serviceName: 'MobileLoginSP.logout', requestBody: {} },
-      // The gateway answers a refused logout with 200 and the envelope "4" or a rule status, never "1".
+      // A refused logout still answers 200, with the envelope "4" or a rule's status, never "1".
       ended: z.object({ status: z.literal('1') }),
     },
     answer: z
@@ -66,15 +62,17 @@ export const sankhya = defineConnector({
         access_token: z.string().min(1).max(8192),
         expires_in: z.number().int().positive(),
       })
-      .transform(({ access_token, expires_in }) => ({
-        accessToken: access_token,
-        expiresInSeconds: expires_in,
+      .transform((token) => ({
+        accessToken: token.access_token,
+        expiresInSeconds: token.expires_in,
       })),
   }),
-  account: { kind: 'none' }, // the documented login answer carries no account
+  account: { kind: 'none' }, // the documented login answer names no account
   category: 'ERP',
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
-  logo: LOGO,
+  // The official logo, from Sankhya's brand page ("Nossas Marcas", sankhya.com.br).
+  logo: readFileSync(new URL('./logo.svg', import.meta.url), 'utf8'),
+  numbers: 'EXACT', // the DbExplorer answers decimals as JSON numbers past a double's digits
   perProject: 'one', // a Projeto reads one Sankhya (founder, 2026-10-29)
   subjects: { porta: 'Porta de leitura', ...sankhyaSubjects },
   operations: sankhyaOperations,
@@ -82,6 +80,6 @@ export const sankhya = defineConnector({
   refusals,
   check: empresas,
   readDoor: sankhyaDoor,
-  callLimit: { countedBy: 'ACCOUNT' }, // each company has its own Sankhya and its own keys
-  skill: readSkill(SKILL),
+  callLimit: { countedBy: 'ACCOUNT' },
+  skill: { written: readSkill(new URL('./skill/', import.meta.url)) },
 })

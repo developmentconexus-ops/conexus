@@ -217,7 +217,7 @@
           "  </skill>",
           "  <skill>",
           "    <name>conexus-sankhya</name>",
-          "    <description>Reads a company&apos;s Sankhya through the Sankhya connector. Every company configures its own Sankhya, so the skill teaches the ready operations, the two read doors, and how to find what each code and field means in this company&apos;s data before relying on it. Use before reading Sankhya or writing code that does.</description>",
+          "    <description>Reads and writes a company&apos;s Sankhya through the Sankhya connector. Every company configures its own Sankhya, so the skill teaches how its routes page, how to read the company&apos;s own tables, how to find what each code and field means in this company&apos;s data before relying on it, and how an order is placed. Use before reading Sankhya, writing to it, or writing code that does.</description>",
           "    <location>inline/conexus-sankhya/SKILL.md</location>",
           "    <source>local</source>",
           "  </skill>",

@@ -16,6 +16,7 @@ export { hubspotFake } from './hubspot/fake.ts'
 export {
   type Auth,
   type ClientCredentialsAuth,
+  type Credential,
   loggedOutBy,
   logoutRequest,
   readToken,
@@ -32,7 +33,10 @@ export {
   CopyPosition,
   copyPrefixOf,
 } from './kernel/copy.ts'
-export type { Connector, ConnectorId, ReadDoor } from './kernel/definition.ts'
+export { CredentialClass } from './kernel/credential-class.ts'
+export type { Connector, ConnectorId, ConnectorSkill, ReadDoor } from './kernel/definition.ts'
+export { toolNameOf } from './kernel/definition.ts'
+export { type Numbers, parseExact, parseJson } from './kernel/exact-json.ts'
 export type { ListPage } from './kernel/list.ts'
 export { listInputOf, listPageOf } from './kernel/list.ts'
 export {
@@ -70,6 +74,20 @@ export {
 } from './kernel/operation.ts'
 export { toRequest } from './kernel/request.ts'
 export { CONCURRENT_CALL, Rows } from './kernel/rows.ts'
+export {
+  credentialsSource,
+  type Grant,
+  type LoggedOut,
+  type LoginRefused,
+  type NeedsReauth,
+  openSession,
+  type ProviderSend,
+  RENEW_BEFORE_MS,
+  type Session,
+  sessionOf,
+  type TokenSource,
+} from './kernel/session.ts'
+export { connectorSkill } from './kernel/skill.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { MERCADO_LIVRE_FACTS } from './mercado-livre/fake-facts.ts'
 export { sankhyaFake } from './sankhya/fake.ts'
@@ -81,3 +99,4 @@ export {
   salesDatabase,
   soldBy,
 } from './sankhya/fake-sales.ts'
+export { SEARCH_PAGE_ROWS } from './sankhya/search.ts'

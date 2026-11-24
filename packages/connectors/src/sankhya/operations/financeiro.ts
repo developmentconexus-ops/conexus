@@ -1,61 +1,47 @@
 import { z } from 'zod'
-import { defineOperation, get } from '../../kernel/operation.ts'
-import { rows } from '../answers.ts'
-import { empresaPage, empresas } from './cadastros.ts'
-import { Code, Date_, Page } from './shared.ts'
+import { get } from '../../kernel/operation.ts'
+import { companyProbe, empresas } from './cadastros.ts'
+import { Code, Day, defineRoute, Page } from './route.ts'
 
-/** The filters the two financial lists share; their pages start at 1, where the other routes start at 0. */
-const TitulosInput = z.strictObject({
+/** The filters both title lists take; their first page is 1, where most routes start at 0. */
+const Titulos = z.strictObject({
   codigoEmpresa: Code,
   page: Page(1),
   codigoParceiro: Code.optional(),
   statusFinanceiro: z.number().int().optional(),
-  dataVencimentoInicio: Date_.optional(),
-  dataVencimentoFinal: Date_.optional(),
-  dataNegociacaoInicio: Date_.optional(),
-  dataNegociacaoFinal: Date_.optional(),
+  dataVencimentoInicio: Day.optional(),
+  dataVencimentoFinal: Day.optional(),
+  dataNegociacaoInicio: Day.optional(),
+  dataNegociacaoFinal: Day.optional(),
 })
 
-export const contasAReceber = defineOperation({
-  id: 'contasAReceber',
-  class: 'read' as const,
-  subject: 'financeiro',
-  idempotent: true,
-  summary:
-    'Lista os títulos a receber de uma empresa (parceiro, natureza, vencimento, valor, baixa); a página começa em 1. `statusFinanceiro`: 1 aberto, 2 baixado, 3 todos.',
-  label: 'Contas a receber',
-  input: TitulosInput,
-  ...rows({ list: 'financeiros' }),
-  from: [empresas.id],
-  probe: empresaPage(1),
-  request: (input) => get('/v1/financeiros/receitas', input),
-})
+function titulos(kind: 'receber' | 'pagar') {
+  const receivable = kind === 'receber'
+  return defineRoute({
+    id: receivable ? 'contasAReceber' : 'contasAPagar',
+    subject: 'financeiro',
+    summary: `Lista os títulos a ${kind} de uma empresa (parceiro, natureza, vencimento, valor, baixa); a página começa em 1. \`statusFinanceiro\`: 1 aberto, 2 baixado, 3 todos.`,
+    label: receivable ? 'Contas a receber' : 'Contas a pagar',
+    input: Titulos,
+    rowsAt: 'financeiros',
+    from: [empresas.id],
+    probe: companyProbe(1),
+    request: (input) =>
+      get(receivable ? '/v1/financeiros/receitas' : '/v1/financeiros/despesas', input),
+  })
+}
 
-export const contasAPagar = defineOperation({
-  id: 'contasAPagar',
-  class: 'read' as const,
-  subject: 'financeiro',
-  idempotent: true,
-  summary:
-    'Lista os títulos a pagar de uma empresa (parceiro, natureza, vencimento, valor, baixa); a página começa em 1. `statusFinanceiro`: 1 aberto, 2 baixado, 3 todos.',
-  label: 'Contas a pagar',
-  input: TitulosInput,
-  ...rows({ list: 'financeiros' }),
-  from: [empresas.id],
-  probe: empresaPage(1),
-  request: (input) => get('/v1/financeiros/despesas', input),
-})
+export const contasAReceber = titulos('receber')
+export const contasAPagar = titulos('pagar')
 
-export const tiposPagamento = defineOperation({
+export const tiposPagamento = defineRoute({
   id: 'tiposPagamento',
-  class: 'read' as const,
   subject: 'financeiro',
-  idempotent: true,
   summary:
     'Lista os tipos de pagamento (código, nome, subtipo); a página começa em 0. `subTipoPagamento` filtra por subtipo.',
   label: 'Tipos de pagamento',
   input: z.strictObject({ page: Page(0), subTipoPagamento: z.number().int().optional() }),
-  ...rows({ list: 'data' }),
+  rowsAt: 'data',
   probe: () => ({ page: 0 }),
   request: (input) => get('/v1/financeiros/tipos-pagamento', input),
 })

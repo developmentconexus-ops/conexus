@@ -6,21 +6,56 @@ import { listOf } from '../kernel/rows.ts'
 import { gatewayAnswer } from './answers.ts'
 import { isOneReadStatement, isReadCondition } from './read-only-sql.ts'
 
-const GATEWAY_PATH = '/gateway/v1/mge/service.sbr'
-const LOAD_RECORDS = 'CRUDServiceProvider.loadRecords'
-const EXECUTE_QUERY = 'DbExplorerSP.executeQuery'
-
-function gatewayRequest(serviceName: string, requestBody: unknown): ProviderRequest {
+/** A call to one of the gateway's services: the service is named in the query and in the body. */
+function service(serviceName: string, requestBody: unknown): ProviderRequest {
   return {
     method: 'POST',
-    path: GATEWAY_PATH,
+    path: '/gateway/v1/mge/service.sbr',
     query: { serviceName, outputType: 'json' },
     body: { serviceName, requestBody },
   }
 }
 
+/** One read statement, the only text a DbExplorer request is built from (code C23). */
+const ReadSql = z.string().min(1).max(8000).refine(isOneReadStatement).brand('ReadSql')
+
+/** What `DbExplorerSP.executeQuery` answers, each row keyed by its column; `completo` is false when Sankhya cut the list. */
+export const QueriedRows = z
+  .object({
+    fieldsMetadata: z.array(z.looseObject({ name: z.string() })),
+    rows: z.array(z.array(z.unknown())),
+    burstLimit: z.boolean().optional(),
+  })
+  .transform(({ fieldsMetadata, rows, burstLimit }) => ({
+    linhas: rows.map((row) =>
+      Object.fromEntries(fieldsMetadata.map(({ name }, at) => [name, row[at] ?? null])),
+    ),
+    completo: burstLimit !== true,
+  }))
+
+/** The DbExplorer request of a statement, judged by the read filter whoever wrote it. */
+export function queryRequest(sql: string): ProviderRequest {
+  return service('DbExplorerSP.executeQuery', { sql: ReadSql.parse(sql) })
+}
+
+const consultar = defineOperation({
+  id: 'consultar',
+  class: 'read' as const,
+  subject: 'porta',
+  idempotent: true,
+  summary:
+    'Roda uma consulta SQL de leitura (SELECT ou WITH, uma só) no Sankhya (DbExplorerSP.executeQuery).',
+  label: 'Consulta',
+  input: z.object({ sql: ReadSql }),
+  output: z.object({ linhas: z.array(z.record(z.string(), z.unknown())), completo: z.boolean() }),
+  probe: () => ({ sql: ReadSql.parse('SELECT COUNT(*) AS N FROM TSIEMP') }),
+  request: ({ sql }) => queryRequest(sql),
+  answer: (answer) => gatewayAnswer(answer, QueriedRows),
+})
+
 const Cell = z.looseObject({ $: z.unknown().optional() })
 
+/** What `loadRecords` answers: the field names in `metadata`, each row's cells as `f0`, `f1`… in that order, every value as text. */
 const LoadedRecords = z
   .object({
     entities: z.looseObject({
@@ -30,26 +65,23 @@ const LoadedRecords = z
         })
         .optional(),
       entity: listOf(z.record(z.string(), Cell)).optional(),
-      hasMoreResult: z.union([z.string(), z.boolean()]).optional(),
+      hasMoreResult: z.union([z.boolean(), z.string()]).optional(),
     }),
   })
   .transform(({ entities }) => {
     const names = (entities.metadata?.fields.field ?? []).map(({ name }) => name)
     const linhas = (entities.entity ?? []).map((cells) =>
       Object.fromEntries(
-        names.map((name, index): [string, string | null] => {
-          const value = cells[`f${index}`]?.$
+        names.map((name, at) => {
+          const value = cells[`f${at}`]?.$
           return [name, value === undefined || value === null ? null : String(value)]
         }),
       ),
     )
-    return { linhas, temMais: entities.hasMoreResult === true || entities.hasMoreResult === 'true' }
+    return { linhas, temMais: String(entities.hasMoreResult) === 'true' }
   })
 
-const Loaded = z.object({
-  linhas: z.array(z.record(z.string(), z.string().nullable())),
-  temMais: z.boolean(),
-})
+const ParameterType = z.enum(['D', 'H', 'F', 'I', 'S'])
 
 const CarregarInput = z.object({
   entidade: z.string().regex(/^[A-Z][A-Za-z]{1,60}$/),
@@ -60,7 +92,7 @@ const CarregarInput = z.object({
   criterio: z
     .object({
       expressao: z.string().max(2000).refine(isReadCondition),
-      parametros: z.array(z.object({ valor: z.string(), tipo: z.enum(['D', 'H', 'F', 'I', 'S']) })),
+      parametros: z.array(z.object({ valor: z.string(), tipo: ParameterType })),
     })
     .optional(),
   pagina: z.number().int().min(0),
@@ -75,14 +107,17 @@ const carregar = defineOperation({
     'Lê registros de uma entidade do dicionário do Sankhya (loadRecords), uma página por chamada.',
   label: 'Leitura genérica',
   input: CarregarInput,
-  output: Loaded,
+  output: z.object({
+    linhas: z.array(z.record(z.string(), z.string().nullable())),
+    temMais: z.boolean(),
+  }),
   probe: (): z.infer<typeof CarregarInput> => ({
     entidade: 'Empresa',
     campos: ['CODEMP'],
     pagina: 0,
   }),
   request: ({ entidade, campos, criterio, pagina }) =>
-    gatewayRequest(LOAD_RECORDS, {
+    service('CRUDServiceProvider.loadRecords', {
       dataSet: {
         rootEntity: entidade,
         includePresentationFields: 'N',
@@ -99,47 +134,5 @@ const carregar = defineOperation({
   answer: (answer) => gatewayAnswer(answer, LoadedRecords),
 })
 
-/** One read statement: the only text `consultar` takes, so a request cannot be built from another (code C23). */
-const ReadSql = z.string().min(1).max(8000).refine(isOneReadStatement).brand('ReadSql')
-
-/** What `DbExplorerSP.executeQuery` answers, its rows keyed by column: the door's `consultar` and the searches read it. */
-const QueriedShape = z.object({
-  fieldsMetadata: z.array(z.looseObject({ name: z.string() })),
-  rows: z.array(z.array(z.unknown())),
-  burstLimit: z.boolean().optional(),
-})
-
-export const QueriedRows = QueriedShape.transform(({ fieldsMetadata, rows, burstLimit }) => ({
-  linhas: rows.map((row) =>
-    Object.fromEntries(fieldsMetadata.map(({ name }, index) => [name, row[index] ?? null])),
-  ),
-  completo: burstLimit !== true,
-}))
-
-/** The request of one read statement: the only way a request is built from SQL, so the filter has judged it (code C23). */
-export function queryRequest(sql: string): ProviderRequest {
-  return gatewayRequest(EXECUTE_QUERY, { sql: ReadSql.parse(sql) })
-}
-
-const Queried = z.object({
-  linhas: z.array(z.record(z.string(), z.unknown())),
-  completo: z.boolean(),
-})
-
-const consultar = defineOperation({
-  id: 'consultar',
-  class: 'read' as const,
-  subject: 'porta',
-  idempotent: true,
-  summary:
-    'Roda uma consulta SQL de leitura (SELECT ou WITH, uma só) no Sankhya (DbExplorerSP.executeQuery).',
-  label: 'Consulta',
-  input: z.object({ sql: ReadSql }),
-  output: Queried,
-  probe: () => ({ sql: ReadSql.parse('SELECT COUNT(*) AS N FROM TSIEMP') }),
-  request: ({ sql }) => gatewayRequest(EXECUTE_QUERY, { sql }),
-  answer: (answer) => gatewayAnswer(answer, QueriedRows),
-})
-
-/** The two ways to read what each company has of its own; nothing else leaves the kit through the gateway. */
+/** The two ways to read what each company has of its own; nothing else reaches the gateway's services from the kit. */
 export const sankhyaDoor = defineReadDoor({ consultar, carregar })

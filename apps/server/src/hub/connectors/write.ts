@@ -6,14 +6,15 @@ import { Failure } from '../../platform/failure.ts'
 import { chosenIn } from '../access/public.ts'
 import { roleOfSpeaker, speakerOf, withinVersion } from '../identity/public.ts'
 import { offeredIn } from './builder-port.ts'
-import type { Login, OpenedConnection } from './executor.ts'
+import type { OpenedConnection } from './executor.ts'
+import { bearerOf } from './executor.ts'
 import { issuesOf } from './read.ts'
 import type { Deps } from './rows.ts'
 import { scopeOf } from './rows.ts'
 import { idsOf } from './scope.ts'
 import { openedIn } from './testing.ts'
-import type { AppRefused } from './tokens.ts'
-import { accessFor } from './tokens.ts'
+import type { TokenFailure } from './tokens.ts'
+import { sessionFor } from './tokens.ts'
 import type { WriteRequest, Written } from './write-record.ts'
 import { aboutOf, finish, hashOf, markOf, register } from './write-record.ts'
 import type { Wrote } from './wrote.ts'
@@ -31,7 +32,7 @@ export function openText(mark: string, since: Date): string {
   return `Do not call this again: a write like it, asked at ${since.toISOString()}, may already exist and this one was not sent. Tell the person to look for the mark "${mark}" in what the system wrote before anything is written again.`
 }
 
-type Ended = Wrote<unknown> | Exclude<Login, { kind: 'TOKEN' }> | AppRefused | { kind: 'DEADLINE' }
+type Ended = Wrote<unknown> | TokenFailure | { kind: 'DEADLINE' }
 
 /** What an ended call is for the model and for the record: a send whose end is unknown is `WRITE_UNCERTAIN`, the rest of the failures were not taken. */
 function writtenOf(ended: Ended, mark: string): Written {
@@ -123,12 +124,10 @@ async function sendOnce(
   function left() {
     return Math.max(1, Math.floor(endsAt - performance.now()))
   }
-  const login = await accessFor(deps, viewer).token(opened, { force: false, deadlineMs: left() })
-  if (login.kind !== 'TOKEN') return login
-  const sent = await deps.executor.write(opened, login.token, operation, input, left())
-  // The provider ended the token before it took the request: never repeated, but the next call logs in again.
-  if (sent.kind === 'TOKEN_EXPIRED') deps.limits.invalidate(opened, login.token)
-  return sent
+  return sessionFor(deps, viewer, opened).once(
+    (token) => deps.executor.write(opened, bearerOf(token), operation, input, left()),
+    AbortSignal.timeout(left()),
+  )
 }
 
 /** The line for what came of the send, before the record's end: scalars only, and the id the write declares when the answer has one, under a name of the Hub's own (S40). */

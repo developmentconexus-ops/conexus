@@ -1,16 +1,15 @@
 import { setTimeout } from 'node:timers/promises'
-import type { Native } from '@conexus/connectors'
-import { refreshRequest } from '@conexus/connectors'
+import type { Grant, Native, Session, TokenSource } from '@conexus/connectors'
+import { refreshRequest, sessionOf } from '@conexus/connectors'
 import type { CompanyId, ConnectionId } from '@conexus/hub-api'
 import { GRANT_DEADLINE_MS } from '@conexus/hub-api'
 import { and, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import { Credential, open, seal } from '../../platform/seal.ts'
-import { Secret } from '../../platform/secret.ts'
 import type { OAuthConnector } from './apps.ts'
 import { appKeysOf, isOAuth } from './apps.ts'
-import type { BearerToken, Login, OpenedConnection } from './executor.ts'
+import type { LoginFailure, OpenedConnection } from './executor.ts'
 import type { Deps, Viewer } from './rows.ts'
 import { ofCompany, scopeOf, sealContext, sealedOf } from './rows.ts'
 import { connection } from './tables.ts'
@@ -19,8 +18,6 @@ import { connection } from './tables.ts'
 // second caller rereads every step until it lands, fails or its own deadline ends.
 const LEASE_MS = 30_000
 const WAIT_STEP_MS = 200
-// A token this close to its end is refreshed before a call rather than refused in the middle of one.
-const EARLY_MS = 300_000
 /** What an OAuth connection's seal holds (S32): `expiresAt` in epoch milliseconds. */
 export const ConnectionTokens = z.object({
   access: z.string().min(1),
@@ -48,28 +45,17 @@ export function sealTokens(
   return seal(deps.sealKeys, sealContext(row), Credential.parse(JSON.stringify(tokens)))
 }
 
-export type AppRefused = Readonly<{ kind: 'APP_REFUSED'; native: Native }>
+type AppRefused = Readonly<{ kind: 'APP_REFUSED'; native: Native }>
 
-/**
- * The bearer for one call. Pasted fields use the token `limits.ts` owns, one login at a time; OAuth uses the sealed token while it
- * lives, else one refresh leased in the database. `force` refreshes a token the provider refused
- * with 401, whose answer is `refused`: a refresh another caller already found refused ends with it.
- * A login, and a wait for another caller's refresh, each take one call's deadline.
- */
-export type Access = {
-  token(
-    opened: OpenedConnection,
-    a: Readonly<
-      { force: false; deadlineMs?: number } | { force: true; refused: Native; deadlineMs?: number }
-    >,
-  ): Promise<Login | AppRefused>
-}
+export type TokenFailure = LoginFailure | AppRefused
+
+export type ConnectionSession = Session<TokenFailure>
 
 /** The revision and tokens a refresh starts from: the opened row's, then each newer one this Testar saw. */
 type Held = { revision: number; tokens: ConnectionTokens }
 
-function bearer(tokens: ConnectionTokens): Login {
-  return { kind: 'TOKEN', token: new Secret('BearerToken', tokens.access) }
+function grantOf(tokens: ConnectionTokens): Grant {
+  return { kind: 'TOKEN', token: tokens.access, expiresAt: tokens.expiresAt }
 }
 
 const UNREACHABLE = { kind: 'UNREACHABLE', native: null } as const
@@ -154,7 +140,7 @@ function reread(g: Ground) {
   })
 }
 
-type Turned = Readonly<{ answer: Login | AppRefused; held: Held | null }>
+type Turned = Readonly<{ answer: Grant | TokenFailure; held: Held | null }>
 
 /** The refresh by who holds the lease, with its own deadline: a token the provider already turned must reach `store`. */
 async function refreshed(g: Ground): Promise<Turned> {
@@ -176,7 +162,7 @@ async function refreshed(g: Ground): Promise<Turned> {
     }
     await store(g, tokens)
     deps.log.info(where, 'CONNECTION_TOKEN_REFRESHED')
-    return { answer: bearer(tokens), held: { revision: from.revision + 1, tokens } }
+    return { answer: grantOf(tokens), held: { revision: from.revision + 1, tokens } }
   }
   await release(g, answered.kind === 'GRANT_REFUSED')
   switch (answered.kind) {
@@ -199,19 +185,19 @@ async function refreshed(g: Ground): Promise<Turned> {
 
 /**
  * Who did not get the lease rereads until the revision changes (the new token), the provider
- * refused the grant, the lease drops with nothing stored, or its own deadline ends.
+ * refused the grant, the lease drops with nothing stored, or its own deadline ends. `refused`: the
+ * provider's answer that ended the token this caller held, null when it was renewed before its end.
  */
-async function waited(g: Ground, a: Parameters<Access['token']>[1]): Promise<Turned> {
+async function waited(g: Ground, refused: Native | null): Promise<Turned> {
   const endsAt = performance.now() + g.deps.callDeadlineMs
   for (;;) {
     const now = await reread(g)
     if (now.revision !== g.from.revision)
-      return { answer: bearer(now.tokens), held: { revision: now.revision, tokens: now.tokens } }
+      return { answer: grantOf(now.tokens), held: { revision: now.revision, tokens: now.tokens } }
     // Refused before this caller asked: the sealed token is still the provider's to judge, and a forced one already was.
     if (now.state === 'NEEDS_REAUTH') {
-      const answer = a.force
-        ? { kind: 'AUTH_REFUSED' as const, native: a.refused }
-        : bearer(now.tokens)
+      const answer =
+        refused === null ? grantOf(now.tokens) : { kind: 'AUTH_REFUSED' as const, native: refused }
       return { answer, held: null }
     }
     if (!now.leased || performance.now() + WAIT_STEP_MS >= endsAt)
@@ -220,40 +206,45 @@ async function waited(g: Ground, a: Parameters<Access['token']>[1]): Promise<Tur
   }
 }
 
-/** The pasted key's token from `limits`; a forced one is a token the provider ended, dropped so the next is a new login. */
-function pastedToken(
+/**
+ * An OAuth connection's tokens: the sealed one while the session's margin allows it, else one
+ * refresh leased in the database, since the provider serves a refresh once (an EXCLUSIVE credential,
+ * 0077). Each step is a short command, no transaction open during a call (D22).
+ */
+function oauthSource(
   deps: Deps,
+  viewer: Viewer,
   opened: OpenedConnection,
-  a: Parameters<Access['token']>[1],
-  remembered: BearerToken | null,
-) {
-  if (a.force && remembered !== null) deps.limits.invalidate(opened, remembered)
-  return deps.limits.token(opened, a.deadlineMs ?? deps.callDeadlineMs)
-}
-
-/** One Testar's access to its connection (security S34); each step is a short command, no transaction open during a call (D22). */
-export function accessFor(deps: Deps, viewer: Viewer): Access {
-  let held: Held | null = null
-  let pasted: BearerToken | null = null
+  connector: OAuthConnector,
+): TokenSource<TokenFailure> {
+  let from: Held = { revision: opened.revision, tokens: tokensOf(opened.credential) }
   return {
-    async token(opened, a) {
-      const { connector } = opened
-      if (!isOAuth(connector)) {
-        const login = await pastedToken(deps, opened, a, pasted)
-        pasted = login.kind === 'TOKEN' ? login.token : null
-        return login
-      }
-      const from = held ?? { revision: opened.revision, tokens: tokensOf(opened.credential) }
-      held = from
-      if (!a.force && from.tokens.expiresAt - EARLY_MS > Date.now()) return bearer(from.tokens)
+    held: grantOf(from.tokens),
+    async open({ replacing }) {
       // Before the lease: an installation without the app keys calls nothing.
       appKeysOf(deps.apps, connector)
       const ground = { deps, viewer, opened, connector, from }
-      const turned = (await reserve(ground)) ? await refreshed(ground) : await waited(ground, a)
-      held = turned.held ?? held
+      const refused = replacing?.ended ?? null
+      const turned = (await reserve(ground))
+        ? await refreshed(ground)
+        : await waited(ground, refused)
+      from = turned.held ?? from
       return turned.answer
     },
+    async end() {
+      return undefined
+    },
   }
+}
+
+export function sessionFor(
+  deps: Deps,
+  viewer: Viewer,
+  opened: OpenedConnection,
+): ConnectionSession {
+  const { connector } = opened
+  if (!isOAuth(connector)) return deps.limits.session(opened)
+  return sessionOf(oauthSource(deps, viewer, opened, connector), Date.now)
 }
 
 /** What the provider said, as a log may carry it: its status and code, never its body (S41). */

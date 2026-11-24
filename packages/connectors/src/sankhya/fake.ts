@@ -66,6 +66,8 @@ export type SankhyaFake = CredentialFake &
     logouts: () => number
     /** The tokens issued so far expire, as after their hour; a login after this gives a good one. */
     expireTokens: () => void
+    /** The sessions still open: issued and never logged out, an expired one's included (its logout is refused). */
+    open: () => number
   }>
 
 /** How long a call holds its token: long enough for a second call over HTTP to arrive while the first is unanswered. */
@@ -292,5 +294,6 @@ export function sankhyaFake(options: { sales?: SalesSet } = {}): SankhyaFake {
     expireTokens: () => {
       for (const token of sessions.issued) sessions.expired.add(token)
     },
+    open: () => [...sessions.issued].filter((token) => !sessions.ended.has(token)).length,
   }
 }

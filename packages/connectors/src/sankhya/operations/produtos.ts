@@ -1,31 +1,25 @@
-import { z } from 'zod'
-import { defineOperation, get } from '../../kernel/operation.ts'
-import { rows } from '../answers.ts'
-import { Page } from './shared.ts'
+import { get } from '../../kernel/operation.ts'
+import { defineRoute, FirstPage } from './route.ts'
 
-export const produtos = defineOperation({
+export const produtos = defineRoute({
   id: 'produtos',
-  class: 'read' as const,
   subject: 'produtos',
-  idempotent: true,
   summary:
     'Lista os produtos do Sankhya (código, nome, grupo, marca, NCM), uma página por chamada; a página começa em 0. Não filtra por nome, código nem grupo, só por página: para achar por nome, referência, código ou grupo, use `buscarProdutos`.',
   label: 'Produtos',
-  input: z.strictObject({ page: Page(0) }),
-  ...rows({ list: 'produtos' }),
+  input: FirstPage,
+  rowsAt: 'produtos',
   probe: () => ({ page: 0 }),
-  request: ({ page }) => get('/v1/produtos', { page }),
+  request: (input) => get('/v1/produtos', input),
 })
 
-export const gruposProduto = defineOperation({
+export const gruposProduto = defineRoute({
   id: 'gruposProduto',
-  class: 'read' as const,
   subject: 'produtos',
-  idempotent: true,
   summary: 'Lista os grupos de produto (código, nome, grupo pai); a página começa em 0.',
   label: 'Grupos de produto',
-  input: z.strictObject({ page: Page(0) }),
-  ...rows({ list: 'grupos' }),
+  input: FirstPage,
+  rowsAt: 'grupos',
   probe: () => ({ page: 0 }),
-  request: ({ page }) => get('/v1/grupos-produto', { page }),
+  request: (input) => get('/v1/grupos-produto', input),
 })

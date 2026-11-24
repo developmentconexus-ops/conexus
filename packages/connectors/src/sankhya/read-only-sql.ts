@@ -1,115 +1,107 @@
 /*
- * A best-effort first layer, not a guarantee. It refuses, before any request is built, what is plainly
- * not one read: a comment, a second statement, a write word, a number glued to a word. Sankhya's
- * DbExplorer, which refuses a consult that writes, is the second layer, and the read only integration
- * user the company created is behind both. Quoting follows Oracle and SQL Server, the databases Sankhya
- * runs on; SQL Server runs a second statement with no `;` before it, so statement words are refused
- * anywhere. Comments are refused outright, quoted or not: SQL Server nests block comments and Oracle
- * does not, and a line comment ends at different characters on each, so no reading of where one ends is
- * safe on both, and a read never needs one.
+ * The first of three layers, and only best effort: it refuses before any request is built what is
+ * plainly not one read. Sankhya's DbExplorer refuses a consult that writes, and the company's read
+ * only integration user is behind both. Sankhya runs on Oracle or SQL Server: SQL Server runs a second
+ * statement with no `;` before it, so a statement word is refused anywhere outside quotes; the two
+ * disagree on where a comment ends (SQL Server nests `/*`, and their line ends differ), so no comment
+ * is read at all, quoted or not.
  */
-const REFUSED_WORDS = new RegExp(
-  `\\b(?:${[
-    'INSERT',
-    'UPDATE',
-    'DELETE',
-    'MERGE',
-    'DROP',
-    'ALTER',
-    'CREATE',
-    'TRUNCATE',
-    'GRANT',
-    'REVOKE',
-    'EXEC',
-    'EXECUTE',
-    'CALL',
-    'INTO',
-    'BEGIN',
-    'COMMIT',
-    'DENY',
-    'WRITETEXT',
-    'UPDATETEXT',
-    'BACKUP',
-    'RESTORE',
-    'DBCC',
-    'SHUTDOWN',
-    'KILL',
-    'RECONFIGURE',
-    'OPENROWSET',
-    'OPENDATASOURCE',
-    'OPENQUERY',
-    'DISABLE',
-    'ENABLE',
-    'DECLARE',
-    'WAITFOR',
-    'RENAME',
-    'ROLLBACK',
-    'RECEIVE',
-    'SEND',
-    'MOVE',
-    'CHECKPOINT',
-    'SETUSER',
-    'ADD',
-    'USE',
-    'SET',
-    'END\\s+CONVERSATION',
-  ].join('|')})\\b`,
-  'i',
-)
 
-const COMMENT = /\/\*|\*\/|--/
-// SQL Server ends a number at its first non-digit, so `1DELETE` is `1` and then `DELETE`, where `\b` sees one word.
-const GLUED_NUMBER = /(?<![\w@#])(?=((?:\d+\.?\d*|\.\d+)(?:e[+-]?\d*)?))\1[a-z_]/i
-const CLOSING_QUOTE: Readonly<Record<string, string>> = { "'": "'", '"': '"', '[': ']' }
+const STATEMENT_WORDS = [
+  'ADD',
+  'ALTER',
+  'BACKUP',
+  'BEGIN',
+  'CALL',
+  'CHECKPOINT',
+  'COMMIT',
+  'CREATE',
+  'DBCC',
+  'DECLARE',
+  'DELETE',
+  'DENY',
+  'DISABLE',
+  'DROP',
+  'ENABLE',
+  'END\\s+CONVERSATION',
+  'EXEC',
+  'EXECUTE',
+  'GRANT',
+  'INSERT',
+  'INTO',
+  'KILL',
+  'MERGE',
+  'MOVE',
+  'OPENDATASOURCE',
+  'OPENQUERY',
+  'OPENROWSET',
+  'RECEIVE',
+  'RECONFIGURE',
+  'RENAME',
+  'RESTORE',
+  'REVOKE',
+  'ROLLBACK',
+  'SEND',
+  'SET',
+  'SETUSER',
+  'SHUTDOWN',
+  'TRUNCATE',
+  'UPDATE',
+  'UPDATETEXT',
+  'USE',
+  'WAITFOR',
+  'WRITETEXT',
+]
+const STATEMENT_WORD = new RegExp(`\\b(?:${STATEMENT_WORDS.join('|')})\\b`, 'i')
+const COMMENT_MARK = /--|\/\*|\*\//
+const CLOSER: Readonly<Record<string, string>> = { "'": "'", '"': '"', '[': ']' }
+const NUMBER = /(?<![\w@#])(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d*)?/gi
 
-/** The index just past the quoted text opened at `start`, where a doubled closing quote is an escape; -1 if it never closes. */
-function pastQuote(sql: string, start: number, close: string): number {
-  for (let at = start + 1; ; at += 2) {
-    at = sql.indexOf(close, at)
-    if (at === -1) return -1
-    if (sql[at + 1] !== close) return at + 1
-  }
-}
-
-/** The index past the quoted text that starts at `at`, -1 when it never closes, or null when `at` starts plain code. */
-function skipAt(sql: string, at: number): number | null {
-  const close = CLOSING_QUOTE[sql[at] ?? '']
-  return close === undefined ? null : pastQuote(sql, at, close)
-}
-
-/** The SQL with each quoted text replaced by a space; null when one never closes, a comment appears anywhere, or Oracle's `q'` quoting appears. */
-function codeOf(sql: string): string | null {
-  if (COMMENT.test(sql)) return null
+/** The text with every quoted part made one space; null when a quote never closes or Oracle's `q'` quoting opens one. */
+function unquoted(text: string): string | null {
   let code = ''
   let at = 0
-  while (at < sql.length) {
-    if (sql[at] === "'" && /q/i.test(sql[at - 1] ?? '')) return null
-    const next = skipAt(sql, at)
-    if (next === null) {
-      code += sql[at]
+  while (at < text.length) {
+    const opener = text[at] ?? ''
+    const closer = CLOSER[opener]
+    if (closer === undefined) {
+      code += opener
       at += 1
       continue
     }
-    if (next === -1) return null
+    if (opener === "'" && /q/i.test(text[at - 1] ?? '')) return null
+    let end = text.indexOf(closer, at + 1)
+    while (end !== -1 && text[end + 1] === closer) end = text.indexOf(closer, end + 2)
+    if (end === -1) return null
     code += ' '
-    at = next
+    at = end + 1
   }
   return code
 }
 
-/** No `;`, no refused word and no number glued to a letter in the code, the part of the wire that a statement and a condition share. */
-function isInert(code: string): boolean {
-  return !code.includes(';') && !REFUSED_WORDS.test(code) && !GLUED_NUMBER.test(code)
+/** SQL Server ends a number at its first other character, so `1DELETE` is `1` and then `DELETE`, where `\b` sees one word. */
+function gluesANumber(code: string): boolean {
+  return [...code.matchAll(NUMBER)].some((found) =>
+    /[a-z_]/i.test(code[found.index + found[0].length] ?? ''),
+  )
 }
 
-/** One SELECT or WITH statement, with no refused word outside quoted text. */
+/** The code outside quotes when nothing in it can end the read and start another; else null. */
+function inertCode(text: string): string | null {
+  if (COMMENT_MARK.test(text)) return null
+  const code = unquoted(text)
+  if (code === null || STATEMENT_WORD.test(code) || gluesANumber(code)) return null
+  return code
+}
+
+/** One SELECT or WITH, at most one `;` and only at its end. */
 export function isOneReadStatement(sql: string): boolean {
-  const code = codeOf(sql)?.trim().replace(/;$/, '')
-  return code !== undefined && /^(?:SELECT|WITH)\b/i.test(code) && isInert(code)
+  const code = inertCode(sql)?.trim().replace(/;$/, '')
+  return code !== undefined && /^(?:SELECT|WITH)\b/i.test(code) && !code.includes(';')
 }
 
-/** A condition (`loadRecords` criteria) that carries no second statement: the same wire, with no `;` at all. */
+/** A `loadRecords` condition: the same refusals, and no `;` at all. */
 export function isReadCondition(text: string): boolean {
-  const code = codeOf(text)
-  return code !== null && isInert(code)
+  const code = inertCode(text)
+  return code !== null && !code.includes(';')
 }

@@ -20,7 +20,7 @@ test('a ferramenta de busca do agente do Projeto: acha por nome sem acento, pagi
   const on = await approving(t, [
     [tool('tool_buscar_parceiros', { nome: 'sao' })],
     [tool('tool_buscar_parceiros', { limite: 50 })],
-    [tool('tool_buscar_parceiros', { depoisDe: 308, limite: 50 })],
+    [tool('tool_buscar_parceiros', { depoisDe: 307, limite: 50 })],
     [tool('tool_buscar_parceiros', { nome: 'sao', telefone: '1' })],
     [said('Pronto.')],
   ])
@@ -60,8 +60,8 @@ test('a ferramenta de busca do agente do Projeto: acha por nome sem acento, pagi
   assert.equal(first.value.temMais, true)
   assert.equal(first.complete, false)
   const next = Answer.parse(JSON.parse(resultOf(3)))
-  assert.equal(next.value.linhas[0]?.codigoParceiro, 309)
-  assert.equal(first.value.linhas.at(-1)?.codigoParceiro, 308)
+  assert.equal(next.value.linhas[0]?.codigoParceiro, 308)
+  assert.equal(first.value.linhas.at(-1)?.codigoParceiro, 307)
 
   const refused = on.calls[4]?.toolResults.at(-1)
   assert.match(refused?.text ?? '', /Unrecognized key.*telefone/)
