@@ -77,9 +77,16 @@ relatório dele traz a imagem da tela antes e depois.
   abrir: nele o Builder segue com a conferência de hoje. Todo Projeto novo tem endereço.
 - A etapa 2 do harness, "Uma sala e os nomes certos" (os nomes "Construtor de apps" e "Construtor
   de agentes"). Ela vem depois deste marco e antes do `A3`, na mesma ordem de 2026-11-22.
-- Os itens abertos com o rótulo `next-card`. Nenhum tem o gatilho num arquivo que esta etapa
-  muda. O 1164 (o turno recusado quando outra conversa salvou) é da sincronização da máquina, que
-  esta etapa não toca.
+- Dos itens abertos com o rótulo `next-card`, quatro têm o gatilho num arquivo ou numa pasta que
+  esta etapa muda. Dois entram: o 788 (tirar `SUBSCRIPTION_KINDS` do índice de `packages/hub-api`,
+  que a U2 muda para exportar o Worker e os logins de conferência) e o item 4 do 753 (quebrar um
+  comentário longo em `hub/apps/live.ts`, a pasta da U2). Os outros itens do 753 ficam: são
+  testes e comentários em pastas que esta etapa não toca. Esperam também: o 808 (o dublê das
+  máquinas ainda chamado pelo nome do Assistente), porque o renome passa por testes dos quatro
+  agentes e é o assunto da etapa 2 do harness, que vem logo depois; e o 813 (uma regra que recusa
+  app com estado guardado entre chamadas), porque esta etapa só acrescenta apps de teste à
+  conferência da máquina e não muda o que ela recusa. O 1164 (o turno recusado quando outra
+  conversa salvou) é da sincronização da máquina, que esta etapa não toca.
 
 **Já decidido pelo firstmate; você muda ao aprovar, se quiser.**
 
@@ -572,6 +579,8 @@ O builder relê cada linha desta seção na base da U2.
 | `packages/hub-api/src/apps.ts` | Muda: `AppWorker` aceita `c-<id>`; `appCheckWorkerOf` | o despachante (sem mudança de código, publicado de novo), `conference.ts`, `removal.ts` |
 | `apps/edge/src/dispatcher-versions.test.ts` | Muda: o caso do critério 22 | — |
 | `packages/hub-api/src/app-login.ts` | Muda: `appCheckLogin` | `company-postgres.ts`, `handoff.ts` |
+| `packages/hub-api/src/index.ts` | Muda: exporta `appCheckWorkerOf`, `appCheckLogin` e `AppLogins`; tira `SUBSCRIPTION_KINDS` da lista (issue 788: só `model-accounts.ts` o lê) | o servidor e o despachante |
+| `apps/server/src/hub/apps/live.ts` | Muda: só os dois comentários de mais de 100 colunas (`:19`, `:41`), quebrados em linhas (issue 753, item 4) | — |
 | `apps/server/src/hub/apps/tables.ts`, `apps/server/migrations/`, `apps/server/database-grants.sql` | Muda e cria: `CallEnvironment`; `apps.check_session` | `handoff.ts`, `conference.ts` |
 | `apps/server/src/platform/company-postgres.ts` | Muda: `resetCheck`, `migrate` com o conjunto de logins, `dropApp` com o esquema de conferência | `conference.ts`, `app-database.ts`, `removal.ts` |
 | `apps/server/src/hub/apps/send.ts`, `app-database.ts` | Muda: `uploadVersion` recebe o nome do Worker; `migrateApp` passa `appLogin` a `migrate` | `prepare`, `conference.ts` |
@@ -675,7 +684,8 @@ guia além do de código: data (D17, D22).
 ### A ordem do trabalho
 
 1. **O contrato e a tabela.** Critério: 14.
-   - **Arquivos:** muda `packages/hub-api/src/apps.ts`, `app-login.ts`; muda `tables.ts`
+   - **Arquivos:** muda `packages/hub-api/src/apps.ts`, `app-login.ts`, `index.ts` (com a saída de
+     `SUBSCRIPTION_KINDS` da lista, issue 788, provada por `npm run typecheck` e `npm run knip`); muda `tables.ts`
      (`checkSession`, `CallEnvironment`); cria a migração por `drizzle-kit generate`; muda `database-grants.sql` e o retrato do catálogo no
      mesmo commit.
    - **Pronto quando:** `npm run migrations -- --base origin/main` passa.
@@ -700,7 +710,8 @@ guia além do de código: data (D17, D22).
      `migrate` de conferência, grava a `check_session` e devolve o endereço `appHostOf` com o
      rótulo do Projeto, o host do app publicado (a decisão 12 do firstmate).
    - **Arquivos, além:** muda `send.ts` (`uploadVersion` com `worker`), `app-database.ts`
-     (`migrateApp` com `appLogin`).
+     (`migrateApp` com `appLogin`), e os dois comentários longos de `live.ts` (issue 753, item 4;
+     nenhum código muda ali).
    - **Testes:** `conference.test.ts`, critério 9.
 4. **A chamada no ambiente de conferência.** Critérios: 11, 12, 21, 22, 26.
    - **Arquivos:** muda `handoff.ts`, `read-notice.ts`, `read-notice.test.ts`,
