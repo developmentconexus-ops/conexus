@@ -2,8 +2,8 @@
 
 ## Context
 
-The Builder writes and runs commands on a Mastra `Workspace` over E2B; the libraries leave open its
-hosts, filesystem and where a version is kept.
+The Builder works on a Mastra `Workspace` over E2B; the libraries leave open its hosts, filesystem
+and version storage.
 
 ## Decision
 
@@ -11,9 +11,9 @@ hosts, filesystem and where a version is kept.
   found by its name `conexus-<installation>-<conversation>`, no id stored, no idle sweep. Releasing
   a conversation kills its machines first.
 - The network is a list of domains (`denyOut: [ALL_TRAFFIC]`, `allowOut`), starting with
-  `registry.npmjs.org`; a host is added only when `npm install` fails without it.
+  `registry.npmjs.org`; a host is added only when `npm install` fails without it, written here.
 - Amended 2026-11-23 (A1; founder: "Aprovo emenda"): during the Hub's conference the machine also
-  reaches the app's exact host until it ends, never `*.` of the apps' domain. E2B opens `8.8.8.8` for any listed
+  reaches its Project's exact app host until it ends, never `*.` of the apps' domain. E2B opens `8.8.8.8` for any listed
   domain and checks the name asked (SNI), not the address, so any server accepting an allowed name is
   reachable.
 - The Git is ours: a bare repository on the server, `main` moved by `update-ref` against the base

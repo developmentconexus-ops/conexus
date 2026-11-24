@@ -14,7 +14,6 @@ import {
   FAILED,
   MARK,
   realBrowser,
-  reported,
   TOKEN,
 } from './test-confer.ts'
 
@@ -27,7 +26,9 @@ test('Machines.confer: a tela que chama uma operação que dá 500 é DIRTY, com
   )
   const program = realBrowser(t)
   const machine = await conferring(t, program)
-  const value = await reported(machine, at, program)
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
+  const { value } = result
   assert.equal(value.kind, 'DIRTY')
   assert.ok(value.kind === 'DIRTY')
   assert.deepEqual(
@@ -51,9 +52,11 @@ test('Machines.confer: a tela que só desenha é CLEAN, mesmo com um pedido a ou
     app(`fetch('https://127.0.0.1:1/x').catch(()=>{});console.error('${MARK}')`),
   )
   const program = realBrowser(t)
-  const value = await reported(await conferring(t, program), at, program)
-  assert.equal(value.kind, 'CLEAN')
-  assert.ok(value.console.some((line) => line.includes(MARK)))
+  const machine = await conferring(t, program)
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
+  assert.equal(result.value.kind, 'CLEAN')
+  assert.ok(result.value.console.some((line) => line.includes(MARK)))
 })
 
 test('Machines.confer: reprova o pedido ao host do app com 400 ou mais, ou sem resposta; o 200 não', async (t) => {
@@ -62,10 +65,12 @@ test('Machines.confer: reprova o pedido ao host do app com 400 ou mais, ou sem r
     app(`['/api/200','/api/400','/api/corta'].forEach((p)=>fetch(p).catch(()=>{}))`),
   )
   const program = realBrowser(t)
-  const value = await reported(await conferring(t, program), at, program)
-  assert.ok(value.kind === 'DIRTY')
+  const machine = await conferring(t, program)
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
+  assert.ok(result.value.kind === 'DIRTY')
   assert.deepEqual(
-    value.problems.toSorted((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+    result.value.problems.toSorted((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
     [
       { kind: 'REQUEST_FAILED', method: 'GET', path: '/api/400', status: 400 },
       { kind: 'REQUEST_FAILED', method: 'GET', path: '/api/corta', status: null },
@@ -88,7 +93,8 @@ test('Machines.confer: no fim o navegador está fechado, e o seguinte abre sem a
   const { at } = await appServer(t, app('document.title="oi"'))
   const program = realBrowser(t)
   const machine = await conferring(t, program)
-  await reported(machine, at, program)
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
   const left = execFileSync(program, ['--json', 'cookies'], { encoding: 'utf8' })
   assert.deepEqual(
     z.object({ data: z.object({ cookies: z.array(z.unknown()) }) }).parse(JSON.parse(left)).data

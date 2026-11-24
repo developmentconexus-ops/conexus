@@ -8,7 +8,7 @@ import type { Kit } from './kit.ts'
 import { parsedWith } from './pack.ts'
 import { quoted } from './scripts.ts'
 
-export const BROWSER_PROGRAM = 'agent-browser'
+export const BROWSER_PROGRAM = '/usr/local/bin/agent-browser'
 
 const SHOT = `${WORK_FOLDER}/tela.png`
 
@@ -84,11 +84,13 @@ function reportOf(outputs: Outputs, host: string): BrowserReport {
 class Unrunnable extends Error {
   readonly step: string
   readonly exitCode: number | undefined
+  readonly detail: string | undefined
 
-  constructor(step: string, options: { exitCode?: number; cause?: unknown } = {}) {
+  constructor(step: string, options: { exitCode?: number; detail?: string; cause?: unknown } = {}) {
     super(step, { cause: options.cause })
     this.step = step
     this.exitCode = options.exitCode
+    this.detail = options.detail
   }
 
   fields(reason: string): Record<string, string | number> {
@@ -98,6 +100,7 @@ class Unrunnable extends Error {
       exitCode: this.exitCode ?? -1,
     }
     if (this.cause !== undefined) fields.cause = String(this.cause).slice(0, 500)
+    if (this.detail !== undefined) fields.detail = this.detail
     return fields
   }
 }
@@ -114,13 +117,16 @@ type Conference = Readonly<{
   log: FailureLog
 }>
 
-function commandsOf({ exec, program }: Pick<Conference, 'exec' | 'program'>) {
+function commandsOf({ exec, program, at }: Pick<Conference, 'exec' | 'program' | 'at'>) {
   function cli(...args: string[]): string {
     return `${quoted(program)} --json ${args.map(quoted).join(' ')}`
   }
   async function ran(step: string, script: string, timeoutMs: number): Promise<string> {
     const done = await attempted(step, () => exec(script, timeoutMs))
-    if (done.exitCode !== 0) throw new Unrunnable(step, { exitCode: done.exitCode })
+    if (done.exitCode !== 0) {
+      const detail = done.stderr.replaceAll(at.session, '[token]').trim().slice(-500)
+      throw new Unrunnable(step, { exitCode: done.exitCode, detail })
+    }
     return done.stdout
   }
   async function read<T>(

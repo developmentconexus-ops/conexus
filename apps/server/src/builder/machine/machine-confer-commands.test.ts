@@ -53,6 +53,16 @@ test('Machines.confer: um comando que sai com erro, ou que não imprime o JSON d
   }
 })
 
+test('Machines.confer: o motivo de um comando que falha vai ao log, com o token trocado', async (t) => {
+  const stub = stubBrowser(t, { failOn: 'open' })
+  const machine = await conferring(t, stub.program)
+  const at = { url: new URL('https://localhost:4433'), session: TOKEN }
+  assert.deepEqual(await confer(machine, at), FAILED)
+  const log = machine.lines.join('\n')
+  assert.ok(log.includes('Chrome not found, session [token]'))
+  assert.ok(!log.includes(TOKEN))
+})
+
 test('Machines.confer: um comando que lança não deixa a rede aberta nem o arquivo do token', async (t) => {
   const stub = stubBrowser(t)
   const machine = await conferring(t, stub.program)
