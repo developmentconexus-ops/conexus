@@ -208,7 +208,7 @@ A Pergunte 3: b", e antes 1 a ("Mas queria detalhes e exemplos para entender mel
 | G4 | U5 | A máquina sem o caminho morto (U-c da auditoria: MACH-1, 5 e 7) | `B/machine/`, `B/git/` | testing | o fechamento do `A1` |
 | G4 | U6 | A ficha sem o que repete o Mastra (U-d: SPEC-1, 2 e 3) | `B/controller-kit/`, os quatro arquivos de agente | testing | o fechamento do `A1` |
 | G4 | U15 | Dois consertos fora do codemod: a frase da ferramenta do Assistente que cita o botão, com o retrato dele regravado; o agendador que não apaga uma automação cujo fluxo ele não acha registrado (`missesBeforeDelete`, a U-i da auditoria), com a linha de log da poda que não terminou | `B/assistant/`, `B/mastra/`, `docs/explanation/agents-and-automations.md` | testing | o fechamento do `A1` |
-| G5a a G5f | U7 | O codemod do servidor, um pull request por área: `harness/mastra`, `harness/model-accounts` (com a lista do MA-8), `harness/machine`, `harness/spec` com `turn`, `memory`, `prompt` e `routes`, `harness/tools`, e por fim os quatro `agents/` | `apps/server/src/`, `packages/hub-api/src/` e `apps/web/src/` (as constantes que mudam de nome), `.dependency-cruiser.cjs`, `biome.json`, `scripts/`, os documentos que citam `apps/server/src/builder` | testing | U5, U6, U15 |
+| G5a a G5f | U7 | O codemod do servidor, em dois pull requests (o G5-harness, uma área por commit de G5a a G5e, e o G5-agents, o G5f): `harness/mastra`, `harness/model-accounts` (com a lista do MA-8), `harness/machine`, `harness/spec` com `turn`, `memory`, `prompt` e `routes`, `harness/tools`, e por fim os quatro `agents/` | `apps/server/src/`, `packages/hub-api/src/` e `apps/web/src/` (as constantes que mudam de nome), `.dependency-cruiser.cjs`, `biome.json`, `scripts/`, os documentos que citam `apps/server/src/builder` | testing | U5, U6, U15 |
 | G6 | U8 | As marcas da conversa por um esquema só (U-e: SPEC-4) | `harness/spec/` | testing | G5d |
 | G6 | U9 | A máquina como campo da ficha (U-f: MACH-3, AGT-1) | `harness/machine/`, `harness/spec/`, `agents/*/` | testing | G5c, G5f, U8 |
 | G6 | U10 | Uma lista de ferramentas e um "nunca pergunta" (U-g: FERR-3, FERR-9) | `harness/tools/`, `harness/spec/`, `harness/machine/`, `agents/app-builder/`, `agents/saved-agent/`, `packages/hub-api/src/tools.ts` | testing | G5d, G5e, G5f |
@@ -221,10 +221,10 @@ G1, G2 e G3 correm em sequência: a U3 move os arquivos que a U1 e a U2 mudam, e
 nas pastas novas (`names.test.ts` e `CONEXUS` moram em `apps/web/src/harness/`). O G3 espera
 também o protótipo, que pode ser feito enquanto G1 e G2 andam. G4 junta U5, U6 e U15, antes do
 movimento (Subtract Before You Add, a ordem da auditoria): U5 e U6 só apagam, a U15 muda duas
-coisas pequenas, e as três tocam pastas diferentes e correm em paralelo. Os seis pull requests do G5 só movem, cada um provado
-pelos mesmos testes e pelos quatro retratos `request.test.ts` iguais; G5a a G5e correm em paralelo
-entre si se o script de cada área toca só a sua pasta, e G5f, que move os quatro agentes, vem por
-último. G6 constrói já nas pastas finais; U10 e U11 correm em paralelo com U8 e U9, porque não
+coisas pequenas, e as três tocam pastas diferentes e correm em paralelo. Os dois pull requests do G5 só movem, cada um provado
+pelos mesmos testes e pelos quatro retratos `request.test.ts` iguais; G5a a G5e são os commits do
+G5-harness, um por área, na ordem do cartão, e G5f, que move os quatro agentes, vem por último, no
+G5-agents, sobre o G5-harness. G6 constrói já nas pastas finais; U10 e U11 correm em paralelo com U8 e U9, porque não
 dividem pasta. G7 vem por último no servidor: a U12 apaga o molde da troca de modelo de três rotas,
 e a U13 reusa a entrada que a U12 abre no guarda.
 
@@ -261,7 +261,7 @@ conta, porque cada arquivo movido sai igual.
 | 15 | U4 | A tela de cada parte bate com o protótipo aprovado, elemento por elemento, a 1366 e a 390 px, nos dois temas: o menu do Projeto e a cabeça das quatro respostas | QA (testing T25) | must |
 | 16 | U5 | A máquina da conversa roda só pelo caminho nativo do Mastra: o caminho por shell, a opção `instructions` nunca lida e os donos repetidos de `quoted`, `CANDIDATE_REF` e `IDENTITY` saem; os testes da máquina passam com `native: true` como padrão do dublê; os quatro retratos não mudam | `B/machine/machine*.test.ts`; `request.test.ts` dos quatro | must |
 | 17 | U6 | A ficha não tem `base`, `ended`, nem os campos que só repassam o que o `AgentConfig` do Mastra já tem; o Construtor de apps ganha os sinais de tarefa pela própria ficha; os quatro retratos não mudam | `controller-kit/spec.test.ts`; `request.test.ts` dos quatro | must |
-| 18 | U7 | Cada pull request do codemod do servidor só move: o script roda de novo e dá a mesma árvore, os mesmos testes passam com o mesmo número de casos, os quatro `request.test.ts` passam sem regravar, `npm run deps` passa com as regras novas no mesmo pull request; no fim, `apps/server/src/builder/` não existe e o dublê das máquinas se chama `conversationMachines` (issue 808); nenhuma migração nasce, e o retrato do catálogo do banco não muda | por pull request: a contagem dos testes antes e depois, `npm run deps`, `npm run migrations -- --base origin/main`, o script de novo com `git diff --exit-code` | must |
+| 18 | U7 | Cada área do codemod do servidor só move: o script roda de novo e dá a mesma árvore, os mesmos testes passam com o mesmo número de casos, os quatro `request.test.ts` passam sem regravar, `npm run deps` passa com as regras novas no mesmo pull request; no fim, `apps/server/src/builder/` não existe e o dublê das máquinas se chama `conversationMachines` (issue 808); nenhuma migração nasce, e o retrato do catálogo do banco não muda | por pull request: a contagem dos testes antes e depois, `npm run deps`, `npm run migrations -- --base origin/main`, o script de novo com `git diff --exit-code` | must |
 | 19 | U15 | O agendador das automações não apaga uma agenda cujo fluxo ele não acha registrado (`isTargetReady` falso, `@mastra/core` 1.83.0 `dist/worker-DCnErilX.js:342-348`): `schedulerOf` passa `missesBeforeDelete`, e a agenda de um fluxo ausente sobrevive a quatro tiques seguidos e é apagada na quinta falta seguida, com um aviso do Mastra na primeira (um tique dura 10 segundos, `DEFAULT_TICK_INTERVAL_MS`, `dist/scheduler-DOueSa7x.js:7`: uns 50 segundos). Hoje ela é apagada na terceira, uns 30 segundos (`DEFAULT_MISSES_BEFORE_DELETE`, `dist/scheduler-DOueSa7x.js:9`; `scheduler.ts:12` na prateleira). A poda diária que não terminou (`prune` devolve `done: false`, `B/mastra/retention.ts:26-29`) grava a linha nova `RETENTION_STILL_DRAINING`, sem dado | `B/mastra/mastra.test.ts`, o caso da agenda órfã com o relógio do agendador; `retention.test.ts`, o caso `done: false` | must |
 | 20 | U8 | As marcas de uma conversa gravada com as chaves de hoje (Assistente, Construtor de agentes, agente salvo, automação) são lidas igual por um esquema só; uma marca que falta ou tem outro tipo é recusada como hoje (`CONVERSATION_NOT_FOUND`) | `harness/spec/run.test.ts`, uma conversa de cada tipo gravada antes da mudança | must |
 | 21 | U9 | Cada agente abre, usa e solta a máquina pela montagem, por um campo da ficha, numa montagem só do `Workspace`; o Assistente solta as máquinas ao apagar uma conversa, como hoje | um teste por agente em `agents/*/machine.test.ts`; `agents/assistant/routes.test.ts`, o apagar de hoje | must |
@@ -1290,7 +1290,7 @@ falham na base.
 | G5e | `B/company-tools/`, `B/data-tools/`, `B/connectors/` e `B/app-data/` para `harness/tools/` (a árvore aprovada: "as ferramentas em comum"); `B/tools/`, a biblioteca dos agentes salvos, vai com o agente salvo no G5f | — |
 | G5f | os quatro agentes para `agents/app-builder/` (com `runs/` e `git/`, e o `end.ts` com `builderEnds`, o que preenche a porta `TurnEnds`), `agents/assistant/` (com `automations/`), `agents/agent-builder/`, `agents/saved-agent/` (com `tools/`) | o item 2 do 753 (`handoff.test.ts:285-288`), num commit à parte |
 
-Cada pull request muda também `.dependency-cruiser.cjs`, `biome.json` (`:180-184`, `:198-214`) e
+Cada área muda também `.dependency-cruiser.cjs`, `biome.json` (`:180-184`, `:198-214`) e
 os documentos que citam o caminho que ele move (47 arquivos de documento e configuração citam
 `apps/server/src/builder` hoje). O G5d renomeia `BUILDER_ROUTES` e o `BuilderSession` do servidor,
 e o G5e renomeia `BUILDER_TOOL`: os arquivos de `packages/hub-api/src/` e de `apps/web/src/` que os
@@ -1313,7 +1313,7 @@ Ler primeiro `docs/guides/testing.md` (T26, os retratos).
 ### A ordem do trabalho
 
 1. **O script.** Critérios: 18. Um commit, com a tabela das seis áreas.
-2. **G5a a G5f, cada um um pull request.** Critérios: 18, 19.
+2. **G5a a G5e, um commit por área no G5-harness, e G5f no G5-agents.** Critérios: 18, 19.
    - **Testes:** a contagem antes e depois; os cinco retratos sem regravar; `npm run deps`.
    - **Mutações à mão:** na G5a, tirar `missesBeforeDelete` deixa vermelho o caso novo de
      `harness/mastra/mastra.test.ts`; em cada área, importar `@mastra/*` de fora das pastas que a
@@ -1321,7 +1321,7 @@ Ler primeiro `docs/guides/testing.md` (T26, os retratos).
 
 ### Como se prova
 
-Por pull request: o script de novo com `git diff --exit-code`, a contagem dos testes, os retratos
+Por área: o script de novo com `git diff --exit-code`, a contagem dos testes, os retratos
 sem regravar, `npm run deps`. No fim: `ls apps/server/src/builder` falha.
 
 ### Parar se
@@ -1333,7 +1333,7 @@ sem regravar, `npm run deps`. No fim: `ls apps/server/src/builder` falha.
 
 ## G5 O ponto de conferência
 
-Em cada um dos seis pull requests: `npm run check`, os testes do servidor da área, o script rodado
+Em cada um dos dois pull requests: `npm run check`, os testes do servidor da área, o script rodado
 pelo revisor. Depois do G5f: um turno de cada agente no Hub local.
 
 ## U8 As marcas da conversa por um esquema só
