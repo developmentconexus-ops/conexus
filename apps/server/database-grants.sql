@@ -34,7 +34,7 @@ ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
 ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 ALTER FUNCTION connectors.companies_with_seals() OWNER TO hub_connection_seals;
--- The lake copy, part 1 (D11, in the pull request of its own, the card approved by the founder): a link for another person to fill a connection's credential, found by one function owned by a role that cannot log in; only hub_runtime executes it.
+-- The lake copy, part 1 (D11, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a link for another person to fill a connection's credential, found by one function owned by a role that cannot log in; only hub_runtime executes it.
 ALTER FUNCTION connectors.link_of(secret_hash text) OWNER TO hub_links;
 ALTER FUNCTION connectors.sealed_of(connection uuid) OWNER TO hub_connection_seals;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
@@ -374,7 +374,7 @@ GRANT SELECT(account_label),UPDATE(account_label) ON TABLE connectors.connection
 -- Step 20 (D11, founder 2026-10-30, "1 aprovo"): a company's routes grant a Projeto a connection and
 -- take it back, and read and change a connection's notes.
 GRANT SELECT(notes),UPDATE(notes) ON TABLE connectors.connection TO hub_company;
--- The lake copy, part 1: a company's routes make, read and spend their links, and never read the digest of a secret; hub_links reads the columns link_of returns and filters by.
+-- The lake copy, part 1 (D11, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a company's routes make, read and spend their links, and never read the digest of a secret; hub_links reads the columns link_of returns and filters by.
 GRANT INSERT,DELETE ON TABLE connectors.connection_link TO hub_company;
 GRANT SELECT(id) ON TABLE connectors.connection_link TO hub_company;
 GRANT SELECT(id) ON TABLE connectors.connection_link TO hub_links;
@@ -398,7 +398,7 @@ GRANT SELECT,INSERT ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(state) ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(answer) ON TABLE connectors.connector_write TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company;
--- The lake copy, part 1: a company's routes keep the four tables of its copies.
+-- The lake copy, part 1 (D11, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a company's routes keep the four tables of its copies.
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE copies.lake_copy TO hub_company;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE copies.lake_run TO hub_company;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE copies.lake_table TO hub_company;
@@ -409,7 +409,7 @@ GRANT SELECT,INSERT ON TABLE data.data_read TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 GRANT SELECT,INSERT,DELETE ON TABLE lake.company_lake TO hub_operator;
--- The lake copy, part 1 (decision H): a company's login reads its own lake's row, five columns of it, and writes none.
+-- The lake copy, part 1 (D11, decision H, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a company's login reads its own lake's row, five columns of it, and writes none.
 GRANT SELECT(company_id) ON TABLE lake.company_lake TO hub_company;
 GRANT UPDATE(lake_id) ON TABLE lake.company_lake TO hub_operator;
 GRANT SELECT(lake_id) ON TABLE lake.company_lake TO hub_company;

@@ -1,7 +1,8 @@
--- Custom SQL: Drizzle cannot generate a function or a grant (data D5). The lake copy's first part,
--- in the pull request of its own (data D11): a company's routes keep the four tables of its copies;
--- its login reads its own lake's row, five columns of it (decision H); and a link for another person
--- is found by one function owned by a role that cannot log in.
+-- Custom SQL: Drizzle cannot generate a function or a grant (data D5). The lake copy's first part
+-- (data D11, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a company's routes
+-- keep the four tables of its copies; its login reads its own lake's row, five columns of it
+-- (decision H); and a link for another person is found by one function owned by a role that cannot
+-- log in.
 GRANT USAGE ON SCHEMA copies TO hub_company;
 --> statement-breakpoint
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE copies.lake_copy, copies.lake_table, copies.lake_run, copies.lake_table_run TO hub_company;
