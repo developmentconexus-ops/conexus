@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { conversing } from '../../builder/conversation/test-conversation.ts'
+import { stepped } from '../../builder/conversation/test-questions.ts'
 import { call, personOn } from '../../hub/identity/test-hub.ts'
-import { conversing } from '../conversation/test-conversation.ts'
-import { stepped } from '../conversation/test-questions.ts'
 import { schedulerOf } from './public.ts'
 
 test('o agendador: a falha de publicação vai ao registro com o id da agenda', () => {

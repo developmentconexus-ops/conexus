@@ -55,7 +55,7 @@ function releaseOf(deps: {
 /**
  * The Builder's conversations (decision 0050): the index in the Hub's database says whose each
  * thread is, and Mastra keeps their words in its own (decision 0010). Its part on the one `Mastra`
- * (`builder/mastra/`), whose close ends the open streams, and its routes beside Mastra's.
+ * (`harness/mastra/`), whose close ends the open streams, and its routes beside Mastra's.
  */
 export function createBuilderConversations(deps: {
   database: Database

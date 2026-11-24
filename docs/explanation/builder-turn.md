@@ -166,7 +166,7 @@ a client more than 8 MiB behind (`builder/conversation/stream.ts`).
   machines and deletes the thread (`builder/conversation/public.ts`).
 - **Shutdown.** The Hub stops the scheduler, refuses new messages and waits up to 180 seconds for
   the turns in flight, never aborting one (`apps/server/src/platform/lifecycle.ts`,
-  `builder/mastra/hub-mastra.ts`). What remains after that is aborted, and each aborted run still
+  `harness/mastra/hub-mastra.ts`). What remains after that is aborted, and each aborted run still
   saves what it wrote.
 - **A crash.** A crash leaves no run held. The machine keeps its folder, and the next turn merges
   the unsaved work.

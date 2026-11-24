@@ -1131,7 +1131,7 @@ changes, reread the line it names.
   `__setLogger` of its own), and each domain logs its own failures. The provider registry says of a model only
   `attachment`, `temperature`, `structuredOutput` and `reasoning` (`dist/capabilities/*.json`),
   nothing of what the model outputs.
-- **Hand-made piece.** `apps/server/src/builder/mastra/mastra.ts` gives each domain the Hub's logger
+- **Hand-made piece.** `apps/server/src/harness/mastra/mastra.ts` gives each domain the Hub's logger
   by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/builder/model-accounts/providers.ts`
   leaves out a model whose name says it draws, films, speaks, hears, embeds, ranks, guards, reads
   scans or talks live.

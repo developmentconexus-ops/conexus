@@ -149,7 +149,7 @@ export type MayApprove = (
   input: Parameters<WriteOf>[0],
 ) => Promise<Readonly<{ held: boolean; operation?: string }>>
 
-/** The controllers on the one `Mastra`, as the guard consults them (`builder/mastra/`). */
+/** The controllers on the one `Mastra`, as the guard consults them (`harness/mastra/`). */
 export type GuardedMastra = {
   mastra: Mastra
   part(

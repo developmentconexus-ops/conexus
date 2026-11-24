@@ -12,9 +12,9 @@ leaves alone. `builder/` below means `apps/server/src/builder/`. The import law 
 
 ## One Mastra, four controllers
 
-The server builds one `Mastra` instance (`builder/mastra/mastra.ts`) with a logger, a storage,
+The server builds one `Mastra` instance (`harness/mastra/mastra.ts`) with a logger, a storage,
 four agent controllers and three workflows. It passes no `agents`, `server`, MCP, vectors or
-scorers keys; `observability` is set (see Tracing below). `createHubMastra` (`builder/mastra/hub-mastra.ts`) owns its life:
+scorers keys; `observability` is set (see Tracing below). `createHubMastra` (`harness/mastra/hub-mastra.ts`) owns its life:
 `prepare()` creates Mastra's tables, `start()` starts Mastra's workers after every part is ready,
 `settle()` stops the scheduler and waits for live turns at shutdown, and `close()` drains and shuts
 Mastra down.
@@ -176,7 +176,7 @@ The Builder's end-of-turn judge is a code scorer made with `createScorer` and gi
 
 Two workflows, built with `createWorkflow` and `createStep`. `conexus-automation-run` runs
 automations and is a row of `mastra.schedules`. `conexus-retention-prune` drops old traces at 03:30 in São Paulo
-(`builder/mastra/retention.ts`). The scheduler polls every 10 seconds and
+(`harness/mastra/retention.ts`). The scheduler polls every 10 seconds and
 starts only when a schedule row exists. Renaming the workflow would make Mastra delete every
 automation (`builder/automations/run.ts`).
 
@@ -184,7 +184,7 @@ automation (`builder/automations/run.ts`).
 
 One `Observability` with the storage exporter writes every controller's and workflow's spans, logs
 and metrics to Mastra's own database, without the streamed chunks
-(`builder/mastra/mastra.ts`, decision [0068](../decisions/0068-mastra-tracing-in-its-own-database.md)).
+(`harness/mastra/mastra.ts`, decision [0068](../decisions/0068-mastra-tracing-in-its-own-database.md)).
 
 ## The routes the browser reaches
 

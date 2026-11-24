@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { Mastra } from '@mastra/core/mastra'
+import { createMastraStorage } from '../../builder/conversation/public.ts'
 import { createTestDatabase } from '../../platform/test-database.ts'
-import { createMastraStorage } from '../conversation/public.ts'
 import { retentionOf } from './public.ts'
 
 const DAY_MS = 86_400_000

@@ -257,7 +257,7 @@ export function createAgentConversations(deps: Deps) {
     memory,
     machines,
     draftAgent: (run: AgentRun) => draftAgentOf({ ...deps, memories }, run),
-    /** Its controller on the one `Mastra` (`builder/mastra/`), after the Assistant's. */
+    /** Its controller on the one `Mastra` (`harness/mastra/`), after the Assistant's. */
     part: {
       kind: 'agents',
       controller,

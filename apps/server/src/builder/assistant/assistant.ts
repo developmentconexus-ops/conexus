@@ -295,7 +295,7 @@ export function createAssistant(deps: Deps) {
   const opening: OpenDeps = { ...deps, controller, memory, chosen }
 
   return Object.freeze({
-    /** Its controller on the one `Mastra` (`builder/mastra/`), beside the Builder's. */
+    /** Its controller on the one `Mastra` (`harness/mastra/`), beside the Builder's. */
     part: {
       kind: 'assistant',
       controller,

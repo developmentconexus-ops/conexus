@@ -2,13 +2,9 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { PostgresStore } from '@mastra/pg'
-import type { Hub } from '../../hub/identity/test-hub.ts'
-import { post } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
-import { createTestDatabase } from '../../platform/test-database.ts'
-import { agentsOn, madeAgent, talkedTo } from '../agents/test-agents.ts'
-import { created } from '../assistant/test-assistant.ts'
-import { createMastraStorage } from '../conversation/public.ts'
+import { agentsOn, madeAgent, talkedTo } from '../../builder/agents/test-agents.ts'
+import { created } from '../../builder/assistant/test-assistant.ts'
+import { createMastraStorage } from '../../builder/conversation/public.ts'
 import {
   asked,
   conversing,
@@ -18,7 +14,11 @@ import {
   started,
   streamOf,
   title,
-} from '../conversation/test-conversation.ts'
+} from '../../builder/conversation/test-conversation.ts'
+import type { Hub } from '../../hub/identity/test-hub.ts'
+import { post } from '../../hub/identity/test-hub.ts'
+import type { Sent } from '../../platform/test-anthropic.ts'
+import { createTestDatabase } from '../../platform/test-database.ts'
 
 /**
  * The ended spans of `threadId`'s traces, as Mastra reads them back (`listTraces`, `getTrace`): the

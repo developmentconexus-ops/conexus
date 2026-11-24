@@ -314,7 +314,7 @@ export function createConstrutor(deps: Deps) {
   return Object.freeze({
     controller,
     memory,
-    /** Its controller on the one `Mastra` (`builder/mastra/`), after the agents'. */
+    /** Its controller on the one `Mastra` (`harness/mastra/`), after the agents'. */
     part: {
       kind: 'construtor',
       controller,

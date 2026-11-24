@@ -142,7 +142,7 @@ the tables left with G0c ([the Sync](explanation/sync.md)); the lake takes the c
 `hub/operations` keeps the Central's clients, `hub/status` each start's version. `builder/app-data`
 reads an app's data for the Builder and for the agents of `builder/agents`;
 `builder/construtor` edits an agent's draft ([agents](explanation/agents-and-automations.md)).
-`builder/mastra` builds the `Mastra` and prunes its traces daily. The Hub image carries CLIProxyAPI,
+`harness/mastra` builds the `Mastra` and prunes its traces daily. The Hub image carries CLIProxyAPI,
 the Google sign-in binary [0049]. Packages: [app](explanation/app-package.md),
 [connectors](how-to/add-a-connector.md).
 

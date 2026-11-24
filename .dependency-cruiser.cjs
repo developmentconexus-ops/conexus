@@ -1,6 +1,6 @@
 // The import law of code C3 to C8, data D19, testing T5 and web W1, W4 to W7, W13. Every rule below names
 // the guide rule it enforces; scripts/rules.test.ts plants one bad file per rule.
-// A subject is one folder of hub/ or builder/ on the server, and one folder of hub/, harness/ or agents/ on the web. Revalidate by 2027-04-13.
+// A subject is one folder of hub/, builder/, harness/ or agents/ on the server, and one folder of hub/, harness/ or agents/ on the web. Revalidate by 2027-04-13.
 const { readdirSync } = require('node:fs')
 const { join } = require('node:path')
 const SERVER = '^apps/server/src'
@@ -42,9 +42,9 @@ module.exports = {
     },
     {
       name: 'no-loose-file-in-hub-or-builder',
-      comment: 'C6: a file in hub/ or builder/ belongs to a subject folder.',
+      comment: 'C6: a file in hub/, builder/, harness/ or agents/ belongs to a subject folder.',
       severity: 'error',
-      from: { path: `${SERVER}/(hub|builder)/[^/]+\\.tsx?$` },
+      from: { path: `${SERVER}/(hub|builder|harness|agents)/[^/]+\\.tsx?$` },
       to: {},
     },
     {
@@ -116,7 +116,7 @@ module.exports = {
         'C4: main.ts, conversations-of.ts and first-person-arguments.ts, at the root of the server, reach a subject only through its public.ts.',
       severity: 'error',
       from: { path: `${SERVER}/[^/]+\\.tsx?$`, pathNot: `${SERVER}/.*\\.test\\.tsx?$` },
-      to: { path: `${SERVER}/(hub|builder)/`, pathNot: PUBLIC_DOOR },
+      to: { path: `${SERVER}/(hub|builder|harness|agents)/`, pathNot: PUBLIC_DOOR },
     },
     {
       name: 'table-door-only-for-foreign-keys-and-schema',
@@ -140,7 +140,10 @@ module.exports = {
       severity: 'error',
       from: { path: `${SERVER}/platform/` },
       // The test ports hand every test Hub the Builder's doubles (T14), as they hand it Neon's.
-      to: { path: `${SERVER}/(hub|builder)/`, pathNot: `${SERVER}/builder/runs/test-runs\\.ts$` },
+      to: {
+        path: `${SERVER}/(hub|builder|harness|agents)/`,
+        pathNot: `${SERVER}/builder/runs/test-runs\\.ts$`,
+      },
     },
     {
       name: 'program-imports-program-by-name',
@@ -185,11 +188,11 @@ module.exports = {
     {
       name: 'mastra-only-in-builder',
       comment:
-        'W7, decision 0033: @mastra/* is imported only inside builder/ on the server and inside harness/ on the web.',
+        'W7, decision 0033: @mastra/* is imported only inside builder/ and harness/ on the server and inside harness/ on the web.',
       severity: 'error',
       from: {
         path: '^apps/(server|web)/src/',
-        pathNot: '^apps/(server/src/builder|web/src/harness)/',
+        pathNot: '^apps/(server/src/(builder|harness)|web/src/harness)/',
       },
       to: { path: '(^|node_modules/)@mastra/' },
     },

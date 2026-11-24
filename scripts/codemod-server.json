@@ -1,0 +1,40 @@
+{
+  "g5a": [
+    {
+      "from": "apps/server/src/builder/mastra/hub-mastra.ts",
+      "to": "apps/server/src/harness/mastra/hub-mastra.ts"
+    },
+    {
+      "from": "apps/server/src/builder/mastra/logger.test.ts",
+      "to": "apps/server/src/harness/mastra/logger.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/mastra/logger.ts",
+      "to": "apps/server/src/harness/mastra/logger.ts"
+    },
+    {
+      "from": "apps/server/src/builder/mastra/mastra.test.ts",
+      "to": "apps/server/src/harness/mastra/mastra.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/mastra/mastra.ts",
+      "to": "apps/server/src/harness/mastra/mastra.ts"
+    },
+    {
+      "from": "apps/server/src/builder/mastra/public.ts",
+      "to": "apps/server/src/harness/mastra/public.ts"
+    },
+    {
+      "from": "apps/server/src/builder/mastra/retention.test.ts",
+      "to": "apps/server/src/harness/mastra/retention.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/mastra/retention.ts",
+      "to": "apps/server/src/harness/mastra/retention.ts"
+    },
+    {
+      "from": "apps/server/src/builder/mastra/tracing.test.ts",
+      "to": "apps/server/src/harness/mastra/tracing.test.ts"
+    }
+  ]
+}
