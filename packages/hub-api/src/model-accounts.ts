@@ -31,7 +31,7 @@ export const SignInKind = AccountKind.exclude(['api_key'])
 export type SignInKind = z.infer<typeof SignInKind>
 
 /** The kinds that sign in and renew their tokens, one lease-based renewal for all (data D25). */
-export const SUBSCRIPTION_KINDS = [
+const SUBSCRIPTION_KINDS = [
   'claude_subscription',
   'openai_codex',
 ] as const satisfies readonly SignInKind[]

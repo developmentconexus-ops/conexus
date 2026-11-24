@@ -41,6 +41,12 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
       'blob.company_id text NO',
       'blob.sha256 text NO',
       'blob.bytes bytea NO',
+      'check_session.token_hash text NO',
+      'check_session.host_label text NO',
+      'check_session.person_id text NO',
+      'check_session.company_id text NO',
+      'check_session.project_id text NO',
+      `check_session.expires_at ${TS} NO`,
       'handoff.code_hash text NO',
       'handoff.binding_hash text NO',
       'handoff.host_label text NO',
@@ -57,6 +63,10 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
       'version_file.media_type text NO',
     ],
   )
+})
+
+test('catálogo: as restrições do esquema apps, cada sessão presa ao que a encerra', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
   const constraints = await asOwner(
     `select conname as name, contype as type, confdeltype as "onDelete" from pg_constraint
       where connamespace = 'apps'::regnamespace and contype <> 'n' order by conname`,
@@ -82,6 +92,8 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
     { name: 'blob_pkey', type: 'p', onDelete: ' ' },
     { name: 'blob_sha256_form', type: 'c', onDelete: ' ' },
     { name: 'blob_size', type: 'c', onDelete: ' ' },
+    { name: 'check_session_pkey', type: 'p', onDelete: ' ' },
+    { name: 'check_session_project_id_fkey', type: 'f', onDelete: 'c' },
     { name: 'handoff_hub_session_id_fkey', type: 'f', onDelete: 'c' },
     { name: 'handoff_pkey', type: 'p', onDelete: ' ' },
     { name: 'version_file_blob_fkey', type: 'f', onDelete: 'a' },
@@ -89,6 +101,22 @@ test('catálogo: passagens e sessões de app, só hashes, presas à sessão do H
     { name: 'version_file_size', type: 'c', onDelete: ' ' },
     { name: 'version_file_version_id_fkey', type: 'f', onDelete: 'c' },
   ])
+})
+
+test('catálogo: a sessão de conferência é de um Projeto e sai com ele', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  await asOwner(`
+    insert into projects.project(id, company_id, name, attempt_key, created_at) values
+      ('p1', 'c1', 'Pedidos', 'k1', now());
+    insert into apps.check_session(token_hash, host_label, person_id, company_id, project_id, expires_at)
+      values ('h1', 'pedidos--empresa-a', 'u1', 'c1', 'p1', now() + interval '10 minutes')`)
+  await assert.rejects(
+    asOwner(`insert into apps.check_session(token_hash, host_label, person_id, company_id,
+      project_id, expires_at) values ('h2', 'x', 'u1', 'c1', 'p9', now())`),
+    { code: '23503' },
+  )
+  await asOwner(`delete from projects.project where id = 'p1'`)
+  assert.deepEqual(await asOwner('select token_hash from apps.check_session'), [])
 })
 
 test('catálogo: apelido e endereço só na forma de um nome de host', async (t) => {
