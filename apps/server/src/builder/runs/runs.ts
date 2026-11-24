@@ -60,10 +60,11 @@ export class Runs {
   readonly #opened = new Map<ConversationId, Opened>()
   // Where each open conversation hears its machine's phases.
   readonly #phases = new Map<ConversationId, (phase: Phase) => void>()
-  readonly #retry = createCopyRetry(() => copyPending(this.#context))
+  readonly #retry: ReturnType<typeof createCopyRetry>
 
   constructor(deps: RunsDeps) {
     this.#deps = deps
+    this.#retry = createCopyRetry(() => copyPending(this.#context), deps.log)
     this.#context = { ...deps, retry: this.#retry }
   }
 

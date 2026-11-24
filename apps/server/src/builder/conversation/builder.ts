@@ -157,7 +157,7 @@ export function createBuilder(deps: {
       },
       approval: { kind: 'NOTHING_ASKS' },
       judge: {
-        scorers: [conexusCheck({ runs: deps.runs, storage })],
+        scorers: [conexusCheck({ runs: deps.runs, storage, log: deps.log })],
         strategy: 'all',
       },
       turn: turnOf(deps),

@@ -18,6 +18,7 @@ import type {
 } from '../../hub/connectors/public.ts'
 import { mustAsk, openText, uncertainText } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { toldBody, toldText } from '../../platform/model-text.ts'
 import { NEVER_ASKS } from '../controller-kit/public.ts'
 import { approvedCallOf } from '../conversation/public.ts'
 import { unfixedOf } from '../tools/public.ts'
@@ -44,33 +45,12 @@ type Refusal = Readonly<{
   }>
 }>
 
-/** What the model reads of a provider's body at most: Codex's default for a tool's output, 10 000 tokens at 4 characters each. The record keeps it all. */
-const TOLD_CHARACTERS = 40_000
-
-/** A text for the model: whole up to the cap, past it its start and its end, as Claude Code keeps a long tool error; counted in characters, so a cut never splits one in two. */
-function cappedText(text: string): string {
-  if (text.length <= TOLD_CHARACTERS) return text
-  const characters = Array.from(text)
-  if (characters.length <= TOLD_CHARACTERS) return text
-  const half = TOLD_CHARACTERS / 2
-  const cut = characters.length - TOLD_CHARACTERS
-  return `${characters.slice(0, half).join('')}…[${cut} characters cut]…${characters.slice(-half).join('')}`
-}
-
-/** A body for the model: as it came up to the cap, past it the cut of its JSON. */
-function capped(body: unknown): unknown {
-  const text = JSON.stringify(body)
-  if (text === undefined) return body
-  const told = cappedText(text)
-  return told === text ? body : told
-}
-
 /** Throws what the model reads of an answer that was surely not taken: the kind and, when the provider answered, all it said, up to the cap. */
 function refuse(answer: Refusal): never {
   const { status = null, code = null, message = null, body = null } = answer.native ?? {}
   const told = {
     ...{ kind: answer.kind, status, code },
-    ...{ message: message === null ? null : cappedText(message), body: capped(body) },
+    ...{ message: message === null ? null : toldText(message), body: toldBody(body) },
   }
   throw new ConnectorRefused(JSON.stringify(told))
 }
@@ -133,7 +113,7 @@ function readTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject | undef
 
 /** What the provider answered, for the model: the body up to the cap. */
 function told(returned: Returned | null) {
-  return returned && { status: returned.status, body: capped(returned.body) }
+  return returned && { status: returned.status, body: toldBody(returned.body) }
 }
 
 /**

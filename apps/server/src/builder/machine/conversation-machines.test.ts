@@ -56,3 +56,12 @@ test('com `resume`, a de outro molde é retomada e nada é morto', async (t) => 
   assert.deepEqual(on.control.replaced, [])
   assert.deepEqual(on.control.attached, [on.name])
 })
+
+test('com `resume`, a lista do provedor que falha antes de ligar: a partida falha com MACHINE_UNAVAILABLE, nenhuma máquina nasce, e a seguinte retoma a que existe', async (t) => {
+  const on = oldMachine(t, 'resume')
+  on.control.findFails = 1
+  await assert.rejects(opened(on), { code: 'MACHINE_UNAVAILABLE' })
+  assert.deepEqual(on.control.names, [], 'no machine was made in place of the one the list hid')
+  await opened(on)
+  assert.deepEqual(on.control.attached, [on.name])
+})
