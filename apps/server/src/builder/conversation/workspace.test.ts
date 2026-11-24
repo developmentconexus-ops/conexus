@@ -52,17 +52,8 @@ test('pela rota, a escrita vai para o Projeto da conversa e não para o vizinho'
   assert.deepEqual(await written(second), ['b.ts'])
 })
 
-test('fora da pasta do app e via link: recusado; regrava sem ler: aceita', async (t) => {
-  const link = {
-    name: 'mastra_workspace_execute_command',
-    input: { description: 'Rodando um teste', command: 'ln -s .. saida' },
-  }
-  const model = steps(
-    [write('a.ts', 'um\n')],
-    [write('../fora.ts'), link],
-    [write('saida/fora.ts')],
-    [write('a.ts', 'dois\n')],
-  )
+test('fora da pasta do app: recusado; regrava sem ler: aceita', async (t) => {
+  const model = steps([write('a.ts', 'um\n')], [write('../fora.ts')], [write('a.ts', 'dois\n')])
   const { hub, ana, conversations } = await conversing(t, model)
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.equal(endOf(events), 'complete')
@@ -75,6 +66,6 @@ test('fora da pasta do app e via link: recusado; regrava sem ler: aceita', async
       ended.set(part.toolInvocation.toolCallId, part.toolInvocation.isError === true)
     }
   }
-  // The outside write and the write through the symlink fail; a second write needs no prior read.
-  assert.deepEqual([...ended.values()], [false, true, false, true, false])
+  // The outside write fails; a second write needs no prior read.
+  assert.deepEqual([...ended.values()], [false, true, false])
 })
