@@ -22,6 +22,7 @@ test('Machines.confer: a rede abre só para o host do app durante os comandos e 
       'cookies',
       'open',
       'wait',
+      'network',
       'get',
       'screenshot',
       'console',
@@ -100,4 +101,33 @@ test('Machines.confer: uma rede que não fechou fecha de novo no próximo uso da
   await machine.machines.changed({ conversationId: CONVERSATION })
   assert.equal(machine.control.networkOpenTo, undefined)
   assert.equal(machine.control.networkClosed, 1)
+})
+
+test('Machines.confer: a captura espera a chamada /api/ pendente responder, e o 500 dela reprova', async (t) => {
+  const stub = stubBrowser(t, { pendingFirst: true })
+  const machine = await conferring(t, stub.program)
+  const at = { url: new URL('https://localhost:4433'), session: TOKEN }
+  const result = await confer(machine, at)
+  assert.ok(result.ok && result.value.kind === 'DIRTY')
+  assert.deepEqual(result.value.problems, [
+    { kind: 'REQUEST_FAILED', method: 'POST', path: '/api/listarEncomendas', status: 500 },
+  ])
+  assert.deepEqual(
+    stub.calls().map((line) => line.split(' ').slice(1, 2).join()),
+    [
+      ...['open', 'cookies', 'open', 'wait', 'network', 'wait', 'network', 'get'],
+      ...['screenshot', 'console', 'errors', 'network', 'close'],
+    ],
+  )
+})
+
+test('Machines.confer: uma chamada /api/ que não responde até o limite não prende a conferência, e é REQUEST_FAILED sem status', async (t) => {
+  const stub = stubBrowser(t, { pendingFirst: true, neverAnswers: true })
+  const machine = await conferring(t, stub.program, 600)
+  const at = { url: new URL('https://localhost:4433'), session: TOKEN }
+  const result = await confer(machine, at)
+  assert.ok(result.ok && result.value.kind === 'DIRTY')
+  assert.deepEqual(result.value.problems, [
+    { kind: 'REQUEST_FAILED', method: 'POST', path: '/api/listarEncomendas', status: null },
+  ])
 })

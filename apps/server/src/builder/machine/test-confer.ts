@@ -5,6 +5,7 @@ import { createServer } from 'node:https'
 import { homedir, tmpdir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
 import type { TestContext } from 'node:test'
+import { inflateSync } from 'node:zlib'
 import { AppSessionToken } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -114,7 +115,7 @@ function status500(response: ServerResponse) {
   response.writeHead(500).end('x')
 }
 
-export async function conferring(t: TestContext, program: string) {
+export async function conferring(t: TestContext, program: string, settleMs = 1_500) {
   const lines: string[] = []
   const log: FailureLog = {
     info: (fields, message) => lines.push(JSON.stringify([message, fields])),
@@ -127,7 +128,12 @@ export async function conferring(t: TestContext, program: string) {
     seedOf: () => machine.repository.bundleOfMain(),
     mark: { conexus_origin: INSTALLATION },
     ...{ installation: INSTALLATION, template: TEMPLATE, log, startMs: 5_000 },
-    ...{ workdir: join(machine.folder, 'app'), tmp: machine.folder, browserProgram: program },
+    ...{
+      workdir: join(machine.folder, 'app'),
+      tmp: machine.folder,
+      browserProgram: program,
+      settleMs,
+    },
   })
   await machines.workspaceFor({
     ...{ companyId: COMPANY, projectId: PROJECT, conversationId: CONVERSATION },
@@ -142,16 +148,41 @@ export function confer({ machines }: Conferring, at: Awaited<ReturnType<typeof a
   return machines.confer({ conversationId: CONVERSATION, at })
 }
 
+/** The first pixel of a PNG's first row: raw in every filter, so no row has to be unfiltered. */
+export function firstPixel(png: Buffer): [number, number, number] {
+  const chunks: Buffer[] = []
+  for (let at = 8; at < png.length; ) {
+    const length = png.readUInt32BE(at)
+    if (png.toString('latin1', at + 4, at + 8) === 'IDAT')
+      chunks.push(png.subarray(at + 8, at + 8 + length))
+    at += 12 + length
+  }
+  const rows = inflateSync(Buffer.concat(chunks))
+  return [rows[1] ?? -1, rows[2] ?? -1, rows[3] ?? -1]
+}
+
 export const FAILED = { ok: false, error: 'CONFER_PLATFORM_FAILED' }
 
 export function stubBrowser(
   t: TestContext,
-  options: Readonly<{ failOn?: string; text?: string; host?: string }> = {},
+  options: Readonly<{
+    failOn?: string
+    text?: string
+    host?: string
+    /** The first `network requests` shows an `/api/` call without a response; the next ones show its 500. */
+    pendingFirst?: boolean
+    neverAnswers?: boolean
+  }> = {},
 ) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-stub-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))
   const program = join(folder, 'agent-browser')
   const [calls, cookies] = [join(folder, 'calls'), join(folder, 'cookies.json')]
+  const reads = join(folder, 'network-reads')
+  function call(status: string): string {
+    return `{"method":"POST","url":"https://${options.host ?? 'localhost:4433'}/api/listarEncomendas"${status}}`
+  }
+  const answered = options.neverAnswers === true ? '' : ',"status":500'
   const here = options.host ?? 'localhost:4433'
   writeFileSync(
     program,
@@ -164,7 +195,9 @@ export function stubBrowser(
       `  get) echo '{"success":true,"data":{"url":"https://${here}/"}}' ;;`,
       `  console) echo '{"success":true,"data":{"messages":[]}}' ;;`,
       `  errors) echo '{"success":true,"data":{"errors":[]}}' ;;`,
-      `  network) echo '{"success":true,"data":{"requests":[]}}' ;;`,
+      options.pendingFirst === true
+        ? `  network) n=$(cat '${reads}' 2>/dev/null || echo 0); echo $((n+1)) > '${reads}'; if [ "$n" = 0 ] || [ -z '${answered}' ]; then echo '{"success":true,"data":{"requests":[${call('')}]}}'; else echo '{"success":true,"data":{"requests":[${call(answered)}]}}'; fi ;;`
+        : `  network) echo '{"success":true,"data":{"requests":[]}}' ;;`,
       `  *) echo '${options.text ?? '{"success":true,"data":{}}'}' ;;`,
       'esac',
       '',

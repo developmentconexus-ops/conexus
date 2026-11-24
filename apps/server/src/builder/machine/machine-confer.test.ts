@@ -12,6 +12,7 @@ import {
   confer,
   conferring,
   FAILED,
+  firstPixel,
   MARK,
   realBrowser,
   TOKEN,
@@ -44,6 +45,25 @@ test('Machines.confer: a tela que chama uma operação que dá 500 é DIRTY, com
   assert.ok(!machine.lines.join('\n').includes(MARK))
   assert.ok(!machine.lines.join('\n').includes(TOKEN))
   assert.equal(machine.control.networkOpenTo, undefined)
+})
+
+test('Machines.confer: a operação da entrada que responde 500 devagar é DIRTY, e a captura mostra o erro', async (t) => {
+  const page = app(
+    `document.body.style.background='white';setTimeout(()=>fetch('/api/listarEncomendas',{method:'POST'}).then((r)=>{if(!r.ok)document.body.style.background='rgb(255,0,0)'}),300)`,
+  )
+  const { at } = await appServer(t, (request, response) => {
+    if (request.url !== '/api/listarEncomendas') return page(request, response)
+    setTimeout(() => response.writeHead(500).end('x'), 900)
+  })
+  const machine = await conferring(t, realBrowser(t), 20_000)
+  const result = await confer(machine, at)
+  assert.ok(result.ok, machine.lines.join('\n'))
+  assert.ok(result.value.kind === 'DIRTY')
+  assert.deepEqual(result.value.problems, [
+    { kind: 'REQUEST_FAILED', method: 'POST', path: '/api/listarEncomendas', status: 500 },
+  ])
+  const shot = readFileSync(join(machine.folder, 'app', result.value.shot))
+  assert.deepEqual(firstPixel(shot), [255, 0, 0])
 })
 
 test('Machines.confer: a tela que só desenha é CLEAN, mesmo com um pedido a outro host e um erro no console', async (t) => {
