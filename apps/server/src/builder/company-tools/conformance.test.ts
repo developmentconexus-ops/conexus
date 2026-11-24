@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { CatalogSystem, ProjectId } from '@conexus/hub-api'
+import { CatalogSystem } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import type { Access, Principal } from '../../hub/access/public.ts'
 import { listing } from '../../hub/access/test-view.ts'
@@ -80,35 +80,27 @@ test('pela closure: um requestContext com a marca de outra empresa não muda a r
   const overview = await runOn(tools, 'conexus_overview', {}, elsewhere)
   assert.deepEqual(
     overview.connections.map((each: { name: string }) => each.name),
-    ['Matriz', 'Loja A'],
+    ['Matriz'],
   )
 })
 
-test('copy_runs num Projeto: a tabela fora da vista é NOT_FOUND sem ler as cópias; a da vista as lê', async () => {
-  const { tools, called } = await seatOf('assistant', {
-    ...runOf('assistant'),
-    place: { kind: 'PROJECT', projectId: ProjectId.parse(randomUUID().replaceAll('-', '')) },
-  })
-  const gone = await runOn(tools, 'copy_runs', { table: 'clientes' }).catch((error: Error) =>
-    JSON.parse(error.message),
-  )
-  assert.equal(gone.kind, 'NOT_FOUND')
-  assert.equal(called.listed, 0)
-  await runOn(tools, 'copy_runs', { table: 'vendas' }).catch(() => undefined)
-  assert.equal(called.listed, 1)
-})
-
-test('a proposta e a anotação recusam a Filial como a inexistente, sem gravar', async () => {
+test('a anotação recusa a Filial como a inexistente, sem gravar', async () => {
   const { tools, called } = await seatOf('builder')
   const note = { concept: 'c', mapping: 'm', provingQuery: 'select 1' }
-  const proposal = { name: 'sankhya_clientes', label: 'Clientes', definition: {} }
   for (const connection of ['Filial', 'Inexistente']) {
     const saving = await runOn(tools, 'connector_note_save', { connection, ...note })
-    const proposing = await runOn(tools, 'copy_propose', { connections: connection, ...proposal })
     assert.ok(refusedBy(saving), `${connection}: ${JSON.stringify(saving)}`)
-    assert.ok(refusedBy(proposing), `${connection}: ${JSON.stringify(proposing)}`)
   }
-  assert.deepEqual([called.saved, called.proposed], [[], []])
+  assert.deepEqual(called.saved, [])
+})
+
+test('sem copy_propose: nenhum assento nomeia a ferramenta, e o nome não roda', async () => {
+  for (const seat of SEATS) {
+    const { tools } = await seatOf(seat)
+    assert.ok(!('copy_propose' in tools), seat)
+  }
+  const { tools } = await seatOf('builder')
+  assert.throws(() => runOn(tools, 'copy_propose', { connections: 'Matriz' }), TypeError)
 })
 
 test('uma vez por execução: uma vista por escopo, duas no Assistente com escolha; as conexões uma vez', async () => {

@@ -8,7 +8,6 @@ import {
   TASK_TOOLS,
 } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { HistoryIcon } from 'lucide-react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { BUILDER_ROOM } from './room.ts'
 import type { ToolItem } from './rows.ts'
@@ -127,6 +126,31 @@ test('desconhecida no nome legível, argumentos e resultado (Critério 8)', asyn
   expect(screen.getByText(/count/)).toBeTruthy()
 })
 
+test.each([
+  ['copy_propose', 'Usou Copy propose', { name: 'vendas' }, { kind: 'PROPOSED', name: 'vendas' }],
+  ['copy_runs', 'Usou Copy runs', { copy: 'vendas' }, { runs: [{ outcome: 'COMPLETE' }] }],
+])(
+  'a ferramenta que saiu: uma conversa antiga com %s abre como ferramenta desconhecida, sem cartão (Critério 7)',
+  async (toolName, line, args, result) => {
+    const gone: ToolItem = {
+      kind: 'tool',
+      id: 't-6',
+      toolCallId: 'call-6',
+      toolName,
+      state: 'result',
+      args,
+      result,
+    }
+    expect(specOf(toolName, BUILDER_ROOM)).toBeUndefined()
+    render(<ToolRow tool={gone} />)
+    expect(screen.getByText(line)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull()
+    open(new RegExp(line))
+    expect(await screen.findByText(/Argumentos:/)).toBeTruthy()
+    expect(screen.getByText(/Resultado:/)).toBeTruthy()
+  },
+)
+
 test('uma falha abre no motivo, ao vivo e relida, e a edição mostra a mudança embaixo (Critério 8)', async () => {
   const reread = render(<ToolRow tool={itemOf(WRITE_REFUSED_STORED)} />)
   const line = screen.getByText(/Não conseguiu escrever/).closest('[data-slot="trace-line"]')
@@ -214,20 +238,6 @@ test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no co
   expect(
     presentTool({ toolName: 'github_create_issue', args: {} }, 'done', BUILDER_ROOM).sentence,
   ).toBe('Usou Github create issue')
-})
-
-test('copy_runs: as frases da linha e o ícone de histórico', () => {
-  const spec = specOf(ASSISTANT_TOOL.copyRuns, BUILDER_ROOM)
-  expect(spec?.icon).toBe(HistoryIcon)
-  const sentences = (['running', 'done', 'error'] as const).map(
-    (state) =>
-      presentTool({ toolName: ASSISTANT_TOOL.copyRuns, args: {} }, state, BUILDER_ROOM).sentence,
-  )
-  expect(sentences).toEqual([
-    'Lendo as rodadas da cópia',
-    'Leu as rodadas da cópia',
-    'Não conseguiu ler as rodadas',
-  ])
 })
 
 test('o relógio conta desde que a tela ouviu a chamada (Critério 8)', () => {

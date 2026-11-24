@@ -101,7 +101,6 @@ function replies(list: Replies[string]): Replies {
     ...companies([{ name: 'Empresa Teste', role: 'owner' }], false),
     [`GET ${API}/copies`]: ok(listCopies, {
       copies: [copyOf(VENDAS, 'sankhya_vendas', 'Vendas', {})],
-      proposals: [],
     }),
     // Papéis, beside it in the index, preloads who reads each copy on focus.
     [`GET ${API}/copy-readers`]: ok(listCopyReaders, { readers: [] }),

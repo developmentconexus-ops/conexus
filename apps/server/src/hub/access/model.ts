@@ -1,13 +1,10 @@
 import type {
   CatalogSystem,
-  CatalogTable,
   CompanyId,
   ConnectionId,
-  ConnectionState,
   OperationEffect,
   PersonId,
   ProjectId,
-  Role,
 } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
@@ -47,7 +44,7 @@ export type ConsumerContext = Readonly<
 
 export type Consumer = ConsumerContext['consumer']
 
-/** One thing the door answers for: a table by its name, or one operation of one connection. */
+/** One thing the door answers for: one operation of one connection. */
 export const LeafKey = z.string().brand<'LeafKey'>()
 export type LeafKey = z.infer<typeof LeafKey>
 
@@ -61,29 +58,14 @@ export type AccessSources = Readonly<{
   systems(
     tx: ReadTx,
     at: Readonly<{ companyId: CompanyId; place: Place }>,
-  ): Promise<
-    Readonly<{
-      systems: readonly CatalogSystem[]
-      given: ReadonlyMap<ConnectionId, ConnectionState>
-    }>
-  >
-  tables(
-    tx: ReadTx,
-    at: Readonly<{
-      companyId: CompanyId
-      place: Place
-      role: Role
-      given: ReadonlyMap<ConnectionId, ConnectionState>
-    }>,
-  ): Promise<readonly CatalogTable[]>
+  ): Promise<readonly CatalogSystem[]>
 }>
 
 export type Snapshot = Readonly<{
   systems: readonly CatalogSystem[]
-  tables: readonly CatalogTable[]
   /** The operations `mayUseEach` allowed. */
   allowed: ReadonlySet<LeafKey>
 }>
 
-/** Every leaf in reach, with the most it may do. */
+/** Every operation in reach, with the most it may do. */
 export type Reach = ReadonlyMap<LeafKey, OperationEffect>

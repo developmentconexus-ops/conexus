@@ -19,7 +19,6 @@ export function granted(
     reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta', list: null }],
     writes: [],
     notes: [],
-    copies: false,
   }
 }
 

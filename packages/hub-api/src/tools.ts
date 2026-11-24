@@ -40,16 +40,12 @@ export const WORKSPACE_TOOL = {
 /** The app-data tools, the Builder's and the agents' (one name per tool, code C26). */
 export const APP_DATA_TOOL = { read: 'app_data_read', check: 'app_data_check' } as const
 
-/** The company-data tools, the same three agents' (one name per tool, code C26): the catalog and the read-only query over the copies. */
+/** The company-data tools, the same three agents' (one name per tool, code C26). */
 export const DATA_TOOL = { describe: 'data_describe', query: 'data_query' } as const
-
-/** The rows `data_describe` shows of a table: the contract serves a page and the tool shows the sample (decision T7 of the scope). */
-export const DESCRIBE_SAMPLE_ROWS = 5
 
 /**
  * The Builder's own tools besides the workspace's: the web, the memory's recall, the check, the
- * three of a Projeto's granted connections, the two that read its app's data, the two of the company's copied data and the one that
- * proposes a copy (Capacidade 3); the server proves them equal to its own (code C27).
+ * three of a Projeto's granted connections, the two that read its app's data, and the two of the company's data; the server proves them equal to its own (code C27).
  */
 export const BUILDER_TOOL = {
   webSearch: 'web_search',
@@ -63,7 +59,6 @@ export const BUILDER_TOOL = {
   appDataCheck: APP_DATA_TOOL.check,
   dataDescribe: DATA_TOOL.describe,
   dataQuery: DATA_TOOL.query,
-  copyPropose: 'copy_propose',
 } as const
 
 /** Every tool the Builder's closure offers (`TOOL_CLOSURE.availableTools`), each named once. */

@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { call, personOn } from '../../hub/identity/test-hub.ts'
+import { conversing } from '../conversation/test-conversation.ts'
+import { stepped } from '../conversation/test-questions.ts'
 import { schedulerOf } from './public.ts'
 
 test('o agendador: a falha de publicação vai ao registro com o id da agenda', () => {
@@ -15,4 +18,30 @@ test('o agendador: a falha de publicação vai ao registro com o id da agenda', 
   ])
   assert.equal(schedulerOf(log, 200).tickIntervalMs, 200)
   assert.equal('tickIntervalMs' in schedulerOf(log, undefined), false)
+})
+
+test('nenhum relógio de cópia', async (t) => {
+  const on = await conversing(t, stepped([]))
+  const { hub } = on
+  function copyRows() {
+    return hub.mastra.schedules.list({ workflowId: 'conexus-copy-run' })
+  }
+  assert.deepEqual(await copyRows(), [], 'after the Hub boots')
+  const operator = await personOn(hub, {
+    ...{ name: 'Olga Souza', email: 'olga@example.test' },
+    role: 'admin',
+  })
+  await hub.test.asOwner(
+    `insert into operations.client (company_id, cnpj, legal_name, attempt_key, registered_at)
+     values ($1, '00000000000001', 'Empresa A Ltda', $1, now())`,
+    [on.companyId],
+  )
+  const body = { name: 'Empresa Teste', revision: 0 }
+  const deleted = await call(hub, operator, 'DELETE', `/api/clients/${on.companyId}`, body)
+  assert.equal(deleted.statusCode, 204, deleted.body)
+  assert.deepEqual(await copyRows(), [], 'after the company is removed')
+  assert.deepEqual(
+    hub.lines.filter(({ message }) => message === 'COPY_SCHEDULES_RELEASED'),
+    [],
+  )
 })

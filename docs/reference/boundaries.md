@@ -908,6 +908,55 @@ changes, reread the line it names.
   then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when
   `projects.create` gains an idempotency key.
 
+## aws-cdk-lib 2.278.0: the table buckets' catalog in Lake Formation mode (O lago da empresa nasce e some)
+
+- **Library line.** `CfnResourceProps` of `AWS::LakeFormation::Resource`
+  (`aws-cdk-lib/aws-lakeformation/lib/lakeformation.generated.d.ts:1533`) has five properties and
+  no `WithPrivilegedAccess`. Without it, whoever registers the table buckets' location gets no Lake
+  Formation permission on it, and `AWS::Glue::Catalog` failed in the lab's platform deploy with
+  "Insufficient Lake Formation permission(s)" on `bucket/*`: the CDK execution role that calls
+  `CreateCatalog` is no lake administrator.
+- **Hand-made piece.** Three `AwsCustomResource` of `aws-cdk-lib` in `infra/aws/lib/tables.ts`, on
+  one function role, `conexus-s3tables-catalogo`: `TableBucketsRegistration` calls
+  `RegisterResource` with `WithFederation` and `WithPrivilegedAccess` and, on delete,
+  `DeregisterResource`; `TableBucketsLocationGrant`, made after it, revokes on delete the
+  `DATA_LOCATION_ACCESS` the registration gave; `TablesCatalog` calls `CreateCatalog` and
+  `DeleteCatalog`, with both default permissions empty. It is the card's fallback for the native
+  types (row 15), chosen in https://github.com/developmentconexus-ops/conexus/pull/1247; the
+  function's policy grows by the reads the resource schema's handlers do on the Lake Formation role
+  (https://github.com/developmentconexus-ops/conexus/pull/1249).
+- **Why.** The documented prerequisite of the `S3 Tables` integration: a principal with
+  `RegisterResource`, `RegisterResourceWithPrivilegedAccess` and `CreateCatalog` that registers the
+  location receives only `DATA_LOCATION_ACCESS` there, so no new role becomes a lake administrator
+  (the card's L.9 stays). Revalidate when `AWS::LakeFormation::Resource` gains
+  `WithPrivilegedAccess`.
+
+## @aws-sdk/client-cloudformation and @aws-sdk/client-s3tables 3.1175.0: what a failed lake creation leaves (O lago da empresa nasce e some)
+
+- **Library line.** `CreateStack` with `OnFailure: DELETE` (`createStack` in
+  `apps/server/src/platform/aws.ts`) undoes a failed stack, but CloudFormation deletes only what it
+  finished creating: one table bucket was left behind in eight creations at once in the lab proof
+  of 2026-11-20, and a removed bucket's name stays held for minutes (lab run 45081093044).
+  No reference checks for a leftover: SaaS Builder Toolkit 0.9.5 has no rollback or cleanup,
+  ParallelCluster 3.16.3 removes only its own files (`pcluster/models/cluster.py:408-410`), and SAM
+  CLI 1.174.0 passes `--on-failure DELETE` (`samcli/lib/deploy/deployer.py:906-913`).
+- **Hand-made piece.** `leftover` of `LakeStacks` (`bucketMayBeLeft` and `clearLeftover` in
+  `apps/server/src/platform/aws.ts`), which `failure` in `apps/server/src/hub/lake/lake.ts` calls
+  after it reads the first failed event. It reads the stack's `DescribeStackEvents` by its id: no
+  bucket event, or a `CREATE_COMPLETE` with `DELETE_COMPLETE` the newest, means nothing is left;
+  anything else, a `CREATE_FAILED` included, searches. The search is `GetTableBucket`,
+  `ListNamespaces`, `DeleteNamespace` for each (a `NotFoundException` counts as done) and
+  `DeleteTableBucket`, under the Hub's session and the company's tag
+  (`ClearTheSessionCompanyLeftover` in `infra/aws/lib/hub.ts`), so a bucket that is not there
+  answers 403. A refusal logs `LAKE_LEFTOVER_REFUSED` at error level, and the lake still becomes
+  `FAILED`. `aws-leftover.test.ts` covers the three recorded diaries and the namespace another read
+  already removed.
+- **Why.** The founder's decision E ("10a", 2026-11-21): after a creation that fails, the Hub
+  removes what is left. Only the bucket is checked: the Hub has no `iam:` or `athena:`, and an
+  orphan reader role or Athena workgroup was never seen. Revalidate on the first orphan of another
+  kind, on a table-bucket quota refusal no live lake explains, or when CloudFormation deletes what a
+  failed creation began.
+
 ## The Builder's clocks and its eval gate (step 13)
 
 - **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
@@ -1005,6 +1054,40 @@ changes, reread the line it names.
   the order of events for a slow page and passes with Mastra's own adapter too, so it proves neither.
 - **Revisit when** Mastra lets a stream send a subset of the display state, beyond `displayState: false`.
 
+## Mastra 1.83.0: the turn's place in the queue of model accounts (Uma ficha por agente)
+
+- **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`) has no queue of model accounts and no
+  several accounts for one person. Mastra Code reads one credential per organization and keeps no
+  line (`mastracode/sdk/src/index.ts:1413-1416`, `resolveTenantSessionModel`); neither it nor the
+  Factory has the piece (searched in both).
+- **Hand-made piece.** `turnProcessor` and `sessionTurns` in
+  `apps/server/src/builder/controller-kit/turns.ts`: the one input processor that takes a run's
+  `Turn` for the account queue and puts it on the request context, and the way a session holds that
+  turn until `agent_end`. Each agent's ficha chooses by its `turn` field: `SESSION` (the Assistant,
+  the Construtor, a Project agent's conversation) or `RUN` (the Builder, and the version the
+  Construtor tests, which have no session to hold it). Before the step it was three copies.
+- **Why.** Decisions [0049](../decisions/0049-model-accounts-keys-sign-ins-queues.md) and
+  [0050](../decisions/0050-conversation-on-the-agent-controller.md): a person's accounts, in order,
+  one turn on one account at a time. Proof: the criteria of `model-accounts/` and the requests of
+  each agent, which hold the same bytes before and after the join.
+- **Revisit when** Mastra gains an account queue or several credentials for one person.
+
+## Mastra 1.83.0: the Project's lock as the Builder's `take` (Uma ficha por agente)
+
+- **Library line.** `@mastra/core` 1.83.0 locks by conversation only (`threadLock`,
+  `@mastra/core/dist/agent-controller/types.d.ts:316-325`): two conversations
+  of one Project run at the same time.
+- **Hand-made piece.** `projectTurn` in `apps/server/src/builder/conversation/turn-of.ts`, the
+  Builder ficha's `take` (`turnOf`): the run takes the Project's lock (`Runs.take`) before any model
+  call, or ends `RUN_BUSY` with the name of whose run holds it, and frees it at the run's end
+  (`onEnd`).
+- **Why.** A Builder run moves the app's Git reference, and that is the Project's, not the
+  conversation's (decision [0027](../decisions/0027-mastra-builder-engine.md): the run engine is
+  Conexus code). Proof: `conversation-turns.test.ts`, the case of two conversations at once in one
+  Project: the second ends `RUN_BUSY` without calling the model; it fails when `projectTurn` stops
+  refusing a lock that is taken.
+- **Revisit when** Mastra can lock by a key other than the conversation.
+
 ## Mastra 1.83.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
 
 - **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`): the session's native "never ask" is the `allow`
@@ -1012,9 +1095,11 @@ changes, reread the line it names.
   (`packages/core/src/agent-controller/session.ts:4808-4829`, `:5019-5030` and `:6638-6642`). With `@mastra/pg`
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
   at `packages/core/src/agent/agent.ts:8757`).
-- **Hand-made piece.** `requireApproval: NEVER_ASKS` in `apps/server/src/builder/agents/tools.ts` (the
-  reads) and in `agents/agent.ts` (`neverAsking`, the shared tools, on a copy), and
-  `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
+- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/builder/controller-kit/mount.ts`)
+  in `agents/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
+  regime `THE_WRITE_ASKS` runs over its tools: every tool whose rule is not a function (the shared
+  ones, the web's, the code's) goes on a copy with `NEVER_ASKS`, and the given objects stay as they
+  are; and `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
   Computador). A tool's own rule runs before the session's policy, so the call is never suspended.
 - **Why.** With `allow`, 12 of 200 reads were lost on Postgres; with the rule on each tool, 0 of 200
   (the study of step 24.5; Papéis P1).
@@ -1325,176 +1410,3 @@ reference tool checks a read against its documentation.
 - **Why.** It protects the company's system; the door is where every read passes.
 - **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `assistant-port-note.test.ts`; the
   helper's share in `assistant/research.test.ts` "a porta, as 50 e o arquivo".
-
-## Mastra 1.83.0, @neondatabase/serverless 1.2.0 and PostgreSQL 18: the company's copies (Capacidade 2)
-
-Five pieces of `apps/server/src/hub/copies/run.ts` and `platform/copy-sql.ts` are ours, because no
-installed library keeps what a source outside Conexus did between one run and the next. The first
-four are the same rule seen from four sides: a pass reads the whole window, and only a complete pass
-moves the watermark or takes a row out.
-
-### How far a pass has read
-
-- **Library line.** `@mastra/core` 1.83.0 keeps a workflow's state inside one run
-  (`dist/docs/references/docs-workflows-workflow-state.md`); the schedule only knows when to fire
-  (`dist/scheduler-DOueSa7x.js:376-380`). Nothing in `@neondatabase/serverless` 1.2.0 or in
-  PostgreSQL 18 knows what a source's last read reached.
-- **Hand-made piece.** `position` (where the read stopped: a key, an offset or the provider's cursor,
-  `CopyPosition` in `packages/connectors/src/kernel/copy.ts`) and `watermark` (when the last complete
-  pass began) on each source of the copy, `copies.copy_source`, with `pass_started_at`
-  (`hub/copies/tables.ts`). `saved` in `hub/copies/sources.ts` writes the position
-  after each page; `passed` moves the watermark to the instant the pass began, only at the end of a
-  complete one (`run.ts`). The paged read adds the dates to the guarded query
-  (`packages/connectors/src/sankhya/copy-read.ts`): the watermark less a day and the window from the
-  pass's start. The engine never compares a date that came from the source.
-- **Why.** Written to the order of the references it follows: ML-VIGIA moves its cursor only after a
-  complete pass, and Nango checkpoints inside one.
-- **Proof.** `run.test.ts` "a passada completa", "a rodada órfã e a trava perdida" and "o erro não
-  vira vazio".
-
-### One run at a time
-
-- **Library line.** `@mastra/core` 1.83.0 does not look at the previous run when a schedule fires
-  (`dist/scheduler-DOueSa7x.js:376-380`); four runs of one schedule overlapped in the study.
-  [Data D25](../guides/data.md) forbids a session lock.
-- **Hand-made piece.** `claim` in `run.ts`: `claim_token` and `claimed_until` on the copy's row, taken
-  by one `UPDATE` that fires only on a free or expired lease (code C65). The position, the watermark
-  and the closing are written only `WHERE claim_token = $token` (`held`). A run that finds an expired
-  lease closes the open one `INTERRUPTED` and goes on from the saved position; the workflow has
-  `autoRestartActiveRuns: false`, because the library restarts an active run without fencing its
-  writes.
-- **Why.** The same lease as the Mastra Factory's per-project run (`mastracode/factory`,
-  `environment/build.ts`, read for the card at `mastra-1.82@6e8dfcb8`).
-- **Proof.** `run.test.ts` "uma rodada por vez" and "a rodada órfã e a trava perdida";
-  `builder/copy-clock/clock.test.ts` "a órfã não recomeça sozinha", which fails with
-  `autoRestartActiveRuns: true`.
-
-### A ceiling per run
-
-- **Library line.** Nothing in `@mastra/core` 1.83.0 limits a step by the pages it read.
-- **Hand-made piece.** `RUN_DEFAULTS` in `run.ts`: 200 pages or 10 minutes, checked before each page;
-  the run closes `PARTIAL` with the reason `CAP`, keeps the position, moves nothing, takes nothing out,
-  and asks the clock for another run.
-- **Proof.** `run.test.ts` "o teto", with the ceilings injected (T20).
-
-### What left the source
-
-- **Library line.** Neither `@mastra/core` 1.83.0 nor `@neondatabase/serverless` 1.2.0 nor
-  PostgreSQL 18 knows what a source deleted. The references differ: Nango deletes what a complete
-  pass did not see, Mitra never deletes.
-- **Hand-made piece.** Each row carries `_pass`, the engine's own column (`COPY_PASS_COLUMN`,
-  `platform/copy-sql.ts`; the catalog of `hub/apps/app-tables.ts` leaves it out, so no screen reads
-  it). `closePass` deletes, at the end of a complete pass only, the rows of a copy with no change date
-  that the pass did not write, or the rows inside the window that it did not write
-  (`DELETE ... WHERE <window> >= $from AND _pass <> $pass`), and counts, in one transaction. A
-  partial pass or an error never deletes; outside the window nothing is deleted.
-- **Why.** The delete is safe because the read brings the whole window on every pass, changed or not.
-- **Proof.** `run.test.ts` "a janela apaga o que sumiu" and "a janela relê o que não mudou";
-  `hub/apps/copy-data.test.ts` "Dados: as linhas de uma cópia" fails if `_pass` reaches a screen.
-- **Not proved.** A row whose change date is null is never read on the first pass
-  (https://github.com/developmentconexus-ops/conexus/issues/940).
-
-### The column that stops coming (parte 1 da camada de dados)
-
-- **Library line.** `zod` 4.6.5 and the kit have no schema of a source: a list answer is rows of any
-  shape, and `cellOf` (`packages/connectors/src/kernel/list.ts`) reads an absent path and a null the
-  same. Nothing in `@mastra/core` 1.83.0, `@neondatabase/serverless` 1.2.0 or PostgreSQL 18 keeps
-  which columns a source sent in the runs before.
-- **Hand-made piece.** `present` (the columns whose path exists in a row of the page, `cellsOf` and
-  `listPageOf` in the kit, `CopyRead` in `hub/connectors/copy-port.ts`); `seen` of the run
-  (`source-pass.ts`: the present columns, whether every source read the whole window, the rows read);
-  `nextColumnState` (`hub/copies/column-state.ts`) and its write into `copies.copy.column_state`, in
-  the same `UPDATE` that ends a `COMPLETE` run of a version 2 copy (`run.ts`, `ended`). A column that
-  came is active; one seen before and absent from a whole read with rows is inactive since the run
-  began. A whole read is a source that began with no position and either has no `since` or has no
-  `changedSince`.
-- **Why.** The founder's decision: the column stays, marked inactive (`design.md` C5 of the data
-  spec). "Only after it was seen" is ours, so a column that is just empty is never accused.
-- **Proof.** `hub/copies/column-state.test.ts` and `packages/connectors/src/kernel/list-present.test.ts`.
-- **Not proved.** A copy that reads only what changed cannot see a column vanish after its first
-  whole pass; a complete pass now and then is in no milestone.
-
-### The record of each run
-
-- **Library line.** The schedule keeps its triggers, not a run asked for at once: "Trigger history"
-  in `dist/docs/references/docs-workflows-scheduled-workflows.md:117-125` says a trigger can have no
-  run record yet, and a manual `run()` left no trigger in the study.
-- **Hand-made piece.** `copies.copy_run` (`hub/copies/tables.ts`), one open run per copy by a partial
-  unique index, the last run on the copy's row (`last_run_id`) and the newest 100 of each copy kept
-  (`KEPT_RUNS`, `run.ts`).
-- **Proof.** `run.test.ts` "a passada completa" and "o registro não leva dado" (only ids, counts, codes
-  and milliseconds, never a query, a column read or a row).
-- **Revisit when** a Mastra release records a manual run.
-
-### One source per account (O Sync de qualquer conector)
-
-- **Library line.** `@mastra/core` 1.83.0 keeps a workflow's state inside one run
-  (`dist/docs/references/docs-workflows-workflow-state.md`), and `drizzle-orm` 1.0.0-rc.4 only writes
-  what it is given; nothing installed keeps a read's point per connection of one definition. Nango
-  keeps one checkpoint per execution of one sync
-  (`nango@e6c6131` `docs/guides/functions/syncs/sync-partitioning.mdx:7-17`).
-- **Hand-made piece.** `copies.copy_source` (`hub/copies/tables.ts`), one row per connection of a
-  copy with its account (`account_ref`), its pass, position, watermark and wait; the copy no longer
-  hangs from a connection. A version 2 copy's table carries `_account` and `_account_name`
-  (`platform/copy-sql.ts`); `closePass` deletes only the rows of the account whose pass ended, and
-  the run's net (`dropForeignRows`) the rows of an account that is no source's. Desligar takes the
-  account's rows out of each copy that goes on and ends, with its table, a copy whose last source it
-  was (`hub/copies/sources.ts`, `leaveCopies` and `dropEndedCopies`); a table the company's database
-  did not drop is noted in `copies.copy_table_left` and dropped on the company's next Desligar or
-  Ligar.
-- **Why.** One definition, the state per connection, as Nango partitions a sync; the founder's
-  decision to remove the rows at once (#953).
-- **Proof.** `hub/copies/run-v2.test.ts` "duas contas numa tabela" and "a conta desligada";
-  `platform/copy-sql.test.ts` "o fim da passada de uma conta não toca a outra, e o nome da conta segue
-  a conexão"; `hub/connectors/unlink-copies.test.ts` "desligar tira as linhas e a leitura do app" and
-  its three cases; `hub/copies/migrate-copy-source.test.ts` "a fonte de cada cópia de hoje".
-
-### The provider's wait and the cursor that expires (O Sync de qualquer conector)
-
-- **Library line.** Nothing in `@mastra/core` 1.83.0 or `drizzle-orm` 1.0.0-rc.4 carries a wait or a
-  cursor from one run to the next. Airbyte and Nango wait on a 429 by its `Retry-After` and go on
-  (`airbyte@8aed3123` `connector-builder-ui/error-handling.md:15,107`; `nango@e6c6131`
-  `docs/guides/functions/rate-limits.mdx:15-38`). The Mercado Livre `scroll_id` lives 5 minutes.
-- **Hand-made piece.** A 429 left after the executor's own wait inside the call's deadline (0058)
-  ends the run `PARTIAL` with the reason `WAIT`: the source keeps its position, and `wait_until`
-  when the provider said how long (`run.ts`, `sources.ts` `waiting`); the next run skips a source
-  still waiting. A list read declares its cursor's life in `paging.ttlMs`; a saved cursor older than
-  that (by the injected clock) is never sent: the source's pass starts again (`restarted`), logged
-  `COPY_PASS_RESTARTED`.
-- **Why.** The platforms wait and resume; no one recorded how a provider refuses an expired cursor,
-  so the run does not depend on reading that refusal.
-- **Proof.** `hub/copies/run-v2.test.ts` "o fornecedor pede para esperar" and its two cases, and "o
-  cursor vencido recomeça".
-
-### One copy call at a time per connector counted by the app (O Sync de qualquer conector)
-
-- **Library line.** No limiter is installed: `node_modules` has no `p-limit`, `p-queue` or
-  `bottleneck`, only `p-retry` 7.1.1 from another package, which repeats and does not limit.
-  Airbyte's `HTTPAPIBudget` limits one connection's calls per window
-  (`airbyte@8aed3123` `config-based/understanding-the-yaml-file/rate-limit-api-budget.md:3-30`);
-  nothing sums the calls of many companies' connections on one OAuth app.
-- **Hand-made piece.** `callLimit` (`countedBy` `APP` or `ACCOUNT`) on the connector's declaration
-  (`packages/connectors/src/kernel/definition.ts`; Mercado Livre `APP`, Sankhya `ACCOUNT`), and
-  `inCopyTurn` in `hub/connectors/limits.ts`: the same in-process line as each connection's calls,
-  keyed by the connector, which `copy-port.ts` takes for every copy read of a connector that counts
-  by the app. A read whose deadline passes in the line asks nothing, and the run ends `PARTIAL`
-  `WAIT` with the position kept and no `wait_until`. No number is invented: Mercado Livre publishes
-  none.
-- **Why.** Mercado Livre counts its limit "per Client ID (application)", one app for every company.
-- **Proof.** `hub/connectors/copy-lane.test.ts` "uma chamada de cópia por vez por conector" and its
-  two cases; the first and third fail when `copy-port.ts` skips the line.
-- **Revisit when** the Hub runs in more than one process (0058).
-
-### The clock of each copy
-
-- **Library line.** `@mastra/core` 1.83.0 canonicalizes the id of a workflow schedule with a prefix and
-  looks an id without it up as an agent's; `schedules.run` publishes even when the scheduler is
-  stopped (`dist/docs/references/reference-schedules-overview.md`); after three failed publishes the
-  scheduler logs the id and calls the `scheduler.onError` it was given at creation.
-- **Hand-made piece.** `scheduleIdOf` in `builder/copy-clock/workflow.ts` names the row
-  `schedule_<copy id>`; `hub/copies/schedule.ts` refuses with `HUB_UPDATING` to create a schedule
-  while the Hub is updating; `builder/copy-clock/clock.ts` logs an unreadable row as
-  `COPY_SCHEDULE_UNREADABLE`; `schedulerOf` in `builder/mastra/mastra.ts` passes the `onError` that logs
-  `SCHEDULE_PUBLISH_FAILED`.
-- **Proof.** `builder/copy-clock/clock.test.ts` "rodar agora e o disparo", "uma agenda ilegível
-  aparece no registro" and "a empresa apagada leva as agendas".

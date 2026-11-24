@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { readerAt } from '../access/test-principal.ts'
-import { rolesWorld } from '../copies/test-readers.ts'
+import { rolesWorld } from './test-company.ts'
 
 test('um erro que não é de indisponibilidade não é engolido', async (t) => {
-  const w = await rolesWorld(t, 'PLANTED')
+  const w = await rolesWorld(t)
   await w.on.hub.test.asOwner(`create function data.refuse_read() returns trigger language plpgsql as $$
     begin raise exception 'bad' using errcode = '23514'; end $$`)
   await w.on.hub.test.asOwner(

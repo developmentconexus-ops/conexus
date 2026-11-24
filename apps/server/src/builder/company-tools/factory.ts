@@ -7,17 +7,15 @@ import { chosenIn } from '../../hub/access/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { appDataTools, builderAppDataTools } from '../app-data/public.ts'
-import type { ConnectorAccess, NoteSave, ProposeCall } from '../connectors/public.ts'
+import type { ConnectorAccess, NoteSave } from '../connectors/public.ts'
 import { connectorTools } from '../connectors/public.ts'
 import type { DataBinding, RunScope } from '../controller-kit/public.ts'
 import { dataContextOf, principalOf } from '../controller-kit/public.ts'
 import { dataTools } from '../data-tools/public.ts'
-import { copyRunsTool } from './copy-runs.ts'
 import type { Listed } from './listed.ts'
 import type { CompanyToolName, CompanyToolSeat } from './names.ts'
 import { TOOLS_OF } from './names.ts'
 import { overviewTool } from './overview.ts'
-import type { CompanyCopies } from './ports.ts'
 import type { AppDataGrant, CompanyConnection, CompanyToolScope } from './scope.ts'
 
 /** A call of the connectors' door, bound to the run it is for. */
@@ -26,10 +24,8 @@ type OfRun<F extends (...args: never[]) => unknown> = (
   ...args: Parameters<F>
 ) => ReturnType<F>
 
-type Copying = NonNullable<Parameters<typeof connectorTools>[1]['propose']>['copying']
-
 /** What the company's tools of every run are made with: the doors of `hub/`, handed over by each consumer. */
-export type CompanyToolDeps<C extends CompanyConnection = CompanyConnection> = Readonly<{
+export type CompanyToolDeps = Readonly<{
   log: FailureLog
   /** The company's copied data for the run's place and person; a seat without it reads none. */
   data?: (run: RunScope) => CompanyData
@@ -39,12 +35,9 @@ export type CompanyToolDeps<C extends CompanyConnection = CompanyConnection> = R
     /** The connections whose notebook the run's speaker may use; a saved agent's tools name no other. */
     notebooks?: (run: RunScope) => Promise<readonly ConnectionId[]>
     saveNote?: OfRun<NoteSave>
-    /** The Builder's `copy_propose`, on the listed connections whose connector copies. */
-    propose?: Readonly<{ call: OfRun<ProposeCall>; copying: (listed: Listed<C>) => Copying }>
   }>
   /** With a machine: the path the turn's next read is saved whole at. */
   savedAt?: (requestContext: RequestContext) => string
-  copies?: () => Pick<CompanyCopies, 'list' | 'runs'>
   projects?: (run: RunScope) => Promise<Omit<Overview, 'connections'>>
 }>
 
@@ -99,7 +92,7 @@ const WHOSE: Readonly<Record<CompanyToolSeat, string>> = {
 async function namedBy<C extends CompanyConnection>(
   scope: CompanyToolScope<C>,
   seat: CompanyToolSeat,
-  connector: CompanyToolDeps<C>['connector'],
+  connector: CompanyToolDeps['connector'],
 ): Promise<readonly C[]> {
   if (seat !== 'agents') return scope.connections()
   if (connector.notebooks === undefined) {
@@ -115,7 +108,7 @@ async function namedBy<C extends CompanyConnection>(
 export async function connectorAccess<C extends CompanyConnection>(
   scope: CompanyToolScope<C>,
   seat: CompanyToolSeat,
-  deps: CompanyToolDeps<C>,
+  deps: CompanyToolDeps,
 ): Promise<ConnectorAccess> {
   const { run } = scope
   return {
@@ -131,7 +124,7 @@ export async function connectorAccess<C extends CompanyConnection>(
 /** The notebook's write, for a seat whose consumer grants it and only in a run a person follows. */
 function noteSaveOf<C extends CompanyConnection>(
   scope: CompanyToolScope<C>,
-  deps: CompanyToolDeps<C>,
+  deps: CompanyToolDeps,
 ): NoteSave | undefined {
   const { saveNote } = deps.connector
   if (!scope.grants.noteSave || !scope.run.attended || saveNote === undefined) return undefined
@@ -141,23 +134,14 @@ function noteSaveOf<C extends CompanyConnection>(
 async function connectorsOf<C extends CompanyConnection>(
   scope: CompanyToolScope<C>,
   seat: CompanyToolSeat,
-  deps: CompanyToolDeps<C>,
+  deps: CompanyToolDeps,
   names: readonly CompanyToolName[],
 ): Promise<ToolsInput> {
   const access = await connectorAccess(scope, seat, deps)
   const save = names.includes(BUILDER_TOOL.connectorNoteSave) ? noteSaveOf(scope, deps) : undefined
-  const { propose } = deps.connector
   return connectorTools(access, {
     ...(save === undefined ? { noteSave: false } : { noteSave: true, save }),
     ...(names.includes(BUILDER_TOOL.connectorRead) ? {} : { reads: false }),
-    ...(propose === undefined || !names.includes(BUILDER_TOOL.copyPropose)
-      ? {}
-      : {
-          propose: {
-            copying: propose.copying(await scope.connections()),
-            call: (call, requestContext) => propose.call(scope.run, call, requestContext),
-          },
-        }),
   })
 }
 
@@ -194,19 +178,13 @@ function merged(sets: readonly ToolsInput[]): ToolsInput {
 export async function companyTools<C extends CompanyConnection>(
   scope: CompanyToolScope<C>,
   seat: CompanyToolSeat,
-  deps: CompanyToolDeps<C>,
+  deps: CompanyToolDeps,
 ): Promise<ToolsInput> {
   const names: readonly CompanyToolName[] = TOOLS_OF[seat]
-  const tables = scope.view.list('table').map((each) => each.name)
   const pieces = merged([
     await connectorsOf(scope, seat, deps, names),
     appDataOf(scope.grants.appData, dataContextOf(scope.run).thread),
     deps.data === undefined ? {} : dataTools({ data: deps.data(scope.run) }),
-    deps.copies === undefined
-      ? {}
-      : {
-          [ASSISTANT_TOOL.copyRuns]: copyRunsTool({ run: scope.run, tables }, deps.copies),
-        },
     deps.projects === undefined
       ? {}
       : { [ASSISTANT_TOOL.overview]: overviewTool(scope, deps.projects) },

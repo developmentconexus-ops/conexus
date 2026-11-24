@@ -1,8 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { AutomationId, ProjectId } from '@conexus/hub-api'
-import { BUILDER_TOOL, CONSTRUTOR_CONTROLLER, CONSTRUTOR_TOOL, TASK_TOOLS } from '@conexus/hub-api'
-import type { AgentInstructions } from '@mastra/core/agent'
-import { Agent } from '@mastra/core/agent'
+import { BUILDER_TOOL, CONSTRUTOR_TOOL, TASK_TOOLS } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
@@ -23,27 +21,30 @@ import {
   companyTools,
 } from '../company-tools/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
-import type { Owner, ReleaseScope, RunMark, RunScope, Speakers } from '../controller-kit/public.ts'
+import type {
+  ConversationSpec,
+  Owner,
+  ReleaseScope,
+  RunMark,
+  RunScope,
+  Speakers,
+} from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
-  agentDefaults,
   agentManagerAdmission,
   blockOf,
   CONEXUS_PROMPT,
-  controllerOf,
+  CONVERSATION_MODE,
   conversationMemory,
   createAskUserTool,
-  fixedSystem,
+  mountAgent,
   oncePerRun,
   principalOf,
-  RUN_MARKS,
-  releaseThreads,
+  releaseByMarks,
   runResolver,
   sessionModel,
-  sessionTurns,
   TITLE,
   takeOfScope,
-  threadsByMarks,
   toolsOf,
   turnKeyOn,
 } from '../controller-kit/public.ts'
@@ -56,7 +57,6 @@ import { testDraft } from './draft-trial.ts'
 import { registerConstrutorRoutes } from './routes.ts'
 import { construtorTools } from './tools.ts'
 
-const MODE = 'conversa'
 const turnKey = turnKeyOn('conexus-construtor-turn-key')
 const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 'utf8').trim()
 
@@ -179,21 +179,46 @@ function projectReader(deps: Deps, offered: () => Promise<readonly ConstrutorCon
   }
 }
 
+/** The run's scope, its Projeto and its company tools' scope, read once per run; none is the conversation's absence. */
+function runScopeOf(deps: Deps, scopeOf: RunOf) {
+  const toolScopeOf = oncePerRun(async (requestContext: RequestContext) => {
+    const run = await scopeOf(requestContext)
+    if (run === undefined) return undefined
+    return companyToolScope(
+      run,
+      {
+        access: deps.access,
+        connections: (each) => deps.connectors.connections(principalOf(each)),
+      },
+      { noteSave: false, appData: { kind: 'NONE' } },
+    )
+  })
+  return async (requestContext: RequestContext) => {
+    const run = await scopeOf(requestContext)
+    const scope = run === undefined ? undefined : inProjectOf(run)
+    const toolScope = await toolScopeOf(requestContext)
+    if (run === undefined || scope === undefined || toolScope === undefined) {
+      throw new Failure('CONVERSATION_NOT_FOUND')
+    }
+    return { run, scope, toolScope }
+  }
+}
+
 /**
- * The agent: Conexus's fixed message, the conversation's block and the manual; the session's model;
- * the Project's connector reads, the web and the Construtor's tools, all bound to the run's scope.
+ * The Construtor's ficha: Conexus's fixed message, the conversation's block and the manual; the
+ * session's model; the Project's connector reads, the web and the Construtor's tools, all bound to
+ * the run's scope; one mode with a closed list of tools and `ask_user` of its own.
  */
-function construtorAgent(
+function construtorSpec(
   deps: Deps,
   parts: {
     memory: Memory
-    turns: ReturnType<typeof sessionTurns>
     scopeOf: RunOf
     machines: ConversationMachines
   },
-) {
+): ConversationSpec {
   const { scopeOf } = parts
-  const tools: CompanyToolDeps<ConstrutorConnection> = {
+  const tools: CompanyToolDeps = {
     log: deps.log,
     connector: byPrincipal(deps.connectors, turnKey.of),
   }
@@ -208,41 +233,26 @@ function construtorAgent(
         .automations()
         .list({ companyId: scope.companyId, personId: scope.personId }, scope.projectId),
   }
-  const toolScopeOf = oncePerRun(async (requestContext: RequestContext) => {
-    const run = await scopeOf(requestContext)
-    if (run === undefined) return undefined
-    return companyToolScope(
-      run,
-      {
-        access: deps.access,
-        connections: (each) => deps.connectors.connections(principalOf(each)),
-      },
-      { noteSave: false, appData: { kind: 'NONE' } },
-    )
-  })
-  async function runScope(requestContext: RequestContext) {
-    const run = await scopeOf(requestContext)
-    const scope = run === undefined ? undefined : inProjectOf(run)
-    const toolScope = await toolScopeOf(requestContext)
-    if (run === undefined || scope === undefined || toolScope === undefined) {
-      throw new Failure('CONVERSATION_NOT_FOUND')
-    }
-    return { run, scope, toolScope }
+  const runScope = runScopeOf(deps, scopeOf)
+  async function block(requestContext: RequestContext) {
+    const { run, toolScope } = await runScope(requestContext)
+    const speakers = await deps.speakersOf(run)
+    return blockOf(speakers, await companyConnections(toolScope))
   }
-  return new Agent({
-    id: CONSTRUTOR_CONTROLLER,
+  return {
+    kind: 'construtor',
     name: 'Construtor',
-    instructions: async ({ requestContext }) => {
-      const { run, toolScope } = await runScope(requestContext)
-      const speakers = await deps.speakersOf(run)
-      return [
-        fixedSystem(CONEXUS_PROMPT),
-        { role: 'system', content: blockOf(speakers, await companyConnections(toolScope)) },
-        { role: 'system', content: MANUAL },
-      ] satisfies AgentInstructions
+    base: 'AGENT',
+    prompt: {
+      kind: 'MESSAGES',
+      parts: [
+        { kind: 'FIXED', text: CONEXUS_PROMPT },
+        { kind: 'OF_RUN', of: block },
+        { kind: 'TEXT', text: MANUAL },
+      ],
     },
-    model: ({ requestContext }) => sessionModel(requestContext),
-    tools: async ({ requestContext }) => {
+    model: { kind: 'SESSION' },
+    tools: async (requestContext) => {
       const { run, scope, toolScope } = await runScope(requestContext)
       function read(
         call: Parameters<ConnectorAccess['read']>[0],
@@ -257,9 +267,20 @@ function construtorAgent(
         ...construtorTools({ ...construtor, project, read }, scope),
       }
     },
-    ...agentDefaults(deps.queue, parts.turns),
-    memory: parts.memory,
-  })
+    // Decision 0053: nothing waits to be approved; the tools only build a draft.
+    approval: { kind: 'NOTHING_ASKS' },
+    turn: {
+      kind: 'SESSION',
+      id: 'conexus-construtor-turn',
+      take: takeOfScope({
+        ...{ queue: deps.queue, turnKey },
+        scopeOf: async (requestContext) => (await scopeOf(requestContext))?.owner,
+      }),
+    },
+    threads: parts.memory,
+    mode: { id: CONVERSATION_MODE, availableTools: AVAILABLE_TOOLS },
+    own: { fixed: { [ASK_USER_TOOL]: createAskUserTool() } },
+  }
 }
 
 /**
@@ -286,22 +307,10 @@ export function createConstrutor(deps: Deps) {
     },
     deps.machineTuning,
   )
-  const turns = sessionTurns({
-    id: 'conexus-construtor-turn',
-    take: takeOfScope({
-      ...{ queue, turnKey },
-      scopeOf: async (requestContext) => (await scopeOf(requestContext))?.owner,
-    }),
+  const { controller } = mountAgent(construtorSpec(deps, { memory, scopeOf, machines }), {
+    queue,
+    storage,
   })
-  const agent = construtorAgent(deps, { memory, turns, scopeOf, machines })
-  // Decision 0053: nothing waits to be approved; the tools only build a draft.
-  const controller = controllerOf({
-    ...{ kind: 'construtor', storage, memory, agent },
-    mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
-    tools: { fixed: { [ASK_USER_TOOL]: createAskUserTool() } },
-    initialState: { yolo: true },
-  })
-  turns.watch(controller)
 
   return Object.freeze({
     controller,
@@ -318,17 +327,15 @@ export function createConstrutor(deps: Deps) {
       /** Whether the person may build agents in the company now (`manageAgents`). */
       admit: construtorAdmission(deps),
       async release(scope: ReleaseScope): Promise<void> {
-        const ids = await threadsByMarks(memory, {
-          [RUN_MARKS.construtor.company]: scope.companyId,
-          ...(scope.personId === undefined
-            ? {}
-            : { [RUN_MARKS.construtor.person]: scope.personId }),
-          ...(scope.projectId === undefined
-            ? {}
-            : { [RUN_MARKS.construtor.project]: scope.projectId }),
-        })
-        const count = await releaseThreads({ controller, memory }, ids, (id) => machines.kill(id))
-        log.info({ companyId: scope.companyId, count }, 'CONSTRUTOR_CONVERSATIONS_RELEASED')
+        await releaseByMarks(
+          { controller, memory, log },
+          {
+            kind: 'construtor',
+            scope,
+            code: 'CONSTRUTOR_CONVERSATIONS_RELEASED',
+            each: (id) => machines.kill(id),
+          },
+        )
       },
     },
     routes: (app: FastifyInstance) =>

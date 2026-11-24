@@ -2,6 +2,9 @@ import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { ConversationId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { MastraMemory } from '@mastra/core/memory'
+import type { FailureLog } from '../../platform/failure.ts'
+import type { MarkedKind } from './run.ts'
+import { RUN_MARKS } from './run.ts'
 
 /** What a release names: a company, and maybe one of its Projetos or one of its people. */
 export type ReleaseScope = { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }
@@ -31,4 +34,33 @@ export async function threadsByMarks(
 ): Promise<string[]> {
   const { threads } = await memory.listThreads({ filter: { metadata: marks }, perPage: false })
   return threads.map((thread) => thread.id)
+}
+
+/**
+ * Deletes a marked kind's conversations that a removal names (the company, and maybe one person or
+ * Projeto), by the kind's marks: each session, then `each` (its machine), then the thread; logs `code`
+ * with the count.
+ */
+export async function releaseByMarks(
+  deps: { controller: AgentController; memory: MastraMemory; log: FailureLog },
+  input: {
+    kind: MarkedKind
+    scope: ReleaseScope
+    code:
+      | 'ASSISTANT_CONVERSATIONS_RELEASED'
+      | 'CONSTRUTOR_CONVERSATIONS_RELEASED'
+      | 'AGENT_CONVERSATIONS_RELEASED'
+    each?: (id: ConversationId) => Promise<void>
+  },
+): Promise<number> {
+  const { scope } = input
+  const marks = RUN_MARKS[input.kind]
+  const ids = await threadsByMarks(deps.memory, {
+    [marks.company]: scope.companyId,
+    ...(scope.personId === undefined ? {} : { [marks.person]: scope.personId }),
+    ...(scope.projectId === undefined ? {} : { [marks.project]: scope.projectId }),
+  })
+  const count = await releaseThreads(deps, ids, input.each)
+  deps.log.info({ companyId: scope.companyId, count }, input.code)
+  return count
 }

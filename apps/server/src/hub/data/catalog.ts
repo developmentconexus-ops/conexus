@@ -10,7 +10,7 @@ export async function catalogOf(
 ): Promise<Described> {
   try {
     const view = await deps.access.viewOf(principal)
-    return { kind: 'CATALOG', systems: [...view.list('system')], tables: [...view.list('table')] }
+    return { kind: 'CATALOG', systems: [...view.list('system')] }
   } catch (error) {
     if (!(error instanceof Failure) || error.code !== 'DATABASE_UNAVAILABLE') throw error
     logFailure(deps.log, error, { companyId: principal.companyId }, 'DATA_CATALOG_FAILED')

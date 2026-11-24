@@ -146,7 +146,7 @@ test('a árvore: carregando, três esqueletos', async () => {
   server.use(
     http.get(`*/api/companies/${COMPANY.id}/copies`, async () => {
       await held
-      return HttpResponse.json({ copies: [copy()], proposals: [] })
+      return HttpResponse.json({ copies: [copy()] })
     }),
   )
   const nav = await tree()

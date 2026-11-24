@@ -12,7 +12,6 @@ import {
 } from './builder/automations/public.ts'
 import { createConstrutor, tablesWithColumnNamesOf } from './builder/construtor/public.ts'
 import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
-import { COPY_WORKFLOW, copyClockOf, copyRun } from './builder/copy-clock/public.ts'
 import { createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
@@ -21,7 +20,6 @@ import type { Access, Principal } from './hub/access/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
-import type { CopyService } from './hub/copies/public.ts'
 import type { DataContext } from './hub/data/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
@@ -69,14 +67,6 @@ function builderDoorOf(connectors: () => Connectors) {
       ids: Parameters<Connectors['builder']['saveNote']>[0],
       a: Parameters<Connectors['builder']['saveNote']>[1],
     ) => connectors().builder.saveNote(ids, a),
-    provePage: (
-      ids: Parameters<Connectors['builder']['provePage']>[0],
-      a: Parameters<Connectors['builder']['provePage']>[1],
-    ) => connectors().builder.provePage(ids, a),
-    propose: (
-      ids: Parameters<Connectors['builder']['propose']>[0],
-      a: Parameters<Connectors['builder']['propose']>[1],
-    ) => connectors().builder.propose(ids, a),
   }
 }
 
@@ -106,19 +96,10 @@ function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
   }
 }
 
-/** The copies' view for the Builder's turn, reached when a turn starts: the copies are made after the conversations. */
-function copiesOf(
-  copies: () => Pick<CopyService, 'projectView'>,
-): Pick<CopyService, 'projectView'> {
-  return { projectView: (ids) => copies().projectView(ids) }
-}
-
-/** The doors the Builder's turn reaches: the connectors', the apps' data and the copies' view. */
-function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'copies'>) {
+function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps'>) {
   return {
     connectors: builderDoorOf(deps.connectors),
     data: builderDataOf(deps.apps),
-    copies: copiesOf(deps.copies),
   }
 }
 
@@ -161,8 +142,6 @@ type ConversationsDeps = {
   projects: () => Pick<ProjectPorts, 'createProject'>
   /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
   apps: () => Apps
-  /** The copies are made after the conversations; a run comes long after both. */
-  copies: () => Pick<CopyService, 'run' | 'projectView' | 'list' | 'runs'>
   /** The company-data door is made after the conversations; each agent binds it to its own scope when a turn calls it. */
   companyData: (principal: Principal, context: DataContext) => CompanyData
   /** The access door is made after the conversations; a list of what a place offers comes long after. */
@@ -179,11 +158,10 @@ type ConversationsDeps = {
  * turn comes long after: each door is reached when called. The automations' run is made before the
  * one `Mastra` it is registered on, and the automations after it, on its schedules; a run and a
  * removal come long after both. The Construtor (step 24.3, U4) builds the agents through their
- * service and lists the automations made below. The copies' clock (Capacidade 2) is made beside
- * the automations, on the same schedules, and runs the copies made after it.
+ * service and lists the automations made below.
  */
 export function conversationsOf(deps: ConversationsDeps) {
-  const { database, identity, log, copies } = deps
+  const { database, identity, log } = deps
   const storage = createMastraStorage(deps.mastraPool)
   const queue = {
     database,
@@ -194,7 +172,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   }
   const door = doorOf(deps.connectors)
   const assistant = createAssistant({
-    ...{ storage, database, identity, queue, log, copies, companyData: deps.companyData },
+    ...{ storage, database, identity, queue, log, companyData: deps.companyData },
     ...machineOf(deps),
     ...{ connectors: door, access: deps.access },
     projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
@@ -234,12 +212,10 @@ export function conversationsOf(deps: ConversationsDeps) {
     ...{ storage, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
     workflows: {
       [AUTOMATION_WORKFLOW]: run,
-      [COPY_WORKFLOW]: copyRun({ copies: deps.copies, log }),
     },
     schedulerTickMs: clock?.schedulerTickMs,
     releaseFirst: [
       (scope) => automations.release(scope),
-      (scope) => copyClock.release(scope),
       async (scope) => {
         await agents.release(scope)
       },
@@ -258,6 +234,5 @@ export function conversationsOf(deps: ConversationsDeps) {
     access: deps.access,
     updating: hub.updating,
   })
-  const copyClock = copyClockOf({ mastra: hub.mastra, log })
-  return { conversations, assistant, automations, agents, copyClock: copyClock.clock }
+  return { conversations, assistant, automations, agents }
 }

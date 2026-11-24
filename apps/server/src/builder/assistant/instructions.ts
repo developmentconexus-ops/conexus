@@ -1,16 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { AgentInstructions } from '@mastra/core/agent'
-import type { RequestContext } from '@mastra/core/request-context'
-import { Failure } from '../../platform/failure.ts'
-import type { Mays, Speakers } from '../controller-kit/public.ts'
-import {
-  blockOf,
-  CONEXUS_PROMPT,
-  fixedSystem,
-  sessionModel,
-  TITLE,
-} from '../controller-kit/public.ts'
-import { dataOrder } from '../data-tools/public.ts'
+import { CONEXUS_PROMPT, TITLE } from '../controller-kit/public.ts'
 
 /**
  * The Assistant's observer: the conversation's title and what a business conversation keeps, never
@@ -22,7 +11,7 @@ export const ASSISTANT_OBSERVER = `${TITLE.ask.observer} Observe as a business a
  * The fixed message, the same bytes in every conversation of every company (criterion 13a): what
  * Conexus is, shared with the units after this one (`conexus.md`), then the Assistant (`assistant.md`).
  */
-const FIXED = [
+export const FIXED = [
   CONEXUS_PROMPT,
   readFileSync(new URL('./prompt/assistant.md', import.meta.url), 'utf8').trim(),
 ].join('\n\n')
@@ -36,41 +25,7 @@ const FIXED = [
  * same block unmeasured. A model without a block gets the fixed message alone.
  */
 const LUNA = readFileSync(new URL('./prompt/openai-luna.md', import.meta.url), 'utf8').trim()
-const MODEL_BLOCKS: Readonly<Record<string, string>> = {
+export const MODEL_BLOCKS: Readonly<Record<string, string>> = {
   'openai/gpt-6-luna': LUNA,
   'openai/gpt-5.6-luna': LUNA,
-}
-
-/**
- * The system messages (`P1`, `L1`): the fixed one with its own cache mark, the turn's model's block
- * when it has one, then the conversation's block, which the Hub marks as the last one; resolved again
- * on each call of the agent.
- */
-export function assistantInstructions(deps: {
-  /** The connections of the run's view: the chosen ones it reaches (issue 1147). */
-  chosenOf: (
-    requestContext: RequestContext,
-  ) => Promise<readonly { name: string; connector: string }[]>
-  speakersOf: (requestContext: RequestContext) => Promise<Speakers | undefined>
-  maysOf: (requestContext: RequestContext) => Promise<Mays>
-}) {
-  return async ({ requestContext }: { requestContext: RequestContext }) => {
-    const [speakers, chosen, may] = await Promise.all([
-      deps.speakersOf(requestContext),
-      deps.chosenOf(requestContext),
-      deps.maysOf(requestContext),
-    ])
-    if (speakers === undefined) {
-      throw new Failure('INTERNAL_UNEXPECTED', {
-        details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
-      })
-    }
-    const model = MODEL_BLOCKS[sessionModel(requestContext)]
-    return [
-      fixedSystem(FIXED),
-      { role: 'system', content: dataOrder() },
-      ...(model === undefined ? [] : [{ role: 'system' as const, content: model }]),
-      { role: 'system', content: blockOf(speakers, chosen, may) },
-    ] satisfies AgentInstructions
-  }
 }

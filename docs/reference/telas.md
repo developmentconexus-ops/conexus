@@ -308,7 +308,7 @@ A tela é hipótese, fora do repositório até o estudo do marco. O cartão e o 
 | Empresa: Pessoas e acesso | Registro de dados, só Dono e Administrador | `C6` | Registro e conformidade, U9 | Registro de auditoria com filtros e exportação |
 | Empresa: Pessoas e acesso | Chaves para agentes de fora | sem número (perto de G8) | `docs/steps/trilhas/dados.md` | Chaves de acesso e contas de serviço |
 | Empresa: Modelos | Limites por provedor | G4, A1 | etapa 20, decisão 0058 | Limites de gasto por provedor |
-| Empresa: Avisos e uso | Avisos (os e-mails da empresa) | `C1`, `C7` | a etapa 2 do lago | a lista de e-mails da empresa que recebe a falha de qualquer fonte |
+| Integrações: a ligação | Os e-mails do aviso de cópia parada, por ligação (2026-11-23, "Por ligação, na janela") | `C1`, `C7` | o cartão do aviso, depois da etapa 2 do lago | o e-mail de falha no passo da agenda, por pipeline, do Databricks |
 | Empresa: Avisos e uso | Uso | sem número | `D6` | Página de plano e uso |
 | Empresa: Avisos e uso | Atividade | G9 | 21.1 | Registro de auditoria |
 | Empresa: Avisos e uso | Plano e cobrança | sem número | etapa 23 | Página de plano e uso |
@@ -440,18 +440,6 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 - **Hoje falta.** Na Amostra a grade passa da tela; sem busca nem filtro; sem permissões, histórico, linhagem e qualidade; Quem lê mostra papéis, não pessoas.
 - **Referência.** Plataformas de dados fazem a pergunta dentro da amostra e filtram as rodadas.
 - **Princípios.** E1 P. E3 P. E4 P. E5 P. E6 em parte (`copy-readers.tsx`). E7 P.
-
-#### TD7. Janelas de Dados (Ligar uma cópia, Ligar uma proposta, Intervalo, Apagar)
-
-- **Para que serve.** Criar, ajustar e apagar uma cópia dizendo antes o que muda. `C2` e E4.
-- **Conteúdo obrigatório.** Ligar uma cópia: Conexão, Modelo, Intervalo (30 min, `packages/hub-api/src/copies.ts`); sem conexão, "Ir para Integrações" (`new-copy.tsx`). Proposta: o que lê, chave, modo, intervalo, "Libera ao Projeto {nome}" (`copy-proposal.tsx`). Intervalo: seis escolhas (`interval.tsx`). Apagar: linhas que saem, Projetos que perdem leitura, recomeço do zero (`copy-delete.tsx`).
-- **Ações.** Ligar, Salvar, Apagar, Cancelar. Quem gerencia.
-- **Ação principal.** A de confirmar, em cada janela.
-- **Estados.** Carregando; erro de campo; erro do Hub; resultado desconhecido; proposta já decidida por outra pessoa (`copy-proposal.tsx`); tabela que o banco não soltou (`copy-delete.tsx`).
-- **Faixa de dados.** Chamadas por passada, "cerca de 6" no exemplo (`text.ts`). Projetos que perdem leitura, 0 a poucos (hipótese).
-- **Hoje falta.** Ligar uma cópia não mostra o que será copiado antes de salvar.
-- **Referência.** Uma plataforma de dados aceita item por item. Outras usam assistentes em passos.
-- **Princípios.** E4 P. E5 P. E6 em parte. E7 em parte ("Ligar" nomeia cópia e ligação).
 
 #### TD8. Cópias, o endereço antigo (`copies.index.tsx`, `copies.$copyId.tsx`)
 

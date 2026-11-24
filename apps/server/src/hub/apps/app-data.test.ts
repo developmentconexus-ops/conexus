@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { AppTables, CELL_CHARACTERS } from '@conexus/hub-api'
+import { AppTables, CELL_CHARACTERS, ProjectId } from '@conexus/hub-api'
+import { schemasOfAppLogins } from '../../platform/test-company-postgres.ts'
 import { unreachableDatabaseUrl } from '../../platform/test-database.ts'
 import { codeOf, memberOn, personOn, plantCompany, post } from '../identity/test-hub.ts'
 import { ATENDENTE } from '../identity/test-roles.ts'
@@ -69,6 +70,20 @@ test('dados: a lista e a contagem', async (t) => {
   assert.deepEqual(counts.pg_class, { kind: 'EXACT', rows: 2 })
   assert.deepEqual(counts['a"b c'], { kind: 'EXACT', rows: 1 })
   assert.equal(JSON.stringify(listed).includes('conexus_migration'), false)
+})
+
+test('dados: sem liberação de cópia', async (t) => {
+  const on = await dataOn(t)
+  const { schema, logins } = await schemasOfAppLogins(on.owner, ProjectId.parse(on.projectId))
+  assert.equal(logins.length, 2, 'the run and the read logins')
+  for (const { login, schemas } of logins)
+    assert.deepEqual(schemas, [schema, 'public'].sort(), login)
+  const listed = AppTables.parse((await on.tables(on.ana)).json())
+  assert.ok(listed.kind === 'TABLES')
+  assert.ok(
+    listed.tables.some(({ name }) => name === CLIENTES),
+    'the app keeps reading its tables',
+  )
 })
 
 test('dados: a contagem que falha é indisponível', async (t) => {
@@ -290,11 +305,7 @@ test('dados: o registro não leva dado', async (t) => {
   assert.equal((await on.tables(on.ana)).statusCode, 200)
   assert.equal((await on.rows(on.ana, CLIENTES)).statusCode, 200)
   const reads = on.hub.lines.filter(({ message }) => message === 'APP_DATA_READ')
-  assert.equal(
-    reads.length,
-    5,
-    'the app catalog, the copies catalog, the counts, one table and its page',
-  )
+  assert.equal(reads.length, 4, 'the app catalog, the counts, one table and its page')
   for (const { fields } of reads) {
     assert.deepEqual(Object.keys(fields).sort(), ['answer', 'companyId', 'projectId'])
     assert.equal(fields.answer, 'ROWS')

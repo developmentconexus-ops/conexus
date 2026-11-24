@@ -54,15 +54,18 @@ the pointer where it was. The conversation shows the result as the Prévia's sta
 Pruning keeps the new version, the published one and the three newest other `ready` versions, and
 removes the rest, Worker first (`hub/apps/prune.ts`).
 
-## The Prévia and the published app share a host
+## The Prévia and the published app, each on its host
 
-There is one Worker per version, and both environments live at the same host. Which version a
-visit runs depends on the session's environment, chosen by the route that made the one-use pass
-([the app contract and the dispatcher](app-contract-and-dispatcher.md)). A tab opened through
-`/apps/open` is `published` and runs `published_version_id`. The Prévia's frame in the Hub
-(`apps/web/src/builder/preview/preview.tsx`) gets its pass from `POST /api/apps/frame-handoff`, so
-it is `preview` and runs `live_version_id`, or the example app before the first version
-(`callTo` in `hub/apps/handoff.ts`). Only company members enter the Prévia.
+There is one Worker per version, and each environment has its own host ([0024](../decisions/0024-app-address-one-host-per-app.md)): the published app
+at `<label>`, the Prévia at `<label>--previa`, under the same apps' domain. The host a visit opens
+says which version it runs ([the app contract and the dispatcher](app-contract-and-dispatcher.md)).
+A tab opened through `/apps/open` is on the published host and runs `published_version_id`. The
+Prévia's frame in the Hub (`apps/web/src/builder/preview/preview.tsx`) loads the Prévia's host,
+which the Hub sends as `Project.previewAddress`, and gets its pass from
+`POST /api/apps/frame-handoff`; it runs `live_version_id`, or the example app before the first
+version (`callTo` in `hub/apps/handoff.ts`). Only company members enter the Prévia. A label of 56
+to 63 characters, made before the Prévia's mark was reserved, has no Prévia host: the Hub sends
+`previewAddress: null` and the Prévia shows its stage.
 
 ## Publishing, and going back
 

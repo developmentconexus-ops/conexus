@@ -3,8 +3,6 @@ import type {
   CompanyId,
   Connection,
   ConversationId,
-  CopyId,
-  CopyOfConnection,
   OperationId,
   Person,
   ProjectId,
@@ -12,7 +10,7 @@ import type {
 import { CONNECTION_STATES, ConnectionId, PersonId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
+import type { Database, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
@@ -42,28 +40,6 @@ type LiveReadLine = Readonly<{
   ms: number
 }>
 
-type CopiesOf = Readonly<{ companyId: CompanyId; personId: PersonId; connectionId: ConnectionId }>
-
-/**
- * What Desligar asks of the company's copies (O Sync de qualquer conector): `hub/copies` answers it,
- * made after the connectors, so the port is lazy and this subject never imports that one.
- */
-export type ConnectionCopies = Readonly<{
-  /** Each copy that reads the connection, as Desligar shows it before the click. */
-  copiesOf(input: CopiesOf): Promise<CopyOfConnection[]>
-  /** Before anything leaves the Hub: the account's rows out of the copies that go on; COPY_DATABASE_UNAVAILABLE when the company's database is silent. */
-  leave(input: CopiesOf): Promise<void>
-  /** In Desligar's transaction, before its DELETE: the copies the connection is a source of, locked. */
-  locked(tx: CommandTx, input: Omit<CopiesOf, 'personId'>): Promise<CopyId[]>
-  /** In the same transaction, after it: the locked copies left with no source end, their tables noted. */
-  ended(
-    tx: CommandTx,
-    input: { companyId: CompanyId; copyIds: readonly CopyId[] },
-  ): Promise<CopyId[]>
-  /** After the DELETE: the ended copies' tables dropped; those the company's database left, by name. */
-  dropEnded(input: Omit<CopiesOf, 'connectionId'>): Promise<{ tablesLeft: string[] }>
-}>
-
 export type Deps = {
   database: Database
   identity: IdentityPorts
@@ -81,7 +57,6 @@ export type Deps = {
   catalog: readonly Connector[]
   /** The machine's clock; a test injects its own (T20). */
   now: () => Date
-  copies: () => ConnectionCopies
   /** The one writer of the Registro (`hub/data`), handed in by `main.ts`. */
   recordRead: (line: LiveReadLine) => Promise<'RECORDED' | 'UNRECORDED'>
 }

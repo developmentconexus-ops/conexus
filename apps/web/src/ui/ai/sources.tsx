@@ -9,9 +9,8 @@ export type SourceView =
       kind: 'TABLE'
       key: string
       name: string
-      /** The logo and the reauthorize badge, drawn by the caller. */
+      /** The logo, drawn by the caller. */
       logo: ReactNode | undefined
-      badge: ReactNode | undefined
       table: string
       stamp: { tone: 'neutral' | 'success' | 'warning' | 'danger'; text: string }
     }
@@ -29,7 +28,6 @@ function TableLine({ source }: { source: Extract<SourceView, { kind: 'TABLE' }> 
     <li className="flex min-h-8 min-w-0 flex-wrap items-center gap-x-sm gap-y-xs py-xs not-first:border-t not-first:border-line">
       {source.logo}
       <span className="min-w-0 break-words text-label font-medium text-text">{source.name}</span>
-      {source.badge}
       <span aria-hidden="true" className="basis-full @md:hidden" />
       <span
         className={cn(

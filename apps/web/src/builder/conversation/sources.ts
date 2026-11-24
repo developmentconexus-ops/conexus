@@ -1,5 +1,4 @@
-import type { DataOrigin } from '@conexus/hub-api'
-import { BUILDER_TOOL, DataResult, ReadCut } from '@conexus/hub-api'
+import { BUILDER_TOOL, ReadCut } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
 import { clockOf, dayGroupOf, dayOf } from '../../platform/dates.ts'
@@ -8,22 +7,11 @@ import { operationOf, stringArg } from './tool-args.ts'
 /**
  * What a message's answer rests on: a page the model cited, from Mastra's `source` part (`linked`
  * is false for an address that is not `http:` or `https:`: the title shows as text and the address
- * is no link), or a company's data, copied (`FRESH`, `PARTIAL`, `STOPPED`, `at` null before the
- * first run) or read from the system as the answer was written (`LIVE`).
+ * is no link), or a company's data read live from the system's connection as the answer was written.
  */
 export type MessageSource =
   | { kind: 'web'; url: string; title: string | undefined; domain: string; linked: boolean }
-  | {
-      kind: 'data'
-      connector: string
-      /** The names of the connections the place gives, in the order of `systems`; a NOT_GIVEN one is not here. */
-      connections: readonly string[]
-      /** Whether one of them waits for a new authorization (NEEDS_REAUTH). */
-      reauth: boolean
-      table: string
-      at: string | null
-      state: 'FRESH' | 'PARTIAL' | 'STOPPED' | 'LIVE'
-    }
+  | { kind: 'data'; connector: string; connection: string; table: string; at: string }
 /** A message's sources as a row of its transcript. */
 export type CitedRow = { kind: 'sources'; id: string; sources: readonly MessageSource[] }
 
@@ -71,44 +59,6 @@ function sourceOf(url: string, title: string | undefined): MessageSource | undef
     : { kind: 'web', url, title: named, domain: '', linked: false }
 }
 
-function copiedFrom(origin: DataOrigin): MessageSource {
-  const base = {
-    kind: 'data',
-    connector: origin.connector,
-    connections: origin.systems.flatMap((each) => (each.kind === 'NAMED' ? [each.name] : [])),
-    reauth: origin.systems.some((each) => each.kind === 'NAMED' && each.state === 'NEEDS_REAUTH'),
-    table: origin.table,
-  } as const
-  switch (origin.lastRun) {
-    case 'COMPLETE':
-      return { ...base, at: origin.lastRunEndedAt, state: 'FRESH' }
-    case 'PARTIAL':
-      return { ...base, at: origin.lastRunEndedAt, state: 'PARTIAL' }
-    case 'ERROR':
-    case 'INTERRUPTED':
-      return { ...base, at: origin.lastRunEndedAt, state: 'STOPPED' }
-    case 'RUNNING':
-    case 'NONE':
-      return { ...base, at: null, state: 'FRESH' }
-    default:
-      return origin.lastRun satisfies never
-  }
-}
-
-function copiesOf(toolName: string, args: unknown, result: unknown): MessageSource[] {
-  const read = DataResult.safeParse(result)
-  if (!read.success) return []
-  if (toolName === BUILDER_TOOL.dataQuery && read.data.kind === 'ROWS')
-    return read.data.origin.map(copiedFrom)
-  if (
-    toolName === BUILDER_TOOL.dataDescribe &&
-    stringArg(args, 'table') !== undefined &&
-    read.data.kind === 'TABLE'
-  )
-    return [copiedFrom(read.data.origin)]
-  return []
-}
-
 /** The connector and the operation a live read names: `connector_read`'s "sankhya.consultar" or a typed read's `sankhya_pedidos`. */
 function liveRead(
   toolName: string,
@@ -127,12 +77,10 @@ function liveOf(toolName: string, args: unknown, result: unknown): MessageSource
   return [
     {
       kind: 'data',
-      ...named,
-      connections: [connection],
-      reauth: false,
+      connector: named.connector,
+      connection,
       table: named.operation,
       at: read.data.at,
-      state: 'LIVE',
     },
   ]
 }
@@ -140,7 +88,7 @@ function liveOf(toolName: string, args: unknown, result: unknown): MessageSource
 /** The one key a source is told apart by: a page's address, or a table of a system. */
 export function keyOf(source: MessageSource): string {
   if (source.kind === 'web') return source.url
-  return `${source.connector}:${source.connections.join(',')}:${source.table}`
+  return `${source.connector}:${source.connection}:${source.table}`
 }
 
 /** The sources a message shows, each once: the pages the model cited and the data its tools read. */
@@ -167,7 +115,5 @@ function sourcesIn(part: MastraMessagePart): MessageSource[] {
   const tool = ToolPart.safeParse(part)
   if (!tool.success) return []
   const { toolName, args, result } = tool.data.toolInvocation
-  return toolName === BUILDER_TOOL.dataQuery || toolName === BUILDER_TOOL.dataDescribe
-    ? copiesOf(toolName, args, result)
-    : liveOf(toolName, args, result)
+  return liveOf(toolName, args, result)
 }

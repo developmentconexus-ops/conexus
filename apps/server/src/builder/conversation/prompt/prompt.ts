@@ -31,15 +31,13 @@ export type PromptValues = Readonly<{
   memory: string
   /** The Projeto's granted connections as `connectionsContext` says them; empty drops the block. */
   connections: string
-  /** The company's copies as `dataContext` says them; empty drops the block. */
-  data: string
 }>
 
 const STARTER_LINE = '- This app is new: it has only the starter screen.\n'
 const CUTOFF_LINE = ' Your knowledge cutoff: {cutoff}.'
 // One pass over the template, so text a placeholder brings in is never read as another placeholder.
 const PLACEHOLDER =
-  /^- This app is new: it has only the starter screen\.\n| Your knowledge cutoff: \{cutoff\}\.|\{project name\}|\{date\}|\{app folder\}|\{checks\}|\{AGENTS\.md content\}|\{index\}|^\{connections\}\n\n|^\{data\}\n\n/gm
+  /^- This app is new: it has only the starter screen\.\n| Your knowledge cutoff: \{cutoff\}\.|\{project name\}|\{date\}|\{app folder\}|\{checks\}|\{AGENTS\.md content\}|\{index\}|^\{connections\}\n\n/gm
 
 /** A block and the blank line after it; an empty block drops both. */
 function blockOf(text: string): string {
@@ -57,7 +55,6 @@ export function fillPrompt(values: PromptValues): string {
     '{checks}': String(values.checks),
     '{AGENTS.md content}': values.instructions,
     '{connections}\n\n': blockOf(values.connections),
-    '{data}\n\n': blockOf(values.data),
   }
   return TEMPLATE.replace(PLACEHOLDER, (slot) => slots[slot] ?? values.memory)
 }

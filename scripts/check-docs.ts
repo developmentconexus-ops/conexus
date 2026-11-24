@@ -18,6 +18,7 @@ const root = resolve(process.argv[2] ?? '.')
 
 const CEILINGS: readonly (readonly [RegExp, number])[] = [
   [/^AGENTS\.md$/, 400],
+  [/^VISION\.md$/, 1600],
   [/^docs\/index\.md$/, 500],
   [/^docs\/roadmap\.md$/, 1600],
   [/^docs\/architecture\.md$/, 2500],
@@ -28,6 +29,7 @@ const CEILINGS: readonly (readonly [RegExp, number])[] = [
   [/^docs\/guides\/delivery\.md$/, 2200],
   [/^docs\/decisions\/[^/]+\.md$/, 350],
   [/^docs\/how-to\/[^/]+\.md$/, 800],
+  [/^docs\/conhecimento\/[^/]+\.md$/, 3000],
   [/^\.agents\/skills\/[^/]+\/SKILL\.md$/, 600],
   [/^\.agents\/skills\/[^/]+\/references\/[^/]+\.md$/, 1500],
 ]
@@ -55,7 +57,7 @@ function walk(dir: string): string[] {
 }
 
 const files = [
-  ...['AGENTS.md', 'README.md', 'CLAUDE.md'].map((name) => join(root, name)),
+  ...['AGENTS.md', 'README.md', 'CLAUDE.md', 'VISION.md'].map((name) => join(root, name)),
   ...walk(join(root, 'docs')),
   ...walk(join(root, '.agents/skills')),
 ]

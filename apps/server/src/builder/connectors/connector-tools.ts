@@ -9,9 +9,8 @@ import type { Connectors, Native } from '../../hub/connectors/public.ts'
 import { CONNECTOR_CALLS_PER_TURN, deniesAccess } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import { toldNative } from '../../platform/model-text.ts'
 import { INSTANTS_NOTE, inZone, zoneOf } from '../data-tools/public.ts'
-import type { ProposeCall } from './copy-propose.ts'
-import { copyProposeTool } from './copy-propose.ts'
 
 export type BuilderConnectors = Connectors['builder']
 export type GrantedConnection = Awaited<ReturnType<BuilderConnectors['granted']>>[number]
@@ -21,7 +20,7 @@ type Answer = Awaited<ReturnType<BuilderConnectors['read']>>
 type WholeAnswer = Extract<Answer, { kind: 'OK' }> & { whole: unknown }
 type Saved = Awaited<ReturnType<BuilderConnectors['saveNote']>>
 
-/** Who asks, and the run the port counts the 50 calls by, known only when a tool runs. */
+/** Who asks, and the run the port counts its `CONNECTOR_CALLS_PER_TURN` calls by, known only when a tool runs. */
 export type Asker = OfProject & {
   personId: PersonId
   runIdOf: (requestContext: RequestContext) => RunId | undefined
@@ -72,7 +71,7 @@ export function builderAccess(
   granted: readonly GrantedConnection[],
   who: Asker,
   log: FailureLog,
-): { access: ConnectorAccess; save: NoteSave; propose: ProposeCall } {
+): { access: ConnectorAccess; save: NoteSave } {
   const access: ConnectorAccess = {
     connections: granted,
     log,
@@ -87,15 +86,7 @@ export function builderAccess(
   }
   const save: NoteSave = (call, requestContext) =>
     port.saveNote(who, { ...call, personId: who.personId, runId: runIn(who, requestContext) })
-  const propose: ProposeCall = ({ signal, ...call }, requestContext) =>
-    port.propose(who, {
-      ...call,
-      personId: who.personId,
-      runId: runIn(who, requestContext),
-      // A call Mastra gives no signal is one nobody can stop: the proof's own deadline still holds.
-      signal: signal ?? new AbortController().signal,
-    })
-  return { access, save, propose }
+  return { access, save }
 }
 
 /** The connection a name says; the connector too when the call names one, since two systems may share a name. */
@@ -215,11 +206,11 @@ function failedRead(answered: { native: Native }) {
   } as const
 }
 
-/** What the model reads of a read that did not answer OK: the provider's whole answer, with the failed-read words when it was not a refusal of access. */
+/** What the model reads of a read that did not answer OK: the provider's refusal within the ceiling of C79, with the failed-read words when it was not a refusal of access. */
 export function unansweredRead(answered: Exclude<Answer, { kind: 'OK' }>) {
-  return answered.kind === 'REFUSED' && !deniesAccess(answered.native)
-    ? failedRead(answered)
-    : answered
+  if (!('native' in answered)) return answered
+  const told = { ...answered, native: toldNative(answered.native) }
+  return answered.kind === 'REFUSED' && !deniesAccess(answered.native) ? failedRead(told) : told
 }
 
 /** One read through the access's door: the model gets the cut with the time the answer came back, and the whole answer goes to the machine's file when there is one. */
@@ -342,11 +333,6 @@ export function connectorTools(
   access: ConnectorAccess,
   include: ({ noteSave: false } | { noteSave: true; save: NoteSave }) & {
     reads?: false
-    /** The Builder's: `copy_propose` on the connections whose connector copies (Capacidade 3). */
-    propose?: {
-      copying: readonly Pick<GrantedConnection, 'connectionId' | 'connector' | 'name' | 'reads'>[]
-      call: ProposeCall
-    }
   },
 ): ToolsInput {
   if (access.connections.length === 0) return {}
@@ -354,8 +340,5 @@ export function connectorTools(
     ...(include.reads === false ? {} : readTool(access)),
     ...notesTool(access),
     ...(include.noteSave ? noteSaveTool(access.connections, include.save) : {}),
-    ...(include.propose === undefined
-      ? {}
-      : copyProposeTool(include.propose.copying, include.propose.call)),
   }
 }

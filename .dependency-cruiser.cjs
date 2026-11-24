@@ -17,7 +17,7 @@ const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-
 // The access contract (founder's decision 2A, 2026-11-14): the agents and the apps reach the data
 // only through packages/hub-api/src/company-data.ts. Data is the data track's code; the agents and
 // the apps are the conversations, their tool adapters and the app packages.
-const DATA = `^(${SERVER}/(hub/(connectors|copies|ontology|data)/|builder/copy-clock/|platform/copy-sql\\.ts$)|packages/connectors/)`
+const DATA = `^(${SERVER}/hub/(connectors|copies|ontology|data)/|packages/connectors/)`
 const AGENTS_AND_APPS = `^(${SERVER}/builder/(controller-kit|conversation|assistant|agents|construtor|automations|connectors|app-data|data-tools|tools|company-tools)/|packages/app(-contract)?/)`
 // C56: each SDK of a provider only in its adapter.
 const ADAPTERS = require('./.dependency-cruiser-adapters.cjs')

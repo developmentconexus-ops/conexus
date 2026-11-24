@@ -5,7 +5,7 @@ Estado: **aprovado em 2026-11-17**, com o ajuste da língua (seção 8). A prime
 Este documento abre a camada de produto, junto de [o mapa](mapa.md), [as jornadas](jornadas.md), [as telas](../reference/telas.md), [o catálogo](../reference/catalogo.md) e [a folha de movimento](../reference/movimento.md). Ele diz o que o Conexus é, para quem, o que a
 pessoa deve conseguir em cada área, e os princípios de experiência que qualquer tela tem de passar. O
 `PRODUCT.md` continua curto e passa a citar este documento. A cor, a letra e as peças são do
-`DESIGN.md`. O que o produto nunca faz é de `docs/architecture.md`, seção 1; aqui só se cita.
+`DESIGN.md`. O que o produto nunca faz é da [VISION.md](../../VISION.md); aqui só se cita.
 
 ## 1. O conceito
 
@@ -64,7 +64,7 @@ trilha ou numa decisão gravada.
 
 | # | A empresa consegue | Hoje | Marco ou decisão |
 | --- | --- | --- | --- |
-| `C1` | Ligar os seus sistemas pela tela, sem colar chave, e ver cada um funcionando ou parado | parte: Sankhya, Mercado Livre e HubSpot ligam; o login pelo kit é o `D1` | `D1`, `D3` (dez sistemas com a mesma prova) |
+| `C1` | Ligar os seus sistemas pela tela, sem colar chave, e ver cada um funcionando ou parado | parte: Sankhya, Mercado Livre e HubSpot ligam; o login pelo kit é o `D1` | `D1`, `D3` (onze sistemas com a mesma prova) |
 | `C2` | Ver todo o dado copiado num catálogo só: cada tabela com nome, descrição, colunas, de quando é e quem lê | tem: Dados, com Visão geral, Colunas, Amostra, Rodadas e Quem lê | `D2` |
 | `C3` | Dar nome ao que a empresa chama de pedido, cliente, margem: os conceitos, cada um ligado às tabelas e provado com uma consulta | falta: a pasta Negócio existe, vazia | a etapa do Negócio e `D4`; decisões 0064 e 0067 |
 | `C4` | Guardar como a empresa opera: as regras, os processos, as exceções, em páginas que todo agente segue | parte: Memória da empresa, hoje nas Configurações | o Brain, decisão 0065 |
@@ -106,7 +106,7 @@ afirma em lugares diferentes, ou um defeito que os estudos mediram.
 
 | # | Princípio | O teste numa tela | De onde vem |
 | --- | --- | --- | --- |
-| E1 | **O dado mostra de onde veio e de quando é.** | Todo número ou linha que veio de um sistema tem ao lado a fonte e a hora. O que não se sabe aparece como "indisponível", nunca como zero. | `architecture.md` seção 1 ("never invents a value"); roteiro `D2`; o caso do bloco Fontes |
+| E1 | **O dado mostra de onde veio e de quando é.** | Todo número ou linha que veio de um sistema tem ao lado a fonte e a hora. O que não se sabe aparece como "indisponível", nunca como zero. | `VISION.md` ("O dado é verdadeiro e diz de onde veio"); roteiro `D2`; o caso do bloco Fontes |
 | E2 | **O contexto é um só, e aprende com aprovação.** | Um conceito ou uma regra da empresa aparece com quem aprovou e quando. O que um agente aprendeu aparece como proposta, não como fato. Agente e app citam o mesmo conceito. | As palavras do fundador de 2026-11-17 ("uma base de contexto e ontologia que vai aprendendo"); decisões 0064 e 0065 (`B1`) |
 | E3 | **A conversa cria; a tela guarda.** | Tudo que nasce numa conversa (app, agente, automação, cópia, conceito) tem uma linha numa lista, com estado e dono, e se abre sem reler a conversa. | `PRODUCT.md` ("Creation by conversation"); o inventário: a lista de Automações não mostra a última execução |
 | E4 | **Nada age sem dizer antes.** | Toda escrita, publicação ou remoção mostra, antes do clique final, o que vai acontecer e onde. Depois, a tela diz quem aprovou. | "It never publishes on its own"; roteiro `D1` ("Uma escrita mostra o cartão"); design V55 |
@@ -118,11 +118,7 @@ A Pauta já diz como o Conexus parece. Isso é direção visual e continua no `D
 
 ## 5. O que o Conexus nunca faz
 
-Dono: `docs/architecture.md`, seção 1. Não inventa valor nem simula progresso. Não deixa o modelo
-declarar o trabalho pronto. Não sobrescreve o trabalho mais novo de outra pessoa. Não mostra
-credencial. Não publica sozinho. Não substitui o ERP: o dado oficial continua nos sistemas da empresa.
-
-E, pelas palavras do fundador em 2026-11-09, não cria app para ser vendido e acessado pelo público. O app é da empresa, para a empresa.
+Dono: a [VISION.md](../../VISION.md).
 
 ## 6. O que o conceito novo pede do repositório
 

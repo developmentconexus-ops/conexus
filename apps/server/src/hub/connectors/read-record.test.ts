@@ -5,7 +5,6 @@ import { test } from 'node:test'
 import { CompanyId, ConnectionId, OperationId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import { principalFor } from '../access/public.ts'
 import { chooserAt, versionAt } from '../access/test-principal.ts'
-import { ordersCopy, STORE_A, storesOn } from '../copies/test-sources.ts'
 import { call, post } from '../identity/test-hub.ts'
 import { TurnKey } from './public.ts'
 import { appCalls } from './test-app-calls.ts'
@@ -86,16 +85,6 @@ test('a leitura ao vivo deixa uma linha LIVE', async (t) => {
     assert.equal(record.person_id, on.personId)
     assert.equal(record.project_id, on.projectId)
   }
-})
-
-test('a cópia não entra no Registro', async (t) => {
-  const on = await storesOn(t, { stores: [STORE_A] })
-  const copyId = await on.planted('pedidos', ordersCopy(false), [STORE_A.ref])
-  assert.deepEqual(await on.ended(copyId), { kind: 'COMPLETE' })
-  const records = await on.hub.test.asOwner('select * from data.data_read where company_id = $1', [
-    on.companyId,
-  ])
-  assert.deepEqual(records, [])
 })
 
 test('a leitura ao vivo recusada deixa linha', async (t) => {

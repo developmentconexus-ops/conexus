@@ -34,8 +34,6 @@ const READ = new Set<string>([
   BUILDER_TOOL.appDataCheck,
   BUILDER_TOOL.dataDescribe,
   BUILDER_TOOL.dataQuery,
-  // It writes a proposal row and never turns a copy on: a person does (decision 0053).
-  BUILDER_TOOL.copyPropose,
   ...SKILL_TOOLS,
 ])
 // The controller's tools that talk to the person: the questions, the plan and the task list.
@@ -57,11 +55,10 @@ const EXECUTE = new Set<string>([
  * How the Builder's controller closes its tools, the one owner of the closed set, as Mastra Code
  * closes its own (`mastracode/sdk/src/index.ts:858,1331`): the mode offers the four groups and no
  * other tool (`availableTools`, which the controller enforces when a tool is called), a session
- * starts in `yolo` so nothing waits to be approved (decision 0053), and the controller's own
- * tools are off (`disableBuiltinTools`). The account queue narrows the set the mode offers and
- * never rebuilds it.
+ * starts in `yolo` so nothing waits to be approved (decision 0053; the ficha's regime
+ * `NOTHING_ASKS` writes it), and the controller's own tools are off (`disableBuiltinTools`). The
+ * account queue narrows the set the mode offers and never rebuilds it.
  */
 export const TOOL_CLOSURE = {
   availableTools: [...READ, ...EDIT, ...EXECUTE, ...TALK],
-  initialState: { yolo: true },
 }

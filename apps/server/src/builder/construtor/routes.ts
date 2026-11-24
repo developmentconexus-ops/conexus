@@ -14,8 +14,8 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import {
+  answerModelChange,
   attemptIdOf,
-  changeModel,
   listOwned,
   ownThread,
   RUN_MARKS,
@@ -82,23 +82,29 @@ export function registerConstrutorRoutes(app: FastifyInstance, deps: Deps): void
     return answer({ conversations: threads.map(summaryOf) })
   })
 
-  serve(app, setConstrutorModel, async (input) => {
+  serve(app, setConstrutorModel, (input) => {
     const scope = inProjectOf(input)
-    await admittedTo(deps, scope)
-    const owner = { companyId: scope.companyId, personId: scope.personId }
-    const { conversationId } = input.params
-    const thread = await ownThread(memory, 'construtor', owner, conversationId)
-    if (thread.metadata?.[RUN_MARKS.construtor.project] !== scope.projectId)
-      throw new Failure('CONVERSATION_NOT_FOUND')
-    const kept = await changeModel(
-      { controller, queue: deps.queue },
+    return answerModelChange(
       {
-        ...{ kind: 'construtor', owner, id: conversationId, tags: construtorMarks(scope) },
-        choice: input.body,
+        kind: 'construtor',
+        controller,
+        queue: deps.queue,
+        owned: async () => {
+          await admittedTo(deps, scope)
+          const owner = { companyId: scope.companyId, personId: scope.personId }
+          const { conversationId } = input.params
+          const thread = await ownThread(memory, 'construtor', owner, conversationId)
+          if (thread.metadata?.[RUN_MARKS.construtor.project] !== scope.projectId)
+            throw new Failure('CONVERSATION_NOT_FOUND')
+          return { owner, id: conversationId, tags: construtorMarks(scope) }
+        },
+        logged: ({ companyId, conversationId }) =>
+          deps.log.info(
+            { companyId, traceId: input.traceId, conversationId },
+            'CONSTRUTOR_MODEL_SET',
+          ),
       },
+      input.body,
     )
-    const about = { companyId: scope.companyId, traceId: input.traceId, conversationId }
-    deps.log.info(about, 'CONSTRUTOR_MODEL_SET')
-    return answer(kept)
   })
 }

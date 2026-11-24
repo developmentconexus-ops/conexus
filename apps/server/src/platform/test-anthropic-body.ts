@@ -38,6 +38,8 @@ export type Sent = {
   toolResults: ToolResultSent[]
   /** Where the conversation holds a `tool_use` whose `input` is not an object, or a `tool_result` with no `tool_use`, which the Messages API refuses; none if it holds neither. */
   unfilled: string | null
+  /** The request body as the Messages API received it, parsed as JSON and nothing narrowed. */
+  body: unknown
 }
 
 export type ToolUse = { name: string; input: unknown }
@@ -181,7 +183,8 @@ function unfilledOf(body: z.infer<typeof Body>): string | null {
 
 export function sentOf(init: RequestInit | undefined): Sent {
   const headers = new Headers(init?.headers)
-  const body = Body.parse(JSON.parse(String(init?.body)))
+  const received: unknown = JSON.parse(String(init?.body))
+  const body = Body.parse(received)
   const system =
     typeof body.system === 'string'
       ? body.system
@@ -222,5 +225,6 @@ export function sentOf(init: RequestInit | undefined): Sent {
     toolUses: toolUsesOf(body),
     toolResults: toolResultsOf(body),
     unfilled: unfilledOf(body),
+    body: received,
   }
 }

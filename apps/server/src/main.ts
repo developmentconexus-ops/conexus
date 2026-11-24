@@ -22,7 +22,6 @@ import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
 import { createConnectors, roleKit } from './hub/connectors/public.ts'
-import { createCopies } from './hub/copies/public.ts'
 import type { DataDeps } from './hub/data/public.ts'
 import { createCompanyData, createDataReads, recordRead } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
@@ -92,7 +91,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.copies, deps.dataReads, deps.lakes],
+    ...[deps.requests, deps.dataReads, deps.lakes],
   ]) {
     part.routes(app)
   }
@@ -150,11 +149,7 @@ export function subjectsOf(deps: {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
-  // The copies are made below, after the apps their release and removal reach; both come long after.
-  function lateCopies() {
-    return copies
-  }
-  const appRemoval = createAppRemoval({ ...deps, copies: lateCopies })
+  const appRemoval = createAppRemoval(deps)
   const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
   const { repository, copy } = deps
@@ -166,13 +161,13 @@ export function subjectsOf(deps: {
     send: (version) => apps.sendFromBuilder(version),
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const { conversations, assistant, automations, agents, copyClock } = conversationsOf({
+  const { conversations, assistant, automations, agents } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
-    // The data and the access door are made below, after the copies they read; a turn comes long after.
-    ...{ copies: lateCopies, companyData: (principal, context) => data(principal, context) },
+    // The data and the access door are made below, after the connectors they read; a turn comes long after.
+    companyData: (principal, context) => data(principal, context),
     access: { viewOf: (principal) => access.viewOf(principal) },
     ...{ notify: notifications.notify, automationClock: config.automationClock },
   })
@@ -193,7 +188,7 @@ export function subjectsOf(deps: {
   const closeRequests: CloseRequests = (tx, input) => requests.closeRequests(tx, input)
   const apps = createApps({
     ...{ ...deps, identity, appsDomain, ungranted, closeRequests, recordRead: recordRead(deps) },
-    ...{ copies: lateCopies, appDataDeadlineMs: deps.appDataDeadlineMs, projects: projects.ports },
+    ...{ appDataDeadlineMs: deps.appDataDeadlineMs, projects: projects.ports },
   })
   const { noticeRequests } = notifications
   const requests = requestsOf({ database, identity, ungranted, noticeRequests, log })
@@ -201,28 +196,21 @@ export function subjectsOf(deps: {
   const modelAccounts = createModelAccounts({
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
-  // The copies come next: the Builder's proposing is theirs, and a proposal comes long after.
   const connectors = createConnectors({
     ...{ ...deps, identity, door: apps.connectorCall, recordRead: recordRead(deps) },
-    propose: () => copies.propose,
-    copies: () => copies.ofConnections,
   })
-  const copies = createCopies({
-    ...{ database, identity, neon, log, companyPostgres: deps.companyPostgres },
-    ...{ projects: projects.ports, connectors: () => connectors.copies, apps: () => apps },
-    prove: () => connectors.builder.provePage,
-    clock: () => copyClock,
-    updating: () => conversations.updating(),
+  const access = createAccess({
+    database,
+    identity,
+    sources: { systems: connectors.access.systems },
   })
-  const sources = { systems: connectors.access.systems, tables: copies.access.tables }
-  const access = createAccess({ database, identity, sources })
   const { data, dataReads } = dataOf({
-    ...{ database, identity, log, access, copies: () => copies.data, projects: projects.ports },
+    ...{ database, identity, log, access, projects: projects.ports },
     connectors: () => connectors,
   })
   return {
     ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
-    ...{ conversations, assistant, automations, agents, notifications, connectors, copies, data },
+    ...{ conversations, assistant, automations, agents, notifications, connectors, data },
   }
 }
 
@@ -266,7 +254,7 @@ async function runServer(): Promise<void> {
       ...{ neon, lakeStacks, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
-    const { projects, apps, conversations, modelAccounts, runs, connectors, copies } = subjects
+    const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
     await conversations.start()
@@ -294,9 +282,6 @@ async function runServer(): Promise<void> {
         .catch((error: unknown) =>
           logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error })),
         )
-      void copies
-        .ensureWholeLines()
-        .catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void projects
         .nameDatabases()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))

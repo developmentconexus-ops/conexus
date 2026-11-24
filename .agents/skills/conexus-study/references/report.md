@@ -65,12 +65,13 @@ Only for a step with a screen: old and new side by side, per state, with the cap
 The one artifact from study to review. The study fills every column but "Unidade" and "Arquivo
 novo", which the card adds; the verdicts are [code C75](../../../../docs/guides/code.md)'s.
 
-| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Decisão | Arquivo novo |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`, the situation it solves and its match label ([sources](sources.md)); "nenhuma faz" when none does | The traced flow in one line (entry, shape, state, pieces, errors), each hop `file:line` **lido**; for a Mastra row, Mastra Code or Factory beside `node_modules` | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, firstmate's with how to undo it (delivery L6), or "não precisa" | Path |
+| Peça | Unidade | O que o fundador já decidiu | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Decisão | Arquivo novo |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | The [vision](../../../../VISION.md)'s line, by section and sentence, and his decisions on the piece ([delivery L6](../../../../docs/guides/delivery.md)), each with its words, date and file; or "nada registrado" | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`, the situation it solves and its match label ([sources](sources.md)); "nenhuma faz" when none does | The traced flow in one line (entry, shape, state, pieces, errors), each hop `file:line` **lido**; for a Mastra row, Mastra Code or Factory beside `node_modules` | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, firstmate's with how to undo it (delivery L6), or "não precisa" | Path |
 
-Never one row for "o resto". A product piece no library has (our Git, the accounts queue) is a
-remendo row that cites its decision record.
+A piece of `main` that keeps its place cites this row's founder decision or reference; **herdado**
+alone ([sources](sources.md)) takes it out. Never one row for "o resto". A product piece no library
+has (our Git, the accounts queue) is a remendo row that cites its decision record.
 
 ## The coverage list
 

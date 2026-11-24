@@ -7,9 +7,12 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { TaskItemSnapshot } from '@mastra/core/tools'
 import { createTool, summarizeTaskCheck, TASK_STATE_TYPE } from '@mastra/core/tools'
 import { z } from 'zod'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import { controllerIn } from '../controller-context/public.ts'
 import { turnIn } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
+import { conversationIn } from '../runs/public.ts'
 
 /** Conexus OS `e0353c36` `harness/tools.ts:28-33`, with the steps of this check (decision 0055). */
 const CHECK_DESCRIPTION = [
@@ -113,7 +116,7 @@ async function judge(
 }
 
 /** The end of the turn as Mastra's `isTaskComplete` scores it, by code (Mastra Code `agent/goal` is a model's judge). */
-export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore }) {
+export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore; log: FailureLog }) {
   return createScorer({
     id: 'conexus-check',
     name: 'Conferência do app',
@@ -122,7 +125,18 @@ export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore }
     .preprocess(async ({ run }) => {
       const requestContext = new RequestContext<unknown>(Object.entries(run.requestContext ?? {}))
       // Mastra scores a throw 0 and calls the model again, with no cap; a machine that fails here is one that could not check.
-      return judge(deps, requestContext).catch(() => {
+      return judge(deps, requestContext).catch((cause: unknown) => {
+        const conversationId = conversationIn(requestContext)
+        const about = {
+          ...(run.runId === undefined ? {} : { runId: run.runId }),
+          ...(conversationId === undefined ? {} : { conversationId }),
+        }
+        logFailure(
+          deps.log,
+          new Failure('INTERNAL_UNEXPECTED', { cause }),
+          about,
+          'CHECK_JUDGE_FAILED',
+        )
         deps.runs.judged(requestContext, { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' })
         return FINISHED
       })

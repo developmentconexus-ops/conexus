@@ -9,6 +9,7 @@ import { createTool } from '@mastra/core/tools'
 import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { initialStateOf } from '../controller-kit/public.ts'
 import { accountPick, callModel, Turn, turnContext } from '../model-accounts/public.ts'
 import { TOOL_CLOSURE } from './public.ts'
 import { asked, conversing, endOf, MODEL, title } from './test-conversation.ts'
@@ -159,7 +160,7 @@ async function closedSession(ran: string[]) {
       tools: { github_create_issue: outside },
     }),
     modes: [{ id: 'conversa', availableTools: TOOL_CLOSURE.availableTools }],
-    initialState: TOOL_CLOSURE.initialState,
+    initialState: initialStateOf({ kind: 'NOTHING_ASKS' }),
   })
   await controller.init()
   return controller.createSession()

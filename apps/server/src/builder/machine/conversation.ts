@@ -172,11 +172,15 @@ class Machines implements ConversationMachines {
     const { api, template, log, otherTemplate } = this.deps
     this.phases.get(conversationId)?.('starting')
     // A machine found by its id is of the Hub's template: only a turn's start clears an older one.
-    const stale =
-      session.found === undefined && otherTemplate === 'replace'
-        ? api.killStale(conversationId, template)
-        : undefined
-    const starting = Promise.resolve(stale).then(() => session.kit.sandbox.start?.())
+    // Either way the list comes first and a failed one stops the start: E2B's own lookup swallows
+    // it and makes an empty machine in place of the one it could not see.
+    const listed =
+      session.found !== undefined
+        ? undefined
+        : otherTemplate === 'replace'
+          ? api.killStale(conversationId, template)
+          : api.find(conversationId, undefined)
+    const starting = Promise.resolve(listed).then(() => session.kit.sandbox.start?.())
     session.starting = starting
     try {
       await within(starting, this.startMs)

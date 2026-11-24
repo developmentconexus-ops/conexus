@@ -66,10 +66,7 @@ that never touched a machine. The machine starts on the first tool call.
 The instructions are rebuilt on every call, resumed runs included
 (`builder/conversation/instructions.ts`). The template is `builder/conversation/prompt/builder.md`.
 It is filled with the Project's name, the date in São Paulo, the app folder, the check's limit of
-four rounds, the Project's granted connections (names and concepts, never values), the "## Data" block of
-the company copies (`builder/app-data/context.ts`: each released copy with its mode, where it reads,
-its description and its columns from the stored definition, the account's two columns in a copy of
-several accounts, the others by name, never a row count), and two files
+four rounds, the Project's granted connections (names and concepts, never values), and two files
 read from `main` on the server: `AGENTS.md` and `.conexus/memory/MEMORY.md`. They come from `main`,
 not from the machine, so a turn cannot write its own next prompt before a version is saved. The
 machine's own description (Node, npm, Git, the closed network and any merge conflicts) comes from
@@ -87,7 +84,7 @@ The mode's tool list is closed (`builder/conversation/permissions.ts`):
 
 | Kind | Tools |
 | --- | --- |
-| Read | the workspace's read, list, grep and stat; `web_search`, `web_fetch`, `recall`; `connector_read`, `connector_notes`, `connector_note_save`; `app_data_read`, `app_data_check`; `copy_propose`; the skill tools |
+| Read | the workspace's read, list, grep and stat; `web_search`, `web_fetch`, `recall`; `connector_read`, `connector_notes`, `connector_note_save`; `app_data_read`, `app_data_check`; the skill tools |
 | Edit | the workspace's write, edit, mkdir and delete |
 | Run | the workspace's command tools; `conexus_check` |
 | Talk | `ask_user`, `submit_plan`, `task_write`, `task_update`, `task_complete`, `task_check` |

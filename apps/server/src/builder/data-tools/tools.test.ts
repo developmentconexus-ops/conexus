@@ -1,227 +1,64 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { Catalog as CatalogShape, DESCRIBE_SAMPLE_ROWS, READER_ZONE } from '@conexus/hub-api'
-import { RequestContext } from '@mastra/core/request-context'
-import { CATALOG, MIXED, runOn, thrown, UNNAMED, WAITING, world } from './test-world.ts'
+import { Catalog as CatalogShape } from '@conexus/hub-api'
+import { CATALOG, runOn, thrown, world } from './test-world.ts'
 
-const LOJA_A_ACTIVE = { kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }
-const LOJA_B_ACTIVE = { kind: 'NAMED', name: 'Loja B', state: 'ACTIVE' }
+const NOT_IN_CATALOG_REASON =
+  'No such table in the catalog. Call data_describe with no table to list them.'
 
-test('describe sem tabela não traz colunas e traz o conector, a hora do fim e o estado da última rodada', async () => {
+test('data_describe sem tabela lista os sistemas com o conector e as leituras, sem tabela nem coluna', async () => {
   const { tools } = world(CATALOG)
   const result = await runOn(tools, 'data_describe', {})
-  assert.equal(result.kind, 'CATALOG')
-  assert.deepEqual(result.systems[0], {
-    name: 'Loja A',
-    connector: 'erp-falso',
-    reads: [{ operation: 'listar', label: 'Listar', summary: 'Lista os itens.' }],
-  })
-  const [vendas, clientes] = result.tables
-  assert.deepEqual(vendas, {
-    name: 'vendas',
-    label: 'VENDAS',
-    description: 'A tabela vendas.',
-    systems: [{ kind: 'NAMED', name: 'Loja A', state: 'ACTIVE' }],
-    connector: 'erp-falso',
-    lastRunEndedAt: '2026-11-14T11:05:00.000Z',
-    lastRun: 'ERROR',
-  })
-  assert.equal(clientes.lastRunEndedAt, null)
-  assert.equal(clientes.lastRun, 'NONE')
-  assert.equal(JSON.stringify(result).includes('copiedAt'), false)
-  assert.equal(JSON.stringify(result).includes('columns'), false)
-})
-
-test('o catálogo vazio dá CATALOG com as duas listas vazias', async () => {
-  const { tools } = world(CatalogShape.parse({ kind: 'CATALOG', systems: [], tables: [] }))
-  assert.deepEqual(await runOn(tools, 'data_describe', {}), {
+  assert.deepEqual(result, {
     kind: 'CATALOG',
-    systems: [],
-    tables: [],
+    systems: [
+      {
+        name: 'Loja A',
+        connector: 'erp-falso',
+        reads: [{ operation: 'listar', label: 'Listar', summary: 'Lista os itens.' }],
+      },
+      {
+        name: 'Loja B',
+        connector: 'erp-falso',
+        reads: [{ operation: 'listar', label: 'Listar', summary: 'Lista os itens.' }],
+      },
+    ],
   })
 })
 
-test('describe com tabela corta 200 linhas em 5 e diz more', async () => {
-  const { tools } = world(CATALOG)
-  const result = await runOn(tools, 'data_describe', { table: 'vendas' })
-  assert.equal(result.kind, 'TABLE')
-  assert.equal(result.sample.rows.length, DESCRIBE_SAMPLE_ROWS)
-  assert.equal(result.sample.more, true)
-  assert.deepEqual(result.columns, [
-    { name: 'numero', type: 'bigint', description: null, inactiveSince: null },
-  ])
-  assert.equal(result.origin.table, 'vendas')
+test('o catálogo vazio dá CATALOG com a lista de sistemas vazia', async () => {
+  const { tools } = world(CatalogShape.parse({ kind: 'CATALOG', systems: [] }))
+  assert.deepEqual(await runOn(tools, 'data_describe', {}), { kind: 'CATALOG', systems: [] })
 })
 
-test('describe de tabela fora do catálogo dá NOT_IN_CATALOG com a frase e não lê linha', async () => {
+test('sem cópia: data_describe com uma tabela, qualquer uma, dá NOT_IN_CATALOG com a frase e não lê ao vivo', async () => {
   const { tools, reached } = world(CATALOG)
-  const told = await thrown(runOn(tools, 'data_describe', { table: 'nao_existe' }))
-  assert.equal(told.kind, 'NOT_IN_CATALOG')
-  assert.equal(
-    told.reason,
-    'No such table in the catalog. Call data_describe with no table to list them.',
-  )
-  assert.deepEqual(reached.rows, [])
-  assert.deepEqual(reached.query, [])
-})
-
-const HIDDEN = 'clientes'
-/** What a role that does not read `clientes` sees: the catalog without that table. */
-const BRUNO = CatalogShape.parse({
-  ...CATALOG,
-  tables: CATALOG.tables.filter((one) => one.name !== HIDDEN),
-})
-
-test('data_describe sem tabela não nomeia a tabela que o papel não lê', async () => {
-  const { tools } = world(BRUNO)
-  const result = await runOn(tools, 'data_describe', {})
-  const label = CATALOG.tables.find((one) => one.name === HIDDEN)?.label
-  assert.equal(result.kind, 'CATALOG')
-  assert.equal(JSON.stringify(result).toLowerCase().includes(HIDDEN), false)
-  assert.equal(
-    result.tables.some((one: { label: string }) => one.label === label),
-    false,
-  )
-  assert.deepEqual(
-    result.tables.map((one: { name: string }) => one.name),
-    ['vendas', 'juntas'],
-  )
-})
-
-test('data_describe com a tabela que o papel não lê devolve NOT_IN_CATALOG e não lê linha', async () => {
-  const { tools, reached } = world(BRUNO)
-  const told = await thrown(runOn(tools, 'data_describe', { table: HIDDEN }))
-  const absent = await thrown(runOn(tools, 'data_describe', { table: 'nao_existe' }))
-  assert.equal(told.kind, 'NOT_IN_CATALOG')
-  assert.equal(told.kind, absent.kind)
-  assert.equal(told.reason, absent.reason)
-  assert.deepEqual(reached.rows, [])
-  assert.deepEqual(reached.query, [])
-})
-
-test('query devolve a origem com o nome gravado e o conector da cópia', async () => {
-  const { tools } = world(CATALOG)
-  const result = await runOn(tools, 'data_query', { sql: 'select count(*) from sync.juntas' })
-  assert.equal(result.kind, 'ROWS')
-  assert.deepEqual(result.columns, ['n'])
-  assert.equal(result.complete, true)
-  assert.deepEqual(
-    result.origin.map((each: { table: string; systems: unknown[]; connector: string }) => [
-      each.table,
-      each.systems,
-      each.connector,
-    ]),
-    [
-      ['vendas', [LOJA_A_ACTIVE], 'erp-falso'],
-      ['juntas', [LOJA_A_ACTIVE, LOJA_B_ACTIVE], 'erp-falso'],
-    ],
-  )
-})
-
-test('query sem tabela no plano diz que a origem não foi identificada', async () => {
-  const { tools } = world(CATALOG)
-  const result = await runOn(tools, 'data_query', { sql: 'select 1' })
-  assert.deepEqual(result.origin, [])
-  assert.equal(result.reason, 'The origin of these rows was not identified: say so.')
-})
-
-test('a conexão à espera de nova autorização: a tabela é lida e a origem diz o nome e o estado', async () => {
-  const { tools, reached } = world(WAITING)
-  const waiting = { kind: 'NAMED', name: 'Loja A', state: 'NEEDS_REAUTH' }
-  const listed = await runOn(tools, 'data_describe', {})
-  const described = await runOn(tools, 'data_describe', { table: 'esperando' })
-  const queried = await runOn(tools, 'data_query', { sql: 'select 1 from sync.esperando' })
-  assert.deepEqual(listed.tables[0].systems, [waiting])
-  assert.equal(described.kind, 'TABLE')
-  assert.deepEqual(described.origin.systems, [waiting])
-  assert.equal(queried.kind, 'ROWS')
-  assert.deepEqual(queried.origin[0].systems, [waiting])
-  assert.deepEqual(reached.rows, ['esperando'])
-})
-
-test('a fonte não dada ao Projeto: a origem diz só NOT_GIVEN, sem nome', async () => {
-  const { tools } = world(UNNAMED)
-  const listed = await runOn(tools, 'data_describe', {})
-  const described = await runOn(tools, 'data_describe', { table: 'livre' })
-  const queried = await runOn(tools, 'data_query', { sql: 'select 1 from sync.livre' })
-  for (const systems of [
-    listed.tables[0].systems,
-    described.origin.systems,
-    queried.origin[0].systems,
-  ])
-    assert.deepEqual(systems, [{ kind: 'NOT_GIVEN' }])
-  assert.equal(described.origin.connector, 'erp-falso')
-})
-
-test('uma cópia de duas conexões com uma não dada nomeia só a dada', async () => {
-  const { tools } = world(MIXED)
-  const described = await runOn(tools, 'data_describe', { table: 'mista' })
-  assert.deepEqual(described.origin.systems, [LOJA_A_ACTIVE, { kind: 'NOT_GIVEN' }])
-})
-
-test('as duas descrições dizem o estado da conexão e o que é NOT_GIVEN', () => {
-  const { tools } = world(CATALOG)
-  for (const name of ['data_describe', 'data_query'] as const) {
-    const { description } = Object(tools)[name]
-    assert.match(
-      description,
-      /Each system says its state: a state other than ACTIVE means the rows are its last copy/,
-    )
-    assert.match(
-      description,
-      /A system NOT_GIVEN is a connection this place was not given: name only its connector\./,
-    )
+  for (const table of ['vendas', 'sankhya_vendas', 'nao_existe']) {
+    const told = await thrown(runOn(tools, 'data_describe', { table }))
+    assert.equal(told.kind, 'NOT_IN_CATALOG', table)
+    assert.equal(told.reason, NOT_IN_CATALOG_REASON, table)
+    assert.equal(told.status, null)
+    assert.equal(told.body, null)
   }
+  assert.equal(reached.catalog, 3)
 })
 
-test('uma cópia de duas conexões nomeia as duas na origem', async () => {
-  const { tools } = world(CATALOG)
-  const described = await runOn(tools, 'data_describe', { table: 'juntas' })
-  const queried = await runOn(tools, 'data_query', { sql: 'select 1 from sync.juntas' })
-  const catalog = await runOn(tools, 'data_describe', {})
-  const both = [LOJA_A_ACTIVE, LOJA_B_ACTIVE]
-  assert.deepEqual(described.origin.systems, both)
-  assert.deepEqual(queried.origin.at(-1).systems, both)
-  assert.deepEqual(
-    catalog.tables.find((each: { name: string }) => each.name === 'juntas').systems,
-    both,
-  )
-})
-
-function zoned(zone: unknown) {
-  const requestContext = new RequestContext()
-  requestContext.setRaw(READER_ZONE, zone)
-  return { requestContext }
-}
-
-test('a hora da última rodada vai ao modelo no fuso de quem lê, com o deslocamento', async () => {
-  const { tools } = world(CATALOG)
-  const listed = await runOn(tools, 'data_describe', {}, zoned('America/Sao_Paulo'))
-  assert.equal(listed.tables[0].lastRunEndedAt, '2026-11-14T08:05:00.000-03:00')
-  const tabled = await runOn(tools, 'data_describe', { table: 'vendas' }, zoned('Asia/Tokyo'))
-  assert.equal(tabled.origin.lastRunEndedAt, '2026-11-14T20:05:00.000+09:00')
-})
-
-test('sem fuso, ou com um fuso que não existe, a hora vai em UTC com o Z', async () => {
-  const { tools } = world(CATALOG)
-  for (const context of [{}, zoned('Marte/Olympus'), zoned(3)]) {
-    const listed = await runOn(tools, 'data_describe', {}, context)
-    assert.equal(listed.tables[0].lastRunEndedAt, '2026-11-14T11:05:00.000Z')
+test('sem cópia: data_query, qualquer consulta, dá NOT_IN_CATALOG e não lê ao vivo', async () => {
+  const { tools, reached } = world(CATALOG)
+  for (const sql of ['select 1', 'select count(*) from sync.vendas', 'select * from juntas']) {
+    const told = await thrown(runOn(tools, 'data_query', { sql }))
+    assert.equal(told.kind, 'NOT_IN_CATALOG', sql)
+    assert.equal(told.reason, NOT_IN_CATALOG_REASON, sql)
   }
+  assert.equal(reached.catalog, 3)
 })
 
-test('a hora da última rodada de uma consulta vai ao modelo no fuso de quem lê', async () => {
-  const { tools } = world(CATALOG)
-  const sql = { sql: 'select count(*) from sync.vendas' }
-  const local = await runOn(tools, 'data_query', sql, zoned('America/Sao_Paulo'))
-  assert.equal(local.origin[0].lastRunEndedAt, '2026-11-14T08:05:00.000-03:00')
-  const utc = await runOn(tools, 'data_query', sql)
-  assert.equal(utc.origin[0].lastRunEndedAt, '2026-11-14T11:05:00.000Z')
-})
-
-test('as ferramentas dizem ao modelo que a hora vem com o deslocamento', () => {
+test('as descrições dizem que nenhuma tabela é mantida e não falam de cópia, de sync nem de estado de conexão', () => {
   const { tools } = world(CATALOG)
   for (const name of ['data_describe', 'data_query']) {
-    assert.match(Object(tools)[name].description, /UTC offset/)
+    const { description } = Object(tools)[name]
+    assert.match(description, /NOT_IN_CATALOG/)
+    assert.match(description, /No table of the company's data is kept yet|No table is kept yet/)
+    assert.doesNotMatch(description, /sync|copy|copied|NOT_GIVEN|UTC offset/i)
   }
 })

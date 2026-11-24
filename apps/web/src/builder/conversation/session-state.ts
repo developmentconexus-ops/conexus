@@ -3,6 +3,8 @@ import type { KnownAgentControllerEvent, MastraMessagePart } from '@mastra/clien
 import type { MessageFile } from './attachments.ts'
 import type { Stored, Suspended } from './messages.ts'
 import { messageOf, sentOf } from './messages.ts'
+import type { Invocation } from './session-claim.ts'
+import { claimed, isTerminal } from './session-claim.ts'
 
 type Display = Extract<KnownAgentControllerEvent, { type: 'display_state_changed' }>['displayState']
 export type OMProgress = Display['omProgress']
@@ -245,12 +247,6 @@ function wordsOf(message: Stored): string | undefined {
   return sentOf(read).text
 }
 
-type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
-
-function isTerminal(state: Invocation['state']): boolean {
-  return state === 'result' || state === 'output-error' || state === 'output-denied'
-}
-
 /**
  * Whether the read already draws what the stream told in a message: Mastra saves a step per message
  * but the resumed run tells its tool call's result in a message of its own, which the store keeps
@@ -335,7 +331,8 @@ function loaded(state: SessionState, read: readonly Stored[]): SessionState {
   const kept = state.messages.filter(
     (message) => readById.has(message.id) || (!saved.has(message.id) && !drawnBy(read, message)),
   )
-  const messages = merged(kept, read)
+  const claim = claimed(kept, read)
+  const messages = merged(claim.held, claim.read)
   const brought = read.filter((message) => !told.has(message.id)).map(wordsOf)
   const steers = state.steers.filter((steer) => {
     const at = brought.indexOf(steer.content)

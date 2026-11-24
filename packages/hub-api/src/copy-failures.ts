@@ -1,6 +1,5 @@
 import type { FailureRow } from './failure-row.ts'
 
-/** The failures of the company's copies, of their proposals (Capacidade 3) and of their runs (Capacidade 2); the last four are a run's alone. */
 export const COPY_FAILURES = {
   COPY_NOT_FOUND: {
     category: 'USER',
@@ -9,46 +8,6 @@ export const COPY_FAILURES = {
     phrase: 'Não encontramos esta cópia.',
     action: 'Volte às cópias.',
     actionKind: 'INITIAL',
-  },
-  COPY_EXISTS: {
-    category: 'USER',
-    settles: true,
-    status: 409,
-    phrase: 'A empresa já tem esta cópia.',
-    action: 'Abra a cópia na lista.',
-    actionKind: 'NONE',
-  },
-  COPY_MODEL_UNKNOWN: {
-    category: 'USER',
-    settles: true,
-    status: 422,
-    phrase: 'Esta conexão não tem esse modelo de cópia.',
-    action: 'Escolha outro modelo.',
-    actionKind: 'NONE',
-  },
-  COPY_CONNECTION_NOT_READY: {
-    category: 'USER',
-    settles: true,
-    status: 409,
-    phrase: 'A conexão precisa ser testada de novo.',
-    action: 'Abra a conexão em Integrações.',
-    actionKind: 'NONE',
-  },
-  COPY_PROPOSAL_DECIDED: {
-    category: 'USER',
-    settles: true,
-    status: 409,
-    phrase: 'Esta proposta já foi ligada ou dispensada.',
-    action: 'Veja a lista de cópias.',
-    actionKind: 'NONE',
-  },
-  COPY_RUNNING: {
-    category: 'USER',
-    settles: true,
-    status: 409,
-    phrase: 'Esta cópia já está rodando.',
-    action: 'Espere ela terminar.',
-    actionKind: 'NONE',
   },
   COPY_DATABASE_UNAVAILABLE: {
     category: 'THIRD_PARTY',

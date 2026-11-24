@@ -34,6 +34,9 @@ const workspaceMetadataLive: OutputProcessor = {
   },
 }
 
+/** The one mode of every conversation controller, by the id the sessions kept today carry. */
+export const CONVERSATION_MODE = 'conversa'
+
 /** Every tool of the controller's own (`BuiltinToolId`), by the type, so a new one is not missed. */
 const BUILTIN: Record<BuiltinToolId, true> = {
   ask_user: true,
@@ -46,15 +49,25 @@ const BUILTIN: Record<BuiltinToolId, true> = {
 }
 
 /**
- * What every conversation agent shares: the turn, then the account's pick; the account's errors;
- * Mastra retries nothing itself, the account processors retry; and the model call's budget.
+ * What every conversation agent shares: the turn, then the account's pick, with the processors an
+ * agent puts `beforePick` and `afterPick` between them; the account's errors; Mastra retries
+ * nothing itself, the account processors retry; and the model call's budget.
  */
 export function agentDefaults(
   queue: QueueDeps,
   turns: { processor: InputProcessor; deletedRun?: OutputProcessor },
+  around: {
+    beforePick: readonly InputProcessor[]
+    afterPick: readonly InputProcessor[]
+  } = { beforePick: [], afterPick: [] },
 ) {
   return {
-    inputProcessors: [turns.processor, accountPick(queue)],
+    inputProcessors: [
+      turns.processor,
+      ...around.beforePick,
+      accountPick(queue),
+      ...around.afterPick,
+    ],
     outputProcessors: [
       new CyberRefusalHandler(),
       workspaceMetadataLive,
@@ -91,7 +104,7 @@ export function controllerOf(input: {
   memory: MastraMemory
   agent: Agent
   /** A mode without `availableTools` filters nothing: its agent's tools are the closed set. */
-  mode: { id: string; availableTools?: readonly string[] }
+  mode: { id: typeof CONVERSATION_MODE; availableTools?: readonly string[] }
   workspace?: AgentControllerConfig['workspace']
   tools?: {
     fixed: ToolsInput

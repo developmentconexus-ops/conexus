@@ -1,25 +1,38 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { call, plantCompany } from '../../hub/identity/test-hub.ts'
+import { DATA_TOOL } from '@conexus/hub-api'
+import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { until } from '../../platform/test-until.ts'
 import { approving } from '../agents/test-approval.ts'
 import { TITLE } from '../controller-kit/public.ts'
-import { endOf, holding, MODEL, sent, title } from '../conversation/test-conversation.ts'
+import {
+  endOf,
+  holding,
+  MODEL,
+  messagesOf,
+  sent,
+  title,
+} from '../conversation/test-conversation.ts'
 import { sessionStateOf, tool } from '../conversation/test-questions.ts'
+import { TOTAL_OUTUBRO } from '../data-tools/test-data.ts'
 import {
   anasChoice,
   assisting,
   created,
-  publishedApp,
   reading,
   said,
   searching,
   talking,
 } from './test-assistant.ts'
 import { conversation, LONG } from './test-files.ts'
+import { invocationsOf } from './test-scorecard.ts'
+import { shows } from './test-truths.ts'
 
 const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
+
+const OCTOBER_SALES =
+  "SELECT ROUND(SUM(C.VLRNOTA), 2) AS TOTAL FROM TGFCAB C WHERE C.DTNEG BETWEEN '2026-10-01' AND '2026-10-31'"
 
 test('a escolha no turno: numa conversa de Projeto, as duas leituras do Sankhya vão na escolha e no Projeto dela, com a mesma chave; o turno seguinte tem outra', async (t) => {
   const on = await assisting(t, [
@@ -75,7 +88,6 @@ test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras
     'conexus_overview',
     'connector_note_save',
     'connector_notes',
-    'copy_runs',
     'data_describe',
     'data_query',
     'knowledge_list',
@@ -183,67 +195,6 @@ test('as ferramentas: propose_automation recusa uma ligação que a conversa nã
   assert.match(refused, /Matriz/)
 })
 
-test('a visão da empresa: os Projetos com o app, e as ligações que o lugar oferece com a escolha; numa conversa do Projeto a Filial não aparece', async (t) => {
-  const overview = [tool('conexus_overview', {})]
-  const on = await assisting(t, [overview, [said('Veja.')], overview])
-  const inProject = await created(on.hub, on.ana, on.assistant, {
-    projectId: on.projectId,
-    connections: [on.matriz],
-  })
-  assert.equal(endOf(await (await talking(t, on.hub, on.ana, inProject)).say('Resuma')), 'complete')
-  const seen = JSON.parse(
-    String(on.calls.at(1)?.texts.findLast((text) => text.includes('projects'))),
-  )
-  assert.deepEqual(seen, {
-    projects: [{ projectId: on.projectId, name: 'Encomendas', app: { kind: 'NOT_PUBLISHED' } }],
-    moreProjects: false,
-    connections: [{ connectionId: on.matriz, connector: 'sankhya', name: 'Matriz', chosen: true }],
-  })
-
-  const atHome = await created(on.hub, on.ana, on.assistant, { connections: [on.filial] })
-  assert.equal(endOf(await (await talking(t, on.hub, on.ana, atHome)).say('Resuma')), 'complete')
-  const home = JSON.parse(
-    String(on.calls.at(3)?.texts.findLast((text) => text.includes('projects'))),
-  )
-  assert.deepEqual(
-    home.connections.map((each: { name: string; chosen: boolean }) => [each.name, each.chosen]),
-    [
-      ['Matriz', false],
-      ['Filial', true],
-    ],
-  )
-})
-
-test('a visão da empresa com 51 Projetos: 50 pelo nome e moreProjects; o app publicado com a versão que as pessoas usam; o Projeto de outra empresa nunca (F21, F22)', async (t) => {
-  const overview = [tool('conexus_overview', {})]
-  const on = await assisting(t, [overview, [said('Veja.')]])
-  const asOwner = on.hub.test.asOwner
-  await publishedApp(on.hub, { ...on, personId: on.ana.id })
-  const elsewhere = await plantCompany(on.hub.test, on.ana.id, 'Outra Empresa')
-  const plant = `insert into projects.project (id, company_id, name, attempt_key, created_at)
-     select md5($2 || n::text), $1, $3 || lpad(n::text, 2, '0'), md5($2 || n::text), now()
-     from generate_series(1, $4::int) as n`
-  await asOwner(plant, [elsewhere, 'fora', 'Antes de tudo ', 1])
-  await asOwner(plant, [on.companyId, 'aqui', 'Pedidos ', 50])
-  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Resuma')), 'complete')
-  const seen = JSON.parse(
-    String(on.calls.at(1)?.texts.findLast((text) => text.includes('projects'))),
-  )
-  assert.equal(seen.projects.length, 50)
-  assert.equal(seen.moreProjects, true)
-  assert.deepEqual(seen.projects[0], {
-    projectId: on.projectId,
-    name: 'Encomendas',
-    app: { kind: 'PUBLISHED', version: '3' },
-  })
-  assert.equal(
-    seen.projects.some((each: { name: string }) => each.name.startsWith('Antes de tudo')),
-    false,
-    'another company’s Projeto, first by name, never appears',
-  )
-})
-
 test('a troca do modelo: uma resposta em andamento termina no modelo em que começou, a seguinte usa o novo (V54)', async (t) => {
   const held = holding(t)
   const used: (string | null)[] = []
@@ -309,4 +260,44 @@ test('o Observador com foco de negócio', async (t) => {
     false,
     'the Builder’s does not change',
   )
+})
+
+test('sem cópia, ao vivo: com uma ligação do Sankhya e nenhuma cópia, o Assistente responde a pergunta de vendas pela leitura ao vivo, e a origem é a leitura', async (t) => {
+  const total = `R$ ${TOTAL_OUTUBRO.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+  const on = await assisting(t, [
+    [tool(DATA_TOOL.describe, {})],
+    [searching()],
+    [reading('Matriz', OCTOBER_SALES)],
+    [said(`Em outubro você vendeu ${total}.`)],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  assert.equal(
+    endOf(await (await talking(t, on.hub, on.ana, url)).say('Quanto vendi em outubro?')),
+    'complete',
+  )
+
+  const [catalog] = on.calls.at(1)?.toolResults ?? []
+  const listed = JSON.parse(String(catalog?.text))
+  assert.deepEqual(
+    [listed.kind, listed.systems.map((each: { name: string }) => each.name), listed.tables],
+    ['CATALOG', ['Matriz'], undefined],
+  )
+
+  assert.equal(on.reads.length, 1, 'the door received one live read')
+  assert.equal(on.reads[0]?.connectionId, on.matriz)
+  const read = JSON.parse(
+    String(on.calls.at(3)?.texts.find((text) => text.includes('"kind":"OK"'))),
+  )
+  assert.equal(read.kind, 'OK')
+  assert.match(String(read.at), /^\d{4}-\d\d-\d\dT/, 'the read carries the time it came back')
+  assert.ok(JSON.stringify(read.value).includes(String(TOTAL_OUTUBRO)), 'the double’s own total')
+
+  const messages = await messagesOf(on.hub, on.ana, url)
+  const asked = messages.findLastIndex((message) => message.role === 'person')
+  const parts = messages.slice(asked + 1).flatMap((message) => message.parts)
+  const used = invocationsOf(parts).map((each) => each.toolName)
+  assert.ok(used.includes('sankhya_consultar'), 'the answer came from the typed live read')
+  assert.ok(!used.includes(DATA_TOOL.query), 'no table was queried')
+  const answer = parts.findLast((part) => part.type === 'text')
+  assert.ok(answer?.type === 'text' && shows(answer.text, TOTAL_OUTUBRO))
 })

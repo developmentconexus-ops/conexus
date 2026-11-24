@@ -30,7 +30,8 @@ lista de cortes, "Aceito todos"; à cadência, "Nao precisa por agora".
 
 ### A direção
 
-O Conexus se organiza em quatro partes: dados, ferramentas, agentes e apps. Os agentes e os apps
+O Conexus são três Solutions, Dados e contexto, Agentes e Apps, sobre a Plataforma
+([VISION.md](../VISION.md)). Os agentes e os apps
 chegam ao dado da empresa só pelo contrato de acesso, com três verbos: descrever, ler e agir. Atrás
 do contrato podem estar as nossas cópias, no lago de cada empresa, na AWS
 ([0070](decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md)); as ferramentas ao vivo do
@@ -48,14 +49,15 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 | --- | --- | --- |
 | `D1`. O primeiro sistema de catálogo | Liga o HubSpot ou o Gmail pela tela do Conexus, sem colar chave | Como a [trilha Dados](steps/trilhas/dados.md) descreve |
 | `D2`. O dado copiado, visível a todo agente | Pergunta ao Assistente sobre um dado copiado e ele responde dizendo de quando é | Um registro mudado no sistema aparece no lago da empresa na rodada seguinte. Assistente, Builder e um agente salvo respondem pela mesma ferramenta de catálogo, com a hora da última cópia |
-| `D3`. Dez sistemas reais com a mesma prova | Uma lista no Hub de sistemas que funcionam, com a data do teste | Dez sistemas passam no mesmo roteiro (ligar, ler, copiar, reconectar, desligar, e escrever com cartão onde houver) em conta real ou de teste |
+| `D3`. Onze sistemas reais com a mesma prova | Uma lista no Hub de sistemas que funcionam, com a data do teste | Onze sistemas passam no mesmo roteiro (ligar, ler, copiar, reconectar, desligar, e escrever com cartão onde houver) em conta real ou de teste |
 | `D4`. A Ontologia sobre o catálogo | Pergunta por um conceito da empresa e o agente lê pelo conceito | `concept_read` devolve linhas do lago ou de uma leitura ao vivo, conforme o conceito diz. O Builder não tem mais a frase "cópia primeiro" no prompt |
 | `D5`. Gatilhos | Um acontecimento no sistema inicia uma automação | Depende das suas decisões I e L. Um registro novo inicia o workflow com chave única |
 | `D6`. A medição por empresa | Uma página com o uso de cada empresa | Tarefas de cópia, consultas ao lago, chamadas de conector e tokens por empresa, sem preço no repositório |
 
-`D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b");
-depois vêm os conectores por classe e a porta de fora. Fechado o Registro, segue a etapa 1
-(https://github.com/developmentconexus-ops/conexus/pull/1231). As etapas, os dez de `D3` e o
+`D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b"), mais a 3a, dos
+arquivos, e o XML lido em linhas; depois vêm os conectores por classe e a porta
+de fora. Segue a 2, com a etapa O conector no padrão novo entre a parte 0 e a parte
+1 dela. As etapas, os onze de `D3` e o
 Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
@@ -69,8 +71,9 @@ Brain estão na [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A fundação do front-end fechou; segue A Prévia
-(https://github.com/developmentconexus-ops/conexus/pull/1229). Mais na
+A etapa 1 do harness fechou; segue `A1`
+(https://github.com/developmentconexus-ops/conexus/pull/1203), depois a etapa 2 ("Uma sala e os nomes
+certos"), `A2` e `A3`. Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
@@ -80,16 +83,13 @@ plano em `A3`, código e teste em `A1`, revisão em `A4`.
 copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o `A2` entrega apps
 bonitos e quebrados.
 
-**O que não se faz.** Uma segunda fonte de conectores ([0069](decisions/0069-connectors-one-source-the-kit.md)):
-a Nango fica fora do código. O kit serve o ao vivo e o login; a cópia é tap Singer
-gerado dele ([0071](decisions/0071-connectors-kit-live-copies-singer.md)). A Fábrica gera
-declarações do kit, conferidas com uma leitura de teste. Mais de um estudo aberto
-por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
+**O que não se faz agora.** O que nunca se faz está na [VISION.md](../VISION.md). Mais de um estudo
+aberto por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
 agente. Tratamento e qualidade dos dados antes do lago implementado (2026-11-20).
 
 ### O que você fornece, e quando
 
-Já fornecido: Cloudflare (Workers Paid, US$ 5 por mês; Workers for Platforms, US$ 25 por mês), o Neon
+Já fornecido: Cloudflare (Workers Paid e Workers for Platforms), o Neon
 grátis, as assinaturas de modelo, o E2B grátis, o R2, o usuário de leitura no Sankhya e a conta de
 laboratório da AWS ([0072](decisions/0072-the-lab-aws-account-is-provisional.md)). O Neon Launch do Hub, uns
 US$ 19,35 por mês, espera (2026-11-01).

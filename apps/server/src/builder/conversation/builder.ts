@@ -1,43 +1,39 @@
 import type { CompanyData, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
-import { createCodingAgent } from '@mastra/core/coding-agent'
+import { BUILDER_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
 import type { Access, Principal } from '../../hub/access/public.ts'
 import type { BuilderData } from '../../hub/apps/public.ts'
-import type { ProjectCopiesView } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import { dataContext } from '../app-data/public.ts'
 import type { CompanyToolDeps } from '../company-tools/public.ts'
 import { companyConnections, companyToolScope, companyTools } from '../company-tools/public.ts'
-import type { BuilderConnectors, GrantedConnection } from '../connectors/public.ts'
+import type { BuilderConnectors } from '../connectors/public.ts'
 import { builderAccess } from '../connectors/public.ts'
 import type { DataBinding, RunScope } from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
-  agentDefaults,
-  controllerOf,
+  CONVERSATION_MODE,
   conversationMemory,
   createAskUserTool,
   dataContextOf,
+  mountAgent,
   oncePerRun,
   principalOf,
   sessionModel,
+  skillOf,
   TITLE,
   toolsOf,
 } from '../controller-kit/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
-import { APP_SKILLS, builderInstructions, skillOf } from './instructions.ts'
+import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { createSubmitPlanTool, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { checkTool, conexusCheck } from './processors.ts'
-import type { ConversationIndex, ProjectOf } from './turn-of.ts'
+import type { ConversationIndex } from './turn-of.ts'
 import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
-
-const CONVERSATION_MODE = 'conversa'
 
 type Ids = { companyId: CompanyId; personId: PersonId; projectId: ProjectId }
 
@@ -48,16 +44,12 @@ function idsOf(run: RunScope): Ids {
   return { ...run.owner, projectId: run.place.projectId }
 }
 
-/**
- * The Builder's company tools: its Projeto's granted connections through its door, each call
- * counted by the run Mastra runs, its notebook's write and `copy_propose` where a connector copies.
- */
 function companyDeps(deps: {
   connectors: BuilderConnectors
   runs: Runs
   companyData: (principal: Principal, context: DataBinding) => CompanyData
   log: FailureLog
-}): CompanyToolDeps<GrantedConnection> {
+}): CompanyToolDeps {
   function doorOf(run: RunScope) {
     const who = { ...idsOf(run), runIdOf: (context: RequestContext) => deps.runs.runIdOf(context) }
     return builderAccess(deps.connectors, [], who, deps.log)
@@ -69,10 +61,6 @@ function companyDeps(deps: {
       read: (run, call, requestContext) => doorOf(run).access.read(call, requestContext),
       notes: (run, connectionId) => doorOf(run).access.notes(connectionId),
       saveNote: (run, call, requestContext) => doorOf(run).save(call, requestContext),
-      propose: {
-        call: (run, call, requestContext) => doorOf(run).propose(call, requestContext),
-        copying: (listed) => listed.filter((each) => each.copies),
-      },
     },
   }
 }
@@ -102,34 +90,15 @@ function toolScopes(
   })
 }
 
-/**
- * The "## Data" block of the turn, read once for the run: a Hub database that does not answer is a
- * line in the block; a person who is not a member of the company makes the read fail, and the turn
- * does not start.
- */
-function dataFor(
-  copies: (ids: {
-    companyId: CompanyId
-    personId: PersonId
-    projectId: ProjectId
-  }) => Promise<ProjectCopiesView>,
-  projectOf: ProjectOf,
-): (requestContext: RequestContext) => Promise<string> {
-  return oncePerRun(async (requestContext) => {
-    const ids = await projectOf(requestContext)
-    return ids === undefined ? '' : dataContext(await copies(ids))
-  })
-}
-
 /** The Builder's memory words, and its recall of what the observation folded. */
 const BUILDER_MEMORY = { ...TITLE.app, recall: 'thread' } as const
 
 /**
  * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken
  * from the session and given its account by the queue's processors, its memory, its title and its
- * observation through the same account, in Mastra's own database. It is Mastra Code's agent
- * (`sdk/src/index.ts:1216-1223`): no workspace of its own, since the controller lends the turn's
- * machine, and the task list's signal with `memory`.
+ * observation through the same account, in Mastra's own database. It is made from its ficha: Mastra
+ * Code's agent (`mastracode/sdk/src/index.ts:1368-1376`) with no workspace of its own, since the controller
+ * lends the turn's machine, and the task list's signal with `memory`.
  */
 export function createBuilder(deps: {
   storage: MastraCompositeStore
@@ -142,11 +111,6 @@ export function createBuilder(deps: {
   access: Pick<Access, 'viewOf'>
   /** The company's data, bound to the Projeto and its granted connections, and to the conversation that reads. */
   companyData: (principal: Principal, context: DataBinding) => CompanyData
-  copies: (ids: {
-    companyId: CompanyId
-    personId: PersonId
-    projectId: ProjectId
-  }) => Promise<ProjectCopiesView>
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
@@ -162,59 +126,55 @@ export function createBuilder(deps: {
     const scope = await scopeOf(requestContext)
     return scope === undefined ? [] : companyConnections(scope)
   }
-  const defaults = agentDefaults(queue, { processor: turnOf(deps) })
-  const agent = createCodingAgent({
-    id: BUILDER_CONTROLLER,
-    name: 'Builder',
-    instructions: builderInstructions({
-      runs: deps.runs,
-      projectOf,
-      projectName: deps.projectName,
-      granted,
-      data: dataFor(deps.copies, projectOf),
-    }),
-    skills: async ({ requestContext }) => [
-      ...APP_SKILLS,
-      ...(await granted(requestContext)).map((each) =>
-        skillOf({ directory: each.skill.name, ...each.skill }),
-      ),
-    ],
-    model: ({ requestContext }) => sessionModel(requestContext),
-    tools: async ({ requestContext }) => {
-      const scope = await scopeOf(requestContext)
-      // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
-      return {
-        web_fetch: webFetchTool,
-        [BUILDER_TOOL.check]: check,
-        ...toolsOf(sessionModel(requestContext)),
-        ...(scope === undefined ? {} : await companyTools(scope, 'builder', tools)),
-      }
-    },
-    ...defaults,
-    workspace: undefined,
-    defaultOptions: {
-      ...defaults.defaultOptions,
-      isTaskComplete: {
-        scorers: [conexusCheck({ runs: deps.runs, storage })],
+  const instructions = builderInstructions({
+    runs: deps.runs,
+    projectOf,
+    projectName: deps.projectName,
+    granted,
+  })
+  const { agent, controller } = mountAgent(
+    {
+      kind: 'builder',
+      name: 'Builder',
+      base: 'CODING_AGENT',
+      prompt: { kind: 'ONE_STRING', of: (requestContext) => instructions({ requestContext }) },
+      skills: async ({ requestContext }) => [
+        ...APP_SKILLS,
+        ...(await granted(requestContext)).map((each) =>
+          skillOf({ directory: each.skill.name, ...each.skill }),
+        ),
+      ],
+      model: { kind: 'SESSION' },
+      tools: async (requestContext) => {
+        const scope = await scopeOf(requestContext)
+        // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
+        return {
+          web_fetch: webFetchTool,
+          [BUILDER_TOOL.check]: check,
+          ...toolsOf(sessionModel(requestContext)),
+          ...(scope === undefined ? {} : await companyTools(scope, 'builder', tools)),
+        }
+      },
+      approval: { kind: 'NOTHING_ASKS' },
+      judge: {
+        scorers: [conexusCheck({ runs: deps.runs, storage, log: deps.log })],
         strategy: 'all',
       },
+      turn: turnOf(deps),
+      threads: memory,
+      mode: { id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools },
+      // `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`).
+      own: {
+        fixed: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
+      },
+      // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
+      workspace: async ({ requestContext, mastra }) => {
+        const ids = await projectOf(requestContext)
+        return ids === undefined ? undefined : deps.runs.workspaceOf(ids, mastra)
+      },
     },
-    memory,
-  })
-  const controller = controllerOf({
-    ...{ kind: 'builder', storage, memory, agent },
-    mode: { id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools },
-    // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
-    workspace: async ({ requestContext, mastra }) => {
-      const ids = await projectOf(requestContext)
-      return ids === undefined ? undefined : deps.runs.workspaceOf(ids, mastra)
-    },
-    // `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`).
-    tools: {
-      fixed: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
-    },
-    initialState: TOOL_CLOSURE.initialState,
-  })
+    { queue, storage },
+  )
   return { controller, memory, agent, queue: deps.queue }
 }
 

@@ -178,7 +178,7 @@ test('aws: a pilha apagada lida pelo id; ler e apagar mandam o id, nunca o nome'
     t,
     recorded({
       DescribeStacks: ['describe-stacks-apagada-pelo-id'],
-      DeleteStack: ['delete-stack', 'describe-stacks-nao-existe-admin'],
+      DeleteStack: ['delete-stack', 'delete-stack-ja-apagada'],
     }),
   )
   assert.deepEqual(await stacks.status(AT, RECORDED_STACK), {
@@ -186,7 +186,7 @@ test('aws: a pilha apagada lida pelo id; ler e apagar mandam o id, nunca o nome'
     value: 'DELETE_COMPLETE',
   })
   assert.deepEqual(await stacks.remove(AT, RECORDED_STACK), { kind: 'DONE', value: undefined })
-  // The nearest envelope measured (T29): AWS saying the stack does not exist counts as removed.
+  // A stack already deleted: AWS answers DeleteStack with 200, as recorded (criterion 56).
   assert.deepEqual(await stacks.remove(AT, RECORDED_STACK), { kind: 'DONE', value: undefined })
   for (const sent of [...of('DescribeStacks'), ...of('DeleteStack')]) {
     assert.equal(sent.form.get('StackName'), RECORDED_STACK)

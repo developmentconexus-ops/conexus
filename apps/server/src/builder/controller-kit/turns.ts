@@ -11,14 +11,68 @@ import { setTurn, turnIn } from '../model-accounts/public.ts'
 import type { Owner } from './kinds.ts'
 import { turnOfOwner } from './memory.ts'
 
+/** What a run's take answers (C21 on `kind`): its turn; no conversation of this controller; or a refusal with its reason. */
+export type Taken =
+  | Readonly<{ kind: 'TAKEN'; turn: Turn }>
+  | Readonly<{ kind: 'NONE' }>
+  | Readonly<{ kind: 'REFUSED'; reason: string }>
+
+/**
+ * The one input processor that takes a run's turn (C26): at the input and, with `resumes`, at the
+ * first step of a run Mastra resumes with no turn on its context. `NONE` aborts with `none`;
+ * `REFUSED` with its reason.
+ */
+export function turnProcessor(options: {
+  id: string
+  none: string
+  /** Whether a resumed run takes its turn at its first step: the session's and the Builder's do; a version's agent alone does not, as today. */
+  resumes: boolean
+  take: (requestContext: RequestContext) => Promise<Taken>
+}): InputProcessor {
+  async function taken(
+    requestContext: RequestContext | undefined,
+    abort: (reason: string) => never,
+  ): Promise<void> {
+    if (requestContext === undefined) return abort(options.none)
+    const answer = await options.take(requestContext)
+    switch (answer.kind) {
+      case 'TAKEN':
+        return setTurn(requestContext, answer.turn)
+      case 'NONE':
+        return abort(options.none)
+      case 'REFUSED':
+        return abort(answer.reason)
+      default:
+        return answer satisfies never
+    }
+  }
+  const input: InputProcessor = {
+    id: options.id,
+    async processInput({ requestContext, messages, abort }) {
+      await taken(requestContext, abort)
+      return messages
+    },
+  }
+  if (!options.resumes) return input
+  return {
+    ...input,
+    // A run Mastra resumes (an answered card) reads no input: its first step takes the turn.
+    async processInputStep({ requestContext, abort }) {
+      if (requestContext === undefined || turnIn(requestContext) === undefined)
+        await taken(requestContext, abort)
+      return {}
+    },
+  }
+}
+
 /**
  * A controller's turns by session, and the one owner of their end (code C26): a run takes its turn
- * in the accounts' queue (step 11) as Mastra reads its input, by the controller's `take`; every run
- * reads its input, and a resumed one takes it at its first step. The turn lets go of its accounts when the
+ * in the accounts' queue (step 11) as Mastra reads its input, by the controller's `take`, through
+ * `turnProcessor`; a resumed one takes it at its first step. The turn lets go of its accounts when the
  * controller says the run ended (`agent_end`), for every end: done, failed, stopped by Parar or by
  * the Hub's end, and then `ended` runs; a deleted session's run ends without one, so its deletion
  * lets go too. `take` answers `undefined` for a run that is not one of its conversations; the turn it
- * answers is put on the run's context here, once, so no `take` has to.
+ * answers is put on the run's context by the processor, once, so no `take` has to.
  */
 export function sessionTurns(options: {
   id: string
@@ -33,18 +87,13 @@ export function sessionTurns(options: {
     held.delete(sessionId)
   }
 
-  async function takeFor(
-    requestContext: RequestContext | undefined,
-    abort: (reason: string) => never,
-  ): Promise<void> {
+  async function take(requestContext: RequestContext): Promise<Taken> {
     const { sessionId } = controllerIn(requestContext)
-    if (requestContext === undefined || sessionId === undefined) {
-      return abort('CONVERSATION_NOT_FOUND')
-    }
+    if (sessionId === undefined) return { kind: 'NONE' }
     const turn = await options.take(requestContext)
-    if (turn === undefined) return abort('CONVERSATION_NOT_FOUND')
-    setTurn(requestContext, turn)
+    if (turn === undefined) return { kind: 'NONE' }
     held.set(sessionId, { turn, requestContext })
+    return { kind: 'TAKEN', turn }
   }
 
   // A deleted session's run still ends its stream after the abort, and Mastra's memory saves that
@@ -59,19 +108,12 @@ export function sessionTurns(options: {
     },
   }
 
-  const processor: InputProcessor = {
+  const processor = turnProcessor({
     id: options.id,
-    async processInput({ requestContext, messages, abort }) {
-      await takeFor(requestContext, abort)
-      return messages
-    },
-    // A run Mastra resumes (an answered card) reads no input: its first step takes the turn.
-    async processInputStep({ requestContext, abort }) {
-      if (requestContext === undefined || turnIn(requestContext) === undefined)
-        await takeFor(requestContext, abort)
-      return {}
-    },
-  }
+    none: 'CONVERSATION_NOT_FOUND',
+    resumes: true,
+    take,
+  })
 
   function watch(controller: AgentController): void {
     controller.onSessionCreated((session) => {

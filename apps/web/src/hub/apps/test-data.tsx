@@ -14,11 +14,11 @@ const API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 export const TABLES: AppTables = TablesShape.parse({
   kind: 'TABLES',
   tables: [
-    { schema: 'APP', name: 'anotacoes', rows: { kind: 'EXACT', rows: 37 } },
-    { schema: 'APP', name: 'clientes', rows: { kind: 'EXACT', rows: 1284 } },
-    { schema: 'APP', name: 'logs', rows: { kind: 'OVER' } },
-    { schema: 'APP', name: 'metas', rows: { kind: 'EXACT', rows: 0 } },
-    { schema: 'APP', name: 'sobras', rows: { kind: 'UNKNOWN' } },
+    { name: 'anotacoes', rows: { kind: 'EXACT', rows: 37 } },
+    { name: 'clientes', rows: { kind: 'EXACT', rows: 1284 } },
+    { name: 'logs', rows: { kind: 'OVER' } },
+    { name: 'metas', rows: { kind: 'EXACT', rows: 0 } },
+    { name: 'sobras', rows: { kind: 'UNKNOWN' } },
   ],
 })
 export const LONG = 'x'.repeat(100)
@@ -39,7 +39,7 @@ const SECOND: AppRows = RowsShape.parse({
   rows: [[{ text: '51', cut: false }, { text: 'Loja Mar', cut: false }, null]],
   next: { kind: 'END' },
 })
-export const EMPTY: AppRows = RowsShape.parse({
+const EMPTY: AppRows = RowsShape.parse({
   columns: [{ name: 'id' }, { name: 'meta' }],
   rows: [],
   next: { kind: 'END' },
@@ -50,10 +50,6 @@ export const asked: { table: string; page: string | null }[] = []
 export type View = {
   tables: () => Response | AppTables
   rows?: (table: string, page: string | null) => Response | AppRows | Promise<Response | AppRows>
-  copyRows?: (
-    table: string,
-    page: string | null,
-  ) => Response | AppRows | Promise<Response | AppRows>
 }
 
 function answer(value: Response | AppTables | AppRows) {
@@ -65,14 +61,6 @@ export function open(path: string, view: View, role = 'owner') {
   server.use(
     ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: false, role }),
     http.get(`${API}/tables`, () => answer(view.tables())),
-    http.get(`${API}/copy-tables/:table/rows`, async ({ params, request }) => {
-      const table = String(params.table)
-      const page = new URL(request.url).searchParams.get('page')
-      asked.push({ table: `copia:${table}`, page })
-      const rows = view.copyRows
-      if (rows === undefined) return refusal('NOT_FOUND')
-      return answer(await rows(table, page))
-    }),
     http.get(`${API}/tables/:table/rows`, async ({ params, request }) => {
       const table = String(params.table)
       const page = new URL(request.url).searchParams.get('page')

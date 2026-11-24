@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { CompanyData, ReadRequest } from './company-data.ts'
 import { ReadAnswer } from './company-data.ts'
-import { fixturesOf } from './company-data-fixtures.ts'
+import { fixturesOf, OUTSIDE_QUERY } from './company-data-fixtures.ts'
 import type { DataWorld } from './company-data-world.ts'
 
 type Law = (world: DataWorld, data: CompanyData) => Promise<void>
@@ -14,26 +14,15 @@ function stringsOf(value: unknown): string[] {
 }
 
 function broughtOf(answer: ReadAnswer): unknown {
-  switch (answer.kind) {
-    case 'TABLE':
-    case 'QUERY':
-      return answer.rows
-    case 'LIVE':
-      return answer.value
-    default:
-      return null
-  }
+  return answer.kind === 'LIVE' ? answer.value : null
 }
 
 async function readsAsked(world: DataWorld): Promise<ReadRequest[]> {
-  const { copied, live, query } = await fixturesOf(world)
+  const { live } = await fixturesOf(world)
   return [
-    { kind: 'TABLE', table: query.name },
-    { kind: 'OPERATION', ...copied },
+    { kind: 'TABLE', table: 'pedidos' },
     { kind: 'OPERATION', ...live },
-    { kind: 'QUERY', sql: world.queries.reads },
-    { kind: 'QUERY', sql: world.queries.refused },
-    { kind: 'TABLE', table: world.hidden.table },
+    { kind: 'QUERY', sql: OUTSIDE_QUERY },
   ]
 }
 

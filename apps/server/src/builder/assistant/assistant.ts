@@ -1,16 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { CompanyData, CompanyId, ConversationId, Person } from '@conexus/hub-api'
-import {
-  ASSISTANT_CONTROLLER,
-  ASSISTANT_TOOL,
-  BUILDER_TOOL,
-  DATA_TOOL,
-  SKILL_TOOLS,
-  SUBAGENT_TOOL,
-  TASK_TOOLS,
-  WORKSPACE_TOOL,
-} from '@conexus/hub-api'
-import { Agent } from '@mastra/core/agent'
+import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
@@ -20,12 +10,8 @@ import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import type {
-  CompanyCopies,
-  CompanyProjects,
-  CompanyToolDeps,
-  CompanyToolScope,
-} from '../company-tools/public.ts'
+import { Failure } from '../../platform/failure.ts'
+import type { CompanyProjects, CompanyToolDeps, CompanyToolScope } from '../company-tools/public.ts'
 import {
   byPrincipal,
   companyConnections,
@@ -33,35 +19,43 @@ import {
   companyTools,
   projectsOf,
 } from '../company-tools/public.ts'
-import { TYPED_READ_NAMES } from '../connectors/public.ts'
-import type { DataBinding, Owner, ReleaseScope, Speakers } from '../controller-kit/public.ts'
+import type {
+  ConversationSpec,
+  DataBinding,
+  Owner,
+  ReleaseScope,
+  Speakers,
+} from '../controller-kit/public.ts'
 import {
   ASK_USER_TOOL,
   admitAsker,
-  agentDefaults,
-  controllerOf,
+  blockOf,
+  CONVERSATION_MODE,
   createAskUserTool,
   dataContextOf,
   MODEL_TIMEOUT,
+  mountAgent,
   principalOf,
   sessionModel,
+  skillOf,
   toolsOf,
 } from '../controller-kit/public.ts'
-import { skillOf } from '../conversation/public.ts'
+import { dataOrder } from '../data-tools/public.ts'
 import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
 import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { subagentModel } from '../model-accounts/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
+import { AVAILABLE_TOOLS } from './available-tools.ts'
 import { chosenConnections } from './chosen.ts'
-import { COMPANY_MEMORY_TOOLS, companyMemory, companyScopes } from './company-memory.ts'
+import { companyMemory, companyScopes } from './company-memory.ts'
 import { readsFiles } from './connector-access.ts'
 import type { RunOf } from './context.ts'
 import { assistantRuns, machineMarks } from './context.ts'
 import { machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
-import { assistantInstructions } from './instructions.ts'
+import { FIXED, MODEL_BLOCKS } from './instructions.ts'
 import type { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
@@ -74,42 +68,10 @@ import { RESEARCH, researchOnly } from './research.ts'
 import { registerAssistantRoutes } from './routes.ts'
 import type { ScopeOf } from './run-reads.ts'
 import { runReads } from './run-reads.ts'
-import { assistantTurns, turnEnd, turnKey } from './turn.ts'
+import { assistantTurn, turnEnd, turnKey } from './turn.ts'
 
 type AssistantConnectors = Connectors['assistant']
 type AssistantConnection = Awaited<ReturnType<AssistantConnectors['connections']>>[number]
-
-const MODE = 'conversa'
-/** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */
-const SEARCH_TOOLS = 'search_tools'
-/** The memory's own tools, by the ids `@mastra/memory` gives them (`listTools`). */
-const MEMORY_TOOLS = ['recall', 'updateWorkingMemory'] as const
-/**
- * The closed set the mode offers the model (criterion 12): the layer that enforces it, as the
- * controller filters the agent's tools by it; the save is built only for who may manage connections.
- * The typed reads come only once a search loads them. Of the controller's own tools it holds
- * `ask_user` (a card, only what it cannot decide) and the task list; the plan card stays the
- * Builder's, as the Assistant approves no plan, and one subagent type, `pesquisar`
- * (`research.ts`), which only reads. The memory's hold the person's other conversations and what
- * the model keeps about them (`memory.ts`); the company's, what it keeps (`company-memory.ts`).
- */
-const AVAILABLE_TOOLS: readonly string[] = [
-  ...Object.values(WORKSPACE_TOOL),
-  ...MEMORY_TOOLS,
-  ...COMPANY_MEMORY_TOOLS,
-  SEARCH_TOOLS,
-  ...TYPED_READ_NAMES,
-  BUILDER_TOOL.connectorNotes,
-  BUILDER_TOOL.connectorNoteSave,
-  ...Object.values(DATA_TOOL),
-  ...Object.values(ASSISTANT_TOOL),
-  BUILDER_TOOL.webFetch,
-  BUILDER_TOOL.webSearch,
-  ...SKILL_TOOLS,
-  ASK_USER_TOOL,
-  SUBAGENT_TOOL,
-  ...TASK_TOOLS,
-]
 
 /** What Conexus does, read by the Assistant when the task asks (the `conexus` skill). */
 const CONEXUS_SKILL = skillOf({
@@ -137,29 +99,27 @@ type Deps = {
    */
   machine: ConversationMachine
   machineTuning?: MachineTuning
-  /** The copies are made after the conversations; a turn comes long after both. */
-  copies: () => CompanyCopies
   /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
   handOffs: () => HandOffDoors
   log: FailureLog
 }
 
 /** The company's tools of the Assistant's runs and its helper's, every call through the door as the run's principal. */
-function companyDeps(deps: Deps): CompanyToolDeps<AssistantConnection> {
+function companyDeps(deps: Deps): CompanyToolDeps {
   return {
-    ...{ log: deps.log, copies: deps.copies, savedAt: readsFiles() },
+    ...{ log: deps.log, savedAt: readsFiles() },
     data: (run) => deps.companyData(principalOf(run), dataContextOf(run)),
     connector: byPrincipal(deps.connectors, turnKey.of),
     projects: (run) => projectsOf(deps, run),
   }
 }
 
-const FIRST: readonly string[] = [ASSISTANT_TOOL.overview, ASSISTANT_TOOL.copyRuns]
+const FIRST: readonly string[] = [ASSISTANT_TOOL.overview]
 
-/** The company's tools split as the request lists them: the overview and the copies' runs before the Assistant's own, the connectors' and the data's after. */
+/** The company's tools split as the request lists them: the overview before the Assistant's own, the connectors' and the data's after. */
 async function inRequestOrder(
   scope: CompanyToolScope<AssistantConnection> | undefined,
-  tools: CompanyToolDeps<AssistantConnection>,
+  tools: CompanyToolDeps,
 ) {
   const company = Object.entries(
     scope === undefined ? {} : await companyTools(scope, 'assistant', tools),
@@ -170,81 +130,110 @@ async function inRequestOrder(
   }
 }
 
-/**
- * The agent (`template-agent-harness`, `agents/agent.ts:33-76`): its instructions, tools and skills
- * from the run's scope, the Builder's model of the session and the Builder's processors by name.
- */
-function assistantAgent(
-  deps: Deps,
-  parts: {
-    memory: ReturnType<typeof assistantMemory>
-    company: ReturnType<typeof companyMemory>
-    turns: ReturnType<typeof assistantTurns>
-    machines: ConversationMachines
-    scopeOf: RunOf
-    toolScopeOf: ScopeOf<AssistantConnection>
-    tools: CompanyToolDeps<AssistantConnection>
-    maysFor: ReturnType<typeof maysOf>
-    speakersFor: (requestContext: RequestContext) => Promise<Speakers | undefined>
-  },
-) {
-  const { queue } = deps
-  const { scopeOf, toolScopeOf, maysFor } = parts
-  const showFile = showFileTool(parts.machines)
-  const proposeMemory = proposeCompanyMemoryTool({ memory: parts.company, scopeOf })
-  const proposals = proposeTools(parts.machines)
-  async function automationRun(requestContext: RequestContext) {
-    return (await scopeOf(requestContext))?.attended === false
-  }
-  async function chosenOf(requestContext: RequestContext) {
+type Parts = {
+  memory: ReturnType<typeof assistantMemory>
+  company: ReturnType<typeof companyMemory>
+  machines: ConversationMachines
+  scopeOf: RunOf
+  toolScopeOf: ScopeOf<AssistantConnection>
+  tools: CompanyToolDeps
+  maysFor: ReturnType<typeof maysOf>
+  speakersFor: (requestContext: RequestContext) => Promise<Speakers | undefined>
+}
+
+/** The connections the run's view chose and the company's tools reach; none outside a conversation. */
+function chosenIn({ toolScopeOf }: Parts) {
+  return async (requestContext: RequestContext) => {
     const scope = await toolScopeOf(requestContext)
     return scope === undefined ? [] : companyConnections(scope)
   }
-  const defaults = agentDefaults(queue, parts.turns)
-  const assistantDefaults = {
-    ...defaults,
-    // The turn's processor first, then the search that loads the reads (before the account's pick,
-    // which flattens them for CLIProxy's Google path); the person's files go to the machine last,
-    // once the pick has chosen the model.
-    inputProcessors: [
-      parts.turns.processor,
-      companyReadSearch(toolScopeOf, parts.tools),
-      // Before the account's pick, which flattens the step's tools, so it flattens the closed one.
-      researchOnly,
-      profileReadOnlyInRuns(automationRun),
-      ...defaults.inputProcessors.filter((each) => each !== parts.turns.processor),
-      machineUploads({ log: deps.log }),
-    ],
+}
+
+/** The tools of a run, in the order the request lists them: the model's provider's, the company's first, the Assistant's own, the hand-offs, the rest. */
+function assistantTools(parts: Parts) {
+  const { scopeOf, toolScopeOf, maysFor, machines } = parts
+  const showFile = showFileTool(machines)
+  const proposeMemory = proposeCompanyMemoryTool({ memory: parts.company, scopeOf })
+  const proposals = proposeTools(machines)
+  const chosenOf = chosenIn(parts)
+  return async (requestContext: RequestContext) => {
+    const scope = await scopeOf(requestContext)
+    const { byAutomation, automate } = await maysFor(requestContext)
+    const { first, rest } = await inRequestOrder(await toolScopeOf(requestContext), parts.tools)
+    return {
+      ...toolsOf(sessionModel(requestContext)),
+      ...first,
+      [ASSISTANT_TOOL.showFile]: showFile,
+      [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,
+      ...(automate
+        ? {
+            [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(
+              await chosenOf(requestContext),
+            ),
+          }
+        : {}),
+      ...handOffOf(scope, proposals, byAutomation),
+      ...rest,
+    }
   }
-  return new Agent({
-    id: ASSISTANT_CONTROLLER,
+}
+
+/** The conversation's block of the instructions; a run with no conversation is the Hub's defect. */
+function blockOfRun(parts: Parts) {
+  const chosenOf = chosenIn(parts)
+  return async (requestContext: RequestContext) => {
+    const speakers = await parts.speakersFor(requestContext)
+    if (speakers === undefined) {
+      throw new Failure('INTERNAL_UNEXPECTED', {
+        details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
+      })
+    }
+    const [chosen, may] = await Promise.all([
+      chosenOf(requestContext),
+      parts.maysFor(requestContext),
+    ])
+    return blockOf(speakers, chosen, may)
+  }
+}
+
+/**
+ * The Assistant's ficha: its instructions, tools and skills from the run's scope, the session's
+ * model, and the Builder's processors by name around the account's pick (the reads' search, the
+ * helper's closing and the automations' profile before it; the person's files to the machine after).
+ */
+function assistantSpec(deps: Deps, parts: Parts): ConversationSpec {
+  const { queue, log } = deps
+  const { scopeOf, toolScopeOf, machines } = parts
+  const chosenOf = chosenIn(parts)
+  return {
+    kind: 'assistant',
     name: 'Assistant',
-    instructions: assistantInstructions({
-      chosenOf,
-      speakersOf: parts.speakersFor,
-      maysOf: maysFor,
-    }),
-    model: ({ requestContext }) => sessionModel(requestContext),
-    tools: async ({ requestContext }) => {
-      const scope = await scopeOf(requestContext)
-      const toolScope = await toolScopeOf(requestContext)
-      const { byAutomation, automate } = await maysFor(requestContext)
-      const { first, rest } = await inRequestOrder(toolScope, parts.tools)
-      return {
-        ...toolsOf(sessionModel(requestContext)),
-        ...first,
-        [ASSISTANT_TOOL.showFile]: showFile,
-        [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,
-        ...(automate
-          ? {
-              [ASSISTANT_TOOL.proposeAutomation]: proposeAutomationTool(
-                await chosenOf(requestContext),
-              ),
-            }
-          : {}),
-        ...handOffOf(scope, proposals, byAutomation),
-        ...rest,
-      }
+    base: 'AGENT',
+    prompt: {
+      kind: 'MESSAGES',
+      parts: [
+        { kind: 'FIXED', text: FIXED },
+        { kind: 'TEXT', text: dataOrder() },
+        { kind: 'BY_MODEL', blocks: MODEL_BLOCKS },
+        { kind: 'OF_RUN', of: blockOfRun(parts) },
+      ],
+    },
+    model: { kind: 'SESSION' },
+    tools: assistantTools(parts),
+    // Decision 0053: nothing waits to be approved; the systems get no write.
+    approval: { kind: 'NOTHING_ASKS' },
+    turn: assistantTurn({ queue, scopeOf }),
+    // Before the account's pick, which flattens the tools for CLIProxy's Google path: the search
+    // that loads the reads and the helper's closing. The person's files go last, once it has picked.
+    processors: {
+      beforePick: [
+        companyReadSearch(toolScopeOf, parts.tools),
+        researchOnly,
+        profileReadOnlyInRuns(async (requestContext) => {
+          return (await scopeOf(requestContext))?.attended === false
+        }),
+      ],
+      afterPick: [machineUploads({ log })],
     },
     skills: async ({ requestContext }) => [
       CONEXUS_SKILL,
@@ -252,11 +241,23 @@ function assistantAgent(
         skillOf({ directory: each.skill.name, ...each.skill }),
       ),
     ],
-    ...assistantDefaults,
     signals: [new TaskSignalProvider()],
-    memory: parts.memory,
+    threads: parts.memory,
     ...companyScopes({ memory: parts.company, scopeOf }),
-  })
+    mode: { id: CONVERSATION_MODE, availableTools: AVAILABLE_TOOLS },
+    // The helper's `connector_read` is made for each run, closed on the conversation's scope: the
+    // helper's own context cannot find the conversation (`research.ts`).
+    own: {
+      fixed: { [ASK_USER_TOOL]: createAskUserTool() },
+      perRun: async ({ requestContext }) => {
+        const scope = await toolScopeOf(requestContext)
+        return scope === undefined ? {} : companyTools(scope, 'research', parts.tools)
+      },
+    },
+    subagents: { types: [RESEARCH], model: subagentModel(queue, MODEL_TIMEOUT.stepMs) },
+    // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
+    workspace: ({ requestContext }) => machines.workspace(requestContext),
+  }
 }
 
 /**
@@ -283,32 +284,15 @@ export function createAssistant(deps: Deps) {
     },
     deps.machineTuning,
   )
-  const turns = assistantTurns({ queue, scopeOf })
   const tools = companyDeps(deps)
   const { speakersFor, maysFor, toolScopeOf } = runReads(deps, scopeOf)
-  const agent = assistantAgent(deps, {
-    ...{ memory, company, turns, scopeOf, machines },
-    ...{ toolScopeOf, tools, maysFor, speakersFor },
-  })
-  const controller = controllerOf({
-    ...{ kind: 'assistant', storage, memory, agent },
-    mode: { id: MODE, availableTools: AVAILABLE_TOOLS },
-    // The helper's `connector_read` is made for each run, closed on the conversation's scope: the
-    // helper's own context cannot find the conversation (`research.ts`).
-    tools: {
-      fixed: { [ASK_USER_TOOL]: createAskUserTool() },
-      perRun: async ({ requestContext }) => {
-        const scope = await toolScopeOf(requestContext)
-        return scope === undefined ? {} : companyTools(scope, 'research', tools)
-      },
-    },
-    subagents: { types: [RESEARCH], model: subagentModel(queue, MODEL_TIMEOUT.stepMs) },
-    // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
-    workspace: ({ requestContext }) => machines.workspace(requestContext),
-    // Decision 0053: nothing waits to be approved; the systems get no write.
-    initialState: { yolo: true },
-  })
-  turns.watch(controller)
+  const { controller } = mountAgent(
+    assistantSpec(deps, {
+      ...{ memory, company, scopeOf, machines },
+      ...{ toolScopeOf, tools, maysFor, speakersFor },
+    }),
+    { queue, storage },
+  )
   const opening: OpenDeps = { ...deps, controller, memory, chosen }
 
   return Object.freeze({

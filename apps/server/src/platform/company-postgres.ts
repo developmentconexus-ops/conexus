@@ -10,20 +10,6 @@ import type { Context, Row, SqlAnswer, SqlRead, SqlStatement, SqlTransport } fro
 import { existingRoles, LEDGER, missingLogins, quoted, REPLY_CAP_BYTES } from './app-sql.ts'
 import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config-apps.ts'
-import type { Bound, CopyReader } from './copy-reader.ts'
-import { copyReader, grantCopy, revokeCopy } from './copy-reader.ts'
-import type { CopyTable } from './copy-sql.ts'
-import {
-  accountRows,
-  closePass,
-  dropAccountRows,
-  dropCopyTable,
-  dropForeignRows,
-  ensureCopyTable,
-  ensureSync,
-  syncAddress,
-  writePage,
-} from './copy-sql.ts'
 import { DatabaseUrl } from './database.ts'
 import { OUTCOME_AFTER, OUTCOME_BEFORE } from './migration-outcome.ts'
 import type { RuleBreak } from './migration-rule.ts'
@@ -32,7 +18,6 @@ import { NEON_CALL_BUDGET_MS } from './neon.ts'
 
 export type { AppRead, AppReadAnswer } from './app-read.ts'
 export type { ReadResult, SqlAnswer, SqlRead, SqlStatement, SqlTransport } from './app-sql.ts'
-export { quoted } from './app-sql.ts'
 
 // Classes 08 and 57P0: the connection or the server went away, and the commit may have happened.
 const CONNECTION_LOST = /^(08|57P0)/
@@ -169,32 +154,7 @@ export type CompanyPostgres = {
     migrations: readonly AppMigration[],
   ): Promise<MigrateAnswer>
   dropApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
-  /** The `sync` schema and the login that owns it, once per company, as its owner. */
-  ensureSync(owner: DatabaseUrl): Promise<SqlAnswer>
-  /** The copy's table as the sync login. */
-  ensureCopyTable(sync: DatabaseUrl, table: CopyTable): Promise<SqlAnswer>
-  /** Where the Hub reaches the sync login, from the host it recorded, with no call to Neon. */
-  syncAddress(host: string): Promise<DatabaseUrl>
-  /** One page in one transaction, each row with the pass and, in a copy of accounts, its account. */
-  writePage: Bound<typeof writePage>
-  /** The end of a complete pass: what it did not see leaves, then the count. */
-  closePass: Bound<typeof closePass>
-  /** Desligar: an account's rows out of a copy that goes on; repeatable. */
-  dropAccountRows: Bound<typeof dropAccountRows>
-  /** The run's net: the rows of an account that is no source's leave. */
-  dropForeignRows: Bound<typeof dropForeignRows>
-  /** One account's rows in a copy of accounts. */
-  accountRows: Bound<typeof accountRows>
-  /** The table of a copy that ended, with the app logins' read of it; repeatable. */
-  dropCopyTable: Bound<typeof dropCopyTable>
-  /** A copy released to a Projeto's run and read logins. */
-  grantCopy(sync: DatabaseUrl, input: { name: string; projectId: ProjectId }): Promise<SqlAnswer>
-  /** A release taken back; `ALL`, every one of the Projeto and the schema. */
-  revokeCopy(
-    sync: DatabaseUrl,
-    input: { copy: string | 'ALL'; projectId: ProjectId },
-  ): Promise<SqlAnswer>
-} & CopyReader
+}
 
 /** The SHA-256 of a migration's statements, which the ledger keeps (decision 0046). */
 function migrationDigest(migration: AppMigration): string {
@@ -344,23 +304,11 @@ export function createCompanyPostgres(deps: {
 }): CompanyPostgres {
   const context: Context = { transport: deps.transport, key: deps.appLoginKey.reveal() }
   return Object.freeze({
-    ...copyReader(context),
     ensureApp: (owner, projectId) => ensureApp(context, owner, projectId),
     ensureReadLogin: (owner, projectId) => ensureReadLogin(context, owner, projectId),
     readApp: (read, statements, signal) => readApp(context, read, statements, signal),
     readAddress: (host, projectId) => readAddress(context, host, projectId),
     migrate: (owner, projectId, migrations) => migrate(context, { owner, projectId, migrations }),
     dropApp: (owner, projectId) => dropApp(context, owner, projectId),
-    ensureSync: (owner) => ensureSync(context, owner),
-    ensureCopyTable: (sync, table) => ensureCopyTable(context, sync, table),
-    syncAddress: (host) => syncAddress(context, host),
-    writePage: (sync, input, signal) => writePage(context, sync, input, signal),
-    closePass: (sync, input, signal) => closePass(context, sync, input, signal),
-    dropAccountRows: (sync, input) => dropAccountRows(context, sync, input),
-    dropForeignRows: (sync, input, signal) => dropForeignRows(context, sync, input, signal),
-    accountRows: (sync, input) => accountRows(context, sync, input),
-    dropCopyTable: (sync, input) => dropCopyTable(context, sync, input),
-    grantCopy: (sync, input) => grantCopy(context, sync, input),
-    revokeCopy: (sync, input) => revokeCopy(context, sync, input),
   })
 }

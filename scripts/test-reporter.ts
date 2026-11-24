@@ -8,7 +8,10 @@
 // When GITHUB_STEP_SUMMARY names a file, the run also appends its slowest tests there, so a slow
 // run shows where its time went; the test "a lista dos mais lentos" holds that. It appends and
 // prints the time of each test file too: scripts/server-shards.ts reads those lines from a job's
-// log to balance the shards (test "o tempo de cada arquivo").
+// log to balance the shards (test "o tempo de cada arquivo"). A test that a shared runner registers
+// (runDataConformance in packages/hub-api) reports the runner as its file, not the file that ran it;
+// with one file at a time, the time of such a runner goes to the file whose summary follows it
+// (test "o tempo de um corredor compartilhado").
 // When CONEXUS_FAILURES_FILE names a file, each failed test is appended there as one JSON line, for
 // scripts/test-run.ts to decide on the second run; the second run (CONEXUS_TEST_ATTEMPT) prints no
 // file table, since its times are not the files'.
@@ -56,6 +59,14 @@ function filesTable(files: Map<string, number>): string {
   ].join('\n')
 }
 
+/** The time under a file that no run queued, a shared runner's, goes to the file that just ended. */
+function moveRunners(files: Map<string, number>, queued: Set<string>, ran: string): void {
+  for (const [key, ms] of [...files].filter(([key]) => !queued.has(key))) {
+    files.delete(key)
+    files.set(ran, (files.get(ran) ?? 0) + ms)
+  }
+}
+
 type Started = Map<string, { name: string; parent: number }>
 
 function chainOf(started: Started, file: string, id: number): string[] {
@@ -91,6 +102,7 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
   const started: Started = new Map()
   const timed: Timed[] = []
   const files = new Map<string, number>()
+  const queued = new Set<string>()
   for await (const event of source) {
     if (event.type === 'test:stdout' || event.type === 'test:stderr') {
       const key = `${event.type} ${event.data.file ?? ''}`
@@ -102,6 +114,9 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
           process.exitCode = 1
         }
       }
+    }
+    if (event.type === 'test:enqueue' && event.data.name === event.data.file) {
+      queued.add(relative(process.cwd(), event.data.file ?? ''))
     }
     if (event.type === 'test:start') {
       const { file, testId, parentId, name } = event.data
@@ -129,6 +144,9 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
     if (event.type === 'test:pass' && event.data.name === event.data.file) {
       process.stderr.write(`zero-tests: no test ran in ${event.data.file}\n`)
       process.exitCode = 1
+    }
+    if (event.type === 'test:summary' && event.data.file !== undefined) {
+      moveRunners(files, queued, relative(process.cwd(), event.data.file))
     }
     if (
       event.type === 'test:summary' &&

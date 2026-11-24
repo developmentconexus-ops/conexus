@@ -5,7 +5,9 @@ instead of its frozen commit; lines cited from clones that vanished with a workt
 taken as a reference; a warning that sat on an option's reference page, never in the overview.
 Also a reference read in another situation and cited as if it were ours: Airbyte's database discover
 cited for every connector kind, and sync schedules, data-health checks and token renewal cited as
-the limits of a different check.
+the limits of a different check. And a study that started from `main`: the Lago 2 card kept the
+Vendas model because the kit already offered it, against the founder's decisions of 2026-11-19
+(founder, 2026-11-23: "tem que ser desfeito para entrar o novo jeito").
 
 ## Where each source is read
 
@@ -75,7 +77,8 @@ enter the report, or carried as **relay**. Its notes stay beside the report.
 
 Before the report is final, a reader that wrote none of it (another agent) gets the rows that ground
 a verdict, an option or the founder's page, and nothing else from the author. For each it reopens
-every cited `file:line` or docs quote and answers two questions: does the source say what the cell
-claims, and is the situation label right. A row that fails either is fixed and checked again, or
+every cited `file:line` or docs quote and answers three questions: does the source say what the
+cell claims, is the situation label right, and is there a founder's decision, or a reference line
+in the same situation, that this row ignores? A row that fails one is fixed and checked again, or
 dropped with what rested on it. The report records the pass: the reader, the rows checked, fixed
 and dropped.

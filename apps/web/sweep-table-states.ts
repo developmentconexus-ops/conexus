@@ -100,12 +100,8 @@ function appsPage() {
     [`GET /api/companies/${COMPANY.id}/projects/${PROJECT_ID}/tables`]: ok(listAppTables, {
       kind: 'TABLES',
       tables: [
-        {
-          schema: 'APP',
-          name: AppTableName.parse('clientes'),
-          rows: { kind: 'EXACT', rows: 1284 },
-        },
-        { schema: 'APP', name: AppTableName.parse('sobras'), rows: { kind: 'UNKNOWN' } },
+        { name: AppTableName.parse('clientes'), rows: { kind: 'EXACT', rows: 1284 } },
+        { name: AppTableName.parse('sobras'), rows: { kind: 'UNKNOWN' } },
       ],
     }),
   }

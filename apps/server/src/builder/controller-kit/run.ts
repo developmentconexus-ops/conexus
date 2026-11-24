@@ -34,7 +34,7 @@ export type RunScope = Readonly<{
 export type Stored = Readonly<{ place: Place; choice: Choice; ceiling: Ceiling; attended: boolean }>
 
 /** The kinds whose threads are born with marks (`createSession({ tags })`); the Builder's carry none. */
-type MarkedKind = Exclude<ControllerKind, 'builder'>
+export type MarkedKind = Exclude<ControllerKind, 'builder'>
 
 type MarkKeys = Readonly<{
   company: string

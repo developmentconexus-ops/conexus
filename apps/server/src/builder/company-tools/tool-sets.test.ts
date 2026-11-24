@@ -15,6 +15,7 @@ import {
 import { building } from '../construtor/test-construtor.ts'
 import { endOf, started } from '../conversation/test-conversation.ts'
 import { stepped } from '../conversation/test-questions.ts'
+import { SEATS, seatOf } from './test-company-tools.ts'
 
 /** What every seat of the Assistant gets beside the company's tools: the web, the machine, the memories and the controller's own. */
 const ASSISTANT_REST = [
@@ -73,7 +74,6 @@ test('os nomes de hoje: o Assistente no Início', async (t) => {
       'conexus_overview',
       'connector_note_save',
       'connector_notes',
-      'copy_runs',
       'data_describe',
       'data_query',
       'propose_app',
@@ -87,7 +87,6 @@ test('a ordem de hoje: o Assistente pede as suas ferramentas e as da empresa na 
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Oi')), 'complete')
   const order = [
     'conexus_overview',
-    'copy_runs',
     'show_file',
     'propose_company_memory',
     'propose_automation',
@@ -111,7 +110,6 @@ test('os nomes de hoje: o Assistente num Projeto', async (t) => {
       'conexus_overview',
       'connector_note_save',
       'connector_notes',
-      'copy_runs',
       'data_describe',
       'data_query',
       'propose_app_change',
@@ -135,21 +133,14 @@ test('os nomes de hoje: a rodada de automação', async (t) => {
   for (const each of asked) {
     assert.deepEqual(
       namesOf(each.tools),
-      [
-        ...ASSISTANT_REST,
-        'conexus_overview',
-        'connector_notes',
-        'copy_runs',
-        'data_describe',
-        'data_query',
-      ]
+      [...ASSISTANT_REST, 'conexus_overview', 'connector_notes', 'data_describe', 'data_query']
         .filter((name) => name !== 'updateWorkingMemory')
         .sort(),
     )
   }
 })
 
-test('os nomes de hoje: o Builder', async (t) => {
+test('os nomes de hoje: o Builder, sem copy_propose', async (t) => {
   const on = await assisting(t)
   const url = `${on.conversations}/${await started(on.hub, on.ana, on.conversations)}`
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Oi')), 'complete')
@@ -161,7 +152,6 @@ test('os nomes de hoje: o Builder', async (t) => {
     'connector_note_save',
     'connector_notes',
     'connector_read',
-    'copy_propose',
     'data_describe',
     'data_query',
     'mastra_workspace_delete',
@@ -243,4 +233,15 @@ test('os nomes de hoje: o agente salvo, sem e com os dados do app', async (t) =>
   }
   const company = ['connector_notes', 'data_describe', 'data_query', 'tool_pedidos_matriz']
   assert.deepEqual(seen, [company, ['app_data_read', ...company]])
+})
+
+test('sem copy_runs: nenhum assento da empresa tem uma ferramenta com esse nome', async () => {
+  for (const seat of SEATS) {
+    const { tools } = await seatOf(seat)
+    assert.deepEqual(
+      Object.keys(tools).filter((name) => name.includes('copy')),
+      [],
+      seat,
+    )
+  }
 })

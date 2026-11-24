@@ -10,8 +10,8 @@ import type {
 } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import { appRowsOf } from './app-rows.ts'
-import type { AppReadInput, AppTable, TableSchema } from './app-tables.ts'
-import { appTablesOf, copyTablesOf, rowCountsOf } from './app-tables.ts'
+import type { AppReadInput, AppTable } from './app-tables.ts'
+import { appTablesOf, rowCountsOf } from './app-tables.ts'
 import type { SendDeps } from './send.ts'
 import { admitDataReader } from './send.ts'
 
@@ -22,25 +22,11 @@ export type AppDataDeps = SendDeps & {
 
 type OfProject = { person: Person; companyId: CompanyId; projectId: ProjectId }
 
-/** The app's tables, then the copies released to the Projeto, each with its rows counted in one read. */
+/** The app's tables, each with its rows counted in one read. */
 async function summariesOf(deps: AppDataDeps, read: AppReadInput, app: readonly AppTable[]) {
-  const copies = await copyTablesOf(deps, read)
-  if (copies.kind === 'FAILED')
-    throw new Failure('APP_DATABASE_UNAVAILABLE', { details: { answer: copies.code } })
-  const listed = [
-    ...app.map((table) => ({ ...table, of: 'APP' as const })),
-    ...(copies.kind === 'TABLES' ? copies.tables : []).map((table) => ({
-      ...table,
-      of: 'COPY' as const,
-    })),
-  ]
-  const counts = await rowCountsOf(deps, { ...read, tables: listed })
-  return listed.map(
-    ({ of, name }, at): AppTableSummary => ({
-      schema: of,
-      name,
-      rows: counts[at] ?? { kind: 'UNKNOWN' },
-    }),
+  const counts = await rowCountsOf(deps, { ...read, tables: app })
+  return app.map(
+    ({ name }, at): AppTableSummary => ({ name, rows: counts[at] ?? { kind: 'UNKNOWN' } }),
   )
 }
 
@@ -83,7 +69,6 @@ export function createAppData(deps: AppDataDeps) {
     rows: async (
       input: OfProject & {
         signal: AbortSignal
-        schema: TableSchema
         table: AppTableName
         page: string | undefined
       },
@@ -91,7 +76,6 @@ export function createAppData(deps: AppDataDeps) {
       const read = await admit(input)
       const rows = await appRowsOf(deps, {
         ...read,
-        schema: input.schema,
         name: input.table,
         page: input.page,
       })

@@ -24,12 +24,7 @@ at launch.
 5. **Readable.** One language, one tree, and walls checked by a machine, so a person or an agent
    finds any fact's owner [0002] [0003].
 
-**What the product never does.** It never invents a value or simulates progress: a figure shown as
-from a system came from a real read, and an unknown is shown as unavailable, never as zero.
-It never lets the model declare work done; Conexus owns the run's state. It never overwrites someone
-else's newer work. It never shows a credential. It never publishes on its own. Conexus is not an ERP
-replacement, a database console or a drag-and-drop tool: people create by conversation, the result
-is real code, and the official data stays in the company's systems.
+**What the product never does** is [`VISION.md`](../VISION.md), in Portuguese.
 
 **Who has a stake.** The founder: product owner, operator, and the person who closes each step by
 using it. Company administrators and members, who use the Hub and apps. The agents that build
@@ -141,11 +136,11 @@ and tests, and a `public.ts` with what others may use. The import law is
 [code C3 to C8](guides/code.md); the web side's tree is [web W1](guides/web.md). A new one follows
 [adding a subject](how-to/add-a-subject.md).
 
-**Other subjects.** `hub/copies`, `builder/copy-clock` and the schema `sync` are [the Sync](explanation/sync.md),
-until the lake takes the copies [0070].
+**Other subjects.** `hub/copies` keeps only the copies' tables, until their migration drops them
+([the Sync](explanation/sync.md)); the lake takes the copies [0070].
 `hub/ontology` has only tables and a contract. `hub/notifications` sends bell and e-mails,
 `hub/operations` keeps the Central's clients, `hub/status` each start's version. `builder/app-data`
-reads an app's data and copies for the Builder and for the agents of `builder/agents`;
+reads an app's data for the Builder and for the agents of `builder/agents`;
 `builder/construtor` edits an agent's draft ([agents](explanation/agents-and-automations.md)).
 `builder/mastra` builds the `Mastra` and prunes its traces daily. The Hub image carries CLIProxyAPI,
 the Google sign-in binary [0049]. Packages: [app](explanation/app-package.md),
@@ -166,10 +161,11 @@ on the server; no other merge publishes [0035] [0044] [0081]. Migrations run bef
 program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image; migrations only add, so it runs on
-the migrated database ([data D6](guides/data.md)). No image from before v0.5.0 runs (step 4.2 deleted old test
-companies [0039]), nor from before 14.2 (it drops `run_event` (D30), `builder.run`,
-`companies_with_runs()` and `hub_runs`) or v0.24.101 (it
-dropped `copies.copy.readers_set`, which older images read). The edge goes back first. Past v0.24.53, rerun
+the migrated database ([data D6](guides/data.md)). No image runs from
+before v0.5.0 (old test companies deleted [0039]), 14.2 (`run_event` (D30), `builder.run`,
+`companies_with_runs()`, `hub_runs`), v0.24.101 (`copies.copy.readers_set`) or the closing of A
+Prévia em endereço próprio (`apps.app_session.environment`, `apps.handoff.environment`): each drops
+what older images use. The edge goes back first. Past v0.24.53, rerun
 `20261108033751_e245_active_by`'s `UPDATE`.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
@@ -229,18 +225,18 @@ too.
 | Two batches in one action | The second fails and the first stays [0047] | The Builder's skill, step 13 |
 | The app login key leaks | Its holder enters every app's database [0043] | Rotation in the how-to |
 | CPU limits act in seconds, with tolerance | Many looping apps at once slow others | Step 22 load test |
-| The Hub's database never sleeps | The free allowance ends near day 17 and Neon suspends it [0009] | Step 2 test; back to the founder if it fails |
+| The Hub's database never sleeps | The free allowance ends near day 17 and Neon suspends it [0009] | Step 2 test; if it fails, the founder |
 | Six hours of history on the free plan | A mistake seen the next day cannot be undone | Paid plan with the first company [0009] |
 | The server stops | Hub and published apps stop [0025] | Kept: the check stays in the Hub (step 18, `G`) |
-| Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Versions pinned; fallback named in each record |
-| One E2B key for the founder's account | A release kills another's machine | It kills only this installation's machines [0051] |
-| The publish runner runs as root, and its token and keys rest on the server (S31) | A writer of the repository, or root there, commands the server and the edge [0035] [0036] | Accepted by the founder; forks never reach the runner |
-| Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
+| Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Pinned; each record names a fallback |
+| One E2B key for the founder's account | A release kills another's machine | It kills only this installation's [0051] |
+| The publish runner runs as root; its token and keys rest on the server (S31) | A repository writer, or root there, commands server and edge [0035] [0036] | Accepted by the founder; forks never reach it |
+| Transplanted code carries old decisions | A rule kept just for existing | `conexus-study` [0001] |
 | A page the Builder reads hides instructions | It strays, or leaks conversation text in an address | Accepted, founder 2026-10-19 [0050] |
 | A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
 | The lab AWS account | When credits end it closes with its data [0072] | The official account, before another company |
 
-**Debt.** Fixes left, with the steps that remove them.
+**Debt.** Fixes left, and what removes them.
 
 - Until the first scheduled job, expired `auth.session`, `auth.verification` and app-handoff rows
   leave only when presented.
@@ -251,5 +247,7 @@ too.
 - A conversation created between a release and its removal leaves an orphan thread (16).
 - Database calls cannot be cancelled (C57, `pg@8.23.1`): deadlines end waits.
 - A refresh lost after the key turned, or 6 idle months, forces a reconnect. Trigger: `CONNECTION_REFRESH_UNANSWERED` then `NEEDS_REAUTH`.
-- Mercado Livre's page shapes are unmeasured. Trigger: a read failing on a real account.
-- `connection.last_test` stays until a later migration (D6); no unit owns the drop yet.
+- Mercado Livre's page shapes are unmeasured. Trigger: a failed read on a real account.
+- No unit yet drops `connection.last_test` (D6).
+- Only a failed lake's bucket is checked, and the 100-lake quota has no message. Triggers: another
+  orphan; 80 lakes.

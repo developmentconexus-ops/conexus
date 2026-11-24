@@ -1,4 +1,4 @@
-import type { CatalogTable, KeptSource, Overview } from '@conexus/hub-api'
+import type { Overview } from '@conexus/hub-api'
 import { ASSISTANT_TOOL } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
@@ -60,31 +60,10 @@ export function projectsOf(
   })
 }
 
-function namedBy(source: KeptSource) {
-  return source.kind === 'NAMED' ? [source.connection] : []
-}
-
-function copiedFrom(table: CatalogTable) {
-  return table.kept.sources.flatMap(namedBy)
-}
-
-/**
- * The connections the run reaches in its place: a system with an operation to use, then the source
- * of a table to read; each once, with whether the conversation chose it.
- */
 function reachedIn(scope: Readonly<{ run: RunScope; reach: AccessView }>): Listed[] {
   const { reach, run } = scope
-  const systems = reach
-    .list('system')
-    .map(({ connection, connector, name }) => ({ connectionId: connection, connector, name }))
-  const sources = reach
-    .list('table')
-    .flatMap(copiedFrom)
-    .map(({ id, connector, name }) => ({ connectionId: id, connector, name }))
-  const seen = new Set<string>()
-  return [...systems, ...sources].flatMap((each) => {
-    if (seen.has(each.connectionId)) return []
-    seen.add(each.connectionId)
-    return [{ ...each, chosen: chosenIn(run.choice, each.connectionId) }]
-  })
+  return reach.list('system').map(({ connection, connector, name }) => ({
+    ...{ connectionId: connection, connector, name },
+    chosen: chosenIn(run.choice, connection),
+  }))
 }

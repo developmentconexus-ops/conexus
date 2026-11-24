@@ -3,7 +3,6 @@ import type { ConversationId } from '@conexus/hub-api'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { FastifyInstance } from 'fastify'
 import type { BuilderData } from '../../hub/apps/public.ts'
-import type { CopyService } from '../../hub/copies/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -25,7 +24,6 @@ export type { Watched } from './end.ts'
 export { failureOf, modelFailure, watchRuns } from './end.ts'
 export type { GuardedMastra, MayApprove, WriteOf } from './guard.ts'
 export { approvedCallOf } from './guard.ts'
-export { skillOf } from './instructions.ts'
 export { createMastraStorage } from './storage.ts'
 export { TurnTally } from './turn-line.ts'
 export { TOOL_CLOSURE }
@@ -70,7 +68,6 @@ export function createBuilderConversations(deps: {
   data: BuilderData
   companyData: Parameters<typeof createBuilder>[0]['companyData']
   access: Parameters<typeof createBuilder>[0]['access']
-  copies: Pick<CopyService, 'projectView'>
   log: FailureLog
 }) {
   const { database, identity, queue } = deps
@@ -79,7 +76,6 @@ export function createBuilderConversations(deps: {
     ...{ storage: deps.storage, queue, runs: deps.runs, log: deps.log },
     ...{ index: store, connectors: deps.connectors, data: deps.data },
     ...{ companyData: deps.companyData, access: deps.access },
-    copies: (ids) => deps.copies.projectView(ids),
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
         return (await deps.projects.liveProjectOf(tx, ids))?.name

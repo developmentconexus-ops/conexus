@@ -7,7 +7,6 @@ import { z } from 'zod'
 import { listing } from '../../hub/access/test-view.ts'
 import { granted, LOJA, QUIET, SANKHYA } from '../connectors/test-access.ts'
 import type { RunScope } from '../controller-kit/public.ts'
-import { CATALOG } from '../data-tools/test-world.ts'
 import type { CompanyToolDeps, CompanyToolSeat } from './public.ts'
 import { companyToolScope, companyTools } from './public.ts'
 
@@ -19,13 +18,12 @@ export const SEATS: readonly CompanyToolSeat[] = [
   'agents',
 ]
 
-export const MATRIZ = { ...granted('sankhya', SANKHYA, 'Matriz'), copies: true }
+export const MATRIZ = granted('sankhya', SANKHYA, 'Matriz')
 
 /** Received by the run and out of its view: the role reaches none of its operations (`clientes`). */
 export const FILIAL = {
   ...granted('sankhya', LOJA, 'Filial'),
   reads: [{ operation: 'clientes', label: 'Clientes', summary: 'clientes', list: null }],
-  copies: true,
 }
 
 const OWNER = {
@@ -33,19 +31,15 @@ const OWNER = {
   personId: PersonId.parse(randomUUID()),
 }
 
-/** The door lists Matriz with its one read, and the `vendas` table; never `sankhya_clientes`. */
-export const VIEW = listing(
-  [
-    CatalogSystem.parse({
-      connection: SANKHYA,
-      connector: 'sankhya',
-      name: 'Matriz',
-      reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta' }],
-      actions: [],
-    }),
-  ],
-  CATALOG.tables.filter((each) => each.name === 'vendas'),
-)
+export const VIEW = listing([
+  CatalogSystem.parse({
+    connection: SANKHYA,
+    connector: 'sankhya',
+    name: 'Matriz',
+    reads: [{ operation: 'consultar', label: 'Consultas', summary: 'consulta' }],
+    actions: [],
+  }),
+])
 
 export function runOf(
   seat: CompanyToolSeat,
@@ -72,9 +66,8 @@ export function recorded(notebooks: readonly ConnectionId[] = [SANKHYA]) {
   const reads: ConnectionId[] = []
   const notes: ConnectionId[] = []
   const saved: ConnectionId[] = []
-  const proposed: ConnectionId[][] = []
-  const called = { runs, reads, notes, saved, proposed, listed: 0 }
-  const deps: CompanyToolDeps<typeof MATRIZ> = {
+  const called = { runs, reads, notes, saved }
+  const deps: CompanyToolDeps = {
     log: QUIET,
     connector: {
       read: async (run, read) => {
@@ -92,23 +85,7 @@ export function recorded(notebooks: readonly ConnectionId[] = [SANKHYA]) {
         saved.push(note.connectionId)
         throw new Error('a note is never saved in this test')
       },
-      propose: {
-        call: async (_run, proposal) => {
-          proposed.push([...proposal.connections])
-          throw new Error('a copy is never proposed in this test')
-        },
-        copying: (listed) => listed.filter((each) => each.copies),
-      },
     },
-    copies: () => ({
-      list: async () => {
-        called.listed += 1
-        return { copies: [] }
-      },
-      runs: async () => {
-        throw new Error('no copy is found to run')
-      },
-    }),
     projects: async () => ({ projects: [], moreProjects: false }),
   }
   return { called, deps }

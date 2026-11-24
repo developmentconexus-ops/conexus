@@ -22,10 +22,13 @@ test('a lei de uma linha por leitura falha com o Registro que não grava ou que 
   const leaky: DataWorld = {
     ...world,
     async reads() {
-      return (await world.reads()).map((row) => ({ ...row, guardado: 'o total foi 10.00' }))
+      return (await world.reads()).map((row) => ({ ...row, guardado: 'o assunto foi Pedido 7' }))
     },
   }
-  await assert.rejects(recordsEveryReadOnce(leaky, boundOf(leaky)), /a row holds the value 10\.00/)
+  await assert.rejects(
+    recordsEveryReadOnce(leaky, boundOf(leaky)),
+    /a row holds the value Pedido 7/,
+  )
 })
 
 test('a lei da gravação derrubada falha com o contrato que devolve sem gravar', async () => {

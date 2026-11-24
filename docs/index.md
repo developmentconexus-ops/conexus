@@ -5,21 +5,20 @@ One line per document.
 ## Overview
 
 - [AGENTS.md](../AGENTS.md): read first.
-- [README.md](../README.md): repo.
+- [README.md](../README.md): repo; [VISION.md](../VISION.md): direction.
 - [DESIGN.md](../DESIGN.md): Pauta, values, pieces.
 - [roadmap.md](roadmap.md): steps.
 - [approvals/](approvals/): one per card.
 - [architecture.md](architecture.md): design.
 - [explanation/](explanation/): [turn](explanation/builder-turn.md), [harness](explanation/harness.md), [app](explanation/app-package.md), [contract](explanation/app-contract-and-dispatcher.md), [Hub](explanation/hub-apps.md), [agents](explanation/agents-and-automations.md), [Sync](explanation/sync.md).
-- [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [new connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md).
+- [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [new connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md); [mail](how-to/hub-mail.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
-- [how-to/hub-mail.md](how-to/hub-mail.md): mail.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restore; [Git](how-to/hub-git-restore.md).
-- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
-- [how-to/aws-conta-de-laboratorio.md](how-to/aws-conta-de-laboratorio.md): the lab AWS account's preparation.
+- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key; [lab AWS account](how-to/aws-conta-de-laboratorio.md).
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
 - [how-to/rastro-de-uma-conversa.md](how-to/rastro-de-uma-conversa.md): traces.
 - [steps/](steps/): cards; [Data spec](steps/trilhas/dados-spec/README.md).
+- [conhecimento/](conhecimento/): decided, proved, read.
 - [reference/boundaries.md](reference/boundaries.md): hand-made mechanisms.
 - [reference/stack.md](reference/stack.md): sources, skills, traps.
 - [reference/checklist.md](reference/checklist.md): checklist.
@@ -47,7 +46,7 @@ One line per document.
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation; [0051](decisions/0051-builder-machine-git-and-copy-in-r2.md) machine; [0052](decisions/0052-one-tracing-path-builder-to-grafana.md) tracing; [0053](decisions/0053-builder-tools-run-without-asking.md) no approval; [0054](decisions/0054-model-defaults-and-served-models.md) defaults; [0055](decisions/0055-apps-on-the-platform-contract.md) contract; [0056](decisions/0056-connectors-kit-and-one-executor.md) connectors kit; [0057](decisions/0057-connections-by-oauth.md) OAuth; [0058](decisions/0058-provider-limits-and-queues.md) limits; [0059](decisions/0059-assistant-machine-reaches-package-registries.md) registries.
 - [0060](decisions/0060-openai-subscription-sign-in.md) OpenAI; [0061](decisions/0061-turn-carries-its-activation-as-a-scope.md) scope; [0062](decisions/0062-a-write-declares-its-provider-facts.md) writes; [0063](decisions/0063-copy-models-proof.md) proofs; [0064](decisions/0064-company-ontology-in-hub-tables-by-approved-proposals.md) Ontologia; [0065](decisions/0065-brain-on-mastra-knowledge-behind-our-isolation.md) Brain; [0067](decisions/0067-ontology-metamodel-palantir-core-roles-and-named-links.md) metamodel; [0068](decisions/0068-mastra-tracing-in-its-own-database.md) traces; [0069](decisions/0069-connectors-one-source-the-kit.md) sources.
 - [0070](decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md) lake on AWS; [0071](decisions/0071-connectors-kit-live-copies-singer.md) Singer copies; [0072](decisions/0072-the-lab-aws-account-is-provisional.md) lab account; [0073](decisions/0073-platform-by-cdk-one-stack-per-company.md) CDK, stacks; [0074](decisions/0074-python-for-extraction-in-apps-extraction.md) Python; [0075](decisions/0075-how-the-hub-reaches-aws.md) Hub to AWS; [0076](decisions/0076-a-copy-runs-as-a-fargate-task-ending-by-a-queue.md) copy task; [0077](decisions/0077-how-a-credential-reaches-the-copy-task.md) run credential; [0078](decisions/0078-how-the-lake-knows-who-reads.md) who reads; [0079](decisions/0079-the-agent-reads-the-lake-neon-serves-apps.md) agent reads the lake.
-- [0080](decisions/0080-copy-declared-per-table-raw-appends.md) copy declaration; [0081](decisions/0081-publish-on-the-merge-of-a-release-note.md) note publish.
+- [0080](decisions/0080-copy-declared-per-table-raw-appends.md) copy declaration; [0081](decisions/0081-publish-on-the-merge-of-a-release-note.md) note publish; [0082](decisions/0082-the-lake-holds-tables-and-files.md) files.
 
 ## Skills
 
@@ -57,4 +56,4 @@ One line per document.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): screens QA.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [compare](../.agents/skills/conexus-review/references/compare.md), [screen](../.agents/skills/conexus-review/references/screen.md): a step's review; a screen.
 - [conexus-eval](../.agents/skills/conexus-eval/SKILL.md), [rounds](../.agents/skills/conexus-eval/references/rounds.md): evals.
-- [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.
+- [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step.
