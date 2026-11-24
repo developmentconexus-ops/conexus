@@ -655,8 +655,11 @@ tinha: os arquivos de `Wb/agents/` que misturam o Construtor de agentes com o ag
 inteiros para `agents/saved-agent/`, e as consultas da Prévia e do código iam para `harness/room/`
 por causa de um ramo do Construtor de apps dentro da sessão comum. O fundador, no mesmo dia, às
 duas perguntas (os dois desvios eram gambiarra; a regra de divisão passa a ser por dono, e o guia
-da web muda só no fechamento): "sIM NAS duas e revisão tem que pegar essas coisas". Esta seção é a
-emendada; a árvore de topo (a decisão 2 do firstmate) fica.
+da web muda só no fechamento): "sIM NAS duas e revisão tem que pegar essas coisas". A segunda
+revisão do mesmo pull request achou restos da mesma família: três casos do Construtor de agentes
+nos testes do agente salvo, a tela de conversa não achada e o teste do catálogo no Assistente, e o
+painel do Construtor de apps lendo a forma crua do evento do Mastra. Esta seção é a emendada, já
+com eles; a árvore de topo (a decisão 2 do firstmate) fica.
 
 ### As linhas da tabela
 
@@ -679,7 +682,7 @@ emendada; a árvore de topo (a decisão 2 do firstmate) fica.
 - **A sessão comum e o Construtor de apps.** Na base: `Wb/conversation/use-session.ts:102-109`, o
   `if (ids.controller === BUILDER_CONTROLLER)` que relê os arquivos do Projeto depois de uma versão
   salva e a Prévia depois de uma Prévia pronta. Sem referência de fora; a forma é a da U1: a
-  variante `APP_BUILDER` do `Room` leva o que o agente faz com o evento, como a variante
+  variante `APP_BUILDER` do `Room` leva o que o agente faz com a mudança, como a variante
   `SAVED_AGENT` leva `writes`, que `chat.tsx:249-250` lê.
 - **Os arquivos que misturam dois donos.** Na base: `Wb/agents/queries.ts`
   (`construtorConversationsQuery`, `sendConstrutorModel`), `loader.ts`
@@ -695,14 +698,15 @@ emendada; a árvore de topo (a decisão 2 do firstmate) fica.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `Wb/conversation/use-session.ts`, `room.ts`, `chat.tsx`, `panel.tsx` | Muda, antes do movimento: a sessão perde o ramo `BUILDER_CONTROLLER`; a variante `APP_BUILDER` ganha `heard`, que o painel do Construtor de apps preenche | as quatro conversas |
-| `Wb/agents/construtor-queries.ts`, `construtor-loader.ts`, `construtor-text.ts`, `construtor-area.tsx`, `construtor-area.test.tsx`, `construtor-chat.test.tsx` | Cria, antes do movimento, com o que sai de `queries.ts`, `loader.ts`, `text.ts`, `area.tsx` e `area.test.tsx` (os casos da caixa e das conversas anteriores, e os da conversa do Construtor no seu endereço) | a conversa do Construtor, a rota da área |
+| `Wb/conversation/use-session.ts`, `room.ts`, `chat.tsx`, `panel.tsx` | Muda, antes do movimento: a sessão perde o ramo `BUILDER_CONTROLLER` e traduz o evento do Mastra no que a corrida mudou; a variante `APP_BUILDER` ganha `changed`, que o painel do Construtor de apps preenche | as quatro conversas |
+| `Wb/agents/construtor-queries.ts`, `construtor-loader.ts`, `construtor-text.ts`, `construtor-area.tsx`, `construtor-area.test.tsx`, `construtor-chat.test.tsx` | Cria, antes do movimento, com o que sai de `queries.ts`, `loader.ts`, `text.ts`, `area.tsx` e `area.test.tsx` (os casos da caixa e das conversas anteriores, e os da conversa do Construtor no seu endereço); depois do movimento, recebe os três casos do Construtor de `clean.test.tsx` e `conector-rows.test.tsx` | a conversa do Construtor, a rota da área |
 | `routes/.../$projectId_.agents.index.tsx` | Muda, antes do movimento: passa a caixa e as conversas do Construtor à área como encaixe | — |
 | `apps/web/src/ui/block.tsx` | Muda, antes do movimento: recebe `ROW` de `choice-list.tsx`, como `choiceRow`, ao lado de `listRow` e `blockRow`: uma classe sem assunto (W5) | o Assistente, o agente salvo |
-| `apps/web/src/ui/page.tsx` | Cria, antes do movimento, por `git mv` de `Wb/automations/page.tsx`: a coluna de uma página do Início ou de um Projeto, sem assunto | Automações, Agentes do Início |
+| `apps/web/src/ui/page.tsx` | Cria, antes do movimento, por `git mv` de `Wb/automations/page.tsx`: a coluna de uma página, sem assunto; `scrolls` diz se ela mesma rola, num quadro compacto | Automações, Agentes do Início |
 | `apps/web/src/hub/projects/place-name.tsx` | Cria, antes do movimento: `PlaceName` (o nome do Projeto, ou "Início") sai de `Wb/automations/place.tsx` para o assunto que lê o Projeto | Automações, Agentes do Início |
 | `Wb/conversation/logo.tsx` | Cria, antes do movimento: `Logo` sai de `plus-menu.tsx` para perto do catálogo de conectores (`connector-catalog.ts`) | o menu do **+**, as ligações do agente, o chip da ferramenta |
-| `Wb/assistant/connector-names.ts` | Apaga, antes do movimento: quem usa o catálogo o importa da porta da sala | — |
+| `Wb/assistant/connector-names.ts` | Apaga, antes do movimento: quem usa o catálogo o importa da porta da sala; o teste dele vai, depois do movimento, para `harness/room/connector-catalog.test.tsx` | — |
+| `apps/web/src/harness/room/gone.tsx` | Cria, depois do movimento, por `git mv` de `agents/assistant/gone.tsx`, com o texto `CONVERSATION_GONE`: a tela de conversa não achada é das quatro conversas | as rotas das quatro conversas |
 | `apps/web/src/builder/conversation/`, cerca de 70 arquivos fora os testes | Divide pela regra abaixo: para `apps/web/src/harness/room/` (a sala, as linhas, os cartões, a sessão, o registro, os textos comuns) e para `apps/web/src/agents/app-builder/` (o painel, a bancada, a primeira mensagem, a troca de conversa) | todos os embrulhos; a rota de Construir |
 | `apps/web/src/builder/preview/`, `source/` | Move inteiras para `apps/web/src/agents/app-builder/preview/` e `source/` | a página de Construir |
 | `apps/web/src/builder/assistant/` | Move para `apps/web/src/agents/assistant/`, sem as peças comuns, que saíram antes | as rotas do Assistente |
@@ -711,6 +715,7 @@ emendada; a árvore de topo (a decisão 2 do firstmate) fica.
 | `apps/web/src/builder/tools/` | Move para `apps/web/src/agents/saved-agent/tools/`, como no servidor (a biblioteca dos agentes salvos) | a aba Ferramentas |
 | `apps/web/src/builder/model-accounts/`, `observational-memory/` | Move para `apps/web/src/harness/model-accounts/` e `apps/web/src/harness/memory/` | Configurações |
 | `.dependency-cruiser.cjs` `:266-273`, `:283-285` | Muda: `web-tree-shape` aceita `harness/` e `agents/` no lugar de `builder/`; `web-support-does-not-import-subject` lista `hub|harness|agents|routes` | `npm run deps` |
+| `.dependency-cruiser.cjs` `subject-only-through-public` | Muda: a isenção vale só para os ajudantes `test-*` da web; um teste lê outro assunto pela porta dele ou por um ajudante (T5) | `npm run deps` |
 | `biome.json` `:14`, `:123`, `:228-240`; `scripts/rules.test.ts:60`; `scripts/test-rules.ts:134` | Muda: os caminhos | `npm run lint`, `npm run test:scripts` |
 | Os documentos que citam `apps/web/src/builder`, fora `docs/guides/` e os registros (`docs/steps/`, `docs/approvals/`, `docs/decisions/`) | Muda: o caminho | `npm run docs` |
 | `docs/guides/web.md` W1, W4, W7 | Não muda nesta unidade: muda no fechamento (U14) | — |
@@ -730,8 +735,7 @@ antes do movimento, num commit que não muda o comportamento; por isso o script 
 lê a porta de outro numa direção só: o Construtor de agentes lê a do agente salvo, como no
 servidor; o agente salvo nunca lê o Construtor, nenhum outro par de agentes se lê, e `harness/`
 nunca lê um agente. Uma peça sem assunto vai para `ui/` (W5). Um teste fica com o assunto que
-testa; um teste de tela que passa pelas duas conversas no mesmo arquivo (`clean.test.tsx`,
-`conector-rows.test.tsx`) fica com o agente salvo, e lê o Construtor só pela tela, como hoje.
+testa, sem exceção: um arquivo de testes que mistura dois donos se divide como um de código.
 
 O script lê o dono numa tabela: a linha de uma pasta leva os seus arquivos, a linha de um arquivo
 leva o arquivo cujo dono não é o da pasta, e vale a linha mais longa. Ele escreve a lista arquivo
@@ -748,10 +752,10 @@ da U3, depois do movimento.
 
 ### Os contratos que a unidade cria
 
-Um campo: a variante `APP_BUILDER` do `Room` ganha `heard`, o que o Construtor de apps faz com um
-evento da sua corrida além do transcrito (uma versão salva relê os arquivos do Projeto; uma Prévia
-pronta relê a Prévia). O tipo do evento é o `KnownAgentControllerEvent` do `@mastra/client-js`, que
-só a sala importa: o painel do Construtor de apps o recebe pelo tipo do campo. O script: `node
+Um campo: a variante `APP_BUILDER` do `Room` ganha `changed`, o que o Construtor de apps faz quando a
+sua corrida muda algo além do transcrito. A mudança é o tipo `RunChange`: `VERSION_SAVED` relê os
+arquivos do Projeto, e `PREVIEW_READY` relê a Prévia. A sessão comum lê o evento do Mastra e o
+traduz; o painel recebe só a mudança, nunca a forma do evento (W7). O script: `node
 scripts/codemod-web.ts` lê a tabela dos donos, move com `git mv` e reescreve as importações
 relativas; roda duas vezes e dá a mesma árvore.
 
@@ -767,7 +771,7 @@ As da U1, mais `router-core` (`auth-and-guards` para o `beforeLoad`).
    - **Testes:** o de hoje que prova que uma Prévia pronta relê o Projeto
      (`preview-line.test.tsx`), sem mudar, e um caso novo em `workbench.test.tsx`: a versão que a
      resposta salva relê o código do Projeto, que nenhum teste provava.
-   - **Mutações à mão:** a sessão sem a chamada de `heard` deixa esses casos vermelhos.
+   - **Mutações à mão:** a sessão sem a chamada de `changed` deixa esses casos vermelhos.
 2. **A divisão por dono.** Um commit antes do movimento, sem mudar o comportamento. Critérios: 8.
    - **Arquivos:** os que o raio marca "antes do movimento", fora os do passo 1.
    - **Testes:** os mesmos casos da web, no mesmo número.
