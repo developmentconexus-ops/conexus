@@ -4,11 +4,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { WORK_FOLDER } from '@conexus/app/check'
+import { APP_SESSION_COOKIE } from '@conexus/hub-api'
 import { z } from 'zod'
 import {
   app,
   appServer,
-  COOKIE,
   confer,
   conferring,
   FAILED,
@@ -40,7 +40,7 @@ test('Machines.confer: a tela que chama uma operação que dá 500 é DIRTY, com
   assert.equal(value.shot, `${WORK_FOLDER}/tela.png`)
   const shot = readFileSync(join(machine.folder, 'app', value.shot))
   assert.equal(shot.subarray(1, 4).toString(), 'PNG')
-  assert.equal(seen[0]?.cookie, `${COOKIE}=${TOKEN}`)
+  assert.equal(seen[0]?.cookie, `${APP_SESSION_COOKIE}=${TOKEN}`)
   assert.ok(!machine.lines.join('\n').includes(MARK))
   assert.ok(!machine.lines.join('\n').includes(TOKEN))
   assert.equal(machine.control.networkOpenTo, undefined)

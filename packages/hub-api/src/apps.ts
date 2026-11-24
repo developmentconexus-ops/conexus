@@ -13,6 +13,8 @@ const DoorSecret = z.string().regex(/^[A-Za-z0-9_-]{43}$/)
 
 /** The header the dispatcher carries an app session in, from its `__Host-` cookie. */
 export const APP_SESSION_HEADER = 'X-Conexus-App-Session'
+/** The dispatcher's app session cookie: only its host, `Secure`, `Path=/`, never `Domain`. */
+export const APP_SESSION_COOKIE = '__Host-conexus-app'
 /** Where the dispatcher redeems a pass on the app's host. */
 export const HANDOFF_PATH = '/__conexus/passagem'
 /** How long a pass is good for, in seconds (security S22). */

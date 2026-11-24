@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { COOKIE, confer, conferring, FAILED, stubBrowser, TOKEN } from './test-confer.ts'
+import { APP_SESSION_COOKIE } from '@conexus/hub-api'
+import { confer, conferring, FAILED, stubBrowser, TOKEN } from './test-confer.ts'
 import { CONVERSATION, world } from './test-machine.ts'
 
 test('Machines.confer: a rede abre só para o host do app durante os comandos e volta no fim, o token só no arquivo', async (t) => {
@@ -30,7 +31,7 @@ test('Machines.confer: a rede abre só para o host do app durante os comandos e 
     ],
   )
   assert.ok(commands[1]?.includes('--url https://localhost:4433/'))
-  assert.deepEqual(JSON.parse(stub.cookies()), [{ name: COOKIE, value: TOKEN }])
+  assert.deepEqual(JSON.parse(stub.cookies()), [{ name: APP_SESSION_COOKIE, value: TOKEN }])
   assert.ok(!commands.join('\n').includes(TOKEN))
   assert.ok(!machine.lines.join('\n').includes(TOKEN))
   assert.deepEqual(
