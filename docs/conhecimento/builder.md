@@ -13,8 +13,8 @@ fim do turno. O desenho está em [turno](../explanation/builder-turn.md) e no
   partida que o Builder edita.
 - O roteiro dos marcos A1 a A4 nasceu dos quatro estudos "Builder ideal" de 2026-11-09.
 - Aprovação: [o-arquivo-do-turno-anterior](../approvals/o-arquivo-do-turno-anterior.md).
-- O cartão do A1, "O Builder vê o que construiu", está no PR 1203 e vem depois de
-  [Uma ficha por agente](../approvals/uma-ficha-por-agente.md).
+- Aprovação: [o-builder-ve-o-que-construiu](../approvals/o-builder-ve-o-que-construiu.md), o A1, fechado em 2026-11-24
+  (v0.24.122); o cartão foi apagado. Veio depois de [Uma ficha por agente](../approvals/uma-ficha-por-agente.md).
 
 ## Provado
 
@@ -55,10 +55,10 @@ Uma linha por estudo, da data mais nova para a mais velha. "Virou" é o registro
 
 | Data | Estudo | Estado | Virou | Em uma frase |
 | --- | --- | --- | --- | --- |
-| 2026-11-23 | `conexus-a1-cartao-ficha` | aberto | PR 1203 | O cartão do A1 passa a vir depois de Uma ficha por agente: a conferência entra pelo campo judge da ficha do Builder, sem nova decisão do fundador. |
+| 2026-11-23 | `conexus-a1-cartao-ficha` | decidido | PR 1203; [o-builder-ve-o-que-construiu](../approvals/o-builder-ve-o-que-construiu.md) | O cartão do A1 passa a vir depois de Uma ficha por agente: a conferência entra pelo campo judge da ficha do Builder, sem nova decisão do fundador. |
 | 2026-11-18 | `conexus-a1-provas-e2b` | superado, por conexus-a1-navegador-implementacao | - | O CDP do Hub ao Chromium da máquina só passou com dois remendos; 1,28 a 1,36 s por ação; pico de 373 MiB de memória. |
 | 2026-11-18 | `conexus-a1-navegador-implementacao` | decidido | PR 1203 | O CLI agent-browser roda dentro da máquina E2B, sem proxy nem token no CDP: 230 ms por ação contra 1,7 s pelo proxy. |
-| 2026-11-18 | `conexus-a1-cartao` | aberto | PR 1203; docs/steps/o-builder-ve-o-que-construiu.md | Cartão do A1: o juiz do fim do turno sobe a versão num Worker de conferência com esquema vazio e roda agent-browser dentro da máquina; página à espera do fundador. |
+| 2026-11-18 | `conexus-a1-cartao` | decidido | PR 1203; [o-builder-ve-o-que-construiu](../approvals/o-builder-ve-o-que-construiu.md) | Cartão do A1: o juiz do fim do turno sobe a versão num Worker de conferência com esquema vazio e roda agent-browser dentro da máquina; fechado em 2026-11-24. |
 | 2026-11-17 | `conexus-a1-navegador-seguranca` | superado, por conexus-a1-navegador-implementacao | - | O navegador abre o app dentro da máquina E2B da conversa, nunca no servidor do Hub, com a rede aberta só ao endereço da conferência. |
 | 2026-11-17 | `conexus-a1-estudo-navegador` | superado, por conexus-a1-navegador-seguranca | - | Recomendou o navegador do Builder no Hub, com base em Lovable, Base44, v0, vibesdk e agent-browser do Mastra. |
 | 2026-11-17 | `conexus-a1-estudo-maquina-worker` | decidido | PR 1203 | Os dois: a máquina E2B escreve e confere rápido, mas ver o app pede o Worker de verdade com banco de teste e navegador dentro do turno. |

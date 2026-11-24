@@ -102,7 +102,7 @@ flowchart TB
 | Hub database | Companies, people, sessions, Projects; the Builder's space holds runs and model accounts [0011] | Company column on every table [0012] |
 | Mastra database | Mastra's own tables: threads, memory, traces, under a login of its own [0010] | Nothing of the Hub |
 | Company project | One schema per Project, Prévia and published app alike; run, migration and read logins [0021] | The company's app data |
-| E2B machine | Compiles and tests the app; runs Assistant and agent code [0028] [0059] | Nothing after the conversation |
+| E2B machine | Compiles and tests the app; opens the check app in a browser; runs Assistant and agent code [0028] [0051] [0059] | Nothing after the conversation |
 
 **The Hub and the Builder.** One program, two modules, written boundaries [0006]. The Builder
 calls the Hub through named ports: admit, read a connector, store an app version,
@@ -231,6 +231,7 @@ too.
 | The server stops | Hub and published apps stop [0025] | Kept: the check stays in the Hub (step 18, `G`) |
 | Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Pinned; each record names a fallback |
 | One E2B key for the founder's account | A release kills another's machine | It kills only this installation's [0051] |
+| The check browser runs beside the code it judges | A crafted version passes the check | Accepted, founder 2026-11-23 [0051] |
 | The publish runner runs as root; its token and keys rest on the server (S31) | A repository writer, or root there, commands server and edge [0035] [0036] | Accepted by the founder; forks never reach it |
 | Transplanted code carries old decisions | A rule kept just for existing | `conexus-study` [0001] |
 | A page the Builder reads hides instructions | It strays, or leaks conversation text in an address | Accepted, founder 2026-10-19 [0050] |
@@ -250,5 +251,7 @@ too.
 - A refresh lost after the key turned, or 6 idle months, forces a reconnect. Trigger: `CONNECTION_REFRESH_UNANSWERED` then `NEEDS_REAUTH`.
 - Mercado Livre's page shapes are unmeasured. Trigger: a failed read on a real account.
 - No unit yet drops `connection.last_test` (D6).
+- The machine's DNS (`8.8.8.8`) stays open (#1333), E2B reads the name
+  asked, not the address (#1335) [0051], and the template's `setEnvs` holds only at build (#1334).
 - Only a failed lake's bucket is checked, and the 100-lake quota has no message. Triggers: another
   orphan; 80 lakes.
