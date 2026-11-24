@@ -12,7 +12,7 @@ export type Move = { from: string; to: string }
  * move, so the door drops their names) or `dissolved` (every file moves to different subjects, so the
  * door goes and each new subject gets one made of the names its outside importers use).
  */
-export type DoorKind = 'kept' | 'carried' | 'trimmed' | 'dissolved'
+type DoorKind = 'kept' | 'carried' | 'trimmed' | 'dissolved'
 
 export type Graph = {
   texts: Map<string, string>

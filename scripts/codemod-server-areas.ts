@@ -6,7 +6,7 @@ export const OLD = `${SRC}/builder`
 export const AREAS = ['g5a', 'g5b', 'g5c', 'g5d', 'g5e', 'g5f'] as const
 export type Area = (typeof AREAS)[number]
 
-export type Row = { area: Area; to: string }
+type Row = { area: Area; to: string }
 
 /**
  * The owner of each file of builder/, by its subject and never by who imports it (card "Uma sala e os nomes
@@ -14,7 +14,7 @@ export type Row = { area: Area; to: string }
  * longest row wins. A row's target is a folder of src/, or the file's whole new path when it ends in an extension.
  * The six areas are the six pull requests; a row names the pull request that moves it.
  */
-export const ROWS = new Map<string, Row>([
+const ROWS = new Map<string, Row>([
   ['mastra', { area: 'g5a', to: 'harness/mastra' }],
   ['model-accounts', { area: 'g5b', to: 'harness/model-accounts' }],
   ['machine', { area: 'g5c', to: 'harness/machine' }],
