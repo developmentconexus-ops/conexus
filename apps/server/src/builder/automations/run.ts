@@ -20,9 +20,8 @@ import type { Assistant } from '../assistant/public.ts'
 import { attemptIdOf } from '../controller-kit/public.ts'
 
 /**
- * Stored contract: every schedule row names this workflow, and Mastra deletes a row whose target
- * is missing on the fifth consecutive tick (`missesBeforeDelete`, `builder/mastra/mastra.ts`):
- * renaming it deletes every automation within about 50 s.
+ * Stored contract: every schedule row names this workflow, so renaming it deletes every automation
+ * (`docs/explanation/agents-and-automations.md`).
  */
 export const AUTOMATION_WORKFLOW = 'conexus-automation-run'
 /** A turn nobody watches at 07:00 has no Parar: past this it is aborted, `INTERRUPTED` (code C57). */

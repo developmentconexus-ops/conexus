@@ -50,15 +50,14 @@ Each agent is written as a **ficha**, a plain value that says what is its own, a
 turns any ficha into an `Agent` and its controller, the same way for the four. The types are in
 `builder/controller-kit/spec.ts` (`AgentSpec`, and `ConversationSpec` for an agent that has a
 controller) and the functions in `builder/controller-kit/mount.ts`. `agentOfSpec` is the only place
-that calls Mastra's `Agent` constructor or `createCodingAgent`; `mountAgent` adds the controller
+that calls Mastra's `Agent` constructor; `mountAgent` adds the controller
 (`controllerOf`), its mode, the controller's own tools, the helpers and the machine. A ficha holds:
 
 | Field | What it says |
 | --- | --- |
 | `id`, `name`, `description` | the agent's key and names (`AgentSpec`); a conversation's ficha has no `id`, since its controller's comes from `CONTROLLER_KINDS` |
 | `kind` | which controller a conversation's ficha is for (`ConversationSpec`) |
-| `base` | `AGENT`, or `CODING_AGENT` for the Builder, always made with `workspace: undefined` so Mastra's default local machine is never built on the server |
-| `prompt` | the instructions: `MESSAGES` (system messages in order, each `FIXED` with the one-hour cache mark, `TEXT`, `BY_MODEL` or `OF_RUN`), `ONE_STRING`, or `DELEGATED` (the agent of a conversation takes the saved version's) |
+| `prompt` | the instructions: `MESSAGES` (system messages in order, each `FIXED` with the one-hour cache mark, `TEXT`, `BY_MODEL` or `OF_RUN`), or `DELEGATED` (the agent of a conversation takes the saved version's) |
 | `model` | `SESSION` (the conversation's model) or `OF_RUN` (the model the run's plan names) |
 | `tools`, `skills`, `signals`, `scopes`, `knowledge` | what the agent gets; a key the ficha does not fill is not set on the `Agent` |
 | `approval` | `NOTHING_ASKS` or `THE_WRITE_ASKS` (above) |
@@ -87,7 +86,7 @@ alters one byte of it turns that agent's tests red.
 
 | Agent | Built with | Model | Memory | Machine |
 | --- | --- | --- | --- | --- |
-| Builder | `createCodingAgent`, by its ficha (`builder/conversation/builder.ts`) | the session's | observational, with recall | the turn's E2B machine, lent by the controller |
+| Builder | `new Agent` with its task signal, by its ficha (`builder/conversation/builder.ts`) | the session's | observational, with recall | the turn's E2B machine, lent by the controller |
 | Assistant | `new Agent`, by its ficha (`builder/assistant/assistant.ts`) | the session's | observational | an E2B machine per conversation |
 | Construtor | `new Agent`, by its ficha (`builder/construtor/construtor.ts`) | the session's | observational | only for its code-writing tool |
 | Project agent | `new Agent` per published version, key `agent-<id>`, by a ficha made from the version (`builder/agents/agent.ts`) | the version's, or the person's | observational or plain, per version | per conversation, when the version asks |

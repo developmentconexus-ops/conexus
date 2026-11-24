@@ -50,7 +50,7 @@ function heldTheCall(call: Sent): boolean {
   )
 }
 
-test('o Builder sai de createCodingAgent sem workspace próprio: as ferramentas de tarefa, e a máquina emprestada pela volta (14.2, 14)', async (t) => {
+test('o Builder recebe os sinais de tarefa pela ficha, e a máquina vem emprestada pela volta (14.2, 14)', async (t) => {
   const calls: Sent[] = []
   const { hub, ana, conversations } = await conversing(t, (call): Reply => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
