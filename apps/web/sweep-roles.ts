@@ -1,43 +1,12 @@
-import {
-  getAgent,
-  listAgentConversations,
-  listAgentVersions,
-  listCopies,
-  listCopyReaders,
-  listTools,
-} from '@conexus/hub-api'
+import { getAgent, listAgentConversations, listAgentVersions, listTools } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
-import { CLIENTES, copyOf, VENDAS } from './sweep-copies-states.ts'
 import { companies, PROJECT_ID } from './sweep-replies.ts'
 
 export const COMPANY_ID = '0'.repeat(32)
-function tableOf(id: string, name: string, label: string, description: string) {
-  const one = copyOf(id, name, label, {})
-  return { ...one, shown: { ...one.shown, description } }
-}
-
-const TABLES = [
-  tableOf(VENDAS, 'sankhya_vendas', 'Vendas', 'Pedidos e notas de venda, um por linha.'),
-  tableOf(CLIENTES, 'sankhya_clientes', 'Clientes', 'Cadastro de clientes e parceiros.'),
-]
-
-/** Who reads each table: the owner and the administrator both, Financeiro only the sales. */
-const READERS = [
-  { copyId: VENDAS, roles: ['owner', 'admin', 'financeiro'] },
-  { copyId: CLIENTES, roles: ['owner', 'admin'] },
-].map((one) => ({
-  ...one,
-  roles: one.roles.map((name) => ({ role: name, label: name, members: 1 })),
-}))
-
-/** The company page of an owner, with the roles and the copies each role may be marked for. */
+/** The company page of an owner, with its roles. */
 export function rolesReplies(): Replies {
-  return {
-    ...companies([{ name: 'Empresa Teste', role: 'owner' }], false),
-    [`GET /api/companies/${COMPANY_ID}/copies`]: ok(listCopies, { copies: TABLES }),
-    [`GET /api/companies/${COMPANY_ID}/copy-readers`]: ok(listCopyReaders, { readers: READERS }),
-  }
+  return companies([{ name: 'Empresa Teste', role: 'owner' }], false)
 }
 
 const AGENT = '11111111-aaaa-4aaa-8aaa-111111111111'

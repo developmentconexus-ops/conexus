@@ -8,7 +8,6 @@ import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { rolesQuery } from './queries.ts'
 import { Back, NewRole, OpenRole } from './role-editor.tsx'
-import type { RoleTables, SaveTables } from './role-tables.tsx'
 import { summaryOf } from './role-text.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/roles')
@@ -93,8 +92,6 @@ function RoleList(props: {
 export function Roles(props: {
   kit: readonly ConnectorEntry[]
   logo: (entry: ConnectorEntry) => ReactNode
-  tables: RoleTables
-  saveTables: SaveTables
 }) {
   const { companyId } = route.useParams()
   const search = route.useSearch()
@@ -119,17 +116,7 @@ export function Roles(props: {
         </div>
       )
     }
-    return (
-      <OpenRole
-        companyId={companyId}
-        kit={kit}
-        logo={logo}
-        role={found}
-        tables={props.tables}
-        saveTables={props.saveTables}
-        onDone={back}
-      />
-    )
+    return <OpenRole companyId={companyId} kit={kit} logo={logo} role={found} onDone={back} />
   }
   return <RoleList companyId={companyId} roles={data.roles} kit={kit} />
 }

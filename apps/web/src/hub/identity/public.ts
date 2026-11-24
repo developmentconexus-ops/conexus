@@ -25,7 +25,6 @@ export {
   rolesQuery,
   sessionQuery,
 } from './queries.ts'
-export type { RoleTables } from './role-tables.tsx'
 export { Roles } from './roles.tsx'
 export { type PasswordLinkKind, SetPasswordForm } from './set-password-form.tsx'
 export { goBack, SameOriginPath, SignInForm } from './sign-in-form.tsx'

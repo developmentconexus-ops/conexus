@@ -1,26 +1,4 @@
-import type { CopySample, CopySummary } from '@conexus/hub-api'
-import { ConnectionId, ConnectorEntry, ConnectorId } from '@conexus/hub-api'
-
-// The stores of Mercado Livre and the catalog the Dados tests read (O Sync de qualquer conector, U4).
-const LOJA_A = ConnectionId.parse('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')
-const LOJA_B = ConnectionId.parse('cccccccc-cccc-4ccc-8ccc-cccccccccccc')
-/** Two stores of Mercado Livre, by the names the company gave them. */
-export const STORES = [
-  { connection: { id: LOJA_A, name: 'Loja A', connector: ConnectorId.parse('mercado-livre') } },
-  { connection: { id: LOJA_B, name: 'Loja B', connector: ConnectorId.parse('mercado-livre') } },
-]
-/** What a copy of the stores' orders shows: the read `pedidos`, paid only, only what changed. */
-export const ORDERS_SHOWN: CopySummary['shown'] = {
-  source: { kind: 'OPERATION', operation: 'pedidos', label: 'Pedidos', input: { status: 'paid' } },
-  key: ['id'],
-  changedSince: { column: 'atualizado' },
-  window: null,
-  description: 'Os pedidos de cada loja',
-  columns: [
-    { name: 'id', type: 'bigint', description: 'O número do pedido', inactiveSince: null },
-    { name: 'atualizado', type: 'timestamp', description: null, inactiveSince: null },
-  ],
-}
+import { ConnectorEntry } from '@conexus/hub-api'
 
 const LOGO =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28"/></svg>'
@@ -38,10 +16,3 @@ export const CATALOG = [
     fields: [],
   }),
 )
-
-/** What the sample of a copy shows: five rows of two columns, and more behind them. */
-export const SAMPLE: CopySample = {
-  columns: ['NUNOTA', 'CODPARC'],
-  rows: [1, 2, 3, 4, 5].map((n) => [n * 100, `P${n}`]),
-  complete: false,
-}

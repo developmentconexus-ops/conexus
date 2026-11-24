@@ -6,7 +6,6 @@ import { ScrollTextIcon } from 'lucide-react'
 import { z } from 'zod'
 import { agentsQuery } from '../../../../../builder/agents/public.ts'
 import { connectionsQuery } from '../../../../../hub/connectors/public.ts'
-import { copiesQuery } from '../../../../../hub/copies/public.ts'
 import {
   DATA_READS_TEXT,
   DataReads,
@@ -55,7 +54,6 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/data-
         queryClient.ensureQueryData(everyMemberQuery(companyId)),
         queryClient.ensureQueryData(agentsQuery(companyId, undefined)),
         queryClient.ensureQueryData(connectionsQuery(companyId)),
-        queryClient.ensureQueryData(copiesQuery(companyId)),
       ]),
     )
   },
@@ -77,14 +75,13 @@ function DataReadsFailure({ reset }: { reset: () => void }) {
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/data-reads')
 
-/** The people, the tables, the saved agents' and the connections' names come from their owners here, so the Registro imports none of them. */
+/** The people, the saved agents' and the connections' names come from their owners here, so the Registro imports none of them. */
 function DataReadsPage() {
   const { companyId } = route.useParams()
   const { person } = route.useRouteContext()
   const members = useSuspenseQuery(everyMemberQuery(companyId)).data
   const { agents } = useSuspenseQuery(agentsQuery(companyId, undefined)).data
   const { connections } = useSuspenseQuery(connectionsQuery(companyId)).data
-  const { copies } = useSuspenseQuery(copiesQuery(companyId)).data
   const agentNames = new Map<AgentId, string>(agents.map((agent) => [agent.id, agent.name]))
   const connectionNames = new Map<ConnectionId, string>(
     connections.map((connection) => [connection.id, connection.name]),
@@ -93,7 +90,7 @@ function DataReadsPage() {
     <DataReads
       lists={{
         people: members.map((member) => ({ id: member.personId, name: member.name })),
-        tables: copies.map((copy) => copy.name).sort(),
+        tables: [],
         names: {
           agent: (id) => agentNames.get(id),
           connection: (id) => connectionNames.get(id),

@@ -68,5 +68,8 @@ test('o que lê saiu', async (t) => {
     ['DELETE', `${project}/copies/${copyId}`],
     ['GET', `${project}/copy-tables/sankhya_vendas/rows`],
   ])
-  notInContract(['listCopyRows'])
+  notInContract([
+    ...['listCopies', 'listCopyRuns', 'sampleCopy', 'listCopyReaders', 'setRoleCopies'],
+    ...['listProjectCopies', 'grantProjectCopy', 'revokeProjectCopy', 'listCopyRows'],
+  ])
 })

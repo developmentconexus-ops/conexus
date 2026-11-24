@@ -11,7 +11,6 @@ import {
   conversationsNone,
   hubServer,
   PEDIDOS,
-  projectCopiesNone,
   projectsRead,
   refusal,
 } from '../../platform/test-hub.tsx'
@@ -105,7 +104,7 @@ function open(view: View) {
   )
 }
 
-beforeEach(() => server.use(conversationsNone, projectCopiesNone, versionsRead({ versions: [] })))
+beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
 
 async function row(name: string) {
   const heading = await screen.findByText(name)
@@ -135,6 +134,19 @@ test('a dona libera a ligação certa e a linha passa a ler', async () => {
     },
   ])
   expect(await (await row('Loja 2')).findByRole('button', { name: 'Tirar: Loja 2' })).toBeTruthy()
+})
+
+test('sem cópias: as Integrações do Projeto não listam nem liberam cópia (critério 74)', async () => {
+  const asked: string[] = []
+  server.events.on('request:start', ({ request }) => {
+    if (request.url.includes('/copies')) asked.push(request.url)
+  })
+  open({ sankhya: [], ml: [line('Loja 1', { access: READS })], mayManage: true })
+  expect(await row('Loja 1')).toBeTruthy()
+  expect(screen.queryByRole('region', { name: 'Cópias' })).toBeNull()
+  expect(screen.queryByText('A empresa ainda não tem cópias.')).toBeNull()
+  expect(screen.queryByRole('button', { name: /^Liberar: / })).toBeNull()
+  expect(asked).toEqual([])
 })
 
 test('num conector de uma ligação por Projeto, as outras linhas dizem qual tirar e não liberam', async () => {
