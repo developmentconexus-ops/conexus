@@ -1,19 +1,20 @@
-# v0.24.118
+# v0.24.119
 
-Esta versão publica três coisas que entraram no `main` em 23/11: a primeira parte do Lago 2, a
-correção da tela da conversa e as correções do servidor.
+Esta versão publica o que entrou no `main` em 23/11: a segunda parte do Lago 2. O Conexus deixa de
+mostrar e de ler as cópias antigas dos dados da empresa.
 
-**Dados.** O Conexus deixa de criar cópia pelo jeito antigo, e o Builder não propõe mais cópia. As
-cópias antigas da empresa foram apagadas. Os Projetos que liam vendas e os pedidos do Mercado Livre
-ficam só com as leituras ao vivo até o lago trazer as cópias de volta, nas próximas partes do Lago 2.
+**Dados.** A página Dados não mostra mais cópias: some a lista, some a página de uma cópia com a
+Amostra e o "Quem lê", e a busca da árvore também. Em Dados, quem gerencia vê cada sistema ativo da
+empresa com "Nenhuma tabela copiada". Os endereços antigos de uma cópia levam à página Dados.
 
-**A conversa.** A tela não para mais de receber a resposta sem avisar quando a reconexão é recusada.
-Ao reler a conversa no meio de um turno, o texto de um passo não aparece mais repetido.
+**Projetos e apps.** Os Projetos e os apps não recebem mais cópias liberadas. A seção de cópias das
+Integrações do Projeto sai, e o papel só mostra o que lê, escreve e apaga de cada conector.
 
-**O servidor.**
-- A máquina do Assistente não vem mais vazia quando a lista do provedor falha.
-- Uma conta que bate no teto de uso fica fora até o fim do teto, não só por 15 minutos.
-- O modelo lê no máximo 40.000 caracteres de uma recusa de fornecedor.
-- Falhas que sumiam passam a aparecer no registro.
+**Assistente, Builder e agentes.** Eles leem os sistemas só ao vivo, até o lago trazer as tabelas.
+O Assistente continua respondendo, por exemplo, as vendas do mês direto do Sankhya, com a hora da
+leitura.
 
-Segue o `G0b`: sai o que ainda lê as cópias antigas.
+**Registro de dados.** O filtro Tabela fica sem opções, só com "Todas", até o lago trazer as
+tabelas.
+
+Segue o `G0c`: tirar as tabelas antigas das cópias. Depois vem o conector no padrão novo.
