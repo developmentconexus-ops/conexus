@@ -22,7 +22,7 @@ import { catalogRoute } from './test-hub-tools.tsx'
 const server = hubServer()
 const { at } = agentScreens(server)
 const PAGE = `${AREA}/${AGENT}`
-const OLD = 'Outra pessoa ou o Construtor mudou este rascunho. Recarregue.'
+const OLD = 'Outra pessoa ou o Conexus mudou este rascunho. Recarregue.'
 
 test('muda o modelo no painel, o servidor diz AGENT_DRAFT_STALE e a página mostra a frase', async () => {
   at(PAGE, { agents: [agent()], answers: { save: () => refusal('AGENT_DRAFT_STALE') } })

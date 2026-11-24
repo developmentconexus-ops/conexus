@@ -423,7 +423,7 @@ to them:
 | Ipê | `accent` | the 2px current-place tick, focus outline and field edge, the caret, a busy composer's arc (V28); never text |
 | Ipê text | `accent-text` | the only ipê that carries glyphs: the mark of the item the person chose, such as a toggle's icon and the check of the chosen Projeto (V57) |
 | Ipê soft | `accent-soft` | text selection, with the caret (V5) |
-| Mark | `mark` | the Conexus mark on the rail and beside "Assistente"; nothing else |
+| Mark | `mark` | the Conexus mark on the rail and beside "Conexus" at the head of an answer in the platform's three conversations (Construir, Agentes, Conversas); nothing else. A company's agent signs with its own name and the agent icon in `text-2` |
 | Memory | `memory` | the memory ring only |
 | Status | `success`, `warning`, `danger` | always with a word (V35): "Publicado · v3", errors |
 | Outside the scheme | `on-accent`, `preview-paper`, `phone-frame`, `logo-plate`, `code-*` | on-accent text, the Prévia's page, the drawn phone (V3), the light plate under a connector logo (V3), syntax highlighting |
@@ -596,8 +596,8 @@ which shadcn file it was copied from; the front matter holds their values. Their
   hover raised; its rows keep the table display at every width. A markdown table in a message has
   a raised header and a full hairline grid.
 - **Chat messages.** The person's bubble: raised, `rounded.object`, right, 80% at most, the time as
-  a fact under it. The assistant's turn is plain text on the sheet, headed by the mark,
-  "Assistente" and the model badge, on the axis.
+  a fact under it. The assistant's turn is plain text on the sheet, headed by its sign (the mark, or
+  the agent icon of a saved agent), its name and the model badge, on the axis.
 - **Tool row.** A collapsed row with icon, sentence, duration in tabular figures and a chevron;
   it opens on what the tool received and returned (V39).
 - **AI pieces.** `apps/web/src/ui/ai/` holds what the agent did and asks, on `Trace` and shadcn's

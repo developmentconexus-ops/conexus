@@ -141,7 +141,7 @@ export const PREVIEW_STATES: State[] = [
         },
       },
     ]),
-    settle: (p) => inChat(p, 'Pedir ao Builder para corrigir'),
+    settle: (p) => inChat(p, 'Pedir ao Conexus para corrigir'),
   },
   {
     name: 'Conversa, com a Prévia que a lista fixa recusou',
@@ -162,7 +162,7 @@ export const PREVIEW_STATES: State[] = [
         },
       },
     ]),
-    settle: (p) => inChat(p, 'Pedir ao Builder para corrigir'),
+    settle: (p) => inChat(p, 'Pedir ao Conexus para corrigir'),
   },
   {
     name: 'Conversa, com a Prévia que a garantia recusou por linhas apagadas',
@@ -178,6 +178,6 @@ export const PREVIEW_STATES: State[] = [
         },
       },
     ]),
-    settle: (p) => inChat(p, 'Pedir ao Builder para corrigir'),
+    settle: (p) => inChat(p, 'Pedir ao Conexus para corrigir'),
   },
 ]

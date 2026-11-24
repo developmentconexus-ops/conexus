@@ -9,8 +9,7 @@ const { at } = assistantScreens(server)
 
 test('o membro vê no Início a caixa do Assistente, as conversas e os Projetos, e não o cartão de preparar a empresa', async () => {
   at(COMPANY_ROOT, { role: 'member' })
-  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeTruthy()
-  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
   const main = within(screen.getByRole('main'))
   expect(await main.findByRole('region', { name: 'Projetos' })).toBeTruthy()
   expect(screen.queryByRole('region', { name: 'Termine de preparar a empresa' })).toBeNull()

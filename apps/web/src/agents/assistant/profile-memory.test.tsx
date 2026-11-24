@@ -11,9 +11,9 @@ import { companyRead, hubServer, refusal, sessionRead } from '../../platform/tes
 const server = hubServer()
 const PAGE = `/companies/${COMPANY.id}/settings/account`
 const PATH = `*/api/companies/${COMPANY.id}/assistant/profile-memory`
-const TITLE = 'O que o Assistente lembra de você'
+const TITLE = 'O que o Conexus lembra de você'
 const EMPTY =
-  'O Assistente ainda não guardou nada sobre você. Ele guarda o que você pedir para lembrar, e o que aprender nas conversas.'
+  'O Conexus ainda não guardou nada sobre você. Ele guarda o que você pedir para lembrar, e o que aprender nas conversas.'
 const KEPT = 'Acompanha a linha de bebidas.'
 const UNSAVED = 'Não confirmamos se a memória foi salva. Confira o texto e tente de novo.'
 
@@ -186,7 +186,7 @@ test('apagar com confirmação: Apagar tudo pergunta antes, apaga e mostra a fra
   const shown = await section()
   fireEvent.click(await shown.findByRole('button', { name: 'Apagar tudo' }))
   const dialog = within(await screen.findByRole('alertdialog'))
-  expect(dialog.getByText('Apagar o que o Assistente lembra de você?')).toBeTruthy()
+  expect(dialog.getByText('Apagar o que o Conexus lembra de você?')).toBeTruthy()
   fireEvent.click(dialog.getByRole('button', { name: 'Cancelar' }))
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
   expect(hub.erased).toBe(0)

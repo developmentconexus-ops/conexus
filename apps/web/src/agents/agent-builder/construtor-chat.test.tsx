@@ -81,7 +81,7 @@ test('a conversa com o Construtor fica na folha branca, com o botão do modelo n
   const root = title.parentElement?.parentElement
   expect(root?.className).toContain('bg-surface')
   expect(root?.className).not.toContain('bg-canvas')
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
+  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   const form = box.closest('form')
   if (form === null) throw new Error('the box has no form')
   expect(await within(form).findByRole('combobox', { name: 'Modelo e raciocínio' })).toBeTruthy()

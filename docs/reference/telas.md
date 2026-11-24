@@ -183,10 +183,10 @@ A moldura: os grupos de hoje são dois, `Você` e o nome da empresa (`ui/setting
 #### TB13. Minha conta (Você)
 
 - **Para que serve.** A pessoa vê como aparece na empresa e diz ao Assistente quem ela é. G1 e `C4` pelo lado da pessoa.
-- **Conteúdo obrigatório.** Perfil (Nome e E-mail, só leitura, `hub/identity/my-account.tsx`); Cargo e área com Salvar (`hub/identity/member-profile.tsx`); "O que o Assistente lembra de você", até 4.000 caracteres, Salvar e "Apagar tudo" com confirmação (`agents/assistant/profile-memory.tsx`).
+- **Conteúdo obrigatório.** Perfil (Nome e E-mail, só leitura, `hub/identity/my-account.tsx`); Cargo e área com Salvar (`hub/identity/member-profile.tsx`); "O que o Conexus lembra de você", até 4.000 caracteres, Salvar e "Apagar tudo" com confirmação (`agents/assistant/profile-memory.tsx`).
 - **Ações.** Salvar cargo e área, salvar e apagar a memória, só a própria pessoa. Mudar nome, e-mail, senha e sessões não existe.
 - **Ação principal.** Não há uma só (três blocos com Salvar próprio). A camada de área decide.
-- **Estados.** Vazio com "O Assistente ainda não guardou nada sobre você…" (`profile-memory.tsx`); esqueleto (`member-profile.tsx`); erro com Tentar de novo (`member-profile.tsx`, `profile-memory.tsx`); salvo sem confirmação (`profile-memory.tsx`).
+- **Estados.** Vazio com "O Conexus ainda não guardou nada sobre você…" (`profile-memory.tsx`); esqueleto (`member-profile.tsx`); erro com Tentar de novo (`member-profile.tsx`, `profile-memory.tsx`); salvo sem confirmação (`profile-memory.tsx`).
 - **Faixa de dados.** Memória de 0 a 4.000. Cargo e área até cerca de 60 (hipótese).
 - **Hoje falta.** Segurança da conta (sem marco, mapa 6.2). A sessão de 30 min e 8 h não aparece (`auth.ts`). A memória "aprendida nas conversas" não diz de qual conversa nem quando.
 - **Referência.** A demonstração do Better Auth lista sessões ativas, encerrar, passkeys e dois fatores. Outras referências tratam Segurança como seção própria.
@@ -261,7 +261,7 @@ A moldura: os grupos de hoje são dois, `Você` e o nome da empresa (`ui/setting
 #### TB19. Contas da empresa e Troca automática (Empresa: Modelos; página nova do mapa 6.4)
 
 - **Para que serve.** Ligar as contas da empresa, ordenar, reservar para pessoas, e trocar de modelo quando as contas acabam. G4 e A1.
-- **Conteúdo obrigatório.** Contas da empresa: "Ligar conta"; a frase de quem pode; "Nenhuma conta ligada"; por provedor, "o Builder tenta nesta ordem"; por conta, lugar, nome, origem, "para todos" ou "reservada para X", estado, menu com "Dar a pessoas…" (`harness/model-accounts/company-accounts.tsx`, `account-menu.tsx`). Troca automática: a frase, o interruptor, a fila com Subir, Descer, Tirar, e "Adicionar à fila" (`model-fallback.tsx`); leitura para quem não gerencia (`company-accounts.tsx`).
+- **Conteúdo obrigatório.** Contas da empresa: "Ligar conta"; a frase de quem pode; "Nenhuma conta ligada"; por provedor, "o Conexus e os agentes tentam nesta ordem"; por conta, lugar, nome, origem, "para todos" ou "reservada para X", estado, menu com "Dar a pessoas…" (`harness/model-accounts/company-accounts.tsx`, `account-menu.tsx`). Troca automática: a frase, o interruptor, a fila com Subir, Descer, Tirar, e "Adicionar à fila" (`model-fallback.tsx`); leitura para quem não gerencia (`company-accounts.tsx`).
 - **Ações.** Todas, quem gerencia (`mayManage`). Os outros leem.
 - **Ação principal.** Ligar conta.
 - **Estados.** Vazio com a troca desligada; filas; recusada, pausada, no limite; versão que impede sobrescrever (`model-fallback.tsx`); leitura.
@@ -471,7 +471,7 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 
 #### TD11. Conhecimento, hoje a Memória da empresa (`settings/company-memory.tsx`)
 
-- **Para que serve.** Guardar como a empresa opera, em instruções e páginas que o Assistente segue. `C4` e G8. O mapa 3.1 a põe no trilho como Conhecimento.
+- **Para que serve.** Guardar como a empresa opera, em instruções e páginas que o Conexus segue. `C4` e G8. O mapa 3.1 a põe no trilho como Conhecimento.
 - **Conteúdo obrigatório.** "Instruções da empresa" com contador e Salvar; "Páginas" com nome e "autor · dia" (`agents/assistant/company-memory-page.tsx`); a página aberta com texto, notas, "Editar", "Apagar a página", "Corrigir" e "Apagar" por nota; a frase de quem pode (`agents/assistant/text.ts`).
 - **Ações.** Salvar, editar, apagar, corrigir, só Dono e Administrador. Abrir, todo membro. Não há botão para criar página nem nota; elas nascem do cartão do Assistente (`memory-proposal-card.tsx`).
 - **Ação principal.** Salvar as instruções.
@@ -514,7 +514,7 @@ Papéis: `manageAgents` e `manageAutomations` valem para todo papel que não é 
 #### TG2. Conversa da empresa (`conversations/$conversationId.tsx`)
 
 - **Para que serve.** Receber a resposta e agir sobre ela (analisar, ver o arquivo, aprovar, criar). G1, G3, G7, `C5`.
-- **Conteúdo obrigatório.** Título e selo "Automação" (`agents/assistant/conversation.tsx`); transcrição com linhas de ferramenta agrupadas (`text.ts`); bloco de fontes com sistema e estado em palavra (`harness/room/sources.tsx`); "Assistente trabalhando" e tarefas; estado da memória; caixa; arquivo ao lado (`conversation.tsx`); cartões de app, automação, memória, "Aprovar?" (`approval-text.ts`), pergunta e plano.
+- **Conteúdo obrigatório.** Título e selo "Automação" (`agents/assistant/conversation.tsx`); transcrição com linhas de ferramenta agrupadas (`text.ts`); bloco de fontes com sistema e estado em palavra (`harness/room/sources.tsx`); "Conexus trabalhando" e tarefas; estado da memória; caixa; arquivo ao lado (`conversation.tsx`); cartões de app, automação, memória, "Aprovar?" (`approval-text.ts`), pergunta e plano.
 - **Ações.** Enviar, orientar, parar, trocar modelo, quem tem conta. Aprovar ou recusar, a pessoa que conversa. Criar automação, todo papel menos o Membro (`proposal.tsx`). Salvar na memória, só Dono e Administrador. Renomear e apagar só na coluna (`conversation-row.tsx`).
 - **Ação principal.** Enviar a próxima mensagem.
 - **Estados.** Vazio; trabalhando; esperando uma pessoa trava a caixa (`chat.tsx`); mensagens anteriores; envio não confirmado (`harness/room/text.ts`); escrita recusada (`text.ts`); sem conta (`chat.tsx`); não encontrada (`chat.tsx`).
@@ -598,9 +598,9 @@ Papéis: `manageAgents` e `manageAutomations` valem para todo papel que não é 
 #### TG9. Agentes do Projeto (`$projectId_.agents.index.tsx`)
 
 - **Para que serve.** Pedir um agente ao Construtor e ver os agentes do Projeto. G4.
-- **Conteúdo obrigatório.** "Agentes" e as abas Agentes e Ferramentas; "Conte o que você quer que um agente faça."; caixa "Peça ao Construtor…" com dois exemplos; aviso de senhas; Agentes com descrição, ferramentas e estado (`agent-list.tsx`); Conversas com o Construtor (`agents/saved-agent/area.tsx`).
-- **Ações.** Pedir ao Construtor, abrir agente ou conversa, trocar de aba, todo papel menos o Membro (`text.ts`).
-- **Ação principal.** Pedir ao Construtor.
+- **Conteúdo obrigatório.** "Agentes" e as abas Agentes e Ferramentas; "Conte o que você quer que um agente faça."; caixa "Peça ao Conexus um agente…" com dois exemplos; aviso de senhas; Agentes com descrição, ferramentas e estado (`agent-list.tsx`); Conversas sobre agentes (`agents/saved-agent/area.tsx`).
+- **Ações.** Pedir ao Conexus, abrir agente ou conversa, trocar de aba, todo papel menos o Membro (`text.ts`).
+- **Ação principal.** Pedir ao Conexus.
 - **Estados.** Dois vazios; três esqueletos (`route-states.tsx`); erro; sem conta (`area.tsx`); criação não confirmada (`area.tsx`).
 - **Faixa de dados.** Volumes, hipótese. Sem paginação.
 - **Hoje falta.** O título com o Projeto; saber pela lista se o agente rodou e como.
@@ -637,7 +637,7 @@ Papéis: `manageAgents` e `manageAutomations` valem para todo papel que não é 
 - **Conteúdo obrigatório.** "Agentes", abas, tabela com Ferramenta, "Lê de", Efeito, "Usada por", Versão, Ações (`agents/saved-agent/tools/tools-tab.tsx`).
 - **Ações.** Abrir, nova versão, apagar com aviso de quem usa (`agents/saved-agent/tools/text.ts`). Não-Membro.
 - **Ação principal.** Abrir a ferramenta.
-- **Estados.** "Nenhuma ferramenta ainda. O Construtor faz as primeiras…"; esqueleto; erro; apagar em uso recusa.
+- **Estados.** "Nenhuma ferramenta ainda. O Conexus faz as primeiras…"; esqueleto; erro; apagar em uso recusa.
 - **Faixa de dados.** Hipótese; limite do nome em aberto.
 - **Hoje falta.** Criar sem o Construtor (o "Criar" só existe na página do agente).
 - **Referência.** Uma plataforma de dados lista MCPs. Uma plataforma de agentes mostra o painel de configuração do agente.
@@ -647,7 +647,7 @@ Papéis: `manageAgents` e `manageAutomations` valem para todo papel que não é 
 
 - **Para que serve.** Ver as versões de uma ferramenta e gravar uma nova. G4.
 - **Conteúdo obrigatório.** "Voltar às ferramentas"; nome e "Em código"; "Nova versão"; versões com número, descrição, valores fixos e o que o modelo preenche; resultado do teste (`agents/saved-agent/tools/tool-page.tsx`; `agents/saved-agent/tools/text.ts`).
-- **Ações.** Nova versão; ferramenta em código só o Construtor muda (`agents/saved-agent/text.ts`). Papéis de TG12.
+- **Ações.** Nova versão; ferramenta em código só o Conexus muda (`agents/saved-agent/text.ts`). Papéis de TG12.
 - **Ação principal.** Nova versão.
 - **Estados.** Esqueleto; erro; versão mais nova pede "Recarregar"; recusa por campo.
 - **Faixa de dados.** Hipótese.
@@ -658,9 +658,9 @@ Papéis: `manageAgents` e `manageAutomations` valem para todo papel que não é 
 #### TG14. Conversa com o Construtor (`$projectId_.agents.construtor.$conversationId.tsx`)
 
 - **Para que serve.** Montar um agente conversando e ver o rascunho crescer. G4.
-- **Conteúdo obrigatório.** "Voltar para Agentes" e título; a casca de TG2 com "Peça ao Construtor…"; painel do rascunho com nome, estado, Instruções, Modelo, Memória, Ferramentas, Ligações, e "Testar", "Abrir a página", "Publicar vN" (`agents/agent-builder/construtor-chat.tsx`, `draft-panel.tsx`).
+- **Conteúdo obrigatório.** "Voltar para Agentes" e título; a casca de TG2 com "Peça ao Conexus um agente…"; painel do rascunho com nome, estado, Instruções, Modelo, Memória, Ferramentas, Ligações, e "Testar", "Abrir a página", "Publicar vN" (`agents/agent-builder/construtor-chat.tsx`, `draft-panel.tsx`).
 - **Ações.** Conversar, parar, trocar modelo, testar, abrir, publicar. Quem monta.
-- **Ação principal.** Enviar a mensagem ao Construtor.
+- **Ação principal.** Enviar a mensagem ao Conexus.
 - **Estados.** "Conte o que você quer que um agente faça."; sem painel antes do agente; apagado; "O rascunho mudou. Abra o agente para ver."; erro por campo; não encontrada.
 - **Faixa de dados.** A de TG10.
 - **Hoje falta.** "Publicar" do painel vai sem mensagem de versão (`draft-panel.tsx`), a página pede (`publish.tsx`).

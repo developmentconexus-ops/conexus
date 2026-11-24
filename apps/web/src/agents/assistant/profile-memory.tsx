@@ -26,9 +26,9 @@ import { profileMemoryQuery, sendProfileMemory, sendProfileMemoryClear } from '.
 const route = getRouteApi('/_app/companies/$companyId_/settings/account')
 
 const ID = 'profile-memory'
-const TITLE = 'O que o Assistente lembra de você'
+const TITLE = 'O que o Conexus lembra de você'
 const EMPTY =
-  'O Assistente ainda não guardou nada sobre você. Ele guarda o que você pedir para lembrar, e o que aprender nas conversas.'
+  'O Conexus ainda não guardou nada sobre você. Ele guarda o que você pedir para lembrar, e o que aprender nas conversas.'
 const READ_FAILED = 'Não foi possível ler a memória.'
 const MAX = PROFILE_MEMORY_MAX.toLocaleString('pt-BR')
 const TOO_LONG = `Escreva até ${MAX} caracteres.`
@@ -60,7 +60,7 @@ function EraseAll({ companyId }: { companyId: CompanyId }) {
         open={open}
         onOpenChange={setOpen}
         trigger={{ label: ERASE, name: ERASE, danger: true }}
-        title="Apagar o que o Assistente lembra de você?"
+        title="Apagar o que o Conexus lembra de você?"
         description="Ele esquece o texto inteiro. Nas próximas conversas, volta a guardar o que você pedir para lembrar."
         confirm={{ label: ERASE, pending: 'Apagando…' }}
         write={erase}
@@ -126,7 +126,7 @@ function Editor({ companyId, saved }: { companyId: CompanyId; saved: string | nu
   )
 }
 
-/** "O que o Assistente lembra de você" in Sua conta: the person reads, corrects and erases their own. */
+/** "O que o Conexus lembra de você" in Sua conta: the person reads, corrects and erases their own. */
 export function ProfileMemory() {
   const { companyId } = route.useParams()
   const read = useQuery(profileMemoryQuery(companyId))

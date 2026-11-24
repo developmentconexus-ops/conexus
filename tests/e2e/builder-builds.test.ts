@@ -25,7 +25,7 @@ import { createProject, liveHub, openHome, openProject } from './live-hub.ts'
 // command and version 1 that builds over the starter; adds a library the starter lacks, with no question, and version 2 builds; a
 // new Projeto gets a screen-only version. The machine's check program is the one thing faked
 // beyond the providers: it prints a passing report.
-const WORKING = 'Builder trabalhando'
+const WORKING = 'Conexus trabalhando'
 const PLAN = '.conexus/plans/encomendas.md'
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]

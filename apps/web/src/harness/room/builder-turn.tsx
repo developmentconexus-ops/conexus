@@ -1,5 +1,6 @@
 import type { ModelId } from '@conexus/hub-api'
 import { FailureData, MachineData, NoticeData, PreviewData, VersionData } from '@conexus/hub-api'
+import { BotIcon } from 'lucide-react'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
@@ -124,8 +125,12 @@ export function BuilderTurn(props: {
     <Message>
       <MessageContent>
         <MessageHeader>
-          <ConexusMark size={16} />
-          <span className="font-semibold text-text">{agent === 'Builder' ? 'Conexus' : agent}</span>
+          {room.kind === 'SAVED_AGENT' ? (
+            <BotIcon aria-hidden="true" data-slot="agent-icon" className="size-4 text-text-2" />
+          ) : (
+            <ConexusMark size={16} />
+          )}
+          <span className="font-semibold text-text">{agent}</span>
           {props.model !== null && (
             <span className="min-w-0 truncate rounded-pill bg-surface-3 px-sm py-xs">
               {modelLabel(props.model)}

@@ -110,7 +110,7 @@ export function assistantHandOffTo(state: HistoryState, conversationId: string |
 }
 
 /**
- * On the Builder's conversation a touch of **Criar app** or **Mandar ao Builder** opened (step
+ * On the Builder's conversation a touch of **Criar app** or **Mandar para Construir** opened (step
  * 24.3.2): once the screen follows the stream, asks the Hub to send the proposal, with the touch's
  * key. Mastra tells the signal only to those subscribed when it arrives and stores it with the run's
  * first step, so the screen subscribes before the send (Mastra's "subscribe before sending",

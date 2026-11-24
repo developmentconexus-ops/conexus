@@ -44,7 +44,7 @@ test('o CSV põe entre aspas a célula com vírgula, aspas ou quebra de linha', 
   const query = 'select a,\n"b" from sync.sankhya_vendas'
   const text = readsCsv([read({ verb: 'QUERY', query, outcome: 'QUERY' })], NAMES)
   expect(text).toContain(
-    `Bruno Reis,Assistente,no Início,sankhya_vendas,Lida,QUERY,1,12,"select a,\n""b"" from sync.sankhya_vendas"\r\n`,
+    `Bruno Reis,Conexus em Conversas,no Início,sankhya_vendas,Lida,QUERY,1,12,"select a,\n""b"" from sync.sankhya_vendas"\r\n`,
   )
 })
 

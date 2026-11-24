@@ -9,7 +9,7 @@ import { entry, noop } from './kit.tsx'
 import type { ShowcaseEntry } from './types.ts'
 
 const WAITING_LINE = (
-  <WorkingLine state={{ kind: 'WAITING', sentence: 'Builder esperando sua resposta' }} />
+  <WorkingLine state={{ kind: 'WAITING', sentence: 'Conexus esperando sua resposta' }} />
 )
 
 const PLAN_TEXT: PlanText = {
@@ -71,7 +71,7 @@ const APPROVAL_OPEN: ApprovalState = {
 function AnApproval({ state }: { state: ApprovalState }) {
   return (
     <Approval
-      title="Builder quer lançar um pedido no Sankhya"
+      title="Conexus quer lançar um pedido no Sankhya"
       connection=" · Matriz"
       logo={undefined}
       fields={[
@@ -257,7 +257,7 @@ export const AI_CARDS: readonly ShowcaseEntry[] = [
             state={{
               kind: 'CLOSED',
               row: '1 pergunta sem resposta',
-              said: 'Você parou o Builder.',
+              said: 'Você parou o Conexus.',
             }}
           />
         ),

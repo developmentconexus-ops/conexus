@@ -24,7 +24,11 @@ const TODAY: [string, string | undefined, string][] = [
     'Confira a caixa e tente de novo.',
   ],
   ['Não confirmamos. Veja a lista.', undefined, 'Veja a lista.'],
-  ['Não confirmamos o envio ao Builder. Tente de novo.', 'o envio ao Builder', 'Tente de novo.'],
+  [
+    'Não confirmamos o envio para Construir. Tente de novo.',
+    'o envio para Construir',
+    'Tente de novo.',
+  ],
   [
     'Não confirmamos a gravação. Confira o painel e tente de novo.',
     'a gravação',

@@ -86,7 +86,7 @@ function toneOf(classes: string) {
 function linesOf(parts: MastraMessagePart[], words = WORDS) {
   const [item] = sourcesIn(parts)
   render(
-    <RoomContext.Provider value={agentRoom('Assistente', words)}>
+    <RoomContext.Provider value={agentRoom(words)}>
       <Sources sources={item?.sources ?? []} />
     </RoomContext.Provider>,
   )

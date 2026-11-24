@@ -206,7 +206,7 @@ export const AI_LINES: readonly ShowcaseEntry[] = [
     'A linha de atividade do agente: trabalhando, ou esperando a pessoa; no celular, no alto do cartão aberto.',
     () => (
       <WorkingLine
-        state={{ kind: 'WORKING', sentence: 'Builder trabalhando', since: ' · há 12 s' }}
+        state={{ kind: 'WORKING', sentence: 'Conexus trabalhando', since: ' · há 12 s' }}
       />
     ),
     [
@@ -222,14 +222,14 @@ export const AI_LINES: readonly ShowcaseEntry[] = [
         'WorkingState.WORKING sem contagem',
         () => (
           <WorkingLine
-            state={{ kind: 'WORKING', sentence: 'Builder trabalhando', since: undefined }}
+            state={{ kind: 'WORKING', sentence: 'Conexus trabalhando', since: undefined }}
           />
         ),
       ],
       [
         'WorkingState.WAITING',
         () => (
-          <WorkingLine state={{ kind: 'WAITING', sentence: 'Builder esperando sua resposta.' }} />
+          <WorkingLine state={{ kind: 'WAITING', sentence: 'Conexus esperando sua resposta.' }} />
         ),
       ],
     ],

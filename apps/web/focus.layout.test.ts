@@ -140,7 +140,7 @@ function colourOf(page: Page, name: string) {
 
 test('o dourado: o enviar, ao passar o mouse, fica no cinza de destaque (surface-3), não dourado', async () => {
   const page = await open('/', DESKTOP, { ...HOUSE, ...startsOn('0'.repeat(32)) })
-  const box = page.getByRole('textbox', { name: 'Mensagem para o Assistente' })
+  const box = page.getByRole('textbox', { name: 'Mensagem para o Conexus' })
   await box.fill('Como foram as vendas?')
   const send = page.getByRole('button', { name: 'Enviar' })
   await page.waitForFunction(

@@ -169,7 +169,7 @@ export async function turnOnSwitch(page: Page) {
 
 /** Writes in the field and sends; the answer is the caller's to wait for. */
 export async function ask(page: Page, question: string) {
-  await page.getByLabel('Mensagem para o Builder').fill(question)
+  await page.getByLabel('Mensagem para o Conexus').fill(question)
   await page.getByRole('button', { name: 'Enviar' }).click()
 }
 
@@ -246,7 +246,7 @@ export async function readyToBuild(owner: Page, companyId: string, name: string)
 }
 
 export function transcriptOf(chat: Page) {
-  return chat.getByRole('log', { name: 'Conversa com o Builder' })
+  return chat.getByRole('log', { name: 'Conversa com o Conexus' })
 }
 
 /** The command's output as its open row shows it, with `text` as a line of its own. */

@@ -80,7 +80,7 @@ export function MyProfile() {
     <SettingsSection
       id={ID}
       title="Cargo e área"
-      description="Ajuda o Assistente a entender o seu trabalho."
+      description="Ajuda o Conexus a entender o seu trabalho."
     >
       {read.isError ? (
         <ReadFailure text={READ_FAILED} onRetry={() => void read.refetch()} />
@@ -117,7 +117,7 @@ export function EditProfile({ companyId, member }: { companyId: CompanyId; membe
       onOpenChange={changeOpen}
       trigger={{ label: 'Cargo e área', name: `Cargo e área: ${member.name}`, danger: false }}
       title={`Cargo e área de ${member.name}`}
-      description="O Assistente usa estes textos para entender o trabalho da pessoa."
+      description="O Conexus usa estes textos para entender o trabalho da pessoa."
       confirm={{ label: 'Salvar', pending: 'Salvando…' }}
       write={send}
       onConfirm={() => void confirm()}

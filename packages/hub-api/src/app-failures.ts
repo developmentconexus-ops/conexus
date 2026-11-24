@@ -51,7 +51,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 409,
     phrase: 'Já tem uma versão sendo enviada neste Projeto.',
-    action: 'A próxima versão do Builder sobe quando o envio terminar.',
+    action: 'A próxima versão do Conexus sobe quando o envio terminar.',
     actionKind: 'NONE',
   },
   APP_VERSION_FAILED: {
@@ -59,7 +59,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 502,
     phrase: 'A versão não entrou.',
-    action: 'A próxima versão do Builder tenta de novo.',
+    action: 'A próxima versão do Conexus tenta de novo.',
     actionKind: 'NONE',
   },
   APP_MIGRATION_FAILED: {
@@ -67,7 +67,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'Uma migração do app falhou no banco.',
-    action: 'Use o botão para pedir ao Builder que corrija.',
+    action: 'Use o botão para pedir ao Conexus que corrija.',
     actionKind: 'NONE',
   },
   // The fixed list of step 15 (B, 2026-10-27).
@@ -76,7 +76,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'Uma migração do app faz o que o Conexus não confere.',
-    action: 'Use o botão para pedir ao Builder que corrija.',
+    action: 'Use o botão para pedir ao Conexus que corrija.',
     actionKind: 'NONE',
   },
   // Decision 0046: Cloudflare refuses code that does not start before any migration runs.
@@ -85,7 +85,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'O app não inicia.',
-    action: 'Peça ao Builder para corrigir; a próxima versão que montar sobe sozinha.',
+    action: 'Peça ao Conexus para corrigir; a próxima versão que montar sobe sozinha.',
     actionKind: 'NONE',
   },
   APP_MIGRATION_CHANGED: {
@@ -93,7 +93,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'Uma migração já aplicada mudou.',
-    action: 'Peça ao Builder uma migração nova, sem mudar a que já foi aplicada.',
+    action: 'Peça ao Conexus uma migração nova, sem mudar a que já foi aplicada.',
     actionKind: 'NONE',
   },
   CONNECTOR_NOT_GRANTED: {
@@ -129,7 +129,7 @@ export const APP_DATA_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'Esta tabela tem colunas demais para mostrar aqui.',
-    action: 'Peça ao Builder o que você quer ver dela.',
+    action: 'Peça ao Conexus o que você quer ver dela.',
     actionKind: 'NONE',
   },
 } as const satisfies Record<string, FailureRow>

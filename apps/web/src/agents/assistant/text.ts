@@ -88,15 +88,15 @@ export const CLEAR_FILTER = 'Tirar o filtro'
 
 /** The words of the card of an app the Assistant proposed (step 24.3.2, U3); the founder approves them at the step's end. */
 export const CREATE_APP = 'Criar app'
-export const SEND_TO_BUILDER = 'Mandar ao Builder'
+export const SEND_TO_BUILDER = 'Mandar para Construir'
 export const PROJECT_NAME_LABEL = 'Nome do projeto'
 export const RELEASE_CONNECTIONS = 'Ligações para o app ler'
 export const BRIEFING_LABEL = 'Briefing'
 export const PROPOSAL_GONE = 'Esta proposta não existe mais.'
 export const PROJECT_GONE = 'Este Projeto não existe mais.'
-export const UNCONFIRMED_HANDOFF = unconfirmedText('o envio ao Builder', 'Tente de novo.')
+export const UNCONFIRMED_HANDOFF = unconfirmedText('o envio para Construir', 'Tente de novo.')
 export const RETRY = 'Tentar de novo'
-export const OPEN_BUILDER = 'Abrir a conversa do Builder'
+export const OPEN_BUILDER = 'Abrir em Construir'
 export const NAME_HINT = `Escreva o nome do Projeto, com até ${PROJECT_NAME_MAX_LENGTH} caracteres.`
 
 /** The words of the card of what the Assistant proposed to save in the company's memory (U9). */

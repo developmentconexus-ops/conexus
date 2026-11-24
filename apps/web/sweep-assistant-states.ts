@@ -247,11 +247,11 @@ export const ASSISTANT_STATES: State[] = [
     },
   },
   {
-    name: 'Assistente, o cartão Mandar ao Builder de um Projeto',
+    name: 'Assistente, o cartão Mandar para Construir de um Projeto',
     path: INSIDE,
     replies: cardReplies(PROJECT_ID, [...CARD_SPEAKS, proposed(ASSISTANT_TOOL.proposeAppChange)]),
     settle: async (page) => {
-      await page.getByRole('button', { name: 'Mandar ao Builder' }).waitFor()
+      await page.getByRole('button', { name: 'Mandar para Construir' }).waitFor()
     },
   },
   {

@@ -25,7 +25,7 @@ test('a área mostra a conversa com o Construtor e a lista dos agentes com o est
       }),
     ],
   })
-  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })).toBeTruthy()
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
   expect(screen.getByText('Conte o que você quer que um agente faça.')).toBeTruthy()
   expect(await screen.findByRole('link', { name: /Conferente de metas/ })).toBeTruthy()
   expect(screen.getByText('Rascunho')).toBeTruthy()
@@ -63,7 +63,7 @@ test('no celular a área é uma coluna com as abas Agentes e Ferramentas, e o ag
       'Agentes',
       'Ferramentas',
     ])
-    expect(screen.getByRole('textbox', { name: 'Mensagem para o Construtor' })).toBeTruthy()
+    expect(screen.getByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
     expect(screen.getAllByRole('heading', { name: 'Agentes' })).toHaveLength(1)
   })
 })

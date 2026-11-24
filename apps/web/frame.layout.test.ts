@@ -146,7 +146,7 @@ for (const [viewport, axis, half] of [
   test(`o eixo: a ${viewport.width}px a saudação, a caixa, Continuar e o par Projetos e Ligações têm o mesmo centro e ${axis}px (cada metade ${half}, vão 16)`, async () => {
     const page = await open(`/companies/${COMPANY.id}`, viewport, owner([]))
     const form = page
-      .getByRole('textbox', { name: 'Mensagem para o Assistente' })
+      .getByRole('textbox', { name: 'Mensagem para o Conexus' })
       .locator('xpath=ancestor::form')
     const [continuar, projetos, ligacoes] = ['Continuar', 'Projetos', 'Ligações'].map((name) =>
       page.getByRole('region', { name }),

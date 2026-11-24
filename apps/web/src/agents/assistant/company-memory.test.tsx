@@ -132,7 +132,7 @@ async function memorySection() {
   return screen
 }
 
-const SUMMARY = 'As instruções e as páginas que o Assistente segue em toda conversa da empresa.'
+const SUMMARY = 'As instruções e as páginas que o Conexus segue em toda conversa da empresa.'
 const NO_PAGES = 'Nenhuma página guardada ainda.'
 const ONLY_MANAGERS = 'Só o dono ou um administrador muda a memória da empresa.'
 const RULE = 'Valores em reais com duas casas.'

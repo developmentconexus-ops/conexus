@@ -83,7 +83,7 @@ for (const viewport of [DESKTOP, PHONE]) {
     const page = await open(`/companies/${COMPANY_ID}`, viewport, WITH_MODEL)
     const title = page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })
     const box = page
-      .getByRole('textbox', { name: 'Mensagem para o Assistente' })
+      .getByRole('textbox', { name: 'Mensagem para o Conexus' })
       .locator('xpath=ancestor::form')
     const examples = page.getByRole('list', { name: 'Exemplos' })
     await examples.waitFor()
@@ -167,7 +167,7 @@ function starting(sent: Promise<unknown>): Replies {
 
 /** The request written in the Builder's box, **Enviar**, the name, **Criar e começar**: the conversation opens. */
 async function start(page: Page) {
-  await page.getByRole('textbox', { name: 'Mensagem para o Builder' }).fill(REQUEST)
+  await page.getByRole('textbox', { name: 'Mensagem para o Conexus' }).fill(REQUEST)
   await page.getByRole('button', { name: 'Enviar' }).click()
   await page.getByLabel('Nome do projeto').fill('Pedidos')
   await page.getByRole('button', { name: 'Criar e começar' }).click()
@@ -183,7 +183,7 @@ test('no celular, Criar e começar abre na Conversa, não na Prévia', async () 
   await start(page)
   const conversation = page.getByRole('button', { name: 'Conversa', exact: true })
   assert.equal(await conversation.getAttribute('aria-pressed'), 'true')
-  assert.ok(await page.getByRole('log', { name: 'Conversa com o Builder' }).isVisible())
+  assert.ok(await page.getByRole('log', { name: 'Conversa com o Conexus' }).isVisible())
   assert.equal(await page.getByText(/Ainda não há uma prévia/).isVisible(), false)
   assert.deepEqual(page.problems, [])
   await page.close()
@@ -200,7 +200,7 @@ test('recarregar durante o envio do pedido põe o texto na caixa com a frase e n
   assert.equal(messagesSent(page), 1)
   await page.reload()
   assert.equal(await page.getByRole('alert').textContent(), HANDOFF_UNCONFIRMED)
-  const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = page.getByRole('textbox', { name: 'Mensagem para o Conexus' })
   assert.equal(await field.inputValue(), REQUEST)
   assert.equal(messagesSent(page), 1)
   held.resolve()
@@ -220,7 +220,7 @@ test('o pedido recusado e reenviado não volta depois de recarregar: sem a frase
     await page.getByRole('button', { name: 'Enviar' }).click()
     await page.waitForFunction(() => document.querySelector('[role=alert]') === null)
     await page.reload()
-    const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
+    const field = page.getByRole('textbox', { name: 'Mensagem para o Conexus' })
     if (viewport === PHONE) {
       const app = page.getByRole('button', { name: 'App', exact: true })
       await app.waitFor()

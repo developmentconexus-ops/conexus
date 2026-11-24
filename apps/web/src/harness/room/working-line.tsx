@@ -18,7 +18,7 @@ function secondsSince(instant: number): number {
 }
 
 /**
- * "Builder trabalhando · há 12 s", counted from the instant the screen heard the run start (a screen
+ * "Conexus trabalhando · há 12 s", counted from the instant the screen heard the run start (a screen
  * that opens mid-run shows no count, as Mastra's display state has no start); after a minute in which the
  * answer's parts did not change, "Ainda trabalhando… há 1 min 20 s". While a question, a plan or an
  * approval waits on the person, the line says so, with no clock: the time is hers.

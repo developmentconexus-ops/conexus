@@ -82,7 +82,7 @@ export function startHub(server: ReturnType<typeof setupServer>) {
 }
 
 export function box() {
-  return screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  return screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
 }
 
 export async function request(text = REQUEST) {

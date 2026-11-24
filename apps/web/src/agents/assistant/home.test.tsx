@@ -22,7 +22,7 @@ const server = hubServer()
 const { at } = assistantScreens(server)
 
 async function box() {
-  return screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
+  return screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
 }
 
 /** The tools button of the box's row, once the offer is read. */
@@ -157,10 +157,9 @@ test('se a lista das ligações falha, a caixa diz a frase com Tentar de novo e 
   )
 })
 
-test('a caixa do Início se chama Mensagem para o Assistente', async () => {
+test('a caixa do Início se chama Mensagem para o Conexus', async () => {
   at(COMPANY_ROOT)
   expect(await box()).toBeTruthy()
-  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
 })
 
 test('escolher um Projeto no seletor cria a conversa nele, com as ligações dele, e abre no endereço dele', async () => {
@@ -276,7 +275,7 @@ test('voltar ao Início depois de perguntar mostra a conversa nova entre as rece
       new RegExp(`${COMPANY_ROOT}/conversations/`),
     ),
   )
-  await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })
+  await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   act(() => conexus.router.history.back())
   expect((await screen.findAllByRole('link', { name: /Conversa de/ })).length).toBeGreaterThan(0)
 })

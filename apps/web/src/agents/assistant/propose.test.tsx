@@ -1,4 +1,4 @@
-// The card of the app the Assistant proposed: Criar app on the Início, Mandar ao Builder in a Projeto,
+// The card of the app the Assistant proposed: Criar app on the Início, Mandar para Construir in a Projeto,
 // and Continuar aqui (step 24.3.2, criterion 11).
 import { ASSISTANT_TOOL, ConnectionId, handAssistantProposal } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
@@ -106,14 +106,14 @@ test('a conversa do Builder que o toque abre segue o stream antes de pedir o env
   expect(hub.conexus.router.state.location.state.assistantHandOff).toBeUndefined()
 })
 
-test('o cartão do Projeto diz Mandar ao Builder, sem campo de nome, e manda pela mesma rota', async () => {
+test('o cartão do Projeto diz Mandar para Construir, sem campo de nome, e manda pela mesma rota', async () => {
   const handed = handing()
   const { conexus } = proposing([proposal(ASSISTANT_TOOL.proposeAppChange)], IN_PROJECT, PEDIDOS.id)
   expect(await screen.findByText(SUMMARY)).toBeTruthy()
   expect(screen.queryByLabelText('Nome do projeto')).toBeNull()
   expect(screen.queryByRole('checkbox')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Criar app' })).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Mandar ao Builder' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Mandar para Construir' }))
   await waitFor(() =>
     expect(conexus.router.state.location.pathname).toContain(
       `/conversations/${BUILDER_CONVERSATION}`,
@@ -157,8 +157,8 @@ test('uma proposta mais nova no mesmo chat tira os botões da anterior', async (
 test('a falha mostra a frase e Tentar de novo, e a nova tentativa leva a mesma chave', async () => {
   const handed = handing((touch) => (touch === 1 ? refusal('HANDOFF_NOT_DELIVERED') : undefined))
   const { conexus } = proposing([proposal(ASSISTANT_TOOL.proposeAppChange)], IN_PROJECT, PEDIDOS.id)
-  fireEvent.click(await screen.findByRole('button', { name: 'Mandar ao Builder' }))
-  expect(await screen.findByText(/Não confirmamos o envio ao Builder/)).toBeTruthy()
+  fireEvent.click(await screen.findByRole('button', { name: 'Mandar para Construir' }))
+  expect(await screen.findByText(/Não confirmamos o envio para Construir/)).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
   await waitFor(() =>
     expect(conexus.router.state.location.pathname).toContain(
@@ -186,7 +186,7 @@ test('em um Projeto que saiu a frase é a do Projeto', async () => {
   server.use(
     http.get(`*/api/companies/${COMPANY.id}/projects/:projectId`, () => refusal('NOT_FOUND')),
   )
-  fireEvent.click(await screen.findByRole('button', { name: 'Mandar ao Builder' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Mandar para Construir' }))
   expect(await screen.findByText('Este Projeto não existe mais.')).toBeTruthy()
 })
 
@@ -211,7 +211,7 @@ test('a ligação que ficou para trás diz a sua frase e a conversa do Builder a
   const stayed = await screen.findByText(/Estoque: Essa ligação não está funcionando/)
   expect(stayed).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe(OPEN)
-  fireEvent.click(screen.getByRole('button', { name: 'Abrir a conversa do Builder' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Abrir em Construir' }))
   await waitFor(() =>
     expect(conexus.router.state.location.pathname).toContain(
       `/conversations/${BUILDER_CONVERSATION}`,

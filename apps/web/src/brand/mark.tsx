@@ -12,6 +12,7 @@ export function ConexusMark({
   const motion = working ? WORKING_MOTION : arrive ? ARRIVE_MOTION : null
   return (
     <svg
+      data-slot="conexus-mark"
       className="block flex-none text-mark"
       width={size}
       height={size}

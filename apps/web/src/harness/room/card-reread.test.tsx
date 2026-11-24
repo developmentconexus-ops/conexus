@@ -73,7 +73,7 @@ async function asking(call: Extract<MastraPart, { type: 'tool-invocation' }>) {
     line.emit(displayOf({ pendingSuspensions: parked }))
     return screen.findByText(READ)
   }
-  return { end, log: screen.getByRole('log', { name: 'Conversa com o Builder' }) }
+  return { end, log: screen.getByRole('log', { name: 'Conversa com o Conexus' }) }
 }
 
 test('o texto digitado na pergunta sobrevive ao fim do turno: "Enviar" manda o que a pessoa escreveu', async () => {

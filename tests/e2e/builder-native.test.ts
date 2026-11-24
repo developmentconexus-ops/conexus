@@ -13,7 +13,7 @@ const REASONING = 'Vou conferir os arquivos fictícios e manter esta alteração
 const HOLD = 'Vou continuar a conferência fictícia.'
 const SAFE_PATH = 'src/router.tsx'
 const STEER = 'Só eu cadastro.'
-const PENDING = 'Vai ao Builder no próximo passo'
+const PENDING = 'Vai ao Conexus no próximo passo'
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
 
@@ -147,7 +147,7 @@ test('percurso nativo em Chromium: ferramentas, pensamento, tarefas e transcriç
     const panel = chat.getByRole('region', { name: 'Painel de tarefas' })
     await panel.getByText(/Tarefas · 0 de 14/).waitFor()
     // A message sent while the Builder works waits below the answer until Mastra reads it (criterion 45).
-    const field = chat.getByRole('textbox', { name: 'Mensagem para o Builder' })
+    const field = chat.getByRole('textbox', { name: 'Mensagem para o Conexus' })
     await field.fill(STEER)
     await field.press('Enter')
     await transcript.getByText(PENDING).waitFor()

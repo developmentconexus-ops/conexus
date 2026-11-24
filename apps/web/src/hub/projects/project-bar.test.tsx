@@ -39,7 +39,7 @@ async function rail() {
   return within(column)
 }
 
-test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com a troca, Construir, Conversas, Agentes, Automações, Sobre, Quem usa o app, Integrações, Dados', async () => {
+test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com a troca, Construir, Conversas, Agentes, Automações, Integrações, Dados, Quem usa o app, Sobre', async () => {
   open(PROJECT)
   const list = await bar()
   expect(
@@ -51,10 +51,10 @@ test('dentro do Projeto o trilho continua e a lista é a do Projeto: o nome com 
     'Conversas',
     'Agentes',
     'Automações',
-    'Sobre',
-    'Quem usa o app',
     'Integrações',
     'Dados',
+    'Quem usa o app',
+    'Sobre',
   ])
   expect(screen.queryByText(/em breve/i)).toBeNull()
   expect(list.queryByText('Projetos recentes')).toBeNull()

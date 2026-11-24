@@ -41,7 +41,7 @@ export const ASSISTANT_FAILURES = {
     // The key is kept (W24): the touch again finds the Projeto and the conversation, and sends.
     settles: false,
     status: 503,
-    phrase: 'O Builder não recebeu a proposta.',
+    phrase: 'A proposta não chegou a Construir.',
     action: 'O Projeto e a conversa ficam. Tente de novo.',
     actionKind: 'RETRY',
   },

@@ -25,7 +25,7 @@ test('o dono vê a caixa, a pasta do Projeto e só as conversas deste Projeto', 
       assistantConversation({ id: ELSEWHERE, title: 'Conversa da empresa' }),
     ],
   })
-  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeTruthy()
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
   await screen.findByRole('button', { name: '2 ferramentas' })
   expect(screen.queryByRole('combobox', { name: 'Projeto da conversa' })).toBeNull()
   expect(asked).toEqual([`?projectId=${PEDIDOS_ID}`])
@@ -106,7 +106,7 @@ test('a lista passa de uma página: Ver mais leva à seguinte no endereço, e Pr
 
 test('o membro conversa no Projeto: a caixa do Assistente está na página, sem frase que o impeça', async () => {
   at(CONVERSAS, { role: 'member' })
-  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeTruthy()
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
   expect(screen.queryByText(/conversam sobre o Projeto/)).toBeNull()
 })
 
@@ -129,7 +129,7 @@ test('enquanto a lista lê, a página mostra o esqueleto no lugar dela, com a ca
       },
     },
   })
-  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Assistente' })).toBeTruthy()
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
   expect(screen.queryByRole('link', { name: /Vendas da semana/ })).toBeNull()
   release()
   expect(await screen.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()

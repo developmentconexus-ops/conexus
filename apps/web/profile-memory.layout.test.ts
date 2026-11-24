@@ -19,7 +19,7 @@ after(async () => {
 /** Where the captures are kept: outside the repository, for the person who reviews them. */
 const CAPTURES = join(tmpdir(), 'conexus-u7-capturas')
 const PAGE = `/companies/${COMPANY.id}/settings/account`
-const TITLE = 'O que o Assistente lembra de você'
+const TITLE = 'O que o Conexus lembra de você'
 const KEPT = [
   '# Sobre você',
   'Diretora comercial; acompanha a linha de bebidas (2026-11-10)',
@@ -27,7 +27,7 @@ const KEPT = [
   'Valores em reais com duas casas, sem centavos arredondados (2026-11-10)',
 ].join('\n')
 
-// "O que o Assistente lembra de você" in Sua conta (card of the alignment, U7), at 1366 and 390 px
+// "O que o Conexus lembra de você" in Sua conta (card of the alignment, U7), at 1366 and 390 px
 // in both themes: the box takes the column, Salvar and Apagar tudo share a line, and nothing scrolls
 // sideways. The test saves what it saw in CAPTURES, outside the repository (testing T23).
 for (const viewport of [DESKTOP, PHONE])

@@ -62,7 +62,7 @@ test('a conversa do Construtor com uma pergunta guardada abre com o cartão, nã
     answers: ['Um agente de vendas'],
   })
 
-  await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
+  await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   expect(screen.queryByText('Não foi possível abrir esta página')).toBeNull()
   expect(await screen.findByRole('button', { name: 'Respondeu 1 pergunta' })).toBeTruthy()
 })
@@ -71,7 +71,7 @@ test('a conversa do Construtor com uma pergunta guardada abre com o cartão, nã
 async function openAsking() {
   const opened = open()
   stored()
-  await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
+  await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   const asking = {
     toolCallId: 'call-tool-1',
     toolName: 'ask_user',
@@ -100,23 +100,21 @@ test('responder o cartão do Construtor vai para a sessão do Construtor, nunca 
 test('no celular, a pergunta aberta diz que o Construtor espera, não o Builder', async () => {
   await onPhone(async () => {
     await openAsking()
-    expect((await screen.findByRole('status')).textContent).toBe(
-      'Construtor esperando sua resposta',
-    )
+    expect((await screen.findByRole('status')).textContent).toBe('Conexus esperando sua resposta')
   })
 })
 
-test('uma pergunta que a pessoa parou diz "Você parou o Construtor."', async () => {
+test('uma pergunta que a pessoa parou diz "Você parou o Conexus."', async () => {
   open()
   stored('Aborted by the user')
   fireEvent.click(await screen.findByRole('button', { name: /sem resposta/ }))
-  expect(await screen.findByText('Você parou o Construtor.')).toBeTruthy()
+  expect(await screen.findByText('Você parou o Conexus.')).toBeTruthy()
 })
 
 test('a conversa do Construtor que recebe tarefas mostra o painel de tarefas', async () => {
   const opened = open()
   stored()
-  await screen.findByRole('textbox', { name: 'Mensagem para o Construtor' })
+  await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   await waitFor(() => expect(opened.lines.length).toBeGreaterThan(0))
   const line = opened.lines.at(-1)
   line?.emit(AGENT_START)

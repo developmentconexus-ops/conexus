@@ -25,7 +25,7 @@ import { enter } from './model-accounts-journey.ts'
 const NOT_FOUND = 'Não encontramos o que você procurou.'
 const PAGE = '<h1>Padaria</h1>\n'
 const SECOND_PAGE = '<h1>Padaria Nova</h1>\n'
-const WORKING = 'Builder trabalhando'
+const WORKING = 'Conexus trabalhando'
 const VERSION_1 =
   /^Versão 1 guardada, sem conferência: \d+ arquivos?\.\s*Não consegui conferir o app\./
 

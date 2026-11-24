@@ -121,7 +121,7 @@ test('em Conversas do Projeto, o título, a caixa e a frase de vazio ficam na me
   await empty.waitFor()
   const title = page.getByRole('heading', { name: 'Conversas' })
   const form = page
-    .getByRole('textbox', { name: 'Mensagem para o Assistente' })
+    .getByRole('textbox', { name: 'Mensagem para o Conexus' })
     .locator('xpath=ancestor::form')
   const lefts = await Promise.all(
     [title, form, empty].map(async (one) => (await one.boundingBox())?.x),

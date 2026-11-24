@@ -7,7 +7,7 @@ test('cada sala tem só os campos do seu agente', () => {
   // @ts-expect-error a sala do Construtor de apps não desenha propostas
   const inAppBuilder = BUILDER_ROOM.proposals
   // @ts-expect-error a sala do Construtor de agentes não desenha propostas
-  const inAgentBuilder = agentRoom('Construtor').proposals
+  const inAgentBuilder = agentRoom().proposals
   // @ts-expect-error a sala do Assistente não abre rascunho de agente
   const inAssistant = ASSISTANT_ROOM.openAgent
   // @ts-expect-error a sala do agente salvo não abre rascunho de agente

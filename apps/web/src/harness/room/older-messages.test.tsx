@@ -63,7 +63,7 @@ test('quando a janela das últimas 100 desliza, as mensagens que saíram dela fi
   act(() => hub.line().emit(agentEnd()))
   await screen.findByText('resposta nova')
 
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   const text = log.textContent ?? ''
   expect(text.indexOf('mensagem 119')).toBeLessThan(text.indexOf('pergunta nova'))
   expect(text.indexOf('pergunta nova')).toBeLessThan(text.indexOf('resposta nova'))

@@ -51,7 +51,7 @@ test('o Projeto abre na Prévia vazia, com a conversa à direita e sem "Abrir ap
   expect(tab('Prévia').getAttribute('aria-selected')).toBe('true')
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Recarregar' })).toBeNull()
-  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })).toBeTruthy()
+  expect(await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeTruthy()
   expect(screen.getByRole('separator', { name: 'Redimensionar a conversa' })).toBeTruthy()
 })
 
@@ -130,7 +130,7 @@ test('um Projeto que não existe: "não encontrado", sem painel', async () => {
 
 test('no celular, "App | Conversa" mostra uma região por vez, as duas montadas, sem perder o rascunho', async () => {
   openProject()
-  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   expect(regions()).toEqual(['true', 'false'])
   fireEvent.change(field, { target: { value: 'rascunho' } })
   fireEvent.click(screen.getByRole('button', { name: /^Conversa$/ }))

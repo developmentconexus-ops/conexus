@@ -33,7 +33,7 @@ test('agent_draft e agent_set salvos são uma linha que abre o rascunho ao lado,
     [CONSTRUTOR_TOOL.agentSet, 'Ajustou o rascunho do agente'],
   ] as const) {
     const opened: string[] = []
-    const room = { ...agentRoom('Construtor'), openAgent: (id: string) => opened.push(id) }
+    const room = { ...agentRoom(), openAgent: (id: string) => opened.push(id) }
     const { unmount } = render(
       <RoomContext.Provider value={room}>
         <ToolRow
@@ -56,7 +56,7 @@ test('agent_draft e agent_set salvos são uma linha que abre o rascunho ao lado,
 
 test('agent_draft recusado diz a frase de falha, sem abrir nada', () => {
   const opened: string[] = []
-  const room = { ...agentRoom('Construtor'), openAgent: (id: string) => opened.push(id) }
+  const room = { ...agentRoom(), openAgent: (id: string) => opened.push(id) }
   render(
     <RoomContext.Provider value={room}>
       <ToolRow tool={{ ...draftRow(CONSTRUTOR_TOOL.agentDraft), result: REFUSED }} />
@@ -151,7 +151,7 @@ test('a conversa do Construtor e a do agente nomeiam o conector pelo catálogo (
     result: { kind: 'OK', value: {}, complete: true },
   }
   render(
-    <RoomContext.Provider value={agentRoom('Construtor', words)}>
+    <RoomContext.Provider value={agentRoom(words)}>
       <ToolRow tool={read} />
     </RoomContext.Provider>,
   )
@@ -170,7 +170,7 @@ test('tool_<slug> diz o que o agente consultou, nunca "Usou Tool"', () => {
 
 test('tool_<slug> diz o que o agente consultou pela descrição da ferramenta, com acento', () => {
   const room = {
-    ...agentRoom('Construtor'),
+    ...agentRoom(),
     toolDescription: (slug: string) =>
       slug === 'vendas_por_regiao' ? 'vendas por região' : undefined,
   }
@@ -205,7 +205,7 @@ const CATALOG = wordsOf(
 
 function inRoom(tool: ToolItem) {
   return render(
-    <RoomContext.Provider value={agentRoom('Construtor', CATALOG)}>
+    <RoomContext.Provider value={agentRoom(CATALOG)}>
       <ToolRow tool={tool} />
     </RoomContext.Provider>,
   )

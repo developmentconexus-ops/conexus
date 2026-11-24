@@ -27,7 +27,7 @@ async function running(text = 'Compare') {
   opened.line().emit(RUNNING)
   opened.line().emit(signalStarted(opened.shown.conversations[0]?.messages[0]?.id ?? '', text))
   await screen.findByText('Pensando…')
-  return { ...opened, log: screen.getByRole('log', { name: 'Conversa com o Builder' }) }
+  return { ...opened, log: screen.getByRole('log', { name: 'Conversa com o Conexus' }) }
 }
 
 /** A message of ours, as `end.ts` saves and tells it at the run's end. */
@@ -87,7 +87,7 @@ test.each([
   ['MODEL_CALL_FAILED', 'O modelo não respondeu. Envie a mensagem de novo.'],
   [
     'MODEL_REFUSED',
-    'O modelo recusou este pedido. Reescreva a mensagem de outro jeito ou peça outra coisa ao Builder.',
+    'O modelo recusou este pedido. Reescreva a mensagem de outro jeito ou peça outra coisa ao Conexus.',
   ],
   [
     'MODEL_NO_ACCOUNT',
@@ -152,7 +152,7 @@ test('60 s sem o Builder dizer nada: "Ainda trabalhando…", contado desde o in�
     await screen.findByText('Vou ver.')
     vi.setSystemTime(now + 59_000)
     await waitFor(() =>
-      expect(screen.getByRole('status').textContent).toBe('Builder trabalhando · há 59 s'),
+      expect(screen.getByRole('status').textContent).toBe('Conexus trabalhando · há 59 s'),
     )
     vi.setSystemTime(now + 60_000)
     await waitFor(() =>

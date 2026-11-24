@@ -27,10 +27,10 @@ export {
 } from './queries.ts'
 export type { OpenedFile, RoomOf, WriteTool } from './room.ts'
 export {
+  AGENT_BUILDER_WORDS,
   APP_BUILDER_WORDS,
   ASSISTANT_WORDS,
   agentBuilderRoom,
-  agentWords,
   appBuilderRoom,
   assistantRoom,
   RoomContext,
@@ -43,6 +43,7 @@ export { useStartConversation } from './start-conversation.ts'
 export { readStart } from './start-reads.ts'
 export {
   CHOOSE_ANOTHER_MODEL,
+  CONEXUS,
   EMPTY_CONVERSATION,
   NO_SECRETS,
   REQUEST_NOT_SENT,

@@ -66,7 +66,7 @@ async function turn(...parts: MastraPart[]) {
     }
   }
   tell(...parts)
-  return { tell, log: screen.getByRole('log', { name: 'Conversa com o Builder' }), line }
+  return { tell, log: screen.getByRole('log', { name: 'Conversa com o Conexus' }), line }
 }
 
 const WHO: Question = {
@@ -98,7 +98,7 @@ function questionPart(
 
 /** The card's own send button: the field's stays beside it while the Builder waits. */
 function questionSend() {
-  const field = screen.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  const field = screen.getByRole('textbox', { name: 'Mensagem para o Conexus' })
   const found = screen
     .getAllByRole('button', { name: 'Enviar' })
     .find((one) => one.closest('form') !== field.closest('form'))
@@ -161,11 +161,11 @@ test('dois cliques em Enviar mandam a resposta uma única vez', async () => {
 test('com pergunta aberta de tool-invocation, a linha diz que o Builder espera a pessoa, sem relógio', async () => {
   const { tell } = await turn(questionPart('approval-requested'))
   await waitFor(() =>
-    expect(screen.getByRole('status').textContent).toBe('Builder esperando sua resposta.'),
+    expect(screen.getByRole('status').textContent).toBe('Conexus esperando sua resposta.'),
   )
   tell(questionPart('result', ['Só eu', 'Sim']))
   await waitFor(() =>
-    expect(screen.getByRole('status').textContent).toMatch(/^Builder trabalhando · há /),
+    expect(screen.getByRole('status').textContent).toMatch(/^Conexus trabalhando · há /),
   )
 })
 
@@ -200,7 +200,7 @@ test('o cartão da versão: montou, não montou, pela metade, sem conferência (
     /^Versão 2 guardada, não montou: 2 arquivos mudados\./,
   )
   expect(failed.textContent).toBe(
-    'Versão 2 guardada, não montou: 2 arquivos mudados.O app não passou na conferência depois de 4 tentativas. O código ficou guardado. Peça ao Builder para corrigir.',
+    'Versão 2 guardada, não montou: 2 arquivos mudados.O app não passou na conferência depois de 4 tentativas. O código ficou guardado. Peça ao Conexus para corrigir.',
   )
 
   tell({
@@ -216,7 +216,7 @@ test('o cartão da versão: montou, não montou, pela metade, sem conferência (
   })
   const unchecked = await within(log).findByText(/^Versão 4 guardada, sem conferência:/)
   expect(unchecked.textContent).toBe(
-    'Versão 4 guardada, sem conferência: 2 arquivos mudados.Não consegui conferir o app. O código ficou guardado sem conferência. Peça de novo ao Builder.',
+    'Versão 4 guardada, sem conferência: 2 arquivos mudados.Não consegui conferir o app. O código ficou guardado sem conferência. Peça de novo ao Conexus.',
   )
 })
 
@@ -329,5 +329,5 @@ test('o plano aprovado diz que foi aprovado (Critério 12)', async () => {
 test('no celular, o cartão aberto diz que o Builder espera a pessoa, e a linha de trabalho some', () =>
   onPhone(async () => {
     await turn(questionPart('approval-requested'))
-    expect((await screen.findByRole('status')).textContent).toBe('Builder esperando sua resposta')
+    expect((await screen.findByRole('status')).textContent).toBe('Conexus esperando sua resposta')
   }))

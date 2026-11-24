@@ -8,7 +8,7 @@ import { LIMITS } from './attachments.ts'
 /** What `conexus_check` says when it could not check mid-turn: nothing is saved yet, and the app is not the cause. */
 export const CHECK_UNAVAILABLE = 'Não consegui conferir o app agora. Isso não diz nada sobre o app.'
 export const LOADING_OLDER = 'Carregando mensagens anteriores'
-/** The words that name who answers (the Builder in a Projeto, the Assistant in a conversation of Início). */
+export const CONEXUS = 'Conexus'
 export function workingText(agent: string): string {
   return `${agent} trabalhando`
 }
@@ -141,8 +141,8 @@ export function doneText(done: number, failed: number): string {
 }
 
 /** What the footer of a request the Assistant handed to the Builder says beside the hour (Factory's "via Slack · Jane"). */
-export const FROM_ASSISTANT = 'via Assistente'
-export const FROM_ASSISTANT_LABEL = 'Enviado pelo Assistente'
+export const FROM_ASSISTANT = 'via Conversas'
+export const FROM_ASSISTANT_LABEL = 'Enviado de uma conversa com o Conexus'
 
 /**
  * What a write says when the system refused it: one label for the state, and under it the system's

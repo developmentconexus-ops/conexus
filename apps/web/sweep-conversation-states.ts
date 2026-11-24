@@ -222,7 +222,7 @@ export const CONVERSATION_STATES: State[] = [
       ...OPEN,
       ...sessionReplies(ID, { messages: HANDOFF_MESSAGES }),
     },
-    settle: (p) => inChat(p, 'via Assistente'),
+    settle: (p) => inChat(p, 'via Conversas'),
   },
   {
     name: 'Conversa, com as ferramentas abertas',

@@ -62,7 +62,7 @@ test('a bolha mostra o texto e uma etiqueta por arquivo, ao vivo e depois de rec
   expect(bubbles()).toEqual(SENT)
 })
 
-test('um arquivo enviado com o Builder trabalhando aparece pendente com a sua etiqueta (11)', async () => {
+test('um arquivo enviado com o Conexus trabalhando aparece pendente com a sua etiqueta (11)', async () => {
   const { field, line, sent } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Crie um app de encomendas')
   await waitFor(() => expect(sent).toHaveLength(1))
@@ -81,7 +81,7 @@ test('um arquivo enviado com o Builder trabalhando aparece pendente com a sua et
   await waitFor(() =>
     expect(bubbles()).toEqual([{ files: ['cardapio.pdf'], words: undefined, pictures: [] }]),
   )
-  expect(screen.getByText('Vai ao Builder no próximo passo')).toBeTruthy()
+  expect(screen.getByText('Vai ao Conexus no próximo passo')).toBeTruthy()
 })
 
 test('dois arquivos de mesmo nome na mesma mensagem são duas etiquetas, sem chave repetida', () => {
@@ -94,10 +94,10 @@ test('dois arquivos de mesmo nome na mesma mensagem são duas etiquetas, sem cha
 })
 
 function assistantMark() {
-  return screen.queryByRole('note', { name: 'Enviado pelo Assistente' })
+  return screen.queryByRole('note', { name: 'Enviado de uma conversa com o Conexus' })
 }
 
-test('o pedido do Assistente mostra "via Assistente" com a hora, ao vivo e relido; o da pessoa não (24.3.2)', () => {
+test('o pedido do Assistente mostra "via Conversas" com a hora, ao vivo e relido; o da pessoa não (24.3.2)', () => {
   const handoff = recordedRun('handoff')
   let live = OPENED
   for (const event of handoff.events) live = session(live, { type: 'event', event })
@@ -110,7 +110,7 @@ test('o pedido do Assistente mostra "via Assistente" com a hora, ao vivo e relid
       onAsk={() => undefined}
     />,
   )
-  expect(assistantMark()?.textContent).toMatch(/^via Assistente · \d{2}h\d{2}$/)
+  expect(assistantMark()?.textContent).toMatch(/^via Conversas · \d{2}h\d{2}$/)
   shown.unmount()
 
   const reread = session(OPENED, { type: 'loaded', messages: handoff.read })
@@ -123,7 +123,7 @@ test('o pedido do Assistente mostra "via Assistente" com a hora, ao vivo e relid
       onAsk={() => undefined}
     />,
   )
-  expect(assistantMark()?.textContent).toMatch(/^via Assistente · \d{2}h\d{2}$/)
+  expect(assistantMark()?.textContent).toMatch(/^via Conversas · \d{2}h\d{2}$/)
   again.unmount()
 
   const plain = session(OPENED, { type: 'loaded', messages: read })

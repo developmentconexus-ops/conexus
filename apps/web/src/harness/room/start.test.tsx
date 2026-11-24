@@ -47,7 +47,7 @@ test('sem conta, o aviso do Início no lugar da caixa e dos exemplos', async () 
       'Você ainda não tem uma conta de modelo. Peça a quem administra a empresa ou ligue a sua.',
     ),
   ).toBeTruthy()
-  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
+  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeNull()
   expect(screen.queryByRole('list', { name: 'Exemplos' })).toBeNull()
   const link = screen.getByRole('link', { name: 'Minhas contas de modelo' })
   expect(link.className).not.toContain('underline')
@@ -63,7 +63,7 @@ test('enviar pede o nome, vazio, e nada sai', async () => {
   attach(PDF)
   await screen.findByRole('button', { name: 'Tirar tabela.pdf' })
   const name = await request()
-  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
+  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeNull()
   expect(screen.getByText(REQUEST)).toBeTruthy()
   const files = screen.getByRole('group', { name: 'Arquivos do pedido' })
   expect(within(files).getByText('tabela.pdf')).toBeTruthy()
@@ -201,7 +201,7 @@ test('Passo 4: sem conta, o aviso do Início no lugar da caixa', async () => {
       'Você ainda não tem uma conta de modelo. Peça a quem administra a empresa ou ligue a sua.',
     ),
   ).toBeTruthy()
-  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
+  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Conexus' })).toBeNull()
 })
 
 test('Passo 4: Ir para o início sem pedir nada', async () => {

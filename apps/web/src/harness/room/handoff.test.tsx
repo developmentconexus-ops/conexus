@@ -49,8 +49,8 @@ async function handedOver(answers: Parameters<typeof open>[2] = {}) {
     },
     state: { handoff: { conversationId: FIRST, content: REQUEST } },
   })
-  await screen.findByRole('log', { name: 'Conversa com o Builder' })
-  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  await screen.findByRole('log', { name: 'Conversa com o Conexus' })
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
   return { ...hub, field }
 }
 
@@ -61,7 +61,7 @@ test('o pedido do Início sai uma vez ao abrir, em modo estrito e sem aviso (8)'
   // The stream says Mastra took the message; the double has none, so the read is asked again.
   void conexus.queryClient.invalidateQueries()
   function logged() {
-    return within(screen.getByRole('log', { name: 'Conversa com o Builder' }))
+    return within(screen.getByRole('log', { name: 'Conversa com o Conexus' }))
   }
   await waitFor(() => expect(logged().getByText(REQUEST)).toBeTruthy())
   expect(logged().getByText('tabela.pdf')).toBeTruthy()

@@ -27,7 +27,7 @@ async function turn() {
   line.emit(AGENT_START)
   line.emit(RUNNING)
   line.emit(stepStarted('step-1', []))
-  return { line, log: screen.getByRole('log', { name: 'Conversa com o Builder' }) }
+  return { line, log: screen.getByRole('log', { name: 'Conversa com o Conexus' }) }
 }
 
 test('a Prévia sending diz "Subindo o app…", e a mesma mensagem pronta diz "Prévia pronta."', async () => {
@@ -106,7 +106,7 @@ test('recarregar no meio do envio mostra a versão e "Subindo o app…", até a 
     providers: ['anthropic', 'google'],
     display: { isRunning: true },
   })
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   await within(log).findByText(/^Versão 1 guardada/)
   await within(log).findByText(/^Subindo o app…/)
   opened.line().emit(stepStarted('ours', [VERSION, preview({ state: 'ready', number: 1 })]))
@@ -116,7 +116,7 @@ test('recarregar no meio do envio mostra a versão e "Subindo o app…", até a 
 
 test('recarregar uma conversa parada cujo envio foi cortado não mostra "Subindo o app…"', async () => {
   await openConversation(keptSending())
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   await within(log).findByText(/^Versão 1 guardada/)
   expect(within(log).queryByText(/^Subindo o app…/)).toBeNull()
 })
@@ -154,22 +154,22 @@ function keptFailed(data: object) {
 
 test('a Prévia que falhou com motivo diz o motivo e o botão o põe na caixa, sem enviar', async () => {
   const opened = await openConversation(keptFailed(DUPLICATE))
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   await within(log).findByText(
     'Motivo: valor repetido, tabela encomenda, regra encomenda_whatsapp_key.',
   )
-  fireEvent.click(within(log).getByRole('button', { name: 'Pedir ao Builder para corrigir' }))
+  fireEvent.click(within(log).getByRole('button', { name: 'Pedir ao Conexus para corrigir' }))
   await waitFor(() => expect(typed(opened.field)).toBe(ASKED))
-  fireEvent.click(within(log).getByRole('button', { name: 'Pedir ao Builder para corrigir' }))
+  fireEvent.click(within(log).getByRole('button', { name: 'Pedir ao Conexus para corrigir' }))
   expect(typed(opened.field)).toBe(ASKED)
 })
 
 test('o botão acrescenta o motivo numa linha nova quando a caixa já tem texto', async () => {
   const opened = await openConversation(keptFailed(DUPLICATE))
   fireEvent.change(opened.field, { target: { value: 'mantenha só a encomenda mais nova' } })
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   fireEvent.click(
-    await within(log).findByRole('button', { name: 'Pedir ao Builder para corrigir' }),
+    await within(log).findByRole('button', { name: 'Pedir ao Conexus para corrigir' }),
   )
   await waitFor(() =>
     expect(typed(opened.field)).toBe(`mantenha só a encomenda mais nova\n${ASKED}`),
@@ -178,10 +178,10 @@ test('o botão acrescenta o motivo numa linha nova quando a caixa já tem texto'
 
 test('a Prévia que falhou sem motivo não tem motivo nem botão', async () => {
   await openConversation(keptFailed({ state: 'failed', number: 7, code: 'APP_VERSION_FAILED' }))
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   await within(log).findByText(/^Prévia não atualizada: /)
   expect(within(log).queryByText(/^Motivo:/)).toBeNull()
-  expect(within(log).queryByRole('button', { name: 'Pedir ao Builder para corrigir' })).toBeNull()
+  expect(within(log).queryByRole('button', { name: 'Pedir ao Conexus para corrigir' })).toBeNull()
 })
 
 const BEFORE = [
@@ -192,15 +192,15 @@ const BEFORE = [
 for (const [code, phrase] of BEFORE) {
   test(`a Prévia ${code} sem motivo, de antes, diz só a frase, sem apontar para um botão que não há`, async () => {
     await openConversation(keptFailed({ state: 'failed', number: 7, code }))
-    const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+    const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
     await within(log).findByText(`Prévia não atualizada: ${phrase}`)
   })
 }
 
 test('com motivo, a frase do código leva a ação que aponta para o botão', async () => {
   await openConversation(keptFailed(DUPLICATE))
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   await within(log).findByText(
-    'Prévia não atualizada: Uma migração do app falhou no banco. Use o botão para pedir ao Builder que corrija.',
+    'Prévia não atualizada: Uma migração do app falhou no banco. Use o botão para pedir ao Conexus que corrija.',
   )
 })

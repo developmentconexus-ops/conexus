@@ -92,7 +92,7 @@ async function firstQuestion(chat: Page, hold: () => () => void) {
     .and(chat.locator(`[value="${TITLE}"]`))
     .waitFor()
   await chat
-    .getByRole('log', { name: 'Conversa com o Builder' })
+    .getByRole('log', { name: 'Conversa com o Conexus' })
     .getByText('4 ferramentas', { exact: true })
     .waitFor()
 }
@@ -109,7 +109,7 @@ async function refusedThenPaused(
   const notice = 'Time 3 foi recusada. Ligue de novo; continuei pela Time 1.'
   await noticed(chat, hold, 'E o segundo app?', notice)
   await chat.reload()
-  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(notice).waitFor()
+  await chat.getByRole('log', { name: 'Conversa com o Conexus' }).getByText(notice).waitFor()
   await owner.reload()
   await owner.getByRole('heading', { name: 'Anthropic', level: 3 }).waitFor()
   const [top] = await queueTexts(owner, 'Anthropic')
@@ -203,7 +203,7 @@ async function researched(chat: Page, hold: () => () => void, sent: () => number
   await pickLevel(chat, choice, 'Alto')
   const release = hold()
   await ask(chat, 'Compare dois apps de encomenda de padaria')
-  await chat.getByRole('status').filter({ hasText: 'Builder trabalhando' }).waitFor()
+  await chat.getByRole('status').filter({ hasText: 'Conexus trabalhando' }).waitFor()
   await transcriptShowed(chat, ANSWER_HEAD)
   await transcriptShowed(chat, FOLDED)
   await transcriptShowed(chat, 'Pensou')
@@ -220,7 +220,7 @@ async function reconnected(chat: Page, cut: () => void, release: () => void, pro
   await openConversation(again, chat.url())
   release()
   for (const page of [chat, again]) {
-    const log = page.getByRole('log', { name: 'Conversa com o Builder' })
+    const log = page.getByRole('log', { name: 'Conversa com o Conexus' })
     await log.getByText(ANSWER).waitFor()
     const text = await log.innerText()
     for (const once of [ANSWER, ANSWER_HEAD]) assert.equal(text.split(once).length, 2)
@@ -230,7 +230,7 @@ async function reconnected(chat: Page, cut: () => void, release: () => void, pro
 
 /** Step 4: another conversation by the box, and back: the draft is where it was left. */
 async function draftKept(chat: Page) {
-  const field = chat.getByLabel('Mensagem para o Builder')
+  const field = chat.getByLabel('Mensagem para o Conexus')
   const first = chat.url()
   await field.fill(DRAFT)
   await chat.getByRole('button', { name: 'Nova conversa' }).click()
@@ -246,7 +246,7 @@ async function draftKept(chat: Page) {
 /** Step 5: on a phone "App | Conversa" swaps the regions keeping the draft; the dark theme fits too. */
 async function onPhone(chat: Page) {
   await chat.setViewportSize({ width: 390, height: 844 })
-  const field = chat.getByLabel('Mensagem para o Builder')
+  const field = chat.getByLabel('Mensagem para o Conexus')
   await chat.getByRole('button', { name: 'Conversa', exact: true }).click()
   await field.fill(DRAFT)
   await chat.getByRole('button', { name: 'App', exact: true }).click()
@@ -285,7 +285,7 @@ async function pausedNoticeStays(
   await saving(owner, () => changeState(owner, 'Time 1', 'Pausar'))
   await answered(chat, hold, 'E o segundo app?', REFUSED)
   await chat.reload()
-  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(REFUSED).waitFor()
+  await chat.getByRole('log', { name: 'Conversa com o Conexus' }).getByText(REFUSED).waitFor()
 }
 
 test('o roteiro da 12.1: a conversa no painel, o pensamento, as ferramentas dobradas, a volta da linha, o rascunho, o celular e o aviso que fica', async (t) => {

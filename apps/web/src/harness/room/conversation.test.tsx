@@ -21,7 +21,7 @@ test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens
   )
   expect(shown.conversations).toHaveLength(1)
   expect(screen.getByRole('combobox', { name: 'Conversas' })).toHaveProperty('value', 'Padarias')
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  const log = screen.getByRole('log', { name: 'Conversa com o Conexus' })
   expect(within(log).getByText('Oi')).toBeTruthy()
   expect(within(log).getByText('tudo bem').tagName).toBe('STRONG')
   const picker = screen.getByRole('combobox', { name: 'Modelo e raciocínio' })
