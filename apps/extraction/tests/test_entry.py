@@ -83,3 +83,8 @@ def test_sem_data_a_configuracao_nao_a_tem(task: Task) -> None:
 
 def _configs(task: Task) -> list[str]:
     return task.seen("tap.config").splitlines()
+
+
+def test_o_catalogo_chega_inteiro_ao_gravador(task: Task) -> None:
+    assert task.run(task.spec(("TGFCAB", "sankhya_notas"))) == 0
+    assert json.loads(json.loads(task.seen("target.config"))["catalog"]) == task.catalog

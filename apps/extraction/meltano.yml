@@ -23,7 +23,6 @@ plugins:
     executable: target-conexus
     settings:
     - name: catalog
-      kind: object
     - name: tables
       kind: object
     - name: run_parameter

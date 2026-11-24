@@ -194,7 +194,7 @@ class Task:
         config.write_text(
             json.dumps(
                 {
-                    "catalog": self.catalog,
+                    "catalog": json.dumps(self.catalog),
                     "tables": tables,
                     "run_parameter": parameter,
                     "region": REGION,
@@ -238,10 +238,12 @@ def task(aws: Aws, double: Double, tmp_path: Path, monkeypatch: pytest.MonkeyPat
     )
     _program(
         plugins / "target-conexus",
-        f'#!/bin/sh\nenv >> "{dumps}/target.env"\nexec "{target}" "$@"\n',
+        f'#!/bin/sh\nenv >> "{dumps}/target.env"\ncp "$2" "{dumps}/target.config"\n'
+        f'exec "{target}" "$@"\n',
     )
     monkeypatch.setenv("PATH", f"{plugins}:{os.environ['PATH']}")
     catalog = {
+        "client.region": REGION,
         "type": "sql",
         "uri": f"sqlite:///{tmp_path}/catalog.db",
         "warehouse": f"file://{tmp_path}/warehouse",

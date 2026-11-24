@@ -134,7 +134,8 @@ class TargetConexus(Target):
     name = "target-conexus"
     default_sink_class = LakeSink
     config_jsonschema = th.PropertiesList(
-        th.Property("catalog", th.ObjectType(additional_properties=th.StringType), required=True),
+        # Text, not an object: Meltano drops an object's dotted keys, such as rest.sigv4-enabled.
+        th.Property("catalog", th.StringType, required=True),
         th.Property(
             "tables",
             th.ObjectType(
@@ -159,7 +160,7 @@ class TargetConexus(Target):
 
     @functools.cached_property
     def catalog(self) -> Catalog:
-        return load_catalog("lake", **self.config["catalog"])
+        return load_catalog("lake", **json.loads(self.config["catalog"]))
 
     @contextlib.contextmanager
     def writing(self, stream: str) -> Iterator[None]:
