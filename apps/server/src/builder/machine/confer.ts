@@ -26,7 +26,7 @@ const PAGE_MS = 60_000
  * page gives up on its own at `readyMs` since it opened, so the wait ends by time and never fails.
  */
 function readyScript(readyMs: number): string {
-  const mounted = `(document.getElementById('root')?.firstElementChild ?? true) !== null`
+  const mounted = `(document.getElementById('root') === null || document.getElementById('root').firstElementChild !== null)`
   const drawn = `document.querySelector('[data-slot="skeleton"]') === null`
   return `(${mounted} && ${drawn}) || performance.now() >= ${readyMs}`
 }
