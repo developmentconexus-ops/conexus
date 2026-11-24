@@ -9,9 +9,9 @@ import {
 } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import type { ConversationMachines } from '../../harness/machine/public.ts'
+import { withFile } from '../../harness/machine/public.ts'
 import type { RunScope } from '../controller-kit/public.ts'
-import type { ConversationMachines } from '../machine/public.ts'
-import { withFile } from '../machine/public.ts'
 
 const BRIEFING_EXTENSIONS = ['.md', '.txt']
 

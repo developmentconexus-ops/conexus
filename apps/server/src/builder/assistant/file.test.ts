@@ -3,12 +3,12 @@ import { randomUUID } from 'node:crypto'
 import { get } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { INSTALLATION, OLD_TEMPLATE } from '../../harness/machine/test-machine.ts'
 import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { until } from '../../platform/test-until.ts'
 import { endOf, hubBeside } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { INSTALLATION, OLD_TEMPLATE } from '../machine/test-machine.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const FILE_TURN = [[write('relatorio.csv', 'a;b\n1;2\n')], [said('Escrevi.')]]

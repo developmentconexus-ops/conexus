@@ -4,10 +4,10 @@ import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { moveMain, pausedByE2b } from '../../harness/machine/test-machine.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { conversing, sent, started, streamOf, title } from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
-import { moveMain, pausedByE2b } from '../machine/test-machine.ts'
 
 type Tool = { name: string; input: Record<string, string> }
 

@@ -3,6 +3,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
+import { createConversationMachines, PACKAGE_HOSTS } from '../../harness/machine/public.ts'
+import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../../harness/machine/test-machine.ts'
 import { servedSankhya } from '../../hub/connectors/test-connections.ts'
 import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
 import {
@@ -16,8 +18,6 @@ import {
   streamOf,
 } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { createConversationMachines, PACKAGE_HOSTS } from '../machine/public.ts'
-import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../machine/test-machine.ts'
 import { assisting, COUNT, created, reading, said, searching, talking } from './test-assistant.ts'
 
 const WRITE = 'mastra_workspace_write_file'

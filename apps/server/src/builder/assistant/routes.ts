@@ -24,6 +24,8 @@ import type { AgentController } from '@mastra/core/agent-controller'
 import type { StorageThreadType } from '@mastra/core/memory'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import type { ConversationMachines } from '../../harness/machine/public.ts'
+import { registerFile } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import type { Access, Place } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -40,8 +42,6 @@ import {
   RUN_MARKS,
   releaseThreads,
 } from '../controller-kit/public.ts'
-import type { ConversationMachines } from '../machine/public.ts'
-import { registerFile } from '../machine/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { CompanyMemory } from './company-memory.ts'
 import { registerCompanyMemoryRoutes } from './company-memory-routes.ts'

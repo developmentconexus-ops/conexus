@@ -13,11 +13,11 @@ import type {
   MastraMessagePart,
   Session,
 } from '@mastra/core/agent-controller'
+import type { Phase } from '../../harness/machine/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { logMemory } from '../../platform/memory.ts'
 import { ownerOfResource } from '../controller-kit/public.ts'
-import type { Phase } from '../machine/public.ts'
 import type { Runs, Settled } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
 import { FINISHES, TurnTally, turnLine } from './turn-line.ts'

@@ -1099,7 +1099,7 @@ changes, reread the line it names.
   in `agents/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
   regime `THE_WRITE_ASKS` runs over its tools: every tool whose rule is not a function (the shared
   ones, the web's, the code's) goes on a copy with `NEVER_ASKS`, and the given objects stay as they
-  are; and `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
+  are; and `requireApproval: () => false` in `apps/server/src/harness/machine/conversation.ts` (the
   Computador). A tool's own rule runs before the session's policy, so the call is never suspended.
 - **Why.** With `allow`, 12 of 200 reads were lost on Postgres; with the rule on each tool, 0 of 200
   (the study of step 24.5; Papéis P1).
@@ -1148,7 +1148,7 @@ changes, reread the line it names.
   follows a link: `FilesystemReadOpts` has no `nofollow` (`dist/index.d.ts:5794-5807`). `files.list` (`:5972`)
   shows a link's `symlinkTarget`, but a link swapped in between the list and the read still passes.
   Mastra 1.83.0 `WorkspaceFilesystem.readFile` has the same shape.
-- **Hand-made piece.** `packIn` in `apps/server/src/builder/machine/pack.ts` runs one Node program
+- **Hand-made piece.** `packIn` in `apps/server/src/harness/machine/pack.ts` runs one Node program
   on the machine, while the run still holds it. The program opens every folder and file of
   `node_modules/.conexus/version` with `O_NOFOLLOW` through `/proc/self/fd`, refuses a link or a
   file that is not regular with `NOT_REGULAR`, counts every file against `APP_LIMITS` before reading

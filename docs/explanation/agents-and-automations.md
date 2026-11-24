@@ -89,9 +89,9 @@ with `yolo: true`, so no tool call waits for approval. It does not build apps ei
 
 Its machine is an E2B sandbox per conversation with Python and Node and the usual analysis
 libraries. Outbound traffic is denied except `registry.npmjs.org`, `pypi.org` and
-`files.pythonhosted.org` (`builder/machine/kit.ts`). A connector read is saved whole under
+`files.pythonhosted.org` (`harness/machine/kit.ts`). A connector read is saved whole under
 `reads/` on the machine, and the model gets the first rows and the path. E2B pauses the machine on its own
-timeout, five minutes after it starts, and the next tool resumes it (`builder/machine/e2b.ts`).
+timeout, five minutes after it starts, and the next tool resumes it (`harness/machine/e2b.ts`).
 
 ## Automations
 

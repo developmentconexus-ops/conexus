@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { test } from 'node:test'
+import { APP_FOLDER } from '../../harness/machine/public.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { APP_FOLDER } from '../machine/public.ts'
 import { asked, conversing, started, streamOf, title } from './test-conversation.ts'
 
 const PWD = {

@@ -6,6 +6,12 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Memory } from '@mastra/memory'
 import { and, eq, sql } from 'drizzle-orm'
+import type {
+  ConversationMachine,
+  ConversationMachines,
+  MachineTuning,
+} from '../../harness/machine/public.ts'
+import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -27,8 +33,6 @@ import {
   TITLE,
   threadsByMarks,
 } from '../controller-kit/public.ts'
-import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
-import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../machine/public.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
 import { agentOf, agentTurnOf, planOf } from './agent.ts'
 import type { CodeToolsDeps } from './code-tools.ts'

@@ -20,7 +20,7 @@ the server side; `createApi`, `can` and `readCaller` are the screen side
 
 The same contract code runs in three places. The check validates the manifest with it on the
 machine, the Hub validates it again when it receives the version
-(`apps/server/src/builder/machine/pack.ts`), and `serveApp` is both the probe the check runs and
+(`apps/server/src/harness/machine/pack.ts`), and `serveApp` is both the probe the check runs and
 the entry of the deployed Worker. An app never supplies its own Worker entry: the check writes
 `export default serveApp({ operations, handlers, roles })` for it
 (`packages/app/src/check/build.ts`).
@@ -64,7 +64,7 @@ new bare repository on the server's disk (`apps/server/src/builder/git/repositor
 `apps/server/src/builder/runs/ports.ts`). Version numbers count commits after that one, so the
 starter is version 0. A new machine checks out a bundle of `main` into `/home/user/app`; a machine
 that kept unsaved work merges it onto `main` instead
-(`apps/server/src/builder/machine/scripts.ts`). The E2B template runs `npm ci`
+(`apps/server/src/harness/machine/scripts.ts`). The E2B template runs `npm ci`
 on the starter's lockfile once at template build time, so a machine's npm cache already holds the
 starter's packages and an install fetches only what the app added (`infra/e2b/template.ts`).
 
@@ -115,7 +115,7 @@ Every turn that changed the app is saved to Git, whatever the check said. Only a
 check state is `passed` goes further (`passed()` in `runs.ts`). For that version `packIn` reads
 the version folder off the machine, refusing symbolic links and anything over `APP_LIMITS`, and
 the Hub rebuilds it as a `VersionFolder` of the manifest and base64 files
-(`apps/server/src/builder/machine/pack.ts`). A failed or unchecked version stays in Git and makes
+(`apps/server/src/harness/machine/pack.ts`). A failed or unchecked version stays in Git and makes
 no app version. What happens to the folder next is in [the Hub side of an app](hub-apps.md).
 
 A version therefore carries no source and no `node_modules`: only `manifest.json` (with the

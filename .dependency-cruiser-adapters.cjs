@@ -23,9 +23,9 @@ module.exports = [
   {
     name: 'e2b-only-in-the-machine',
     comment:
-      'C56, decision 0051: only builder/machine/ and the template in infra/e2b/ import the E2B SDK and its Mastra sandbox.',
+      'C56, decision 0051: only harness/machine/ and the template in infra/e2b/ import the E2B SDK and its Mastra sandbox.',
     severity: 'error',
-    from: { pathNot: [`${SERVER}/builder/machine/`, '^infra/e2b/'] },
+    from: { pathNot: [`${SERVER}/harness/machine/`, '^infra/e2b/'] },
     to: { path: '(^|node_modules/)(e2b|@mastra/e2b)(/|$)' },
   },
   {

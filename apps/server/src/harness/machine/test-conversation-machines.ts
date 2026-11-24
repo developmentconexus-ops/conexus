@@ -42,7 +42,7 @@ export function testConversationMachines(folder: string) {
     codeMode: new StdioCodeModeTransport(),
   }
   // The repository's own packages stand in for the template's `/opt/conexus`.
-  const toolchain = fileURLToPath(new URL('../../../../../', import.meta.url))
+  const toolchain = fileURLToPath(new URL('../../../../..', import.meta.url))
   const tuning = { workFolder: join(own, 'work'), toolchain, startMs: 5_000 }
   return { deps, tuning, control, killed, folder: own }
 }

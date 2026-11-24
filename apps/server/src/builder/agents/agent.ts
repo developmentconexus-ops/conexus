@@ -11,6 +11,8 @@ import type { Agent, ToolsInput } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
+import type { ConversationMachines } from '../../harness/machine/public.ts'
+import { showFileTool } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import {
   AccountTurn,
@@ -40,8 +42,6 @@ import {
   turnKeyOn,
 } from '../controller-kit/public.ts'
 import { dataOrder } from '../data-tools/public.ts'
-import type { ConversationMachines } from '../machine/public.ts'
-import { showFileTool } from '../machine/public.ts'
 import { codeModeOf } from './code-mode.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'

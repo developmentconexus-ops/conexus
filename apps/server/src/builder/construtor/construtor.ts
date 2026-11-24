@@ -5,6 +5,12 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
+import type {
+  ConversationMachine,
+  ConversationMachines,
+  MachineTuning,
+} from '../../harness/machine/public.ts'
+import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import type { Access, Place } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
@@ -49,8 +55,6 @@ import {
   toolsOf,
   turnKeyOn,
 } from '../controller-kit/public.ts'
-import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
-import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../machine/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { databaseScopeOf } from '../tools/public.ts'
 import { testDraft } from './draft-trial.ts'

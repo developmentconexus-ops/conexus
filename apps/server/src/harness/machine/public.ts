@@ -7,12 +7,7 @@ export { createE2bApi, createE2bCodeMode, createE2bKit } from './e2b.ts'
 export { registerFile } from './file-route.ts'
 export { BUILDER_IDENTITY, CANDIDATE_REF, MAX_BYTES, MAX_FILES, Sha } from './git-facts.ts'
 export type { ConversationMachine, ConversationMachineApi, KitFactory } from './kit.ts'
-export {
-  ALLOWED_HOSTS,
-  APP_FOLDER,
-  MARK,
-  PACKAGE_HOSTS,
-} from './kit.ts'
+export { ALLOWED_HOSTS, APP_FOLDER, MARK, PACKAGE_HOSTS } from './kit.ts'
 export { createMachines } from './machines.ts'
 export type { VersionFolder } from './pack.ts'
 export type { Machines, Phase } from './port.ts'

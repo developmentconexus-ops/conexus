@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { INSTALLATION } from '../../harness/machine/test-machine.ts'
 import { ANA } from '../../hub/identity/test-hub.ts'
-import { INSTALLATION } from '../machine/test-machine.ts'
 import { conversing, endOf, holding, sent, started, streamOf, title } from './test-conversation.ts'
 import { dataOf, failuresOf, partsOf } from './test-parts.ts'
 import { answerTo, ask, invocations, untilCard, WHO } from './test-questions.ts'

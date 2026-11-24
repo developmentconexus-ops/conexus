@@ -17,7 +17,7 @@ with the version in [the Hub side of an app](hub-apps.md). `builder/` below mean
 - Each Project has a bare Git repository on the server's disk. Its `main` is the app's code, and
   each commit after the starter is a version (`builder/git/repository.ts`).
 - Each conversation has an E2B machine where the model edits and runs code
-  (`builder/machine/machines.ts`).
+  (`harness/machine/machines.ts`).
 - `Runs` (`builder/runs/runs.ts`) remembers which run writes in which Project. It lives in memory
   only, so a restart holds no run.
 
@@ -70,7 +70,7 @@ four rounds, the Project's granted connections (names and concepts, never values
 read from `main` on the server: `AGENTS.md` and `.conexus/memory/MEMORY.md`. They come from `main`,
 not from the machine, so a turn cannot write its own next prompt before a version is saved. The
 machine's own description (Node, npm, Git, the closed network and any merge conflicts) comes from
-the workspace at each step (`builder/machine/kit.ts`). How each line of the prompt relates to the
+the workspace at each step (`harness/machine/kit.ts`). How each line of the prompt relates to the
 old one is in [the Builder's prompt](../reference/builder-prompt.md).
 
 The skills from `packages/app/skills/` and the granted connectors' skills reach the model inline,
@@ -99,11 +99,11 @@ provider search Mastra supports.
 ## The machine and Git
 
 The machine is found by a name and marks derived from the conversation, and starts paused or new
-(`builder/machine/machines.ts`, `builder/machine/e2b.ts`). It allows outbound traffic only to
+(`harness/machine/machines.ts`, `harness/machine/e2b.ts`). It allows outbound traffic only to
 `registry.npmjs.org`. On the turn's first start, the server sends a Git bundle of `main`. A new
 machine checks it out into `/home/user/app`. A machine that kept unsaved work from an earlier turn
 merges that work onto `main`, and the model is told about any conflict
-(`builder/machine/scripts.ts`). The server never talks Git over the network; bundles carry
+(`harness/machine/scripts.ts`). The server never talks Git over the network; bundles carry
 everything. While the machine starts, copies or saves, the screen shows the phase as a transient
 message part.
 
@@ -140,7 +140,7 @@ Conexus's own parts, never sent to the model, with the saved version.
 
 Only a version whose check state is `passed` continues (`passed()` in `builder/runs/runs.ts`). The
 message then says the Prévia is `sending`. The server reads the built version folder off the
-machine (`builder/machine/pack.ts`), lets the machine go, and calls the Hub's
+machine (`harness/machine/pack.ts`), lets the machine go, and calls the Hub's
 `sendFromBuilder`. The Hub stores the version, uploads its Worker, migrates the app database and
 moves the Prévia pointer. The message is updated to `ready` or `failed`. The Project stays held
 until the send is over, then the run lets it go and Mastra emits `agent_end`.

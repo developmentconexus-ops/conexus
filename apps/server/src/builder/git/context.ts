@@ -1,7 +1,7 @@
 import { stat } from 'node:fs/promises'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import { MAX_BYTES, Sha } from '../../harness/machine/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { MAX_BYTES, Sha } from '../machine/public.ts'
 import { runGit } from './exec.ts'
 
 export const MAIN = 'refs/heads/main'

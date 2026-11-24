@@ -10,7 +10,7 @@ test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos 
   const runs = 'apps/server/src/builder/runs'
   const run = biomeLint({
     [`${runs}/other.ts`]: clock,
-    'apps/server/src/builder/machine/wait.ts': clock,
+    'apps/server/src/harness/machine/wait.ts': clock,
     [`${runs}/copy-retry.ts`]: clock,
     [`${runs}/runs.test.ts`]: clock,
     'apps/server/src/hub/a/timer.ts': clock,
@@ -22,7 +22,7 @@ test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos 
   )
   assert.deepEqual(
     [...flagged].sort(),
-    ['apps/server/src/builder/machine/wait.ts', `${runs}/other.ts`],
+    ['apps/server/src/harness/machine/wait.ts', `${runs}/other.ts`],
     run.output,
   )
 })

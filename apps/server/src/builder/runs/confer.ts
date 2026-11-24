@@ -1,7 +1,7 @@
 import type { CheckReport } from '@conexus/app/check'
 import type { AppSessionToken } from '@conexus/hub-api'
+import type { ConferPlatformFailed, VersionFolder } from '../../harness/machine/public.ts'
 import type { Result } from '../../platform/result.ts'
-import type { ConferPlatformFailed, VersionFolder } from '../machine/public.ts'
 import type { BuilderCheck, Driven, RunsDeps } from './context.ts'
 
 const PLATFORM_FAILED = { ok: false, error: 'CONFER_PLATFORM_FAILED' } as const

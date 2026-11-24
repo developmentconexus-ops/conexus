@@ -330,5 +330,175 @@
       "from": "apps/server/src/builder/model-accounts/turn.ts",
       "to": "apps/server/src/harness/model-accounts/turn.ts"
     }
+  ],
+  "g5c": [
+    {
+      "from": "apps/server/src/builder/machine/check.ts",
+      "to": "apps/server/src/harness/machine/check.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/command-description.test.ts",
+      "to": "apps/server/src/harness/machine/command-description.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/confer.ts",
+      "to": "apps/server/src/harness/machine/confer.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/conversation-file.ts",
+      "to": "apps/server/src/harness/machine/conversation-file.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/conversation-lane.test.ts",
+      "to": "apps/server/src/harness/machine/conversation-lane.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/conversation-machines.test.ts",
+      "to": "apps/server/src/harness/machine/conversation-machines.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/conversation.ts",
+      "to": "apps/server/src/harness/machine/conversation.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/e2b-api.test.ts",
+      "to": "apps/server/src/harness/machine/e2b-api.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/e2b.ts",
+      "to": "apps/server/src/harness/machine/e2b.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/file-route.ts",
+      "to": "apps/server/src/harness/machine/file-route.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/git-facts.ts",
+      "to": "apps/server/src/harness/machine/git-facts.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/kit.ts",
+      "to": "apps/server/src/harness/machine/kit.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/locate.test.ts",
+      "to": "apps/server/src/harness/machine/locate.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/machine-check.test.ts",
+      "to": "apps/server/src/harness/machine/machine-check.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/machine-confer-commands.test.ts",
+      "to": "apps/server/src/harness/machine/machine-confer-commands.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/machine-confer.test.ts",
+      "to": "apps/server/src/harness/machine/machine-confer.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "to": "apps/server/src/harness/machine/machine-e2b.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/machine-session.test.ts",
+      "to": "apps/server/src/harness/machine/machine-session.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/machine-sync.test.ts",
+      "to": "apps/server/src/harness/machine/machine-sync.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/machine.test.ts",
+      "to": "apps/server/src/harness/machine/machine.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/machines.ts",
+      "to": "apps/server/src/harness/machine/machines.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/pack.test.ts",
+      "to": "apps/server/src/harness/machine/pack.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/pack.ts",
+      "to": "apps/server/src/harness/machine/pack.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/port.ts",
+      "to": "apps/server/src/harness/machine/port.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/public.ts",
+      "to": "apps/server/src/harness/machine/public.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/sandbox-filesystem/containment.ts",
+      "to": "apps/server/src/harness/machine/sandbox-filesystem/containment.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/sandbox-filesystem/filesystem.test.ts",
+      "to": "apps/server/src/harness/machine/sandbox-filesystem/filesystem.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/sandbox-filesystem/filesystem.ts",
+      "to": "apps/server/src/harness/machine/sandbox-filesystem/filesystem.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/sandbox-filesystem/grep.ts",
+      "to": "apps/server/src/harness/machine/sandbox-filesystem/grep.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/sandbox-filesystem/shell.ts",
+      "to": "apps/server/src/harness/machine/sandbox-filesystem/shell.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/sandbox-filesystem/THIRD_PARTY_LICENSE.txt",
+      "to": "apps/server/src/harness/machine/sandbox-filesystem/THIRD_PARTY_LICENSE.txt"
+    },
+    {
+      "from": "apps/server/src/builder/machine/sandbox-filesystem/walk.ts",
+      "to": "apps/server/src/harness/machine/sandbox-filesystem/walk.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/scripts.ts",
+      "to": "apps/server/src/harness/machine/scripts.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/session.ts",
+      "to": "apps/server/src/harness/machine/session.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/show-file.ts",
+      "to": "apps/server/src/harness/machine/show-file.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/test-confer.ts",
+      "to": "apps/server/src/harness/machine/test-confer.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/test-conversation-machines.ts",
+      "to": "apps/server/src/harness/machine/test-conversation-machines.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/test-git.ts",
+      "to": "apps/server/src/harness/machine/test-git.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/test-machine-files.ts",
+      "to": "apps/server/src/harness/machine/test-machine-files.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/test-machine-network.ts",
+      "to": "apps/server/src/harness/machine/test-machine-network.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/test-machine-slow.ts",
+      "to": "apps/server/src/harness/machine/test-machine-slow.ts"
+    },
+    {
+      "from": "apps/server/src/builder/machine/test-machine.ts",
+      "to": "apps/server/src/harness/machine/test-machine.ts"
+    }
   ]
 }

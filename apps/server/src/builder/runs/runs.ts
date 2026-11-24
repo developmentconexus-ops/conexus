@@ -13,14 +13,14 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import { sql } from 'drizzle-orm'
 import { z } from 'zod'
-import { personNameColumn } from '../../hub/identity/public.ts'
-import type { Result } from '../../platform/result.ts'
 import type {
   CheckPlatformFailed,
   ConferPlatformFailed,
   Phase,
   VersionFolder,
-} from '../machine/public.ts'
+} from '../../harness/machine/public.ts'
+import { personNameColumn } from '../../hub/identity/public.ts'
+import type { Result } from '../../platform/result.ts'
 import { conferred, packed } from './confer.ts'
 import type {
   BuilderCheck,

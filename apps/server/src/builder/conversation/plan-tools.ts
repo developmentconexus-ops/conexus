@@ -2,7 +2,7 @@ import { posix } from 'node:path'
 import { submitPlanTool } from '@mastra/core/agent-controller'
 import type { MastraDBMessage } from '@mastra/core/memory'
 import { z } from 'zod'
-import { APP_FOLDER, PLAN_DIR } from '../machine/public.ts'
+import { APP_FOLDER, PLAN_DIR } from '../../harness/machine/public.ts'
 
 export const SUBMIT_PLAN_TOOL = submitPlanTool.id
 

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { INSTALLATION } from '../../harness/machine/test-machine.ts'
 import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import { said, talking } from '../assistant/test-assistant.ts'
 import {
@@ -15,7 +16,6 @@ import {
   title,
 } from '../conversation/test-conversation.ts'
 import { tool } from '../conversation/test-questions.ts'
-import { INSTALLATION } from '../machine/test-machine.ts'
 import { agentsOn, drafted, madeAgent, publishedAgent, talkedTo } from './test-agents.ts'
 
 const COMMAND = 'mastra_workspace_execute_command'

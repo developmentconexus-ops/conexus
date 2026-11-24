@@ -399,43 +399,43 @@
       "name": "a aba Código lê o main"
     },
     {
-      "file": "apps/server/src/builder/machine/conversation-lane.test.ts",
+      "file": "apps/server/src/harness/machine/conversation-lane.test.ts",
       "name": "o download achado pelo id religa pelo id e não mata a de outro modelo; o limite é MAX_BYTES \\(S\\)"
     },
     {
-      "file": "apps/server/src/builder/machine/conversation-machines.test.ts",
+      "file": "apps/server/src/harness/machine/conversation-machines.test.ts",
       "name": "com `replace`, a de outro molde é morta"
     },
     {
-      "file": "apps/server/src/builder/machine/conversation-machines.test.ts",
+      "file": "apps/server/src/harness/machine/conversation-machines.test.ts",
       "name": "com `resume`, a de outro molde é retomada e nada é morto"
     },
     {
-      "file": "apps/server/src/builder/machine/e2b-api.test.ts",
+      "file": "apps/server/src/harness/machine/e2b-api.test.ts",
       "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     },
     {
-      "file": "apps/server/src/builder/machine/locate.test.ts",
+      "file": "apps/server/src/harness/machine/locate.test.ts",
       "name": "o caminho cai na pasta"
     },
     {
-      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
       "name": "achada pelo id"
     },
     {
-      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
       "name": "lista de domínios"
     },
     {
-      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
       "name": "lista de endereços"
     },
     {
-      "file": "apps/server/src/builder/machine/machine.test.ts",
+      "file": "apps/server/src/harness/machine/machine.test.ts",
       "name": "máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main"
     },
     {
-      "file": "apps/server/src/builder/machine/machine.test.ts",
+      "file": "apps/server/src/harness/machine/machine.test.ts",
       "name": "máquina: só a máquina de nome igual ao desta conversa é achada; a do Projeto, a de outra instalação e a de outra conversa não"
     },
     {

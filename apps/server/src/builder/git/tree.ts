@@ -1,5 +1,5 @@
-import type { Sha } from '../machine/public.ts'
-import { MAX_BYTES, MAX_FILES } from '../machine/public.ts'
+import type { Sha } from '../../harness/machine/public.ts'
+import { MAX_BYTES, MAX_FILES } from '../../harness/machine/public.ts'
 import type { Context } from './context.ts'
 import { git, inMain } from './context.ts'
 

@@ -140,12 +140,12 @@ inside its thread. Only the Assistant uses working memory, per person
 ## Workspace, machine and filesystem
 
 A `Workspace` gives the model files and commands on an E2B machine. It is built in
-`builder/machine/machines.ts` for the Builder and in `builder/machine/conversation.ts` for the
-others. Its sandbox is `E2BSandbox`, built in one adapter, `builder/machine/e2b.ts`: one-hour
+`harness/machine/machines.ts` for the Builder and in `harness/machine/conversation.ts` for the
+others. Its sandbox is `E2BSandbox`, built in one adapter, `harness/machine/e2b.ts`: one-hour
 timeout, pause on timeout, reattach when found by id, and all outbound traffic denied except a
-host list (`builder/machine/kit.ts`). The machine starts on the first tool call
+host list (`harness/machine/kit.ts`). The machine starts on the first tool call
 (`beforeToolCall`). Its filesystem is `SandboxFilesystem`, code transplanted from Mastra Code's SDK
-into `builder/machine/sandbox-filesystem/`, because that SDK is not installed. The AST edit tool is
+into `harness/machine/sandbox-filesystem/`, because that SDK is not installed. The AST edit tool is
 off. A Project agent with a machine also gets Mastra's code mode (`createCodeMode`) over an E2B
 transport (`builder/agents/code-mode.ts`).
 
