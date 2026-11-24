@@ -49,7 +49,11 @@ Builder, o Assistente, o Construtor e o agente publicado nascem cada um de uma f
 montagem só, e o pedido de cada um ao modelo ficou igual, byte a byte. O desenho está na
 [explicação do harness](../../explanation/harness.md), e o que a Plataforma mantém à mão, em
 [boundaries](../../reference/boundaries.md). O cartão foi apagado com o fechamento; está no
-histórico do `main`. A trilha está sem cartão em `docs/steps/` até o cartão da etapa seguinte entrar.
+histórico do `main`.
+
+O cartão da etapa 2 do harness, "Uma sala e os nomes certos", é
+[uma-sala-e-os-nomes-certos.md](../uma-sala-e-os-nomes-certos.md), no trilho `harness`. A parte da
+tela anda com a aprovação da página, e a do servidor espera o fechamento do `A1`.
 
 A ordem depois dela é a da decisão A do fundador, de 2026-11-22: `A1`, a etapa 2 do harness ("Uma
 sala e os nomes certos"), `A2` e `A3`. O cartão do `A1` está em
