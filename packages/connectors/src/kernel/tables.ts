@@ -135,14 +135,28 @@ export const TablePosition = z.discriminatedUnion('kind', [
 ])
 export type TablePosition = z.infer<typeof TablePosition>
 
-export const TABLE_PAGE_DEFAULT = { rows: 500, bytes: 1_048_576 } as const // 0063's 1 MiB stop rule
+export const OPERATION_PAGE_BYTES = 1_048_576
+
+export const CeilingInput = z.object({
+  table: SourceTable,
+  column: TableColumn.pick({ name: true, type: true }),
+})
+export type CeilingInput = z.infer<typeof CeilingInput>
 
 export type ConnectorTables = Readonly<{
   declared: readonly TableDeclaration[]
-  page?: Readonly<{ rows: number; bytes: number }> // default TABLE_PAGE_DEFAULT
-  discover?: Operation<{ tables: SourceTable[] }, { tables: DiscoveredTable[] }, 'read'>
+  // tables: how many the source's dictionary answers whole in one call
+  discover?: Readonly<{
+    operation: Operation<{ tables: SourceTable[] }, { tables: DiscoveredTable[] }, 'read'>
+    tables: number
+  }>
   months?: Operation<{ table: SourceTable; column: string }, { months: string[] }, 'read'> // required by a WINDOW table
-  readTable?: Operation<TablePageInput, TablePage, 'read'> // required by a TABLE source
+  ceiling?: Operation<CeilingInput, { value: string | null }, 'read'> // required by a CHANGED table of a TABLE source
+  // required by a TABLE source, with its page's rows and bytes
+  readTable?: Readonly<{
+    operation: Operation<TablePageInput, TablePage, 'read'>
+    page: Readonly<{ rows: number; bytes: number }>
+  }>
 }>
 
 type TableDefinition = Omit<TableDeclaration, 'name' | 'source'> & {
@@ -204,7 +218,8 @@ function slugOf(text: string): string {
 
 /**
  * The kit's name with the connector prefix; when another table of the company has it, the
- * connection's name goes between them, cut so the whole fits in 60 (T.16).
+ * connection's name goes between them, cut so the whole fits in 60 (T.16); when that one is taken
+ * too, or the connection's name has no letter to give, a number ends it.
  */
 export function suggestedLakeName(
   input: Readonly<{
@@ -219,7 +234,13 @@ export function suggestedLakeName(
   if (!input.taken(plain)) return plain
   const room = LAKE_NAME_MAX - prefix.length - input.table.length - 1
   const part = slugOf(input.connectionName).slice(0, Math.max(room, 0)).replace(/_+$/, '')
-  return part === '' ? plain : lakeNameOf(prefix, `${part}_${input.table}`)
+  const named = part === '' ? plain : lakeNameOf(prefix, `${part}_${input.table}`)
+  if (!input.taken(named)) return named
+  for (let count = 2; ; count++) {
+    const suffix = `_${count}`
+    const free = `${named.slice(0, LAKE_NAME_MAX - suffix.length)}${suffix}`
+    if (!input.taken(free)) return free
+  }
 }
 
 /** What a source answers when it stops a table's read: the code, never the body. */

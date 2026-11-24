@@ -1318,12 +1318,18 @@ reference tool checks a read against its documentation.
   filter `{ kind: 'MONTH', column, month }`. On the Sankhya, `contarMeses` and the page SQL
   (`sankhya/copy-reads.ts`) count by `TO_CHAR(column, 'YYYY-MM')` and read between the month's
   first day and the next month's. A year out of the calendar (0208, 2109) is a month like the
-  others.
+  others. A pass after the first rereads from the saved month, or from `reread` months back when
+  that is earlier, up to the current one, so a copy stopped for months misses none: Airbyte's
+  `DatetimeBasedCursor` starts its `lookback_window` from the saved point
+  (the `source-shipstation` connector's `manifest.yaml:116`, at `82db089b`), as dlt's `lag` does
+  (`dlt/extract/incremental/__init__.py:142`, at `8fa90a97`).
 - **Why.** The fiscal tables have no change column, and the A0D measurement read 3,140 rows per
   second by month against 442 without the window (`EST/a0d-sankhya-kit-mes:93-106`). The month
   window is our extension of decision 0080.
 - **Proof.** `sankhya/copy-tables.test.ts`, "os meses da contagem": the double's months come back
   with the two out of the calendar, and each month's page holds that month's rows only.
+  `apps/extraction/tap/src/tap-pass.test.ts`, "a janela parada": a point five months back rereads
+  every month since.
   `kernel/conformance.test.ts`, "a declaração por tabela", refuses a window on a column that is not
   a date.
 - **Not proved.** The count on the real Oracle: the double runs the same SQL in SQLite.
@@ -1338,18 +1344,26 @@ reference tool checks a read against its documentation.
 - **Hand-made piece.** One tap for every connector, in `apps/extraction/tap/src/`: `tap.ts` reads
   the command line and the files Meltano hands it, `messages.ts` writes the catalog and the Singer
   messages, `pass.ts` reads each chosen table page by page, and `source.ts` sends the kit's
-  requests. The parts copy singer-sdk's own conventions: `x-singer.decimal` for a number, base64
-  with `contentEncoding` for bytes (`singerlib/schema.py:93`), and a page that fails out of reach
-  repeated five times on `backoff.expo(factor=2)` with up to one second of jitter
-  (`streams/rest.py:856-894`), with a 429's own wait.
+  requests. The parts copy singer-sdk's own conventions: `x-singer.decimal` for a number, and a
+  page that fails out of reach repeated five times on `backoff.expo(factor=2)` with up to one
+  second of jitter (`streams/rest.py:856-894`), with a 429's own wait. Bytes go as base64 with
+  `contentEncoding`, the way Airbyte types a binary column
+  (`airbyte-cdk/bulk/core/base/.../data/AirbyteSchemaType.kt:37`, at `82db089b`) and JSON Schema
+  names the encoding; singer-sdk itself writes bytes as hex
+  (`singer_sdk/helpers/_typing.py:539`). A pass of a table that follows a change column saves
+  the column's greatest value asked before its first page, not the greatest it read, so a row
+  changed behind the key walk comes again in the next pass: Airbyte's `cursorUpperBoundQuery`
+  (`airbyte-cdk/bulk/toolkits/extract-jdbc/.../read/DefaultJdbcPartition.kt:228-231`).
 - **Why.** The live calls and the lake copy must read one definition (0071), and only the kit
   holds it.
 - **Proof.** `apps/extraction/tap/src/tap.test.ts` and `tap-pass.test.ts` run the command line
-  against the Sankhya and HubSpot doubles. singer-sdk 0.54.9's standard tap battery, run outside
+  against the Sankhya and HubSpot doubles; `tap-ceiling.test.ts` changes a low key and then
+  writes a high one between two pages, and the next pass reads both. singer-sdk 0.54.9's standard tap battery, run outside
   the repository against the tap's own output, passed 284 tests over the Sankhya double's seven
   tables and 13 over the HubSpot double's one. `test_tap_battery.py` enters with U5.
 - **Not proved.** A run under Meltano (U5), the real Sankhya, and a HubSpot token that expires
-  during a run: the tap never renews it.
+  during a run: the tap never renews it. A table read through an operation has no ceiling to
+  ask, so its pass still saves the latest change it read; no declared table does so today.
 - **Revisit when** the kit can be read from Python, or Meltano changes how it calls a tap.
 
 ## Mastra 1.83.0: a conversation's changing state lives in a Hub table (step 24.1)

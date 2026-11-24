@@ -86,7 +86,6 @@ export {
   sourceOf,
   startDateLimits,
   suggestedLakeName,
-  TABLE_PAGE_DEFAULT,
   TABLE_SOURCE_FAILURES,
   TableColumn,
   TableColumnType,
@@ -113,7 +112,12 @@ export {
   HUBSPOT_DISCOVERY,
   SANKHYA_DISCOVERY,
 } from './kernel/tables-fixture.ts'
-export { discoverTables, readTablePage, tableMonths } from './kernel/tables-read.ts'
+export {
+  discoverTables,
+  readTablePage,
+  tableCeiling,
+  tableMonths,
+} from './kernel/tables-read.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { MERCADO_LIVRE_FACTS } from './mercado-livre/fake-facts.ts'
 export { sankhyaFake } from './sankhya/fake.ts'

@@ -54,7 +54,7 @@ async function catalogOf(double: Double) {
   return z.object({ streams: z.array(Entry) }).parse(JSON.parse(run.lines.join('')))
 }
 
-test('o catálogo é a descoberta: a lista esperada do kit, nada marcado, as colunas em minúsculas com a descrição', async () => {
+test('o catálogo é a descoberta: a lista esperada do kit que o dicionário tem, nada marcado, as colunas em minúsculas com a descrição', async () => {
   for (const [double, expected] of [
     [sankhyaDouble(), SANKHYA_DISCOVERY],
     [await hubspotDouble(), HUBSPOT_DISCOVERY],
@@ -63,7 +63,9 @@ test('o catálogo é a descoberta: a lista esperada do kit, nada marcado, as col
     const prefix = tablePrefixOf(double.connector.id)
     assert.deepEqual(
       streams.map((entry) => rowOf(entry, prefix)),
-      expected.map((row) => ({ ...row, key: row.key.map((name) => name.toLowerCase()) })),
+      expected
+        .filter(({ columns }) => columns !== null)
+        .map((row) => ({ ...row, key: row.key.map((name) => name.toLowerCase()) })),
     )
     for (const entry of streams) {
       assert.equal(entry.stream.startsWith(prefix), true)
@@ -87,6 +89,26 @@ test('o catálogo é a descoberta: a lista esperada do kit, nada marcado, as col
     'negocios',
     'a origem de uma tabela por operação é o id da operação',
   )
+})
+
+test('a descoberta recusada: o dicionário que a fonte recusa para o tap com o código dela, nunca um catálogo sem colunas', async () => {
+  const refusing = sankhyaFake()
+  refusing.switches.refuse.add('consultar')
+  const run = await tap(sankhyaDouble(refusing), { args: ['--discover', '--config', '<config>'] })
+  assert.equal(run.code, 1)
+  assert.deepEqual(run.lines, [])
+  assert.partialDeepStrictEqual(run.result, { code: 'COPY_SOURCE_REFUSED', table: '' })
+})
+
+test('o nome da rodada: o fluxo leva o nome da configuração, que o Hub escreve', async () => {
+  const double = sankhyaDouble()
+  const run = await tap(double, {
+    streams: [selected('TGFVEN', 'vendedores_do_catalogo')],
+    configTables: [{ source: 'TGFVEN', name: 'sankhya_matriz_vendedores', whole: false }],
+  })
+  assert.equal(run.code, 0)
+  assert.equal(recordsOf(run, 'vendedores_do_catalogo').length, 0)
+  assert.ok(recordsOf(run, 'sankhya_matriz_vendedores').length > 0)
 })
 
 test('duas tabelas numa rodada: só as escolhidas, uma depois da outra, com o nome do catálogo e a versão da passada', async () => {

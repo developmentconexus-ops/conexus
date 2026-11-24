@@ -7,6 +7,7 @@ import {
   readTablePage,
   sankhyaFake,
   startDateLimits,
+  tableCeiling,
   tableMonths,
 } from '../index.ts'
 import { sendTo, tableReachOf } from '../kernel/conformance-tables.ts'
@@ -25,7 +26,7 @@ async function columnsOf(name: string): Promise<readonly TableColumn[]> {
 
 test('o Sankhya declara as tabelas que as sondas fecharam, e o dicionário dá a descrição e as colunas', async () => {
   const declared = sankhya.tables?.declared ?? []
-  assert.equal(declared.length, 42)
+  assert.equal(declared.length, 49)
   assert.partialDeepStrictEqual(tableOf('notas'), {
     label: 'Notas e pedidos',
     description:
@@ -44,11 +45,27 @@ test('o Sankhya declara as tabelas que as sondas fecharam, e o dicionário dá a
     history: false,
     meanings: { XML: 'NFE_XML' },
   })
-  for (const absent of ['TGFCUS', 'TGFICM', 'TGFIPI', 'TGFCFO', 'TGFAJA', 'TGFCTS', 'TCBSALEMP'])
-    assert.ok(
-      !declared.some(({ source }) => source.kind === 'TABLE' && source.table === absent),
-      `${absent} espera uma sonda da chave`,
-    )
+  const measured = Object.fromEntries(
+    declared.map(({ source, key, mode }) => [
+      source.kind === 'TABLE' ? source.table : '',
+      { key, mode },
+    ]),
+  )
+  assert.partialDeepStrictEqual(measured, {
+    TGFCUS: {
+      key: ['CODPROD', 'CODEMP', 'DTATUAL', 'CODLOCAL', 'CONTROLE', 'NUNOTA', 'SEQUENCIA'],
+      mode: { kind: 'CHANGED', column: 'DHALTER', registry: true },
+    },
+    TGFICM: { mode: { kind: 'FULL' } },
+    TGFIPI: { key: ['CODIPI'], mode: { kind: 'FULL' } },
+    TGFCFO: { key: ['CODCFO'], mode: { kind: 'FULL' } },
+    TGFAJA: { key: ['NUAJA'], mode: { kind: 'CHANGED', column: 'DTALTER', registry: true } },
+    TGFCTS: { mode: { kind: 'FULL' } },
+    TCBSALEMP: {
+      key: ['CODEMP', 'CODCTACTB', 'CODCENCUS', 'CODPROJ', 'REFERENCIA', 'CODEMPDEST'],
+      mode: { kind: 'FULL' },
+    },
+  })
   const found = await discoverTables(await tableReachOf(sankhya, sankhyaFake()))
   const nfe = found.find(({ declaration }) => declaration.name === 'notas_nfe')
   assert.deepEqual(
@@ -111,9 +128,10 @@ test('a página em bytes: no máximo as linhas da página, menos linhas depois d
     return send(request, a)
   }
   const tables = sankhya.tables ?? assert.fail()
+  const readTable = tables.readTable ?? assert.fail()
   const connector = defineConnector({
     ...sankhya,
-    tables: { ...tables, page: { rows: 2, bytes: 1_048_576 } },
+    tables: { ...tables, readTable: { ...readTable, page: { rows: 2, bytes: 1_048_576 } } },
   })
   const nfe = tableOf('notas_nfe')
   const columns = await columnsOf('notas_nfe')
@@ -152,6 +170,34 @@ test('a página em bytes: no máximo as linhas da página, menos linhas depois d
   })
   assert.equal(page.kind, 'PAGE')
   if (page.kind === 'PAGE') assert.equal(Object.keys(page.rows[0] ?? {}).length, WIDE_COLUMNS)
+})
+
+test('o teto da coluna de alteração: o maior valor da tabela no texto da página, e o de uma alteração depois dele', async () => {
+  const fake = sankhyaFake()
+  const reach = await tableReachOf(sankhya, fake)
+  const table = tableOf('notas')
+  const columns = await columnsOf('notas')
+  const before = await tableCeiling({ ...reach, table, columns })
+  const page = await readTablePage({
+    ...reach,
+    table,
+    columns,
+    filter: { kind: 'ALL' },
+    after: null,
+  })
+  if (page.kind !== 'PAGE' || before.kind !== 'CEILING') return assert.fail()
+  const read = page.rows.map((row) => row.DTALTER ?? '').sort()
+  assert.equal(before.value, read.at(-1), 'o maior DTALTER, como a página o escreve')
+  await fake.handle(
+    new Request(new URL('/__teste/notas/100000', sankhya.origin), {
+      method: 'POST',
+      body: JSON.stringify({ acao: 'ALTERAR' }),
+    }),
+  )
+  assert.deepEqual(await tableCeiling({ ...reach, table, columns }), {
+    kind: 'CEILING',
+    value: '2026-11-20T10:00:00',
+  })
 })
 
 test('os meses da contagem: os que a tabela tem, os fora do calendário incluídos, e a página de um mês só traz o mês', async () => {

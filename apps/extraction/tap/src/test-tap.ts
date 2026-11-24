@@ -73,6 +73,14 @@ export function selected(source: string, stream: string) {
   }
 }
 
+function streamOf(streams: readonly unknown[] | undefined, source: string): string {
+  const named = z.array(z.object({ stream: z.string(), table_name: z.string() }).loose())
+  return (
+    named.parse(streams ?? []).find(({ table_name }) => table_name === source)?.stream ??
+    assert.fail(source)
+  )
+}
+
 export type TapRun = Readonly<{
   code: number
   lines: readonly string[]
@@ -89,6 +97,7 @@ export async function tap(
     state?: TapState
     startDate?: string | null
     whole?: readonly string[]
+    configTables?: readonly Readonly<{ source: string; name: string; whole: boolean }>[]
     fetch?: (request: Request) => Promise<Response>
     now?: number
   }> = {},
@@ -104,11 +113,9 @@ export async function tap(
     secret_path: await file('secret.json', double.secret),
     result_path: join(dir, 'result.json'),
     start_date: a.startDate ?? null,
-    tables: (a.whole ?? []).map((source) => ({
-      source,
-      name: `t_${source.toLowerCase()}`,
-      whole: true,
-    })),
+    tables:
+      a.configTables ??
+      (a.whole ?? []).map((source) => ({ source, name: streamOf(a.streams, source), whole: true })),
   })
   const args = a.args ?? [
     '--config',

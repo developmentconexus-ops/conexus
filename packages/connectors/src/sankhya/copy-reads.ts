@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Answered, ProviderAnswer } from '../kernel/operation.ts'
 import { defineOperation } from '../kernel/operation.ts'
 import type {
+  CeilingInput as CeilingInputType,
   DiscoveredTable,
   SourceTable as SourceTableType,
   TableColumn,
@@ -10,13 +11,14 @@ import type {
   TablePageInput,
 } from '../kernel/tables.ts'
 import {
+  CeilingInput,
   DiscoveredTable as DiscoveredTableSchema,
   SourceColumn,
   SourceTable,
   TablePageInput as TablePageInputSchema,
 } from '../kernel/tables.ts'
 import { gatewayAnswer } from './answers.ts'
-import { pageQueryRequest, QueriedRows } from './door.ts'
+import { pageQueryRequest, QueriedCells, QueriedRows } from './door.ts'
 
 const SCHEMA = "SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA')"
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/
@@ -191,7 +193,7 @@ function firstDay(year: number, month: number): string {
 }
 
 /** A column as the page reads it: a date or a timestamp as its canonical text, in Oracle (no zone: the installation's hour). */
-function selected({ name, type }: TablePageInput['columns'][number]): string {
+function selected({ name, type }: CeilingInputType['column']): string {
   if (type === 'date') return `TO_CHAR(T.${name}, 'YYYY-MM-DD') AS ${name}`
   if (type === 'timestamp') return `TO_CHAR(T.${name}, 'YYYY-MM-DD"T"HH24:MI:SS') AS ${name}`
   return `T.${name}`
@@ -240,7 +242,31 @@ function pageSql(input: TablePageInput): string {
  */
 const Cell = z.union([z.string(), z.number().transform(String), z.null()])
 
-const Page = z.object({ linhas: z.array(z.record(z.string(), Cell)), completo: z.boolean() })
+const Page = z.object({ linhas: z.array(z.array(Cell)), completo: z.boolean() })
+
+const Ceiling = z
+  .object({ linhas: z.array(z.array(Cell)).max(1), completo: z.boolean() })
+  .transform(({ linhas, completo }) => ({ value: linhas[0]?.[0] ?? null, completo }))
+
+export const maiorAlteracao = defineOperation({
+  id: 'maiorAlteracao',
+  class: 'read' as const,
+  subject: 'porta',
+  idempotent: true,
+  summary: 'Lê o maior valor da coluna de alteração de uma tabela do Sankhya.',
+  label: 'Maior alteração',
+  input: CeilingInput,
+  output: z.object({ value: z.string().nullable() }),
+  probe: (): CeilingInputType => ({
+    table: SourceTable.parse('TGFCAB'),
+    column: { name: 'DTALTER', type: 'timestamp' },
+  }),
+  request: ({ table, column }) =>
+    pageQueryRequest(
+      `SELECT ${selected(column)} FROM (SELECT MAX(T.${column.name}) AS ${column.name} FROM ${table} T) T`,
+    ),
+  answer: (answer) => whole(answer, gatewayAnswer(answer, QueriedCells.pipe(Ceiling))),
+})
 
 export const lerTabela = defineOperation({
   id: 'lerTabela',
@@ -261,13 +287,7 @@ export const lerTabela = defineOperation({
   }),
   request: (input) => pageQueryRequest(pageSql(input)),
   answer: (answer): Answered<TablePage> => {
-    const read = whole(answer, gatewayAnswer(answer, QueriedRows.pipe(Page)))
-    if (read.kind !== 'OK') return read
-    const { linhas } = read.value
-    const names = Object.keys(linhas[0] ?? {})
-    return {
-      kind: 'OK',
-      value: { rows: linhas.map((row) => names.map((name) => row[name] ?? null)) },
-    }
+    const read = whole(answer, gatewayAnswer(answer, QueriedCells.pipe(Page)))
+    return read.kind === 'OK' ? { kind: 'OK', value: { rows: read.value.linhas } } : read
   },
 })

@@ -51,20 +51,22 @@ async function jsonFile<T>(path: string, schema: z.ZodType<T>): Promise<T> {
   return schema.parse(JSON.parse(await readFile(path, 'utf8')))
 }
 
-async function reachOf(config: Config, deps: TapDeps) {
+async function withReach(
+  config: Config,
+  deps: TapDeps,
+  use: (reach: TableReach) => Promise<number>,
+): Promise<number> {
   const connector = connectorOf(config.connector)
   if (connector?.tables === undefined) throw new Error(`No tables of ${config.connector}`)
   const credential = await jsonFile(config.secret_path, Secret)
   const send = senderOf(connector, { fetch: deps.fetch, credential, now: deps.now })
   const session = sessionFor(connector, { credential, send, now: deps.now })
-  const reach: TableReach = {
-    connector,
-    session,
-    send,
-    account: { ref: config.account },
-    signal: new AbortController().signal,
+  const signal = new AbortController().signal
+  try {
+    return await use({ connector, session, send, account: { ref: config.account }, signal })
+  } finally {
+    await session.close(signal)
   }
-  return reach
 }
 
 async function columnsOf(reach: TableReach, connector: Connector, deps: TapDeps) {
@@ -85,17 +87,22 @@ function failureOf(failed: TableReadFailed, table: string): TapFailure {
   return { code: failed.code, system: failed.system, table }
 }
 
-async function discover(config: Config, deps: TapDeps): Promise<number> {
-  const reach = await reachOf(config, deps)
+async function discover(config: Config, deps: TapDeps, reach: TableReach): Promise<number> {
   const listed = await columnsOf(reach, reach.connector, deps)
   if (listed.kind === 'FAILED') return stopped(config, failureOf(listed.failure, ''))
+  const refused = listed.found.find(({ failed }) => failed !== undefined)?.failed
+  if (refused !== undefined) return stopped(config, failureOf(refused, ''))
   const prefix = tablePrefixOf(reach.connector.id)
-  const streams = listed.found.map(({ declaration, columns }) =>
-    catalogEntry({
-      stream: lakeNameOf(prefix, declaration.name),
-      table: declaration,
-      columns: columns ?? [],
-    }),
+  const streams = listed.found.flatMap(({ declaration, columns }) =>
+    columns === null
+      ? []
+      : [
+          catalogEntry({
+            stream: lakeNameOf(prefix, declaration.name),
+            table: declaration,
+            columns,
+          }),
+        ],
   )
   await deps.write(JSON.stringify({ streams }))
   return 0
@@ -113,15 +120,15 @@ function chosen(connector: Connector, catalog: Catalog, config: Config) {
     if (table === undefined)
       throw new Error(`No table of ${connector.id} reads ${entry.table_name}`)
     const asked = config.tables.find((each) => each.source === entry.table_name)
-    return { table, stream: entry.stream, whole: asked?.whole ?? false }
+    return { table, stream: asked?.name ?? entry.stream, whole: asked?.whole ?? false }
   })
 }
 
 async function sync(
   config: Config,
-  a: Readonly<{ catalog: Catalog; state: TapState; deps: TapDeps }>,
+  a: Readonly<{ catalog: Catalog; state: TapState; deps: TapDeps; reach: TableReach }>,
 ): Promise<number> {
-  const reach = await reachOf(config, a.deps)
+  const { reach } = a
   const tables = chosen(reach.connector, a.catalog, config)
   const first = tables[0]?.stream ?? ''
   const only = { ...reach.connector.tables, declared: tables.map(({ table }) => table) }
@@ -146,7 +153,6 @@ async function sync(
     })
     if (failed !== null) return stopped(config, failureOf(failed, chose.stream))
   }
-  await reach.session.close(reach.signal)
   return 0
 }
 
@@ -168,12 +174,13 @@ export async function runTap(argv: readonly string[], deps: TapDeps): Promise<nu
   }
   if (values.config === undefined) throw new Error('The tap needs --config')
   const config = await jsonFile(values.config, Config)
-  if (values.discover === true) return discover(config, deps)
+  if (values.discover === true)
+    return withReach(config, deps, (reach) => discover(config, deps, reach))
   if (values.catalog === undefined) throw new Error('A run needs --catalog')
   const catalog = await jsonFile(values.catalog, Catalog)
   const state =
     values.state === undefined ? TapState.parse({}) : await jsonFile(values.state, TapState)
-  return sync(config, { catalog, state, deps })
+  return withReach(config, deps, (reach) => sync(config, { catalog, state, deps, reach }))
 }
 
 function writeLine(line: string): Promise<void> {

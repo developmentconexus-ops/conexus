@@ -19,7 +19,6 @@ function row(
   return { name, source, key, mode, limited, columns }
 }
 
-/** Sankhya's 42 tables against `sankhyaFake()`: the double's dictionary has seven of them. */
 export const SANKHYA_DISCOVERY: readonly ExpectedTable[] = [
   row('notas', 'TGFCAB', ['NUNOTA'], 'CHANGED DTALTER', true, 450),
   row('notas_itens', 'TGFITE', ['NUNOTA', 'SEQUENCIA'], 'CHANGED DTALTER', true, 8),
@@ -63,6 +62,14 @@ export const SANKHYA_DISCOVERY: readonly ExpectedTable[] = [
   row('cidades', 'TSICID', ['CODCID'], 'CHANGED DTALTER registry', false, null),
   row('estados', 'TSIUFS', ['CODUF'], 'CHANGED DHALTREG registry', false, null),
   row(
+    'custos',
+    'TGFCUS',
+    ['CODPROD', 'CODEMP', 'DTATUAL', 'CODLOCAL', 'CONTROLE', 'NUNOTA', 'SEQUENCIA'],
+    'CHANGED DHALTER registry',
+    false,
+    null,
+  ),
+  row(
     'notas_impostos',
     'TGFDIN',
     ['NUNOTA', 'SEQUENCIA', 'CODIMP', 'CODINC'],
@@ -98,6 +105,33 @@ export const SANKHYA_DISCOVERY: readonly ExpectedTable[] = [
   ),
   row('livros_fiscais', 'TGFLIV', ['NUNOTA', 'ORIGEM', 'SEQUENCIA', 'CODEMP'], 'FULL', false, null),
   row('notas_nfe', 'TGFNFE', ['NUNOTA'], 'FULL', false, 4),
+  row(
+    'aliquotas_icms',
+    'TGFICM',
+    [
+      'UFORIG',
+      'UFDEST',
+      'TIPRESTRICAO',
+      'CODRESTRICAO',
+      'TIPRESTRICAO2',
+      'CODRESTRICAO2',
+      'SEQUENCIA',
+    ],
+    'FULL',
+    false,
+    null,
+  ),
+  row('aliquotas_ipi', 'TGFIPI', ['CODIPI'], 'FULL', false, null),
+  row('cfops', 'TGFCFO', ['CODCFO'], 'FULL', false, null),
+  row('apuracao_ajustes', 'TGFAJA', ['NUAJA'], 'CHANGED DTALTER registry', false, null),
+  row(
+    'estoque_contagens_serie',
+    'TGFCTS',
+    ['DTCONTAGEM', 'TIPCONTAGEM', 'CODPROD', 'SERIE', 'CODEMP', 'CODLOCAL'],
+    'FULL',
+    false,
+    null,
+  ),
   row(
     'efd_fiscal_participantes',
     'TGFEFDF0150',
@@ -214,6 +248,14 @@ export const SANKHYA_DISCOVERY: readonly ExpectedTable[] = [
     'saldos_contabeis',
     'TCBSAL',
     ['CODEMP', 'CODCTACTB', 'CODCENCUS', 'CODPROJ', 'REFERENCIA'],
+    'FULL',
+    false,
+    null,
+  ),
+  row(
+    'saldos_contabeis_empresa',
+    'TCBSALEMP',
+    ['CODEMP', 'CODCTACTB', 'CODCENCUS', 'CODPROJ', 'REFERENCIA', 'CODEMPDEST'],
     'FULL',
     false,
     null,

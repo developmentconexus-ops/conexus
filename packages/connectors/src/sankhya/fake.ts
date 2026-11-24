@@ -221,7 +221,13 @@ function sessionAnswer(url: URL, token: string, sessions: Sessions): Response | 
   return refused === null && isLogout(url) ? logout(sessions, token) : refused
 }
 
-const NoteChange = z.object({ acao: z.enum(['ALTERAR', 'CRIAR', 'APAGAR']) })
+const NoteChange = z.object({
+  acao: z.enum(['ALTERAR', 'CRIAR', 'APAGAR']),
+  dtalter: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+    .optional(),
+})
 
 /** The double's own routes, which no real Sankhya has: a test changes a note, a NF-e or the columns between two reads. */
 async function testRoute(request: Request, url: URL, tables: CopyTables): Promise<Response> {
@@ -231,8 +237,8 @@ async function testRoute(request: Request, url: URL, tables: CopyTables): Promis
   if (what === 'colunas' && id === undefined) return json({ coluna: tables.addColumn() })
   if (!Number.isSafeInteger(nunota)) return json({ code: 'NOT_FOUND' }, 404)
   if (what === 'notas') {
-    const { acao } = NoteChange.parse(await request.json())
-    return tables.note(nunota, acao) ? json({ nunota }) : json({ code: 'NOT_FOUND' }, 404)
+    const { acao, dtalter } = NoteChange.parse(await request.json())
+    return tables.note(nunota, acao, dtalter) ? json({ nunota }) : json({ code: 'NOT_FOUND' }, 404)
   }
   if (what === 'nfe')
     return tables.nfe(nunota) ? json({ nunota }) : json({ code: 'NOT_FOUND' }, 404)

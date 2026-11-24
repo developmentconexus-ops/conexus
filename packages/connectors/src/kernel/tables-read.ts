@@ -8,11 +8,8 @@ import type {
 } from './tables.ts'
 import { sourceOf } from './tables.ts'
 import type { PageAsk, TablePageRead, TableReach } from './tables-call.ts'
-import { called, pageOf, rowsAfter, UNREADABLE } from './tables-call.ts'
+import { called, rowsAfter, UNREADABLE } from './tables-call.ts'
 import { operationPage } from './tables-operation.ts'
-
-/** The tables a connector declares by kind of columns, each `DISCOVERED` one asked of the hook in batches. */
-const DISCOVER_BATCH = 8
 
 type Discovered = Readonly<{
   found: ReadonlyMap<string, DiscoveredTable>
@@ -33,9 +30,9 @@ async function discoveredOf(reach: TableReach, tables: ConnectorTables): Promise
       ),
     ),
   ]
-  for (let at = 0; at < wanted.length; at += DISCOVER_BATCH) {
-    const batch = wanted.slice(at, at + DISCOVER_BATCH)
-    const read = await called(reach, discover, { tables: batch })
+  for (let at = 0; at < wanted.length; at += discover.tables) {
+    const batch = wanted.slice(at, at + discover.tables)
+    const read = await called(reach, discover.operation, { tables: batch })
     if (read.kind === 'READ') for (const table of read.value.tables) found.set(table.table, table)
     else for (const table of batch) failed.set(table, read)
   }
@@ -93,13 +90,35 @@ export async function tableMonths(
   return read.kind === 'READ' ? { kind: 'MONTHS', months: read.value.months } : read
 }
 
+/**
+ * A CHANGED pass saves this ceiling, asked before its first page, not the latest value it read: a
+ * row changed behind the key walk then comes again in the next pass (Airbyte's
+ * `cursorUpperBoundQuery`).
+ */
+export async function tableCeiling(
+  reach: TableReach & Readonly<{ table: TableDeclaration; columns: readonly TableColumn[] }>,
+): Promise<Readonly<{ kind: 'CEILING'; value: string | null }> | TableReadFailed> {
+  const { table, columns } = reach
+  const ceiling = reach.connector.tables?.ceiling
+  const column = columns.find(
+    ({ name }) => table.mode.kind === 'CHANGED' && name === table.mode.column,
+  )
+  if (table.source.kind !== 'TABLE' || ceiling === undefined || column === undefined)
+    throw new Error(`${table.name} is no CHANGED table of a source table`)
+  const read = await called(reach, ceiling, {
+    table: table.source.table,
+    column: { name: column.name, type: column.type },
+  })
+  return read.kind === 'READ' ? { kind: 'CEILING', value: read.value.value } : read
+}
+
 async function tablePage(ask: PageAsk, table: SourceTable): Promise<TablePageRead> {
   const { connector, columns, filter, after } = ask
   const readTable = connector.tables?.readTable
   if (readTable === undefined) throw new Error(`${connector.id} reads no source table`)
-  const page = pageOf(connector)
+  const { page } = readTable
   const limit = after?.rows ?? page.rows
-  const read = await called(ask, readTable, {
+  const read = await called(ask, readTable.operation, {
     table,
     columns: columns.map(({ name, type }) => ({ name, type })),
     key: [...ask.table.key],
@@ -108,6 +127,7 @@ async function tablePage(ask: PageAsk, table: SourceTable): Promise<TablePageRea
     limit,
   })
   if (read.kind !== 'READ') return read
+  if (read.value.rows.some((cells) => cells.length !== columns.length)) return UNREADABLE
   const rows = read.value.rows.map((cells) =>
     Object.fromEntries(columns.map(({ name }, at) => [name, cells[at] ?? null])),
   )

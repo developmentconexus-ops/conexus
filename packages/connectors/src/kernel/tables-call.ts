@@ -11,7 +11,6 @@ import type {
   TableSendFailure,
   TableSourceFailure,
 } from './tables.ts'
-import { TABLE_PAGE_DEFAULT } from './tables.ts'
 
 const SYSTEM_FAILED_AT = 500
 
@@ -82,10 +81,6 @@ export type PageAsk = TableReach &
 export function rowsAfter(asked: number, rows: readonly unknown[], bytes: number): number {
   const size = Buffer.byteLength(JSON.stringify(rows))
   return size > bytes ? Math.max(1, Math.floor((asked * bytes) / size)) : asked
-}
-
-export function pageOf(connector: Connector): Readonly<{ rows: number; bytes: number }> {
-  return connector.tables?.page ?? TABLE_PAGE_DEFAULT
 }
 
 export const UNREADABLE: TableReadFailed = failed('COPY_SOURCE_UNREADABLE')

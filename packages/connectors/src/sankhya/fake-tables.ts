@@ -18,12 +18,11 @@ export const WINDOW_MONTHS = ['0208-12', '2026-08', '2026-09', '2026-10', '2026-
 
 /** What the test routes change between two reads (criterion 16): a note, a NF-e's events, a new column. */
 export type CopyTables = Readonly<{
-  note(nunota: number, action: 'ALTERAR' | 'CRIAR' | 'APAGAR'): boolean
+  note(nunota: number, action: 'ALTERAR' | 'CRIAR' | 'APAGAR', at?: string): boolean
   nfe(nunota: number): boolean
   addColumn(): string
 }>
 
-/** The instant a test route stamps on what it changes: after every row of the double. */
 const CHANGED_BY_TEST = '2026-11-20 10:00:00'
 
 const DESCRIPTIONS: Readonly<Record<string, string>> = {
@@ -171,19 +170,19 @@ export function copyTablesOn(database: DatabaseSync, decimal: string): CopyTable
     .run()
   let added = 0
   return {
-    note(nunota, action) {
+    note(nunota, action, at = CHANGED_BY_TEST) {
       const done =
         action === 'APAGAR'
           ? database.prepare('DELETE FROM TGFCAB WHERE NUNOTA = ?').run(nunota)
           : action === 'ALTERAR'
             ? database
                 .prepare("UPDATE TGFCAB SET VLRNOTA = '1.00', DTALTER = ? WHERE NUNOTA = ?")
-                .run(CHANGED_BY_TEST, nunota)
+                .run(at, nunota)
             : database
                 .prepare(
                   "INSERT OR IGNORE INTO TGFCAB (NUNOTA, CODEMP, DTNEG, CODVEND, CODPARC, TIPMOV, VLRNOTA, NUMNOTA, DTALTER) VALUES (?, 1, '2026-11-20', 1, 100, 'V', '10.00', ?, ?)",
                 )
-                .run(nunota, nunota % 100_000, CHANGED_BY_TEST)
+                .run(nunota, nunota % 100_000, at)
       return done.changes > 0
     },
     nfe(nunota) {

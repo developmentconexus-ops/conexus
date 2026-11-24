@@ -6,7 +6,7 @@ import type {
   TableReach,
   TableReadFailed,
 } from '@conexus/connectors'
-import { readTablePage, startDateLimits, tableMonths } from '@conexus/connectors'
+import { readTablePage, startDateLimits, tableCeiling, tableMonths } from '@conexus/connectors'
 import type { Bookmark, Pass, SingerMessage } from './messages.ts'
 import { lineOf, recordLine, schemaOf } from './messages.ts'
 
@@ -50,12 +50,26 @@ const SAO_PAULO_MONTH = new Intl.DateTimeFormat('en-CA', {
   month: '2-digit',
 })
 
-function monthsUpTo(now: number, count: number): readonly string[] {
-  const [year = 0, month = 1] = SAO_PAULO_MONTH.format(now).split('-').map(Number)
-  return Array.from({ length: count }, (_, back) => {
-    const at = year * 12 + (month - 1) - (count - 1 - back)
-    return `${String(Math.floor(at / 12)).padStart(4, '0')}-${String((at % 12) + 1).padStart(2, '0')}`
-  })
+const MONTH = /^(\d{4})-(0[1-9]|1[0-2])$/
+
+function indexOf(month: string): number | null {
+  const [, year, at] = MONTH.exec(month) ?? []
+  return year === undefined ? null : Number(year) * 12 + Number(at) - 1
+}
+
+function monthAt(index: number): string {
+  return `${String(Math.floor(index / 12)).padStart(4, '0')}-${String((index % 12) + 1).padStart(2, '0')}`
+}
+
+function thisMonth(now: number): number {
+  return indexOf(SAO_PAULO_MONTH.format(now)) ?? 0
+}
+
+/** From the saved month when it is earlier than `reread` months back: a copy stopped for months misses none. */
+function monthsToReread(now: number, point: string, reread: number): readonly string[] {
+  const last = thisMonth(now)
+  const first = Math.min(indexOf(point) ?? last, last - reread + 1)
+  return Array.from({ length: last - first + 1 }, (_, at) => monthAt(first + at))
 }
 
 /** ISO dates and instants order as text, so the latest is the last after a sort. */
@@ -66,7 +80,7 @@ function latest(values: readonly (string | null | undefined)[]): string | undefi
     .at(-1)
 }
 
-type Plan = Readonly<{ filters: readonly TableFilter[] } | TableReadFailed>
+type Plan = Readonly<{ filters: readonly TableFilter[]; point: string | null } | TableReadFailed>
 
 async function planOf(
   reach: TableReach,
@@ -76,54 +90,57 @@ async function planOf(
   const { mode } = run.table
   const point = run.whole ? undefined : a.bookmark?.replication_key_value
   const date = startDateLimits(mode) ? a.startDate : null
-  if (mode.kind === 'FULL') return { filters: [{ kind: 'ALL' }] }
+  if (mode.kind === 'FULL') return { filters: [{ kind: 'ALL' }], point: null }
   if (mode.kind === 'CHANGED') {
     const since = latest([point, date])
-    return {
-      filters: [
-        since === undefined
-          ? { kind: 'ALL' }
-          : { kind: 'SINCE', column: mode.column, after: since },
-      ],
-    }
+    const filters: TableFilter[] = [
+      since === undefined ? { kind: 'ALL' } : { kind: 'SINCE', column: mode.column, after: since },
+    ]
+    if (run.table.source.kind === 'OPERATION') return { filters, point: null }
+    const ceiling = await tried(
+      () => tableCeiling({ ...reach, table: run.table, columns: run.columns }),
+      a.deps,
+    )
+    return ceiling.kind === 'CEILING' ? { filters, point: ceiling.value } : ceiling
   }
   const counted =
     point === undefined
       ? await tried(() => tableMonths({ ...reach, table: run.table }), a.deps)
-      : { kind: 'MONTHS' as const, months: monthsUpTo(a.deps.now(), mode.reread) }
+      : { kind: 'MONTHS' as const, months: monthsToReread(a.deps.now(), point, mode.reread) }
   if (counted.kind !== 'MONTHS') return counted
   const first = date?.slice(0, 7) ?? ''
   const months = counted.months.filter((month) => month >= first)
-  return { filters: months.map((month) => ({ kind: 'MONTH', column: mode.column, month })) }
+  return {
+    filters: months.map((month) => ({ kind: 'MONTH', column: mode.column, month })),
+    point: null,
+  }
 }
 
-function changedOf(
-  run: RunTable,
-  rows: readonly Readonly<Record<string, string | null>>[],
-): string | null {
-  const { mode } = run.table
-  if (mode.kind !== 'CHANGED') return null
+/** An operation's table has no ceiling to ask, so its pass saves the latest change it read. */
+function readOf(run: RunTable, rows: readonly Readonly<Record<string, string | null>>[]) {
+  const { mode, source } = run.table
+  if (mode.kind !== 'CHANGED' || source.kind !== 'OPERATION') return null
   return latest(rows.map((row) => row[mode.column])) ?? null
 }
 
 function doneOf(run: RunTable, pass: Pass, before: Bookmark | undefined, now: number): Bookmark {
   const { mode } = run.table
   if (mode.kind === 'FULL') return {}
-  if (mode.kind === 'WINDOW') return { replication_key_value: monthsUpTo(now, 1)[0] }
-  const value = latest([pass.max, run.whole ? null : before?.replication_key_value])
+  if (mode.kind === 'WINDOW') return { replication_key_value: monthAt(thisMonth(now)) }
+  const value = latest([pass.point, run.whole ? null : before?.replication_key_value])
   return value === undefined ? {} : { replication_key_value: value }
 }
 
 function advanced(
   pass: Pass,
   page: Extract<TablePageRead, { kind: 'PAGE' }>,
-  max: string | null,
+  read: string | null,
 ): Readonly<{ pass: Pass; done: boolean }> {
-  const best = latest([pass.max, max]) ?? null
-  if (page.next !== null) return { pass: { ...pass, after: page.next, max: best }, done: false }
+  const point = latest([pass.point, read]) ?? null
+  if (page.next !== null) return { pass: { ...pass, after: page.next, point }, done: false }
   if (pass.at + 1 < pass.filters.length)
-    return { pass: { ...pass, at: pass.at + 1, after: null, max: best }, done: false }
-  return { pass: { ...pass, max: best }, done: true }
+    return { pass: { ...pass, at: pass.at + 1, after: null, point }, done: false }
+  return { pass: { ...pass, point }, done: true }
 }
 
 export async function readTable(
@@ -151,7 +168,13 @@ export async function readTable(
   if (pass === undefined) {
     const plan = await planOf(reach, run, { bookmark: before, startDate: a.startDate, deps })
     if ('code' in plan) return plan
-    pass = { version: deps.now(), filters: [...plan.filters], at: 0, after: null, max: null }
+    pass = {
+      version: deps.now(),
+      filters: [...plan.filters],
+      at: 0,
+      after: null,
+      point: plan.point,
+    }
   }
   let done = pass.filters.length === 0
   while (!done) {
@@ -173,7 +196,7 @@ export async function readTable(
       await deps.write(
         recordLine({ stream: run.stream, columns: run.columns, row, version: current.version }),
       )
-    ;({ pass, done } = advanced(current, page, changedOf(run, page.rows)))
+    ;({ pass, done } = advanced(current, page, readOf(run, page.rows)))
     if (!done) {
       bookmarks[run.stream] = { ...before, pass }
       await emit({ type: 'STATE', value: { bookmarks } })

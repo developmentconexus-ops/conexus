@@ -4,7 +4,7 @@ import type {
   TableDeclaration,
   TableSourceFailure,
 } from '@conexus/connectors'
-import { startDateLimits, TableFilter, TablePosition } from '@conexus/connectors'
+import { sourceOf, startDateLimits, TableFilter, TablePosition } from '@conexus/connectors'
 import { z } from 'zod'
 
 type ColumnSchema = Readonly<{
@@ -31,7 +31,7 @@ const Pass = z.object({
   filters: z.array(TableFilter).min(1),
   at: z.int().min(0),
   after: TablePosition.nullable(),
-  max: z.string().nullable(),
+  point: z.string().nullable(),
 })
 export type Pass = z.infer<typeof Pass>
 
@@ -97,7 +97,7 @@ export function catalogEntry(
   return {
     tap_stream_id: a.stream,
     stream: a.stream,
-    table_name: table.source.kind === 'TABLE' ? table.source.table : table.source.operation,
+    table_name: sourceOf(table),
     key_properties: key,
     schema: schemaOf(columns),
     metadata: [

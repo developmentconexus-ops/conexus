@@ -7,19 +7,16 @@ import {
   discoverTables,
   HUBSPOT_DISCOVERY,
   hubspotFake,
-  lakeNameOf,
   readTablePage,
   SANKHYA_DISCOVERY,
   sankhyaFake,
   sourceOf,
   startDateLimits,
-  suggestedLakeName,
   TABLE_SOURCE_FAILURES,
-  TableName,
 } from '../index.ts'
 import { sankhya } from '../sankhya/definition.ts'
 import { tableReachOf, walkTable } from './conformance-tables.ts'
-import { ConnectorId } from './definition.ts'
+import { defineConnector } from './definition.ts'
 
 function modeOf(table: TableDeclaration): string {
   const { mode } = table
@@ -113,6 +110,43 @@ test('uma página de cada origem: a tabela pela leitura do conector, a operaçã
   })
 })
 
+test('a página cheia cuja última linha tem a chave nula, ou uma linha com outro número de células, não se lê', async () => {
+  const tables = sankhya.tables ?? assert.fail()
+  const readTable = tables.readTable ?? assert.fail()
+  function answering(rows: (string | null)[][]): Connector {
+    return defineConnector({
+      ...sankhya,
+      tables: {
+        ...tables,
+        readTable: {
+          operation: { ...readTable.operation, answer: () => ({ kind: 'OK', value: { rows } }) },
+          page: { rows: 2, bytes: 1_048_576 },
+        },
+      },
+    })
+  }
+  const columns = [{ name: 'NUNOTA', type: 'bigint', description: null } as const]
+  async function read(rows: (string | null)[][]) {
+    const connector = answering(rows)
+    return readTablePage({
+      ...(await tableReachOf(connector, sankhyaFake())),
+      table: tableOf(connector, 'notas'),
+      columns,
+      filter: { kind: 'ALL' },
+      after: null,
+    })
+  }
+  assert.equal((await read([['1'], ['2']])).kind, 'PAGE')
+  assert.partialDeepStrictEqual(await read([['1'], [null]]), {
+    kind: 'FAILED',
+    code: 'COPY_SOURCE_UNREADABLE',
+  })
+  assert.partialDeepStrictEqual(await read([['1', 'x']]), {
+    kind: 'FAILED',
+    code: 'COPY_SOURCE_UNREADABLE',
+  })
+})
+
 test('a fonte recusa: um dos quatro códigos, o que o sistema disse sem o corpo, e a espera do 429', async () => {
   const notas = tableOf(sankhya, 'notas_itens')
   const columns = [{ name: 'NUNOTA', type: 'bigint', description: null } as const]
@@ -188,47 +222,6 @@ test('o que a data limita: só a tabela de movimento e a de janela; o cadastro e
         (expected.mode.startsWith('CHANGED') && !expected.mode.endsWith('registry')),
       expected.name,
     )
-})
-
-test('o nome no lago: o prefixo do conector, o da ligação quando o nome já existe, e nunca acima de 60', () => {
-  const sankhyaId = ConnectorId.parse('sankhya')
-  const notas = TableName.parse('notas')
-  assert.equal(lakeNameOf('sankhya_', 'notas'), 'sankhya_notas')
-  assert.throws(() => lakeNameOf('sankhya_', 'x'.repeat(53)), RangeError)
-  function free() {
-    return false
-  }
-  assert.equal(
-    suggestedLakeName({
-      connector: sankhyaId,
-      table: notas,
-      connectionName: 'Matriz',
-      taken: free,
-    }),
-    'sankhya_notas',
-  )
-  function taken(name: string) {
-    return name === 'sankhya_notas'
-  }
-  assert.equal(
-    suggestedLakeName({
-      connector: sankhyaId,
-      table: notas,
-      connectionName: 'Filial São João',
-      taken,
-    }),
-    'sankhya_filial_sao_joao_notas',
-  )
-  const long = suggestedLakeName({
-    connector: ConnectorId.parse('mercado-livre'),
-    table: TableName.parse('periodos_de_faturamento'),
-    connectionName: 'Loja oficial da empresa no marketplace',
-    taken: () => true,
-  })
-  assert.equal(long, 'mercado_livre_loja_oficial_da_empres_periodos_de_faturamento')
-  assert.equal(long.length, 60)
-  assert.throws(() => TableName.parse('Notas'), 'só minúsculas')
-  assert.throws(() => TableName.parse('x'.repeat(41)), 'até 40')
 })
 
 test('a descoberta recusada diz por quê: a tabela sem colunas leva o código da fonte, e a ausente do dicionário não leva nenhum', async () => {

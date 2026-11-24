@@ -113,6 +113,15 @@ test('a janela por mês: a primeira passada lê os meses da contagem, fora do ca
   assert.equal(monthsOf(whole).length, 6, 'Ler de novo desde a data relê a contagem')
 })
 
+test('a janela parada: com o ponto meses atrás, a rodada relê do mês do ponto até hoje, sem pular mês', async () => {
+  const run = await tap(sankhyaDouble(), {
+    streams: WINDOW,
+    state: { bookmarks: { efd: { replication_key_value: '2026-05' } } },
+  })
+  assert.deepEqual(monthsOf(run), ['2026-08', '2026-09', '2026-10', '2026-11'])
+  assert.deepEqual(lastState(run).bookmarks.efd, { replication_key_value: '2026-11' })
+})
+
 test('a janela desde a data: só os meses a partir do mês da data, e a releitura nunca antes dele', async () => {
   const first = await tap(sankhyaDouble(), { streams: WINDOW, startDate: '2026-09-15' })
   assert.deepEqual(monthsOf(first), ['2026-09', '2026-10', '2026-11', '2109-07'])
@@ -189,7 +198,7 @@ test('a página que cai e volta: 5xx, 429 e a rede repetidos até cinco vezes, c
   const once = failing(refused, 1, () => new Response('{"error":"bad"}', { status: 400 }))
   const bad = await tap(refused, { streams: VENDEDORES, fetch: once.fetch })
   assert.equal(bad.code, 1)
-  assert.equal(once.count(), 2, 'o dicionário e a página, e o 4xx não se repete')
+  assert.equal(once.count(), 3, 'o dicionário, o teto e o logout: o 4xx não se repete')
   assert.deepEqual(bad.waits, [])
 })
 

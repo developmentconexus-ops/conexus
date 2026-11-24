@@ -4,8 +4,9 @@ import { Instant, valueAt } from './operation.ts'
 import type { Rows } from './rows.ts'
 import { Rows as RowsSchema } from './rows.ts'
 import type { TableColumnType, TablePosition, TableReadFailed, TableSource } from './tables.ts'
+import { OPERATION_PAGE_BYTES } from './tables.ts'
 import type { PageAsk, TablePageRead } from './tables-call.ts'
-import { called, pageOf, rowsAfter, UNREADABLE } from './tables-call.ts'
+import { called, rowsAfter, UNREADABLE } from './tables-call.ts'
 
 type Cell = string | null | undefined // undefined: not a value of the type
 
@@ -128,8 +129,8 @@ export async function operationPage(
     (each) => each.id === source.operation,
   )
   if (operation === undefined) throw new Error(`${source.operation} is no read of ${connector.id}`)
-  const page = pageOf(connector)
-  const limit = ask.after?.rows ?? page.rows
+  const paging = operation.list?.paging
+  const limit = ask.after?.rows ?? (paging === undefined || paging.kind === 'NONE' ? 1 : paging.max)
   const read = await called(ask, operation, operationInputOf(ask, source, operation, limit))
   if (read.kind !== 'READ') return read
   const answered = RowsSchema.safeParse(read.value)
@@ -145,6 +146,6 @@ export async function operationPage(
     }
     rows.push(Object.fromEntries(cells))
   }
-  const next = nextOf(operation, ask, answered.data, rowsAfter(limit, rows, page.bytes))
+  const next = nextOf(operation, ask, answered.data, rowsAfter(limit, rows, OPERATION_PAGE_BYTES))
   return next.kind === 'NEXT' ? { kind: 'PAGE', rows, next: next.place } : next
 }

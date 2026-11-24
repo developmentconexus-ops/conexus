@@ -27,11 +27,14 @@ const BASE: Declared = {
   },
 }
 
-/** The Sankhya with these tables beside its own, and its discovery unless `discover` is false. */
-function withTables(declared: readonly Declared[], a: { discover?: boolean; id?: string } = {}) {
+function withTables(
+  declared: readonly Declared[],
+  a: { discover?: boolean; ceiling?: boolean; id?: string } = {},
+) {
   const { id: _id, tables, ...rest } = sankhya
   const hooks = {
     ...(a.discover === false ? {} : { discover: tables?.discover }),
+    ...(a.ceiling === false ? {} : { ceiling: tables?.ceiling }),
     months: tables?.months,
     readTable: tables?.readTable,
   }
@@ -90,6 +93,23 @@ const REFUSED: [string, () => unknown, RegExp | typeof ZodError][] = [
         discover: false,
       }),
     /teste discovers its columns, and sankhya has no discovery|notas discovers its columns, and sankhya has no discovery/,
+  ],
+  [
+    'uma tabela só do que mudou de uma fonte sem o teto',
+    () => withTables([BASE], { ceiling: false }),
+    /follows DTALTER, and sankhya asks no ceiling/,
+  ],
+  [
+    'uma descoberta que não pede tabela',
+    () =>
+      defineConnector({
+        ...sankhya,
+        tables: {
+          ...(sankhya.tables ?? assert.fail()),
+          discover: { ...(sankhya.tables?.discover ?? assert.fail()), tables: 0 },
+        },
+      }),
+    /A discovery asks tables/,
   ],
   [
     'uma tabela de operação sem colunas declaradas',

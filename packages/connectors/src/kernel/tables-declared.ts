@@ -5,7 +5,7 @@ import type {
   TableColumnType,
   TableDeclaration,
 } from './tables.ts'
-import { PREFIX_MAX, SourceColumn, TABLE_PAGE_DEFAULT, TableName, tablePrefixOf } from './tables.ts'
+import { PREFIX_MAX, SourceColumn, TableName, tablePrefixOf } from './tables.ts'
 
 /** The engine's columns start with `_` (the `_sdc_*` and the 3a's), so a declared one never does (T.41). */
 function assertColumn(name: string, table: TableName): void {
@@ -36,13 +36,20 @@ function assertDeclaredColumns(table: TableDeclaration, columns: readonly Declar
   }
 }
 
+function assertTableSource(connector: Declaring, tables: ConnectorTables, table: TableDeclaration) {
+  const { mode } = table
+  if (tables.readTable === undefined)
+    throw new Error(`${table.name} reads a source table, and ${connector.id} has no readTable`)
+  if (mode.kind === 'WINDOW' && tables.months === undefined)
+    throw new Error(`${table.name} windows by month, and ${connector.id} counts no months`)
+  if (mode.kind === 'CHANGED' && tables.ceiling === undefined)
+    throw new Error(`${table.name} follows ${mode.column}, and ${connector.id} asks no ceiling`)
+}
+
 function assertSource(connector: Declaring, tables: ConnectorTables, table: TableDeclaration) {
   const { source, mode, columns } = table
   if (source.kind === 'TABLE') {
-    if (tables.readTable === undefined)
-      throw new Error(`${table.name} reads a source table, and ${connector.id} has no readTable`)
-    if (mode.kind === 'WINDOW' && tables.months === undefined)
-      throw new Error(`${table.name} windows by month, and ${connector.id} counts no months`)
+    assertTableSource(connector, tables, table)
     return
   }
   if (columns.kind !== 'DECLARED')
@@ -95,9 +102,15 @@ function assertApart(source: string, same: readonly TableDeclaration[]): void {
   }
 }
 
-function assertPage(page: Readonly<{ rows: number; bytes: number }>): void {
-  if (!Number.isSafeInteger(page.rows) || page.rows < 1) throw new Error('A page asks rows')
-  if (!Number.isSafeInteger(page.bytes) || page.bytes < 1) throw new Error('A page has bytes')
+function assertCounts(tables: ConnectorTables): void {
+  const page = tables.readTable?.page
+  if (page !== undefined && (!Number.isSafeInteger(page.rows) || page.rows < 1))
+    throw new Error('A page asks rows')
+  if (page !== undefined && (!Number.isSafeInteger(page.bytes) || page.bytes < 1))
+    throw new Error('A page has bytes')
+  const discover = tables.discover
+  if (discover !== undefined && (!Number.isSafeInteger(discover.tables) || discover.tables < 1))
+    throw new Error('A discovery asks tables')
 }
 
 /** The part of a connector its tables' declaration reads. */
@@ -135,7 +148,7 @@ export function assertTablesDeclared(connector: Declaring): void {
   if (tables === undefined) return
   if (tablePrefixOf(connector.id).length > PREFIX_MAX)
     throw new Error(`The prefix of ${connector.id} passes ${PREFIX_MAX}`)
-  assertPage(tables.page ?? TABLE_PAGE_DEFAULT)
+  assertCounts(tables)
   const names = tables.declared.map(({ name }) => name)
   if (new Set(names).size !== names.length)
     throw new Error(`${connector.id} suggests one lake name twice`)

@@ -1,5 +1,5 @@
 import { defineTables } from '../kernel/tables.ts'
-import { contarMeses, descobrirTabelas, lerTabela } from './copy-reads.ts'
+import { contarMeses, descobrirTabelas, lerTabela, maiorAlteracao } from './copy-reads.ts'
 import type { Row } from './copy-tables-fiscal.ts'
 import { changed, FISCAL_TABLES, FULL } from './copy-tables-fiscal.ts'
 
@@ -203,13 +203,27 @@ const CORE_TABLES: readonly Row[] = [
     key: ['CODUF'],
     mode: changed('DHALTREG', true),
   },
+  {
+    name: 'custos',
+    label: 'Custos dos produtos',
+    description:
+      'O custo de cada produto por empresa, local e controle, a cada nota que o atualizou (DTATUAL).',
+    group: 'produtos',
+    table: 'TGFCUS',
+    key: ['CODPROD', 'CODEMP', 'DTATUAL', 'CODLOCAL', 'CONTROLE', 'NUNOTA', 'SEQUENCIA'],
+    mode: changed('DHALTER', true),
+  },
 ]
 
-/** The Sankhya's tables: 5,000 rows, the gateway's measured ceiling (0080), and 1 MiB, the stop rule of 0063. */
+/** The most rows the gateway answers in one call, measured (0080). */
+const GATEWAY_ROWS = 5000
+/** The most columns Oracle allows a table, so a dictionary of this many tables fits in one answer. */
+const ORACLE_COLUMNS_MAX = 1000
+
 export const sankhyaTables = defineTables({
   declared: declared([...CORE_TABLES, ...FISCAL_TABLES]),
-  page: { rows: 5000, bytes: 1_048_576 },
-  discover: descobrirTabelas,
+  discover: { operation: descobrirTabelas, tables: GATEWAY_ROWS / ORACLE_COLUMNS_MAX },
   months: contarMeses,
-  readTable: lerTabela,
+  ceiling: maiorAlteracao,
+  readTable: { operation: lerTabela, page: { rows: GATEWAY_ROWS, bytes: 1_048_576 } },
 })
