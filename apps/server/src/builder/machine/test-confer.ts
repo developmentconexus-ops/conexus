@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer } from 'node:https'
@@ -48,7 +48,7 @@ export function realBrowser(t: TestContext): string {
       '#!/bin/sh',
       `export HOME='${homedir()}' AGENT_BROWSER_SESSION='${basename(folder)}'`,
       `export AGENT_BROWSER_IGNORE_HTTPS_ERRORS=1 AGENT_BROWSER_EXECUTABLE_PATH='${headlessShell()}'`,
-      `exec '${join(ROOT, 'node_modules/.bin/agent-browser')}' "$@"`,
+      `exec '${join(ROOT, 'node_modules/.bin/agent-browser')}' --args --no-sandbox "$@"`,
       '',
     ].join('\n'),
   )
@@ -141,6 +141,19 @@ export type Conferring = Awaited<ReturnType<typeof conferring>>
 
 export function confer({ machines }: Conferring, at: Awaited<ReturnType<typeof appServer>>['at']) {
   return machines.confer({ conversationId: CONVERSATION, at })
+}
+
+/** The report of a conference that must run; when it does not, the log lines and what the browser itself says. */
+export async function reported(
+  machine: Conferring,
+  at: Parameters<typeof confer>[1],
+  program: string,
+) {
+  const result = await confer(machine, at)
+  if (result.ok) return result.value
+  const probe = spawnSync(program, ['--json', 'open', 'about:blank'], { encoding: 'utf8' })
+  spawnSync(program, ['--json', 'close'])
+  throw new Error(`${machine.lines.join('\n')}\n${probe.stdout}${probe.stderr}`)
 }
 
 export const FAILED = { ok: false, error: 'CONFER_PLATFORM_FAILED' }
