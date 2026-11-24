@@ -2,7 +2,6 @@ import type { CompanyId, CompanyMemoryPageId, ConversationId, ProjectId } from '
 import {
   addCompanyMemoryNote,
   clearProfileMemory,
-  createAssistantConversation,
   createCompanyMemoryPage,
   deleteAssistantConversation,
   getProfileMemory,
@@ -52,7 +51,6 @@ export function assistantConnectionsQuery(companyId: CompanyId, projectId: Proje
   return hubQuery(listAssistantConnections, { params: { companyId }, query: { projectId } })
 }
 
-export const sendAssistantCreation = hubMutation(createAssistantConversation)
 export const sendAssistantConnections = hubMutation(setAssistantConnections)
 export const sendAssistantModel = hubMutation(setAssistantModel)
 export const sendAssistantDeletion = hubMutation(deleteAssistantConversation)

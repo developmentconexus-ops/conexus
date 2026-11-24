@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
-import { UNCONFIRMED_CHOICE, UNCONFIRMED_HANDOFF, UNCONFIRMED_WRITE } from './text.ts'
+import { UNCONFIRMED_WRITE } from '../conversation/public.ts'
+import { UNCONFIRMED_CHOICE, UNCONFIRMED_HANDOFF } from './text.ts'
 
 test('os "Não confirmamos" do Assistente são os de hoje, letra por letra', () => {
   expect([UNCONFIRMED_CHOICE, UNCONFIRMED_WRITE, UNCONFIRMED_HANDOFF]).toEqual([

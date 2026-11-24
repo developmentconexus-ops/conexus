@@ -1,8 +1,5 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import { useMutation } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { useRef } from 'react'
 import { HubFailure, sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { Empty } from '../../ui/states.tsx'
@@ -10,17 +7,23 @@ import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { Outgoing } from './attachments.ts'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
-import { isModelRefusal, stashHandoffFiles } from './handoff.ts'
+import { isModelRefusal } from './handoff.ts'
 import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
-import { sendCreation } from './queries.ts'
 import { APP_BUILDER_WORDS } from './room.ts'
 import { usePicked } from './start.tsx'
+import { useStartConversation } from './start-conversation.ts'
 import {
   CHOOSE_ANOTHER_MODEL,
   EMPTY_CONVERSATION,
   NO_SECRETS,
   UNCONFIRMED_CREATION,
 } from './text.ts'
+
+function failureText(failure: unknown): string {
+  return failure instanceof HubFailure && isModelRefusal(failure.code)
+    ? `${sentenceOfCode(failure.code)} ${CHOOSE_ANOTHER_MODEL}`
+    : writeFailureText(failure, UNCONFIRMED_CREATION)
+}
 
 /**
  * A Projeto with no conversation opens ready to type: the box is a draft, and the conversation is
@@ -32,34 +35,12 @@ export function FirstMessage(props: { companyId: CompanyId; projectId: ProjectId
   const { picked, setPicked, providers, usable } = usePicked(companyId)
   const draft = useDraft(`first:${projectId}`)
   const field = useRef<HTMLTextAreaElement>(null)
-  const [failure, setFailure] = useState<string>()
-  const navigate = useNavigate()
-  const create = useMutation(sendCreation)
-  const attempt = useAttemptKey()
+  const { start, failure } = useStartConversation('APP_BUILDER')
   const phone = useIsMobile()
 
   async function send(outgoing: Outgoing): Promise<boolean> {
-    setFailure(undefined)
-    const params = { companyId, projectId }
-    try {
-      const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({ params, body: picked ?? {}, attemptKey }),
-      )
-      stashHandoffFiles(conversation.id, outgoing.files)
-      await navigate({
-        to: '/companies/$companyId/projects/$projectId/conversations/$conversationId',
-        params: { ...params, conversationId: conversation.id },
-        state: { handoff: { conversationId: conversation.id, content: outgoing.content } },
-      })
-      return true
-    } catch (error) {
-      setFailure(
-        error instanceof HubFailure && isModelRefusal(error.code)
-          ? `${sentenceOfCode(error.code)} ${CHOOSE_ANOTHER_MODEL}`
-          : writeFailureText(error, UNCONFIRMED_CREATION),
-      )
-      return false
-    }
+    const started = await start({ companyId, projectId, picked: picked ?? undefined }, outgoing)
+    return started.opened
   }
 
   return (
@@ -74,7 +55,7 @@ export function FirstMessage(props: { companyId: CompanyId; projectId: ProjectId
       <div className="flex-1" />
       {failure !== undefined && (
         <div className="px-md pb-sm">
-          <Notice>{failure}</Notice>
+          <Notice>{failureText(failure)}</Notice>
         </div>
       )}
       <div className="px-md">
