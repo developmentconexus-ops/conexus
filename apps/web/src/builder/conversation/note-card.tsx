@@ -8,7 +8,7 @@ import { Approval } from '../../ui/ai/approval.tsx'
 import { APPROVAL_TEXT, NOTE_TEXT } from './approval-text.ts'
 import type { NoteAsked, NoteCardItem } from './note-parse.ts'
 import { useAnswer } from './question-card.tsx'
-import { useRoom } from './room.ts'
+import { isRoom, useRoom } from './room.ts'
 
 function fieldsOf(asked: NoteAsked | undefined) {
   if (asked === undefined) return []
@@ -89,7 +89,7 @@ function NoteOfCompany({ part, companyId }: { part: NoteCardItem; companyId: Com
 }
 
 export function NoteSaveCard({ part }: { part: NoteCardItem }) {
-  const { notebook } = useRoom()
-  if (notebook === undefined) return <NoteCard part={part} may />
-  return <NoteOfCompany part={part} companyId={notebook.companyId} />
+  const room = useRoom()
+  if (!isRoom(room, ['APP_BUILDER', 'ASSISTANT'])) return <NoteCard part={part} may />
+  return <NoteOfCompany part={part} companyId={room.notebook.companyId} />
 }

@@ -1,8 +1,9 @@
 import { MACHINE_TOOL } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { agentRoom, RoomContext } from './room.ts'
+import { RoomContext } from './room.ts'
 import type { ToolItem } from './rows.ts'
+import { agentRoom } from './test-rooms.ts'
 import { ToolRow } from './tool-row.tsx'
 
 const CODE = 'const a = await external_tool_vendas({ mes: "09" })\nreturn a.total'

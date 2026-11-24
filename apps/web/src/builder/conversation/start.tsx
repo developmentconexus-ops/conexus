@@ -1,11 +1,10 @@
 import type { CompanyId, Effort, ModelId, Project } from '@conexus/hub-api'
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useRef, useState } from 'react'
 import { companyQuery } from '../../hub/identity/public.ts'
 import { NameStep, projectsQuery } from '../../hub/projects/public.ts'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -16,11 +15,13 @@ import type { Outgoing } from './attachments.ts'
 import type { ComposerTools } from './composer.tsx'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
-import { isModelRefusal, stashHandoffFiles } from './handoff.ts'
+import { isModelRefusal } from './handoff.ts'
 import { chipOf } from './messages.ts'
 import { ComposerModelPicker, NoAccount } from './model-choice.tsx'
 import { FileChip } from './person-turn.tsx'
-import { sendCreation } from './queries.ts'
+import type { BoxWords } from './room.ts'
+import { APP_BUILDER_WORDS } from './room.ts'
+import { useStartConversation } from './start-conversation.ts'
 import { EXAMPLES, START_NO_ACCOUNT, START_PLACEHOLDER } from './text.ts'
 
 type Phase =
@@ -96,29 +97,18 @@ function useCreated(
   onOpened: () => void,
 ) {
   const navigate = useNavigate()
-  const create = useMutation(sendCreation)
-  const attempt = useAttemptKey()
+  const { start } = useStartConversation('APP_BUILDER')
   return async (project: Project, outgoing: Outgoing) => {
     const params = { companyId, projectId: project.id }
-    try {
-      const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({ params, body: picked, attemptKey }),
-      )
-      stashHandoffFiles(conversation.id, outgoing.files)
-      onOpened()
-      await navigate({
-        to: '/companies/$companyId/projects/$projectId/conversations/$conversationId',
-        params: { ...params, conversationId: conversation.id },
-        state: { handoff: { conversationId: conversation.id, content: outgoing.content } },
-      })
-    } catch (error) {
-      if (!(error instanceof HubFailure && isModelRefusal(error.code))) throw error
-      await navigate({
-        to: '/companies/$companyId/projects/$projectId',
-        params,
-        state: { refused: error.code },
-      })
-    }
+    const started = await start({ ...params, picked }, outgoing, onOpened)
+    if (started.opened) return
+    const { failure } = started
+    if (!(failure instanceof HubFailure && isModelRefusal(failure.code))) throw failure
+    await navigate({
+      to: '/companies/$companyId/projects/$projectId',
+      params,
+      state: { refused: failure.code },
+    })
   }
 }
 
@@ -188,6 +178,7 @@ function Naming(props: Parameters<typeof NamingBody>[0]) {
  * in the draft until its conversation opens (criterion 12).
  */
 export function StartBox(props: {
+  words: BoxWords
   draft: ReturnType<typeof useDraft>
   placeholder: string
   /** Chips under the bar; none draws nothing. */
@@ -212,6 +203,7 @@ export function StartBox(props: {
     <div className={`${START_COLUMN} gap-md`}>
       <div className="md:[&_textarea]:min-h-20 [&_textarea]:min-h-16">
         <Composer
+          words={props.words}
           placement="inline"
           answering={false}
           canSend={props.canSend ?? true}
@@ -284,6 +276,7 @@ export function Start({ companyId }: { companyId: CompanyId }): ReactNode {
 
   return (
     <StartBox
+      words={APP_BUILDER_WORDS}
       draft={draft}
       placeholder={START_PLACEHOLDER}
       examples={EXAMPLES}

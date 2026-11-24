@@ -1,8 +1,6 @@
 import type { AgentDetail, AgentId, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
   activateAgentVersion,
-  createAgentConversation,
-  createConstrutorConversation,
   createTool,
   deleteAgent,
   getAgent,
@@ -60,8 +58,6 @@ export const sendDraft = hubMutation(saveAgentDraft)
 export const sendPublish = hubMutation(publishAgent)
 export const sendActivation = hubMutation(activateAgentVersion)
 export const sendDeletion = hubMutation(deleteAgent)
-export const sendAgentConversation = hubMutation(createAgentConversation)
-export const sendConstrutorConversation = hubMutation(createConstrutorConversation)
 export const sendConstrutorModel = hubMutation(setConstrutorModel)
 export const sendTool = hubMutation(createTool)
 

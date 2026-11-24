@@ -236,6 +236,7 @@
         "apps/web/src/builder/assistant/test-propose.tsx",
         "apps/web/src/builder/automations/test-hub.tsx",
         "apps/web/src/builder/conversation/test-hub.tsx",
+        "apps/web/src/builder/conversation/test-render.tsx",
         "apps/web/src/builder/conversation/test-start.tsx",
         "apps/web/src/builder/conversation/test-stream.tsx",
         "apps/web/src/hub/identity/test-hub.tsx",

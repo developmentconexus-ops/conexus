@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { APP_DATA_TOOL } from '@conexus/hub-api'
-import { BUILDER_ROOM } from './room.ts'
+import { BUILDER_ROOM } from './test-rooms.ts'
 import { presentTool, toolStatus } from './tool-registry.ts'
 
 function row(toolName: string, result: unknown, args: object = { sql: 'select 1' }) {

@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { MemoryGauge } from './memory-status.tsx'
 import { MemoryStatus } from './memory-status.tsx'
+import { render } from './test-render.tsx'
 
 const MEMORY: MemoryGauge = {
   pendingTokens: 3_600,

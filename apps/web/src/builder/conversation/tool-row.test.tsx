@@ -7,11 +7,12 @@ import {
   SUBAGENT_TOOL,
   TASK_TOOLS,
 } from '@conexus/hub-api'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
-import { BUILDER_ROOM } from './room.ts'
 import type { ToolItem } from './rows.ts'
 import { invocationToItem } from './rows.ts'
+import { render } from './test-render.tsx'
+import { BUILDER_ROOM } from './test-rooms.ts'
 import type { Invocation } from './tool-fixtures.ts'
 import {
   EDIT_DONE,

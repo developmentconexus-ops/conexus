@@ -3,8 +3,9 @@ import { CONSTRUTOR_TOOL } from '@conexus/hub-api'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 import { expect, test } from 'vitest'
-import { agentRoom, RoomContext } from './room.ts'
+import { RoomContext } from './room.ts'
 import type { ToolItem } from './rows.ts'
+import { agentRoom } from './test-rooms.ts'
 import { ToolRow } from './tool-row.tsx'
 
 // The Construtor's agent line heard as it ran (step 24.3, criterion 26).

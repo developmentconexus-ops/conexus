@@ -1,27 +1,25 @@
 import type { CompanyId, Effort, ModelId, ProjectId } from '@conexus/hub-api'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { useQuery } from '@tanstack/react-query'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Block, BlockSentence, blockRow } from '../../ui/block.tsx'
 import { cn } from '../../ui/cn.ts'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
+import type { Outgoing } from '../conversation/public.ts'
 import {
-  agentRoom,
-  RoomContext,
+  agentWords,
   START_COLUMN,
   StartBox,
   StartWithoutAccount,
-  stashHandoffFiles,
   UNCONFIRMED_CREATION,
   useDraft,
   usePicked,
+  useStartConversation,
 } from '../conversation/public.ts'
 import { AgentList } from './agent-list.tsx'
 import { AreaFrame } from './area-frame.tsx'
-import { construtorConversationsQuery, sendConstrutorConversation } from './queries.ts'
+import { construtorConversationsQuery } from './queries.ts'
 import { ConversationLine } from './rows.tsx'
 import {
   CONSTRUTOR_EXAMPLES,
@@ -51,54 +49,35 @@ function AskBox(
 ) {
   const { companyId, projectId, picked } = props
   const draft = useDraft(`construtor:${projectId}`)
-  const navigate = useNavigate()
-  const create = useMutation(sendConstrutorConversation)
-  const attempt = useAttemptKey()
-  const [error, setError] = useState<unknown>()
+  const { start, failure } = useStartConversation('AGENT_BUILDER')
   // The Hub, too, can find no account for the person's model: the same notice, with the way to the accounts.
-  const noAccount = error instanceof HubFailure && error.code === 'MODEL_NO_ACCOUNT'
-  if (noAccount) return <StartWithoutAccount companyId={companyId} />
+  if (failure instanceof HubFailure && failure.code === 'MODEL_NO_ACCOUNT')
+    return <StartWithoutAccount companyId={companyId} />
 
-  async function begin(question: {
-    content: string
-    files: Parameters<typeof stashHandoffFiles>[1]
-  }) {
-    setError(undefined)
-    try {
-      const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({ params: { companyId, projectId }, body: picked, attemptKey }),
-      )
-      stashHandoffFiles(conversation.id, question.files)
-      await navigate({
-        to: '/companies/$companyId/projects/$projectId/agents/construtor/$conversationId',
-        params: { companyId, projectId, conversationId: conversation.id },
-        state: { handoff: { conversationId: conversation.id, content: question.content } },
-      })
-      return true
-    } catch (failure) {
-      setError(failure)
-      return false
-    }
+  async function begin(question: Outgoing) {
+    const started = await start({ companyId, projectId, picked }, question)
+    return started.opened
   }
 
   return (
-    <RoomContext.Provider value={agentRoom(CONSTRUTOR_NAME)}>
+    <>
       <p className="text-text-2">{CONSTRUTOR_FIRST}</p>
       <StartBox
+        words={agentWords(CONSTRUTOR_NAME)}
         draft={draft}
         placeholder={CONSTRUTOR_PLACEHOLDER}
         examples={CONSTRUTOR_EXAMPLES}
         picker={{ picked, onPick: props.onPick, providers: props.providers }}
         onSend={begin}
         notice={
-          error !== undefined && (
+          failure !== undefined && (
             <p role="alert" className="text-danger">
-              {writeFailureText(error, UNCONFIRMED_CREATION)}
+              {writeFailureText(failure, UNCONFIRMED_CREATION)}
             </p>
           )
         }
       />
-    </RoomContext.Provider>
+    </>
   )
 }
 

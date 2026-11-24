@@ -4,8 +4,8 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import type { MessageFile } from './attachments.ts'
 import { acceptOf, LIMITS, useAttachments } from './attachments.ts'
-import { ASSISTANT_ROOM, agentRoom, BUILDER_ROOM } from './room.ts'
 import { conversationOf, say, screens } from './test-hub.tsx'
+import { ASSISTANT_ROOM, agentRoom, BUILDER_ROOM } from './test-rooms.ts'
 
 const { openConversation } = screens(hubServer())
 

@@ -1,11 +1,8 @@
 import type { AgentId, CompanyId, ProjectId } from '@conexus/hub-api'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { useQueryClient } from '@tanstack/react-query'
 import { writeFailureText } from '../../platform/hub.ts'
-import { UNCONFIRMED_CREATION } from '../conversation/public.ts'
-import { agentConversationsQuery, sendAgentConversation } from './queries.ts'
+import { UNCONFIRMED_CREATION, useStartConversation } from '../conversation/public.ts'
+import { agentConversationsQuery } from './queries.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -15,28 +12,19 @@ type Scope = { companyId: CompanyId; projectId: ProjectId }
  */
 export function useOpenAgentConversation(scope: Scope, agentId: AgentId) {
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
-  const create = useMutation(sendAgentConversation)
-  const attempt = useAttemptKey()
-  const [error, setError] = useState<string>()
+  const { start, pending, failure } = useStartConversation('SAVED_AGENT')
 
   async function open(draft: boolean) {
-    setError(undefined)
-    try {
-      const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({ params: { ...scope, agentId }, body: { draft }, attemptKey }),
-      )
-      await queryClient.invalidateQueries({
+    await start({ ...scope, agentId, draft }, undefined, () =>
+      queryClient.invalidateQueries({
         queryKey: agentConversationsQuery(scope, agentId).queryKey,
-      })
-      await navigate({
-        to: '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId',
-        params: { ...scope, agentId, conversationId: conversation.id },
-      })
-    } catch (failure) {
-      setError(writeFailureText(failure, UNCONFIRMED_CREATION))
-    }
+      }),
+    )
   }
 
-  return { open, pending: create.isPending, error }
+  return {
+    open,
+    pending,
+    error: failure === undefined ? undefined : writeFailureText(failure, UNCONFIRMED_CREATION),
+  }
 }

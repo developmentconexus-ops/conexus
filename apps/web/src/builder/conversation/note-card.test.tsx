@@ -9,8 +9,9 @@ import { wordsOf } from './connector-words.ts'
 import { NoteSaveCard } from './note-card.tsx'
 import type { NoteCardItem } from './note-parse.ts'
 import type { Room } from './room.ts'
-import { AnswerProvider, ASSISTANT_ROOM, builderRoomOf, RoomContext } from './room.ts'
+import { AnswerProvider, appBuilderRoom, RoomContext } from './room.ts'
 import { invocationToItem } from './rows.ts'
+import { assistantRoomOf } from './test-rooms.ts'
 
 const server = hubServer()
 
@@ -34,7 +35,7 @@ function card(over: Partial<NoteCardItem> = {}): NoteCardItem {
   }
 }
 
-const ANAS: Room = { ...ASSISTANT_ROOM, notebook: { companyId: CompanyId.parse(COMPANY.id) } }
+const ANAS: Room = assistantRoomOf({ notebook: { companyId: CompanyId.parse(COMPANY.id) } })
 
 function show(item: NoteCardItem, room: Room = ANAS) {
   const answers: [string, unknown][] = []
@@ -89,7 +90,7 @@ test('o Caderno: quem não gerencia ligações vê o cartão sem os botões e a 
 
 test('o Caderno: no Builder, quem não gerencia ligações vê o cartão sem os botões, como no Assistente', async () => {
   company(false)
-  show(card(), builderRoomOf(wordsOf([]), CompanyId.parse(COMPANY.id)))
+  show(card(), appBuilderRoom(wordsOf([]), CompanyId.parse(COMPANY.id)))
   const region = within(await screen.findByRole('region', { name: 'Gravar no Caderno?' }))
   expect(await region.findByText('Peça a quem gerencia a ligação.')).toBeTruthy()
   expect(region.queryByRole('button', { name: 'Aprovar' })).toBeNull()

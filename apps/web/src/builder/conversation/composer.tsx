@@ -26,7 +26,7 @@ import { acceptOf, useAttachments } from './attachments.ts'
 import type { Draft } from './draft.ts'
 import { chipOf } from './messages.ts'
 import { FileChip } from './person-turn.tsx'
-import { useRoom } from './room.ts'
+import type { BoxWords } from './room.ts'
 import { dictationText, NO_SECRETS, REFUSALS, steerPlaceholderText } from './text.ts'
 
 /**
@@ -121,14 +121,17 @@ function joined(text: string, added: string): string {
 export const COMPOSER_SOFT = 'shrink-0 rounded-full bg-surface-3 hover:bg-accent-soft'
 
 /** The browser's file picker, limited to the types the Builder reads; **+** or the menu behind it opens it. */
-function FilePicker(props: { add: AddFiles; input: RefObject<HTMLInputElement | null> }) {
-  const { files } = useRoom()
+function FilePicker(props: {
+  add: AddFiles
+  input: RefObject<HTMLInputElement | null>
+  files: BoxWords['files']
+}) {
   return (
     <input
       ref={props.input}
       type="file"
       multiple
-      accept={acceptOf(files)}
+      accept={acceptOf(props.files)}
       hidden
       onChange={(event) => {
         const picked = Array.from(event.currentTarget.files ?? [])
@@ -142,6 +145,7 @@ function FilePicker(props: { add: AddFiles; input: RefObject<HTMLInputElement | 
 /** The row's left: **+** (its menu, or the file picker alone), then what the place puts after it. */
 function RowStart(props: {
   add: AddFiles
+  files: BoxWords['files']
   plus: ((pickFiles: () => void) => ReactNode) | undefined
   children: ReactNode
 }) {
@@ -152,7 +156,7 @@ function RowStart(props: {
   return (
     <div className="flex shrink-0 items-center gap-xs max-[20rem]:basis-full max-[20rem]:flex-wrap">
       {props.plus === undefined ? <AttachButton onClick={pickFiles} /> : props.plus(pickFiles)}
-      <FilePicker add={props.add} input={input} />
+      <FilePicker add={props.add} input={input} files={props.files} />
       {props.children}
     </div>
   )
@@ -210,14 +214,13 @@ function useDictation(draft: Draft, setPhrase: (phrase: string | null) => void) 
 }
 
 /** What the empty box says: the steering words while the agent answers, else the screen's own or the conversation's. */
-function usePlaceholder(answering: boolean, own: string | undefined): string {
-  const { agent } = useRoom()
+function placeholderOf(agent: string, answering: boolean, own: string | undefined): string {
   return answering ? steerPlaceholderText(agent) : (own ?? 'Escreva sua mensagem')
 }
 
 /** The box's name for a screen reader: whom the message goes to. */
-function Subject() {
-  return `Mensagem para o ${useRoom().agent}`
+function Subject({ agent }: { agent: string }) {
+  return `Mensagem para o ${agent}`
 }
 
 /**
@@ -237,6 +240,7 @@ function Subject() {
  * computer, one small line says not to paste secrets (founder, 2026-10-26).
  */
 export function Composer(props: {
+  words: BoxWords
   placement: ComposerPlacement
   answering: boolean
   canSend: boolean
@@ -260,7 +264,7 @@ export function Composer(props: {
 }) {
   const { draft } = props
   const phone = useIsMobile()
-  const { files } = useRoom()
+  const { files } = props.words
   const attachments = useAttachments(draft, files)
   const empty = draft.text.trim() === '' && attachments.files.length === 0
   const action: 'stop' | 'send' = props.answering && empty ? 'stop' : 'send'
@@ -268,7 +272,7 @@ export function Composer(props: {
   const sending = useRef(false)
   const { phrase, setPhrase, addFiles, removeFile } = usePhrase(attachments)
   const dictation = useDictation(draft, setPhrase)
-  const placeholder = usePlaceholder(props.answering, props.placeholder)
+  const placeholder = placeholderOf(props.words.agent, props.answering, props.placeholder)
 
   /** One send at a time: a second Enter or click before the route answers would send it again (Factory clears its field before sending). */
   async function send() {
@@ -310,7 +314,7 @@ export function Composer(props: {
         className="rounded-composer data-busy:working-ring"
       >
         <Label htmlFor="message" className="sr-only">
-          <Subject />
+          <Subject agent={props.words.agent} />
         </Label>
         <Attached attachments={attachments} onRemove={removeFile} />
         <InputGroupTextarea
@@ -326,7 +330,7 @@ export function Composer(props: {
           align="block-end"
           className="flex-nowrap items-center justify-between gap-xs pointer-coarse:gap-sm max-[20rem]:flex-wrap"
         >
-          <RowStart add={addFiles} plus={props.plus}>
+          <RowStart add={addFiles} files={files} plus={props.plus}>
             {props.context}
           </RowStart>
           <div className="flex min-w-0 flex-1 items-center justify-end gap-xs pointer-coarse:gap-md">

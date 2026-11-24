@@ -6,10 +6,9 @@ import type {
   ModelId,
   ProjectId,
 } from '@conexus/hub-api'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayOf } from '../../platform/dates.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
@@ -19,29 +18,27 @@ import { Pager } from '../../ui/pager.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { AutomationBadge } from '../automations/public.ts'
+import type { Outgoing } from '../conversation/public.ts'
 import {
-  ASSISTANT_ROOM,
-  RoomContext,
+  ASSISTANT_WORDS,
   START_COLUMN,
   StartBox,
   StartWithoutAccount,
-  stashHandoffFiles,
   titleOf,
   UNCONFIRMED_CREATION,
   useDraft,
   usePicked,
+  useStartConversation,
 } from '../conversation/public.ts'
 import { useComposerTools } from './composer-tools.tsx'
 import { useDraftChoice } from './draft-choice.ts'
-import { assistantConversationsQuery, sendAssistantCreation } from './queries.ts'
+import { assistantConversationsQuery } from './queries.ts'
 import {
   ASSISTANT_EXAMPLES,
   HOME_PLACEHOLDER,
   NO_CONVERSATIONS,
   PROJECT_LIST_TITLE,
 } from './text.ts'
-
-type Begun = { content: string; files: Parameters<typeof stashHandoffFiles>[1] }
 
 /**
  * Creates the conversation with the model, the Projeto and the connections the box holds, then
@@ -57,43 +54,20 @@ function useBegin(
     connections: readonly ConnectionId[] | undefined
   },
 ) {
-  const [error, setError] = useState<string>()
-  const create = useMutation(sendAssistantCreation)
-  const attempt = useAttemptKey()
-  const navigate = useNavigate()
-  async function begin(question: Begun): Promise<boolean> {
+  const { start, failure } = useStartConversation('ASSISTANT')
+  async function begin(question: Outgoing): Promise<boolean> {
     const { connections } = held
     if (connections === undefined) return false
-    setError(undefined)
-    try {
-      const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({
-          params: { companyId },
-          body: { ...held.model, projectId: held.projectId, connections: [...connections] },
-          attemptKey,
-        }),
-      )
-      stashHandoffFiles(conversation.id, question.files)
-      const state = { handoff: { conversationId: conversation.id, content: question.content } }
-      const { id: conversationId, projectId } = conversation
-      await (projectId === null
-        ? navigate({
-            to: '/companies/$companyId/conversations/$conversationId',
-            params: { companyId, conversationId },
-            state,
-          })
-        : navigate({
-            to: '/companies/$companyId/projects/$projectId/assistant/$conversationId',
-            params: { companyId, projectId, conversationId },
-            state,
-          }))
-      return true
-    } catch (failure) {
-      setError(writeFailureText(failure, UNCONFIRMED_CREATION))
-      return false
-    }
+    const started = await start(
+      { companyId, projectId: held.projectId, picked: held.model, connections },
+      question,
+    )
+    return started.opened
   }
-  return { begin, error }
+  return {
+    begin,
+    error: failure === undefined ? undefined : writeFailureText(failure, UNCONFIRMED_CREATION),
+  }
 }
 
 /**
@@ -107,11 +81,7 @@ export function Ask(props: {
 }) {
   const { picked, setPicked, providers } = usePicked(props.companyId)
   if (picked === null) return <StartWithoutAccount companyId={props.companyId} />
-  return (
-    <RoomContext.Provider value={ASSISTANT_ROOM}>
-      <AskBox {...props} picked={picked} onPick={setPicked} providers={providers} />
-    </RoomContext.Provider>
-  )
+  return <AskBox {...props} picked={picked} onPick={setPicked} providers={providers} />
 }
 
 function AskBox(props: {
@@ -143,6 +113,7 @@ function AskBox(props: {
   })
   return (
     <StartBox
+      words={ASSISTANT_WORDS}
       draft={draft}
       placeholder={HOME_PLACEHOLDER}
       examples={props.chooseProject ? ASSISTANT_EXAMPLES : []}

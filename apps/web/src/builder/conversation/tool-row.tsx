@@ -1,20 +1,10 @@
-import {
-  DraftRef,
-  ProposedApp,
-  ProposedAutomation,
-  ProposedCompanyMemory,
-  ShownFile,
-  TestedResult,
-  ToolSearchResult,
-} from '@conexus/hub-api'
+import { TestedResult, ToolSearchResult } from '@conexus/hub-api'
 import { Link, useParams } from '@tanstack/react-router'
-import { BotIcon, FileTextIcon } from 'lucide-react'
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useState } from 'react'
 import type { ToolLineBeside, ToolLineState } from '../../ui/ai/tool-line.tsx'
 import { ToolLine } from '../../ui/ai/tool-line.tsx'
-import { Button } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
-import { TraceDescription, TraceIcon, TraceLine, TraceTitle } from '../../ui/trace.tsx'
+import { TraceDescription } from '../../ui/trace.tsx'
 import { failureDetail } from './connector-specs.ts'
 import { useSecondsSince } from './elapsed.ts'
 import type { Room } from './room.ts'
@@ -36,6 +26,7 @@ import {
   SkillBlock,
   textOf,
 } from './tool-bodies.tsx'
+import { cardOf } from './tool-cards.tsx'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
 import { presentTool, readable, specOf, toolStatus } from './tool-registry.ts'
 
@@ -185,67 +176,6 @@ function Reconnect() {
   )
 }
 
-/** The Assistant's shown file, a button that opens it beside the chat. */
-function ShownLine(props: {
-  file: Extract<ShownFile, { kind: 'TEXT' | 'FILE' }>
-  /** The screen heard the call as it ran: the file opens by itself, once; a conversation read afterwards waits for the click. */
-  live: boolean
-}) {
-  const { file } = props
-  const room = useRoom()
-  const open = useEffectEvent(() => room.openFile?.(file))
-  useEffect(() => {
-    if (props.live) open()
-  }, [props.live])
-  return (
-    <Button
-      aria-label={`Abrir ${file.name}`}
-      aria-pressed={room.openedPath === file.path}
-      onClick={() => room.openFile?.(file)}
-      className="w-fit max-w-full"
-    >
-      <FileTextIcon aria-hidden="true" />
-      <span className="truncate">{file.name}</span>
-    </Button>
-  )
-}
-
-/** The agent the Construtor saved: its line says so and, clicked, opens the draft beside the chat. */
-function AgentLine({
-  draft,
-  sentence,
-  live,
-}: {
-  draft: DraftRef
-  sentence: string
-  live: boolean
-}) {
-  const { agent } = draft
-  const room = useRoom()
-  // A call heard as it ran opens its draft; a conversation read afterwards opens the newest one. Only on
-  // mount: a tap changes `openedAgent`, and that must not re-open the line's own agent.
-  const open = useEffectEvent(() => {
-    if (live || room.openedAgent === undefined) room.openAgent?.(agent.id, 'CALL')
-  })
-  useEffect(() => open(), [])
-  return (
-    <button
-      type="button"
-      aria-pressed={room.openedAgent === agent.id}
-      onClick={() => room.openAgent?.(agent.id, 'TAP')}
-      className="flex w-fit max-w-full min-w-0 cursor-pointer rounded-control text-left hover:text-text"
-    >
-      <TraceLine>
-        <TraceIcon>
-          <BotIcon />
-        </TraceIcon>
-        <TraceTitle className="shrink-0 whitespace-nowrap">{sentence}</TraceTitle>
-        <TraceDescription className="min-w-0 truncate">{agent.name}</TraceDescription>
-      </TraceLine>
-    </button>
-  )
-}
-
 function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
   const room = useRoom()
   const spec = specOf(tool.toolName, room)
@@ -266,40 +196,6 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
       {edit !== undefined ? <Change edit={edit} /> : !failed && <Block tool={tool} body={body} />}
     </div>
   )
-}
-
-/** The rows that are not a line: the file the Assistant showed, and the app or the automation it proposed. */
-function specialRow(tool: ToolItem, status: ToolStatus, room: Room) {
-  const body = specOf(tool.toolName, room)?.body
-  if (status !== 'done') return undefined
-  const shown = body === 'shown' ? ShownFile.safeParse(tool.result).data : undefined
-  if (shown !== undefined && shown.kind !== 'SHOW_REFUSED')
-    return <ShownLine file={shown} live={tool.startedAt !== undefined} />
-  const automation =
-    body === 'automation' ? ProposedAutomation.safeParse(tool.result).data : undefined
-  if (automation !== undefined)
-    return room.automationCard?.({ proposed: automation, toolCallId: tool.toolCallId })
-  const memory =
-    body === 'companyMemory' ? ProposedCompanyMemory.safeParse(tool.result).data : undefined
-  if (memory !== undefined)
-    return room.companyMemoryCard?.({ proposed: memory, toolCallId: tool.toolCallId })
-  const draft = body === 'agent' ? DraftRef.safeParse(tool.result).data : undefined
-  if (draft !== undefined)
-    return (
-      <AgentLine
-        draft={draft}
-        sentence={specOf(tool.toolName, room)?.done ?? ''}
-        live={tool.startedAt !== undefined}
-      />
-    )
-  const proposed = body === 'proposal' ? ProposedApp.safeParse(tool.result).data : undefined
-  return proposed === undefined
-    ? undefined
-    : room.appCard?.({
-        proposed,
-        toolCallId: tool.toolCallId,
-        closed: tool.closed === true,
-      })
 }
 
 /** What the line says beside its sentence: the detail the tool names, or the clock of a call that runs. */
@@ -325,7 +221,7 @@ function lineState(status: ToolStatus): ToolLineState {
 export function ToolRow({ tool }: { tool: ToolItem }) {
   const room = useRoom()
   const status = toolStatus(tool, room)
-  const special = specialRow(tool, status, room)
+  const special = status === 'done' ? cardOf(tool, room) : undefined
   if (special !== undefined) return special
   const presented = presentTool(tool, status, room)
   return (

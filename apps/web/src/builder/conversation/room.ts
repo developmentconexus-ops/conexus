@@ -34,87 +34,154 @@ export type WriteTool = {
   bound: Readonly<Record<string, unknown>>
 }
 
-/**
- * Whose conversation the rows are drawn in (step 24.1, U4): the Builder's, which every row was
- * written for, or the Assistant's, whose rows name the connection read and open the file shown or
- * the app proposed in the screen that holds them. Whose session it is, is the chat's `Place`.
- */
-export type Room = {
+/** What a box that begins a conversation needs to know: whom it asks and where its files go, which decides the types it accepts. */
+export type BoxWords = {
   /** Who answers, as the screen's words name it. */
   agent: string
+  files: FilesGo
+}
+
+type RoomBase = BoxWords & {
   /** The connector's name as the person knows it ("Sankhya"), and its refusals, from its id. */
   connectors: ConnectorWords
-  /** Opens a file beside the chat; none in the Builder's conversation. */
-  openFile?: (file: OpenedFile) => void
-  /** The path of the file now open, for its row to say so. */
-  openedPath?: string
-  /** Draws the card of the app the call `toolCallId` proposed, with no button once `closed`; none in the Builder's conversation. */
-  appCard?: (proposal: { proposed: ProposedApp; toolCallId: string; closed: boolean }) => ReactNode
-  /** Draws **Criar automação** for the proposal of the call `toolCallId`; none in the Builder's conversation. */
-  automationCard?: (proposal: { proposed: ProposedAutomation; toolCallId: string }) => ReactNode
-  /** Draws the card of what the call `toolCallId` proposed to save in the company's memory; none in the Builder's conversation. */
-  companyMemoryCard?: (proposal: {
-    proposed: ProposedCompanyMemory
-    toolCallId: string
-  }) => ReactNode
-  /** Shows the draft `agent_draft` or `agent_set` saved beside the chat: by a call of the answer, or by a tap of its line; none outside the Construtor's conversation. */
-  openAgent?: (agentId: AgentId, by: 'CALL' | 'TAP') => void
-  /** The agent now open, for its row to say so; `undefined` until one is. */
-  openedAgent?: AgentId
-  /** What the agent's own tool `slug` does, in the words its row reads; none where the room does not know the tools. */
-  toolDescription?: (slug: string) => string | undefined
-  /** The company whose connections the notebook's card asks about: whether the person manages them. None where the room has no notebook card to draw. */
-  notebook?: { companyId: CompanyId }
-  /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it; none where the room has no writes. */
-  writeOf?: (toolName: string) => WriteTool | undefined
-  /** The connector ("sankhya") of the connection a tool `tool_<slug>` of the agent reads or writes; none where the room does not know the tools. */
-  connectorOf?: (toolName: string) => string | undefined
-  /** The agent's writes of this conversation as the record keeps them (step 24.5): the card's warning and its end, read again when a card opens. */
-  writes?: WritesRead
-  refreshWrites?: () => void
   /** The rows this room draws differently from the table. */
   overrides: Partial<Record<RowTool, ToolSpec>>
   /** A turn's failures this room says in its own sentence: the Assistant has no model to choose. */
   failures: Partial<Record<FailureCode, string>>
-  /** Where the files the person sends go, which decides the types the box accepts. */
-  files: FilesGo
 }
 
-export const BUILDER_ROOM: Room = {
-  agent: 'Builder',
-  connectors: PLAIN_WORDS,
-  overrides: {},
-  failures: {},
-  files: 'MODEL',
+/** A file opened beside the chat, and the path of the one now open, for its row to say so. */
+type Opened = { openFile: (file: OpenedFile) => void; openedPath: string | undefined }
+
+/** What the agent's own tool `slug` does, in the words its row reads. */
+type AgentTools = { toolDescription: (slug: string) => string | undefined }
+
+/** The company whose connections the notebook's card asks about: whether the person manages them. */
+type Notebook = { notebook: { companyId: CompanyId } }
+
+/** The cards the Assistant draws from what its tools proposed, each with no button once `closed`. */
+type AssistantProposals = {
+  app: (proposal: { proposed: ProposedApp; toolCallId: string; closed: boolean }) => ReactNode
+  automation: (proposal: { proposed: ProposedAutomation; toolCallId: string }) => ReactNode
+  companyMemory: (proposal: { proposed: ProposedCompanyMemory; toolCallId: string }) => ReactNode
 }
 
-/** The Builder's room once the catalog is read: the connectors' names, logos and way of linking, and the Builder's own refusals. */
-export function builderRoomOf(words: ConnectorWords, companyId: CompanyId): Room {
+/**
+ * Whose conversation the rows are drawn in, one variant per agent: each has only the fields its own
+ * agent has, so a card of one agent cannot be drawn by the code of another. Whose session it is, is
+ * the chat's `Place`.
+ */
+export type Room =
+  | (RoomBase & Notebook & { kind: 'APP_BUILDER' })
+  | (RoomBase & Opened & Notebook & { kind: 'ASSISTANT'; proposals: AssistantProposals })
+  | (RoomBase &
+      AgentTools & {
+        kind: 'AGENT_BUILDER'
+        /** Shows the draft `agent_draft` or `agent_set` saved beside the chat: by a call of the answer, or by a tap of its line. */
+        openAgent: (agentId: AgentId, by: 'CALL' | 'TAP') => void
+        /** The agent now open, for its row to say so; `undefined` until one is. */
+        openedAgent: AgentId | undefined
+      })
+  | (RoomBase &
+      Opened &
+      AgentTools & {
+        kind: 'SAVED_AGENT'
+        /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it. */
+        writeOf: (toolName: string) => WriteTool | undefined
+        /** The connector ("sankhya") of the connection a tool `tool_<slug>` of the agent reads or writes. */
+        connectorOf: (toolName: string) => string | undefined
+        /** The agent's writes of this conversation as the record keeps them (step 24.5): the card's warning and its end, read again when a card opens. */
+        writes: WritesRead
+        refreshWrites: () => void
+      })
+
+export type RoomKind = Room['kind']
+
+export type RoomOf<K extends RoomKind> = Extract<Room, { kind: K }>
+
+export function isRoom<K extends RoomKind>(room: Room, kinds: readonly K[]): room is RoomOf<K> {
+  return kinds.some((kind) => kind === room.kind)
+}
+
+export const APP_BUILDER_WORDS: BoxWords = { agent: 'Builder', files: 'MODEL' }
+export const ASSISTANT_WORDS: BoxWords = { agent: 'Assistente', files: 'MACHINE' }
+
+export function agentWords(agent: string): BoxWords {
+  return { agent, files: 'MODEL' }
+}
+
+/** The room of the Builder's conversation once the catalog is read: the connectors' names, logos and way of linking, and the Builder's own refusals. */
+export function appBuilderRoom(words: ConnectorWords, companyId: CompanyId): RoomOf<'APP_BUILDER'> {
   return {
-    ...BUILDER_ROOM,
+    kind: 'APP_BUILDER',
+    ...APP_BUILDER_WORDS,
     connectors: { ...words, refusal: PLAIN_WORDS.refusal },
+    overrides: {},
+    failures: {},
     notebook: { companyId },
   }
 }
 
-/** The Assistant's conversation before a connector catalog is read: its box and its rows say "Assistente". */
-export const ASSISTANT_ROOM: Room = {
-  agent: 'Assistente',
-  connectors: PLAIN_WORDS,
-  overrides: ASSISTANT_OVERRIDES,
-  failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
-  files: 'MACHINE',
+export function assistantRoom(
+  held: Pick<
+    RoomOf<'ASSISTANT'>,
+    'connectors' | 'notebook' | 'openFile' | 'openedPath' | 'proposals'
+  >,
+): RoomOf<'ASSISTANT'> {
+  return {
+    kind: 'ASSISTANT',
+    ...ASSISTANT_WORDS,
+    overrides: ASSISTANT_OVERRIDES,
+    failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+    ...held,
+  }
 }
 
-/** The room of a conversation with the Construtor or with an agent of the Projeto: the rows are the Assistant's, the name is the one the person talks to and the connectors are named by the catalog the screen read. */
-export function agentRoom(agent: string, connectors: ConnectorWords = PLAIN_WORDS): Room {
-  return { ...ASSISTANT_ROOM, agent, connectors, files: 'MODEL' }
+export function agentBuilderRoom(
+  agent: string,
+  held: Pick<
+    RoomOf<'AGENT_BUILDER'>,
+    'connectors' | 'toolDescription' | 'openAgent' | 'openedAgent'
+  >,
+): RoomOf<'AGENT_BUILDER'> {
+  return {
+    kind: 'AGENT_BUILDER',
+    ...agentWords(agent),
+    overrides: ASSISTANT_OVERRIDES,
+    failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+    ...held,
+  }
 }
 
-export const RoomContext = createContext<Room>(BUILDER_ROOM)
+export function savedAgentRoom(
+  agent: string,
+  held: Pick<
+    RoomOf<'SAVED_AGENT'>,
+    | 'connectors'
+    | 'toolDescription'
+    | 'writeOf'
+    | 'connectorOf'
+    | 'writes'
+    | 'refreshWrites'
+    | 'openFile'
+    | 'openedPath'
+  >,
+): RoomOf<'SAVED_AGENT'> {
+  return {
+    kind: 'SAVED_AGENT',
+    ...agentWords(agent),
+    overrides: ASSISTANT_OVERRIDES,
+    failures: { MODEL_NO_ACCOUNT: START_NO_ACCOUNT },
+    ...held,
+  }
+}
+
+export const RoomContext = createContext<Room | null>(null)
 
 export function useRoom(): Room {
-  return useContext(RoomContext)
+  const room = useContext(RoomContext)
+  if (room === null) throw new Error('a row drawn outside a conversation')
+  return room
 }
 
 /** What the conversation's box sends as the person's own message; the card's **Continuar aqui** says it through this. */

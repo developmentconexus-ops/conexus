@@ -1,9 +1,8 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { CheckIcon, ChevronDownIcon, SquarePenIcon } from 'lucide-react'
 import { useState } from 'react'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -20,7 +19,8 @@ import { Drawer, DrawerClose, DrawerContent, DrawerTrigger } from '../../ui/draw
 import { PhoneTopContent } from '../../ui/frame.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { conversationsQuery, sendCreation } from './queries.ts'
+import { conversationsQuery } from './queries.ts'
+import { useStartConversation } from './start-conversation.ts'
 import { titleOf, UNCONFIRMED_CREATION } from './text.ts'
 import { usePhoneView } from './workbench.tsx'
 
@@ -29,32 +29,19 @@ const CONVERSATION = '/companies/$companyId/projects/$projectId/conversations/$c
 
 export type Item = { value: ConversationId; label: string }
 
-/** **Nova conversa**: the attempt key stays until the Hub settles the outcome (web W24). */
+/** **Nova conversa**: the conversation opens empty, on the model the Hub picks. */
 function useNewConversation(onFailure: (sentence: string | undefined) => void) {
   const { companyId, projectId } = route.useParams()
-  const navigate = useNavigate()
-  const create = useMutation(sendCreation)
-  const attempt = useAttemptKey()
+  const { start, pending } = useStartConversation('APP_BUILDER')
 
-  async function start(): Promise<boolean> {
+  async function begin(): Promise<boolean> {
     onFailure(undefined)
-    try {
-      const { conversation } = await attempt((attemptKey) =>
-        create.mutateAsync({ params: { companyId, projectId }, body: {}, attemptKey }),
-      )
-      await navigate({
-        to: CONVERSATION,
-        params: { companyId, projectId, conversationId: conversation.id },
-        search: (previous) => previous,
-      })
-      return true
-    } catch (failure) {
-      onFailure(writeFailureText(failure, UNCONFIRMED_CREATION))
-      return false
-    }
+    const started = await start({ companyId, projectId, picked: undefined }, undefined)
+    if (!started.opened) onFailure(writeFailureText(started.failure, UNCONFIRMED_CREATION))
+    return started.opened
   }
 
-  return { start, pending: create.isPending }
+  return { start: begin, pending }
 }
 
 function NewConversation(props: { onFailure: (sentence: string | undefined) => void }) {
