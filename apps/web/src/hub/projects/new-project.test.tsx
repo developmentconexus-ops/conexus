@@ -76,7 +76,7 @@ function name(dialog: ReturnType<typeof within>, text: string) {
   fireEvent.change(dialog.getByLabelText('Nome do projeto'), { target: { value: text } })
 }
 
-test('o +: abre o diálogo, o nome cria o Projeto e a pessoa chega na página dele', async () => {
+test('Novo projeto: abre o diálogo, o nome cria o Projeto e a pessoa chega na página dele', async () => {
   const { sent, router } = hub()
   const dialog = await openDialog()
   expect(dialog.getByText('Um Projeto precisa só de um nome, por enquanto.')).toBeTruthy()

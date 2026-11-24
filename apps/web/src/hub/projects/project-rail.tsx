@@ -159,11 +159,9 @@ export function ProjectRailNav(scope: Scope) {
     <>
       {RAIL.map(({ group, items }) => {
         const seen = items.filter((item) => item.needs === undefined || may[item.needs])
-        if (seen.length === 0) return null
-        const label = `rail-group-${group}`
         return (
-          <SidebarGroup key={group} aria-labelledby={label}>
-            <SidebarGroupLabel id={label}>{group}</SidebarGroupLabel>
+          <SidebarGroup key={group}>
+            <SidebarGroupLabel>{group}</SidebarGroupLabel>
             <SidebarMenu>
               {seen.map((item) => (
                 <FrameLink

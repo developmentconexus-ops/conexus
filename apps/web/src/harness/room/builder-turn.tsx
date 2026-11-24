@@ -126,7 +126,7 @@ export function BuilderTurn(props: {
       <MessageContent>
         <MessageHeader>
           {room.kind === 'SAVED_AGENT' ? (
-            <BotIcon aria-hidden="true" className="size-4 text-text-2" />
+            <BotIcon aria-hidden="true" data-slot="agent-icon" className="size-4 text-text-2" />
           ) : (
             <ConexusMark size={16} />
           )}

@@ -26,14 +26,14 @@ test.each([
 ])('a resposta de %s vem assinada "Conexus", com a marca', (_place, room) => {
   const header = head(room)
   expect(header.textContent).toContain('Conexus')
-  expect(header.querySelector('svg.text-mark')).toBeTruthy()
-  expect(header.querySelector('svg.lucide-bot')).toBeNull()
+  expect(header.querySelector('[data-slot=conexus-mark]')).toBeTruthy()
+  expect(header.querySelector('[data-slot=agent-icon]')).toBeNull()
 })
 
 test('a resposta de um agente salvo vem com o nome dele e o ícone de agente, sem a marca', () => {
   const header = head(savedRoom('Conferente de metas'))
   expect(header.textContent).toContain('Conferente de metas')
   expect(header.textContent).not.toContain('Conexus')
-  expect(header.querySelector('svg.lucide-bot')).toBeTruthy()
-  expect(header.querySelector('svg.text-mark')).toBeNull()
+  expect(header.querySelector('[data-slot=agent-icon]')).toBeTruthy()
+  expect(header.querySelector('[data-slot=conexus-mark]')).toBeNull()
 })
