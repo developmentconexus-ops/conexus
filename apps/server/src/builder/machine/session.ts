@@ -24,6 +24,8 @@ export type Session = {
   /** The Hub saved a version the machine was not told of: its next use brings `main` in, as a start would. */
   unsynced: boolean
   ready: Promise<Kit> | undefined
+  /** A browser check's close of the network failed: the next use of the machine closes it again. */
+  networkOpen: boolean
 }
 
 /** The Git's missing copy-backed repository, wherever Mastra's start wrapped it: it is no machine fault. */

@@ -88,3 +88,16 @@ test('Machines.confer: uma conversa que nenhuma volta abriu é CONFER_PLATFORM_F
   assert.deepEqual(await machines.confer({ conversationId: CONVERSATION, at }), FAILED)
   assert.deepEqual(control.names, [])
 })
+
+test('Machines.confer: uma rede que não fechou fecha de novo no próximo uso da máquina', async (t) => {
+  const stub = stubBrowser(t)
+  const machine = await conferring(t, stub.program)
+  const at = { url: new URL('https://localhost:4433'), session: TOKEN }
+  machine.control.closeFails = 1
+  assert.ok((await confer(machine, at)).ok)
+  assert.ok(machine.lines.join('\n').includes('MACHINE_NETWORK_CLOSE_FAILED'))
+  assert.deepEqual(machine.control.networkOpenTo, ['localhost'])
+  await machine.machines.changed({ conversationId: CONVERSATION })
+  assert.equal(machine.control.networkOpenTo, undefined)
+  assert.equal(machine.control.networkClosed, 1)
+})

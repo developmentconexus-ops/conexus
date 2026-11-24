@@ -107,7 +107,7 @@ class Unrunnable extends Error {
 type Conference = Readonly<{
   exec: TimedExec
   files: Readonly<{ write(path: string, text: string): Promise<void> }>
-  // `close` never throws: its owner logs a failure, and the machine's next start closes again.
+  // `close` never throws: its owner logs a failure, and the machine's next use closes again.
   network: Readonly<{ open(extra: readonly string[]): Promise<void>; close(): Promise<void> }>
   workdir: string
   tmp: string
@@ -226,9 +226,11 @@ export function conferOn(
     program: string
     at: ConferAt
     log: FailureLog
+    /** The close failed: the machine's network may still be open to the app's host. */
+    onCloseFailed: () => void
   }>,
 ): Promise<Result<BrowserReport, ConferPlatformFailed>> {
-  const { kit, conversationId, log } = input
+  const { kit, conversationId, log, onCloseFailed } = input
   return conferIn({
     ...input,
     files: { write: (path, text) => kit.transport.write(path, Buffer.from(text)) },
@@ -236,6 +238,7 @@ export function conferOn(
       open: (extra) => kit.openNetwork(extra),
       close: () =>
         kit.closeNetwork().catch((cause) => {
+          onCloseFailed()
           log.error(
             { conversationId, cause: String(cause).slice(0, 500) },
             'MACHINE_NETWORK_CLOSE_FAILED',

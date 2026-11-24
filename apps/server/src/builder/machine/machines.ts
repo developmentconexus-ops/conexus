@@ -92,7 +92,25 @@ class BuilderMachines implements Machines {
     }
     const kit = await session.ready
     await session.refreshing
+    if (session.networkOpen) await this.closeAgain(kit, session)
     return kit
+  }
+
+  /**
+   * A running machine's start is a no-op, so `onStart` cannot close what a failed close left open:
+   * every use retries until one succeeds. A retry that fails does not stop the tool, which the
+   * machine still serves; its log is the failure.
+   */
+  private async closeAgain(kit: Kit, session: Session) {
+    try {
+      await kit.closeNetwork()
+      session.networkOpen = false
+    } catch (cause) {
+      this.deps.log.error(
+        { conversationId: session.conversationId, cause: String(cause).slice(0, 500) },
+        'MACHINE_NETWORK_CLOSE_FAILED',
+      )
+    }
   }
 
   /** A start that ran meanwhile (a resume) told the conflicts itself, and its word is the later one. */
@@ -231,6 +249,7 @@ class BuilderMachines implements Machines {
         conflicts: NO_CONFLICTS,
         unsynced: false,
         ready: undefined,
+        networkOpen: false,
       },
     }
     return session
@@ -300,6 +319,9 @@ class BuilderMachines implements Machines {
       ...{ kit, conversationId, at, workdir: this.workdir, tmp: this.tmp, log: this.deps.log },
       exec: (script, timeoutMs) => this.run(kit, script, timeoutMs),
       program: this.deps.browserProgram ?? BROWSER_PROGRAM,
+      onCloseFailed: () => {
+        session.networkOpen = true
+      },
     })
   }
 
