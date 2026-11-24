@@ -3,10 +3,11 @@ import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { BUILDER_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
 import { BRUNO, memberOn, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { agentsOn, publishedAgent, talkedTo } from '../agents/test-agents.ts'
-import { createAskUserTool } from '../controller-kit/public.ts'
+import { CONTROLLER_KINDS, createAskUserTool } from '../controller-kit/public.ts'
 import {
   asked,
   conversing,
@@ -240,4 +241,22 @@ test('só o resumo volta', async (t) => {
   const [ended] = turnLines(on)
   assert.equal(ended?.fields.helpers, 1)
   assert.equal(ended?.fields.helperCalls, 1)
+})
+
+test('a pesquisa do Assistente fecha a ferramenta antes de a escolha da conta achatá-la (1285)', async (t) => {
+  const on = await assisting(t, [[said('Oi.')]])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const session = await on.hub.mastra
+    .getAgentController(CONTROLLER_KINDS.assistant.id)
+    ?.getSession(url.slice(url.lastIndexOf('/') + 1))
+  assert.ok(session, 'the conversation has its session')
+  const agent = on.hub.mastra
+    .getAgentController(CONTROLLER_KINDS.assistant.id)
+    ?.getCurrentAgent(session)
+  const listed = (await agent?.listConfiguredInputProcessors(new RequestContext())) ?? []
+  const ids = listed.map((each) => ('id' in each ? each.id : undefined))
+  const research = ids.indexOf('conexus-research-only')
+  const pick = ids.indexOf('conexus-account-pick')
+  assert.ok(research >= 0 && pick >= 0, String(ids))
+  assert.ok(research < pick, `the research comes before the account's pick: ${String(ids)}`)
 })

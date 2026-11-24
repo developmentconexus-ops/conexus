@@ -144,7 +144,6 @@ function agentsSpec(
   return {
     kind: 'agents',
     name: 'Agents',
-    base: 'AGENT',
     prompt: {
       kind: 'DELEGATED',
       of: async (requestContext) =>

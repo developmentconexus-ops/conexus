@@ -25,13 +25,11 @@ export type PromptPart =
     }>
 
 /**
- * An agent's instructions (row 5): system messages in order; one string, as the Builder's are; or,
- * for the agent of a conversation that delegates (row 21), the instructions of the agent the run
- * names.
+ * An agent's instructions (row 5): system messages in order; or, for the agent of a conversation
+ * that delegates (row 21), the instructions of the agent the run names.
  */
 export type Prompt =
   | Readonly<{ kind: 'MESSAGES'; parts: readonly PromptPart[] }>
-  | Readonly<{ kind: 'ONE_STRING'; of: (requestContext: RequestContext) => Promise<string> }>
   | Readonly<{
       kind: 'DELEGATED'
       of: (requestContext: RequestContext) => Promise<AgentInstructions>
@@ -79,27 +77,25 @@ type Processors = Readonly<{
   afterPick: readonly InputProcessor[]
 }>
 
-/** What an agent is made of: Mastra's `Agent` fields, filled by its ficha. */
-export type AgentSpec = Readonly<{
-  id: string
-  name: string
-  description?: string
-  /** `CODING_AGENT` is Mastra's `createCodingAgent`, made with no workspace of its own. */
-  base: 'AGENT' | 'CODING_AGENT'
-  prompt: Prompt
-  model: ModelSource
-  tools: (requestContext: RequestContext) => Promise<ToolsInput>
-  approval: Approval
-  memory: AgentConfig['memory']
-  turn: TurnSource
-  processors?: Processors
-  skills?: AgentConfig['skills']
-  signals?: AgentConfig['signals']
-  scopes?: AgentConfig['scopes']
-  knowledge?: AgentConfig['knowledge']
-  /** How a turn ends (row 11): Mastra's `isTaskComplete` scores it, and a score of 0 sends the reason back to the model. */
-  judge?: StreamIsTaskCompleteConfig
-}>
+/**
+ * What an agent is made of: Mastra's `Agent` fields the ficha only passes on, as they are, and the
+ * ones Conexus builds from its own kinds.
+ */
+export type AgentSpec = Readonly<
+  Pick<AgentConfig, 'description' | 'skills' | 'signals' | 'scopes' | 'knowledge'> & {
+    id: string
+    name: string
+    prompt: Prompt
+    model: ModelSource
+    tools: (requestContext: RequestContext) => Promise<ToolsInput>
+    approval: Approval
+    memory: AgentConfig['memory']
+    turn: TurnSource
+    processors?: Processors
+    /** How a turn ends (row 11): Mastra's `isTaskComplete` scores it, and a score of 0 sends the reason back to the model. */
+    judge?: StreamIsTaskCompleteConfig
+  }
+>
 
 type ControllerInput = Parameters<typeof controllerOf>[0]
 

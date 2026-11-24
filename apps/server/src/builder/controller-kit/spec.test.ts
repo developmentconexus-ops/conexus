@@ -39,7 +39,6 @@ async function mounting(t: TestContext) {
   const base: ConversationSpec = {
     kind: 'construtor',
     name: 'Ficha de teste',
-    base: 'AGENT',
     prompt: { kind: 'MESSAGES', parts: [{ kind: 'TEXT', text: 'Responda.' }] },
     model: { kind: 'SESSION' },
     tools: async () => ({}),
@@ -51,7 +50,6 @@ async function mounting(t: TestContext) {
   const alone: AgentSpec = {
     id: 'agent-de-teste',
     name: 'Agente de teste',
-    base: 'AGENT',
     prompt: { kind: 'MESSAGES', parts: [{ kind: 'TEXT', text: 'Responda.' }] },
     model: { kind: 'OF_RUN', of: async () => routedModel(ModelId.parse('anthropic/claude-test')) },
     tools: async () => ({}),
@@ -259,27 +257,24 @@ test('o turno RUN da ficha leva o id dela e só retoma no primeiro passo se a fi
   assert.equal('processInputStep' in (await processorOf(true)), true)
 })
 
-test('a ficha de código dá um agente sem máquina própria: sem a chave, o Mastra poria a local no servidor do Hub', async (t) => {
+test('a ficha dá um agente sem máquina própria: a máquina é a do controlador, nunca uma local no servidor do Hub', async (t) => {
   const { mount } = await mounting(t)
   assert.equal(await mount().agent.getWorkspace(), undefined)
-  const coding = mount({ base: 'CODING_AGENT' }).agent
-  assert.equal(await coding.getWorkspace(), undefined)
-  // Only `createCodingAgent` adds the task list's signal, and only with memory.
-  assert.deepEqual(mount().agent.listSignalProviders(), [])
-  assert.equal(coding.listSignalProviders().length, 1)
 })
 
-test('as instruções de uma string só chegam ao agente como a ficha as dá, e a ficha vê o run', async (t) => {
+test('a ficha com um só trecho do run dá uma mensagem de sistema, e a ficha vê o run', async (t) => {
   const { mount } = await mounting(t)
   const requestContext = new RequestContext()
   requestContext.set('lido', 'do run')
   const { agent } = mount({
     prompt: {
-      kind: 'ONE_STRING',
-      of: async (context) => `Uma só, ${String(context.get('lido'))}.`,
+      kind: 'MESSAGES',
+      parts: [{ kind: 'OF_RUN', of: async (context) => `Uma só, ${String(context.get('lido'))}.` }],
     },
   })
-  assert.equal(await agent.getInstructions({ requestContext }), 'Uma só, do run.')
+  assert.deepEqual(await agent.getInstructions({ requestContext }), [
+    { role: 'system', content: 'Uma só, do run.' },
+  ])
 })
 
 test('a ficha sem juiz dá um agente sem isTaskComplete; com um, ele é o padrão do agente e os outros padrões ficam', async (t) => {

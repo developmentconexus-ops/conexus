@@ -242,7 +242,6 @@ function construtorSpec(
   return {
     kind: 'construtor',
     name: 'Construtor',
-    base: 'AGENT',
     prompt: {
       kind: 'MESSAGES',
       parts: [

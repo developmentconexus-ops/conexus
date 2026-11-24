@@ -1,6 +1,7 @@
 import type { CompanyData, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
 import { BUILDER_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
+import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
 import type { Access, Principal } from '../../hub/access/public.ts'
@@ -136,8 +137,11 @@ export function createBuilder(deps: {
     {
       kind: 'builder',
       name: 'Builder',
-      base: 'CODING_AGENT',
-      prompt: { kind: 'ONE_STRING', of: (requestContext) => instructions({ requestContext }) },
+      prompt: {
+        kind: 'MESSAGES',
+        parts: [{ kind: 'OF_RUN', of: (requestContext) => instructions({ requestContext }) }],
+      },
+      signals: [new TaskSignalProvider()],
       skills: async ({ requestContext }) => [
         ...APP_SKILLS,
         ...(await granted(requestContext)).map((each) =>
