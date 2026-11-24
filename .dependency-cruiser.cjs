@@ -1,6 +1,8 @@
 // The import law of code C3 to C8, data D19, testing T5 and web W1, W4 to W7, W13. Every rule below names
 // the guide rule it enforces; scripts/rules.test.ts plants one bad file per rule.
 // A subject is one folder of hub/ or builder/ (server and web). Revalidate by 2027-04-13.
+const { readdirSync } = require('node:fs')
+const { join } = require('node:path')
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 // The Assistant's tests, and the automations', the tools' and the agents' beside them, drive the Builder's test Hub and stream, as a server test drives the test Hub (T5).
@@ -21,6 +23,10 @@ const DATA = `^(${SERVER}/hub/(connectors|copies|ontology|data)/|packages/connec
 const AGENTS_AND_APPS = `^(${SERVER}/builder/(controller-kit|conversation|assistant|agents|construtor|automations|connectors|app-data|data-tools|tools|company-tools)/|packages/app(-contract)?/)`
 // C56: each SDK of a provider only in its adapter.
 const ADAPTERS = require('./.dependency-cruiser-adapters.cjs')
+// The connectors the kit holds: each folder of packages/connectors/src but the kernel.
+const CONNECTORS = readdirSync(join(__dirname, 'packages/connectors/src'), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && entry.name !== 'kernel')
+  .map((entry) => entry.name)
 const CONTRACT_MIGRATION = require('./.dependency-cruiser-migration.cjs')
   .map((file) => `${SERVER}/builder/${file}\\.ts$`)
   .concat('^packages/app/src/connectors\\.ts$')
@@ -216,11 +222,29 @@ module.exports = {
           '^apps/server/src/hub/connectors/',
           '^tests/',
           '^packages/app/src/',
+          // The extraction's adapter reads the kit's index (the next two rules).
+          '^apps/extraction/',
           // The recorder runs the Sankhya double's order book under Mastra, to record what the library emits (testing T26).
           '^scripts/record',
         ],
       },
       to: { path: '^packages/connectors/' },
+    },
+    {
+      name: 'adapter-reads-only-the-kit-index',
+      comment:
+        "Decision 0071: the extraction's adapter imports the kit through its index alone (@conexus/connectors), so it holds no line of one connector.",
+      severity: 'error',
+      from: { path: '^apps/extraction/' },
+      to: { path: '^packages/connectors/', pathNot: '^packages/connectors/src/index\\.ts$' },
+    },
+    {
+      name: 'adapter-names-no-connector',
+      comment:
+        "Decision 0071: the extraction's adapter names no connector, whatever the path of its import; the connectors are the folders of the kit.",
+      severity: 'error',
+      from: { path: '^apps/extraction/' },
+      to: { path: `(^|/)(${CONNECTORS.join('|')})(/|\\.|$)` },
     },
     {
       name: 'app-reads-kit-types-only',

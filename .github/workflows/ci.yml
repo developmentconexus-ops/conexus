@@ -413,6 +413,50 @@ jobs:
       - if: steps.scope.outputs.run == 'true'
         run: npm run test:docs -w @conexus/connectors
 
+  # The Python project of decision 0074. While apps/extraction/ has no pyproject.toml the job ends as
+  # a success with its steps skipped, as the `sankhya-docs` job does; once it has one, formatting,
+  # types and tests of the locked project run and block. The tools are the project's own
+  # dependency group, locked in uv.lock; uv is pinned here and Python is 3.13.
+  extraction:
+    needs: scope
+    if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Is there a Python project yet?
+        id: project
+        run: |
+          if [ -f apps/extraction/pyproject.toml ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No apps/extraction yet: the Python checks are skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - if: steps.project.outputs.present == 'true'
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          version: 0.13.9
+          enable-cache: true
+          cache-dependency-glob: apps/extraction/uv.lock
+      - if: steps.project.outputs.present == 'true'
+        working-directory: apps/extraction
+        run: uv sync --locked --python 3.13
+      - name: Formatting
+        if: steps.project.outputs.present == 'true'
+        working-directory: apps/extraction
+        run: uv run ruff format --check . && uv run ruff check .
+      - name: Types
+        if: steps.project.outputs.present == 'true'
+        working-directory: apps/extraction
+        run: uv run mypy .
+      - name: Tests
+        if: steps.project.outputs.present == 'true'
+        working-directory: apps/extraction
+        run: uv run pytest
+
   e2e:
     needs: scope
     if: ${{ !cancelled() && needs.scope.outputs.code != 'false' }}
@@ -545,7 +589,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [scope, check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, e2e, image]
+    needs: [scope, check, scripts, server-plan, server, web, web-sweep, packages, sankhya-docs, extraction, e2e, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -557,7 +601,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           CODE: ${{ needs.scope.outputs.code }}
-          RESULTS: ${{ needs.scope.result }} ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.web-sweep.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.e2e.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.scope.result }} ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server-plan.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.web-sweep.result }} ${{ needs.packages.result }} ${{ needs.sankhya-docs.result }} ${{ needs.extraction.result }} ${{ needs.e2e.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do

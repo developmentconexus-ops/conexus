@@ -15,3 +15,4 @@ secrets/
 .stryker-report/
 .lab/
 /infra/aws/cdk.out/
+__pycache__/

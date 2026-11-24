@@ -12,12 +12,13 @@ the session that wrote the card.
 
 ## What it receives
 
-The card (in `docs/steps/` or its pull request) and the unit.
+The card (`docs/steps/` or its pull request) and the unit.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
-unit's named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
+unit's guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
 `typescript-best-practices` before writing code; [bring](references/bring.md) for brought code,
-[bug](references/bug.md) for a defect, [brief](references/brief.md) for the session's brief.
+[bug](references/bug.md) for a defect, [`conexus-connector`](../conexus-connector/SKILL.md) for
+connectors, [brief](references/brief.md) for the session's brief.
 
 ## Steps
 
