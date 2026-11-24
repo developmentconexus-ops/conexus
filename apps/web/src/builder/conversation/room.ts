@@ -1,5 +1,6 @@
 import type {
   AgentId,
+  CompanyId,
   FailureCode,
   ProposedApp,
   ProposedAutomation,
@@ -62,6 +63,8 @@ export type Room = {
   openedAgent?: AgentId
   /** What the agent's own tool `slug` does, in the words its row reads; none where the room does not know the tools. */
   toolDescription?: (slug: string) => string | undefined
+  /** The company whose connections the notebook's card asks about: whether the person manages them. None where the Hub's own refusal is the rule (the Builder's conversation). */
+  notebook?: { companyId: CompanyId }
   /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it; none where the room has no writes. */
   writeOf?: (toolName: string) => WriteTool | undefined
   /** The connector ("sankhya") of the connection a tool `tool_<slug>` of the agent reads or writes; none where the room does not know the tools. */

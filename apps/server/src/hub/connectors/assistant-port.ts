@@ -232,7 +232,7 @@ async function noted(
     opened: chosen.opened,
     deadlineMs: CALL_DEADLINE_MS,
   } as const
-  return provedAndSaved(deps, { ...call, read })
+  return provedAndSaved(deps, { ...call, approvedBy: scope.personId, read })
 }
 
 /** The company's door for the Assistant (step 24.1, U1): the chosen connections its place offers; the caderno's write only for `manageConnections` (step 24.3.5). */

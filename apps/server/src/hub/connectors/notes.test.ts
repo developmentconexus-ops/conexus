@@ -32,6 +32,7 @@ test('guardar: roda a consulta uma vez pela porta e guarda o mapa, a consulta, a
   const [row] = await on.hub.test.asOwner('select notes from connectors.connection')
   const note = Object(Object(row).notes).Empresa
   assert.deepEqual(Object.keys(note).sort(), [
+    'approvedBy',
     'mapping',
     'provedAt',
     'provedRows',
@@ -39,12 +40,18 @@ test('guardar: roda a consulta uma vez pela porta e guarda o mapa, a consulta, a
     'writtenBy',
   ])
   assert.equal(note.writtenBy, on.ana.id)
+  assert.equal(note.approvedBy, on.ana.id)
   const answered = Object((await on.read({ operation: 'consultar', input: { sql: QUERY } })).json())
   for (const value of Object.values(Object(answered.value?.linhas?.[0] ?? {})))
     assert.ok(!JSON.stringify(note).includes(String(value)) || String(value).length < 3)
   assert.deepEqual(await on.port.notes(on.ids, on.connectionId), Object(row).notes)
   const logged = on.hub.lines.find((line) => line.message === 'CONNECTION_NOTE_SAVED')
-  assert.deepEqual(Object.keys(logged?.fields ?? {}).sort(), ['by', 'connectionId', 'rows'])
+  assert.deepEqual(Object.keys(logged?.fields ?? {}).sort(), [
+    'approvedBy',
+    'by',
+    'connectionId',
+    'rows',
+  ])
 })
 
 test('guardar: no Builder o membro grava, sem manageConnections', async (t) => {

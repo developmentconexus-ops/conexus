@@ -5,7 +5,14 @@ import { SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { ActionDialog, isGone } from '../identity/public.ts'
 import { connectionKeys, sendNoteDeletion } from './queries.ts'
-import { EMPTY_NOTEBOOK, ERASE, ERASE_NOTE_DESCRIPTION, NOTEBOOK, provedText } from './text.ts'
+import {
+  approvedText,
+  EMPTY_NOTEBOOK,
+  ERASE,
+  ERASE_NOTE_DESCRIPTION,
+  NOTEBOOK,
+  provedText,
+} from './text.ts'
 
 function Entry(props: {
   companyId: CompanyId
@@ -30,6 +37,7 @@ function Entry(props: {
         <span className="wrap-anywhere font-medium">{note.concept}</span>
         <code className="wrap-anywhere font-mono text-fact">{note.mapping}</code>
         <span className="text-label text-text-2">{provedText(note)}</span>
+        <span className="text-label text-text-2">{approvedText(note)}</span>
       </span>
       {props.mayManage && (
         <ActionDialog

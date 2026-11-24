@@ -82,6 +82,7 @@ const NOTE = {
   provedAt: '2026-10-30T14:02:00.000Z',
   provedRows: 20,
   writtenBy: 'Bruno',
+  approvedBy: 'Ana',
 }
 const CONNECTION = connectionOf({ name: 'Matriz', state: 'ACTIVE' })
 

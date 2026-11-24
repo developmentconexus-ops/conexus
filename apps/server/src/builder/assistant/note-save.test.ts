@@ -7,47 +7,128 @@ import {
   ended,
   ranNow,
 } from '../automations/test-automations.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+import { endOf, sent } from '../conversation/test-conversation.ts'
+import { answerTo, tool, untilCard } from '../conversation/test-questions.ts'
 import { assisting, COUNT, created, said, talking } from './test-assistant.ts'
 
 const SAVE = 'connector_note_save'
+const BIA = { name: 'Bia Souza', email: 'bia@example.test' }
 
-test('a anotação grava: a dona pede, a consulta prova uma vez pela porta do Assistente, o modelo ouve SAVED e a ligação mostra a anotação com o nome dela', async (t) => {
-  const on = await assisting(t, [
-    [
-      tool(SAVE, {
-        connection: 'Matriz',
-        concept: 'Empresa',
-        mapping: 'TSIEMP.CODEMP é o código da empresa',
-        provingQuery: COUNT,
-      }),
-    ],
-    [said('Anotei: TSIEMP.CODEMP é o código da empresa.')],
-  ])
+const SAVING = [
+  [
+    tool(SAVE, {
+      connection: 'Matriz',
+      concept: 'Empresa',
+      mapping: 'TSIEMP.CODEMP é o código da empresa',
+      provingQuery: COUNT,
+    }),
+  ],
+  [said('Anotei: TSIEMP.CODEMP é o código da empresa.')],
+]
+
+function yes(
+  hub: Parameters<typeof answerTo>[0],
+  person: Parameters<typeof answerTo>[1],
+  url: string,
+  toolCallId: string,
+  approved: boolean,
+) {
+  return answerTo(hub, person, url, toolCallId, { kind: 'note', approved })
+}
+
+async function notesOf(on: Awaited<ReturnType<typeof assisting>>) {
+  const page = await call(on.hub, on.ana, 'GET', `${on.company}/connections/${on.matriz}`)
+  return Object(page.json()).notes
+}
+
+test('pede o sim: a conversa para no cartão com o conceito, o mapeamento e a consulta, nada é provado nem gravado antes do sim, e o sim grava com o nome de quem aprovou', async (t) => {
+  const on = await assisting(t, SAVING)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
-  const { say } = await talking(t, on.hub, on.ana, url)
+  const { stream } = await talking(t, on.hub, on.ana, url)
+  await sent(on.hub, on.ana, url, 'O CODEMP é o código da empresa; anota isso no caderno')
+  const { card } = await untilCard(stream, 'note')
+  assert.deepEqual(Object(card.suspendPayload), {
+    connection: 'Matriz',
+    concept: 'Empresa',
+    mapping: 'TSIEMP.CODEMP é o código da empresa',
+    provingQuery: COUNT,
+  })
+  assert.deepEqual(await notesOf(on), [], 'nothing is written before the yes')
   assert.equal(
-    endOf(await say('O CODEMP é o código da empresa; anota isso no caderno')),
-    'complete',
+    on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length,
+    0,
+    'the proving query does not run before the yes',
   )
-  assert.equal(on.calls[0]?.tools.includes(SAVE), true)
-  assert.match(on.calls[1]?.texts.at(-1) ?? '', /"kind":"SAVED","provedRows":1/)
+
+  assert.equal((await yes(on.hub, on.ana, url, card.toolCallId, true)).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
+  assert.match(on.calls.at(-1)?.texts.join('\n') ?? '', /"kind":"SAVED","provedRows":1/)
   const proved = on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED')
   assert.deepEqual(
     proved.map((line) => [line.fields.by, line.fields.operation]),
     [['assistant', 'consultar']],
   )
-  const page = await call(on.hub, on.ana, 'GET', `${on.company}/connections/${on.matriz}`)
-  const [note] = Object(page.json()).notes
+  const [note] = await notesOf(on)
   assert.equal(note.concept, 'Empresa')
-  assert.equal(note.mapping, 'TSIEMP.CODEMP é o código da empresa')
   assert.equal(note.provedRows, 1)
   assert.equal(note.writtenBy, 'Ana Lima')
+  assert.equal(note.approvedBy, 'Ana Lima')
   const [row] = await on.hub.test.asOwner('select notes from connectors.connection where id = $1', [
     on.matriz,
   ])
   assert.equal(Object(row).notes.Empresa.provingQuery, COUNT)
+  assert.equal(Object(row).notes.Empresa.approvedBy, on.ana.id)
+  const saved = on.hub.lines.filter((line) => line.message === 'CONNECTION_NOTE_SAVED')
+  assert.equal(saved.length, 1)
+  assert.equal(saved[0]?.fields.approvedBy, on.ana.id)
+})
+
+test('a recusa: o Recusar no cartão não prova nem grava nada, e o modelo ouve a recusa', async (t) => {
+  const on = await assisting(t, SAVING)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  const { stream } = await talking(t, on.hub, on.ana, url)
+  await sent(on.hub, on.ana, url, 'Anota que o CODEMP é a empresa')
+  const { card } = await untilCard(stream, 'note')
+  assert.equal((await yes(on.hub, on.ana, url, card.toolCallId, false)).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
+  assert.deepEqual(await notesOf(on), [])
+  assert.equal(
+    on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length,
+    0,
+    'the proving query does not run on a refusal',
+  )
+})
+
+test('quem aprova: o sim de quem deixou de gerenciar ligações entre o pedido e o sim é NOT_GRANTED e nada é gravado, e uma anotação de antes desta etapa lê approvedBy nulo', async (t) => {
+  const on = await assisting(t, SAVING)
+  const bia = await memberOn(on.hub, on.companyId, BIA, 'admin')
+  const url = await created(on.hub, bia, on.assistant, { connections: [on.matriz] })
+  const { stream } = await talking(t, on.hub, bia, url)
+  await sent(on.hub, bia, url, 'O CODEMP é o código da empresa; anota isso no caderno')
+  const { card } = await untilCard(stream, 'note')
+  await on.hub.test.asOwner(`update auth.member set role = 'member' where user_id = $1`, [bia.id])
+  assert.equal((await yes(on.hub, bia, url, card.toolCallId, true)).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
+  assert.match(on.calls.at(-1)?.texts.join('\n') ?? '', /"kind":"NOT_GRANTED"/)
+  assert.deepEqual(await notesOf(on), [])
+  const refused = on.hub.lines.filter((line) => line.message === 'CONNECTION_NOTE_REFUSED')
+  assert.equal(refused.length, 1)
+
+  await on.hub.test.asOwner(`update connectors.connection set notes = $2::jsonb where id = $1`, [
+    on.matriz,
+    JSON.stringify({
+      Antiga: {
+        mapping: 'de antes',
+        provingQuery: COUNT,
+        provedAt: '2026-11-01T10:00:00.000Z',
+        provedRows: 1,
+        writtenBy: on.ana.id,
+      },
+    }),
+  ])
+  const [before] = await notesOf(on)
+  assert.equal(before.concept, 'Antiga')
+  assert.equal(before.approvedBy, null)
 })
 
 test('a rodada de automação: a conversa que a automação abre não leva connector_note_save, a da dona leva', async (t) => {

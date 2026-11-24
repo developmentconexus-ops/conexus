@@ -229,6 +229,8 @@ export const ConnectionNote = z.object({
   provedRows: z.int().nonnegative(),
   // null: who wrote it has left the company.
   writtenBy: z.string().nullable(),
+  // The approver's name; null: a note from before the yes ("Gravada sem aprovação"), or they left the company.
+  approvedBy: z.string().nullable(),
 })
 export type ConnectionNote = z.infer<typeof ConnectionNote>
 

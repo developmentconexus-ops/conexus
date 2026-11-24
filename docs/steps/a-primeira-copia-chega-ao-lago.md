@@ -416,7 +416,7 @@ da trilha e está na página dela. O que cada decisão faz no cartão:
 | NT4 | Os nomes sugeridos | (a) `sankhya_notas`, "Notas e pedidos"; com o completo, os 42 da mesma regra (`SK` seção 1) | A U3 |
 | NT5 | Duas ligações do mesmo sistema | (a) uma tabela por ligação | A segunda ligação vem sugerida com o nome dela, `sankhya_<ligação>_notas`, trocável (T.16) |
 | A do conector | O alcance do "refeito" | (a) refazer do zero as pastas do Sankhya e do Mercado Livre e cada peça do Hub que diverge do decidido; as que já são o decidido ficam; a Fábrica é provada no TOTVS | A U16 a U19. Veredito: embrulhado (a forma do kit, conferida pela conformidade e pelos dublês) |
-| B do conector | Quando o Caderno sai | (a) na etapa nova, gravar pede o sim de quem gerencia a ligação; o Caderno sai na etapa do Negócio | A U19. Veredito: nativo (o `requireApproval` do Mastra, como na escrita) |
+| B do conector | Quando o Caderno sai | (a) na etapa nova, gravar pede o sim de quem gerencia a ligação; o Caderno sai na etapa do Negócio | A U19. Veredito: nativo (a suspensão do Mastra, como o `ask_user` e o `submit_plan`) |
 | C do conector | Onde a troca entra no roteiro | (a) uma etapa própria entre a parte 0 e a parte 1, um pull request por conector, sem o Assistente perder as leituras ao vivo | O GC1, o GC2 e o GC3, entre o G0c e o G1 |
 
 **As emendas, uma por uma.** Cada uma muda uma decisão aceita, pela sua palavra mais nova:
@@ -594,8 +594,8 @@ velha, que passa ao índice do kit.
 | 80 | U17 | Pelo Hub, nada muda para quem usa o Sankhya: as ferramentas tipadas `sankhya_*` têm os mesmos nomes e entradas, a busca de ferramentas as acha, um app e uma ferramenta salva leem pela mesma operação, o papel `connector_sankhya` admite as mesmas, e a escrita passa pelo cartão como hoje | os testes de hoje de `apps/server/src/builder/connectors/` (`typed-reads`), `builder/company-tools/` (`search`), `hub/connectors/` (`app-calls`, `tool-door`, `write`, `approval`) e os de hoje dos papéis em `hub/identity/`, sem mudar o que esperam | must |
 | 81 | U17 | As buscas do Sankhya escapam `[` e `]` no `LIKE` do SQL Server (#929), e o 20 da página padrão tem um dono só, a busca (#930) | `packages/connectors/src/sankhya/search.test.ts`, "o colchete na busca" e "a página padrão" | must |
 | 82 | U18 | A pasta nova do Mercado Livre, lida pelo índice do kit, declara o mesmo conector de hoje: o id `mercado-livre`, o login por autorização com PKCE, a renovação de uso único, a conta informada pelo sistema, a classe exclusiva, as 27 leituras com os mesmos ids e as listas que paginam (`pedidos`, `anuncios`, `perguntas`, `reclamacoes`, `periodosDeFaturamento`). O commit apaga cada arquivo da pasta velha que não é dublê, gravação, leitura da documentação nem teste. Os testes de hoje do Mercado Livre e do Hub passam sem mudar o que esperam | `packages/connectors/src/mercado-livre/*.test.ts` de hoje, pelo índice do kit; `apps/server/src/hub/connectors/sign-ins.test.ts` e os de reconectar, sem mudar o que esperam; a lista do commit (`git show --stat`), no pull request | must |
-| 83 | U19 | `connector_note_save` pede aprovação antes de gravar: a conversa mostra o cartão com o conceito, o mapeamento e a consulta da prova, e nada é gravado no Caderno antes do sim | `apps/server/src/builder/assistant/note-save.test.ts`, "pede o sim", pela conversa com as gravações do Mastra | must |
-| 84 | U19 | O sim de um membro que gerencia ligações grava a anotação com o nome de quem aprovou; o de quem não gerencia é recusado com `NOT_GRANTED`, e nada é gravado; a recusa no cartão não grava nada; a página da ligação mostra quem aprovou, e uma anotação de antes desta etapa mostra "Gravada sem aprovação". O cartão mostra a quem não gerencia ligações a frase da matriz, sem os botões, e a ligação que saiu antes do sim dá a frase dela | `note-save.test.ts`, "quem aprova" e "a recusa"; `apps/web/src/hub/connectors/notes.test.tsx`, "quem aprovou"; `apps/web/src/builder/conversation/approval-card.test.tsx` (novo), "o Caderno" | must |
+| 83 | U19 | `connector_note_save` pede o sim antes de gravar, suspendendo a chamada como o `ask_user`: a conversa mostra o cartão com o conceito, o mapeamento e a consulta da prova, e nada é provado nem gravado no Caderno antes do sim; no Assistente e no Builder, que seguem sem pedir aprovação a nenhuma outra ferramenta (0053) | `apps/server/src/builder/assistant/note-save.test.ts`, "pede o sim"; `apps/server/src/builder/conversation/conversation-connectors.test.ts`, "o caderno"; `apps/server/src/builder/connectors/connector-tools-scope.test.ts`, "o caderno pede o sim" | must |
+| 84 | U19 | O sim de um membro que gerencia ligações grava a anotação com o nome de quem aprovou; o de quem não gerencia é recusado com `NOT_GRANTED`, e nada é gravado; a recusa no cartão não grava nada; a página da ligação mostra quem aprovou, e uma anotação de antes desta etapa mostra "Gravada sem aprovação". O cartão mostra a quem não gerencia ligações a frase da matriz, sem os botões, e a ligação que saiu antes do sim dá a frase dela | `note-save.test.ts`, "quem aprova" e "a recusa"; `apps/web/src/hub/connectors/notes.test.tsx`, "quem aprovou"; `apps/web/src/builder/conversation/note-card.test.tsx` (novo), "o Caderno" | must |
 
 ### Parte 1, a carga chega e a mudança aparece
 
@@ -687,7 +687,7 @@ velha, que passa ao índice do kit.
 | A ligação, a seção Tabelas no lago (U9) | Sem cópia: "Nada desta ligação é copiado para o lago." e **Escolher o que copiar** | Conector sem tabela declarada ou de credencial exclusiva: a seção não aparece | "Lendo o dicionário do <sistema>…" | O dicionário fora: as tabelas com o rótulo do kit e "Não deu para ler o dicionário agora."; `COPY_RUN_OPEN`: "A ligação está copiando agora. Desmarque quando a rodada terminar."; `COPY_NAME_TAKEN` e `COPY_NAME_INVALID`, como na janela; a AWS fora ao desmarcar ou desligar (503): "Não deu para falar com a AWS agora. Tente de novo em alguns minutos." | A ligação desligada: a frase de hoje da página | Quem não gerencia cópias vê as tabelas copiadas, sem caixas, sem **Salvar** e sem **Rodar agora** | — |
 | Dados, a lista do lago (U9) | "Nenhuma tabela copiada. Para copiar, ligue um sistema em Integrações." | O mesmo da primeira vez | O de hoje da página | O de hoje da página | Uma tabela desmarcada noutra aba some na próxima leitura | Quem não lê a ligação não vê as tabelas dela | A última rodada com erro: o selo de hoje, com a frase do código |
 | A tabela do lago, Visão geral, Colunas, Rodadas e Detalhes (U9) | A primeira rodada aberta: "Rodando…", sem linhas | Nenhuma rodada ainda: "Esta tabela ainda não rodou." | O de hoje da página | `COPY_LAKE_UNAVAILABLE`: "A AWS não iniciou a cópia. A próxima rodada tenta de novo." `COPY_TASK_LOST`: "A cópia parou antes de terminar. A próxima rodada tenta de novo." `COPY_LAKE_WRITE_FAILED`: "Não deu para gravar no lago. A próxima rodada tenta de novo." `COPY_SOURCE_NEEDS_REAUTH`: "<sistema> recusou o login da ligação. Reconecte a ligação." `COPY_SOURCE_REFUSED`: "<sistema> recusou a leitura." `COPY_SOURCE_UNREACHABLE`: "<sistema> não respondeu. A próxima rodada tenta de novo." `COPY_SOURCE_UNREADABLE`: "<sistema> respondeu algo que o Conexus não entende. A próxima rodada tenta de novo." Uma rodada com erro diz em que tabela parou e, quando o sistema respondeu, a resposta dele por extenso | A tabela desmarcada: "Esta tabela não é mais copiada." | Quem não lê a ligação: o "não encontrado" (S10) | A rodada interrompida: "Interrompida." |
-| O cartão do Caderno na conversa (U19) | "Gravar no Caderno?", com o conceito, o mapeamento, a consulta da prova e o número de linhas, e **Aprovar** e **Recusar** | — | O de hoje do cartão de escrita | A ligação saiu antes do sim: "Esta ligação não existe mais. Nada foi gravado." | — | Quem não gerencia ligações vê o cartão sem os botões e "Peça a quem gerencia a ligação." | Recusado: "Não gravado." |
+| O cartão do Caderno na conversa (U19) | "Gravar no Caderno?", com o conceito, o mapeamento e a consulta da prova (o número de linhas só se sabe depois da prova, e a página da ligação o mostra), e **Aprovar** e **Recusar** | — | O de hoje do cartão de escrita | A ligação saiu antes do sim: "Esta ligação não existe mais. Nada foi gravado." | — | Quem não gerencia ligações vê o cartão sem os botões e "Peça a quem gerencia a ligação." | Recusado: "Não gravado." |
 | A ligação, o Caderno (U19) | A lista de hoje, com "Aprovada por <nome>" em cada anotação | O vazio de hoje | O de hoje | O de hoje | — | Como hoje | Uma anotação de antes desta etapa: "Gravada sem aprovação" |
 
 **Em dia** quer dizer que a última rodada da tabela terminou completa; "Rodando…", que há rodada
@@ -893,7 +893,7 @@ limpeza; L.8, apagar sem sobra; L.9, a cota do parâmetro.
 | 46 | A definição única do conector | refeita | `C/packages/connectors/src/kernel/definition.ts:42-71` | Nango `e6c6131`, situação diferente: funções num executor (`EST/kit-vs-nango-study`, `EST/kit-nango:113-117`); "Um tap Singer é só um segundo executor das mesmas funções" (`EST/kit-nango:116`) | embrulhado (herdado, decidido) | Os 198 testes do kit (`EST/conector-estilo-novo-estudo`, seção 5) | 0056, 0069, 0071 | U16, U17, U18 | — |
 | 47 | As leituras como ferramentas | fica | `C/apps/server/src/builder/connectors/typed-reads.ts:27-35`; `C/apps/server/src/builder/company-tools/search.ts:28-43` | `@mastra/core@1.83.0` `ToolSearchProcessor`, "gives the agent two meta-tools (`search_tools` and `load_tool`)", com `filter` por pedido; Nekt `discover_live_tools` e `run_live_tool` | nativo | — | não precisa | fica (a U17 e a U18 provam que as pastas novas as mantêm) | — |
 | 48 | A escrita com o cartão | fica | `C/apps/server/src/hub/connectors/write.ts`, `write-record.ts`, `approval.ts` | `@mastra/core@1.83.0` `requireApproval` (`reference-tools-create-tool.md:79-81`), mesma situação; Nekt, "your agent confirms", situação diferente: quem confirma é o agente | embrulhado (o registro é nosso) | A etapa 24.5, fechada | 0062; e245 | fica (a U17 prova `lancarPedido`) | — |
-| 49 | O Caderno | refeita: pede o sim; sai na etapa do Negócio | `C/apps/server/src/hub/connectors/notes.ts`; `C/apps/server/src/builder/connectors/connector-tools.ts:307-333` | Nekt: o agente "will typically offer to save a context document", e a pessoa aceita (`EST/ao-vivo-estudo:114`), situação diferente: a Nekt guarda o roteamento, e não um significado que todos os agentes usam | nativo: o `requireApproval` do Mastra para a ferramenta, como na escrita | — | 0064 (`:30`); B do conector | U19 | — |
+| 49 | O Caderno | refeita: pede o sim; sai na etapa do Negócio | `C/apps/server/src/hub/connectors/notes.ts`; `C/apps/server/src/builder/connectors/connector-tools.ts:307-333` | Nekt: o agente "will typically offer to save a context document", e a pessoa aceita (`EST/ao-vivo-estudo:114`), situação diferente: a Nekt guarda o roteamento, e não um significado que todos os agentes usam | nativo: a suspensão do Mastra, `suspend()` e `resumeData` da própria ferramenta, como `askUserTool` (`M/packages/core/src/tools/builtin/ask-user.ts:98-122`) e `submitPlanTool` (`submit-plan.ts:78-128`), `@mastra/core@1.83.0`. O `requireApproval` não serve ao Assistente nem ao Builder: com `yolo: true` (0053) o controlador aprova sozinho toda porta de aprovação (`M/packages/core/src/agent-controller/session.ts:4815`, `:6638-6642`; `session-run-engine.ts:910`), e ligar `yolo: false` faria pedir toda ferramenta que o Mastra injeta fora de `spec.tools` (medido: `search_tools` trava o turno) e traria de volta a perda de retomada no Postgres que a 0053 evita | — | 0064 (`:30`); B do conector; o firstmate, 2026-11-24 ("B") | U19 | — |
 | 50 | A skill do conector | refeita em parte | `C/packages/connectors/src/kernel/skill.ts`; `sankhya/skill/SKILL.md` à mão, que diz "There is no operation that writes" (`:14`) contra `lancarPedido` (`sankhya/operations/index.ts:62`) | Nekt: os nomes das ferramentas "can change, so an agent should resolve them at run time rather than hardcoding them into a skill" (`NK:12598-12600`), mesma situação | embrulhado: a parte gerada da definição, a escrita guarda o saber | O defeito lido | técnica (T.25) | U16, U17, U18, U3 | — (muda `kernel/skill.ts`) |
 | 51 | A janela Ligar com busca, acesso, testando e lendo, o que copiar, quando copiar e Ligado; o link de 30 minutos | refeita, nesta etapa | `C/apps/web/src/hub/connectors/link-dialog.tsx:272`; `integrations.tsx:94` | Nekt, o assistente e o Share link (`MAPA` 1.1, `EST/nekt-rea:83`); Databricks, "Save and run pipeline" (`MAPA` 1.2); Nango `connect_link`, 30 minutos (spec 02, `design.md:48`) | embrulhado | — | o fluxo e o link, 2026-11-23; spec 02 (`C4`, `C5`) | U9, U20 | `apps/web/src/hub/connectors/link-window.tsx`, `link-page.tsx`; `apps/server/src/hub/connectors/connection-links.ts` |
 | 52 | A segunda forma, pelo servidor MCP do fornecedor | fica de fora | nenhum; `@mastra/mcp` não instalado | AWS AgentCore Gateway, Nekt, Databricks (`EST/registro-vs-lago-e-ao-vivo:505-512`) | embrulhado, na etapa própria | — | `C1` (a), `C2` (a) de 2026-11-21 | fica de fora: a etapa "A ferramenta ao vivo, por pessoa e por MCP" | — |
@@ -1677,10 +1677,13 @@ e 5 do roteiro para o Mercado Livre.
 - **Linha 49.** Ler `C/apps/server/src/hub/connectors/notes.ts` (`save`, que já confere
   `manageConnections` com `manage`; `provedAndSaved`), `C/apps/server/src/builder/connectors/connector-tools.ts:307-333`
   (`noteSaveTool`) e `builder/company-tools/factory.ts:132-137` (quem recebe a ferramenta). Seguir a
-  escrita com o cartão: `builder/agents/tools.ts:188-230` (`requireApproval`, `approvedCallOf`) e
-  `hub/connectors/approval.ts` (`mayApprove`). `@mastra/core@1.83.0`, `requireApproval`: "Input is
-  validated against inputSchema first: if it is invalid, the validation error is returned to the model
-  and no approval is requested" (`reference-tools-create-tool.md:79`).
+  pergunta com o cartão: `builder/controller-kit/ask-user.ts` (`createAskUserTool`: `suspendSchema`,
+  `resumeSchema`, `execute` que suspende sem `resumeData` e responde com ele) e `builder/conversation/plan-tools.ts`
+  (`createSubmitPlanTool`). `@mastra/core@1.83.0`: `ask-user.ts:98-122` e `submit-plan.ts:78-128` fazem o
+  mesmo, e o cartão responde pela rota `tool-suspension`, já na lista fixa do guarda
+  (`builder/conversation/guard.ts:38`). O `requireApproval` não é o caminho: no Assistente e no Builder
+  o controlador roda em `yolo` (0053), e `session.ts:4815` (`if (state.yolo === true) return 'allow'`)
+  aprova sozinho toda porta de aprovação.
 - **A decisão.** 0064 (`:30`): as anotações viram propostas e o Caderno sai, na etapa do Negócio.
   Até lá, gravar pede o sim (B do conector).
 
@@ -1688,10 +1691,10 @@ e 5 do roteiro para o Mercado Livre.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/builder/connectors/connector-tools.ts` | Muda: `requireApproval` na ferramenta; o `execute` grava com quem aprovou | o Assistente e o Builder |
-| `apps/server/src/builder/conversation/` | Muda: a aprovação de `connector_note_save` confere `manageConnections` de quem aprova | a rota de aprovar |
+| `apps/server/src/builder/connectors/connector-tools.ts` | Muda: a ferramenta suspende com o pedido e grava só com o sim (`suspendSchema`, `resumeSchema`); o não devolve `NOT_SAVED` | o Assistente e o Builder |
+| `apps/server/src/hub/connectors/assistant-port.ts`, `builder-port.ts` | Muda: quem responde o cartão é quem aprova (`approvedBy`), e a gravação o confere | a ferramenta |
 | `apps/server/src/hub/connectors/notes.ts`, `packages/hub-api/src/project-connections.ts` (`ConnectionNote`) | Muda: `approvedBy` | a tela |
-| `apps/web/src/builder/conversation/` (o cartão), `apps/web/src/hub/connectors/notes.tsx`, `text.ts` | Muda: o cartão do Caderno; "Aprovada por" | — |
+| `apps/web/src/builder/conversation/` (o cartão: `note-card.tsx`, `note-parse.ts`, `rows.ts`), `apps/web/src/hub/connectors/notes.tsx`, `text.ts` | Muda: o cartão do Caderno, que responde pela suspensão; "Aprovada por" | — |
 
 ### Os contratos que a unidade cria
 
@@ -1702,10 +1705,11 @@ approvedBy: z.string().nullable().default(null)
 approvedBy: z.string().nullable()   // the approver's name; null: "Gravada sem aprovação"
 ```
 
-- **Quem aprova**: um membro com `manageConnections`, conferido na transação da gravação (T.26); uma
-  recusa é `NOT_GRANTED`, com o motivo só no registro (S8, S10).
-- **O cartão**: o da escrita (`approval-card.tsx`), com o título "Gravar no Caderno?" e as frases da
-  matriz em `approval-text.ts` (C26).
+- **Quem aprova**: a pessoa que responde o cartão, dona da conversa (o guarda só deixa a dona
+  responder); um membro com `manageConnections` agora, conferido na transação da gravação (T.26), e
+  não quando pediu; uma recusa é `NOT_GRANTED`, com o motivo só no registro (S8, S10).
+- **O cartão**: a peça `Approval` de `ui/ai/`, com o título "Gravar no Caderno?" e as frases da
+  matriz em `approval-text.ts` (C26), respondido por `tool-suspension` com `{ approved }`.
 - **O arquivo modelo**: `builder/agents/tools.ts`, `writeTool` (C21: a resposta por `kind`).
 
 ### As skills e a leitura
@@ -1715,21 +1719,28 @@ As linhas de `@mastra/core` e `react` do `stack.md`: a skill `mastra`. A securit
 ### A ordem do trabalho
 
 1. **A ferramenta pede o sim.** Critério: 83.
-   - **Mutações à mão:** `requireApproval: false`: o 83 fica vermelho.
-2. **Quem aprova e o que fica gravado.** Critério: 84.
-   - **Mutações à mão:** conferir `manageConnections` de quem pediu, e não de quem aprova: o 84 fica
+   - **Mutações à mão:** a ferramenta gravar sem suspender (o `execute` chamar `save` direto): o 83 fica
      vermelho.
+2. **Quem aprova e o que fica gravado.** Critério: 84.
+   - **Mutações à mão:** tirar a conferência de `manageConnections` da transação da gravação, ou
+     conferi-la quando o cartão abre e não quando o sim chega: o 84 fica vermelho.
 3. **A tela.** Critério: 84.
 
 ### Como se prova
 
-Por uma conversa do Assistente com as gravações do Mastra de aprovação (`platform/recordings/mastra/approval*.jsonl`)
-e um PostgreSQL local; pela tela com o Hub falso. Hoje o 83 falha: a ferramenta grava sem pedir.
+Por uma conversa do Assistente e uma do Builder com o dublê do modelo e um PostgreSQL local (a suspensão
+é a do `ask_user`, que o Mastra retoma na mesma rota); pela tela com o Hub falso. Hoje o 83 falha: a
+ferramenta grava sem pedir.
+
+O desvio do cartão: a aprovação é a suspensão do Mastra, e não o `requireApproval`. O motivo, medido: em
+`yolo` o controlador aprova toda porta de aprovação sem perguntar. Para perguntar, o Assistente e o
+Builder teriam de sair de `yolo`, e então toda ferramenta que o Mastra injeta (a busca de ferramentas, as
+leituras tipadas) pediria também. A suspensão pergunta só no Caderno e deixa a 0053 como está.
 
 ### Parar se
 
 - Uma unidade da trilha Agentes e Apps está nesses arquivos (delivery L1): espera.
-- A aprovação de hoje não distingue a ferramenta e pediria mudar a rota de aprovar para todas.
+- A suspensão de hoje não deixa a ferramenta retomar com o sim sem mudar a rota de responder.
 
 ## GC3 O ponto de conferência
 

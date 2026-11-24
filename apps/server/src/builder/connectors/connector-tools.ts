@@ -1,5 +1,6 @@
-import type { ConnectionId, OfProject, PersonId, RunId } from '@conexus/hub-api'
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { randomUUID } from 'node:crypto'
+import type { ConnectionId, OfProject, PersonId } from '@conexus/hub-api'
+import { BUILDER_TOOL, RunId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
@@ -47,7 +48,7 @@ export type ConnectorAccess = {
   wording: { whose: string }
 }
 
-/** The notebook's write: the Builder's, and the Assistant's for who manages the connections. */
+/** The notebook's write, once the person said yes on the card: the Builder's, and the Assistant's for who manages the connections. */
 export type NoteSave = (
   call: { connectionId: ConnectionId; concept: string; mapping: string; provingQuery: string },
   requestContext: RequestContext,
@@ -56,6 +57,9 @@ export type NoteSave = (
 type Connection = ConnectorAccess['connections'][number]
 
 export const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
+
+/** The person said no on the notebook's card: nothing was proved and nothing written. */
+const NOT_SAVED = { kind: 'NOT_SAVED' } as const
 
 function runIn(who: Asker, requestContext: RequestContext): RunId {
   const runId = who.runIdOf(requestContext)
@@ -84,8 +88,13 @@ export function builderAccess(
     notes: (connectionId) => port.notes(who, connectionId),
     wording: { whose: "this Project's owner released" },
   }
+  // The yes resumes the save before the run takes the Projeto again, so it counts as a run of its own.
   const save: NoteSave = (call, requestContext) =>
-    port.saveNote(who, { ...call, personId: who.personId, runId: runIn(who, requestContext) })
+    port.saveNote(who, {
+      ...call,
+      personId: who.personId,
+      runId: who.runIdOf(requestContext) ?? RunId.parse(randomUUID()),
+    })
   return { access, save }
 }
 
@@ -295,26 +304,36 @@ function notesTool(access: ConnectorAccess) {
   }
 }
 
+/** What the person's card answers: the yes or the no. */
+const NoteAnswer = z.object({ approved: z.boolean() })
+
 function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
+  const asking = z.object({
+    connection: connectionField(connections),
+    connector: CONNECTOR_FIELD,
+    concept: z.string().min(1).max(120),
+    mapping: z.string().min(1).max(500),
+    provingQuery: z.string().min(1).max(4000),
+  })
   return {
     [BUILDER_TOOL.connectorNoteSave]: createTool({
       id: BUILDER_TOOL.connectorNoteSave,
       description:
-        "Saves in a connection's notebook what a code or a field means in this company. It runs `provingQuery` once through the connection's read door and keeps the mapping, the query, the date and the number of rows it returned, never a row. Names and codes only, never a value.",
-      inputSchema: z.object({
-        connection: connectionField(connections),
-        connector: CONNECTOR_FIELD,
-        concept: z.string().min(1).max(120),
-        mapping: z.string().min(1).max(500),
-        provingQuery: z.string().min(1).max(4000),
-      }),
-      execute: async (
-        { connection, connector, concept, mapping, provingQuery },
-        { requestContext },
-      ) => {
-        const found = inNotebook(connections, connection, connector)
+        "Saves in a connection's notebook what a code or a field means in this company, after the person approves it on a card. It runs `provingQuery` once through the connection's read door and keeps the mapping, the query, the date and the number of rows it returned, never a row. Names and codes only, never a value.",
+      inputSchema: asking,
+      suspendSchema: asking,
+      resumeSchema: NoteAnswer,
+      execute: async (asked, { requestContext, agent }) => {
+        const found = inNotebook(connections, asked.connection, asked.connector)
         if (found === undefined || requestContext === undefined) return NOT_GRANTED
         if ('kind' in found) return found
+        const answer = agent?.resumeData
+        if (answer === undefined) {
+          await agent?.suspend?.(asked)
+          return undefined
+        }
+        if (!answer.approved) return NOT_SAVED
+        const { concept, mapping, provingQuery } = asked
         return save(
           { connectionId: found.connectionId, concept, mapping, provingQuery },
           requestContext,

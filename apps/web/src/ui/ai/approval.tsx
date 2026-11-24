@@ -24,6 +24,8 @@ export type ApprovalState =
       readFailure: { text: string; onRetry: () => void } | undefined
       /** Another write like this one is still open: the notice's sentence. */
       openWrite: string | undefined
+      /** The person may not answer: this sentence takes the place of the two buttons. */
+      locked: string | undefined
       onApprove: () => void
       onDecline: () => void
     }
@@ -111,6 +113,7 @@ function Decided({ state, text }: { state: Ended; text: ApprovalText }) {
 }
 
 function Answer({ open, text }: { open: Open; text: ApprovalText }) {
+  if (open.locked !== undefined) return <p className="text-text-2">{open.locked}</p>
   const off = open.sending !== undefined || !open.lit
   return (
     <div className="flex flex-col gap-sm">
@@ -168,7 +171,9 @@ export function Approval(props: {
           <Decided state={state} text={text} />
         )}
       </Card>
-      {state.kind === 'OPEN' && <p className="px-xs text-label text-text-2">{text.steer}</p>}
+      {state.kind === 'OPEN' && state.locked === undefined && (
+        <p className="px-xs text-label text-text-2">{text.steer}</p>
+      )}
     </div>
   )
 }

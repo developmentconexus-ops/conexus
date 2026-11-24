@@ -234,6 +234,11 @@ export const ERASE_NOTE_DESCRIPTION =
   'Quem conversa deixa de usar essa anotação. Ela pode ser anotada de novo.'
 export const ERASE = 'Apagar'
 
+/** "Aprovada por Ana": who said yes on the card; a note from before the yes says so. */
+export function approvedText(note: { approvedBy: string | null }) {
+  return note.approvedBy === null ? 'Gravada sem aprovação' : `Aprovada por ${note.approvedBy}`
+}
+
 /** "provado em 30/10 por Bruno, com 20 linhas": what an entry of the notebook says about its proof. */
 export function provedText(note: {
   provedAt: string

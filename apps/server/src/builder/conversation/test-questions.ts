@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { BUILDER_TOOL } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
@@ -15,7 +16,11 @@ type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
 type Suspended = Extract<StreamEvent, { type: 'tool_suspended' }>
 
 /** The tool each kind of card is, as Mastra names the call it parks. */
-const CARD_TOOL = { question: ASK_USER_TOOL, plan: SUBMIT_PLAN_TOOL } as const
+const CARD_TOOL = {
+  question: ASK_USER_TOOL,
+  plan: SUBMIT_PLAN_TOOL,
+  note: BUILDER_TOOL.connectorNoteSave,
+} as const
 
 /** How long a test waits for the card a turn parks, which the double answers at once. */
 const CARD_DEADLINE_MS = 15_000
@@ -124,15 +129,17 @@ export function cards(events: StreamEvent[]): Suspended[] {
 
 /**
  * What Mastra resumes a card's call with, from a person's answer: one answer per question, or the
- * decision on the plan (Mastra's `PlanResume`).
+ * decision on the plan (Mastra's `PlanResume`), or the yes or no on the notebook's save.
  */
 function resumeDataOf(body: {
   kind: string
   answers?: unknown
   action?: string
   feedback?: string
+  approved?: boolean
 }) {
   if (body.kind === 'answers') return body.answers
+  if (body.kind === 'note') return { approved: body.approved }
   return {
     action: body.action,
     ...(body.feedback === undefined ? {} : { feedback: body.feedback }),

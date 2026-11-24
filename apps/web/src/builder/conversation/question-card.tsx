@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import type { QuestionState, QuestionText, QuestionView } from '../../ui/ai/question.tsx'
 import { Question as Questions } from '../../ui/ai/question.tsx'
+import type { NoteResume } from './note-parse.ts'
 import { useAnswerTo, useRoom } from './room.ts'
 import type { QuestionCardItem } from './rows.ts'
 import { WaitingOnPhone } from './working-line.tsx'
@@ -44,7 +45,7 @@ export function useAnswer(toolCallId: ToolCallId) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string>()
   const sent = useRef(false)
-  async function answer(resumeData: readonly Answer[] | PlanResume): Promise<void> {
+  async function answer(resumeData: readonly Answer[] | PlanResume | NoteResume): Promise<void> {
     if (sent.current) return
     sent.current = true
     setSending(true)

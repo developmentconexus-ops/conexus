@@ -246,7 +246,7 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
       if (speaker === undefined) return { kind: 'NOT_GRANTED' }
       if (!spend(a.runId)) return { kind: 'CALLS_SPENT' }
       const read = readerOf({ ids, ...a, speaker, opened })
-      return provedAndSaved(deps, { ...a, read })
+      return provedAndSaved(deps, { ...a, approvedBy: a.personId, read })
     },
   }
 }

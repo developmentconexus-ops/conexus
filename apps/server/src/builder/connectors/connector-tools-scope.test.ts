@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { PersonId, RunId } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
 import type { BuilderConnectors } from './public.ts'
 import { builderAccess, connectorTools } from './public.ts'
-import { accessOver, granted, LOJA, QUIET, runOn, SANKHYA } from './test-access.ts'
+import { accessOver, granted, LOJA, QUIET, runOn, SANKHYA, YES } from './test-access.ts'
 
 const RUN = RunId.parse('33333333-3333-4333-8333-333333333333')
 
@@ -39,7 +40,7 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
     input: { sql: 'SELECT 1' },
   })
   const note = { connection: 'Matriz', concept: 'C', mapping: 'm', provingQuery: 'q' }
-  await runOn(set, 'connector_note_save', note)
+  await runOn(set, 'connector_note_save', note, YES)
   assert.deepEqual(seen[0], {
     connectionId: SANKHYA,
     operation: 'consultar',
@@ -58,7 +59,7 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
   })
 })
 
-test('uma ferramenta chamada fora de uma corrida do Builder lança CONNECTOR_TOOL_WITHOUT_RUN, e nada chega à porta', async () => {
+test('uma leitura fora de uma corrida do Builder lança CONNECTOR_TOOL_WITHOUT_RUN e nada chega à porta; o sim do cartão do caderno, que retoma antes de a corrida tomar o Projeto, grava como uma corrida só dele', async () => {
   const calls: unknown[] = []
   const port: BuilderConnectors = {
     granted: async () => [],
@@ -84,13 +85,18 @@ test('uma ferramenta chamada fora de uma corrida do Builder lança CONNECTOR_TOO
   )
   const set = connectorTools(access, { noteSave: true, save })
   const read = { connection: 'Matriz', operation: 'sankhya.consultar', input: {} }
-  const note = { connection: 'Matriz', concept: 'C', mapping: 'm', provingQuery: 'q' }
   function refusal(error: unknown) {
     return Object(error).details?.reason === 'CONNECTOR_TOOL_WITHOUT_RUN'
   }
   await assert.rejects(runOn(set, 'connector_read', read), refusal)
-  await assert.rejects(runOn(set, 'connector_note_save', note), refusal)
   assert.deepEqual(calls, [])
+  const [matriz] = access.connections
+  assert.ok(matriz)
+  await save(
+    { connectionId: matriz.connectionId, concept: 'C', mapping: 'm', provingQuery: 'q' },
+    new RequestContext(),
+  )
+  assert.equal(calls.length, 1)
 })
 
 function ids() {
@@ -152,7 +158,7 @@ test('a escrita do caderno de um conector que a ligação não tem é NOT_GRANTE
     },
   })
   const note = { connection: 'Matriz', concept: 'C', mapping: 'm', provingQuery: 'q' }
-  assert.deepEqual(await runOn(set, 'connector_note_save', { ...note, connector: 'outro' }), {
+  assert.deepEqual(await runOn(set, 'connector_note_save', { ...note, connector: 'outro' }, YES), {
     kind: 'NOT_GRANTED',
   })
   assert.deepEqual(saved, [])
@@ -176,7 +182,7 @@ test('a escrita do caderno recusa o vazio e o que passa dos limites do conceito,
       await runOn(set, 'connector_note_save', { ...full, [field]: 'x'.repeat(max + 1) }),
     ]
     for (const each of refused) assert.equal(each.error, true, field)
-    const kept = await runOn(set, 'connector_note_save', { ...full, [field]: 'x'.repeat(max) })
+    const kept = await runOn(set, 'connector_note_save', { ...full, [field]: 'x'.repeat(max) }, YES)
     assert.equal(kept.kind, 'SAVED', field)
   }
   assert.equal(saved.length, 3)
@@ -251,4 +257,24 @@ test('uma ligação sem leituras não leva a ferramenta de leitura, mas leva o c
   assert.deepEqual(Object.keys(connectorTools(none, { noteSave: false })), [])
   const noReads = accessOver([{ ...granted('sankhya', SANKHYA), reads: [] }]).access
   assert.deepEqual(Object.keys(connectorTools(noReads, { noteSave: false })), ['connector_notes'])
+})
+
+test('o caderno pede o sim: a primeira chamada suspende com o pedido e nada chega à porta; o não devolve NOT_SAVED e nada chega à porta', async () => {
+  const saved: unknown[] = []
+  const { access } = accessOver([granted('sankhya', SANKHYA)])
+  const set = connectorTools(access, {
+    noteSave: true,
+    save: async (call) => {
+      saved.push(call)
+      return { kind: 'SAVED', provedRows: 1 }
+    },
+  })
+  const note = { connection: 'Matriz', concept: 'C', mapping: 'm', provingQuery: 'q' }
+  const suspended: unknown[] = []
+  const asking = { agent: { suspend: async (payload: unknown) => void suspended.push(payload) } }
+  assert.equal(await runOn(set, 'connector_note_save', note, asking), undefined)
+  assert.deepEqual(suspended, [note])
+  const no = { agent: { resumeData: { approved: false } } }
+  assert.deepEqual(await runOn(set, 'connector_note_save', note, no), { kind: 'NOT_SAVED' })
+  assert.deepEqual(saved, [])
 })

@@ -37,3 +37,15 @@ export function openWriteText(sentAt: string, mark: string): string {
 export function launchedText(code: number): string {
   return `Pedido ${code} lançado, a confirmar.`
 }
+
+/** The words of the notebook's card (U19), from the state matrix. */
+export const NOTE_TEXT = {
+  title: 'Gravar no Caderno?',
+  action: 'gravar no Caderno',
+  concept: 'Conceito',
+  mapping: 'Mapeamento',
+  query: 'Consulta da prova',
+  declined: 'Não gravado.',
+  gone: 'Esta ligação não existe mais. Nada foi gravado.',
+  ask: 'Peça a quem gerencia a ligação.',
+} as const
