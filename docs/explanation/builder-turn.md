@@ -9,7 +9,7 @@ with the version in [the Hub side of an app](hub-apps.md). `builder/` below mean
 
 ## The pieces a turn touches
 
-- One Builder agent for every conversation, made with Mastra's `createCodingAgent`, on one
+- One Builder agent for every conversation, made with Mastra's `Agent` and its task signal, on one
   `AgentController` (`builder/conversation/builder.ts`).
 - A conversation is a Mastra thread in Mastra's database. The Hub's database keeps only an index
   row per conversation, naming its company, Project and person (`builder/conversation/store.ts`).

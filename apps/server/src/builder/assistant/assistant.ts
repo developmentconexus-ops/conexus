@@ -208,7 +208,6 @@ function assistantSpec(deps: Deps, parts: Parts): ConversationSpec {
   return {
     kind: 'assistant',
     name: 'Assistant',
-    base: 'AGENT',
     prompt: {
       kind: 'MESSAGES',
       parts: [

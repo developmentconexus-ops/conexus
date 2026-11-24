@@ -204,7 +204,6 @@ test('a rede só fecha na máquina achada; a pasta que o mkdir não fez derruba 
     assert.equal((await on.machines.read(on.id, 'a.txt', kept())).kind, 'MACHINE_UNAVAILABLE')
   }
   const on = machinesOf(t)
-  on.control.native = true
   const outside = join(on.tuning.workFolder, '..', 'segredo.txt')
   writeFileSync(outside, 'SECRET OUTSIDE')
   symlinkSync(outside, join(on.tuning.workFolder, 'link.txt'))

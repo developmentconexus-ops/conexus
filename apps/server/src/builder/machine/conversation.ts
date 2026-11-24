@@ -258,7 +258,6 @@ class Machines implements ConversationMachines {
         [MARK.template]: template,
       },
       workingDirectory: this.folder,
-      instructions: this.told,
       onStart: ({ outcome }) => this.started(session, outcome),
     })
     const session: Session = {

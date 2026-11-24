@@ -107,6 +107,11 @@ after every agent is registered, and Mastra starts the scheduler only when a sch
 (`builder/mastra/hub-mastra.ts`). On shutdown the scheduler stops first, so nothing fires after
 the signal.
 
+Every schedule row names the workflow `conexus-automation-run`, and that name is a stored
+contract. The scheduler skips a row whose workflow it cannot find and deletes it on the fifth
+consecutive tick, about 50 seconds (`missesBeforeDelete` in `builder/mastra/mastra.ts`), so
+renaming the workflow deletes every automation within that time.
+
 A fire runs the workflow `conexus-automation-run` in three steps:
 
 1. `check` confirms the owner may still create automations. If not, it pauses the automation and

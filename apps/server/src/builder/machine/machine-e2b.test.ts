@@ -14,7 +14,6 @@ import {
   createE2bCodeMode,
   createE2bKit,
   MARK,
-  machineInstructions,
   PACKAGE_HOSTS,
 } from './public.ts'
 import { INSTALLATION, realE2b } from './test-machine.ts'
@@ -24,7 +23,6 @@ const CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000a'
 const IN_APP = {
   allowOut: ALLOWED_HOSTS,
   workingDirectory: APP_FOLDER,
-  instructions: machineInstructions(APP_FOLDER),
 }
 
 test('máquina: o kit de uma máquina achada pelo id só a religa, e nunca faz outra no lugar (B2)', async () => {
@@ -40,7 +38,7 @@ test('máquina: o kit de uma máquina achada pelo id só a religa, e nunca faz o
   assert.equal(options.reattach, 'required')
 })
 
-test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, atrás da lista de domínios, pausando ao vencer, com a marca da conversa, na pasta do app e dizendo ao modelo o que a máquina tem', async () => {
+test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, atrás da lista de domínios, pausando ao vencer, com a marca da conversa, na pasta do app', async () => {
   const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
     id: `conexus-hub-${CONVERSATION}`,
     metadata: { conexus_origin: 'hub.example.test', conexus_conversation: CONVERSATION },
@@ -61,9 +59,6 @@ test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, a
   assert.equal(options.metadata.conexus_origin, 'hub.example.test')
   assert.equal(options.metadata.conexus_conversation, CONVERSATION)
   assert.equal(options.workingDirectory, APP_FOLDER)
-  const told = kit.sandbox.getInstructions?.() ?? ''
-  assert.ok(told.includes(`Commands start in ${APP_FOLDER}`), told)
-  assert.equal(told.includes('Cloud sandbox'), false)
 })
 
 test('máquina: a lista de endereços que quem monta passa é a que o E2B recebe, a do Builder só o npm e a do Assistente também o PyPI (17)', async () => {
@@ -75,7 +70,6 @@ test('máquina: a lista de endereços que quem monta passa é a que o E2B recebe
       onStart: () => undefined,
       allowOut,
       workingDirectory: APP_FOLDER,
-      instructions: 'The test machine.',
     })
     return Reflect.get(kit.sandbox, '_constructorOptions').network
   }
@@ -148,7 +142,6 @@ test('opt-in: no E2B de verdade, a máquina do Assistente instala com pip e npm,
     metadata: { ...mark, [MARK.conversation]: conversation },
     onStart: () => undefined,
     workingDirectory: '/home/user',
-    instructions: 'The test machine.',
   })
   await kit.sandbox.start?.()
   async function run(script: string) {

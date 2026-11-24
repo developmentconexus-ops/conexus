@@ -13,17 +13,18 @@ import {
   sandboxOf,
   world,
 } from './test-machine.ts'
+import { fileTools } from './test-machine-files.ts'
 
 // A machine found again after another conversation of the Projeto moved `main`: its folder keeps the
 // cut turn's work merged onto `main`, and the model is told what did not merge.
 test('máquina: o turno cortado enquanto outra conversa moveu o main: religada, a pasta guarda o trabalho cortado sobre o main', async (t) => {
   const { open, machines, control, repository, folder } = await world(t)
-  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  await fileTools(await open()).writeFile('cut.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
   pausedByE2b(control)
   const after = await open()
-  assert.equal(await after.filesystem?.readFile('cut.ts', { encoding: 'utf-8' }), 'meio\n')
-  assert.equal(await after.filesystem?.readFile('b.ts', { encoding: 'utf-8' }), 'outra\n')
+  assert.equal(await fileTools(after).readFile('cut.ts', { encoding: 'utf-8' }), 'meio\n')
+  assert.equal(await fileTools(after).readFile('b.ts', { encoding: 'utf-8' }), 'outra\n')
   assert.doesNotMatch(await after.getInstructionsAsync(), /conflict/)
   const main = await repository.ensure()
   const bundle = await machines.collect({ conversationId: CONVERSATION })
@@ -34,11 +35,11 @@ test('máquina: o turno cortado enquanto outra conversa moveu o main: religada, 
 
 test('máquina: o turno cortado e outra conversa mudaram a mesma linha: as marcas do conflito ficam no arquivo e o modelo é avisado dos caminhos', async (t) => {
   const { open, control, folder } = await world(t)
-  await (await open()).filesystem?.writeFile('s.ts', 'meio\n')
+  await fileTools(await open()).writeFile('s.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 's.ts', 'outra\n')
   pausedByE2b(control)
   const after = await open()
-  const text = String(await after.filesystem?.readFile('s.ts', { encoding: 'utf-8' }))
+  const text = String(await fileTools(after).readFile('s.ts', { encoding: 'utf-8' }))
   assert.match(text, /^<<<<<<< [^\n]*\noutra\n=======\nmeio\n>>>>>>> /)
   const told = await after.getInstructionsAsync()
   assert.match(told, /conflict markers; resolve them before any other change: `s\.ts`\./)
@@ -47,7 +48,7 @@ test('máquina: o turno cortado e outra conversa mudaram a mesma linha: as marca
 
 test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e o arquivo que o Builder resolveu sai do aviso, com a máquina ainda ligada', async (t) => {
   const { open, machines, repository, control, folder } = await world(t)
-  await (await open()).filesystem?.writeFile('s.ts', 'meio\n')
+  await fileTools(await open()).writeFile('s.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 's.ts', 'outra\n')
   pausedByE2b(control)
   let run = 10
@@ -64,16 +65,16 @@ test('máquina: as marcas que um turno salvou são avisadas no turno seguinte, e
   }
   // The turn that got the notice saves the markers as they are.
   const noticed = await open()
-  assert.equal(await noticed.filesystem?.exists('s.ts'), true)
+  assert.equal(await fileTools(noticed).exists('s.ts'), true)
   assert.doesNotMatch(await noticed.getInstructionsAsync(), /could not merge/)
   await save()
   const next = await open()
-  assert.match(String(await next.filesystem?.readFile('s.ts', { encoding: 'utf-8' })), /^<<<<<<< /)
+  assert.match(String(await fileTools(next).readFile('s.ts', { encoding: 'utf-8' })), /^<<<<<<< /)
   assert.match(await next.getInstructionsAsync(), /resolve them before any other change: `s\.ts`\./)
-  await next.filesystem?.writeFile('s.ts', 'outra\nmeio\n')
+  await fileTools(next).writeFile('s.ts', 'outra\nmeio\n')
   await save()
   const resolved = await open()
-  assert.equal(await resolved.filesystem?.readFile('s.ts', { encoding: 'utf-8' }), 'outra\nmeio\n')
+  assert.equal(await fileTools(resolved).readFile('s.ts', { encoding: 'utf-8' }), 'outra\nmeio\n')
   assert.doesNotMatch(await resolved.getInstructionsAsync(), /conflict/)
 })
 
@@ -81,11 +82,11 @@ test('máquina: o turno cortado mudou um arquivo que o main novo apagou: a cópi
   const { open, control, folder } = await world(t)
   const gitDir = join(folder, 'git', COMPANY, `${PROJECT}.git`)
   moveMain(gitDir, 'd.ts', 'um\n')
-  await (await open()).filesystem?.writeFile('d.ts', 'meio\n')
+  await fileTools(await open()).writeFile('d.ts', 'meio\n')
   moveMain(gitDir, 'd.ts', null)
   pausedByE2b(control)
   const after = await open()
-  assert.equal(await after.filesystem?.readFile('d.ts', { encoding: 'utf-8' }), 'meio\n')
+  assert.equal(await fileTools(after).readFile('d.ts', { encoding: 'utf-8' }), 'meio\n')
   const told = await after.getInstructionsAsync()
   assert.match(told, /deleted in the newer version[^.]*: `d\.ts`\./)
   assert.doesNotMatch(told, /conflict markers/)
@@ -95,11 +96,11 @@ test('máquina: o turno cortado e outra conversa mudaram o mesmo arquivo binári
   const { open, control, folder } = await world(t)
   const gitDir = join(folder, 'git', COMPANY, `${PROJECT}.git`)
   moveMain(gitDir, 'img.bin', 'um\0\n')
-  await (await open()).filesystem?.writeFile('img.bin', 'meio\0\n')
+  await fileTools(await open()).writeFile('img.bin', 'meio\0\n')
   moveMain(gitDir, 'img.bin', 'outra\0\n')
   pausedByE2b(control)
   const after = await open()
-  assert.equal(await after.filesystem?.readFile('img.bin', { encoding: 'utf-8' }), 'outra\0\n')
+  assert.equal(await fileTools(after).readFile('img.bin', { encoding: 'utf-8' }), 'outra\0\n')
   const told = await after.getInstructionsAsync()
   assert.match(told, /could not merge: redo the change where the app needs it: `img\.bin`\./)
   assert.doesNotMatch(told, /conflict markers/)
@@ -113,7 +114,7 @@ test('máquina: uma máquina nova sobre um main que guarda marcas de conflito: o
     '<<<<<<< main\noutra\n=======\nmeio\n>>>>>>> cut\n',
   )
   const created = await open()
-  assert.equal(await created.filesystem?.exists('s.ts'), true)
+  assert.equal(await fileTools(created).exists('s.ts'), true)
   assert.match(
     await created.getInstructionsAsync(),
     /conflict markers; resolve them before any other change: `s\.ts`\./,
@@ -125,16 +126,13 @@ test('máquina: a religada cujo main não se integra falha com a causa nomeada e
   const here = await world(t, 5_000, INSTALLATION, async () =>
     broken ? Buffer.from('not a bundle') : here.repository.bundleOfMain(),
   )
-  await (await here.open()).filesystem?.writeFile('a.ts', 'um\n')
+  await fileTools(await here.open()).writeFile('a.ts', 'um\n')
   broken = true
   pausedByE2b(here.control)
-  await assert.rejects(
-    (await here.open()).filesystem?.exists('a.ts') ?? Promise.reject(),
-    /sync failed/,
-  )
+  await assert.rejects(fileTools(await here.open()).exists('a.ts'), /sync failed/)
   assert.deepEqual(here.errors, ['MACHINE_SYNC_FAILED'])
   const restarted = here.restartHub()
-  await assert.rejects((await restarted.open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
+  await assert.rejects(fileTools(await restarted.open()).exists('a.ts'), {
     code: 'MACHINE_UNAVAILABLE',
   })
   assert.deepEqual(here.errors, [
@@ -147,15 +145,15 @@ test('máquina: a religada cujo main não se integra falha com a causa nomeada e
 
 test('máquina: o trabalho cortado que o turno seguinte juntou ao main continua na pasta quando esse turno termina sem salvar', async (t) => {
   const { open, machines, control, folder } = await world(t)
-  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  await fileTools(await open()).writeFile('cut.ts', 'meio\n')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
   pausedByE2b(control)
   const next = await open()
-  assert.equal(await next.filesystem?.exists('cut.ts'), true, 'the sync kept the cut work')
+  assert.equal(await fileTools(next).exists('cut.ts'), true, 'the sync kept the cut work')
   await machines.release(CONVERSATION)
   const third = await open()
-  assert.equal(await third.filesystem?.exists('cut.ts'), true, 'an unsaved turn does not drop it')
-  assert.equal(await third.filesystem?.exists('b.ts'), true)
+  assert.equal(await fileTools(third).exists('cut.ts'), true, 'an unsaved turn does not drop it')
+  assert.equal(await fileTools(third).exists('b.ts'), true)
 })
 
 test('máquina: o trabalho não guardado que o Hub recusaria por tamanho ou por quantidade de arquivos é dito ao modelo, que o enxuga antes de qualquer outra mudança', async (t) => {
@@ -169,7 +167,7 @@ test('máquina: o trabalho não guardado que o Hub recusaria por tamanho ou por 
   await machines.release(CONVERSATION)
   pausedByE2b(control)
   const next = await open()
-  assert.equal(await next.filesystem?.exists('big.bin'), true)
+  assert.equal(await fileTools(next).exists('big.bin'), true)
   const told = await next.getInstructionsAsync()
   assert.match(told, /too many files to save[^.]*remove what the app does not need/)
   assert.match(told, /too large to save[^.]*remove what the app does not need/)
@@ -177,56 +175,53 @@ test('máquina: o trabalho não guardado que o Hub recusaria por tamanho ou por 
 
 test('máquina: o trabalho não guardado que cabe no que o Hub aceita não leva aviso de tamanho', async (t) => {
   const { open, machines } = await world(t)
-  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  await fileTools(await open()).writeFile('cut.ts', 'meio\n')
   await machines.release(CONVERSATION)
   const next = await open()
-  assert.equal(await next.filesystem?.exists('cut.ts'), true)
+  assert.equal(await fileTools(next).exists('cut.ts'), true)
   assert.doesNotMatch(await next.getInstructionsAsync(), /too large|too many files/)
 })
 
 test('máquina: um comando da máquina que não termina no prazo falha a religada com a causa nomeada, em vez de segurar a conversa até o fim da máquina', async (t) => {
   const here = await world(t)
-  await (await here.open()).filesystem?.writeFile('a.ts', 'um\n')
+  await fileTools(await here.open()).writeFile('a.ts', 'um\n')
   const hook = join(here.folder, 'app', '.git', 'hooks', 'post-checkout')
   writeFileSync(hook, '#!/bin/sh\nsleep 20\n')
   chmodSync(hook, 0o755)
   pausedByE2b(here.control)
   const started = Date.now()
-  await assert.rejects(
-    (await here.openWithCommandMs(400)).filesystem?.exists('a.ts') ?? Promise.reject(),
-    {
-      code: 'MACHINE_UNAVAILABLE',
-    },
-  )
+  await assert.rejects(fileTools(await here.openWithCommandMs(400)).exists('a.ts'), {
+    code: 'MACHINE_UNAVAILABLE',
+  })
   assert.ok(Date.now() - started < 4_000, 'the sync gave up at its own budget')
   assert.deepEqual(here.errors, ['MACHINE_SYNC_FAILED', 'MACHINE_UNAVAILABLE'])
 })
 
 test('máquina: um index.lock que um git morto deixou na pasta não prende a conversa: a religada o tira e junta o trabalho não guardado', async (t) => {
   const { open, control, folder } = await world(t)
-  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  await fileTools(await open()).writeFile('cut.ts', 'meio\n')
   writeFileSync(join(folder, 'app', '.git', 'index.lock'), '')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
   pausedByE2b(control)
   const after = await open()
-  assert.equal(await after.filesystem?.exists('cut.ts'), true)
-  assert.equal(await after.filesystem?.exists('b.ts'), true)
+  assert.equal(await fileTools(after).exists('cut.ts'), true)
+  assert.equal(await fileTools(after).exists('b.ts'), true)
 })
 
 test('máquina: o lock do índice próprio da junção, que um git morto deixou, não prende a conversa: a religada o tira e junta o trabalho não guardado', async (t) => {
   const { open, control, folder } = await world(t)
-  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  await fileTools(await open()).writeFile('cut.ts', 'meio\n')
   writeFileSync(join(folder, 'app', '.git', 'conexus-sync-index.lock'), '')
   moveMain(join(folder, 'git', COMPANY, `${PROJECT}.git`), 'b.ts', 'outra\n')
   pausedByE2b(control)
   const after = await open()
-  assert.equal(await after.filesystem?.exists('cut.ts'), true)
-  assert.equal(await after.filesystem?.exists('b.ts'), true)
+  assert.equal(await fileTools(after).exists('cut.ts'), true)
+  assert.equal(await fileTools(after).exists('b.ts'), true)
 })
 
 test('máquina: o lock do índice de um guardar que o prazo cortou não impede o guardar seguinte', async (t) => {
   const { open, machines, folder } = await world(t)
-  await (await open()).filesystem?.writeFile('cut.ts', 'meio\n')
+  await fileTools(await open()).writeFile('cut.ts', 'meio\n')
   writeFileSync(join(folder, 'app', '.git', 'conexus-index.lock'), '')
   const bundle = await machines.collect({ conversationId: CONVERSATION })
   assert.ok(typeof bundle === 'object', `the turn is collected, not ${String(bundle)}`)
@@ -241,6 +236,6 @@ test('máquina: um arquivo com uma linha que só começa como marca de conflito 
     '<<<<<<< é só o exemplo de uma marca\ntexto\n',
   )
   const created = await open()
-  assert.equal(await created.filesystem?.exists('doc.md'), true)
+  assert.equal(await fileTools(created).exists('doc.md'), true)
   assert.doesNotMatch(await created.getInstructionsAsync(), /conflict/)
 })

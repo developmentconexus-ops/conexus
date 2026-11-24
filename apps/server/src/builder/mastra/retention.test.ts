@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { Mastra } from '@mastra/core/mastra'
 import { createTestDatabase } from '../../platform/test-database.ts'
 import { createMastraStorage } from '../conversation/public.ts'
+import { retentionOf } from './public.ts'
 
 const DAY_MS = 86_400_000
 const TABLE = 'mastra.mastra_span_events'
@@ -57,4 +59,41 @@ test('a limpeza tira os dias vencidos', { timeout: 60_000 }, async (t) => {
     left.rows.map((row) => row.traceId),
     [kept],
   )
+})
+
+test('a poda que parou no limite de linhas deixa uma linha com o nome do passo e mais nada', {
+  timeout: 60_000,
+}, async (t) => {
+  const { mastraPool: pool } = await createTestDatabase(t)
+  const storage = createMastraStorage(pool)
+  t.after(() => storage.close())
+  await storage.init()
+  for (const daysAgo of [16, 17]) {
+    const old = dayOf(daysAgo)
+    await pool.query(
+      `CREATE TABLE mastra."mastra_span_events_p${old.suffix}" (LIKE ${TABLE} INCLUDING ALL)`,
+    )
+    await pool.query(
+      `ALTER TABLE ${TABLE} ATTACH PARTITION mastra."mastra_span_events_p${old.suffix}" FOR VALUES FROM ('${old.start}') TO ('${old.end}')`,
+    )
+    await pool.query(
+      `INSERT INTO ${TABLE} ("traceId", "spanId", "startedAt", "endedAt", "name", "spanType")
+       VALUES ($1, $2, $3::timestamptz, $3::timestamptz, 'span', 'agent_run')`,
+      [randomUUID(), randomUUID(), new Date(Date.parse(old.start) + 3_600_000).toISOString()],
+    )
+  }
+  const lines: { fields: Record<string, unknown>; message: string }[] = []
+  const log = {
+    info: (fields: Record<string, unknown>, message: string) =>
+      void lines.push({ fields, message }),
+    error: () => undefined,
+  }
+  const retention = retentionOf({ log, maxRows: 1 })
+  const mastra = new Mastra({ storage, workflows: { [retention.id]: retention } })
+  const run = await mastra.getWorkflow(retention.id).createRun()
+
+  const stopped = await run.start({ inputData: {} })
+  assert.equal(stopped.status, 'success')
+  assert.deepEqual(Object(stopped).result, { done: false })
+  assert.deepEqual(lines, [{ fields: { step: 'prune' }, message: 'RETENTION_STILL_DRAINING' }])
 })

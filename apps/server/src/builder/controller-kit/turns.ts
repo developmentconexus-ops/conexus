@@ -70,14 +70,12 @@ export function turnProcessor(options: {
  * in the accounts' queue (step 11) as Mastra reads its input, by the controller's `take`, through
  * `turnProcessor`; a resumed one takes it at its first step. The turn lets go of its accounts when the
  * controller says the run ended (`agent_end`), for every end: done, failed, stopped by Parar or by
- * the Hub's end, and then `ended` runs; a deleted session's run ends without one, so its deletion
- * lets go too. `take` answers `undefined` for a run that is not one of its conversations; the turn it
+ * the Hub's end; a deleted session's run ends without one, so its deletion lets go too. `take` answers `undefined` for a run that is not one of its conversations; the turn it
  * answers is put on the run's context by the processor, once, so no `take` has to.
  */
 export function sessionTurns(options: {
   id: string
   take: (requestContext: RequestContext) => Promise<Turn | undefined>
-  ended?: (sessionId: ConversationId) => void
 }) {
   const held = new Map<ConversationId, { turn: Turn; requestContext: RequestContext }>()
   const deleted = new WeakSet<RequestContext>()
@@ -121,7 +119,6 @@ export function sessionTurns(options: {
       session.subscribe((event) => {
         if (event.type !== 'agent_end') return
         letGo(sessionId)
-        options.ended?.(sessionId)
       })
     })
     controller.onSessionDeleted((session) => {

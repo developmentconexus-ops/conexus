@@ -236,7 +236,6 @@ class BuilderMachines implements Machines {
         [MARK.template]: this.deps.template,
       },
       workingDirectory: this.workdir,
-      instructions: machineInstructions(this.workdir),
       onStart: ({ outcome }) => this.onStart(session, outcome),
     })
     const session: Session = {

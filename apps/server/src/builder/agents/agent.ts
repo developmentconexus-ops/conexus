@@ -303,7 +303,6 @@ export function agentOf(deps: AgentDeps, frozen: Frozen): Agent {
       id: agentKey(frozen.agentId),
       name: frozen.name,
       description: frozen.description,
-      base: 'AGENT',
       prompt: {
         kind: 'MESSAGES',
         parts: [

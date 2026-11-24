@@ -76,7 +76,6 @@ test('a tela que recebe 500 reprova o fim do turno com o relatório do navegador
   const subject = await conversing(t, answer)
   hub = subject.hub
   hub.builder.knobs.seeing = { ok: true, value: DIRTY }
-  hub.builder.control.native = true
   checking(hub.builder.folder, [])
   const { ana, conversations } = subject
   const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')

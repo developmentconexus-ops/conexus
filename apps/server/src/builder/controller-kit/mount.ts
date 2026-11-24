@@ -1,7 +1,6 @@
 import type { AgentConfig, AgentInstructions, ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { AgentController } from '@mastra/core/agent-controller'
-import { createCodingAgent } from '@mastra/core/coding-agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -52,7 +51,6 @@ function instructionsOf(prompt: Prompt): AgentConfig['instructions'] {
   switch (prompt.kind) {
     case 'MESSAGES':
       return ({ requestContext }) => messagesOf(prompt.parts, requestContext)
-    case 'ONE_STRING':
     case 'DELEGATED':
       return ({ requestContext }) => prompt.of(requestContext)
     default:
@@ -109,7 +107,10 @@ function askingOnlyByOwnRule(tools: ToolsInput): ToolsInput {
   )
 }
 
-async function toolsOfSpec(spec: AgentSpec, requestContext: RequestContext): Promise<ToolsInput> {
+async function toolsOfSpec(
+  spec: Pick<AgentSpec, 'tools' | 'approval'>,
+  requestContext: RequestContext,
+): Promise<ToolsInput> {
   const tools = await spec.tools(requestContext)
   switch (spec.approval.kind) {
     case 'NOTHING_ASKS':
@@ -133,18 +134,6 @@ export function initialStateOf(approval: Approval): Readonly<{ yolo: boolean }> 
   }
 }
 
-/** `createCodingAgent` reads a missing `workspace` key as a local machine (`NM/coding-agent/index.js:221`); the ficha never gives one, so the key is always there, `undefined`. */
-function agentOfBase(base: AgentSpec['base'], config: AgentConfig): Agent {
-  switch (base) {
-    case 'AGENT':
-      return new Agent(config)
-    case 'CODING_AGENT':
-      return createCodingAgent({ ...config, workspace: undefined })
-    default:
-      return base satisfies never
-  }
-}
-
 /**
  * The one place that calls Mastra's agent constructor for the agents on a ficha, with the turn's
  * processor made from `spec.turn`, the tools under the ficha's regime, the judge as the default
@@ -155,27 +144,22 @@ export function agentOfSpec(
   spec: AgentSpec,
   deps: { queue: QueueDeps },
 ): Readonly<{ agent: Agent; watch?: (controller: AgentController) => void }> {
-  const turns = turnsOf(spec.turn)
-  const defaults = agentDefaults(deps.queue, turns, spec.processors)
+  const { prompt, model, tools, approval, memory, turn, processors, judge, ...native } = spec
+  const turns = turnsOf(turn)
+  const defaults = agentDefaults(deps.queue, turns, processors)
   const config: AgentConfig = {
-    id: spec.id,
-    name: spec.name,
-    ...(spec.description === undefined ? {} : { description: spec.description }),
-    instructions: instructionsOf(spec.prompt),
-    model: modelOf(spec.model),
-    tools: ({ requestContext }) => toolsOfSpec(spec, requestContext),
+    ...native,
+    instructions: instructionsOf(prompt),
+    model: modelOf(model),
+    tools: ({ requestContext }) => toolsOfSpec({ tools, approval }, requestContext),
     ...defaults,
-    ...(spec.judge === undefined
+    ...(judge === undefined
       ? {}
-      : { defaultOptions: { ...defaults.defaultOptions, isTaskComplete: spec.judge } }),
-    memory: spec.memory,
-    ...(spec.skills === undefined ? {} : { skills: spec.skills }),
-    ...(spec.signals === undefined ? {} : { signals: spec.signals }),
-    ...(spec.scopes === undefined ? {} : { scopes: spec.scopes }),
-    ...(spec.knowledge === undefined ? {} : { knowledge: spec.knowledge }),
+      : { defaultOptions: { ...defaults.defaultOptions, isTaskComplete: judge } }),
+    memory,
   }
   return {
-    agent: agentOfBase(spec.base, config),
+    agent: new Agent(config),
     ...('watch' in turns ? { watch: turns.watch } : {}),
   }
 }
