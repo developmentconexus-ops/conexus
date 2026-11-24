@@ -7,8 +7,7 @@ export const lake = pgSchema('lake')
 
 // The company's one data lake. The stack in AWS is the truth; `state` is the last state the Hub
 // saw, and the row says whose lake it is and where to ask for it. company_id is only the company's
-// id, which identity owns, with no foreign key between owners (data D17). Only the Central reaches
-// a row: the company's own login sees none (data D11, founder 2026-11-22, "2. A").
+// id, which identity owns, with no foreign key between owners (data D17).
 export const companyLake = lake.table(
   'company_lake',
   {
@@ -45,6 +44,7 @@ export const companyLake = lake.table(
       'company_lake_failure_code',
       sql`${table.failure} IS NULL OR ${table.failure} = 'LAKE_CREATE_FAILED'`,
     ),
+    policy(SCOPE_ROLES.COMPANY, 'select', sql`company_id = ${scoped.companyId}`),
     // The Central reaches every row to read and write, and one company's to delete.
     ...(['select', 'insert', 'update'] as const).map((verb) =>
       policy(SCOPE_ROLES.OPERATOR, verb, ADMINISTRATOR),

@@ -8,6 +8,7 @@ ALTER SCHEMA apps OWNER TO test_owner;
 ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA builder OWNER TO test_owner;
 ALTER SCHEMA connectors OWNER TO test_owner;
+ALTER SCHEMA copies OWNER TO test_owner;
 ALTER SCHEMA data OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
@@ -33,6 +34,8 @@ ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
 ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 ALTER FUNCTION connectors.companies_with_seals() OWNER TO hub_connection_seals;
+-- The lake copy, part 1 (D11, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a link for another person to fill a connection's credential, found by one function owned by a role that cannot log in; only hub_runtime executes it.
+ALTER FUNCTION connectors.link_of(secret_hash text) OWNER TO hub_links;
 ALTER FUNCTION connectors.sealed_of(connection uuid) OWNER TO hub_connection_seals;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
 ALTER FUNCTION projects.apps_of_person(person text) OWNER TO hub_app_people;
@@ -75,9 +78,14 @@ ALTER TABLE builder.person_model_default OWNER TO test_owner;
 ALTER TABLE builder.tool OWNER TO test_owner;
 ALTER TABLE builder.tool_version OWNER TO test_owner;
 ALTER TABLE connectors.connection OWNER TO test_owner;
+ALTER TABLE connectors.connection_link OWNER TO test_owner;
 ALTER TABLE connectors.connection_sign_in OWNER TO test_owner;
 ALTER TABLE connectors.connector_write OWNER TO test_owner;
 ALTER TABLE connectors.project_connection OWNER TO test_owner;
+ALTER TABLE copies.lake_copy OWNER TO test_owner;
+ALTER TABLE copies.lake_run OWNER TO test_owner;
+ALTER TABLE copies.lake_table OWNER TO test_owner;
+ALTER TABLE copies.lake_table_run OWNER TO test_owner;
 ALTER TABLE data.data_read OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
@@ -138,12 +146,15 @@ GRANT USAGE ON SCHEMA connectors TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 GRANT USAGE ON SCHEMA connectors TO hub_connection_seals;
 GRANT USAGE ON SCHEMA connectors TO hub_runtime;
+GRANT USAGE ON SCHEMA connectors TO hub_links;
+GRANT USAGE ON SCHEMA copies TO hub_company;
 GRANT USAGE ON SCHEMA data TO hub_company;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 -- The company's lake (data D11, founder 2026-11-22, "2. A", decision G): the Central's login reads,
 -- creates, changes the state of and deletes a lake's row; a company's login sees none.
 GRANT USAGE ON SCHEMA lake TO hub_operator;
+GRANT USAGE ON SCHEMA lake TO hub_company;
 GRANT USAGE ON SCHEMA notifications TO hub_company;
 GRANT USAGE ON SCHEMA ontology TO hub_company;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
@@ -172,6 +183,8 @@ GRANT ALL ON FUNCTION builder.sealed_of(account uuid) TO hub_company;
 -- Step 19 (D11, founder 2026-10-29, "Aprovado"): the connections of a company, the role that reads their seals and what each role may do with them.
 REVOKE ALL ON FUNCTION connectors.companies_with_seals() FROM PUBLIC;
 GRANT ALL ON FUNCTION connectors.companies_with_seals() TO hub_runtime;
+REVOKE ALL ON FUNCTION connectors.link_of(secret_hash text) FROM PUBLIC;
+GRANT ALL ON FUNCTION connectors.link_of(secret_hash text) TO hub_runtime;
 REVOKE ALL ON FUNCTION connectors.sealed_of(connection uuid) FROM PUBLIC;
 GRANT ALL ON FUNCTION connectors.sealed_of(connection uuid) TO hub_company;
 -- Step 18 (D11, founder 2026-10-28, "aPROVO PAGINA"): who uses an app and the Projects of one person.
@@ -361,6 +374,22 @@ GRANT SELECT(account_label),UPDATE(account_label) ON TABLE connectors.connection
 -- Step 20 (D11, founder 2026-10-30, "1 aprovo"): a company's routes grant a Projeto a connection and
 -- take it back, and read and change a connection's notes.
 GRANT SELECT(notes),UPDATE(notes) ON TABLE connectors.connection TO hub_company;
+-- The lake copy, part 1 (D11, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a company's routes make, read and spend their links, and never read the digest of a secret; hub_links reads the columns link_of returns and filters by.
+GRANT INSERT,DELETE ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(id) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(id) ON TABLE connectors.connection_link TO hub_links;
+GRANT SELECT(company_id) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(company_id) ON TABLE connectors.connection_link TO hub_links;
+GRANT SELECT(connector_id) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(name) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(secret_hash) ON TABLE connectors.connection_link TO hub_links;
+GRANT SELECT(asked) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(sealed) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(key_id) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(created_by) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(created_by) ON TABLE connectors.connection_link TO hub_links;
+GRANT SELECT(expires_at) ON TABLE connectors.connection_link TO hub_company;
+GRANT SELECT(expires_at) ON TABLE connectors.connection_link TO hub_links;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.connection_sign_in TO hub_company;
 -- Step 24.5, U1, the founder's word on the card (D11, page approval "Sim"): a company's routes read and
 -- record each write an agent sends to an outside system, and finish its record with the state and the
@@ -369,14 +398,25 @@ GRANT SELECT,INSERT ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(state) ON TABLE connectors.connector_write TO hub_company;
 GRANT UPDATE(answer) ON TABLE connectors.connector_write TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE connectors.project_connection TO hub_company;
+-- The lake copy, part 1 (D11, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a company's routes keep the four tables of its copies.
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE copies.lake_copy TO hub_company;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE copies.lake_run TO hub_company;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE copies.lake_table TO hub_company;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE copies.lake_table_run TO hub_company;
 -- A governança mínima, grupo 3, founder 2026-11-15 ("P2 Okay"), in the pull request of its own (data D11; E4a): a
 -- company's routes record each read of the company's data and list them; the Hub never changes or deletes one.
 GRANT SELECT,INSERT ON TABLE data.data_read TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 GRANT SELECT,INSERT,DELETE ON TABLE lake.company_lake TO hub_operator;
+-- The lake copy, part 1 (D11, decision H, founder 2026-11-24, asked "Pode dar a palavra?", answered "Sim"): a company's login reads its own lake's row, five columns of it, and writes none.
+GRANT SELECT(company_id) ON TABLE lake.company_lake TO hub_company;
 GRANT UPDATE(lake_id) ON TABLE lake.company_lake TO hub_operator;
+GRANT SELECT(lake_id) ON TABLE lake.company_lake TO hub_company;
 GRANT UPDATE(state) ON TABLE lake.company_lake TO hub_operator;
+GRANT SELECT(state) ON TABLE lake.company_lake TO hub_company;
+GRANT SELECT(account) ON TABLE lake.company_lake TO hub_company;
+GRANT SELECT(region) ON TABLE lake.company_lake TO hub_company;
 GRANT UPDATE(template) ON TABLE lake.company_lake TO hub_operator;
 GRANT UPDATE(stack_id) ON TABLE lake.company_lake TO hub_operator;
 GRANT UPDATE(since) ON TABLE lake.company_lake TO hub_operator;
@@ -491,6 +531,8 @@ CREATE ROLE hub_hosts;
 ALTER ROLE hub_hosts WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_invitation;
 ALTER ROLE hub_invitation WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE hub_links;
+ALTER ROLE hub_links WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 -- Step 11: the owner of builder.sealed_of and builder.companies_with_seals.
 CREATE ROLE hub_model_seals;
 ALTER ROLE hub_model_seals WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
@@ -520,6 +562,7 @@ GRANT hub_connection_seals TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET F
 GRANT hub_hosts TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_invitation TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_invitation TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
+GRANT hub_links TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_model_seals TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_operator TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_operator TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;

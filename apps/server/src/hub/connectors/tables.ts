@@ -247,3 +247,41 @@ export const connectorWrite = connectors.table(
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
+
+export const connectionLink = connectors.table(
+  'connection_link',
+  {
+    id: uuid('id').primaryKey(),
+    companyId: text('company_id').notNull(),
+    connectorId: text('connector_id').notNull(),
+    name: text('name').notNull(),
+    secretHash: text('secret_hash').notNull(),
+    asked: text('asked').array().notNull(),
+    sealed: bytea('sealed'),
+    keyId: text('key_id'),
+    createdBy: text('created_by').notNull(),
+    expiresAt: instant('expires_at').notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'connection_link_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
+    unique('connection_link_secret_hash_key').on(table.secretHash),
+    check('connection_link_secret_hash', sql`${table.secretHash} ~ '^[0-9a-f]{64}$'`),
+    check(
+      'connection_link_name',
+      sql`char_length(${table.name}) BETWEEN 1 AND 60 AND ${table.name} = btrim(${table.name})`,
+    ),
+    check('connection_link_connector_id', sql`${table.connectorId} ~ '^[a-z][a-z0-9-]{1,31}$'`),
+    check('connection_link_asked', sql`cardinality(${table.asked}) >= 1`),
+    check('connection_link_sealed', sql`(${table.sealed} IS NULL) = (${table.keyId} IS NULL)`),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+    pgPolicy('connection_link_links_select', {
+      for: 'select',
+      to: 'hub_links',
+      using: sql`true`,
+    }),
+  ],
+)

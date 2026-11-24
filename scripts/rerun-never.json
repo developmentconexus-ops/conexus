@@ -587,6 +587,14 @@
       "name": "quem saiu da empresa recebe a lista vazia e NOT_GRANTED"
     },
     {
+      "file": "apps/server/src/hub/connectors/connection-link-table.test.ts",
+      "name": "o link: a empresa o faz, o lê e o gasta, e nunca lê o resumo nem o link de outra"
+    },
+    {
+      "file": "apps/server/src/hub/connectors/connection-link-table.test.ts",
+      "name": "o link: o login do Hub o acha só por connectors.link_of, vivo, pelo resumo"
+    },
+    {
       "file": "apps/server/src/hub/connectors/connections-several.test.ts",
       "name": "o id de outra empresa dá 404 no Testar, no Desligar e no getConnection"
     },
@@ -625,6 +633,10 @@
     {
       "file": "apps/server/src/hub/connectors/write.test.ts",
       "name": "o pedido sem resposta \\(a\\): uma linha SENDING de outra chamada faz WRITE_OPEN com a marca dela, sem gravar nem enviar"
+    },
+    {
+      "file": "apps/server/src/hub/copies/lake-tables-owned.test.ts",
+      "name": "a empresa lê e grava as quatro tabelas da sua cópia, e de nenhuma outra"
     },
     {
       "file": "apps/server/src/hub/identity/companies.test.ts",
@@ -861,6 +873,10 @@
     {
       "file": "apps/server/src/hub/identity/sign-up.test.ts",
       "name": "empresa só pela Central"
+    },
+    {
+      "file": "apps/server/src/hub/lake/tables.test.ts",
+      "name": "a empresa lê a sua linha"
     },
     {
       "file": "apps/server/src/hub/notifications/notifications.test.ts",
