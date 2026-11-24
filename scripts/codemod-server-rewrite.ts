@@ -1,6 +1,6 @@
 import { posix } from 'node:path'
 import type { Binding, Named, Ref } from './codemod-imports.ts'
-import { isDoor, isTest, otherSpecifiers, parse, resolved } from './codemod-imports.ts'
+import { isTest, otherSpecifiers, parse, resolved } from './codemod-imports.ts'
 import type { Graph, Plan } from './codemod-server-plan.ts'
 import { isHelper, reached, subjectOf } from './codemod-server-plan.ts'
 
@@ -9,6 +9,11 @@ export type Surface = Map<string, Map<string, Named>>
 type Edit = { start: number; end: number; text: string }
 
 type Context = { graph: Graph; plan: Plan; surface: Surface }
+
+/** A subject's door: its public.ts, or the public-<name>.ts that holds its tables. */
+function isAnyDoor(file: string): boolean {
+  return /(^|\/)public(-[a-z]+)?\.tsx?$/.test(file)
+}
 
 export function relativeTo(from: string, to: string): string {
   const path = posix.relative(posix.dirname(from), to)
@@ -47,7 +52,7 @@ function register(surface: Surface, into: string, name: Binding): void {
 function sourceOf(context: Context, at: string, ref: Ref, name: Binding, target: string): string {
   const { plan, graph } = context
   const into = plan.newOf(target)
-  if (isDoor(ref.target) && !graph.doors.has(ref.target)) return plan.newOf(ref.target)
+  if (isAnyDoor(ref.target) && !graph.doors.has(ref.target)) return plan.newOf(ref.target)
   const subject = subjectOf(into)
   const direct = !graph.doors.has(ref.target) || into === target
   const inside = subject !== undefined && subject === subjectOf(at)
