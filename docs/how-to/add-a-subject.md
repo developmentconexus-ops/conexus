@@ -3,7 +3,7 @@
 A subject is a folder that holds one product theme ([0003](../decisions/0003-repository-shape.md)):
 its routes, tables, tests and a `public.ts`. This page lists what a new Hub subject with tables, an
 agent tool and a screen touches, in order, and which part of the repository refuses a missing
-step. Start from `apps/server/src/hub/copies/`, the most recent one. `apps/server/src/hub/ontology/`
+step. Start from `apps/server/src/hub/lake/`, a complete one. `apps/server/src/hub/ontology/`
 shows a subject that stops at the tables.
 
 A step that says "nothing refuses it" is held by the review alone. Nothing refuses a subject
