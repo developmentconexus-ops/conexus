@@ -142,7 +142,7 @@ function idOf(url: string) {
 
 test('a máquina: apagar as conversas — pela pessoa, pelo Projeto e pela empresa — mata as máquinas delas, e de nenhuma outra (21)', async (t) => {
   const on = await spread(t)
-  const { killed } = on.hub.assistantMachines
+  const { killed } = on.hub.conversationMachines
   const removed = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${on.carla.id}`)
   assert.equal(removed.statusCode, 204, removed.body)
   assert.deepEqual(
@@ -175,7 +175,7 @@ test('a máquina: remover a empresa mata as máquinas de todas as conversas dela
   assert.equal(deleted.statusCode, 204, deleted.body)
   const { anaHome, anaProject, carlaHome, carlaProject } = on.urls
   assert.deepEqual(
-    [...on.hub.assistantMachines.killed].sort(),
+    [...on.hub.conversationMachines.killed].sort(),
     [anaHome, anaProject, carlaHome, carlaProject].map(idOf).sort(),
   )
 })

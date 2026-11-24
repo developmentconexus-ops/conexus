@@ -28,10 +28,10 @@ function fileOf(url: string, path: string) {
 
 /** The provider holds the conversation's machine, as E2B does after the turn: a download finds it by its name. */
 function provided(
-  on: { hub: { assistantMachines: { control: { discoverable: string[] } } } },
+  on: { hub: { conversationMachines: { control: { discoverable: string[] } } } },
   url: string,
 ) {
-  on.hub.assistantMachines.control.discoverable.push(
+  on.hub.conversationMachines.control.discoverable.push(
     `conexus-${INSTALLATION}-${url.slice(url.lastIndexOf('/') + 1)}`,
   )
 }
@@ -131,18 +131,18 @@ test('o arquivo: acima do teto, FILE_TOO_LARGE; a máquina perdida, FILE_GONE; a
   const gone = await call(beside, big.ana, 'GET', fileOf(bigUrl, 'grande.bin'))
   assert.deepEqual([gone.statusCode, codeOf(gone)], [410, 'FILE_GONE'])
   assert.equal(titleOf(gone), 'A máquina desta conversa não guarda mais este arquivo.')
-  assert.equal(beside.assistantMachines.control.names.length, 0, 'none was started (B2)')
+  assert.equal(beside.conversationMachines.control.names.length, 0, 'none was started (B2)')
 
   const down = await assisting(t, [[said('Oi.')]])
   const downUrl = await created(down.hub, down.ana, down.assistant, { connections: [] })
-  down.hub.assistantMachines.control.start = 'unreachable'
+  down.hub.conversationMachines.control.start = 'unreachable'
   const unavailable = await call(down.hub, down.ana, 'GET', fileOf(downUrl, 'relatorio.csv'))
   assert.deepEqual([unavailable.statusCode, codeOf(unavailable)], [503, 'MACHINE_UNAVAILABLE'])
 })
 
 test('o download de uma máquina que o Hub guarda, ainda ligada depois do turno: lê por ela, sem procurar no provedor e sem pausá-la (B2)', async (t) => {
   const on = await withFile(t)
-  const { control, killed } = on.hub.assistantMachines
+  const { control, killed } = on.hub.conversationMachines
   const started = control.names.length
   control.findFails = 1
   const got = await call(on.hub, on.ana, 'GET', fileOf(on.url, 'relatorio.csv'))
@@ -156,7 +156,7 @@ test('o download de uma máquina que o Hub guarda, ainda ligada depois do turno:
 
 test('o arquivo de uma máquina de outro molde baixa', async (t) => {
   const on = await withFile(t)
-  const { control } = on.hub.assistantMachines
+  const { control } = on.hub.conversationMachines
   const name = `conexus-${INSTALLATION}-${on.url.slice(on.url.lastIndexOf('/') + 1)}`
   control.templates[name] = OLD_TEMPLATE
   const got = await call(on.hub, on.ana, 'GET', fileOf(on.url, 'relatorio.csv'))
@@ -177,7 +177,7 @@ test('o download que o navegador abandona, num soquete de verdade: sair no meio 
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Escreva')), 'complete')
   provided(on, url)
-  const { control } = on.hub.assistantMachines
+  const { control } = on.hub.conversationMachines
   control.chunkMs = 50
   const reading = Promise.withResolvers<void>()
   control.beforeRead = () => reading.resolve()

@@ -41,7 +41,7 @@ test('show_file: um Markdown, texto ou CSV de até 64 KB sai com o conteúdo, e 
   const [output] = await shown(on, url)
   assert.deepEqual(output, {
     kind: 'TEXT',
-    path: join(on.hub.assistantMachines.folder, 'work', 'relatorio.md'),
+    path: join(on.hub.conversationMachines.folder, 'work', 'relatorio.md'),
     name: 'relatorio.md',
     media: 'text/markdown',
     content: '# Vendas\n\nTotal: 10',
@@ -134,7 +134,7 @@ test('show_file: na máquina com API de arquivos própria, o link para fora feit
 
 test('show_file: a máquina que não liga é recusada com MACHINE_UNAVAILABLE (19)', async (t) => {
   const on = await assisting(t, [[show('a.md')], [said('Não consegui.')]])
-  on.hub.assistantMachines.control.start = 'unreachable'
+  on.hub.conversationMachines.control.start = 'unreachable'
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Mostre')), 'complete')

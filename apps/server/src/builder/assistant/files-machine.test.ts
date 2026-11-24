@@ -55,10 +55,10 @@ test('o teto é o da rota', async (t) => {
   assert.ok(call)
   assert.deepEqual(documentsIn(call), [])
   assert.equal(notesOf(call)[0]?.size, `${bytes.length} bytes`)
-  const [path] = placed(join(on.hub.assistantMachines.folder, 'work'))
+  const [path] = placed(join(on.hub.conversationMachines.folder, 'work'))
   assert.ok(path)
   assert.deepEqual(
-    readFileSync(join(on.hub.assistantMachines.folder, 'work', 'uploads', path)),
+    readFileSync(join(on.hub.conversationMachines.folder, 'work', 'uploads', path)),
     bytes,
   )
 })
@@ -79,7 +79,7 @@ test('read_file: o PDF só por metadados', async (t) => {
       ? { kind: 'blocks', blocks: [tool(READ_FILE, { path: 'logo.png' })] }
       : { kind: 'text', text: 'Li.' }
   })
-  held.control = on.hub.assistantMachines.control
+  held.control = on.hub.conversationMachines.control
   mkdirSync(on.work, { recursive: true })
   writeFileSync(join(on.work, 'logo.png'), PNG)
   assert.equal(endOf(await on.say('Leia o PDF.', [pdf])), 'complete')
@@ -100,7 +100,7 @@ test('read_file: o PDF só por metadados', async (t) => {
 
 test('a máquina fora: o turno falha e o arquivo não vaza', async (t) => {
   const on = await conversation(t)
-  on.hub.assistantMachines.control.start = 'unreachable'
+  on.hub.conversationMachines.control.start = 'unreachable'
   const events = await on.say('Quais as regras?', [pdf])
   assert.deepEqual(failuresOf(events), ['MACHINE_UNAVAILABLE'])
   assert.deepEqual(on.calls.flatMap(documentsIn), [])
@@ -113,7 +113,7 @@ test('a máquina fora com o arquivo só do histórico: o turno segue com a nota'
   const [first] = on.calls
   assert.ok(first)
   const restarted = await hubBeside(t, on.hub)
-  restarted.assistantMachines.control.start = 'unreachable'
+  restarted.conversationMachines.control.start = 'unreachable'
   const next = await talking(t, restarted, on.ana, on.url)
   assert.equal(endOf(await next.say('E os prazos?')), 'complete')
   assert.equal(on.calls.length, 2, 'the second question reached the model')
@@ -125,7 +125,7 @@ test('a máquina fora com o arquivo só do histórico: o turno segue com a nota'
 
 test('o turno seguinte reusa a máquina que o anterior deixou ligada', async (t) => {
   const on = await conversation(t)
-  const { control } = on.hub.assistantMachines
+  const { control } = on.hub.conversationMachines
   assert.equal(endOf(await on.say('Quais as regras?', [pdf])), 'complete')
   assert.equal(endOf(await on.say('Oi')), 'complete')
   assert.equal(endOf(await on.say('Obrigado')), 'complete')
@@ -161,7 +161,7 @@ test('parar no meio da gravação não é a máquina fora', async (t) => {
   const writing = Promise.withResolvers<void>()
   const cut = Promise.withResolvers<void>()
   let box: unknown
-  Object.defineProperty(on.hub.assistantMachines.control, 'sandbox', {
+  Object.defineProperty(on.hub.conversationMachines.control, 'sandbox', {
     configurable: true,
     get: () => box,
     set(next: Machine) {

@@ -215,13 +215,13 @@ export function testBuilderPorts(
     doubled(machines, knobs, folder)
     return machines
   }
-  const assistantMachines = testConversationMachines(folder)
+  const conversationMachines = testConversationMachines(folder)
   return {
     machinesOf,
     confer: conferOf(knobs),
-    conversationMachine: assistantMachines.deps,
-    machineTuning: assistantMachines.tuning,
-    assistantMachines,
+    conversationMachine: conversationMachines.deps,
+    machineTuning: conversationMachines.tuning,
+    conversationMachines,
     repository,
     copy: bucket.copy,
     bucket,

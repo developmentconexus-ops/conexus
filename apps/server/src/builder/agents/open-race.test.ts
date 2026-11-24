@@ -59,7 +59,7 @@ test('abrir: a linha que a varredura levou depois do fio devolve AGENT_NOT_FOUND
   }
   assert.deepEqual(Object(await opening).code, 'AGENT_NOT_FOUND')
   assert.ok(
-    on.hub.assistantMachines.killed.includes(id),
+    on.hub.conversationMachines.killed.includes(id),
     'the machine of the lost conversation was killed',
   )
   const threads = await on.hub.test.mastraPool.query(

@@ -126,7 +126,7 @@ async function hubServing(
       killed: ports.killed,
       folder: ports.folder,
     },
-    assistantMachines: ports.assistantMachines,
+    conversationMachines: ports.conversationMachines,
     ...{ connectors: subjects.connectors, access: subjects.access },
     apps,
     ...{ identity: identity.ports, agents: subjects.agents, data: subjects.data, sendMail },

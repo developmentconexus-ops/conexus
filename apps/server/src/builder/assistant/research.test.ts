@@ -146,7 +146,7 @@ test('a porta, as 50 e o arquivo', async (t) => {
     on.reads.every((each) => each.turn === turn),
     'one key for the main agent and the helper',
   )
-  const files = readdirSync(join(on.hub.assistantMachines.folder, 'work', 'reads')).sort()
+  const files = readdirSync(join(on.hub.conversationMachines.folder, 'work', 'reads')).sort()
   const prefix = turn.slice(0, 8)
   assert.deepEqual(
     files,

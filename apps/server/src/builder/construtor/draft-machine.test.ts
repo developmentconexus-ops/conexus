@@ -38,5 +38,5 @@ test('a máquina do Construtor: apagar o Projeto mata a máquina da conversa del
     name: 'Encomendas',
   })
   assert.equal(gone.statusCode, 204, gone.body)
-  assert.deepEqual(on.hub.assistantMachines.killed, [id])
+  assert.deepEqual(on.hub.conversationMachines.killed, [id])
 })

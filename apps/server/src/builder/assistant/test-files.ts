@@ -83,7 +83,7 @@ export async function conversation(
   })
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const talk = await talking(t, on.hub, on.ana, url)
-  const work = join(on.hub.assistantMachines.folder, 'work')
+  const work = join(on.hub.conversationMachines.folder, 'work')
   return { ...on, ...talk, url, calls, observers, work }
 }
 

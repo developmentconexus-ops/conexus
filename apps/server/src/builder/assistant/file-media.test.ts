@@ -38,7 +38,7 @@ test('o arquivo: cada extensão baixa com o seu tipo, e só png, jpeg e svg abre
   const on = await assisting(t, [names.map(write), [said('Escrevi.')]])
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Escreva')), 'complete')
-  on.hub.assistantMachines.control.discoverable.push(
+  on.hub.conversationMachines.control.discoverable.push(
     `conexus-${INSTALLATION}-${url.slice(url.lastIndexOf('/') + 1)}`,
   )
   for (const [name, [type, disposition]] of Object.entries(MEDIA)) {

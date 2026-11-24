@@ -39,7 +39,7 @@ test('a máquina da conversa: a primeira ferramenta de arquivo liga uma com o no
     [said('Li.')],
     [write('b.txt', 'dois')],
   ])
-  const { control, folder } = on.hub.assistantMachines
+  const { control, folder } = on.hub.conversationMachines
   const home = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const project = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
@@ -93,7 +93,7 @@ test('a leitura na máquina: grava a resposta inteira em reads/<turno>-<n>.json,
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Quantas empresas?')), 'complete')
-  const reads = join(on.hub.assistantMachines.folder, 'work', 'reads')
+  const reads = join(on.hub.conversationMachines.folder, 'work', 'reads')
   const [turn] = on.reads
   assert.ok(turn !== undefined)
   const first = `${turn.turn.slice(0, 8)}-1.json`
@@ -111,7 +111,7 @@ test('a leitura na máquina: grava a resposta inteira em reads/<turno>-<n>.json,
 
 test('a leitura na máquina: a máquina que não liga deixa a leitura responder o corte com saved: false e a falha (18)', async (t) => {
   const on = await assisting(t, [[searching()], [reading('Matriz', COUNT)], [said('Não salvei.')]])
-  on.hub.assistantMachines.control.start = 'unreachable'
+  on.hub.conversationMachines.control.start = 'unreachable'
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Quantas empresas?')), 'complete')
@@ -127,7 +127,7 @@ test('o fim do turno não para a máquina: o turno seguinte a reusa e o provedor
     [write('b.txt', 'dois')],
     [said('Escrevi de novo.')],
   ])
-  const { control } = on.hub.assistantMachines
+  const { control } = on.hub.conversationMachines
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Escreva a.txt')), 'complete')
@@ -170,7 +170,7 @@ test('a leitura: cada leitura do turno grava o seu arquivo, numerado na ordem, e
   assert.equal(endOf(await say('Conte quatro vezes')), 'complete')
   const [turn] = on.reads
   assert.ok(turn !== undefined)
-  const reads = join(on.hub.assistantMachines.folder, 'work', 'reads')
+  const reads = join(on.hub.conversationMachines.folder, 'work', 'reads')
   const prefix = turn.turn.slice(0, 8)
   assert.deepEqual(
     readdirSync(reads).sort(),
@@ -183,7 +183,7 @@ test('a marca: a máquina leva a marca que a morte procura, e a morte a acha; a 
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Escreva')), 'complete')
-  const { control, deps } = on.hub.assistantMachines
+  const { control, deps } = on.hub.conversationMachines
   const other = ConversationId.parse('00000000-0000-4000-8000-0000000000ff')
   assert.equal(await deps.api.kill(other), 0, 'another conversation’s mark finds nothing')
   assert.equal(control.killed, false)
@@ -199,7 +199,7 @@ test('a marca: a máquina leva a marca que a morte procura, e a morte a acha; a 
 test('a máquina de outro molde é retomada com os arquivos (17)', async (t) => {
   const on = await assisting(t, [[write('a.txt', 'um')], [said('Escrevi.')]])
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  const { control } = on.hub.assistantMachines
+  const { control } = on.hub.conversationMachines
   control.discoverable.push(nameOf(url))
   control.templates[nameOf(url)] = OLD_TEMPLATE
   const { say } = await talking(t, on.hub, on.ana, url)
@@ -221,7 +221,7 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const { say } = await talking(t, on.hub, on.ana, url)
   assert.equal(endOf(await say('Escreva')), 'complete')
-  const { control, deps } = on.hub.assistantMachines
+  const { control, deps } = on.hub.conversationMachines
   control.discoverable.push(nameOf(url))
   const machines = createConversationMachines(
     {
@@ -231,7 +231,7 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
       otherTemplate: 'resume',
       marksOf: async () => undefined,
     },
-    on.hub.assistantMachines.tuning,
+    on.hub.conversationMachines.tuning,
   )
   const id = ConversationId.parse(url.slice(url.lastIndexOf('/') + 1))
   const left = new AbortController()
@@ -277,7 +277,7 @@ test('o fim do Hub: a máquina do turno em andamento para quando o Hub é parado
   t.after(() => stream.close())
   assert.equal((await sent(stopping, ana, url, 'Escreva')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
-  const { control } = stopping.assistantMachines
+  const { control } = stopping.conversationMachines
   control.stopMs = 150
   assert.equal(control.names.length, 1, 'the turn started the machine')
   assert.equal(control.stops, 0, 'and it runs')
