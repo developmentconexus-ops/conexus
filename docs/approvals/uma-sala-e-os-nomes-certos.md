@@ -1,0 +1,7 @@
+# Uma sala e os nomes certos
+
+Em 2026-11-22, ao estudo do harness, o fundador decidiu a ordem e os nomes desta etapa: as respostas A, B e C estão no [arquivo de aprovação da etapa 1](uma-ficha-por-agente.md).
+
+Em 2026-11-24, no quadro da entrevista deste cartão: "1 Pode ser A Pergunte 3: b", e antes 1 a ("Mas queria detalhes e exemplos para entender melhor"), 2 a e 4 a. São as decisões 1 a 4 do cartão: o menu do Projeto em quatro grupos, cada agente assinando a própria resposta, Renomear nas quatro conversas e Apagar só onde já existe, e a tela já com o servidor depois do `A1`.
+
+Cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovado em 2026-11-24 (commit 5074535ecc47a7844359697c211443ac8bc02121), na página do fundador do cartão, com as quatro correções de fato que a página das três aprovações apontou (o total do orçamento, o que o guarda confere, o que cada peça sem referência segue, o texto do botão e o tempo dos tiques do agendador): "Aprovo a página"
