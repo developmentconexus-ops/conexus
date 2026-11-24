@@ -113,21 +113,33 @@ function createLanes<K>(): InLane<K> {
 type Ending = { grant: Grant | null; timer: NodeJS.Timeout | undefined }
 type Held = Readonly<{ session: PastedSession; ending: Ending }>
 
-function createSessions(
-  executor: Executor,
-  inTurn: Limits['inTurn'],
-  log: FailureLog,
-): Omit<Limits, 'inTurn' | 'inCopyTurn'> {
+type SessionDeps = Readonly<{
+  executor: Executor
+  inTurn: Limits['inTurn']
+  log: FailureLog
+  now: () => Date
+}>
+
+function createSessions(deps: SessionDeps): Omit<Limits, 'inTurn' | 'inCopyTurn'> {
+  const { executor, inTurn, log } = deps
   const held = new Map<ConnectionId, Held>()
+  function clock(): number {
+    return deps.now().getTime()
+  }
 
   function stop(ending: Ending): void {
     clearTimeout(ending.timer)
     ending.timer = undefined
   }
 
-  function close(entry: Held, deadlineMs: number): Promise<void> {
+  /** Never throws: a defect in the logout is logged, so the other connections still close. */
+  async function close(id: ConnectionId, entry: Held, deadlineMs: number): Promise<void> {
     stop(entry.ending)
-    return entry.session.close(AbortSignal.timeout(deadlineMs))
+    try {
+      await entry.session.close(AbortSignal.timeout(deadlineMs))
+    } catch (error) {
+      logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error }), { connection: id })
+    }
   }
 
   /** The end of `grant`, in the connection's turn like every call: a logout on a token with a read open is refused. */
@@ -141,12 +153,12 @@ function createSessions(
           const entry = held.get(id)
           if (entry?.ending !== ending || ending.grant !== grant) return
           held.delete(id)
-          await close(entry, LOGOUT_DEADLINE_MS)
+          await close(id, entry, LOGOUT_DEADLINE_MS)
         }).catch((error: unknown) =>
           logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error }), { connection: id }),
         )
       },
-      Math.max(0, grant.expiresAt - RENEW_BEFORE_MS - Date.now()),
+      Math.max(0, grant.expiresAt - RENEW_BEFORE_MS - clock()),
     )
     timer.unref()
     ending.timer = timer
@@ -167,7 +179,7 @@ function createSessions(
             return opening
           },
         },
-        Date.now,
+        clock,
       )
       held.set(opened.id, { session, ending })
       return session
@@ -177,22 +189,22 @@ function createSessions(
       const entry = held.get(connection)
       if (entry === undefined) return
       held.delete(connection)
-      await close(entry, LOGOUT_DEADLINE_MS)
+      await close(connection, entry, LOGOUT_DEADLINE_MS)
     },
 
     async closeAll(deadlineMs) {
-      const live = [...held.values()]
+      const live = [...held]
       held.clear()
-      await Promise.all(live.map((entry) => close(entry, deadlineMs)))
+      await Promise.all(live.map(([id, entry]) => close(id, entry, deadlineMs)))
     },
   }
 }
 
-export function createLimits(deps: { executor: Executor; log: FailureLog }): Limits {
+export function createLimits(deps: Omit<SessionDeps, 'inTurn'>): Limits {
   const inTurn = createLanes<ConnectionId>()
   return {
     inTurn,
     inCopyTurn: createLanes<ConnectorId>(),
-    ...createSessions(deps.executor, inTurn, deps.log),
+    ...createSessions({ ...deps, inTurn }),
   }
 }

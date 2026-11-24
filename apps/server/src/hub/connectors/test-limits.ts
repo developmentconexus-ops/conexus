@@ -10,7 +10,11 @@ import { createLimits as createLimitsWith } from './limits.ts'
 const SILENT: FailureLog = { info: () => undefined, error: () => undefined }
 
 export function createLimits(deps: { executor: Executor; log?: FailureLog }) {
-  return createLimitsWith({ executor: deps.executor, log: deps.log ?? SILENT })
+  return createLimitsWith({
+    executor: deps.executor,
+    log: deps.log ?? SILENT,
+    now: () => new Date(),
+  })
 }
 
 export const A = ConnectionId.parse(randomUUID())

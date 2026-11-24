@@ -103,7 +103,7 @@ export function createConnectors(deps: {
     log: deps.log,
     now,
   })
-  const limits = createLimits({ executor, log: deps.log })
+  const limits = createLimits({ executor, log: deps.log, now })
   const routeDeps = {
     ...deps,
     sealKeys: deps.config.sealKeys,
