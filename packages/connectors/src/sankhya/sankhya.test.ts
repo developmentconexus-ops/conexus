@@ -307,7 +307,7 @@ test('o logout só vale com o envelope "1": o "4" e a regra recusada em um 200 n
 test('a skill: diz que escreve com a aprovação de uma pessoa, e nunca que não escreve nem quais ferramentas há', () => {
   const connector = connectorOf('sankhya')
   assert.ok(connector)
-  const { content, references } = connectorSkill(connector)
+  const { content, references } = connectorSkill(connector, [])
   const text = [content, ...Object.values(references)].join('\n')
   assert.ok(
     content.includes('Esta ligação lê e escreve; cada escrita pede a aprovação de uma pessoa.'),

@@ -14,8 +14,8 @@ import type { ProviderRequest } from './operation.ts'
 import { defineOperation, failedBy, locateOf, outcomeOf } from './operation.ts'
 import { toRequest } from './request.ts'
 
-/** The connector as the reads' tests build on: its one write would need a subject of its own in each lone connector. */
-const { writes: _writes, ...sankhya } = sankhyaWithWrites
+/** The connector as the reads' tests build on: its one write and its tables would need their subjects in each lone connector. */
+const { writes: _writes, tables: _tables, ...sankhya } = sankhyaWithWrites
 
 function get(path: `/${string}`, query: Record<string, string> = {}): ProviderRequest {
   return { method: 'GET', path, query, body: undefined }

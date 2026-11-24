@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { clientCredentials } from '../kernel/auth.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import { readSkill } from '../kernel/skill.ts'
+import { sankhyaTables } from './copy-tables.ts'
 import { sankhyaDoor } from './door.ts'
 import { empresas } from './operations/cadastros.ts'
 import { sankhyaOperations, sankhyaSubjects, sankhyaWrites } from './operations/index.ts'
@@ -82,4 +83,5 @@ export const sankhya = defineConnector({
   readDoor: sankhyaDoor,
   callLimit: { countedBy: 'ACCOUNT' },
   skill: { written: readSkill(new URL('./skill/', import.meta.url)) },
+  tables: sankhyaTables,
 })

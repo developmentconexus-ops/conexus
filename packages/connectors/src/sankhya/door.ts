@@ -38,6 +38,13 @@ export function queryRequest(sql: string): ProviderRequest {
   return service('DbExplorerSP.executeQuery', { sql: ReadSql.parse(sql) })
 }
 
+/** A table copy's page names each column it reads (TGFCAB has 449, measured by P3), past what an agent's query takes; the same read filter judges it. */
+const PageSql = z.string().min(1).max(65_536).refine(isOneReadStatement).brand('PageSql')
+
+export function pageQueryRequest(sql: string): ProviderRequest {
+  return service('DbExplorerSP.executeQuery', { sql: PageSql.parse(sql) })
+}
+
 const consultar = defineOperation({
   id: 'consultar',
   class: 'read' as const,

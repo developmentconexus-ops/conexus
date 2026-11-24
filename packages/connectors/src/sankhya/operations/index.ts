@@ -62,7 +62,7 @@ export const sankhyaWrites = [lancarPedido]
 /** Every read by its id, the door's included: what an app's typed client is made of (`calls.ts`). */
 export const sankhyaReads = readsOf({ ...sankhyaDoor, ...ready })
 
-/** Each subject and its label, in the order of `ready`. */
+/** Each subject and its label, in the order of `ready`; `fiscal` and `contabil` group only tables of the copy (T.40). */
 export const sankhyaSubjects = {
   cadastros: 'Cadastros',
   produtos: 'Produtos',
@@ -71,4 +71,6 @@ export const sankhyaSubjects = {
   financeiro: 'Financeiro',
   precos: 'Preços',
   logistica: 'Logística',
+  fiscal: 'Fiscal',
+  contabil: 'Contábil',
 } as const

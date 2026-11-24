@@ -1307,6 +1307,28 @@ reference tool checks a read against its documentation.
 - **Revisit when** a read-only rehearsal on the real Sankhya shows the DbExplorer takes bound
   values (then the literal goes), or the first company runs Sankhya on SQL Server.
 
+## Connectors (A primeira cópia chega ao lago): the month window of a table
+
+- **Library line.** `singer-sdk` 0.54.9 has no window mode: a stream without a replication key is
+  read whole on every pass, and a stream with one keeps a single point. `meltano` 4.4.1 keeps that
+  point per stream. Neither reads a table again by month. The card's row 66 holds the comparison.
+- **Hand-made piece.** The `WINDOW` mode of a table (`packages/connectors/src/kernel/tables.ts`):
+  a date column, `step: 'MONTH'` and `reread`. `tableMonths` (`kernel/tables-read.ts`) asks the
+  connector's `months` hook for the months the column has rows in, and `readTablePage` takes the
+  filter `{ kind: 'MONTH', column, month }`. On the Sankhya, `contarMeses` and the page SQL
+  (`sankhya/copy-reads.ts`) count by `TO_CHAR(column, 'YYYY-MM')` and read between the month's
+  first day and the next month's. A year out of the calendar (0208, 2109) is a month like the
+  others.
+- **Why.** The fiscal tables have no change column, and the A0D measurement read 3,140 rows per
+  second by month against 442 without the window (`EST/a0d-sankhya-kit-mes:93-106`). The month
+  window is our extension of decision 0080.
+- **Proof.** `sankhya/copy-tables.test.ts`, "os meses da contagem": the double's months come back
+  with the two out of the calendar, and each month's page holds that month's rows only.
+  `kernel/conformance.test.ts`, "a declaração por tabela", refuses a window on a column that is not
+  a date.
+- **Not proved.** The count on the real Oracle: the double runs the same SQL in SQLite.
+- **Revisit when** `singer-sdk` or `meltano` gains a partition or window mode.
+
 ## Mastra 1.83.0: a conversation's changing state lives in a Hub table (step 24.1)
 
 - **Library line.** At `@mastra/pg` version 1.36.0 and `@mastra/memory` version 1.41.1 (the lockfile's),

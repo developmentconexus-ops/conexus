@@ -42,6 +42,7 @@ type World = {
   refresh: Map<string, { current: boolean }>
   count: { issued: number; renewals: number; calls: number }
   notes: Record<string, unknown>[]
+  deals: Deal[] // a copy per double: a test route changes or removes one between two reads
 }
 
 function json(body: unknown, status = 200): Response {
@@ -111,13 +112,33 @@ function bearing(world: World, request: Request): Response | null {
     : failure(401, 'EXPIRED_AUTHENTICATION', 'The OAuth token used to make this call expired.')
 }
 
-function listed(name: string, url: URL): Response {
+type Deal = (typeof OBJECTS.deals)[number]
+
+/** When a test route changes a deal: after every record of the double. */
+const CHANGED_BY_TEST = new Date(Date.UTC(2026, 10, 20, 13, 0, 0)).toISOString()
+
+const DealChange = z.object({ acao: z.enum(['ALTERAR', 'REMOVER']) })
+
+/** The double's own route, which no real HubSpot has: a test changes or removes a deal between two reads. */
+async function changedDeal(world: World, request: Request, id: string): Promise<Response> {
+  const at = world.deals.findIndex((deal) => deal.id === id)
+  const deal = world.deals[at]
+  if (request.method !== 'POST' || deal === undefined)
+    return failure(404, 'RESOURCE_NOT_FOUND', 'resource not found')
+  const { acao } = DealChange.parse(await request.json())
+  if (acao === 'REMOVER') world.deals.splice(at, 1)
+  else
+    world.deals[at] = {
+      ...deal,
+      updatedAt: CHANGED_BY_TEST,
+      properties: { ...deal.properties, amount: '1', hs_lastmodifieddate: CHANGED_BY_TEST },
+    }
+  return json({ id })
+}
+
+function listed(world: World, name: string, url: URL): Response {
   const rows =
-    name === 'contacts'
-      ? OBJECTS.contacts
-      : name === 'companies'
-        ? OBJECTS.companies
-        : OBJECTS.deals
+    name === 'contacts' ? OBJECTS.contacts : name === 'companies' ? OBJECTS.companies : world.deals
   const limit = Number(url.searchParams.get('limit') ?? 10)
   const after = Number(url.searchParams.get('after') ?? 0)
   if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isInteger(after) || after < 0)
@@ -157,7 +178,7 @@ async function crm(world: World, request: Request, url: URL): Promise<Response> 
   if (world.switches.readRefused)
     return failure(403, 'MISSING_SCOPES', "This app hasn't been granted all required scopes.")
   const listing = /^\/crm\/v3\/objects\/(contacts|companies|deals)$/.exec(url.pathname)
-  if (listing?.[1] !== undefined && request.method === 'GET') return listed(listing[1], url)
+  if (listing?.[1] !== undefined && request.method === 'GET') return listed(world, listing[1], url)
   if (url.pathname === '/crm/v3/objects/notes' && request.method === 'POST')
     return created(world, request)
   return failure(404, 'RESOURCE_NOT_FOUND', 'resource not found')
@@ -165,6 +186,8 @@ async function crm(world: World, request: Request, url: URL): Promise<Response> 
 
 async function handle(world: World, request: Request): Promise<Response> {
   const url = new URL(request.url)
+  const testing = /^\/__teste\/negocios\/(\d+)$/.exec(url.pathname)?.[1]
+  if (testing !== undefined) return changedDeal(world, request, testing)
   if (url.pathname === '/oauth/authorize' && request.method === 'GET')
     return authorization(world, url)
   if (url.pathname === '/oauth/2026-09/token' && request.method === 'POST')
@@ -197,6 +220,7 @@ export function hubspotFake({
     refresh: new Map(),
     count: { issued: 0, renewals: 0, calls: 0 },
     notes: [],
+    deals: OBJECTS.deals.map((deal) => ({ ...deal, properties: { ...deal.properties } })),
   }
   return {
     app: APP,

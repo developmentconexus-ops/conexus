@@ -2,19 +2,19 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
-import { answerOf } from '../kernel/conformance-session.ts'
-import type { CopyDefinitionV2, CopyPosition } from '../kernel/copy.ts'
-import { CopyDefinitionV2 as CopyDefinitionV2Schema } from '../kernel/copy.ts'
-import { listInputOf, listPageOf } from '../kernel/list.ts'
+import { tableReachOf, walkTable } from '../kernel/conformance-tables.ts'
 import type { Operation } from '../kernel/operation.ts'
 import { requestOf } from '../kernel/operation.ts'
-import { toRequest } from '../kernel/request.ts'
 import { Rows } from '../kernel/rows.ts'
+import type { DeclaredColumn } from '../kernel/tables.ts'
+import { defineTables } from '../kernel/tables.ts'
+import type { TableReach } from '../kernel/tables-call.ts'
+import { readTablePage } from '../kernel/tables-read.ts'
 import { mercadoLivre } from './definition.ts'
 import { mercadoLivreFake } from './fake.ts'
 import { mensagensDoPacote } from './operations/mensagens.ts'
 import { recording } from './recordings.ts'
-import { ACCOUNT, authorize } from './test-session.ts'
+import { ACCOUNT } from './test-session.ts'
 
 function scanned(results: unknown[], extra: Record<string, unknown>) {
   return operationOf('anuncios').answer({ status: 200, body: { results, ...extra } })
@@ -120,51 +120,52 @@ test('o total e o temMais saem das mesmas contagens: sem deslocamento só o tota
   })
 })
 
-/** Every page of a list read of the double, through the copy's own input and page: the cells of each row. */
-async function walked(
+/** A list read as a declared table of these columns: changed since `changed` when given, whole otherwise. */
+function tableOf(
   operation: Operation<unknown, unknown>,
-  definition: CopyDefinitionV2,
-  since: string | null = null,
-) {
-  const list = operation.list ?? assert.fail(`${operation.id} declares no list`)
-  const fake = mercadoLivreFake()
-  const granted = await authorize(fake)
-  if (granted.kind !== 'OK') return assert.fail('authorize')
-  const cells: (string | null)[][] = []
-  let position: CopyPosition | null = null
-  for (let pages = 0; pages < 100; pages++) {
-    const input = operation.input.parse(listInputOf({ list, definition, position, since }))
-    const request = requestOf(operation, input, ACCOUNT, SENT_AT)
-    const answered = operation.answer(
-      await answerOf(
-        await fake.handle(toRequest(mercadoLivre, request, granted.accessToken)),
-        mercadoLivre.numbers,
-      ),
-    )
-    if (answered.kind !== 'OK') return assert.fail(`${operation.id}: ${answered.kind}`)
-    const rows = Rows.parse(answered.value)
-    const page = listPageOf({ list, definition, position, rows, at: SENT_AT })
-    if (page.kind !== 'PAGE') return assert.fail(`${operation.id}: ${page.kind}`)
-    cells.push(...page.rows.map((row) => [...row]))
-    if (!page.more) return { cells, pages: pages + 1 }
-    position = page.next
-  }
-  return assert.fail(`${operation.id} never ends`)
-}
-
-function definitionOf(
-  operation: Operation<unknown, unknown>,
-  columns: { name: string; type: string; path: string }[],
+  columns: Omit<DeclaredColumn, 'description'>[],
   changed: string | null = null,
 ) {
-  return CopyDefinitionV2Schema.parse({
-    version: 2,
-    source: { kind: 'OPERATION', operation: operation.id, input: {} },
-    description: 'Teste.',
-    columns,
-    key: [columns[0]?.name],
-    changedSince: changed === null ? null : { column: changed },
-  })
+  const [table] = defineTables({
+    declared: [
+      {
+        name: 'teste',
+        label: operation.label,
+        description: 'Teste.',
+        group: operation.subject,
+        source: { kind: 'OPERATION', operation: operation.id, input: {} },
+        key: [columns[0]?.name ?? ''],
+        mode:
+          changed === null
+            ? { kind: 'FULL' }
+            : { kind: 'CHANGED', column: changed, registry: true },
+        history: false,
+        columns: {
+          kind: 'DECLARED',
+          columns: columns.map((column) => ({ ...column, description: null })),
+        },
+      },
+    ],
+  }).declared
+  return table ?? assert.fail('the table')
+}
+
+/** Every page of the double through `readTablePage`: the cells of each row, in the order of the columns. */
+async function walked(
+  operation: Operation<unknown, unknown>,
+  columns: Omit<DeclaredColumn, 'description'>[],
+  a: { changed?: string; since?: string } = {},
+) {
+  const reach = await tableReachOf(mercadoLivre, mercadoLivreFake())
+  const table = tableOf(operation, columns, a.changed ?? null)
+  const rows = await walkTable(
+    reach,
+    table,
+    a.since === undefined || a.changed === undefined
+      ? { kind: 'ALL' }
+      : { kind: 'SINCE', column: a.changed, after: a.since },
+  )
+  return rows.map((row) => columns.map(({ name }) => row[name] ?? null))
 }
 
 test('pedidos declara a lista por deslocamento e o filtro do que mudou', async () => {
@@ -173,26 +174,20 @@ test('pedidos declara a lista por deslocamento e o filtro do que mudou', async (
     paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 50, ceiling: null },
     changed: { input: 'changedFrom', field: 'date_last_updated' },
   })
-  const definition = definitionOf(
-    pedidos,
-    [
-      { name: 'id', type: 'bigint', path: 'id' },
-      { name: 'alterado', type: 'timestamp', path: 'date_last_updated' },
-    ],
-    'alterado',
-  )
-  const all = await walked(pedidos, definition)
-  assert.equal(all.cells.length, 120, 'os 120 pedidos do dublê')
-  assert.equal(all.pages, 3)
-  const changed = await walked(pedidos, definition, '2026-09-10T14:50:00.000Z')
+  const columns = [
+    { name: 'id', type: 'bigint', path: 'id' },
+    { name: 'alterado', type: 'timestamp', path: 'date_last_updated' },
+  ] as const
+  const all = await walked(pedidos, [...columns], { changed: 'alterado' })
+  assert.equal(all.length, 120, 'os 120 pedidos do dublê')
+  const since = '2026-09-10T14:50:00.000Z'
+  const changed = await walked(pedidos, [...columns], { changed: 'alterado', since })
   assert.deepEqual(
-    changed.cells.map((row) => row[1]),
-    all.cells
-      .map((row) => row[1])
-      .filter((at) => Date.parse(at ?? '') >= Date.parse('2026-09-10T14:50:00.000Z')),
+    changed.map((row) => row[1]),
+    all.map((row) => row[1]).filter((at) => Date.parse(at ?? '') >= Date.parse(since)),
     'só o que mudou desde o instante',
   )
-  assert.equal(changed.cells.length, 10)
+  assert.equal(changed.length, 10)
 })
 
 test('a varredura passa de mil', async () => {
@@ -217,33 +212,28 @@ test('a varredura passa de mil', async () => {
     )
   }
   const anuncios = operationOf('anuncios')
-  const all = await walked(
-    anuncios,
-    definitionOf(anuncios, [{ name: 'id', type: 'text', path: 'id' }]),
-  )
-  assert.equal(all.cells.length, 1300, 'os 1.300 anúncios, passando de mil')
-  assert.equal(new Set(all.cells.map((row) => row[0])).size, 1300, 'nenhum repete')
-  const list = anuncios.list ?? assert.fail('list')
-  const definition = definitionOf(anuncios, [{ name: 'id', type: 'text', path: 'id' }])
+  const id = [{ name: 'id', type: 'text', path: 'id' }] as const
+  const all = await walked(anuncios, [...id])
+  assert.equal(all.length, 1300, 'os 1.300 anúncios, passando de mil')
+  assert.equal(new Set(all.map((row) => row[0])).size, 1300, 'nenhum repete')
+  const reach = await tableReachOf(mercadoLivre, mercadoLivreFake())
   function pageOf(body: Record<string, unknown>) {
-    const answered = scanned(['MLB1'], body)
-    if (answered.kind !== 'OK') return assert.fail(answered.kind)
-    return listPageOf({
-      list,
-      definition,
-      position: null,
-      rows: Rows.parse(answered.value),
-      at: SENT_AT,
-    })
+    const answering: TableReach = {
+      ...reach,
+      send: async () => ({ status: 200, body: { results: ['MLB1'], ...body } }),
+    }
+    const table = tableOf(anuncios, [...id])
+    return readTablePage({ ...answering, table, columns: [], filter: { kind: 'ALL' }, after: null })
   }
+  const unreadable = { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE', system: null, waitMs: null }
   assert.deepEqual(
-    pageOf({ paging: { total: 9, offset: 0, limit: 1 } }),
-    { kind: 'UNREADABLE', reason: 'NO_CURSOR' },
+    await pageOf({ paging: { total: 9, offset: 0, limit: 1 } }),
+    unreadable,
     'linhas, mais por vir e sem scroll_id',
   )
   assert.deepEqual(
-    pageOf({ paging: { total: 9, limit: 1 } }),
-    { kind: 'UNREADABLE', reason: 'NO_MORE_SIGNAL' },
+    await pageOf({ paging: { total: 9, limit: 1 } }),
+    unreadable,
     'linhas sem scroll_id e sem deslocamento: nenhum sinal de fim',
   )
 })

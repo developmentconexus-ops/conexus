@@ -12,8 +12,6 @@ What remains:
 
 - In each company's database, the schema `sync` and its logins, until the readjust takes them out.
   No Hub code opens a company's database with them.
-- The kit's `CopyDefinition` (`packages/connectors/src/kernel/copy.ts`), the shape of a stored
-  definition.
 
 `builder/git/copy` has nothing to do with this: it is the Git bundle copied to R2
 ([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)).

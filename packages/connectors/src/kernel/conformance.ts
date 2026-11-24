@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { tokenRequest } from './auth.ts'
 import { assertDeclaredByProvider, SENT_AT } from './conformance-declared.ts'
-import { assertListsWalk } from './conformance-list.ts'
 import type { Fake, OAuthFake } from './conformance-session.ts'
 import {
   answeredEach,
@@ -12,6 +11,7 @@ import {
   signIn,
   verifierAndChallenge,
 } from './conformance-session.ts'
+import { assertListsWalk } from './conformance-tables.ts'
 import type { Connector } from './definition.ts'
 import { inProbeOrder } from './definition.ts'
 import { logoProblems } from './logo.ts'
@@ -74,7 +74,7 @@ function assertDeclared(connector: Connector): void {
   assert.equal(new Set(all.map((operation) => operation.id)).size, all.length)
   assert.match(connector.version, /^\d+\.\d+\.\d+$/)
   assert.ok(
-    connectorSkill(connector).content.split('\n').length < 500,
+    connectorSkill(connector, []).content.split('\n').length < 500,
     'SKILL.md stays under the 500 lines Mastra recommends',
   )
 }
@@ -210,7 +210,7 @@ export function runConformance(connector: Connector, fake: Fake): void {
       await answerInOrder(connector, fake)
     })
 
-    it('walks every page of each list read of the double, each row once', async () => {
+    it('walks every page of each list read of the double through readTablePage, each row once', async () => {
       await assertListsWalk(connector, fake)
     })
 

@@ -1,6 +1,9 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
 import { z } from 'zod'
 import { clientCredentials } from './auth.ts'
 import type { CredentialFake } from './conformance-session.ts'
+import { assertListsWalk } from './conformance-tables.ts'
 import { defineConnector } from './definition.ts'
 import type { ListRead } from './operation.ts'
 import { defineOperation, get } from './operation.ts'
@@ -33,17 +36,17 @@ const Asked = z.object({
   changedFrom: z.string().optional(),
 })
 
-export const RIGHT: ListRead = {
+const RIGHT: ListRead = {
   paging: { kind: 'OFFSET', offset: 'offset', limit: 'limit', max: 50, ceiling: null },
   changed: { input: 'changedFrom', field: 'changed' },
 }
-export const SWAPPED: ListRead = {
+const SWAPPED: ListRead = {
   ...RIGHT,
   paging: { kind: 'OFFSET', offset: 'limit', limit: 'offset', max: 50, ceiling: null },
 }
 
 /** A connector of one list read over a double of 137 rows in memory, for the conformance of a declaration. */
-export function listingConnector(list: ListRead) {
+function listingConnector(list: ListRead) {
   const things = defineOperation({
     id: 'things',
     class: 'read',
@@ -99,10 +102,10 @@ function json(body: unknown): Response {
 }
 
 /** How a double misbehaves while still answering in the shape the schema reads: it ignores `offset`, reports a total with a row missing, or answers an empty page after the first while saying more follows. */
-export type Plant = 'IGNORES_OFFSET' | 'DROPS_LAST' | 'EMPTY_AFTER_FIRST' | null
+type Plant = 'IGNORES_OFFSET' | 'DROPS_LAST' | 'EMPTY_AFTER_FIRST' | null
 
 /** The double: `/token` gives a bearer, `/things` pages the 137 rows by `offset` and `limit`, and with `changed_from` only the rows changed since. */
-export function listingFake(plant: Plant = null): CredentialFake {
+function listingFake(plant: Plant = null): CredentialFake {
   return {
     credential: { key: 'invented-key' },
     serve: () => Promise.reject(new Error('the fixture double is never served')),
@@ -126,3 +129,51 @@ export function listingFake(plant: Plant = null): CredentialFake {
     },
   }
 }
+
+test('a conformidade anda pelo readTablePage todas as páginas do dublê de uma leitura de lista', async () => {
+  await assertListsWalk(listingConnector(RIGHT), listingFake())
+  await assert.rejects(
+    assertListsWalk(listingConnector(SWAPPED), listingFake()),
+    z.ZodError,
+    'o tamanho e o deslocamento trocados: o esquema da leitura recusa o tamanho 0',
+  )
+  await assert.rejects(
+    assertListsWalk(listingConnector(RIGHT), listingFake('IGNORES_OFFSET')),
+    /repeats a row/,
+    'um dublê que ignora o deslocamento repete as linhas da primeira página',
+  )
+  await assert.rejects(
+    assertListsWalk(listingConnector(RIGHT), listingFake('DROPS_LAST')),
+    /lacks rows/,
+    'um total que não bate com as linhas entregues',
+  )
+  const requested: string[] = []
+  const counting = listingFake('EMPTY_AFTER_FIRST')
+  const handle = counting.handle
+  await assert.rejects(
+    assertListsWalk(listingConnector(RIGHT), {
+      ...counting,
+      handle: (request) => {
+        requested.push(new URL(request.url).search)
+        return handle(request)
+      },
+    }),
+    /lacks rows/,
+    'uma página vazia que diz ter mais termina a caminhada, sem erro e sem repetir a posição',
+  )
+  const things = requested.filter((search) => search.includes('limit=50'))
+  assert.equal(new Set(things).size, things.length, 'nenhuma leitura repetida')
+  assert.equal(
+    things.filter((search) => search.includes('offset=50')).length,
+    1,
+    'a página vazia é lida uma vez e a caminhada para',
+  )
+  await assert.rejects(
+    assertListsWalk(
+      listingConnector({ ...RIGHT, changed: { input: 'changedFrom', field: 'ausente' } }),
+      listingFake(),
+    ),
+    /carry/,
+    'o campo de alteração que as linhas não trazem',
+  )
+})

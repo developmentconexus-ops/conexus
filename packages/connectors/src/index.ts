@@ -23,22 +23,10 @@ export {
   tokenRequest,
 } from './kernel/auth.ts'
 export type { CredentialFake, Fake, OAuthFake } from './kernel/conformance-session.ts'
-export type { CopyColumnType, CopyColumnTypeV2 } from './kernel/copy.ts'
-export {
-  CANONICAL_CELL,
-  CopyDefinition,
-  CopyDefinitionV1,
-  CopyDefinitionV2,
-  CopyName,
-  CopyPosition,
-  copyPrefixOf,
-} from './kernel/copy.ts'
 export { CredentialClass } from './kernel/credential-class.ts'
 export type { Connector, ConnectorId, ConnectorSkill, ReadDoor } from './kernel/definition.ts'
 export { toolNameOf } from './kernel/definition.ts'
 export { type Numbers, parseExact, parseJson } from './kernel/exact-json.ts'
-export type { ListPage } from './kernel/list.ts'
-export { listInputOf, listPageOf } from './kernel/list.ts'
 export {
   type AppKeys,
   type AppSource,
@@ -68,6 +56,7 @@ export type {
 export {
   AccountRef,
   deniesAccess,
+  Instant,
   listInputNames,
   locateOf,
   requestOf,
@@ -87,7 +76,39 @@ export {
   sessionOf,
   type TokenSource,
 } from './kernel/session.ts'
-export { connectorSkill } from './kernel/skill.ts'
+export { connectorSkill, type SkillTable } from './kernel/skill.ts'
+export {
+  type ConnectorTables,
+  DiscoveredTable,
+  lakeNameOf,
+  SourceColumn,
+  SourceTable,
+  sourceOf,
+  startDateLimits,
+  suggestedLakeName,
+  TABLE_PAGE_DEFAULT,
+  TABLE_SOURCE_FAILURES,
+  TableColumn,
+  TableColumnType,
+  type TableDeclaration,
+  TableFilter,
+  type TableMode,
+  TableName,
+  TablePosition,
+  type TableReadFailed,
+  type TableSendFailure,
+  type TableSource,
+  type TableSourceFailure,
+  tablePrefixOf,
+} from './kernel/tables.ts'
+export type { TablePageRead, TableReach } from './kernel/tables-call.ts'
+export {
+  DISCOVERED_TYPES,
+  type ExpectedTable,
+  HUBSPOT_DISCOVERY,
+  SANKHYA_DISCOVERY,
+} from './kernel/tables-fixture.ts'
+export { discoverTables, readTablePage, tableMonths } from './kernel/tables-read.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { MERCADO_LIVRE_FACTS } from './mercado-livre/fake-facts.ts'
 export { sankhyaFake } from './sankhya/fake.ts'
