@@ -25,7 +25,7 @@ const Listed = z.record(z.string(), z.array(z.object({ from: z.string(), to: z.s
 // The records keep the paths they were written with; a guide and a skill change only in a step's closing (delivery L20).
 const KEPT = /^(docs\/(steps|approvals|decisions|guides)\/|\.agents\/)/
 const BINARY = /\.(png|jpe?g|svg|ico|woff2?|zip|snapshot)$/
-const CITED = /(?<![\w/.-])((?:apps\/server\/src\/|src\/)?)builder\/([\w.$/-]*\w)/g
+const CITED = /(?<![\w/.-])((?:apps\/server\/src\/|src\/|\$\{SERVER\}\/)?)builder\/([\w.$/-]*\w)/g
 const READ_URL = /new URL\(\s*(['"`])(\.[^'"`]*)\1\s*,\s*import\.meta\.url/g
 
 function git(...args: string[]): string {
