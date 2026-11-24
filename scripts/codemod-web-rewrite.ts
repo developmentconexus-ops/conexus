@@ -1,6 +1,6 @@
 import { posix } from 'node:path'
-import type { Binding, Named, Ref } from './codemod-web-imports.ts'
-import { isTest, otherSpecifiers, parse, resolved } from './codemod-web-imports.ts'
+import type { Binding, Named, Ref } from './codemod-imports.ts'
+import { isTest, otherSpecifiers, parse, resolved } from './codemod-imports.ts'
 import type { Graph } from './codemod-web-plan.ts'
 import { reached, SRC } from './codemod-web-plan.ts'
 
