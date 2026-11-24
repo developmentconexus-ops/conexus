@@ -14,6 +14,21 @@ export function appLogin(projectId: ProjectId) {
   })
 }
 export type AppLogin = ReturnType<typeof appLogin>
+/** The schema and the logins a migration needs: the Prévia's, or the conference's. */
+export type AppLogins = Readonly<Record<'schema' | 'runLogin' | 'migrateLogin', string>>
+
+/**
+ * The schema and two logins of a Projeto's conference, beside the app's (decision 0021): emptied at
+ * each conference, with no read login, since no agent reads it. The longest name has 50 characters,
+ * under PostgreSQL's 63.
+ */
+export function appCheckLogin(projectId: ProjectId): AppLogins {
+  return Object.freeze({
+    schema: `app_${projectId}_check`,
+    runLogin: `app_${projectId}_check_run`,
+    migrateLogin: `app_${projectId}_check_migrate`,
+  })
+}
 
 function base64Url(bytes: ArrayBuffer): string {
   return btoa(String.fromCharCode(...new Uint8Array(bytes)))

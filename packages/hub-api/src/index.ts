@@ -17,7 +17,13 @@ export {
   revokeAppAccess,
 } from './app-access.ts'
 export * from './app-data.ts'
-export { type AppLogin, appLogin, appLoginPassword } from './app-login.ts'
+export {
+  type AppLogin,
+  type AppLogins,
+  appCheckLogin,
+  appLogin,
+  appLoginPassword,
+} from './app-login.ts'
 export {
   APP_OPEN_PATH,
   APP_SESSION_HEADER,
@@ -30,6 +36,7 @@ export {
   AppVersionFailure,
   AppVersionId,
   AppWorker,
+  appCheckWorkerOf,
   appWorkerOf,
   checkAppCall,
   createAppFrameHandoff,
@@ -187,7 +194,6 @@ export {
   removeModelAccount,
   SignInId,
   SignInKind,
-  SUBSCRIPTION_KINDS,
   type SubscriptionKind,
   setAccountKinds,
   setModelFallback,

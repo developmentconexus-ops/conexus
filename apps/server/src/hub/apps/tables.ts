@@ -1,4 +1,5 @@
 import { APP_LIMITS } from '@conexus/app-contract'
+import type { AppEnvironment } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import type { PgTableExtraConfigValue } from 'drizzle-orm/pg-core'
 import {
@@ -51,14 +52,21 @@ export const handoff = apps.table(
   ],
 )
 
-export const appSession = apps.table(
-  'app_session',
-  {
+/** What an app session and a conference session both hold: the token's hash, the app and the person. */
+function sessionColumns() {
+  return {
     tokenHash: text('token_hash').primaryKey(),
     hostLabel: text('host_label').notNull(),
     personId: text('person_id').notNull(),
     companyId: text('company_id').notNull(),
     projectId: text('project_id').notNull(),
+  }
+}
+
+export const appSession = apps.table(
+  'app_session',
+  {
+    ...sessionColumns(),
     hubSessionId: text('hub_session_id').notNull(),
   },
   (table) => [
@@ -69,6 +77,25 @@ export const appSession = apps.table(
     }).onDelete('cascade'),
   ],
 )
+
+// The conference's browser enters the app through a session of its own, never the person's Hub
+// session: one app, in the person's name, ended with the conference and refused after its expiry.
+// A call it admits runs in the `check` environment, which no host names.
+export const checkSession = apps.table(
+  'check_session',
+  {
+    ...sessionColumns(),
+    expiresAt: instant('expires_at').notNull(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'check_session_project_id_fkey',
+      columns: [table.projectId],
+      foreignColumns: [project.id],
+    }).onDelete('cascade'),
+  ],
+)
+export type CallEnvironment = AppEnvironment | 'check'
 
 // A Projeto's app and its versions belong to a company, as its Projects do (decision 0039): the
 // company's routes reach their own rows; the Central reads and deletes the rows of the one company

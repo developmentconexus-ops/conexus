@@ -228,6 +228,7 @@ test('o login do Hub tem os verbos da lista de e-mails de aviso', async (t) => {
 // A table not listed here and without one fails this test: say why it may go without, or police it.
 const WITHOUT_POLICY = [
   'apps.app_session',
+  'apps.check_session',
   'apps.handoff',
   'auth.account',
   'auth.rate_limit',
