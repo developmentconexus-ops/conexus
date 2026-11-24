@@ -24,7 +24,7 @@ import {
   pedidos,
 } from './vendas.ts'
 
-/** The order the probes run in: `empresas` first, since seven probes read it (their `from`); each subject keeps the ready five before the rest. */
+/** The ready reads in the order the probes and Testar run them, subject by subject; `empresas` first, since the company reads take its code. */
 const ready = readsOf({
   empresas,
   clientes,
@@ -55,16 +55,14 @@ const ready = readsOf({
   ordensCarga,
 })
 
-/** The ready reads, in that order: what the connector declares as its `operations`. */
 export const sankhyaOperations = Object.values(ready)
 
-/** The connector's writes: the list the Hub's write funnel reads; the reads above never include one. */
 export const sankhyaWrites = [lancarPedido]
 
-/** Every read of the connector by its id, the door's included: what an app's typed client is made of (`calls.ts`). */
+/** Every read by its id, the door's included: what an app's typed client is made of (`calls.ts`). */
 export const sankhyaReads = readsOf({ ...sankhyaDoor, ...ready })
 
-/** The subjects and their labels; each has a part of the skill. */
+/** Each subject and its label, in the order of `ready`. */
 export const sankhyaSubjects = {
   cadastros: 'Cadastros',
   produtos: 'Produtos',

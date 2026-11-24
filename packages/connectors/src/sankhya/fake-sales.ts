@@ -222,6 +222,28 @@ function asSankhyaDate(value: unknown): unknown {
   return year === undefined ? value : `${day}${month}${year} ${time ?? '00:00:00'}`
 }
 
+function literal(text: string): string {
+  return text.replace(/[\\^$.*+?()[\]{}|/]/g, '\\$&')
+}
+
+/** One piece of a `LIKE` pattern as a regular expression: an escaped character, a class, `%`, `_` or itself. */
+function likePart(part: string, escapeMark: unknown): string {
+  if (part.length === 2 && part[0] === escapeMark) return literal(part[1] ?? '')
+  if (part === '%') return '[\\s\\S]*'
+  if (part === '_') return '[\\s\\S]'
+  if (part.length === 1) return literal(part)
+  const negated = part[1] === '^'
+  const members = part.slice(negated ? 2 : 1, -1).replace(/[\\\]^[]/g, '\\$&')
+  return `[${negated ? '^' : ''}${members}]`
+}
+
+/** A `LIKE` pattern as a regular expression: `%` any text, `_` one character, `[...]` or `[^...]` a class, and the escape character's next one as itself. */
+function likeOf(pattern: string, escapeMark: unknown): RegExp {
+  const escaped = typeof escapeMark === 'string' ? `${literal(escapeMark)}[\\s\\S]|` : ''
+  const pieces = pattern.match(new RegExp(`${escaped}\\[\\^?[^\\]]+\\]|[\\s\\S]`, 'gu')) ?? []
+  return new RegExp(`^${pieces.map((part) => likePart(part, escapeMark)).join('')}$`, 'u')
+}
+
 /** The answer of a read query: the columns by name and the rows in their order. */
 export type QueryAnswer = { fields: string[]; rows: unknown[][] }
 
@@ -238,7 +260,7 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
       .map((letter) => pairs.find(([of]) => of === letter)?.[1] ?? letter)
       .join('')
   })
-  // Oracle's `UPPER` folds every letter and its `LIKE` heeds case; SQLite's `UPPER` folds only ASCII and its `LIKE` ignores ASCII case.
+  // Oracle's `UPPER` folds every letter; SQLite's folds only ASCII.
   database.function('UPPER', { deterministic: true }, (text) =>
     text === null ? null : String(text).toUpperCase(),
   )
@@ -248,7 +270,10 @@ export function salesDatabase(set: SalesSet): (sql: string) => QueryAnswer | und
       throw new DoubleRefusal('The double reads only TO_DATE(day, YYYY-MM-DD).')
     return String(text)
   })
-  database.exec('PRAGMA case_sensitive_like = ON')
+  // `LIKE` as SQL Server reads it, case and all: there `[...]` is a class besides `%` and `_` (#929).
+  database.function('like', { deterministic: true, varargs: true }, (pattern, text, escapeMark) =>
+    text === null ? null : Number(likeOf(String(pattern), escapeMark).test(String(text))),
+  )
   tablesOf(database, set)
   registerOn(database)
   return (sql) => {

@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CONCURRENT_CALL, CONNECTORS, connectorOf, loggedOutBy } from '../index.ts'
+import {
+  CONCURRENT_CALL,
+  CONNECTORS,
+  connectorOf,
+  connectorSkill,
+  loggedOutBy,
+  toolNameOf,
+} from '../index.ts'
 import { runConformance } from '../kernel/conformance.ts'
 import { SENT_AT } from '../kernel/conformance-declared.ts'
 import type { Operation } from '../kernel/operation.ts'
@@ -295,4 +302,18 @@ test('o logout só vale com o envelope "1": o "4" e a regra recusada em um 200 n
   assert.equal(loggedOutBy(auth, { status: 200, body: { status: '1' } }), true)
   assert.equal(loggedOutBy(auth, { status: 200, body: { status: '4' } }), false)
   assert.equal(loggedOutBy(auth, { status: 403, body: { status: '1' } }), false)
+})
+
+test('a skill: diz que escreve com a aprovação de uma pessoa, e nunca que não escreve nem quais ferramentas há', () => {
+  const connector = connectorOf('sankhya')
+  assert.ok(connector)
+  const { content, references } = connectorSkill(connector)
+  const text = [content, ...Object.values(references)].join('\n')
+  assert.ok(
+    content.includes('Esta ligação lê e escreve; cada escrita pede a aprovação de uma pessoa.'),
+  )
+  assert.ok(!text.includes('There is no operation that writes'))
+  assert.doesNotMatch(text, /\bread only\b(?! integration user)|never write|no such operation/i)
+  for (const operation of [...connector.operations, ...(connector.writes ?? [])])
+    assert.ok(!text.includes(toolNameOf(connector, operation.id)), operation.id)
 })

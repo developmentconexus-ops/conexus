@@ -1,109 +1,97 @@
 import { z } from 'zod'
 import { defineOperation, get, post } from '../../kernel/operation.ts'
-import { placed, rows } from '../answers.ts'
-import { empresaPage, empresas } from './cadastros.ts'
-import { Code, DashDate, Date_, firstCode, Page } from './shared.ts'
+import { Placed, placedAnswer } from '../answers.ts'
+import { companyProbe, empresas } from './cadastros.ts'
+import { Code, DashDay, Day, defineRoute, firstCode, Page } from './route.ts'
 
-/** The filters the orders and the invoices share; the order route ignores `codigoNota` (measured 2026-10-30), so only the invoices take it. */
-const Janela = z.strictObject({
+/** The window the orders and the invoices share; the order route ignores `codigoNota` (measured 2026-10-30), so only the invoices take it. */
+const Window = z.strictObject({
   codigoEmpresa: Code,
   page: Page(0),
-  dataNegociacaoInicio: Date_.optional(),
-  dataNegociacaoFinal: Date_.optional(),
+  dataNegociacaoInicio: Day.optional(),
+  dataNegociacaoFinal: Day.optional(),
   codigoCliente: Code.optional(),
 })
 
-export const pedidos = defineOperation({
+const ofCompany = { from: [empresas.id], probe: companyProbe(0) }
+
+export const pedidos = defineRoute({
   id: 'pedidos',
-  class: 'read' as const,
   subject: 'vendas',
-  idempotent: true,
   summary:
     'Lista os pedidos de venda de uma empresa (nota, cliente, vendedor, valor e itens), uma página por chamada; a página começa em 0.',
   label: 'Pedidos',
-  input: Janela.extend({ confirmada: z.boolean().optional(), pendente: z.boolean().optional() }),
-  ...rows({ list: 'pedido' }),
-  from: [empresas.id],
-  probe: empresaPage(0),
+  input: Window.extend({ confirmada: z.boolean().optional(), pendente: z.boolean().optional() }),
+  rowsAt: 'pedido',
+  ...ofCompany,
   request: (input) => get('/v1/vendas/pedidos', input),
 })
 
-export const notasFiscais = defineOperation({
+export const notasFiscais = defineRoute({
   id: 'notasFiscais',
-  class: 'read' as const,
   subject: 'vendas',
-  idempotent: true,
   summary:
     'Lista as notas fiscais de venda de uma empresa (número, cliente, tipo de operação, valor, status da NF-e), sem os itens; a página começa em 0.',
   label: 'Notas fiscais',
-  input: Janela.extend({ statusNFe: z.number().int().optional(), codigoNota: Code.optional() }),
-  ...rows({ list: 'nota' }),
-  from: [empresas.id],
-  probe: empresaPage(0),
+  input: Window.extend({ statusNFe: z.number().int().optional(), codigoNota: Code.optional() }),
+  rowsAt: 'nota',
+  ...ofCompany,
   request: (input) => get('/v1/vendas/nfe', input),
 })
 
-export const notaFiscal = defineOperation({
+export const notaFiscal = defineRoute({
   id: 'notaFiscal',
-  class: 'read' as const,
   subject: 'vendas',
-  idempotent: true,
   summary: 'Lê uma nota fiscal de venda inteira pelo código: itens, impostos e parcelas.',
   label: 'Nota fiscal com itens',
   input: z.strictObject({ codigoNota: Code }),
-  ...rows({ list: 'nota' }),
+  rowsAt: 'nota',
   from: [notasFiscais.id],
   probe: (earlier) => {
     const codigoNota = firstCode(earlier, notasFiscais.id, 'codigoNota')
     return codigoNota === undefined ? null : { codigoNota }
   },
-  request: ({ codigoNota }) => get(`/v1/vendas/nfe/${codigoNota}`, {}),
+  request: ({ codigoNota }) => get(`/v1/vendas/nfe/${codigoNota}`),
 })
 
-export const devolucoes = defineOperation({
+export const devolucoes = defineRoute({
   id: 'devolucoes',
-  class: 'read' as const,
   subject: 'vendas',
-  idempotent: true,
   summary:
     'Lista as notas de devolução de venda de uma empresa, sem os itens; a página começa em 0 e as datas vão como dd-mm-aaaa.',
   label: 'Devoluções',
   input: z.strictObject({
     codigoEmpresa: Code,
     page: Page(0),
-    dataNegociacaoInicio: DashDate.optional(),
-    dataNegociacaoFinal: DashDate.optional(),
+    dataNegociacaoInicio: DashDay.optional(),
+    dataNegociacaoFinal: DashDay.optional(),
     codigoCliente: Code.optional(),
   }),
-  ...rows({ list: 'nota' }),
-  from: [empresas.id],
-  probe: empresaPage(0),
+  rowsAt: 'nota',
+  ...ofCompany,
   request: (input) => get('/v1/vendas/nfe/devolucoes', input),
 })
 
-export const notasCanceladas = defineOperation({
+export const notasCanceladas = defineRoute({
   id: 'notasCanceladas',
-  class: 'read' as const,
   subject: 'vendas',
-  idempotent: true,
   summary:
     'Lista as notas fiscais canceladas de uma empresa (número, cliente, motivo, data); a página começa em 0 e as datas de cancelamento vão como dd-mm-aaaa.',
   label: 'Notas canceladas',
   input: z.strictObject({
     codigoEmpresa: Code,
     page: Page(0),
-    dataCancelamentoInicio: DashDate.optional(),
-    dataCancelamentoFinal: DashDate.optional(),
+    dataCancelamentoInicio: DashDay.optional(),
+    dataCancelamentoFinal: DashDay.optional(),
   }),
-  ...rows({ list: 'registros' }),
-  from: [empresas.id],
-  probe: empresaPage(0),
+  rowsAt: 'registros',
+  ...ofCompany,
   request: (input) => get('/v1/vendas/nfe/canceladas', input),
 })
 
 const Place = z.number().int().positive()
 
-const ItemPedido = z.object({
+const Item = z.object({
   codigoProduto: z.number().int().positive(),
   quantidade: z.number().positive(),
   valorUnitario: z.number().nonnegative(),
@@ -124,49 +112,33 @@ export const LancarPedidoInput = z
     codigoLocalEstoque: Place.describe(
       'O local de estoque do pedido; quando vem, vale para todo item e vence o de cada um.',
     ).optional(),
-    itens: z.array(ItemPedido).min(1),
+    itens: z.array(Item).min(1),
   })
-  .superRefine((input, context) => {
-    input.itens.forEach((item, index) => {
-      if (input.codigoLocalEstoque === undefined && item.codigoLocalEstoque === undefined)
+  .superRefine((pedido, context) => {
+    if (pedido.codigoLocalEstoque !== undefined) return
+    for (const [at, item] of pedido.itens.entries())
+      if (item.codigoLocalEstoque === undefined)
         context.addIssue({
           code: 'custom',
-          path: ['itens', index, 'codigoLocalEstoque'],
+          path: ['itens', at, 'codigoLocalEstoque'],
           message:
             'o item não tem local de estoque e o pedido também não: leia o estoque do produto (estoqueDoProduto) e escolha o local',
         })
-    })
   })
 
 type Pedido = z.infer<typeof LancarPedidoInput>
 
-/** The company's clock: the Sankhya keeps dates and hours with no zone, and the companies are in Brasília. */
-const BRASILIA = 'America/Sao_Paulo'
+// Sankhya keeps dates and hours without a zone, on the company's clock; the companies are in Brasília.
+const BRASILIA = { timeZone: 'America/Sao_Paulo' } as const
+const DAY = new Intl.DateTimeFormat('pt-BR', { ...BRASILIA, dateStyle: 'short' })
+const HOUR = new Intl.DateTimeFormat('pt-BR', { ...BRASILIA, timeStyle: 'short', hourCycle: 'h23' })
 
-const DATA = new Intl.DateTimeFormat('pt-BR', {
-  timeZone: BRASILIA,
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-})
-
-const HORA = new Intl.DateTimeFormat('pt-BR', {
-  timeZone: BRASILIA,
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-})
-
-/** The page's `data` (dd/MM/yyyy) and `hora` (HH:mm) of an instant, on Brasília's clock. */
-function brasiliaOf(at: Date): { data: string; hora: string } {
-  return { data: DATA.format(at), hora: HORA.format(at) }
-}
-
-/** The order as the page asks it: the date and hour of the send, each item numbered from 1, with the order's place when it gave one (it wins) or else the item's own, and its control or ''. */
-function pedidoOf({ codigoLocalEstoque, itens, ...header }: Pedido, at: Date) {
+/** The body the page asks: the send's date (dd/MM/yyyy) and hour (HH:mm), each item numbered from 1 with the order's place if it gave one, else its own, and its control or ''. */
+function bodyOf({ codigoLocalEstoque, itens, ...header }: Pedido, at: Date) {
   return {
     ...header,
-    ...brasiliaOf(at),
+    data: DAY.format(at),
+    hora: HOUR.format(at),
     itens: itens.map((item, index) => ({
       sequencia: index + 1,
       codigoProduto: item.codigoProduto,
@@ -188,23 +160,20 @@ export const lancarPedido = defineOperation({
   label: 'Lançar pedido',
   input: LancarPedidoInput,
   fixed: ['notaModelo'],
-  ...placed(),
+  output: Placed,
   probe: (): Pedido => ({
     notaModelo: 1,
     codigoCliente: 1,
     codigoLocalEstoque: 1,
     itens: [{ codigoProduto: 1, quantidade: 1, valorUnitario: 1 }],
   }),
-  request: (input, _account, at) => post('/v1/vendas/pedidos', pedidoOf(input, at)),
-  // The gateway's own timeout answers for the provider after it took the request: the order may exist.
+  request: (pedido, _account, at) => post('/v1/vendas/pedidos', bodyOf(pedido, at)),
+  answer: placedAnswer,
+  // The gateway's own timeout, after it took the request: the order may exist.
   uncertain: (native) => native.code === 'GTW3503',
-  // `observacao` is the one free text the person finds in the order.
-  mark: (input, mark) => ({
-    ...input,
-    observacao:
-      input.observacao === undefined || input.observacao === ''
-        ? mark
-        : `${input.observacao} ${mark}`,
+  mark: (pedido, mark) => ({
+    ...pedido,
+    observacao: pedido.observacao ? `${pedido.observacao} ${mark}` : mark,
   }),
-  idOf: (value) => value.codigoPedido,
+  idOf: (placed) => placed.codigoPedido,
 })

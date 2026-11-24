@@ -99,3 +99,4 @@ export {
   salesDatabase,
   soldBy,
 } from './sankhya/fake-sales.ts'
+export { SEARCH_PAGE_ROWS } from './sankhya/search.ts'

@@ -1,19 +1,16 @@
 import { z } from 'zod'
-import { defineOperation, get } from '../../kernel/operation.ts'
-import { rows } from '../answers.ts'
+import { get } from '../../kernel/operation.ts'
 import { produtos } from './produtos.ts'
-import { Code, firstCode, Page } from './shared.ts'
+import { Code, defineRoute, firstCode, Page } from './route.ts'
 
-export const precosDoProduto = defineOperation({
+export const precosDoProduto = defineRoute({
   id: 'precosDoProduto',
-  class: 'read' as const,
   subject: 'precos',
-  idempotent: true,
   summary:
     'Lista os preços de um produto em cada tabela de preço; a página se chama `pagina` e começa em 1.',
   label: 'Preços de um produto',
   input: z.strictObject({ codigoProduto: Code, pagina: Page(1) }),
-  ...rows({ list: 'produtos' }),
+  rowsAt: 'produtos',
   from: [produtos.id],
   probe: (earlier) => {
     const codigoProduto = firstCode(earlier, produtos.id, 'codigoProduto')
@@ -22,16 +19,14 @@ export const precosDoProduto = defineOperation({
   request: ({ codigoProduto, pagina }) => get(`/v1/precos/produto/${codigoProduto}`, { pagina }),
 })
 
-export const precosDaTabela = defineOperation({
+export const precosDaTabela = defineRoute({
   id: 'precosDaTabela',
-  class: 'read' as const,
   subject: 'precos',
-  idempotent: true,
   summary:
     'Lista os preços de uma tabela de preço, de todos os produtos; a página se chama `pagina` e começa em 1.',
   label: 'Preços de uma tabela',
   input: z.strictObject({ codigoTabela: Code, pagina: Page(1) }),
-  ...rows({ list: 'produtos' }),
+  rowsAt: 'produtos',
   from: [precosDoProduto.id],
   probe: (earlier) => {
     const codigoTabela = firstCode(earlier, precosDoProduto.id, 'codigoTabela')

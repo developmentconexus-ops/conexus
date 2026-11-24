@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { SEARCH_PAGE_ROWS } from '@conexus/connectors'
 import { shaped } from './test-app-calls.ts'
 
 function row(n: number) {
@@ -13,6 +14,11 @@ test('o corte: 500 linhas viram 20 inteiras com complete falso; menos de 20 e se
   const small = shaped({ linhas: [row(1), row(2)], temMais: false })
   assert.deepEqual([Object(small.value).linhas.length, small.complete], [2, true])
   assert.equal(shaped({ linhas: [row(1)], temMais: true }).complete, false)
+})
+
+test('o corte guarda as linhas da página padrão da busca do kit, o mesmo número', () => {
+  const cut = shaped({ linhas: Array.from({ length: 500 }, (_, n) => row(n)), temMais: false })
+  assert.equal(Object(cut.value).linhas.length, SEARCH_PAGE_ROWS)
 })
 
 test('o corte: passa de 16 KB, o texto longo é cortado com reticências antes de perder linha; sobrando, perde linhas do fim', () => {
