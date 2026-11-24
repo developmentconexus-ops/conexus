@@ -1,4 +1,3 @@
-export { AskAboutTable } from './ask-about-table.tsx'
 export { ROW } from './choice-list.tsx'
 export { CompanyMemory } from './company-memory.tsx'
 export { useConnectorCatalog } from './connector-names.ts'

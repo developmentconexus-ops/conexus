@@ -2,10 +2,9 @@ import {
   getConnection,
   listConnections,
   listProjectConnections,
-  listProjectCopies,
   ProjectConnections,
 } from '@conexus/hub-api'
-import { failure, ok } from './layout-harness.ts'
+import { ok } from './layout-harness.ts'
 import { MERCADO_LIVRE, SANKHYA } from './src/hub/connectors/fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionOf } from './sweep-connections.ts'
@@ -47,36 +46,8 @@ function listOf(sankhya: Line[], mercadoLivre: Line[]) {
   })
 }
 
-const COPIES = [
-  { id: '00000000-0000-4000-8000-0000000000a1', label: 'Vendas', name: 'vendas', granted: false },
-  {
-    id: '00000000-0000-4000-8000-0000000000a2',
-    label: 'Clientes da Matriz com um nome bem comprido para a linha quebrar',
-    name: 'clientes_da_matriz_com_um_nome_bem_comprido_para_a_linha',
-    granted: true,
-  },
-]
-
-function copiesOf(copies: typeof COPIES) {
+function page(who: typeof OWNER, mayManage: boolean, sankhya: Line[], mercadoLivre: Line[]) {
   return {
-    [`GET /api/companies/${COMPANY.id}/projects/${PROJECT_ID}/copies`]: ok(listProjectCopies, {
-      copies: copies.map(({ granted, ...copy }) => ({
-        copy: { ...copy, connector: 'sankhya' },
-        granted,
-      })),
-    }),
-  }
-}
-
-function page(
-  who: typeof OWNER,
-  mayManage: boolean,
-  sankhya: Line[],
-  mercadoLivre: Line[],
-  copies: typeof COPIES = COPIES,
-) {
-  return {
-    ...copiesOf(copies),
     ...who,
     ...projectsPage(COMPANY.id),
     [`GET /api/companies/${COMPANY.id}/connections`]: ok(listConnections, {
@@ -191,30 +162,10 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
     settle: (p) => waitFor(p, 'Conectar de novo em Integrações da empresa'),
   },
   {
-    name: 'Integrações do Projeto, sem nenhuma cópia na empresa',
-    path: PAGE,
-    replies: page(OWNER, true, [MATRIZ], [], []),
-    settle: (p) => waitFor(p, 'A empresa ainda não tem cópias.'),
-  },
-  {
-    name: 'Integrações do Projeto, o banco da empresa não respondeu ao liberar uma cópia',
-    path: PAGE,
-    replies: {
-      ...page(OWNER, true, [MATRIZ], []),
-      [`PUT /api/companies/${COMPANY.id}/projects/${PROJECT_ID}/copies/${COPIES[0]?.id}`]: failure(
-        'COPY_DATABASE_UNAVAILABLE',
-      ),
-    },
-    settle: async (p) => {
-      await p.getByRole('button', { name: 'Liberar: Vendas' }).click()
-      await waitFor(p, 'O banco da empresa não respondeu.')
-    },
-  },
-  {
-    name: 'Integrações do Projeto, o membro lê quem libera uma cópia',
+    name: 'Integrações do Projeto, o membro lê quem libera',
     path: PAGE,
     replies: page(MEMBER, false, [MATRIZ], []),
-    settle: (p) => waitFor(p, 'Dono ou administrador libera uma cópia.'),
+    settle: (p) => waitFor(p, 'Peça ao dono ou a um administrador.'),
   },
   {
     name: 'Integrações do Projeto sem nenhuma ligação',

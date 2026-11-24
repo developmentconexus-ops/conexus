@@ -5,7 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { copy, LIST, openCopies } from './test-hub.tsx'
+import { LIST, openData } from './test-hub.tsx'
 
 // Dados, camada Apps: as tabelas que cada app guarda, por Projeto (Dados, parte 1, 10.1 a 10.5).
 const server = hubServer()
@@ -46,7 +46,7 @@ test('Apps: as tabelas por Projeto, com a versão e as linhas', async () => {
     [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 1284 })),
     [ACOMPANHAMENTO.id]: tablesOf(table('metas', { kind: 'EXACT', rows: 0 })),
   })
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM, ACOMPANHAMENTO])
+  openData(server, {}, APPS, 'owner', [CRM, ACOMPANHAMENTO])
   const crm = within(await screen.findByRole('region', { name: 'CRM' }))
   expect(crm.getByText('CRM · 1 tabela')).toBeTruthy()
   expect(crm.getByText('clientes')).toBeTruthy()
@@ -62,26 +62,26 @@ test('Apps: um Projeto sem app não aparece', async () => {
     [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 3 })),
     [SEM_APP.id]: TablesShape.parse({ kind: 'NO_APP' }),
   })
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM, SEM_APP])
+  openData(server, {}, APPS, 'owner', [CRM, SEM_APP])
   await screen.findByRole('region', { name: 'CRM' })
   expect(screen.queryByText(/Sem app/)).toBeNull()
 })
 
 test('Apps: um Projeto que o Hub diz sem app também não aparece', async () => {
   answering({ [CRM.id]: TablesShape.parse({ kind: 'NO_APP' }) })
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM])
+  openData(server, {}, APPS, 'owner', [CRM])
   expect(await screen.findByText('Nenhum app guarda tabelas ainda.')).toBeTruthy()
   expect(screen.queryByRole('region', { name: 'CRM' })).toBeNull()
 })
 
 test('Apps: nenhum app', async () => {
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [SEM_APP])
+  openData(server, {}, APPS, 'owner', [SEM_APP])
   expect(await screen.findByText('Nenhum app guarda tabelas ainda.')).toBeTruthy()
 })
 
 test('Apps: a contagem indisponível', async () => {
   answering({ [CRM.id]: tablesOf(table('sobras', { kind: 'UNKNOWN' })) })
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM])
+  openData(server, {}, APPS, 'owner', [CRM])
   expect(await screen.findByText('indisponível')).toBeTruthy()
 })
 
@@ -90,7 +90,7 @@ test('Apps: o Projeto que não responde diz só no grupo dele', async () => {
     [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 3 })),
     [ACOMPANHAMENTO.id]: refusal('DATABASE_UNAVAILABLE'),
   })
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM, ACOMPANHAMENTO])
+  openData(server, {}, APPS, 'owner', [CRM, ACOMPANHAMENTO])
   const failed = within(await screen.findByRole('region', { name: 'Acompanhamento' }))
   expect(failed.getByRole('button', { name: 'Tentar de novo' })).toBeTruthy()
   expect(failed.getByRole('link', { name: 'Abrir o Projeto' })).toBeTruthy()
@@ -99,14 +99,14 @@ test('Apps: o Projeto que não responde diz só no grupo dele', async () => {
 
 test('Apps: Abrir o Projeto leva à página Dados do Projeto', async () => {
   answering({ [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 3 })) })
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM])
+  openData(server, {}, APPS, 'owner', [CRM])
   const link = await screen.findByRole('link', { name: 'Abrir o Projeto' })
   expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/projects/${CRM.id}/data`)
 })
 
 test('Apps: o grupo Apps abre a camada Apps', async () => {
   answering({ [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 3 })) })
-  openCopies(server, { copies: [copy()] }, LIST, 'owner', [CRM])
+  openData(server, {}, LIST, 'owner', [CRM])
   fireEvent.click(await screen.findByRole('link', { name: 'Apps' }))
   await waitFor(() => expect(screen.getByText('clientes')).toBeTruthy())
 })
@@ -117,7 +117,7 @@ test('Apps: a segunda página de Projetos só é lida no toque em Mais Projetos'
     [CRM.id]: tablesOf(table('clientes', { kind: 'EXACT', rows: 3 })),
     [ACOMPANHAMENTO.id]: tablesOf(table('metas', { kind: 'EXACT', rows: 0 })),
   })
-  openCopies(server, { copies: [copy()] }, APPS, 'owner', [CRM])
+  openData(server, {}, APPS, 'owner', [CRM])
   server.use(
     http.get(`*/api/companies/${COMPANY.id}/projects`, ({ request }) => {
       const page = new URL(request.url).searchParams.get('page')

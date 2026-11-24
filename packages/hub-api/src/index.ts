@@ -137,11 +137,6 @@ export {
   setConversationModel,
   TurnFailureCode,
 } from './conversations.ts'
-export * from './copies.ts'
-export { PROOF_PAGE_ROWS } from './copy-proof.ts'
-export * from './copy-readers.ts'
-export * from './copy-sample.ts'
-export * from './copy-shown.ts'
 export * from './data-reads.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export * from './handoff.ts'

@@ -27,7 +27,6 @@ import {
 } from '../connectors/public.ts'
 import { ActionDialog } from '../identity/public.ts'
 import { GrantDialog } from './grant-dialog.tsx'
-import { ProjectCopies } from './project-copies.tsx'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 type Group = ProjectConnections['connectors'][number]
@@ -208,7 +207,6 @@ export function ProjectIntegrations(scope: Scope) {
           ))}
         </List>
       )}
-      <ProjectCopies {...scope} />
     </section>
   )
 }

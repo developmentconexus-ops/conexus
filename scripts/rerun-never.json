@@ -1127,10 +1127,6 @@
       "name": "NOT_FOUND \\(outra empresa\\): \"Esse endereço não é de uma ligação\\.\""
     },
     {
-      "file": "apps/web/src/hub/copies/copy-list.test.tsx",
-      "name": "o membro que abre uma tabela de outro papel vê a página de não encontrado"
-    },
-    {
       "file": "apps/web/src/hub/identity/company-switcher.test.tsx",
       "name": "escolher a outra empresa na troca a faz a última lembrada \\(critério 6\\)"
     },
