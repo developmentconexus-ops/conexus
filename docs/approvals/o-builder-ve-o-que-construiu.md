@@ -25,3 +25,5 @@ Em 2026-11-23, às duas decisões da página do cartão (commit `205a1980`): "1.
   `apps.check_session`.
 
 A aprovação da página do fundador, com o commit do cartão, entra aqui quando ele a der.
+
+Cartão curto de O Builder vê o que construiu (`docs/steps/o-builder-ve-o-que-construiu.md`) aprovado em 2026-11-23 (commit fd27fdc77d4eaae0b9accfc40f98607e3ad18581), com as duas decisões da página respondidas e o merge e o início do A1 autorizados: "Pode".
