@@ -239,6 +239,9 @@ test('a segunda preparação', () => {
       'TaskDefinitionsHaveNoResource',
       'TheCopyQueues',
       'TheCopyRule',
+      'ReadTheCopyNetwork',
+      'CreateTheCopyNetwork',
+      'TagTheCopyNetworkOnCreate',
       'TheCopyNetwork',
       'TheCopyLogs',
       'TheTemplatesBucket',
@@ -265,9 +268,33 @@ test('a segunda preparação', () => {
     'ecs:DeregisterTaskDefinition',
     'ecs:DescribeTaskDefinition',
   ])
-  const network = actionsOf(bySid(statements, 'TheCopyNetwork'))
-  assert.ok(network.every((action) => action.startsWith('ec2:')))
-  for (const action of network) assert.doesNotMatch(action, /\*|Instance(?!s$)|NatGateway|Peering/)
+  const network = statements.filter((statement) =>
+    actionsOf(statement).some((action) => action.startsWith('ec2:')),
+  )
+  for (const action of network.flatMap(actionsOf)) {
+    assert.match(action, /^ec2:/)
+    assert.doesNotMatch(action, /\*|Instance(?!s$)|NatGateway|Peering/)
+  }
+  for (const statement of network) {
+    assert.equal(statement.Condition?.StringEquals?.['aws:RequestedRegion'], REGION, statement.Sid)
+  }
+  const ours = {
+    'aws:RequestedRegion': REGION,
+    'aws:ResourceTag/aws:cloudformation:stack-name': 'conexus-plataforma',
+  }
+  const creates = actionsOf(bySid(statements, 'CreateTheCopyNetwork'))
+  assert.deepEqual(bySid(statements, 'TheCopyNetwork').Condition, { StringEquals: ours })
+  assert.deepEqual(bySid(statements, 'TagTheCopyNetworkOnCreate').Condition, {
+    StringEquals: {
+      'aws:RequestedRegion': REGION,
+      'ec2:CreateAction': creates.map((action) => action.slice('ec2:'.length)),
+    },
+  })
+  for (const action of actionsOf(bySid(statements, 'ReadTheCopyNetwork'))) {
+    assert.match(action, /^ec2:Describe/)
+  }
+  for (const action of creates)
+    assert.match(action, /^ec2:Create(Vpc|Subnet|InternetGateway|RouteTable|SecurityGroup)$/)
   for (const sid of ['TheCopyCluster', 'TheCopyQueues', 'TheCopyRule']) {
     for (const action of actionsOf(bySid(statements, sid))) assert.doesNotMatch(action, /\*/)
   }

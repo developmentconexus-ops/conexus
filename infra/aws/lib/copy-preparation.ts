@@ -50,39 +50,50 @@ const COPY_RULE_ACTIONS = [
   'events:ListTagsForResource',
 ]
 
-const COPY_NETWORK_ACTIONS = [
-  'ec2:CreateVpc',
-  'ec2:DeleteVpc',
+/** What the network's handlers read, and the resources they create, which have no tag before they exist. */
+const COPY_NETWORK_READS = [
   'ec2:DescribeVpcs',
   'ec2:DescribeVpcAttribute',
-  'ec2:ModifyVpcAttribute',
   'ec2:DescribeVpcEncryptionControls',
-  'ec2:CreateSubnet',
-  'ec2:DeleteSubnet',
   'ec2:DescribeSubnets',
-  'ec2:ModifySubnetAttribute',
   'ec2:DescribeNetworkAcls',
   'ec2:DescribeAvailabilityZones',
-  'ec2:CreateInternetGateway',
-  'ec2:DeleteInternetGateway',
   'ec2:DescribeInternetGateways',
+  'ec2:DescribeRouteTables',
+  'ec2:DescribeNetworkInterfaces',
+  'ec2:DescribeSecurityGroups',
+  'ec2:DescribeInstances',
+]
+
+const COPY_NETWORK_CREATES = [
+  'ec2:CreateVpc',
+  'ec2:CreateSubnet',
+  'ec2:CreateInternetGateway',
+  'ec2:CreateRouteTable',
+  'ec2:CreateSecurityGroup',
+]
+
+/**
+ * What changes or deletes the network, only where CloudFormation's own tag names the platform: it
+ * tags each piece in the create call itself, and no one may write a tag that starts with `aws:`.
+ */
+const COPY_NETWORK_CHANGES = [
+  'ec2:DeleteVpc',
+  'ec2:ModifyVpcAttribute',
+  'ec2:DeleteSubnet',
+  'ec2:ModifySubnetAttribute',
+  'ec2:DeleteInternetGateway',
   'ec2:AttachInternetGateway',
   'ec2:DetachInternetGateway',
-  'ec2:CreateRouteTable',
   'ec2:DeleteRouteTable',
-  'ec2:DescribeRouteTables',
   'ec2:AssociateRouteTable',
   'ec2:DisassociateRouteTable',
   'ec2:CreateRoute',
   'ec2:DeleteRoute',
   'ec2:ReplaceRoute',
-  'ec2:DescribeNetworkInterfaces',
-  'ec2:CreateSecurityGroup',
   'ec2:DeleteSecurityGroup',
-  'ec2:DescribeSecurityGroups',
   'ec2:AuthorizeSecurityGroupEgress',
   'ec2:RevokeSecurityGroupEgress',
-  'ec2:DescribeInstances',
   'ec2:CreateTags',
   'ec2:DeleteTags',
 ]
@@ -105,6 +116,7 @@ export function copyPlatformStatements(stack: Stack): iam.PolicyStatement[] {
   function arn(service: string, resource: string): string {
     return `arn:${stack.partition}:${service}:*:${stack.account}:${resource}`
   }
+  const inRegion = { 'aws:RequestedRegion': stack.region }
   return [
     new iam.PolicyStatement({
       sid: 'TheCopyCluster',
@@ -132,9 +144,35 @@ export function copyPlatformStatements(stack: Stack): iam.PolicyStatement[] {
       resources: [arn('events', `rule/${PLATFORM_STACK}-*`)],
     }),
     new iam.PolicyStatement({
-      sid: 'TheCopyNetwork',
-      actions: COPY_NETWORK_ACTIONS,
+      sid: 'ReadTheCopyNetwork',
+      actions: COPY_NETWORK_READS,
       resources: ['*'],
+      conditions: { StringEquals: inRegion },
+    }),
+    new iam.PolicyStatement({
+      sid: 'CreateTheCopyNetwork',
+      actions: COPY_NETWORK_CREATES,
+      resources: ['*'],
+      conditions: { StringEquals: inRegion },
+    }),
+    new iam.PolicyStatement({
+      sid: 'TagTheCopyNetworkOnCreate',
+      actions: ['ec2:CreateTags'],
+      resources: ['*'],
+      conditions: {
+        StringEquals: { ...inRegion, 'ec2:CreateAction': COPY_NETWORK_CREATES.map(withoutService) },
+      },
+    }),
+    new iam.PolicyStatement({
+      sid: 'TheCopyNetwork',
+      actions: COPY_NETWORK_CHANGES,
+      resources: ['*'],
+      conditions: {
+        StringEquals: {
+          ...inRegion,
+          'aws:ResourceTag/aws:cloudformation:stack-name': PLATFORM_STACK,
+        },
+      },
     }),
     new iam.PolicyStatement({
       sid: 'TheCopyLogs',
@@ -142,4 +180,8 @@ export function copyPlatformStatements(stack: Stack): iam.PolicyStatement[] {
       resources: [arn('logs', `log-group:${COPY_LOGS}`), arn('logs', `log-group:${COPY_LOGS}:*`)],
     }),
   ]
+}
+
+function withoutService(action: string): string {
+  return action.slice(action.indexOf(':') + 1)
 }
