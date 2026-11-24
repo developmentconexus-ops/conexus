@@ -1,7 +1,0 @@
-export { Automations } from './automations.tsx'
-export { AutomationBadge } from './badge.tsx'
-export { automationParams, loadAutomations, RunsSearch, runsDeps, runsLoader } from './loader.ts'
-export { Page } from './page.tsx'
-export { PlaceName } from './place.tsx'
-export { ProposalCard } from './proposal.tsx'
-export { AutomationRuns } from './runs.tsx'

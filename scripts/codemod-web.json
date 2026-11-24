@@ -1,0 +1,1477 @@
+{
+  "moves": [
+    {
+      "from": "apps/web/src/builder/agents/agent-chat.tsx",
+      "to": "apps/web/src/agents/saved-agent/agent-chat.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/agent-list.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/agent-list.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/agent-list.tsx",
+      "to": "apps/web/src/agents/saved-agent/agent-list.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/agent-page-not-in-role.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/agent-page-not-in-role.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/agent-page-versao-nova.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/agent-page-versao-nova.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/agent-page.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/agent-page.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/agent-page.tsx",
+      "to": "apps/web/src/agents/saved-agent/agent-page.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/approval-card.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/approval-card.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/approval-record.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/approval-record.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/area-frame.tsx",
+      "to": "apps/web/src/agents/saved-agent/area-frame.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/area.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/area.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/area.tsx",
+      "to": "apps/web/src/agents/saved-agent/area.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/chooser.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/chooser.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/chooser.tsx",
+      "to": "apps/web/src/agents/saved-agent/chooser.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/clean.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/clean.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/computer.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/computer.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/conector-rows.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/conector-rows.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/config-panel.tsx",
+      "to": "apps/web/src/agents/saved-agent/config-panel.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/connection-tools.tsx",
+      "to": "apps/web/src/agents/saved-agent/connection-tools.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/connections-section.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/connections-section.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/connections-section.tsx",
+      "to": "apps/web/src/agents/saved-agent/connections-section.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/construtor-area.test.tsx",
+      "to": "apps/web/src/agents/agent-builder/construtor-area.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/construtor-area.tsx",
+      "to": "apps/web/src/agents/agent-builder/construtor-area.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/construtor-card.test.tsx",
+      "to": "apps/web/src/agents/agent-builder/construtor-card.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/construtor-chat.test.tsx",
+      "to": "apps/web/src/agents/agent-builder/construtor-chat.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/construtor-chat.tsx",
+      "to": "apps/web/src/agents/agent-builder/construtor-chat.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/construtor-loader.ts",
+      "to": "apps/web/src/agents/agent-builder/construtor-loader.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/construtor-queries.ts",
+      "to": "apps/web/src/agents/agent-builder/construtor-queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/construtor-text.ts",
+      "to": "apps/web/src/agents/agent-builder/construtor-text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/creator.tsx",
+      "to": "apps/web/src/agents/saved-agent/creator.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/draft-panel.test.tsx",
+      "to": "apps/web/src/agents/agent-builder/draft-panel.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/draft-panel.tsx",
+      "to": "apps/web/src/agents/agent-builder/draft-panel.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/file-width.ts",
+      "to": "apps/web/src/agents/saved-agent/file-width.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/loader.ts",
+      "to": "apps/web/src/agents/saved-agent/loader.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/new-agent.tsx",
+      "to": "apps/web/src/agents/saved-agent/new-agent.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/open-conversation.ts",
+      "to": "apps/web/src/agents/saved-agent/open-conversation.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/publish.tsx",
+      "to": "apps/web/src/agents/saved-agent/publish.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/queries.ts",
+      "to": "apps/web/src/agents/saved-agent/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/read-states.tsx",
+      "to": "apps/web/src/agents/saved-agent/read-states.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/route-states.tsx",
+      "to": "apps/web/src/agents/saved-agent/route-states.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/rows.tsx",
+      "to": "apps/web/src/agents/saved-agent/rows.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/section.tsx",
+      "to": "apps/web/src/agents/saved-agent/section.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/test-agents.ts",
+      "to": "apps/web/src/agents/saved-agent/test-agents.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/test-approval.tsx",
+      "to": "apps/web/src/agents/saved-agent/test-approval.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/test-connection-tools.ts",
+      "to": "apps/web/src/agents/saved-agent/test-connection-tools.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/test-hub-tools.tsx",
+      "to": "apps/web/src/agents/saved-agent/test-hub-tools.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/test-hub.tsx",
+      "to": "apps/web/src/agents/saved-agent/test-hub.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/test-panel.tsx",
+      "to": "apps/web/src/agents/saved-agent/test-panel.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/text.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/text.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/text.ts",
+      "to": "apps/web/src/agents/saved-agent/text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/tool-chip.tsx",
+      "to": "apps/web/src/agents/agent-builder/tool-chip.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/tool-form.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/tool-form.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/tool-form.tsx",
+      "to": "apps/web/src/agents/saved-agent/tool-form.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/tool-line.tsx",
+      "to": "apps/web/src/agents/saved-agent/tool-line.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/tools-section.tsx",
+      "to": "apps/web/src/agents/saved-agent/tools-section.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/untitled-conversation.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/untitled-conversation.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/use-draft-save-queue.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/use-draft-save-queue.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/use-draft-save.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/use-draft-save.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/use-draft-save.ts",
+      "to": "apps/web/src/agents/saved-agent/use-draft-save.ts"
+    },
+    {
+      "from": "apps/web/src/builder/agents/versions.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/versions.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/versions.tsx",
+      "to": "apps/web/src/agents/saved-agent/versions.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/write-lines.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/write-lines.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/write-lines.tsx",
+      "to": "apps/web/src/agents/saved-agent/write-lines.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/agents/write-rows.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/write-rows.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/badge.test.tsx",
+      "to": "apps/web/src/agents/assistant/badge.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/choice-list.tsx",
+      "to": "apps/web/src/agents/assistant/choice-list.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/company-memory-page.tsx",
+      "to": "apps/web/src/agents/assistant/company-memory-page.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/company-memory.test.tsx",
+      "to": "apps/web/src/agents/assistant/company-memory.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/company-memory.tsx",
+      "to": "apps/web/src/agents/assistant/company-memory.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/composer-tools.test.tsx",
+      "to": "apps/web/src/agents/assistant/composer-tools.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/composer-tools.tsx",
+      "to": "apps/web/src/agents/assistant/composer-tools.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/connector-names.test.tsx",
+      "to": "apps/web/src/agents/assistant/connector-names.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/conversation-row.tsx",
+      "to": "apps/web/src/agents/assistant/conversation-row.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/conversation.test.tsx",
+      "to": "apps/web/src/agents/assistant/conversation.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/conversation.tsx",
+      "to": "apps/web/src/agents/assistant/conversation.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/day.test.tsx",
+      "to": "apps/web/src/agents/assistant/day.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/day.tsx",
+      "to": "apps/web/src/agents/assistant/day.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/draft-choice.ts",
+      "to": "apps/web/src/agents/assistant/draft-choice.ts"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/file-failures.test.tsx",
+      "to": "apps/web/src/agents/assistant/file-failures.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/file.test.tsx",
+      "to": "apps/web/src/agents/assistant/file.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/gone.tsx",
+      "to": "apps/web/src/agents/assistant/gone.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/home.test.tsx",
+      "to": "apps/web/src/agents/assistant/home.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/home.tsx",
+      "to": "apps/web/src/agents/assistant/home.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/list-view.ts",
+      "to": "apps/web/src/agents/assistant/list-view.ts"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/loader.ts",
+      "to": "apps/web/src/agents/assistant/loader.ts"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/member-home.test.tsx",
+      "to": "apps/web/src/agents/assistant/member-home.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/memory-proposal-card.tsx",
+      "to": "apps/web/src/agents/assistant/memory-proposal-card.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/memory-proposal.test.tsx",
+      "to": "apps/web/src/agents/assistant/memory-proposal.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/memory-proposal.tsx",
+      "to": "apps/web/src/agents/assistant/memory-proposal.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/model.test.tsx",
+      "to": "apps/web/src/agents/assistant/model.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/place-filter.tsx",
+      "to": "apps/web/src/agents/assistant/place-filter.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/plus-menu.tsx",
+      "to": "apps/web/src/agents/assistant/plus-menu.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/profile-memory.test.tsx",
+      "to": "apps/web/src/agents/assistant/profile-memory.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/profile-memory.tsx",
+      "to": "apps/web/src/agents/assistant/profile-memory.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/project-choice.tsx",
+      "to": "apps/web/src/agents/assistant/project-choice.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/project.test.tsx",
+      "to": "apps/web/src/agents/assistant/project.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/project.tsx",
+      "to": "apps/web/src/agents/assistant/project.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/projects-tab.tsx",
+      "to": "apps/web/src/agents/assistant/projects-tab.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/propose-closing.test.tsx",
+      "to": "apps/web/src/agents/assistant/propose-closing.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/propose.test.tsx",
+      "to": "apps/web/src/agents/assistant/propose.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/propose.tsx",
+      "to": "apps/web/src/agents/assistant/propose.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/queries.ts",
+      "to": "apps/web/src/agents/assistant/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/question-card.test.tsx",
+      "to": "apps/web/src/agents/assistant/question-card.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/refusals.test.tsx",
+      "to": "apps/web/src/agents/assistant/refusals.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/sidebar-conversations.test.tsx",
+      "to": "apps/web/src/agents/assistant/sidebar-conversations.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/sidebar-conversations.tsx",
+      "to": "apps/web/src/agents/assistant/sidebar-conversations.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/sidebar-search.test.tsx",
+      "to": "apps/web/src/agents/assistant/sidebar-search.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/test-changes.tsx",
+      "to": "apps/web/src/agents/assistant/test-changes.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/test-file.tsx",
+      "to": "apps/web/src/agents/assistant/test-file.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/test-hub.tsx",
+      "to": "apps/web/src/agents/assistant/test-hub.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/test-list.ts",
+      "to": "apps/web/src/agents/assistant/test-list.ts"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/test-model.tsx",
+      "to": "apps/web/src/agents/assistant/test-model.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/test-propose.tsx",
+      "to": "apps/web/src/agents/assistant/test-propose.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/text.test.tsx",
+      "to": "apps/web/src/agents/assistant/text.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/text.ts",
+      "to": "apps/web/src/agents/assistant/text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/title-heard.test.tsx",
+      "to": "apps/web/src/agents/assistant/title-heard.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/turn-failure.test.tsx",
+      "to": "apps/web/src/agents/assistant/turn-failure.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/assistant/untitled-conversation.test.tsx",
+      "to": "apps/web/src/agents/assistant/untitled-conversation.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/automations.test.tsx",
+      "to": "apps/web/src/agents/assistant/automations/automations.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/automations.tsx",
+      "to": "apps/web/src/agents/assistant/automations/automations.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/badge.tsx",
+      "to": "apps/web/src/agents/assistant/automations/badge.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/bell-after-run.test.tsx",
+      "to": "apps/web/src/agents/assistant/automations/bell-after-run.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/cadence-text.ts",
+      "to": "apps/web/src/agents/assistant/automations/cadence-text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/automations/loader.ts",
+      "to": "apps/web/src/agents/assistant/automations/loader.ts"
+    },
+    {
+      "from": "apps/web/src/builder/automations/place.tsx",
+      "to": "apps/web/src/agents/assistant/automations/place.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/proposal.test.tsx",
+      "to": "apps/web/src/agents/assistant/automations/proposal.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/proposal.tsx",
+      "to": "apps/web/src/agents/assistant/automations/proposal.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/queries.ts",
+      "to": "apps/web/src/agents/assistant/automations/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/automations/runs.tsx",
+      "to": "apps/web/src/agents/assistant/automations/runs.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/test-hub.tsx",
+      "to": "apps/web/src/agents/assistant/automations/test-hub.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/text.test.tsx",
+      "to": "apps/web/src/agents/assistant/automations/text.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/automations/text.ts",
+      "to": "apps/web/src/agents/assistant/automations/text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/agent-line.test.tsx",
+      "to": "apps/web/src/harness/room/agent-line.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/app-data-specs.test.ts",
+      "to": "apps/web/src/harness/room/app-data-specs.test.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/app-data-specs.ts",
+      "to": "apps/web/src/harness/room/app-data-specs.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/approval-card.tsx",
+      "to": "apps/web/src/harness/room/approval-card.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/approval-fields.ts",
+      "to": "apps/web/src/harness/room/approval-fields.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/approval-item.ts",
+      "to": "apps/web/src/harness/room/approval-item.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/approval-text.ts",
+      "to": "apps/web/src/harness/room/approval-text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/assistant-specs.ts",
+      "to": "apps/web/src/harness/room/assistant-specs.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/attachments.test.tsx",
+      "to": "apps/web/src/harness/room/attachments.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/attachments.ts",
+      "to": "apps/web/src/harness/room/attachments.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/beside.tsx",
+      "to": "apps/web/src/harness/room/beside.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/builder-turn.tsx",
+      "to": "apps/web/src/harness/room/builder-turn.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/card-answered.test.tsx",
+      "to": "apps/web/src/harness/room/card-answered.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/card-null-args.test.tsx",
+      "to": "apps/web/src/harness/room/card-null-args.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/card-reread.test.tsx",
+      "to": "apps/web/src/harness/room/card-reread.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/card-state.test.ts",
+      "to": "apps/web/src/harness/room/card-state.test.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/card-stopped.test.tsx",
+      "to": "apps/web/src/harness/room/card-stopped.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/cards.test.tsx",
+      "to": "apps/web/src/harness/room/cards.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/chat.tsx",
+      "to": "apps/web/src/harness/room/chat.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/composer.test.tsx",
+      "to": "apps/web/src/harness/room/composer.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/composer.tsx",
+      "to": "apps/web/src/harness/room/composer.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/connector-catalog.ts",
+      "to": "apps/web/src/harness/room/connector-catalog.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/connector-specs.ts",
+      "to": "apps/web/src/harness/room/connector-specs.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/connector-words.ts",
+      "to": "apps/web/src/harness/room/connector-words.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/construtor-rows.test.tsx",
+      "to": "apps/web/src/harness/room/construtor-rows.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/construtor-specs.ts",
+      "to": "apps/web/src/harness/room/construtor-specs.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/conversation-menu.test.tsx",
+      "to": "apps/web/src/harness/room/conversation-menu.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/conversation-menu.tsx",
+      "to": "apps/web/src/harness/room/conversation-menu.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/conversation-switch.tsx",
+      "to": "apps/web/src/agents/app-builder/conversation-switch.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/conversation.test.tsx",
+      "to": "apps/web/src/harness/room/conversation.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/data-specs.test.tsx",
+      "to": "apps/web/src/harness/room/data-specs.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/data-specs.ts",
+      "to": "apps/web/src/harness/room/data-specs.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/diagram-fixture.tsx",
+      "to": "apps/web/src/harness/room/diagram-fixture.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/diagram-frame.ts",
+      "to": "apps/web/src/harness/room/diagram-frame.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/diagram.tsx",
+      "to": "apps/web/src/harness/room/diagram.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/dictation.test.tsx",
+      "to": "apps/web/src/harness/room/dictation.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/draft.ts",
+      "to": "apps/web/src/harness/room/draft.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/elapsed.ts",
+      "to": "apps/web/src/harness/room/elapsed.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/first-message.tsx",
+      "to": "apps/web/src/agents/app-builder/first-message.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/fold.test.ts",
+      "to": "apps/web/src/harness/room/fold.test.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/fold.ts",
+      "to": "apps/web/src/harness/room/fold.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/follow-dropped.test.tsx",
+      "to": "apps/web/src/harness/room/follow-dropped.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/handoff.test.tsx",
+      "to": "apps/web/src/harness/room/handoff.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/handoff.ts",
+      "to": "apps/web/src/harness/room/handoff.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/logo.tsx",
+      "to": "apps/web/src/harness/room/logo.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/machine-line.tsx",
+      "to": "apps/web/src/harness/room/machine-line.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/machine-specs.ts",
+      "to": "apps/web/src/harness/room/machine-specs.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/markdown-blocks.ts",
+      "to": "apps/web/src/harness/room/markdown-blocks.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/markdown.test.tsx",
+      "to": "apps/web/src/harness/room/markdown.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/markdown.tsx",
+      "to": "apps/web/src/harness/room/markdown.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/memory-status.test.tsx",
+      "to": "apps/web/src/harness/room/memory-status.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/memory-status.tsx",
+      "to": "apps/web/src/harness/room/memory-status.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/messages.test.tsx",
+      "to": "apps/web/src/harness/room/messages.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/messages.ts",
+      "to": "apps/web/src/harness/room/messages.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/migration-cause.test.ts",
+      "to": "apps/web/src/harness/room/migration-cause.test.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/migration-cause.ts",
+      "to": "apps/web/src/harness/room/migration-cause.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/model-choice.tsx",
+      "to": "apps/web/src/harness/room/model-choice.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/note-card.test.tsx",
+      "to": "apps/web/src/harness/room/note-card.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/note-card.tsx",
+      "to": "apps/web/src/harness/room/note-card.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/note-parse.ts",
+      "to": "apps/web/src/harness/room/note-parse.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/older-messages.test.tsx",
+      "to": "apps/web/src/harness/room/older-messages.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/panel-sources.test.tsx",
+      "to": "apps/web/src/agents/app-builder/panel-sources.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/panel.test.tsx",
+      "to": "apps/web/src/agents/app-builder/panel.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/panel.tsx",
+      "to": "apps/web/src/agents/app-builder/panel.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/params.ts",
+      "to": "apps/web/src/harness/room/params.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/person-turn.test.tsx",
+      "to": "apps/web/src/harness/room/person-turn.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/person-turn.tsx",
+      "to": "apps/web/src/harness/room/person-turn.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/plan-card.tsx",
+      "to": "apps/web/src/harness/room/plan-card.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/plan-parse.ts",
+      "to": "apps/web/src/harness/room/plan-parse.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/plan-recorded.test.tsx",
+      "to": "apps/web/src/harness/room/plan-recorded.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/preview-line.test.tsx",
+      "to": "apps/web/src/harness/room/preview-line.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/preview-line.tsx",
+      "to": "apps/web/src/harness/room/preview-line.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/program-call.test.tsx",
+      "to": "apps/web/src/harness/room/program-call.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/proposals.ts",
+      "to": "apps/web/src/harness/room/proposals.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/queries.ts",
+      "to": "apps/web/src/harness/room/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/question-card.tsx",
+      "to": "apps/web/src/harness/room/question-card.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/question-parse.ts",
+      "to": "apps/web/src/harness/room/question-parse.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/reread-mid-turn.test.tsx",
+      "to": "apps/web/src/harness/room/reread-mid-turn.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/research-specs.ts",
+      "to": "apps/web/src/harness/room/research-specs.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/room.test.ts",
+      "to": "apps/web/src/harness/room/room.test.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/room.ts",
+      "to": "apps/web/src/harness/room/room.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/rows.ts",
+      "to": "apps/web/src/harness/room/rows.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/session-claim.ts",
+      "to": "apps/web/src/harness/room/session-claim.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/session-state.ts",
+      "to": "apps/web/src/harness/room/session-state.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/session.ts",
+      "to": "apps/web/src/harness/room/session.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/shown-file.tsx",
+      "to": "apps/web/src/harness/room/shown-file.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/sources.test.tsx",
+      "to": "apps/web/src/harness/room/sources.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/sources.ts",
+      "to": "apps/web/src/harness/room/sources.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/sources.tsx",
+      "to": "apps/web/src/harness/room/sources.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/split-text.test.tsx",
+      "to": "apps/web/src/harness/room/split-text.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/start-conversation.test.tsx",
+      "to": "apps/web/src/harness/room/start-conversation.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/start-conversation.ts",
+      "to": "apps/web/src/harness/room/start-conversation.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/start-failures.test.tsx",
+      "to": "apps/web/src/harness/room/start-failures.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/start-reads.ts",
+      "to": "apps/web/src/harness/room/start-reads.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/start.test.tsx",
+      "to": "apps/web/src/harness/room/start.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/start.tsx",
+      "to": "apps/web/src/harness/room/start.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/stream.test.tsx",
+      "to": "apps/web/src/harness/room/stream.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/task-panel.test.tsx",
+      "to": "apps/web/src/harness/room/task-panel.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/task-panel.tsx",
+      "to": "apps/web/src/harness/room/task-panel.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/test-events.ts",
+      "to": "apps/web/src/harness/room/test-events.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/test-hub.tsx",
+      "to": "apps/web/src/harness/room/test-hub.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/test-providers.ts",
+      "to": "apps/web/src/harness/room/test-providers.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/test-recorded.ts",
+      "to": "apps/web/src/harness/room/test-recorded.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/test-render.tsx",
+      "to": "apps/web/src/harness/room/test-render.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/test-rooms.ts",
+      "to": "apps/web/src/harness/room/test-rooms.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/test-start.tsx",
+      "to": "apps/web/src/harness/room/test-start.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/test-stream.tsx",
+      "to": "apps/web/src/harness/room/test-stream.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/text.test.tsx",
+      "to": "apps/web/src/harness/room/text.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/text.ts",
+      "to": "apps/web/src/harness/room/text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/thinking-line.tsx",
+      "to": "apps/web/src/harness/room/thinking-line.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/title-heard.test.tsx",
+      "to": "apps/web/src/harness/room/title-heard.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-args.ts",
+      "to": "apps/web/src/harness/room/tool-args.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-bodies.tsx",
+      "to": "apps/web/src/harness/room/tool-bodies.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-cards.test.tsx",
+      "to": "apps/web/src/harness/room/tool-cards.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-cards.tsx",
+      "to": "apps/web/src/harness/room/tool-cards.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-fixtures.ts",
+      "to": "apps/web/src/harness/room/tool-fixtures.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-group.tsx",
+      "to": "apps/web/src/harness/room/tool-group.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-registry.test.ts",
+      "to": "apps/web/src/harness/room/tool-registry.test.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-registry.ts",
+      "to": "apps/web/src/harness/room/tool-registry.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-row-states.test.tsx",
+      "to": "apps/web/src/harness/room/tool-row-states.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-row.test.tsx",
+      "to": "apps/web/src/harness/room/tool-row.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-row.tsx",
+      "to": "apps/web/src/harness/room/tool-row.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-spec.ts",
+      "to": "apps/web/src/harness/room/tool-spec.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/tool-summary.ts",
+      "to": "apps/web/src/harness/room/tool-summary.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/transcript.test.tsx",
+      "to": "apps/web/src/harness/room/transcript.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/transcript.tsx",
+      "to": "apps/web/src/harness/room/transcript.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/turn-failure.test.tsx",
+      "to": "apps/web/src/harness/room/turn-failure.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/use-session.ts",
+      "to": "apps/web/src/harness/room/use-session.ts"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/workbench.test.tsx",
+      "to": "apps/web/src/agents/app-builder/workbench.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/workbench.tsx",
+      "to": "apps/web/src/agents/app-builder/workbench.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/working-line.tsx",
+      "to": "apps/web/src/harness/room/working-line.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/conversation/workspace-specs.ts",
+      "to": "apps/web/src/harness/room/workspace-specs.ts"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/account-dialog.tsx",
+      "to": "apps/web/src/harness/model-accounts/account-dialog.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/account-dialogs.tsx",
+      "to": "apps/web/src/harness/model-accounts/account-dialogs.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/account-kinds.tsx",
+      "to": "apps/web/src/harness/model-accounts/account-kinds.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/account-menu.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/account-menu.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/account-menu.tsx",
+      "to": "apps/web/src/harness/model-accounts/account-menu.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/account-row.tsx",
+      "to": "apps/web/src/harness/model-accounts/account-row.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/accounts-table.tsx",
+      "to": "apps/web/src/harness/model-accounts/accounts-table.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/choice.tsx",
+      "to": "apps/web/src/harness/model-accounts/choice.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/company-accounts.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/company-accounts.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/company-accounts.tsx",
+      "to": "apps/web/src/harness/model-accounts/company-accounts.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/company-defaults.tsx",
+      "to": "apps/web/src/harness/model-accounts/company-defaults.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/connect.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/connect.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/default-choice.tsx",
+      "to": "apps/web/src/harness/model-accounts/default-choice.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/defaults.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/defaults.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/key-form.tsx",
+      "to": "apps/web/src/harness/model-accounts/key-form.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/link-account.tsx",
+      "to": "apps/web/src/harness/model-accounts/link-account.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/marks/claude-spark.svg",
+      "to": "apps/web/src/harness/model-accounts/marks/claude-spark.svg"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/marks/google-g.svg",
+      "to": "apps/web/src/harness/model-accounts/marks/google-g.svg"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/mine.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/mine.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/model-accounts.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/model-accounts.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/model-accounts.tsx",
+      "to": "apps/web/src/harness/model-accounts/model-accounts.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/model-choices.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/model-choices.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/model-fallback.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/model-fallback.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/model-fallback.tsx",
+      "to": "apps/web/src/harness/model-accounts/model-fallback.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/model-label.test.ts",
+      "to": "apps/web/src/harness/model-accounts/model-label.test.ts"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/model-label.ts",
+      "to": "apps/web/src/harness/model-accounts/model-label.ts"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/model-picker.tsx",
+      "to": "apps/web/src/harness/model-accounts/model-picker.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/my-accounts.tsx",
+      "to": "apps/web/src/harness/model-accounts/my-accounts.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/my-defaults.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/my-defaults.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/my-defaults.tsx",
+      "to": "apps/web/src/harness/model-accounts/my-defaults.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/provider-choice.tsx",
+      "to": "apps/web/src/harness/model-accounts/provider-choice.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/provider-mark.tsx",
+      "to": "apps/web/src/harness/model-accounts/provider-mark.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/queries.ts",
+      "to": "apps/web/src/harness/model-accounts/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/queue.tsx",
+      "to": "apps/web/src/harness/model-accounts/queue.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/rename-form.tsx",
+      "to": "apps/web/src/harness/model-accounts/rename-form.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/sign-in-form.tsx",
+      "to": "apps/web/src/harness/model-accounts/sign-in-form.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/sign-in.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/sign-in.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/test-hub.tsx",
+      "to": "apps/web/src/harness/model-accounts/test-hub.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/test-view.ts",
+      "to": "apps/web/src/harness/model-accounts/test-view.ts"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/test-writes.tsx",
+      "to": "apps/web/src/harness/model-accounts/test-writes.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/text.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/text.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/text.ts",
+      "to": "apps/web/src/harness/model-accounts/text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/THIRD_PARTY_LICENSE.txt",
+      "to": "apps/web/src/harness/model-accounts/THIRD_PARTY_LICENSE.txt"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/use-move-feedback.ts",
+      "to": "apps/web/src/harness/model-accounts/use-move-feedback.ts"
+    },
+    {
+      "from": "apps/web/src/builder/model-accounts/welcome-step.test.tsx",
+      "to": "apps/web/src/harness/model-accounts/welcome-step.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/observational-memory/queries.ts",
+      "to": "apps/web/src/harness/memory/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/observational-memory/settings.test.tsx",
+      "to": "apps/web/src/harness/memory/settings.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/observational-memory/settings.tsx",
+      "to": "apps/web/src/harness/memory/settings.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/preview/preview.test.tsx",
+      "to": "apps/web/src/agents/app-builder/preview/preview.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/preview/preview.tsx",
+      "to": "apps/web/src/agents/app-builder/preview/preview.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/preview/queries.ts",
+      "to": "apps/web/src/agents/app-builder/preview/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/preview/stage.tsx",
+      "to": "apps/web/src/agents/app-builder/preview/stage.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/preview/webkit.ts",
+      "to": "apps/web/src/agents/app-builder/preview/webkit.ts"
+    },
+    {
+      "from": "apps/web/src/builder/source/file-tree.tsx",
+      "to": "apps/web/src/agents/app-builder/source/file-tree.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/source/highlight.ts",
+      "to": "apps/web/src/agents/app-builder/source/highlight.ts"
+    },
+    {
+      "from": "apps/web/src/builder/source/queries.ts",
+      "to": "apps/web/src/agents/app-builder/source/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/source/source.test.tsx",
+      "to": "apps/web/src/agents/app-builder/source/source.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/source/source.tsx",
+      "to": "apps/web/src/agents/app-builder/source/source.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/tools/code-version.tsx",
+      "to": "apps/web/src/agents/saved-agent/tools/code-version.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/tools/loader.ts",
+      "to": "apps/web/src/agents/saved-agent/tools/loader.ts"
+    },
+    {
+      "from": "apps/web/src/builder/tools/queries.ts",
+      "to": "apps/web/src/agents/saved-agent/tools/queries.ts"
+    },
+    {
+      "from": "apps/web/src/builder/tools/text.ts",
+      "to": "apps/web/src/agents/saved-agent/tools/text.ts"
+    },
+    {
+      "from": "apps/web/src/builder/tools/tool-page.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/tools/tool-page.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/tools/tool-page.tsx",
+      "to": "apps/web/src/agents/saved-agent/tools/tool-page.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/tools/tool-row.tsx",
+      "to": "apps/web/src/agents/saved-agent/tools/tool-row.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/tools/tools-tab.test.tsx",
+      "to": "apps/web/src/agents/saved-agent/tools/tools-tab.test.tsx"
+    },
+    {
+      "from": "apps/web/src/builder/tools/tools-tab.tsx",
+      "to": "apps/web/src/agents/saved-agent/tools/tools-tab.tsx"
+    }
+  ],
+  "doors": {
+    "apps/web/src/harness/room/public.ts": [
+      "APP_BUILDER_WORDS",
+      "ASSISTANT_WORDS",
+      "AssistantHandOff",
+      "Beside",
+      "CHOOSE_ANOTHER_MODEL",
+      "COMPOSER_SOFT",
+      "CONTINUE_HERE",
+      "Chat",
+      "Composer",
+      "ComposerModelPicker",
+      "ComposerTools",
+      "ConversationActions",
+      "ConversationMenu",
+      "EMPTY_CONVERSATION",
+      "Logo",
+      "Markdown",
+      "ModelChoice",
+      "ModelRefusal",
+      "NO_SECRETS",
+      "NoAccount",
+      "OpenedFile",
+      "Outgoing",
+      "REQUEST_NOT_SENT",
+      "RoomContext",
+      "RoomOf",
+      "START_COLUMN",
+      "START_NO_ACCOUNT",
+      "Start",
+      "StartBox",
+      "StartWithoutAccount",
+      "UNCONFIRMED_CREATION",
+      "UNCONFIRMED_WRITE",
+      "WRITE_AGAIN",
+      "WriteTool",
+      "WritesRead",
+      "agentBuilderRoom",
+      "agentWords",
+      "allConversationsQueryKey",
+      "appBuilderRoom",
+      "assistantHandOffTo",
+      "assistantRoom",
+      "conversationParams",
+      "conversationQuery",
+      "conversationsQuery",
+      "fileSide",
+      "handoffTo",
+      "hasInterruptedHandoff",
+      "isModelRefusal",
+      "projectConversationParams",
+      "readStart",
+      "savedAgentRoom",
+      "sendAssistantHandOff",
+      "sendModel",
+      "sessionReadQuery",
+      "titleOf",
+      "toolsText",
+      "useConnectorCatalog",
+      "useDraft",
+      "usePicked",
+      "useSay",
+      "useStartConversation"
+    ],
+    "apps/web/src/harness/model-accounts/public.ts": [
+      "AccountKinds",
+      "CompanyDefaults",
+      "LinkAccount",
+      "ModelAccounts",
+      "ModelPicker",
+      "MyDefaults",
+      "accountsQuery",
+      "kindsQuery",
+      "modelLabel",
+      "providersQuery"
+    ],
+    "apps/web/src/agents/saved-agent/public.ts": [
+      "AGENT_GONE",
+      "AgentChat",
+      "AgentPage",
+      "AgentPending",
+      "AgentsArea",
+      "AgentsPage",
+      "AgentsReadFailure",
+      "AreaPending",
+      "ConversationLine",
+      "DRAFT_CHANGED",
+      "GONE_CONNECTION",
+      "SAME_MODEL",
+      "StateStamp",
+      "ToolPage",
+      "ToolsTab",
+      "WEB_TOOL",
+      "agentParams",
+      "agentQuery",
+      "agentsQuery",
+      "connectionOf",
+      "loadAgent",
+      "loadAgentConversation",
+      "loadAgents",
+      "loadArea",
+      "loadTool",
+      "loadTools",
+      "memoryText",
+      "publishFailureText",
+      "toolParams",
+      "toolTitle",
+      "toolsQuery",
+      "useOpenAgentConversation",
+      "usePublish",
+      "usePublishLabel"
+    ],
+    "apps/web/src/agents/assistant/public.ts": [
+      "AssistantChat",
+      "AssistantDay",
+      "AssistantHome",
+      "AssistantProject",
+      "AutomationRuns",
+      "Automations",
+      "CompanyMemory",
+      "ConversationGone",
+      "NewConversation",
+      "ProfileMemory",
+      "RunsSearch",
+      "SidebarConversations",
+      "automationParams",
+      "loadAssistantConversation",
+      "loadAutomations",
+      "runsDeps",
+      "runsLoader"
+    ],
+    "apps/web/src/agents/app-builder/public.ts": [
+      "EmptyPanel",
+      "Panel",
+      "Preview",
+      "Source",
+      "Workbench"
+    ],
+    "apps/web/src/agents/agent-builder/public.ts": [
+      "ConstrutorAsk",
+      "ConstrutorChat",
+      "ConstrutorConversations",
+      "loadConstrutorConversation"
+    ],
+    "apps/web/src/harness/memory/public.ts": [
+      "ObservationalMemorySettings",
+      "observationalMemoryModelsQuery"
+    ]
+  }
+}

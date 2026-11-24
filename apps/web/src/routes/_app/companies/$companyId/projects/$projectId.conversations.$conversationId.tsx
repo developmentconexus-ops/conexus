@@ -1,10 +1,7 @@
 import { BUILDER_CONTROLLER, ConversationId } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  conversationQuery,
-  Panel,
-  sessionReadQuery,
-} from '../../../../../builder/conversation/public.ts'
+import { Panel } from '../../../../../agents/app-builder/public.ts'
+import { conversationQuery, sessionReadQuery } from '../../../../../harness/room/public.ts'
 import { idOrNotFound, readOrNotFound } from '../../../../../platform/hub.ts'
 
 export const Route = createFileRoute(

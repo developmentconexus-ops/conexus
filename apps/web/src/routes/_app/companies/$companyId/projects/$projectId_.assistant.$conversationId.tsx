@@ -1,10 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import {
-  AssistantChat,
-  ConversationGone,
-  loadAssistantConversation,
-} from '../../../../../builder/assistant/public.ts'
-import { projectConversationParams } from '../../../../../builder/conversation/public.ts'
+import { AssistantChat, loadAssistantConversation } from '../../../../../agents/assistant/public.ts'
+import { ConversationGone, projectConversationParams } from '../../../../../harness/room/public.ts'
 
 // A conversation with the Assistant born in a Projeto, at that Projeto's address; opened under
 // another Projeto, or on the company's floor, it is not found.

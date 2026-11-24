@@ -1,0 +1,199 @@
+import { BUILDER_TOOL, SKILL_TOOLS } from '@conexus/hub-api'
+import {
+  BookOpenIcon,
+  CircleAlertIcon,
+  ClipboardCheckIcon,
+  GlobeIcon,
+  HistoryIcon,
+  SearchIcon,
+  WrenchIcon,
+} from 'lucide-react'
+import { APP_DATA_SPECS } from './app-data-specs.ts'
+import { ASSISTANT_SPECS } from './assistant-specs.ts'
+import { CONNECTOR_SPECS } from './connector-specs.ts'
+import { CONSTRUTOR_SPECS, slugToolSpec, writeToolSpec } from './construtor-specs.ts'
+import { DATA_SPECS } from './data-specs.ts'
+import { MACHINE_SPECS } from './machine-specs.ts'
+import { RESEARCH_SPECS } from './research-specs.ts'
+import type { Room } from './room.ts'
+import { isRoom } from './room.ts'
+import type { ToolItem } from './rows.ts'
+import { CHECK_UNAVAILABLE } from './text.ts'
+import { stringArg } from './tool-args.ts'
+import type { Presented, RowTool, ToolSpec, ToolStatus } from './tool-spec.ts'
+import { headOf } from './tool-spec.ts'
+import { WORKSPACE_SPECS } from './workspace-specs.ts'
+
+export type { ToolBody, ToolSpec, ToolStatus } from './tool-spec.ts'
+
+const { webSearch, webFetch, recall, check } = BUILDER_TOOL
+const [skill, skillRead, skillSearch] = SKILL_TOOLS
+
+export const TOOLS: Record<RowTool, ToolSpec> = {
+  [webSearch]: {
+    icon: GlobeIcon,
+    running: 'Pesquisando na internet',
+    done: 'Pesquisou na internet',
+    failed: 'Não conseguiu pesquisar na internet',
+    verb: 'pesquisou',
+    detailKey: 'query',
+    detailBeside: true,
+    body: 'generic',
+    groups: true,
+  },
+  [webFetch]: {
+    icon: BookOpenIcon,
+    running: 'Lendo uma página',
+    done: 'Leu uma página',
+    failed: 'Não conseguiu ler uma página',
+    verb: 'leu página',
+    detailKey: 'url',
+    detailBeside: true,
+    body: 'generic',
+    groups: true,
+  },
+  [recall]: {
+    icon: HistoryIcon,
+    running: 'Relendo conversas anteriores',
+    done: 'Releu conversas anteriores',
+    failed: 'Não conseguiu reler as conversas',
+    verb: 'releu',
+    body: 'generic',
+    groups: true,
+  },
+  [check]: {
+    icon: ClipboardCheckIcon,
+    running: 'Conferindo o app',
+    done: 'Conferiu o app',
+    failed: 'Não conseguiu conferir o app',
+    verb: 'conferiu',
+    body: 'generic',
+    groups: true,
+    thrownText: { CHECK_PLATFORM_FAILED: CHECK_UNAVAILABLE },
+  },
+  ...WORKSPACE_SPECS,
+  ...DATA_SPECS,
+  ...CONNECTOR_SPECS,
+  ...ASSISTANT_SPECS,
+  ...MACHINE_SPECS,
+  ...RESEARCH_SPECS,
+  ...CONSTRUTOR_SPECS,
+  ...APP_DATA_SPECS,
+  [skill]: {
+    icon: BookOpenIcon,
+    running: 'Usando a skill',
+    done: 'Usou a skill',
+    failed: 'Não conseguiu usar a skill',
+    verb: 'usou skill',
+    detailKey: 'name',
+    body: 'skill',
+    groups: false,
+  },
+  [skillRead]: {
+    icon: BookOpenIcon,
+    running: 'Lendo a skill',
+    done: 'Leu a skill',
+    failed: 'Não conseguiu ler a skill',
+    verb: 'leu skill',
+    detailKey: 'name',
+    body: 'skill',
+    groups: false,
+  },
+  [skillSearch]: {
+    icon: SearchIcon,
+    running: 'Procurando uma skill',
+    done: 'Procurou uma skill',
+    failed: 'Não conseguiu procurar a skill',
+    verb: 'procurou skill',
+    detailKey: 'query',
+    body: 'generic',
+    groups: false,
+  },
+}
+
+/** The spec of a tool of the closed set, or none for a name outside it. */
+function isRowTool(toolName: string): toolName is RowTool {
+  return Object.hasOwn(TOOLS, toolName)
+}
+
+/** The prefix of the agent's library tools, `tool_<slug>`. */
+const AGENT_TOOL_PREFIX = 'tool_'
+
+/** The one lookup of how a tool's row reads, in the room that draws it. */
+export function specOf(toolName: string, room: Room): ToolSpec | undefined {
+  if (isRowTool(toolName)) return room.overrides[toolName] ?? TOOLS[toolName]
+  if (!toolName.startsWith(AGENT_TOOL_PREFIX)) return undefined
+  const write = room.kind === 'SAVED_AGENT' ? room.writeOf(toolName) : undefined
+  if (write !== undefined) return writeToolSpec(write.label, room.connectors.name(write.connector))
+  const slug = toolName.slice(AGENT_TOOL_PREFIX.length)
+  const described = isRoom(room, ['AGENT_BUILDER', 'SAVED_AGENT'])
+  return slugToolSpec(slug, described ? room.toolDescription(slug) : undefined)
+}
+
+/** One status per call (Factory `terminalInvocationStatus`); a command that exited non-zero is an error. */
+export function toolStatus(
+  tool: Pick<ToolItem, 'toolName' | 'state' | 'isError' | 'result'>,
+  room: Room,
+): ToolStatus {
+  switch (tool.state) {
+    case 'result':
+      return tool.isError === true ||
+        specOf(tool.toolName, room)?.refusal?.(tool.result) !== undefined
+        ? 'error'
+        : 'done'
+    case 'output-error':
+      return 'error'
+    case 'output-denied':
+      return 'denied'
+    default:
+      return 'running'
+  }
+}
+
+/** A tool outside the closed set reads by its name, as words. */
+export function readable(toolName: string): string {
+  const words = toolName.replace(/[_-]+/g, ' ').trim()
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : toolName
+}
+
+/** The row of a tool outside the set: its readable name, by status. */
+function unknownTool(toolName: string, status: ToolStatus) {
+  const name = readable(toolName)
+  const sentence =
+    status === 'denied'
+      ? `Não pôde usar ${name}`
+      : status === 'error'
+        ? `Não conseguiu usar ${name}`
+        : status === 'running'
+          ? `Usando ${name}`
+          : `Usou ${name}`
+  const icon = status === 'error' || status === 'denied' ? CircleAlertIcon : WrenchIcon
+  return { icon, sentence, beside: false }
+}
+
+/** The row of a tool whose own sentence is the phrase it was given: "Rodando…" while it runs. */
+function phrased(spec: ToolSpec, phrase: string, status: ToolStatus, detail: string | undefined) {
+  const failed = status === 'error' || status === 'denied'
+  const ongoing = status === 'running' ? `Rodando… ${phrase}` : phrase
+  const sentence = failed ? `${spec.failed}: ${phrase}` : ongoing
+  return { icon: failed ? CircleAlertIcon : spec.icon, sentence, detail, beside: false }
+}
+
+/** The row's icon and sentence by its status; the readable name for a tool outside the set. */
+export function presentTool(
+  tool: Pick<ToolItem, 'toolName' | 'args' | 'errorText' | 'isError'> & { result?: unknown },
+  status: ToolStatus,
+  room: Room,
+): Presented {
+  const spec = specOf(tool.toolName, room)
+  const failed = status === 'error' || status === 'denied'
+  if (spec === undefined) return unknownTool(tool.toolName, status)
+  if (spec.present !== undefined) return spec.present(tool, status, room.connectors)
+  const detail = spec.detailKey === undefined ? undefined : stringArg(tool.args, spec.detailKey)
+  const phrase = spec.phraseKey === undefined ? undefined : stringArg(tool.args, spec.phraseKey)
+  if (phrase !== undefined) return phrased(spec, phrase, status, detail)
+  const head = headOf(spec, status)
+  const beside = spec.detailBeside === true && !failed && detail !== undefined
+  const sentence = detail === undefined || beside ? head : `${head} ${detail}`
+  return { icon: failed ? CircleAlertIcon : spec.icon, sentence, detail, beside }
+}

@@ -192,7 +192,7 @@ A Pergunte 3: b", e antes 1 a ("Mas queria detalhes e exemplos para entender mel
 | --- | --- | --- | --- | --- | --- |
 | G1 | U1 | O registro inteiro e a sala por agente: cada cartão desenhado pelo resultado de uma ferramenta (app proposto, automação, memória da empresa, rascunho do agente, arquivo mostrado) vira uma linha do registro; a pergunta, o plano e o cartão do Caderno seguem cartões do transcrito, num lugar só, como hoje; o `Room` vira uma união com `kind` por agente, e os treze campos opcionais saem | `Wb/conversation/`, `Wb/assistant/`, `Wb/agents/` | web | nada |
 | G1 | U2 | Um começo de conversa e um menu de conversa: os seis começos usam uma peça com o tipo de conversa como parâmetro; o menu da conversa sai do Assistente para a sala, com cada item existindo só onde a sala o liga | `Wb/conversation/`, `Wb/assistant/`, `Wb/agents/` | web | U1 |
-| G2 | U3 | O codemod da web: `Wb/` se divide em `apps/web/src/harness/` e `apps/web/src/agents/<agente>/`, por um script que o revisor roda de novo; o endereço `agents/construtor/$conversationId` vira `agents/agent-builder/$conversationId`, e o antigo redireciona; as regras do `dependency-cruiser` e do Biome que citam `builder/`, e as regras W1, W4 e W7 do guia da web, mudam junto | `apps/web/src/`, `.dependency-cruiser.cjs`, `biome.json`, `scripts/`, `docs/guides/web.md`, os documentos que citam `apps/web/src/builder` | web | U2 |
+| G2 | U3 | O codemod da web: `Wb/` se divide em `apps/web/src/harness/` e `apps/web/src/agents/<agente>/` pelo dono de cada arquivo, por um script que o revisor roda de novo, depois de dois commits que não mudam o comportamento (a sessão comum sem o ramo do Construtor de apps; os arquivos misturados divididos por dono); o endereço `agents/construtor/$conversationId` vira `agents/agent-builder/$conversationId`, e o antigo redireciona; as regras do `dependency-cruiser` e do Biome que citam `builder/` mudam junto; as regras W1, W4 e W7 do guia da web mudam no fechamento (U14) | `apps/web/src/`, `.dependency-cruiser.cjs`, `biome.json`, `scripts/`, os documentos que citam `apps/web/src/builder`, fora `docs/guides/` | web | U2 |
 | G3 | U4 | Os nomes na tela e o menu do Projeto em grupos, depois do protótipo aprovado | `apps/web/src/`, `apps/web/sweep-*.ts`, `packages/hub-api/src/*-failures.ts`, `tests/e2e/` (as asserções dos textos) | design | U3, o protótipo |
 
 **A parte do servidor, que começa quando o G3 do `A1` entrar no `main`.**
@@ -209,7 +209,7 @@ A Pergunte 3: b", e antes 1 a ("Mas queria detalhes e exemplos para entender mel
 | G6 | U11 | O turno sem ler texto de erro (U-h: TURN-3, TURN-4) | `harness/turn/`, `agents/app-builder/` | testing | G5d, G5f |
 | G7 | U12 | A troca de modelo pela rota nativa (U-a), e uma `ModelChoice` só na web | `harness/routes/`, `agents/*/`, `packages/hub-api/src/`, `apps/web/src/harness/` | testing | G5d |
 | G7 | U13 | Renomear nas quatro conversas pela rota nativa (U-b e a sua resposta 3): o guarda abre `PUT …/threads/:threadId`; a rota do Assistente sai; o menu da conversa liga Renomear nas outras três | `harness/routes/`, `agents/assistant/`, `packages/hub-api/src/assistant.ts`, `apps/web/src/harness/`, `apps/web/src/agents/` | testing | U12, U2 |
-| G8 | U14 | O fechamento: DOC-1 e MACH-8 da auditoria, `docs/explanation/harness.md`, `boundaries.md`, a página da trilha sem "a área Estúdio", o cartão apagado | `docs/` | delivery | o uso |
+| G8 | U14 | O fechamento: DOC-1 e MACH-8 da auditoria, `docs/explanation/harness.md`, `boundaries.md`, as regras W1, W4 e W7 do guia da web com a árvore nova, a página da trilha sem "a área Estúdio", o cartão apagado | `docs/` | delivery | o uso |
 
 G1, G2 e G3 correm em sequência: a U3 move os arquivos que a U1 e a U2 mudam, e a U4 escreve já
 nas pastas novas (`names.test.ts` e `AGENT_NAMES` moram em `apps/web/src/harness/`). O G3 espera
@@ -354,7 +354,7 @@ não toca.
 | Quem assina a resposta | "Conexus" para o Construtor de apps e o nome para os outros (`Wb/conversation/builder-turn.tsx:128`) | LibreChat, **mesma situação**: `LC/packages/chat/src/components/messages/MessageParts.tsx:51-62`, `AuthorHeader.tsx:11-29`. Factory, **situação diferente**: a resposta não tem cabeça com nome, só o modelo (`FU/.../MessageBubble.tsx:182-196`, `:129-138`) | o nome do agente na cabeça de cada resposta | nativo da forma do LibreChat (a resposta 2 do fundador) | — | U4 | — |
 | Os nomes dos construtores | "Builder" e "Construtor" | n8n, **mesma situação no nome**: `packages/frontend/@n8n/i18n/src/locales/en.json:599-604` ("AI Builder"); LibreChat: `client/src/locales/en/translation.json:1284-1285` ("Agent Builder", "Assistant Builder") | o construtor se chama pelo que constrói | nativo (a decisão B do fundador) | — | U4 | — |
 | O menu do Projeto em grupos | oito itens numa lista sem título (`apps/web/src/hub/projects/project-rail.tsx:84-152`) | Nekt (`data/conexus-refs/nekt/rea/home-3.png`) e Databricks (`databricks/app-genie-3.png`), **mesma situação**, vistas; Dify (`web/app/components/main-nav/routes.ts:44-116`) e LibreChat (`client/src/hooks/Nav/useSideNavLinks.ts:122-243`), **situação diferente**: listas sem título | grupos com título pequeno acima dos itens | nativo: a peça já existe em `ui/` (`SidebarGroupLabel`, `apps/web/src/ui/sidebar.tsx:252`) | — | U4 | — |
-| O endereço antigo leva ao novo | `…/agents/construtor/$conversationId` (`routes/_app/companies/$companyId/projects/$projectId_.agents.construtor.$conversationId.tsx:8`) | `@tanstack/router-core` (instalado com `@tanstack/react-router` 1.170.44) `src/redirect.ts:102-122`, `src/route.ts:1020-1025`; o mesmo caso no Conexus, `routes/_app/companies/$companyId/data.$copyId.tsx:3-10` | `beforeLoad` lança `redirect({ to, params, replace: true })` | nativo | — | U3 | o arquivo da rota nova; o antigo fica só com o `beforeLoad` |
+| O endereço antigo leva ao novo | `…/agents/construtor/$conversationId` (`routes/_app/companies/$companyId/projects/$projectId_.agents.construtor.$conversationId.tsx:8`) | `@tanstack/router-core` (instalado com `@tanstack/react-router` 1.170.44) `src/redirect.ts:102-122`, `src/route.ts:1020-1025`, `src/load-client.ts:1723-1755` (o `followRedirect` navega com `replace: true` em todo redirect); o mesmo caso no Conexus, `routes/_app/companies/$companyId/data.$copyId.tsx:3-10` | `beforeLoad` lança `redirect({ to, params })`; a opção `replace` não se repete, porque o router já a força | nativo | — | U3 | o arquivo da rota nova; o antigo fica só com o `beforeLoad` |
 | A árvore da web | `Wb/` com os quatro agentes, e o Construtor de apps em `Wb/conversation/` | **sem referência**: nenhum estudo propôs; Mastra Code junta o comum em `sdk/src/agents/*.ts` e as variantes em `agents/modes/`, `agents/subagents/`; a Factory divide por assunto | — | embrulhado, sem referência própria: espelha a árvore do servidor (a decisão 2 do firstmate) | critério 8 | U3 | `apps/web/src/harness/`, `apps/web/src/agents/` |
 | A árvore do servidor | `B/` com os quatro agentes e o comum; `B/conversation/` é o Construtor de apps e também o guarda dos quatro | a árvore aprovada do estudo 2, seção 2.8, e os nomes da decisão B. Mastra Code, **situação diferente** (um agente com modos): `sdk/src/agents/` e o resto por assunto; nenhuma referência chama uma pasta de `harness/` | o comum por assunto, as variantes por pasta | nativo da forma: a divisão por assunto segue a Factory; o nome `harness/` é do fundador (estudo 2 aprovado) | critério 18 | U7 | `apps/server/src/harness/`, `apps/server/src/agents/` |
 | A máquina só pelo caminho nativo | o caminho por shell de `SandboxFilesystem` (`B/machine/sandbox-filesystem/copy.ts`, `files.ts`, `listing.ts`, e os ramos de `filesystem.ts` `:189-342`); o dublê com `native: false` (`B/machine/test-machine.ts:111`) | Factory, **mesma situação** (E2B com `SandboxFilesystem`): `mastracode/factory/src/workspace.ts:1806-1830`; `mastracode/sdk/src/agents/sandbox-filesystem.ts:434-440` (lê pelo nativo quando a sandbox tem `filesystem`); `@mastra/e2b` 0.17.0 `dist/index.js:764-800` e `:1588-1591` (o `filesystem` da `E2BSandbox` existe sempre) | o caminho nativo; o de shell fica para provedores sem `filesystem` | embrulhado depois de apagar o shell: o nativo, mais o nosso limite de pastas, `walk` e `grep`. A diferença: o Mastra Code guarda o shell para outros provedores, e o Conexus só tem a E2B | critério 16 | U5 | nenhum: só apaga |
@@ -647,7 +647,19 @@ px, no pull request.
 ## U3 O codemod da web
 
 **Base e modelo.** O commit de G1 no `main`. Sonnet: um script que move arquivos e corrige
-importações, sem mudar lógica.
+importações, sem mudar lógica, depois de dois commits pequenos que não mudam o comportamento.
+
+**A emenda de 2026-11-24.** A revisão do primeiro pull request desta unidade achou que a regra de
+divisão por quem importa cada arquivo levava para a árvore nova a posse errada que o código já
+tinha: os arquivos de `Wb/agents/` que misturam o Construtor de agentes com o agente salvo iam
+inteiros para `agents/saved-agent/`, e as consultas da Prévia e do código iam para `harness/room/`
+por causa de um ramo do Construtor de apps dentro da sessão comum. O fundador, no mesmo dia, às
+duas perguntas (os dois desvios eram gambiarra; a regra de divisão passa a ser por dono, e o guia
+da web muda só no fechamento): "sIM NAS duas e revisão tem que pegar essas coisas". A segunda
+revisão do mesmo pull request achou restos da mesma família: três casos do Construtor de agentes
+nos testes do agente salvo, a tela de conversa não achada e o teste do catálogo no Assistente, e o
+painel do Construtor de apps lendo a forma crua do evento do Mastra. Esta seção é a emendada, já
+com eles; a árvore de topo (a decisão 2 do firstmate) fica.
 
 ### As linhas da tabela
 
@@ -658,48 +670,94 @@ importações, sem mudar lógica.
 - **As regras que citam a pasta.** `.dependency-cruiser.cjs:187-191` (W7), `:266-273`
   (`web-tree-shape`, que só aceita `routes|hub|builder|ui|platform|brand` em `apps/web/src`),
   `:283-285` (`web-support-does-not-import-subject`); `biome.json:14`, `:123`, `:228-240`;
-  `scripts/rules.test.ts:60`; `scripts/test-rules.ts:134`; `docs/guides/web.md` W1 (a árvore,
-  `:25`), W4 (`:38`) e W7 (`:42`); o link do endereço antigo em `apps/web/src/hub/data/read-detail.tsx:54`.
+  `scripts/rules.test.ts:60`; `scripts/test-rules.ts:134`; o link do endereço antigo em
+  `apps/web/src/hub/data/read-detail.tsx:54`. As regras W1 (`docs/guides/web.md:25`), W4 (`:38`) e
+  W7 (`:42`) nomeiam `builder/` até o fechamento: um guia muda só no fechamento de uma etapa
+  ([delivery L19, L20](../guides/delivery.md)), e quem segura a regra enquanto isso é o
+  `.dependency-cruiser.cjs`, que muda nesta unidade.
 - **O endereço antigo leva ao novo.** Na base:
   `routes/_app/companies/$companyId/projects/$projectId_.agents.construtor.$conversationId.tsx:8`.
   Na referência: `routes/_app/companies/$companyId/data.$copyId.tsx:3-10`; `@tanstack/router-core`
-  `src/redirect.ts:102-122`.
+  `src/redirect.ts:102-122` e `src/load-client.ts:1723-1755`.
+- **A sessão comum e o Construtor de apps.** Na base: `Wb/conversation/use-session.ts:102-109`, o
+  `if (ids.controller === BUILDER_CONTROLLER)` que relê os arquivos do Projeto depois de uma versão
+  salva e a Prévia depois de uma Prévia pronta. Sem referência de fora; a forma é a da U1: a
+  variante `APP_BUILDER` do `Room` leva o que o agente faz com a mudança, como a variante
+  `SAVED_AGENT` leva `writes`, que `chat.tsx:249-250` lê.
+- **Os arquivos que misturam dois donos.** Na base: `Wb/agents/queries.ts`
+  (`construtorConversationsQuery`, `sendConstrutorModel`), `loader.ts`
+  (`loadConstrutorConversation`), `text.ts` (os `CONSTRUTOR_*`, `NO_CONSTRUTOR_CONVERSATIONS`,
+  `DRAFT_PANEL`), `area.tsx` (a caixa e as conversas anteriores do Construtor) e `area.test.tsx`
+  (os casos delas); as peças que outros agentes leem do Assistente: `Wb/assistant/choice-list.tsx:11`
+  (`ROW`), `plus-menu.tsx:115` (`Logo`), `connector-names.ts` (uma passagem de
+  `useConnectorCatalog`), e das automações `Wb/automations/page.tsx` (`Page`) e `place.tsx`
+  (`PlaceName`). Na referência: o servidor, onde `B/construtor/` importa `B/agents/public.ts` e
+  `B/agents/` não importa o Construtor.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/web/src/builder/conversation/`, cerca de 70 arquivos fora os testes | Divide pela regra abaixo: para `apps/web/src/harness/room/` (a sala, as linhas, os cartões, a sessão, o registro, os textos comuns) e para `apps/web/src/agents/app-builder/` | todos os embrulhos; a rota de Construir |
-| `apps/web/src/builder/preview/`, `source/` | Move para `apps/web/src/agents/app-builder/preview/` e `source/` | a página de Construir |
-| `apps/web/src/builder/assistant/` | Move para `apps/web/src/agents/assistant/` | as rotas do Assistente |
-| `apps/web/src/builder/automations/` | Move para `apps/web/src/agents/assistant/automations/`, como no servidor | a página Automações |
-| `apps/web/src/builder/agents/` | Divide pela regra abaixo: para `apps/web/src/agents/agent-builder/` (o Construtor de agentes) e `apps/web/src/agents/saved-agent/` (a página do agente, o Testar) | as rotas de Agentes |
+| `Wb/conversation/use-session.ts`, `room.ts`, `chat.tsx`, `panel.tsx` | Muda, antes do movimento: a sessão perde o ramo `BUILDER_CONTROLLER` e traduz o evento do Mastra no que a corrida mudou; a variante `APP_BUILDER` ganha `changed`, que o painel do Construtor de apps preenche | as quatro conversas |
+| `Wb/agents/construtor-queries.ts`, `construtor-loader.ts`, `construtor-text.ts`, `construtor-area.tsx`, `construtor-area.test.tsx`, `construtor-chat.test.tsx` | Cria, antes do movimento, com o que sai de `queries.ts`, `loader.ts`, `text.ts`, `area.tsx` e `area.test.tsx` (os casos da caixa e das conversas anteriores, e os da conversa do Construtor no seu endereço); depois do movimento, recebe os três casos do Construtor de `clean.test.tsx` e `conector-rows.test.tsx` | a conversa do Construtor, a rota da área |
+| `routes/.../$projectId_.agents.index.tsx` | Muda, antes do movimento: passa a caixa e as conversas do Construtor à área como encaixe | — |
+| `apps/web/src/ui/block.tsx` | Muda, antes do movimento: recebe `ROW` de `choice-list.tsx`, como `choiceRow`, ao lado de `listRow` e `blockRow`: uma classe sem assunto (W5) | o Assistente, o agente salvo |
+| `apps/web/src/ui/page.tsx` | Cria, antes do movimento, por `git mv` de `Wb/automations/page.tsx`: a coluna de uma página, sem assunto; `scrolls` diz se ela mesma rola, num quadro compacto | Automações, Agentes do Início |
+| `apps/web/src/hub/projects/place-name.tsx` | Cria, antes do movimento: `PlaceName` (o nome do Projeto, ou "Início") sai de `Wb/automations/place.tsx` para o assunto que lê o Projeto | Automações, Agentes do Início |
+| `Wb/conversation/logo.tsx` | Cria, antes do movimento: `Logo` sai de `plus-menu.tsx` para perto do catálogo de conectores (`connector-catalog.ts`) | o menu do **+**, as ligações do agente, o chip da ferramenta |
+| `Wb/assistant/connector-names.ts` | Apaga, antes do movimento: quem usa o catálogo o importa da porta da sala; o teste dele vai, depois do movimento, para `harness/room/connector-catalog.test.tsx` | — |
+| `apps/web/src/harness/room/gone.tsx` | Cria, depois do movimento, por `git mv` de `agents/assistant/gone.tsx`, com o texto `CONVERSATION_GONE`: a tela de conversa não achada é das quatro conversas | as rotas das quatro conversas |
+| `apps/web/src/builder/conversation/`, cerca de 70 arquivos fora os testes | Divide pela regra abaixo: para `apps/web/src/harness/room/` (a sala, as linhas, os cartões, a sessão, o registro, os textos comuns) e para `apps/web/src/agents/app-builder/` (o painel, a bancada, a primeira mensagem, a troca de conversa) | todos os embrulhos; a rota de Construir |
+| `apps/web/src/builder/preview/`, `source/` | Move inteiras para `apps/web/src/agents/app-builder/preview/` e `source/` | a página de Construir |
+| `apps/web/src/builder/assistant/` | Move para `apps/web/src/agents/assistant/`, sem as peças comuns, que saíram antes | as rotas do Assistente |
+| `apps/web/src/builder/automations/` | Move para `apps/web/src/agents/assistant/automations/`, como no servidor, sem `Page` e `PlaceName` | a página Automações |
+| `apps/web/src/builder/agents/` | Divide pela regra abaixo: para `apps/web/src/agents/agent-builder/` (o Construtor de agentes: a conversa, o painel do rascunho, a caixa e as conversas da área, e as consultas, o carregador e os textos dele) e `apps/web/src/agents/saved-agent/` (a página do agente, o Testar, a lista, e o registro do agente salvo: ler, publicar, apagar) | as rotas de Agentes |
 | `apps/web/src/builder/tools/` | Move para `apps/web/src/agents/saved-agent/tools/`, como no servidor (a biblioteca dos agentes salvos) | a aba Ferramentas |
 | `apps/web/src/builder/model-accounts/`, `observational-memory/` | Move para `apps/web/src/harness/model-accounts/` e `apps/web/src/harness/memory/` | Configurações |
 | `.dependency-cruiser.cjs` `:266-273`, `:283-285` | Muda: `web-tree-shape` aceita `harness/` e `agents/` no lugar de `builder/`; `web-support-does-not-import-subject` lista `hub|harness|agents|routes` | `npm run deps` |
+| `.dependency-cruiser.cjs` `subject-only-through-public` | Muda: a isenção vale só para os ajudantes `test-*` da web; um teste lê outro assunto pela porta dele ou por um ajudante (T5) | `npm run deps` |
 | `biome.json` `:14`, `:123`, `:228-240`; `scripts/rules.test.ts:60`; `scripts/test-rules.ts:134` | Muda: os caminhos | `npm run lint`, `npm run test:scripts` |
-| `docs/guides/web.md` W1, W4, W7 e os documentos que citam `apps/web/src/builder` | Muda: o nome da pasta na regra, sem mudar o que a regra pede | `npm run docs` |
+| Os documentos que citam `apps/web/src/builder`, fora `docs/guides/` e os registros (`docs/steps/`, `docs/approvals/`, `docs/decisions/`) | Muda: o caminho | `npm run docs` |
+| `docs/guides/web.md` W1, W4, W7 | Não muda nesta unidade: muda no fechamento (U14) | — |
 | `apps/web/src/hub/data/read-detail.tsx:54` | Muda: o link aponta para o endereço novo | o Registro de dados |
 | `routes/.../$projectId_.agents.construtor.$conversationId.tsx` | Muda: só o `beforeLoad` que redireciona | — |
 | `routes/.../$projectId_.agents.agent-builder.$conversationId.tsx` | Cria: a rota com o conteúdo da antiga | os links do Construtor de agentes |
+| `packages/hub-api/src/pages.ts` | Muda: o endereço novo entra na lista das páginas que o Hub abre (`PAGES`), ao lado do antigo | o Hub, o `pages.layout.test.ts` |
 | `.dependency-cruiser.cjs` | Muda: a regra W7 (`mastra-only-in-builder`, `:187-191`) passa a valer para `apps/web/src/harness/` | `npm run deps` |
-| `scripts/codemod-web.ts` | Cria: o script | o revisor |
+| `scripts/codemod-web.ts` e os seus módulos | Cria: o script | o revisor |
 
 O nome de cada arquivo que já diz o que ele é fica; o script não renomeia arquivo, só move e
-corrige importações. **A regra da divisão**, para as duas pastas que se dividem: um arquivo vai
-para a pasta do agente se só arquivos daquele agente o importam (e as rotas dele); se o importam
-arquivos de dois agentes ou da sala, vai para `harness/room/`. O script calcula isso pelo grafo do
-`dependency-cruiser` (`depcruise --output-type json`) sobre a base, escreve a lista arquivo por
-arquivo em `scripts/codemod-web.json` e o pull request a traz. Cada pasta nova tem o seu
-`public.ts`, como cada pasta de assunto tem hoje: a regra W4 passa a valer entre `agents/<agente>/`,
-`harness/` e `hub/`, e a W6 entre `routes/` e as pastas novas. O item 6 do 753 (o comentário de `Wb/assistant/day.tsx:122`) vai num
-commit à parte da U3, depois do movimento.
+corrige importações. **A regra da divisão.** Um arquivo vai para o dono do seu assunto, e não para
+o lugar de quem o importa. O assunto de um agente mora na pasta dele, mesmo quando outro agente o
+usa; só o que os quatro agentes rodam por cima (a sala, as linhas, os cartões, a sessão, o
+registro, os textos comuns) mora em `harness/room/`. Um arquivo que mistura dois donos se divide
+antes do movimento, num commit que não muda o comportamento; por isso o script só move. Um agente
+lê a porta de outro numa direção só: o Construtor de agentes lê a do agente salvo, como no
+servidor; o agente salvo nunca lê o Construtor, nenhum outro par de agentes se lê, e `harness/`
+nunca lê um agente. Uma peça sem assunto vai para `ui/` (W5). Um teste fica com o assunto que
+testa, sem exceção: um arquivo de testes que mistura dois donos se divide como um de código.
+
+O script lê o dono numa tabela: a linha de uma pasta leva os seus arquivos, a linha de um arquivo
+leva o arquivo cujo dono não é o da pasta, e vale a linha mais longa. Ele escreve a lista arquivo
+por arquivo em `scripts/codemod-web.json`, e o pull request a traz. O grafo das importações é lido
+nome a nome pelo compilador do TypeScript (`typescript`, já instalado): cada nome que passa por uma
+porta `public.ts` é seguido até o arquivo que o declara, o que o grafo de arquivos do `depcruise
+--output-type json` não faz. Com ele o script reescreve cada importação, refaz cada `public.ts` com
+os nomes que a cruzam e recusa uma tabela que deixe uma importação de código contra a direção,
+listando-a. Cada pasta nova tem o seu `public.ts`, como cada pasta de assunto tem hoje: a regra W4
+passa a valer entre `agents/<agente>/`, `harness/` e `hub/`, e a W6 entre `routes/` e as pastas
+novas. A direção entre agentes vira regra do `dependency-cruiser` no fechamento, com a W4 nova
+(delivery L20). O item 6 do 753 (o comentário de `Wb/assistant/day.tsx:122`) vai num commit à parte
+da U3, depois do movimento.
 
 ### Os contratos que a unidade cria
 
-Nenhum tipo novo. O script: `node scripts/codemod-web.ts` lê uma tabela (pasta de origem, pasta de
-destino), move com `git mv` e reescreve as importações relativas; roda duas vezes e dá a mesma
-árvore.
+Um campo: a variante `APP_BUILDER` do `Room` ganha `changed`, o que o Construtor de apps faz quando a
+sua corrida muda algo além do transcrito. A mudança é o tipo `RunChange`: `VERSION_SAVED` relê os
+arquivos do Projeto, e `PREVIEW_READY` relê a Prévia. A sessão comum lê o evento do Mastra e o
+traduz; o painel recebe só a mudança, nunca a forma do evento (W7). O script: `node
+scripts/codemod-web.ts` lê a tabela dos donos, move com `git mv` e reescreve as importações
+relativas; roda duas vezes e dá a mesma árvore.
 
 ### As skills e a leitura
 
@@ -707,25 +765,38 @@ As da U1, mais `router-core` (`auth-and-guards` para o `beforeLoad`).
 
 ### A ordem do trabalho
 
-1. **O script e o movimento.** Critérios: 8.
+1. **A sessão sem o ramo do Construtor de apps.** Um commit antes do movimento, sem mudar o
+   comportamento. Critérios: 8.
+   - **Arquivos:** `use-session.ts`, `room.ts`, `chat.tsx`, `panel.tsx`.
+   - **Testes:** o de hoje que prova que uma Prévia pronta relê o Projeto
+     (`preview-line.test.tsx`), sem mudar, e um caso novo em `workbench.test.tsx`: a versão que a
+     resposta salva relê o código do Projeto, que nenhum teste provava.
+   - **Mutações à mão:** a sessão sem a chamada de `changed` deixa esses casos vermelhos.
+2. **A divisão por dono.** Um commit antes do movimento, sem mudar o comportamento. Critérios: 8.
+   - **Arquivos:** os que o raio marca "antes do movimento", fora os do passo 1.
+   - **Testes:** os mesmos casos da web, no mesmo número.
+3. **O script e o movimento.** Critérios: 8.
    - **Arquivos:** cria `scripts/codemod-web.ts` e a lista `scripts/codemod-web.json`; move as
      pastas; muda as regras e os caminhos da tabela acima no mesmo commit.
    - **Testes:** a contagem dos testes da web antes e depois, no pull request; `npm run deps`.
-2. **A rota nova e a antiga.** Critérios: 9.
-   - **Referência a seguir:** `data.$copyId.tsx:3-10`.
+4. **A rota nova e a antiga.** Critérios: 9.
+   - **Referência a seguir:** `data.$copyId.tsx:3-10`, sem `replace`, que o router já força.
    - **Testes:** `agents/agent-builder/route.test.tsx`.
-3. **A regra W7.** Critérios: 8.
+5. **A regra W7.** Critérios: 8.
    - **Mutações à mão:** importar `@mastra/client-js` em `apps/web/src/agents/assistant/` deixa
      `npm run deps` vermelho.
 
 ### Como se prova
 
-O script rodado de novo sobre a base dá a mesma árvore (`git diff --exit-code`); os testes da web
-passam com o mesmo número de casos; `npm run deps` passa e fica vermelho com a mutação.
+O script rodado de novo sobre a base do movimento (o commit da divisão por dono) dá a mesma árvore
+(`git diff --exit-code`); os testes da web passam com o mesmo número de casos; `npm run deps` passa
+e fica vermelho com a mutação.
 
 ### Parar se
 
-- Um arquivo não couber em nenhuma pasta da tabela: parar e listar, com o que ele importa.
+- Um arquivo não couber em nenhuma linha da tabela, ou o script recusar uma importação contra a
+  direção: parar e listar, com o que o arquivo importa e quem o importa. A tabela muda pelo cartão;
+  o script nunca ganha uma exceção.
 
 ## G2 O ponto de conferência
 
@@ -1094,7 +1165,9 @@ importam mudam no mesmo pull request, só no nome importado.
 
 Nenhum tipo novo. O script: `node scripts/codemod-server.ts <área>` lê a tabela da área, move
 com `git mv`, reescreve as importações e os caminhos citados em `docs/`; rodado duas vezes, dá a
-mesma árvore.
+mesma árvore. Ele segue a regra da divisão da U3: cada arquivo vai para o dono do seu assunto, um
+arquivo que mistura dois donos se divide num commit antes do movimento, e o grafo das importações
+é lido nome a nome pelo compilador do TypeScript.
 
 ### As skills e a leitura
 
@@ -1117,8 +1190,9 @@ sem regravar, `npm run deps`. No fim: `ls apps/server/src/builder` falha.
 
 ### Parar se
 
-- Um arquivo for comum a dois agentes e não estiver na árvore aprovada: parar e listar, com quem o
-  importa.
+- Um arquivo for comum a dois agentes e não estiver na árvore aprovada, ou o script recusar uma
+  importação contra a direção da U3: parar e listar, com quem o importa; o script nunca ganha uma
+  exceção.
 - Mover um arquivo mudar um retrato: um caminho entrou no texto que o modelo lê; parar.
 
 ## G5 O ponto de conferência
@@ -1494,4 +1568,7 @@ instalada do `@mastra/core` e a árvore nova (DOC-1); a decisão 0051 com as ver
 `closeAgain` e o `networkOpen` do `A1` (MACH-8); `docs/reference/boundaries.md` com as duas rotas
 nativas atrás do guarda e o registro da recusa do turno (U11); a página da trilha sem "a área
 Estúdio" e com os passos 3 e 8 fechados; `docs/explanation/conceito.md` sem "o rótulo Estúdio" na
-lista do plano do harness; a linha de uso no arquivo de aprovação; o cartão apagado.
+lista do plano do harness; as regras W1, W4 e W7 de `docs/guides/web.md` com a árvore nova da web
+(`harness/` e `agents/<agente>/`) e a direção entre agentes da U3, com a regra do
+`dependency-cruiser` que segura a direção (delivery L19, L20; o fundador, 2026-11-24, na emenda da
+U3); a linha de uso no arquivo de aprovação; o cartão apagado.

@@ -10,7 +10,7 @@ import {
   TimerIcon,
 } from 'lucide-react'
 import { useEffect } from 'react'
-import { NewConversation, SidebarConversations } from '../../../../builder/assistant/public.ts'
+import { NewConversation, SidebarConversations } from '../../../../agents/assistant/public.ts'
 import { DataTree } from '../../../../hub/copies/public.ts'
 import {
   AccountMenu,

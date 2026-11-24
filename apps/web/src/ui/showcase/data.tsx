@@ -14,6 +14,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible.tsx'
 import { List, PageTitle, Row, SectionTitle } from '../list.tsx'
 import { Meter, MeterLabel } from '../meter.tsx'
+import { Page } from '../page.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../resizable.tsx'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../table.tsx'
 
@@ -87,6 +88,14 @@ export const DATA: readonly ShowcaseEntry[] = [
         <Row>João</Row>
       </List>
     </>
+  )),
+  entry('page.tsx', 'Dados', 'A coluna de uma página do Início ou de um Projeto.', () => (
+    <Page scrolls={false} gap="lg">
+      <PageTitle>Automações</PageTitle>
+      <List>
+        <Row>Resumo das vendas da semana</Row>
+      </List>
+    </Page>
   )),
   entry('block.tsx', 'Dados', 'Um bloco de Configurações com título e linhas.', () => (
     <Block title="Equipe" action={<Stamp tone="success">Ativa</Stamp>}>

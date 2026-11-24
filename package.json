@@ -31,6 +31,7 @@
     "migrations": "node scripts/check-migrations.ts",
     "release-note": "node scripts/release-note.ts",
     "cochange": "node scripts/cochange.ts",
+    "codemod:web": "node scripts/codemod-web.ts",
     "record": "node scripts/record.ts",
     "record-provider": "node scripts/record-provider.ts",
     "record-connector": "node scripts/record-connector.ts",
