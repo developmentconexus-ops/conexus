@@ -53,18 +53,17 @@ histórico do `main`.
 
 O cartão da etapa 2 do harness, "Uma sala e os nomes certos", é
 [uma-sala-e-os-nomes-certos.md](../uma-sala-e-os-nomes-certos.md), no trilho `harness`. A parte da
-tela anda com a aprovação da página, e a do servidor espera o fechamento do `A1`.
+tela anda com a aprovação da página, e a do servidor já não espera o `A1`, que fechou.
 
-A ordem depois dela é a da decisão A do fundador, de 2026-11-22: `A1`, a etapa 2 do harness ("Uma
-sala e os nomes certos"), `A2` e `A3`. O cartão do `A1` está em
-https://github.com/developmentconexus-ops/conexus/pull/1203 e parte do `main` depois do fechamento da
-etapa 1: ele relê as linhas que a Prévia trocou (um terceiro ambiente no endereço do app) e as que
-a etapa 1 trocou. O juiz de fim de turno do Builder é o campo `judge` da ficha dele, onde a
-conferência nova entra, e as skills dele são o campo `skills`; `B/conversation/processors.ts` não
-mudou. O passo 2 da U3 do `A1` muda a descrição de `conexus_check` e o texto do juiz, que vão no
-pedido ao modelo: os retratos do Builder (`B/conversation/requests/*.snapshot`) ficam vermelhos de
-propósito, e o commit dele os regrava com `--test-update-snapshots`, com o diff mostrando só essas
-duas coisas. Antes fecharam Um escopo e a fábrica de ferramentas, em 2026-11-17
+`A1`, "O Builder vê o que construiu", fechou em 2026-11-24: o fundador fez o roteiro na nuvem, na
+v0.24.122, e a linha de fechamento está no
+[arquivo de aprovação](../../approvals/o-builder-ve-o-que-construiu.md). O Builder sobe a versão num
+Worker de conferência, abre a tela num navegador dentro da máquina e recebe o que viu; o desenho
+está na [arquitetura](../../architecture.md). O cartão está no histórico do `main`, no commit
+`936c7adc`, o último que o mudou.
+
+A ordem depois dela é a da decisão A do fundador, de 2026-11-22: a etapa 2 do harness ("Uma sala e
+os nomes certos"), `A2` e `A3`. Antes fecharam Um escopo e a fábrica de ferramentas, em 2026-11-17
 ([aprovação](../../approvals/um-escopo-e-a-fabrica-de-ferramentas.md)), e a fundação do front-end,
 em 2026-11-22 ([aprovação](../../approvals/fundacao-do-front-end.md)). A ordem dos marcos não muda.
 
