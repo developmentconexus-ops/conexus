@@ -97,9 +97,7 @@ test('conexus_check que não pôde conferir diz, aberta, a frase do meio do turn
   expect(screen.getByText('Não conseguiu conferir o app')).toBeTruthy()
   open(/Não conseguiu conferir o app/)
   expect(
-    screen.getByText(
-      'Não consegui conferir o app agora. Isso não diz nada sobre o app; o Builder tenta de novo neste turno.',
-    ),
+    screen.getByText('Não consegui conferir o app agora. Isso não diz nada sobre o app.'),
   ).toBeTruthy()
   expect(screen.queryByText(/guardado/)).toBeNull()
 })

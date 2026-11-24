@@ -6,8 +6,7 @@ import type { Refusal } from './attachments.ts'
 import { LIMITS } from './attachments.ts'
 
 /** What `conexus_check` says when it could not check mid-turn: nothing is saved yet, and the app is not the cause. */
-export const CHECK_UNAVAILABLE =
-  'Não consegui conferir o app agora. Isso não diz nada sobre o app; o Builder tenta de novo neste turno.'
+export const CHECK_UNAVAILABLE = 'Não consegui conferir o app agora. Isso não diz nada sobre o app.'
 export const LOADING_OLDER = 'Carregando mensagens anteriores'
 /** The words that name who answers (the Builder in a Projeto, the Assistant in a conversation of Início). */
 export function workingText(agent: string): string {
