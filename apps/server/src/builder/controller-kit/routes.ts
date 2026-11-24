@@ -1,7 +1,7 @@
 import type { CompanyId, ConversationId, Effort, ModelId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { answer } from '../../platform/http.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ControllerKind, Owner } from './kinds.ts'
 import { changeModel } from './open.ts'
 

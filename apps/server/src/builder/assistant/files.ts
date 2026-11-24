@@ -9,9 +9,9 @@ import type {
 import { FILE_UPLOAD_ERROR_CODES, FileUploadProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
+import { emit } from '../../harness/model-accounts/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import { emit } from '../model-accounts/public.ts'
 
 /** What the model reads itself and keeps receiving as a part: images. */
 const SEEN_BY_MODEL = 'image/'

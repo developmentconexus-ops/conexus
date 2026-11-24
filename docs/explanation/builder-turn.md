@@ -54,7 +54,7 @@ input processors (`builder/controller-kit/factories.ts`):
    and calls `Runs.take`. One run writes in a Project at a time, whoever started it. If another
    conversation holds the Project, the run aborts with `RUN_BUSY` and the holder's name, before
    any model call.
-2. `accountPick` (`builder/model-accounts/processors.ts`) picks the model account for each step
+2. `accountPick` (`harness/model-accounts/processors.ts`) picks the model account for each step
    from the person's queue, with its thinking effort. At step 100 it forces a last answer with no
    tools.
 

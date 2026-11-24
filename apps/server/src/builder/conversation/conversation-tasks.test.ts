@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
+import { connect, GROQ_MODEL } from '../../harness/model-accounts/test-defaults.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { connect, GROQ_MODEL } from '../model-accounts/test-defaults.ts'
 import type { StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,

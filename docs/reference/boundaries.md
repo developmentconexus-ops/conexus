@@ -1118,7 +1118,7 @@ changes, reread the line it names.
   not reachable here: Mastra's loop reads the provider's `stream.request` itself and takes no
   such option.
 - **Hand-made piece.** `bodylessMiddleware` in
-  `apps/server/src/builder/model-accounts/claude/models.ts`, a `wrapStream` that drops `request`
+  `apps/server/src/harness/model-accounts/claude/models.ts`, a `wrapStream` that drops `request`
   from `doStream()`'s answer.
 - **Why.** The Hub's heap grew with the prompts of the last turn of every open conversation.
 - **Proof.** `prompt-cache.test.ts` "cada passo do modelo da conta volta sem o corpo do pedido…".
@@ -1132,7 +1132,7 @@ changes, reread the line it names.
   `attachment`, `temperature`, `structuredOutput` and `reasoning` (`dist/capabilities/*.json`),
   nothing of what the model outputs.
 - **Hand-made piece.** `apps/server/src/harness/mastra/mastra.ts` gives each domain the Hub's logger
-  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/builder/model-accounts/providers.ts`
+  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/harness/model-accounts/providers.ts`
   leaves out a model whose name says it draws, films, speaks, hears, embeds, ranks, guards, reads
   scans or talks live.
 - **Why.** A domain's failure would log nowhere the Hub reads; the model picker would list models
@@ -1407,7 +1407,7 @@ reference tool checks a read against its documentation.
   `internal/util/gemini_schema.go:73-83`, `:941` and `:957-971` drop every `enum` from a tool's
   schema for the Antigravity path and keep a multi-branch `anyOf`; `antigravity_executor_request.go:70-77`
   sends the same cleaned schema to Gemini (commits `7d55d0da` and `5efe9758`).
-- **Hand-made piece.** `forCliProxy` in `apps/server/src/builder/model-accounts/google/flat-unions.ts`,
+- **Hand-made piece.** `forCliProxy` in `apps/server/src/harness/model-accounts/google/flat-unions.ts`,
   called by `accountPick` only when the account is `google_cliproxy`. For that step it declares flat
   any tool whose input has a union of objects told apart by a fixed-value field (`cadence` of
   `propose_automation`); `execute` and the validation stay the tool's own, so the card, the route and
@@ -1441,7 +1441,7 @@ reference tool checks a read against its documentation.
   `dist/provider-registry.json`, and Mastra Code's `auth/storage.ts` (`@mastra/code-sdk` 1.18.0)
   keeps one person's credentials. Neither has a switch per company for a kind of sign-in, and the
   Codex CLI has no company at all.
-- **Hand-made piece.** `builder.company_account_kind` (`apps/server/src/builder/model-accounts/tables.ts`)
+- **Hand-made piece.** `builder.company_account_kind` (`apps/server/src/harness/model-accounts/tables.ts`)
   and `openKindsOf` in `kinds.ts`, read by `admitOpen` in `sign-ins.ts` when a sign-in starts, when a
   pasted code completes it and on every device-code poll (`sign-in-poll.ts`). The API key is open to
   every company; `claude_subscription`, `google_cliproxy` and `openai_codex` start off.

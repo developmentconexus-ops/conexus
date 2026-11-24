@@ -10,7 +10,7 @@
     "apps/server/src/builder/conversation/permissions.test.ts",
     "apps/server/src/builder/data-tools/tools-refusals.test.ts",
     "apps/server/src/builder/data-tools/tools.test.ts",
-    "apps/server/src/builder/model-accounts/openai/sign-in-refusals.test.ts",
+    "apps/server/src/harness/model-accounts/openai/sign-in-refusals.test.ts",
     "apps/server/src/hub/access/conformance.test.ts",
     "apps/server/src/hub/access/principal.test.ts",
     "apps/server/src/hub/apps/app-access-journey.test.ts",
@@ -439,23 +439,23 @@
       "name": "máquina: só a máquina de nome igual ao desta conversa é achada; a do Projeto, a de outra instalação e a de outra conversa não"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/claude/claude.test.ts",
+      "file": "apps/server/src/harness/model-accounts/claude/claude.test.ts",
       "name": "troca recusada: 422 e nada gravado, e a entrada acaba; fornecedor fora: 502; tarde ou de outro: 410"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/google/flat-unions.test.ts",
+      "file": "apps/server/src/harness/model-accounts/google/flat-unions.test.ts",
       "name": "sem união"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/model-accounts-order.test.ts",
+      "file": "apps/server/src/harness/model-accounts/model-accounts-order.test.ts",
       "name": "ordenar uma fila com todos os seus ids grava; velha, incompleta ou de outro fornecedor dá 409"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/model-defaults.test.ts",
+      "file": "apps/server/src/harness/model-accounts/model-defaults.test.ts",
       "name": "o padrão sem conta usável é pulado: pausada, no limite, de outra pessoa; nenhum degrau usável é 422 e nada nasce"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/openai/sign-in.test.ts",
+      "file": "apps/server/src/harness/model-accounts/openai/sign-in.test.ts",
       "name": "a entrada de outra empresa: a espera diz que venceu, sem chamar a OpenAI"
     },
     {

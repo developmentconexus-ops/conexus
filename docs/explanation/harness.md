@@ -101,7 +101,7 @@ shares `agentDefaults` (`builder/controller-kit/factories.ts`): the same process
 Model accounts live in processors, not in the agents
 ([0049](../decisions/0049-model-accounts-keys-sign-ins-queues.md)). The input processors are
 the turn processor (`turnProcessor`, `builder/controller-kit/turns.ts`), the same for every agent, which
-builds the person's `AccountTurn` for the account queue and puts it on the request context, then `accountPick` (`builder/model-accounts/processors.ts`), which picks the account, the
+builds the person's `AccountTurn` for the account queue and puts it on the request context, then `accountPick` (`harness/model-accounts/processors.ts`), which picks the account, the
 model and the thinking effort for each step. What differs is the ficha's `turn`: a `SESSION` turn is
 held until the session's `agent_end`; a `RUN` turn is taken by the run alone. The Builder's is the
 Project's lock as a named step, its `take` (`builder/conversation/turn-of.ts`): the run takes the
@@ -132,7 +132,7 @@ Memory is one factory, `conversationMemory` (`builder/controller-kit/memory.ts`)
 observational memory scoped to the thread, observing at 30,000 message tokens and reflecting at
 40,000 observation tokens, with async buffering off. The title writer uses the turn's account. The
 observer and the reflector use the company's memory models, read when the turn opens and picked
-beside the queue, never through it (`builder/model-accounts/processors.ts`). Only the Builder turns on recall
+beside the queue, never through it (`harness/model-accounts/processors.ts`). Only the Builder turns on recall
 inside its thread. Only the Assistant uses working memory, per person
 (`builder/assistant/memory.ts`), and reads the company's Knowledge, tools that only read
 (`builder/assistant/company-memory.ts`). Nothing uses semantic recall, vectors or embedders.

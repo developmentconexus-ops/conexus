@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { MODEL } from '../../builder/conversation/test-conversation.ts'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, plantCompany } from '../../hub/identity/test-hub.ts'
-import { MODEL } from '../conversation/test-conversation.ts'
 import { company, connect, created, GROQ_MODEL, pairOf, patch, startOf } from './test-defaults.ts'
 
 const GPT = 'openai/gpt-5'

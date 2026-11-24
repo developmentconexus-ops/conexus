@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import http from 'node:http'
 import type { TestContext } from 'node:test'
+import { GROQ_MODEL } from '../../harness/model-accounts/test-defaults.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Anthropic } from '../../platform/test-anthropic.ts'
-import { GROQ_MODEL } from '../model-accounts/test-defaults.ts'
 
 /**
  * Everything the process prints on stdout and stderr while the test runs, still printed: by the

@@ -3,7 +3,7 @@ import type { AgentControllerSubagent } from '@mastra/core/agent-controller'
 import type { InputProcessor } from '@mastra/core/processors'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { TURN_ACCOUNT } from '../model-accounts/public.ts'
+import { TURN_ACCOUNT } from '../../harness/model-accounts/public.ts'
 
 /** The helper's type: it reads the systems the conversation chose and the machine's files, and writes nothing. */
 const RESEARCH_TYPE = 'pesquisar'

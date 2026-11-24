@@ -36,5 +36,299 @@
       "from": "apps/server/src/builder/mastra/tracing.test.ts",
       "to": "apps/server/src/harness/mastra/tracing.test.ts"
     }
+  ],
+  "g5b": [
+    {
+      "from": "apps/server/src/builder/model-accounts/access.ts",
+      "to": "apps/server/src/harness/model-accounts/access.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/account-limit.test.ts",
+      "to": "apps/server/src/harness/model-accounts/account-limit.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/accounts.ts",
+      "to": "apps/server/src/harness/model-accounts/accounts.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/auto-memory-model.test.ts",
+      "to": "apps/server/src/harness/model-accounts/auto-memory-model.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/auto-memory-model.ts",
+      "to": "apps/server/src/harness/model-accounts/auto-memory-model.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/bodyless.ts",
+      "to": "apps/server/src/harness/model-accounts/bodyless.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/changes.ts",
+      "to": "apps/server/src/harness/model-accounts/changes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/choices.ts",
+      "to": "apps/server/src/harness/model-accounts/choices.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/claude-refresh.test.ts",
+      "to": "apps/server/src/harness/model-accounts/claude-refresh.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/claude/claude.test.ts",
+      "to": "apps/server/src/harness/model-accounts/claude/claude.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/claude/models.ts",
+      "to": "apps/server/src/harness/model-accounts/claude/models.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/claude/prompt-cache.test.ts",
+      "to": "apps/server/src/harness/model-accounts/claude/prompt-cache.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/claude/sign-in.ts",
+      "to": "apps/server/src/harness/model-accounts/claude/sign-in.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/claude/THIRD_PARTY_LICENSE.txt",
+      "to": "apps/server/src/harness/model-accounts/claude/THIRD_PARTY_LICENSE.txt"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/defaults.ts",
+      "to": "apps/server/src/harness/model-accounts/defaults.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/errors.ts",
+      "to": "apps/server/src/harness/model-accounts/errors.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/fallback.ts",
+      "to": "apps/server/src/harness/model-accounts/fallback.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/google/calls.ts",
+      "to": "apps/server/src/harness/model-accounts/google/calls.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/google/flat-unions.test.ts",
+      "to": "apps/server/src/harness/model-accounts/google/flat-unions.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/google/flat-unions.ts",
+      "to": "apps/server/src/harness/model-accounts/google/flat-unions.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/google/google-calls.test.ts",
+      "to": "apps/server/src/harness/model-accounts/google/google-calls.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/google/google.test.ts",
+      "to": "apps/server/src/harness/model-accounts/google/google.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/google/google.ts",
+      "to": "apps/server/src/harness/model-accounts/google/google.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/google/port.ts",
+      "to": "apps/server/src/harness/model-accounts/google/port.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/kinds.ts",
+      "to": "apps/server/src/harness/model-accounts/kinds.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-account-kinds.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-account-kinds.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-accounts-assign.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-accounts-assign.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-accounts-log.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-accounts-log.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-accounts-order.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-accounts-order.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-accounts.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-accounts.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-defaults.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-defaults.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-fallback.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-fallback.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-id.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-id.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-retry.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-retry.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-served.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-served.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/model-start.test.ts",
+      "to": "apps/server/src/harness/model-accounts/model-start.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/observational-memory-settings.test.ts",
+      "to": "apps/server/src/harness/model-accounts/observational-memory-settings.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/observational-memory-settings.ts",
+      "to": "apps/server/src/harness/model-accounts/observational-memory-settings.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/openai/aggregate.test.ts",
+      "to": "apps/server/src/harness/model-accounts/openai/aggregate.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/openai/codex.test.ts",
+      "to": "apps/server/src/harness/model-accounts/openai/codex.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/openai/models.ts",
+      "to": "apps/server/src/harness/model-accounts/openai/models.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/openai/sign-in-refusals.test.ts",
+      "to": "apps/server/src/harness/model-accounts/openai/sign-in-refusals.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/openai/sign-in.test.ts",
+      "to": "apps/server/src/harness/model-accounts/openai/sign-in.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/openai/sign-in.ts",
+      "to": "apps/server/src/harness/model-accounts/openai/sign-in.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/openai/test-sign-in.ts",
+      "to": "apps/server/src/harness/model-accounts/openai/test-sign-in.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/openai/THIRD_PARTY_LICENSE.txt",
+      "to": "apps/server/src/harness/model-accounts/openai/THIRD_PARTY_LICENSE.txt"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/processors.test.ts",
+      "to": "apps/server/src/harness/model-accounts/processors.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/processors.ts",
+      "to": "apps/server/src/harness/model-accounts/processors.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/provider-tools.ts",
+      "to": "apps/server/src/harness/model-accounts/provider-tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/providers.test.ts",
+      "to": "apps/server/src/harness/model-accounts/providers.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/providers.ts",
+      "to": "apps/server/src/harness/model-accounts/providers.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/public.ts",
+      "to": "apps/server/src/harness/model-accounts/public.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/queue.test.ts",
+      "to": "apps/server/src/harness/model-accounts/queue.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/queue.ts",
+      "to": "apps/server/src/harness/model-accounts/queue.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/reseal.test.ts",
+      "to": "apps/server/src/harness/model-accounts/reseal.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/reseal.ts",
+      "to": "apps/server/src/harness/model-accounts/reseal.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/routes.ts",
+      "to": "apps/server/src/harness/model-accounts/routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/served-reads.test.ts",
+      "to": "apps/server/src/harness/model-accounts/served-reads.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/served-recordings.test.ts",
+      "to": "apps/server/src/harness/model-accounts/served-recordings.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/served.ts",
+      "to": "apps/server/src/harness/model-accounts/served.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/side-calls.ts",
+      "to": "apps/server/src/harness/model-accounts/side-calls.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/sign-in-poll.ts",
+      "to": "apps/server/src/harness/model-accounts/sign-in-poll.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/sign-ins.test.ts",
+      "to": "apps/server/src/harness/model-accounts/sign-ins.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/sign-ins.ts",
+      "to": "apps/server/src/harness/model-accounts/sign-ins.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/store.ts",
+      "to": "apps/server/src/harness/model-accounts/store.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/subscription-store.ts",
+      "to": "apps/server/src/harness/model-accounts/subscription-store.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/tables.ts",
+      "to": "apps/server/src/harness/model-accounts/tables.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/test-defaults.ts",
+      "to": "apps/server/src/harness/model-accounts/test-defaults.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/test-fleet.ts",
+      "to": "apps/server/src/harness/model-accounts/test-fleet.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/thinking.test.ts",
+      "to": "apps/server/src/harness/model-accounts/thinking.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/thinking.ts",
+      "to": "apps/server/src/harness/model-accounts/thinking.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/turn.test.ts",
+      "to": "apps/server/src/harness/model-accounts/turn.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/model-accounts/turn.ts",
+      "to": "apps/server/src/harness/model-accounts/turn.ts"
+    }
   ]
 }

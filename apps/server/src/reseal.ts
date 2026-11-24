@@ -1,4 +1,4 @@
-import { resealModelAccounts } from './builder/model-accounts/public.ts'
+import { resealModelAccounts } from './harness/model-accounts/public.ts'
 import { resealConnections } from './hub/connectors/public.ts'
 import { readConfig } from './platform/config.ts'
 import { assertMigrated, assertRuntimeLogin, openDatabase } from './platform/database.ts'

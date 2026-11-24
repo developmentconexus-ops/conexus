@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { call, post } from '../../hub/identity/test-hub.ts'
-import { until } from '../../platform/test-until.ts'
 import {
   asked,
   beside,
@@ -13,8 +11,10 @@ import {
   started,
   streamOf,
   turnNotices,
-} from '../conversation/test-conversation.ts'
-import { failuresOf } from '../conversation/test-parts.ts'
+} from '../../builder/conversation/test-conversation.ts'
+import { failuresOf } from '../../builder/conversation/test-parts.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { bothOnTheLease, titleOf } from './test-defaults.ts'
 
 const FIRST = { access: 'sk-ant-oat01-first-access', refresh: 'sk-ant-ort01-first-refresh' }

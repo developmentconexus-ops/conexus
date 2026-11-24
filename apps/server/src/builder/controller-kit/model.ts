@@ -4,8 +4,8 @@ import type { ModelId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { webFetchTool, webSearchTool } from '@mastra/core/tools'
+import { chosenModel, providerOf } from '../../harness/model-accounts/public.ts'
 import { Failure } from '../../platform/failure.ts'
-import { chosenModel, providerOf } from '../model-accounts/public.ts'
 
 // The providers whose native search Mastra resolves (`webSearchTool`) for xAI; Google through
 // CLIProxy stays out until the paid proof of criterion 8 passes.

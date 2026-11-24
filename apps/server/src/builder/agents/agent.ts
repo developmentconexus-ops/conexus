@@ -11,6 +11,12 @@ import type { Agent, ToolsInput } from '@mastra/core/agent'
 import type { MastraMemory } from '@mastra/core/memory'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import {
+  AccountTurn,
+  conversationStart,
+  memoryModelsFor,
+} from '../../harness/model-accounts/public.ts'
 import type { Access, Place, Principal } from '../../hub/access/public.ts'
 import { principalFor } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
@@ -36,8 +42,6 @@ import {
 import { dataOrder } from '../data-tools/public.ts'
 import type { ConversationMachines } from '../machine/public.ts'
 import { showFileTool } from '../machine/public.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
-import { AccountTurn, conversationStart, memoryModelsFor } from '../model-accounts/public.ts'
 import { codeModeOf } from './code-mode.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
 import { codeTools } from './code-tools.ts'

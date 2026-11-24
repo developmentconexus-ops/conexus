@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import {
+  asked,
+  conversing,
+  endOf,
+  KEY,
+  turnNotices,
+} from '../../builder/conversation/test-conversation.ts'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
-import { asked, conversing, endOf, KEY, turnNotices } from '../conversation/test-conversation.ts'
 import { opened } from './openai/test-sign-in.ts'
 import { company, connect, created, GROQ_MODEL, pairOf, patch } from './test-defaults.ts'
 

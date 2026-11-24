@@ -8,9 +8,14 @@ import { InMemoryStore } from '@mastra/core/storage'
 import { createTool } from '@mastra/core/tools'
 import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
+import {
+  AccountTurn,
+  accountPick,
+  callModel,
+  turnContext,
+} from '../../harness/model-accounts/public.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { initialStateOf } from '../controller-kit/public.ts'
-import { AccountTurn, accountPick, callModel, turnContext } from '../model-accounts/public.ts'
 import { TOOL_CLOSURE } from './public.ts'
 import { asked, conversing, endOf, MODEL, title } from './test-conversation.ts'
 import { partsOf } from './test-parts.ts'

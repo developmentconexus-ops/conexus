@@ -16,8 +16,8 @@ import {
   StreamErrorRetryProcessor,
 } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
+import { controllerIn } from '../../builder/controller-context/public.ts'
 import { Failure } from '../../platform/failure.ts'
-import { controllerIn } from '../controller-context/public.ts'
 import { accessText, ENDS, until } from './access.ts'
 import { autoMemoryModel } from './auto-memory-model.ts'
 import type { AccountFailure } from './errors.ts'

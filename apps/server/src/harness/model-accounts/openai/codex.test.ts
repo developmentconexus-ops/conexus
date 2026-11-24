@@ -3,6 +3,18 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ATTEMPT_KEY_HEADER, CompanyId, ModelAccountId } from '@conexus/hub-api'
+import { TITLE } from '../../../builder/controller-kit/public.ts'
+import {
+  asked,
+  beside,
+  conversing,
+  endOf,
+  sent,
+  started,
+  streamOf,
+  turnNotices,
+} from '../../../builder/conversation/test-conversation.ts'
+import { failuresOf } from '../../../builder/conversation/test-parts.ts'
 import { call, post } from '../../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../../platform/test-database.ts'
 import {
@@ -15,18 +27,6 @@ import {
 } from '../../../platform/test-openai-codex.ts'
 import { recordedBody } from '../../../platform/test-recordings.ts'
 import { testOpened } from '../../../platform/test-seal.ts'
-import { TITLE } from '../../controller-kit/public.ts'
-import {
-  asked,
-  beside,
-  conversing,
-  endOf,
-  sent,
-  started,
-  streamOf,
-  turnNotices,
-} from '../../conversation/test-conversation.ts'
-import { failuresOf } from '../../conversation/test-parts.ts'
 import { codexModel } from '../public.ts'
 import { bothOnTheLease, titleOf } from '../test-defaults.ts'
 

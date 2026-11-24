@@ -6,12 +6,12 @@ import type { InputProcessor, OutputProcessor } from '@mastra/core/processors'
 import { CyberRefusalHandler } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
-import type { QueueDeps } from '../model-accounts/public.ts'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import {
   accountErrorProcessors,
   accountPick,
   MAX_PROCESSOR_RETRIES,
-} from '../model-accounts/public.ts'
+} from '../../harness/model-accounts/public.ts'
 import type { ControllerKind } from './kinds.ts'
 import { CONTROLLER_KINDS } from './kinds.ts'
 

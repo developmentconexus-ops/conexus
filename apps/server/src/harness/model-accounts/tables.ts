@@ -14,10 +14,10 @@ import {
   unique,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { builder } from '../../builder/schema/public.ts'
 import { ADMINISTRATOR, policy } from '../../hub/identity/public.ts'
 import { company, member } from '../../hub/identity/public-tables.ts'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
-import { builder } from '../schema/public.ts'
 
 // Every row belongs to a company and leaves with it, and a person's rows leave with their
 // membership: the foreign keys say so, and their cascade runs as the tables' owner (data D17).

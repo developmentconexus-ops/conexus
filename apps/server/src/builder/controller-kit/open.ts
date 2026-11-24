@@ -3,9 +3,13 @@ import type { Effort } from '@conexus/hub-api'
 import { ConversationId, ModelId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { Memory } from '@mastra/memory'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import {
+  conversationModel,
+  conversationStart,
+  effortsOf,
+} from '../../harness/model-accounts/public.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationModel, conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { ControllerKind, Owner } from './kinds.ts'
 import { resourceOf } from './kinds.ts'
 
