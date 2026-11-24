@@ -18,17 +18,28 @@ a U6, na região de `AWS_REGION`, a mesma da pilha `conexus-preparacao`.
    ```
 
    Depois: só três mudanças. O depósito `CopyRepository` entra, a política
-   `ReleaseRoleDefaultPolicy` entra com o envio ao depósito, e a política `CdkExecution` ganha
-   `TheCopyCluster`, `TheCopyTaskDefinition`, `TaskDefinitionsHaveNoResource`, `TheCopyQueues`,
-   `TheCopyRule`, `ReadTheCopyNetwork`, `CreateTheCopyNetwork`, `TagTheCopyNetworkOnCreate`,
-   `TheCopyNetwork` e `TheCopyLogs`. Qualquer outra mudança volta ao firstmate.
+   `ReleaseRoleDefaultPolicy` entra com o envio ao depósito, e entra a política
+   `conexus-cdk-execucao-copia` (`CdkCopyExecution`), com `TheCopyCluster`, `TheCopyTaskDefinition`,
+   `TaskDefinitionsHaveNoResource`, `TheCopyQueues`, `TheCopyRule`, `ReadTheCopyNetwork`,
+   `CreateTheCopyNetwork`, `TagTheCopyNetworkOnCreate`, `TheCopyNetwork` e `TheCopyLogs`. Ela fica
+   fora de `conexus-cdk-execucao` porque uma política gerenciada cabe em 6.144 caracteres. Qualquer
+   outra mudança volta ao firstmate.
 3. A preparação de novo, com o comando do passo 1 da primeira e `--region <região>`. Depois:
    `conexus-preparacao` em `UPDATE_COMPLETE`, e
    `aws ecr describe-repositories --repository-names conexus-copia` mostra `IMMUTABLE`.
-4. A primeira Release depois disso monta a imagem, publica-a em `conexus-copia` e só então publica a
+4. O bootstrap de novo, só na região da plataforma, com as duas políticas:
+
+   ```sh
+   npx cdk bootstrap aws://<conta>/<região> --profile <perfil> \
+     --cloudformation-execution-policies \
+     arn:aws:iam::<conta>:policy/conexus-cdk-execucao,arn:aws:iam::<conta>:policy/conexus-cdk-execucao-copia
+   ```
+
+   Depois: o papel `cdk-hnb659fds-cfn-exec-role-<conta>-<região>` com as duas, e nada mais.
+5. A primeira Release depois disso monta a imagem, publica-a em `conexus-copia` e só então publica a
    plataforma. Depois: `conexus-plataforma` em `UPDATE_COMPLETE`, com as saídas `CopyClusterArn`,
    `CopyTaskFamily`, `CopyQueueUrl`, `CopySubnets` e `CopySecurityGroup`.
-5. Os lagos que já existem não têm o papel que escreve. Eles são apagados e criados de novo pelo
+6. Os lagos que já existem não têm o papel que escreve. Eles são apagados e criados de novo pelo
    botão da Central (T.5 do cartão).
 
 ## Os poderes que valem em `*`

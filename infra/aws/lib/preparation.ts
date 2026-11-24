@@ -4,6 +4,7 @@ import type { Construct } from 'constructs'
 import { LOG_GROUP_ACTIONS } from './actions.ts'
 import { copyImages, copyPlatformStatements } from './copy-preparation.ts'
 import {
+  CDK_COPY_EXECUTION_POLICY,
   CDK_EXECUTION_POLICY,
   HUB_KEY_USER,
   HUB_ROLE,
@@ -118,6 +119,10 @@ export class PreparationStack extends Stack {
       }),
     )
     cdkExecutionPolicy(this)
+    new iam.ManagedPolicy(this, 'CdkCopyExecution', {
+      managedPolicyName: CDK_COPY_EXECUTION_POLICY,
+      statements: copyPlatformStatements(this),
+    })
   }
 }
 
@@ -214,6 +219,7 @@ function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
         resources: [
           iamArn(stack, `role/${RELEASE_ROLE}`),
           iamArn(stack, `policy/${CDK_EXECUTION_POLICY}`),
+          iamArn(stack, `policy/${CDK_COPY_EXECUTION_POLICY}`),
           iamArn(stack, `user/${HUB_KEY_USER}`),
         ],
       }),
@@ -223,7 +229,6 @@ function cdkExecutionPolicy(stack: Stack): iam.ManagedPolicy {
         resources: ['*'],
       }),
       ...catalogFunctionStatements(stack),
-      ...copyPlatformStatements(stack),
       new iam.PolicyStatement({
         sid: 'TheTemplatesBucket',
         actions: ['s3:*'],

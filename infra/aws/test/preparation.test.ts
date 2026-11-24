@@ -130,6 +130,7 @@ test('a execução do CDK não é administradora', () => {
   assert.deepEqual(resourcesOf(preparationItself), [
     `arn:aws:iam::${ACCOUNT}:role/conexus-release`,
     `arn:aws:iam::${ACCOUNT}:policy/conexus-cdk-execucao`,
+    `arn:aws:iam::${ACCOUNT}:policy/conexus-cdk-execucao-copia`,
     `arn:aws:iam::${ACCOUNT}:user/conexus-hub-chave`,
   ])
 })
@@ -223,9 +224,8 @@ test('a execução do CDK só cria a função do catálogo, e não registra nem 
 })
 
 test('a segunda preparação', () => {
-  const statements = statementsOf(find(preparation, 'CdkExecution'))
   assert.deepEqual(
-    statements.map((statement) => statement.Sid),
+    statementsOf(find(preparation, 'CdkExecution')).map((statement) => statement.Sid),
     [
       'OurRolesAndPolicies',
       'NeverThePreparation',
@@ -234,6 +234,18 @@ test('a segunda preparação', () => {
       'TheCatalogFunctionCode',
       'TheCatalogFunctionLogs',
       'DescribeLogGroups',
+      'TheTemplatesBucket',
+      'BudgetAndAnomalies',
+      'ThePlatformStack',
+      'ReadBootstrapVersion',
+    ],
+  )
+  const copyExecution = find(preparation, 'CdkCopyExecution')
+  assert.equal(copyExecution.Properties.ManagedPolicyName, 'conexus-cdk-execucao-copia')
+  const statements = statementsOf(copyExecution)
+  assert.deepEqual(
+    statements.map((statement) => statement.Sid),
+    [
       'TheCopyCluster',
       'TheCopyTaskDefinition',
       'TaskDefinitionsHaveNoResource',
@@ -244,10 +256,6 @@ test('a segunda preparação', () => {
       'TagTheCopyNetworkOnCreate',
       'TheCopyNetwork',
       'TheCopyLogs',
-      'TheTemplatesBucket',
-      'BudgetAndAnomalies',
-      'ThePlatformStack',
-      'ReadBootstrapVersion',
     ],
   )
   function copy(sid: string) {
@@ -299,6 +307,14 @@ test('a segunda preparação', () => {
     for (const action of actionsOf(bySid(statements, sid))) assert.doesNotMatch(action, /\*/)
   }
   assert.ok(!statements.flatMap(actionsOf).some((action) => action.startsWith('ecr:')))
+})
+
+// IAM counts a managed policy's characters without the whitespace, and refuses one past 6,144.
+test('cada política da execução do CDK cabe no limite do IAM', () => {
+  for (const id of ['CdkExecution', 'CdkCopyExecution']) {
+    const size = JSON.stringify(find(preparation, id).Properties.PolicyDocument).length
+    assert.ok(size < 6144, `${id}: ${size}`)
+  }
 })
 
 test('o depósito das imagens da cópia nasce na preparação, e a Release só publica nele', () => {
