@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { assisting, created } from '../../agents/assistant/test-assistant.ts'
 import { agentsOn, publishedAgent, talkedTo } from '../../agents/saved-agent/test-agents.ts'
 import { approving, askedOf, launched, untilAsked } from '../../agents/saved-agent/test-approval.ts'
+import type { Hub } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { RUN_MARKS } from '../spec/public.ts'
 import { hubBeside, MODEL, sessionUrl, started } from './test-conversation.ts'
@@ -149,7 +150,7 @@ test('a troca de modelo do Assistente depois de um reinício: grava igual e as m
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const id = url.slice(url.lastIndexOf('/') + 1)
-  async function marksOf(hub: typeof on.hub) {
+  async function marksOf(hub: Hub) {
     const read = await hub.test.mastraPool.query(
       'select metadata from mastra.mastra_threads where id = $1',
       [id],
