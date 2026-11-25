@@ -6,8 +6,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { LocalFilesystem, WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { NEVER_ASKS } from '../spec/public.ts'
-import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
-import { workspaceOf } from './workspace.ts'
+import { SandboxFilesystem, workspaceOf } from './public.ts'
 
 function over(t: TestContext, parts: { neverAsks: boolean; readMedia?: readonly string[] }) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-workspace-'))
