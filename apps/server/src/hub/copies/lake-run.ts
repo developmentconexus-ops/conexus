@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import type { CompanyId, ConnectionId, LakeInterval } from '@conexus/hub-api'
 import { ConnectionId as ConnectionIdSchema, LakeRunId } from '@conexus/hub-api'
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import type { AwsAnswer, CopyQueue, CopyTasks, Where } from '../../platform/aws.ts'
+import type { AwsAnswer, CopyQueue, CopyTasks, TaskArn, Where } from '../../platform/aws.ts'
 import { bucketName, RunParameter, runParameterName, writerRoleArn } from '../../platform/aws.ts'
 import type { AwsConfig } from '../../platform/config-aws.ts'
 import type { Database } from '../../platform/database.ts'
@@ -10,8 +10,8 @@ import { databaseFailure, violatedConstraint } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { logFailure } from '../../platform/failure.ts'
 import type { CopySource } from '../connectors/public.ts'
-import type { CompanyScope, RunEnd } from './lake-close.ts'
-import { closeLakeRun, companyScope } from './lake-close.ts'
+import type { CompanyScope, RunEnd, RunFields } from './lake-close.ts'
+import { closeLakeRun, companyScope, deleteParameter } from './lake-close.ts'
 import { createLakeQueue } from './lake-queue.ts'
 import type { Started } from './lake-spec.ts'
 import { readCopy, specOf, writeColumns } from './lake-spec.ts'
@@ -19,12 +19,12 @@ import { sweep } from './lake-sweep.ts'
 import { lakeCopy, lakeRun } from './tables.ts'
 
 const RUN_STALE_MS = 48 * 60 * 60 * 1_000
-/** The Parameter Store's advanced tier, which `Intelligent-Tiering` picks past the standard 4 KB (T.11). */
+/** The Parameter Store's advanced tier, which `Intelligent-Tiering` picks past the standard 4 KB. */
 const PARAMETER_MAX_BYTES = 8 * 1_024
-/** Parameter Store's `PutParameter` quota for the account (T.32): the start line never passes it. */
+/** Parameter Store's `PutParameter` quota for the account: the start line never passes it. */
 const PARAMETER_WRITES_PER_SECOND = 3
 /**
- * Fargate's sizes, in 1/1024 vCPU and MiB (T.6): 2 vCPU and 4 GB when a round carries a table's
+ * Fargate's sizes, in 1/1024 vCPU and MiB: 2 vCPU and 4 GB when a round carries a table's
  * first load, 1 vCPU and 2 GB otherwise, the task definition's own.
  */
 const MACHINES = {
@@ -41,7 +41,7 @@ const UNAVAILABLE: RunEnd = {
   system: null,
 }
 
-/** The `RunTask` idempotency token of a round's attempt: the round and the attempt, at most 64 characters (T.8). */
+/** The `RunTask` idempotency token of a round's attempt: the round and the attempt, at most 64 characters. */
 function clientTokenOf(run: string, attempt: number): string {
   return `${run}-${attempt}`
 }
@@ -51,7 +51,7 @@ export type StartAnswer =
   | Readonly<{ kind: 'ALREADY_RUNNING' }>
   | Readonly<{ kind: 'NO_COPY' }>
 
-/** The start line's time: the machine's in production, a test's own in the tests (T20). */
+/** The start line's time: the machine's in production, a test's own in the tests. */
 export type StartClock = Readonly<{ now(): number; sleep(ms: number): Promise<void> }>
 
 export const MACHINE_CLOCK: StartClock = {
@@ -148,18 +148,47 @@ async function launch(deps: LakeRunDeps, line: Line, started: Started, a: Launch
   const asked = { token, startedBy: run, writer: a.writer, parameter, machine }
   const task = await tried(line.clock, () => deps.tasks.start(a.where, asked))
   if (task.kind !== 'DONE') return failed('RunTask', task)
+  if ((await kept(deps, started, task.value)) === 'CLOSED')
+    await undone(deps, line, { where: a.where, fields, task: task.value })
+}
+
+/** The task's ARN kept on its round, unless the round closed while the start was in the line. */
+async function kept(deps: LakeRunDeps, started: Started, task: TaskArn) {
+  const run = LakeRunId.parse(started.run)
   try {
-    await deps.database.command(at, (tx) =>
+    const rows = await deps.database.command(started.at, (tx) =>
       tx
         .update(lakeRun)
-        .set({ taskArn: task.value })
-        .where(and(eq(lakeRun.id, run), isNull(lakeRun.endedAt))),
+        .set({ taskArn: task })
+        .where(and(eq(lakeRun.id, run), isNull(lakeRun.endedAt)))
+        .returning({ id: lakeRun.id }),
     )
+    return rows.length === 0 ? 'CLOSED' : 'KEPT'
   } catch (error) {
     const failure = databaseFailure(error)
     if (failure.code !== 'DATABASE_UNAVAILABLE') throw failure
-    deps.log.error(fields, 'COPY_TASK_UNRECORDED')
+    deps.log.error(
+      { companyId: started.at.companyId, connectionId: started.connection, runId: run },
+      'COPY_TASK_UNRECORDED',
+    )
+    return 'UNRECORDED'
   }
+}
+
+/**
+ * A round closed during its start, by a leave or a sweep: the close found no task to stop and
+ * deleted a parameter the start then wrote again, so the start stops its task and deletes it.
+ */
+async function undone(
+  deps: LakeRunDeps,
+  line: Line,
+  a: Readonly<{ where: Where; fields: RunFields; task: TaskArn }>,
+) {
+  deps.log.info(a.fields, 'COPY_START_UNDONE')
+  const stopped = await tried(line.clock, () => deps.tasks.stop(a.where, a.task))
+  if (stopped.kind !== 'DONE')
+    deps.log.error({ ...a.fields, answer: stopped.kind }, 'COPY_TASK_LEFT')
+  await deleteParameter(deps, a.where, a.fields)
 }
 
 async function start(deps: LakeRunDeps, line: Line, started: Started) {

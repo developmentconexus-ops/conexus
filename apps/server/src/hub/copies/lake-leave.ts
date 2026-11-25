@@ -3,9 +3,10 @@ import { ConnectionId as ConnectionIdSchema, LakeRunId } from '@conexus/hub-api'
 import { and, eq, isNull } from 'drizzle-orm'
 import type { AwsAnswer, Where } from '../../platform/aws.ts'
 import { RunParameter, runParameterName, TaskArn } from '../../platform/aws.ts'
+import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyScope } from './lake-close.ts'
-import { companyScope, lakeOf } from './lake-close.ts'
+import { companyScope, deleteParameter, lakeOf, lastClosedOf } from './lake-close.ts'
 import type { LakeCopyDeps } from './lake-copy.ts'
 import { awsDown, dropTables } from './lake-copy.ts'
 import { MACHINE_CLOCK } from './lake-run.ts'
@@ -79,11 +80,36 @@ async function stopRun(
   })
 }
 
+type Rounds = Readonly<{ open: Open | undefined; last: { id: string } | undefined }>
+
+async function roundsOf(tx: ReadTx, connection: ConnectionId): Promise<Rounds> {
+  const [open] = await tx
+    .select({ id: lakeRun.id, taskArn: lakeRun.taskArn })
+    .from(lakeRun)
+    .where(and(eq(lakeRun.connectionId, connection), isNull(lakeRun.endedAt)))
+  const [last] = await lastClosedOf(tx, connection)
+  return { open, last }
+}
+
 /**
- * What a copy owes before its connection's row goes (criterion 47): the open round's task stopped,
- * the tables dropped in both areas, the clock taken, each AWS first and the row after, so with AWS
- * out the call answers 503 and the row stays; a connection with no copy never calls AWS. The row's
- * key takes `lake_copy` with it.
+ * The connection's rounds ended in AWS before its tables or rows go: the open one stopped, and the
+ * parameter of the one closed last deleted again, since its close may have left it; with AWS out,
+ * 503 and nothing more.
+ */
+async function endRounds(deps: LakeCopyDeps, at: Of, where: Where | null, rounds: Rounds) {
+  const scope = companyScope(at.companyId)
+  if (rounds.open !== undefined) await stopRun(deps, at, scope, where, rounds.open)
+  if (rounds.last === undefined || where === null) return
+  const runId = LakeRunId.parse(rounds.last.id)
+  const left = await deleteParameter(deps, where, { ...at, runId })
+  if (left === 'LEFT') throw new Failure('COPY_AWS_UNAVAILABLE')
+}
+
+/**
+ * What a copy owes before its connection's row goes: its rounds ended in AWS, the tables dropped
+ * in both areas, the clock taken, each AWS first and the row after, so with AWS out the call
+ * answers 503 and the row stays; a connection with no copy never calls AWS. The row's key takes
+ * `lake_copy` with it.
  */
 export function createLakeLeave(deps: LakeCopyDeps) {
   return {
@@ -99,15 +125,12 @@ export function createLakeLeave(deps: LakeCopyDeps) {
           .select({ name: lakeTable.name })
           .from(lakeTable)
           .where(eq(lakeTable.connectionId, at.connectionId))
-        const [open] = await tx
-          .select({ id: lakeRun.id, taskArn: lakeRun.taskArn })
-          .from(lakeRun)
-          .where(and(eq(lakeRun.connectionId, at.connectionId), isNull(lakeRun.endedAt)))
-        return { tables, open, lake: await lakeOf(tx, at.companyId) }
+        const rounds = await roundsOf(tx, at.connectionId)
+        return { tables, rounds, lake: await lakeOf(tx, at.companyId) }
       })
       if (found === undefined) return
-      const { lake, open } = found
-      if (open !== undefined) await stopRun(deps, at, scope, lake?.where ?? null, open)
+      const { lake } = found
+      await endRounds(deps, at, lake?.where ?? null, found.rounds)
       if (lake !== null) await dropTables(deps, at, lake, found.tables)
       await deps.clock.remove(at.connectionId)
       deps.log.info(
@@ -117,16 +140,25 @@ export function createLakeLeave(deps: LakeCopyDeps) {
     },
 
     /**
-     * The company's lake leaving, after its tables are dropped: the clocks of the company's
-     * connections, then the copies' rows, which carry the tables and the rounds (criterion 48).
+     * The company's lake leaving, after its tables are dropped: each connection's rounds ended in
+     * AWS as a leave ends them, its clock taken, then the copies' rows, which carry the tables and
+     * the rounds.
      */
     async erase(companyId: CompanyId): Promise<void> {
       const scope = companyScope(companyId)
-      const copies = await deps.database.read(scope, (tx) =>
-        tx.select({ connectionId: lakeCopy.connectionId }).from(lakeCopy),
-      )
-      for (const { connectionId } of copies)
-        await deps.clock.remove(ConnectionIdSchema.parse(connectionId))
+      const found = await deps.database.read(scope, async (tx) => {
+        const copies = await tx.select({ connectionId: lakeCopy.connectionId }).from(lakeCopy)
+        const each = []
+        for (const copy of copies) {
+          const connectionId = ConnectionIdSchema.parse(copy.connectionId)
+          each.push({ connectionId, rounds: await roundsOf(tx, connectionId) })
+        }
+        return { each, lake: await lakeOf(tx, companyId) }
+      })
+      for (const { connectionId, rounds } of found.each) {
+        await endRounds(deps, { companyId, connectionId }, found.lake?.where ?? null, rounds)
+        await deps.clock.remove(connectionId)
+      }
       await deps.database.command(scope, (tx) =>
         tx.delete(lakeCopy).where(eq(lakeCopy.companyId, companyId)),
       )

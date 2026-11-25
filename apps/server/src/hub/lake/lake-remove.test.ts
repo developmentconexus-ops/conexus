@@ -87,6 +87,18 @@ test('lago: o apagar recusado numa pilha viva vai a não deu para apagar, que se
 })
 
 const OPERATOR = { name: 'Operadora Teste', email: 'operadora@example.test', role: 'admin' }
+
+/** The company as a client of the Central, its operator, and the name its lake's deletion asks. */
+async function clientOf(on: Awaited<ReturnType<typeof lakeCopyOn>>) {
+  const operator = await personOn(on.hub, OPERATOR)
+  const [company] = await on.rows('select name from auth.company where id = $1', [on.companyId])
+  await on.rows(
+    `insert into operations.client (company_id, cnpj, legal_name, attempt_key, registered_at)
+     values ($1, '00000000000001', 'Empresa Teste Ltda', $1, now())`,
+    [on.companyId],
+  )
+  return { operator, asked: { name: String(company?.name) } }
+}
 const SILENT = { kind: 'NO_ANSWER' } as const
 
 test('o lago com tabela: apaga as tabelas, depois a pilha, e na mesma passada as cópias do lago e os relógios; com a AWS fora, nada sai e repetir termina', async (t) => {
@@ -97,13 +109,7 @@ test('o lago com tabela: apaga as tabelas, depois a pilha, e na mesma passada as
       drop: async (...asked) => (down ? SILENT : real.drop(...asked)),
     }),
   })
-  const operator = await personOn(on.hub, OPERATOR)
-  const [company] = await on.rows('select name from auth.company where id = $1', [on.companyId])
-  await on.rows(
-    `insert into operations.client (company_id, cnpj, legal_name, attempt_key, registered_at)
-     values ($1, '00000000000001', 'Empresa Teste Ltda', $1, now())`,
-    [on.companyId],
-  )
+  const { operator, asked } = await clientOf(on)
   const connection = await on.linked()
   assert.equal((await on.put(connection, { tables: [NOTAS, PARCEIROS], ...DAILY })).statusCode, 200)
   await finished(on, connection, ['sankhya_notas', 'sankhya_parceiros'])
@@ -116,7 +122,6 @@ test('o lago com tabela: apaga as tabelas, depois a pilha, e na mesma passada as
   const clockId = `schedule_${connection}`
   assert.notEqual(await on.hub.mastra.schedules.get(clockId), null)
   const url = `/api/clients/${on.companyId}/lake`
-  const asked = { name: String(company?.name) }
 
   const refused = await call(on.hub, operator, 'DELETE', url, asked)
   assert.equal(refused.statusCode, 202, refused.body)
@@ -145,3 +150,27 @@ async function copiesLeft(on: Awaited<ReturnType<typeof lakeCopyOn>>) {
   )
   return row
 }
+
+test('apagar o lago com a rodada aberta: a tarefa para, o parâmetro sai e a rodada fecha INTERRUPTED antes das linhas', async (t) => {
+  const on = await lakeCopyOn(t)
+  const { operator, asked } = await clientOf(on)
+  const connection = await on.linked()
+  assert.equal((await on.put(connection, { tables: [NOTAS], ...DAILY })).statusCode, 200)
+  await on.hub.lakeRuns.idle()
+  assert.equal(on.aws.tasks()[0]?.stopped, false)
+  assert.equal(on.aws.parameters().length, 1)
+
+  const deleting = await call(
+    on.hub,
+    operator,
+    'DELETE',
+    `/api/clients/${on.companyId}/lake`,
+    asked,
+  )
+  assert.equal(deleting.statusCode, 202, deleting.body)
+  assert.equal(on.aws.tasks()[0]?.stopped, true, 'the open task was stopped')
+  assert.deepEqual(on.aws.parameters(), [])
+  const ended = on.hub.lines.find(({ message }) => message === 'COPY_RUN_ENDED')
+  assert.deepEqual([ended?.fields.outcome, ended?.fields.cause], ['INTERRUPTED', 'LEAVE'])
+  assert.deepEqual(await copiesLeft(on), { copies: 0, tables: 0 })
+})

@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { until } from '../../platform/test-until.ts'
 import { call, codeOf } from '../identity/test-hub.ts'
 import type { LakeCopyOn } from './test-lake-copy.ts'
 import { counts, DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS } from './test-lake-copy.ts'
+import { silenceDelete } from './test-lake-queue.ts'
 import { testClock } from './test-lake-run.ts'
 
 const SILENT = { kind: 'NO_ANSWER' } as const
@@ -165,4 +167,38 @@ test('desligar: o limite da espera vence sem STOPPED, 503, as tabelas ficam, e a
   assert.equal((await unlink(on, connection)).statusCode, 200)
   assert.deepEqual(on.aws.tables(), [])
   assert.equal(await connectionRows(on, connection), 0)
+})
+
+test('desligar durante a partida: a partida que perde a corrida para a tarefa que iniciou e apaga o parâmetro que regravou', async (t) => {
+  const on = await lakeCopyOn(t)
+  const connection = await on.linked()
+  // The SDK repeats a silent request inside the call: both are held, and the start tries again.
+  on.aws.start.script('PutParameter', 'HELD')
+  on.aws.start.script('PutParameter', 'HELD')
+  assert.equal((await on.put(connection, { tables: [NOTAS], ...DAILY })).statusCode, 200)
+  await until(() => on.aws.parameters().length === 1, 'the start wrote its parameter')
+
+  const answered = await unlink(on, connection)
+  assert.equal(answered.statusCode, 200, answered.body)
+  assert.deepEqual(on.aws.tasks(), [], 'the leave found no task to stop')
+  await on.hub.lakeRuns.idle()
+
+  const tasks = on.aws.tasks()
+  assert.equal(tasks.length, 1, 'the start began its task after the leave')
+  assert.equal(tasks[0]?.stopped, true, 'and stopped it')
+  assert.deepEqual(on.aws.parameters(), [])
+  assert.ok(on.hub.lines.some(({ message }) => message === 'COPY_START_UNDONE'))
+})
+
+test('desligar apaga o parâmetro que o fecho da última rodada deixou', async (t) => {
+  const on = await lakeCopyOn(t)
+  const connection = await on.linked()
+  on.aws.start.script('RunTask', 'REFUSED')
+  silenceDelete(on)
+  assert.equal((await on.put(connection, { tables: [NOTAS], ...DAILY })).statusCode, 200)
+  await on.hub.lakeRuns.idle()
+  assert.equal(on.aws.parameters().length, 1, 'the refused start left it')
+
+  assert.equal((await unlink(on, connection)).statusCode, 200)
+  assert.deepEqual(on.aws.parameters(), [])
 })
