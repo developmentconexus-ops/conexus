@@ -2,7 +2,7 @@ import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { EndParts, TurnEnds } from '../../harness/turn/public.ts'
 import type { Settled } from './runs/context.ts'
 import type { Runs } from './runs/runs.ts'
-import { busyIn } from './turn-of.ts'
+import type { Refusals } from './turn-of.ts'
 
 /** The Builder's settled turn as the parts of our message and what the end keeps of it. */
 function endOf(settled: Settled): EndParts {
@@ -18,9 +18,9 @@ function endOf(settled: Settled): EndParts {
 
 /**
  * The Builder's end of a turn: its Projeto settled by `Runs.finish` (a version and its Preview),
- * the Projeto busy read on the run's error (`turnOf`), and its machine's steps.
+ * the Projeto busy as `turnOf` recorded it, and its machine's steps.
  */
-export function builderEnds(runs: Pick<Runs, 'finish' | 'onPhase'>): TurnEnds {
+export function builderEnds(runs: Pick<Runs, 'finish' | 'onPhase'>, refusals: Refusals): TurnEnds {
   return {
     async finish(input) {
       const settled = await runs.finish({
@@ -29,12 +29,12 @@ export function builderEnds(runs: Pick<Runs, 'finish' | 'onPhase'>): TurnEnds {
       })
       return settled === 'gone' ? settled : endOf(settled)
     },
-    refusal(error) {
-      const busy = busyIn(error)
-      if (busy === undefined) return undefined
-      return busy.person === undefined
-        ? { code: 'RUN_BUSY' }
-        : { code: 'RUN_BUSY', person: busy.person }
+    refusal(conversationId) {
+      const refused = refusals.read(conversationId)
+      if (refused === undefined) return undefined
+      return refused.person === undefined
+        ? { code: refused.code }
+        : { code: refused.code, person: refused.person }
     },
     onPhase: (...args) => runs.onPhase(...args),
   }

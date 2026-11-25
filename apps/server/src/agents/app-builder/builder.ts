@@ -31,7 +31,7 @@ import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { createSubmitPlanTool, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { checkTool, conexusCheck } from './processors.ts'
 import type { Runs } from './runs/runs.ts'
-import type { ConversationIndex } from './turn-of.ts'
+import type { ConversationIndex, Refusals } from './turn-of.ts'
 import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
 
 type Ids = { companyId: CompanyId; personId: PersonId; projectId: ProjectId }
@@ -112,6 +112,8 @@ export function createBuilder(deps: {
   companyData: (principal: Principal, context: DataBinding) => CompanyData
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
+  /** What the turn's processor records of a refused run, for the end of the turn (`builderEnds`). */
+  refusals: Refusals
 }) {
   const { storage } = deps
   const check = checkTool(deps.runs)
@@ -162,7 +164,7 @@ export function createBuilder(deps: {
         scorers: [conexusCheck({ runs: deps.runs, storage, log: deps.log })],
         strategy: 'all',
       },
-      turn: turnOf(deps),
+      turn: turnOf({ ...deps, projectOf, refusals: deps.refusals }),
       threads: memory,
       mode: { id: CONVERSATION_MODE, availableTools: [...CLOSED_TOOLS] },
       // `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`).

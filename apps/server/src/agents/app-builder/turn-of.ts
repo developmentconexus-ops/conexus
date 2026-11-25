@@ -3,12 +3,10 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { Memory } from '@mastra/memory'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import type { Owner, RunScope, Taken, TurnSource } from '../../harness/spec/public.ts'
-import { ownerIn, runResolver, turnOfOwner } from '../../harness/spec/public.ts'
-import { conversationIn } from './runs/keys.ts'
+import { runResolver, turnOfOwner } from '../../harness/spec/public.ts'
 import type { Runs } from './runs/runs.ts'
 
 const TURN_PROCESSOR = 'conexus-turn'
-const RUN_BUSY = 'RUN_BUSY:'
 
 type Conversation = Owner & { conversationId: ConversationId; projectId: ProjectId }
 
@@ -17,16 +15,30 @@ export type ConversationIndex = {
   projectOf(input: Owner & { conversationId: ConversationId }): Promise<ProjectId | undefined>
 }
 
-async function conversationOf(
-  index: ConversationIndex,
-  requestContext: RequestContext,
-): Promise<Conversation | undefined> {
-  const owner = ownerIn(requestContext)
-  const conversationId = conversationIn(requestContext)
-  if (owner?.kind !== 'builder' || conversationId === undefined) return undefined
-  const { companyId, personId } = owner
-  const projectId = await index.projectOf({ companyId, personId, conversationId })
-  return projectId === undefined ? undefined : { companyId, personId, conversationId, projectId }
+/** Why `turnOf` refused a conversation's run: the Projeto is busy, with the name of whoever holds it while they are still there. */
+export type Refused = Readonly<{ code: 'RUN_BUSY'; person?: string }>
+
+/**
+ * What the turn's processor recorded of each refusal, for the end of the turn to read: the
+ * controller's own `error` event says only that a processor aborted the run (`finishReason:
+ * 'tripwire'`, with the reason folded into its text), so the code and the name are kept here, by
+ * conversation, and never read back from the text (code C52).
+ */
+export type Refusals = ReturnType<typeof createRefusals>
+
+export function createRefusals() {
+  const held = new Map<ConversationId, Refused>()
+  return {
+    record(conversationId: ConversationId, refused: Refused): void {
+      held.set(conversationId, refused)
+    },
+    /** The refusal the run's end reads, once: a later run of the conversation never meets it. */
+    read(conversationId: ConversationId): Refused | undefined {
+      const refused = held.get(conversationId)
+      held.delete(conversationId)
+      return refused
+    },
+  }
 }
 
 /**
@@ -36,14 +48,22 @@ async function conversationOf(
 function projectTurn(deps: {
   queue: QueueDeps
   runs: Pick<Runs, 'take'>
-  index: ConversationIndex
+  projectOf: ProjectOf
+  refusals: Refusals
 }): (requestContext: RequestContext) => Promise<Taken> {
   return async (requestContext) => {
-    const found = await conversationOf(deps.index, requestContext)
+    const found = await deps.projectOf(requestContext)
     if (found === undefined) return { kind: 'NONE' }
+    deps.refusals.read(found.conversationId)
     const turn = await turnOfOwner(deps.queue, found)
     const taken = await deps.runs.take({ ...found, onEnd: () => turn.end() })
-    if (!taken.ok) return { kind: 'REFUSED', reason: `${RUN_BUSY}${taken.person ?? ''}` }
+    if (!taken.ok) {
+      deps.refusals.record(found.conversationId, {
+        code: 'RUN_BUSY',
+        ...(taken.person === undefined ? {} : { person: taken.person }),
+      })
+      return { kind: 'REFUSED', reason: 'RUN_BUSY' }
+    }
     return { kind: 'TAKEN', turn }
   }
 }
@@ -51,14 +71,16 @@ function projectTurn(deps: {
 /**
  * The Builder's turn as its ficha holds it (`turn`): the run's, made as Mastra's run reads its
  * input, from the conversation the run is (Factory `credential-policy.ts:31-90`), never from the
- * request that woke it. `projectTurn` is the step: the run takes the Projeto, or ends refused with
- * whose run holds it, before any model call and with nothing saved. A run Mastra resumes (an
- * answered card) reads no input: its first step takes the turn instead.
+ * request that woke it. `projectTurn` is the step: the run takes the Projeto, or ends refused,
+ * with the refusal recorded for the end of the turn, before any model call and with nothing
+ * saved. A run Mastra resumes (an answered card) reads no input: its first step takes the turn
+ * instead.
  */
 export function turnOf(deps: {
   queue: QueueDeps
   runs: Pick<Runs, 'take'>
-  index: ConversationIndex
+  projectOf: ProjectOf
+  refusals: Refusals
 }): TurnSource {
   return {
     kind: 'RUN',
@@ -101,15 +123,4 @@ export function projectOfRun(
     const { projectId } = run.place
     return { ...run.owner, projectId, conversationId: run.conversation.id }
   }
-}
-
-/**
- * The run `turnOf` refused as busy, as Mastra says it on the run's error (`Processor "<id>" stopped
- * the run: <reason>`): with the name of whoever holds the Projeto, when they are still there.
- */
-export function busyIn(error: Error): { person: string | undefined } | undefined {
-  const said = `Processor "${TURN_PROCESSOR}" stopped the run: ${RUN_BUSY}`
-  if (!error.message.startsWith(said)) return undefined
-  const person = error.message.slice(said.length)
-  return { person: person === '' ? undefined : person }
 }

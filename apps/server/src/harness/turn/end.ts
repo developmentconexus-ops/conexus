@@ -113,14 +113,15 @@ function startThinking(run: Run, message: string, index: number): void {
   if (!run.thinking.has(key)) run.thinking.set(key, Date.now())
 }
 
-function failedOn(run: Run, event: AgentControllerEvent, refusal: TurnEnds['refusal']): void {
-  if (event.type === 'error') run.failure ??= refusal?.(event.error) ?? failureOf(event.error)
-}
+type Refused = () => FailureData | undefined
 
 /** What a run keeps of each event: its line's counts, its error's failure and the thinking clock. */
-function heard(run: Run, event: AgentControllerEvent, refusal: TurnEnds['refusal']): void {
+function heard(run: Run, event: AgentControllerEvent, refused: Refused): void {
   run.tally.heard(event)
-  failedOn(run, event, refusal)
+  if (event.type === 'error') {
+    const aborted = event.finishReason === 'tripwire' ? refused() : undefined
+    run.failure ??= aborted ?? failureOf(event.error)
+  }
   if (event.type === 'message_start' && event.message.role === 'assistant') {
     for (const [index, part] of event.message.content.parts.entries()) {
       if (part.type === 'reasoning') startThinking(run, event.message.id, index)
@@ -144,7 +145,7 @@ function heard(run: Run, event: AgentControllerEvent, refusal: TurnEnds['refusal
 
 /**
  * The end of a turn a controller fills in for itself: the Builder settles each run's Projeto
- * (`finish`), reads the Projeto busy on the run's error (`refusal`) and tells its machine's steps
+ * (`finish`), says the Projeto busy when a processor aborted the run (`refusal`) and tells its machine's steps
  * (`onPhase`); the other three hold no Projeto, so they fill in at most `onPhase` (step 24.1, U2).
  */
 export type TurnEnds = {
@@ -153,7 +154,8 @@ export type TurnEnds = {
     reason: AgentEnd
     told(end: EndParts): void
   }): Promise<EndParts | 'gone'>
-  refusal?(error: Error): FailureData | undefined
+  /** The failure of a run a processor aborted (its `finishReason` is `tripwire`), as the processor recorded it; asked of no other run. */
+  refusal?(conversationId: ConversationId): FailureData | undefined
   onPhase?(conversationId: ConversationId, listener: (phase: Phase) => void): () => void
 }
 
@@ -331,7 +333,7 @@ export function watchRuns(deps: { watched: readonly Watched[]; log: FailureLog }
           each.log.info({ ...fields, runId: run.runId }, 'CONVERSATION_TURN_STARTED')
         }
         if (run === undefined) return
-        heard(run, event, each.refusal)
+        heard(run, event, () => each.refusal?.(conversationId))
         if (event.type !== 'agent_end') return
         const line = turnLine({
           ...{ runId: run.runId, startedAt: run.startedAt, tally: run.tally },
