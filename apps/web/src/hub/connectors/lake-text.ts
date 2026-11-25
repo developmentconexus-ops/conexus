@@ -27,6 +27,8 @@ export const MAKE_LINK = 'Gerar o link'
 export const MAKING_LINK = 'Gerando…'
 export const COPY_LINK = 'Copiar'
 export const BACK_TO_ACCESS = 'Voltar ao acesso'
+export const LINK_NEXT =
+  'Quando a outra pessoa enviar, a ligação nova aparece em Integrações. Abra-a e clique em Escolher o que copiar.'
 
 export function linkValidText(expiresAt: string, clock: (instant: string) => string): string {
   return `Vale até ${clock(expiresAt)}.`
