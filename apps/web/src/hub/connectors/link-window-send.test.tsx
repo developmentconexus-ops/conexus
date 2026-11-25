@@ -3,15 +3,18 @@ import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { connectionOf } from './fixtures.ts'
 import { readyLake } from './lake-fixtures.ts'
-import type { Answers } from './test-hub.tsx'
+import type { Answers, View } from './test-hub.tsx'
 import { fill, openForm, openIntegrations, viewOf } from './test-hub.tsx'
 
 const server = hubServer()
 const NEXT_STEPS =
   'Quando a outra pessoa enviar, a ligação nova aparece em Integrações. Abra-a e clique em Escolher o que copiar.'
 
-async function toSend(answers: Answers = {}) {
-  const sent = openIntegrations(server, viewOf({ lake: readyLake() }), answers)
+const ASK_MANAGER =
+  'Quando a outra pessoa enviar, a ligação nova aparece em Integrações. Peça a quem gerencia as cópias para escolher o que copiar.'
+
+async function toSend(answers: Answers = {}, role: View['role'] = 'owner') {
+  const sent = openIntegrations(server, viewOf({ lake: readyLake(), role }), answers)
   const dialog = await openForm()
   fill('Comercial')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Enviar link' }))
@@ -119,3 +122,18 @@ test('enviar link: repetir o nome de uma ligação do mesmo sistema é recusado 
   ).toBe(true)
   expect(sent.filter((one) => one.path.endsWith('/connection-links'))).toHaveLength(0)
 })
+
+test.each([
+  ['owner', NEXT_STEPS],
+  ['admin', NEXT_STEPS],
+  ['member', ASK_MANAGER],
+] as const)(
+  'enviar link: o painel do endereço, para o papel %s, diz o caminho que ele pode seguir',
+  async (role, sentence) => {
+    const { dialog } = await toSend({}, role)
+    fireEvent.click(within(dialog).getByRole('checkbox', { name: 'X-Token' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Gerar o link' }))
+    expect(await within(dialog).findByText(sentence)).toBeTruthy()
+    expect(within(dialog).queryByText(role === 'member' ? NEXT_STEPS : ASK_MANAGER)).toBeNull()
+  },
+)

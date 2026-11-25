@@ -27,8 +27,12 @@ export const MAKE_LINK = 'Gerar o link'
 export const MAKING_LINK = 'Gerando…'
 export const COPY_LINK = 'Copiar'
 export const BACK_TO_ACCESS = 'Voltar ao acesso'
-export const LINK_NEXT =
-  'Quando a outra pessoa enviar, a ligação nova aparece em Integrações. Abra-a e clique em Escolher o que copiar.'
+
+/** What happens after the link is sent; who cannot choose what to copy is told whom to ask instead of where to click. */
+export function linkNextText(mayManageCopies: boolean): string {
+  const arrives = 'Quando a outra pessoa enviar, a ligação nova aparece em Integrações.'
+  return `${arrives} ${mayManageCopies ? `Abra-a e clique em ${CHOOSE_WHAT}.` : ASK_COPY_MANAGER}`
+}
 
 export function linkValidText(expiresAt: string, clock: (instant: string) => string): string {
   return `Vale até ${clock(expiresAt)}.`
