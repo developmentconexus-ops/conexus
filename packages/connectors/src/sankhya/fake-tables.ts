@@ -35,7 +35,7 @@ export const DECLARED_DECIMAL = {
 } as const
 
 /** A calculated number in the first note of `TGFCAB`, with ten places and no declared scale, as the real table carries (issue 1380). */
-export const CALCULATED = { column: 'CAMPO003', value: '2.1234567895' } as const
+const CALCULATED = { column: 'CAMPO003', value: '2.1234567895' } as const
 
 const CHANGED_BY_TEST = '2026-11-20 10:00:00'
 
