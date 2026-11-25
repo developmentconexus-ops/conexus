@@ -17,6 +17,29 @@ test('o resultado é completo, ou erro com o código', () => {
   assert.equal(CopyTaskResult.safeParse({ ...result, outcome: coded }).success, true)
 })
 
+test('o resultado: sem machine ainda vale, com machine só o inteiro e o que cabe', () => {
+  const result = {
+    ...{ type: 'RESULT', version: 1, runId: randomUUID(), attempt: 1, tables: [] },
+    outcome: { kind: 'COMPLETE' },
+  }
+  const machine = {
+    allocated: { vcpu: 1, memoryMib: 2048 },
+    peak: { vcpu: 0.97, memoryMib: 771 },
+    everySeconds: 5,
+    samples: [[0.97, 771]],
+  }
+  function accepted(change: object) {
+    return CopyTaskResult.safeParse({ ...result, ...change }).success
+  }
+  assert.equal(accepted({}), true, 'a task of the earlier image')
+  assert.equal(accepted({ machine: null }), true, 'not measured')
+  assert.equal(accepted({ machine }), true)
+  assert.equal(accepted({ machine: { ...machine, everySeconds: 4 } }), false)
+  assert.equal(accepted({ machine: { ...machine, samples: Array(361).fill([0, 0]) } }), false)
+  assert.equal(accepted({ machine: { ...machine, peak: { vcpu: -1, memoryMib: 1 } } }), false)
+  assert.equal(accepted({ machine: { ...machine, allocated: { vcpu: 0, memoryMib: 1 } } }), false)
+})
+
 test('a especificação pede ao menos uma tabela', () => {
   const spec = {
     version: 1,

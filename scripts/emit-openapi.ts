@@ -65,6 +65,9 @@ function responses(operation: Operation): Json {
   const out: Json = {
     [success.status]: { description: operation.summary, ...contentOf(success) },
   }
+  for (const also of operation.alsoAnswers ?? []) {
+    out[also.status] = { description: operation.summary, ...contentOf({ ...also }) }
+  }
   const byStatus = Object.groupBy(failuresOf(operation), (code) => FAILURES[code].status)
   for (const [status, codes] of Object.entries(byStatus)) {
     out[status] = {

@@ -10,6 +10,8 @@ import type {
   LoggedOut,
   Native,
   Operation,
+  ProviderSend,
+  TableSendFailure,
   TokenSource,
   WriteOperation,
 } from '@conexus/connectors'
@@ -133,10 +135,16 @@ export type Executor = {
     token: BearerToken,
     deadlineMs: number,
   ): Promise<Readonly<{ kind: 'OK'; account: AccountOf }> | Unreadable | Unreachable>
+  /**
+   * The kit's sender for a connection's table operations (`TableReach.send`): each request built by
+   * the kit, sent to the connector's origin with the connection's secrets redacted from the answer,
+   * until `signal` aborts; never logs input or output (S41).
+   */
+  tableSend(connection: OpenedConnection): ProviderSend<TableSendFailure>
 }
 
 /** The opened values, checked again by the connector's own schema: a value it refuses never opened. */
-function valuesOf(
+export function valuesOf(
   connection: OpenedConnection,
   auth: ClientCredentialsAuth,
 ): Readonly<Record<string, string>> {
@@ -303,6 +311,19 @@ export function createExecutor(deps: ExecutorDeps): Executor {
 
     revoke(connection, connector, token, app, deadlineMs) {
       return revoked(deps, { connection, connector, token, app }, originOf(connector), deadlineMs)
+    },
+
+    tableSend(connection) {
+      const { connector } = connection
+      const { auth } = connector
+      const pasted = auth.kind === 'client_credentials' ? valuesOf(connection, auth) : {}
+      const origin = originOf(connector)
+      return (request, a) => {
+        const secrets = [...Object.values(pasted), ...(a.token === null ? [] : [a.token])]
+        const reading = { secrets, whole2xx: true, numbers: connector.numbers }
+        const sent = toRequest(connector, request, a.token, origin)
+        return sendUntil(deps, sent, whereOf(connection), reading, a.signal)
+      }
     },
 
     async who(where, connector, token, deadlineMs) {

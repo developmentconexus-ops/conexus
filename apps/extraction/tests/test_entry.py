@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.conftest import Task
+from tests.conftest import Metadata, Task, fargate
 
 NOTAS = ("TGFCAB", "sankhya_notas")
 
@@ -24,7 +24,9 @@ def test_o_segredo_fica_no_arquivo(task: Task, capfd: pytest.CaptureFixture[str]
     assert set(task.seen("secret.mode").split()) == {"600"}
 
 
-def test_um_resultado_por_rodada(task: Task) -> None:
+def test_um_resultado_por_rodada(task: Task, metadata: Metadata) -> None:
+    task_body, stats = fargate(1)
+    metadata.serve(task_body, *stats)
     spec = task.spec(NOTAS, ("TGFNFE", "sankhya_notas_nfe"))
     assert task.run(spec) == 0
     assert len(task.aws.sent) == 1
@@ -37,6 +39,24 @@ def test_um_resultado_por_rodada(task: Task) -> None:
         for name in ("sankhya_notas", "sankhya_notas_nfe")
     ]
     assert "1234567890123" not in json.dumps(result)
+    machine = result["machine"]
+    assert machine["allocated"] == {"vcpu": 1, "memoryMib": 2048}
+    assert set(machine) == {"allocated", "peak", "everySeconds", "samples"}
+    assert machine["peak"]["memoryMib"] > 0
+    assert set(result) == {"type", "version", "runId", "attempt", "outcome", "tables", "machine"}
+
+
+def test_o_resultado_sai_igual_sem_a_medida(
+    task: Task, metadata: Metadata, capfd: pytest.CaptureFixture[str]
+) -> None:
+    metadata.status = 500
+    spec = task.spec(NOTAS)
+    assert task.run(spec) == 0
+    [result] = task.aws.sent
+    assert result["machine"] is None
+    assert result["outcome"] == {"kind": "COMPLETE"}
+    assert result["tables"][0]["written"] > 0
+    assert "MACHINE_NOT_MEASURED" in capfd.readouterr().err
 
 
 def test_a_falha_do_leitor_da_o_codigo_dele(task: Task) -> None:

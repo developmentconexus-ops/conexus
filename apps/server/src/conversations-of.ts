@@ -12,7 +12,9 @@ import {
 } from './builder/automations/public.ts'
 import { createConstrutor, tablesWithColumnNamesOf } from './builder/construtor/public.ts'
 import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
-import { createHubMastra } from './builder/mastra/public.ts'
+import type { LakeClock } from './builder/copy-clock/public.ts'
+import { copyClockWorkflow, createLakeClock } from './builder/copy-clock/public.ts'
+import { COPY_WORKFLOW, createHubMastra } from './builder/mastra/public.ts'
 import type { openGoogleCalls } from './builder/model-accounts/public.ts'
 import { isChoosable } from './builder/model-accounts/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
@@ -20,6 +22,7 @@ import type { Access, Principal } from './hub/access/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
 import type { Connectors } from './hub/connectors/public.ts'
+import type { LakeRuns } from './hub/copies/public.ts'
 import type { DataContext } from './hub/data/public.ts'
 import type { IdentityPorts } from './hub/identity/public.ts'
 import type { Notify } from './hub/notifications/public.ts'
@@ -120,6 +123,18 @@ function handOffsOf(
   }
 }
 
+function lakeClockRun(deps: Pick<ConversationsDeps, 'lakeRuns' | 'log'>) {
+  return copyClockWorkflow({
+    start: (at, connection, cause) => deps.lakeRuns().iniciarRodada(at, connection, cause),
+    log: deps.log,
+  })
+}
+
+async function lakeStart(lakeRuns: LakeRuns, clock: LakeClock) {
+  await clock.reconcile(await lakeRuns.scheduled())
+  await lakeRuns.queue.start()
+}
+
 /** The provider's machines and the tests' tuning of them, which the Assistant and the Construtor open. */
 function machineOf(deps: { machine: ConversationMachine; machineTuning?: MachineTuning }) {
   return { machine: deps.machine, machineTuning: deps.machineTuning }
@@ -148,6 +163,7 @@ type ConversationsDeps = {
   access: Pick<Access, 'viewOf'>
   notify: Notify
   automationClock: Config['automationClock']
+  lakeRuns: () => LakeRuns
   log: FailureLog
 }
 
@@ -210,17 +226,17 @@ export function conversationsOf(deps: ConversationsDeps) {
   // the runs.
   const hub = createHubMastra({
     ...{ storage, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
-    workflows: {
-      [AUTOMATION_WORKFLOW]: run,
-    },
+    workflows: { [AUTOMATION_WORKFLOW]: run, [COPY_WORKFLOW]: lakeClockRun(deps) },
     schedulerTickMs: clock?.schedulerTickMs,
     releaseFirst: [
       (scope) => automations.release(scope),
       async (scope) => {
         await agents.release(scope)
       },
+      (scope) => lakeClock.release(scope),
     ],
-    closeLast: [() => deps.google.stop()],
+    startFirst: [() => lakeStart(deps.lakeRuns(), lakeClock)],
+    closeLast: [() => deps.google.stop(), () => deps.lakeRuns().queue.stop()],
   })
   const conversations = Object.freeze({
     ...hub,
@@ -234,5 +250,6 @@ export function conversationsOf(deps: ConversationsDeps) {
     access: deps.access,
     updating: hub.updating,
   })
-  return { conversations, assistant, automations, agents }
+  const lakeClock = createLakeClock({ mastra: hub.mastra, log })
+  return { conversations, assistant, automations, agents, lakeClock }
 }

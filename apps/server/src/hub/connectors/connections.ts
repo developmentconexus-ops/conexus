@@ -308,24 +308,24 @@ function whereOf(input: OfConnection, connector: Connector) {
 
 /**
  * Removes a connection and its seal; removing one already gone answers the same (criterion 13).
- * A connector that declares a revoke is asked to take the authorization back first; the provider
- * refusing or being down never stops the removal. Then the connection is deleted in one transaction.
+ * The lake copy leaves first (criterion 47; AWS out is a 503), then the provider is asked to take
+ * the authorization back, and its refusal never stops the removal, made in one transaction.
  */
 export async function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId }) {
   await deps.database.command(scopeOf(input), (tx) =>
     admitted(deps, tx, input, 'manageConnections'),
   )
-  const { connectionId } = input
+  await deps.leaveCopy(input)
   const revocation = await revoked(deps, input)
   const removed = await deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
     const rows = await tx
       .delete(connection)
-      .where(ofCompany(input, connectionId))
+      .where(ofCompany(input, input.connectionId))
       .returning({ id: connection.id })
     return rows.length > 0
   })
-  await deps.limits.forget(connectionId)
+  await deps.limits.forget(input.connectionId)
   return { removed, revocation: removed ? revocation : ('NONE' as const) }
 }
 

@@ -1516,3 +1516,60 @@ reference tool checks a read against its documentation.
 - **Why.** It protects the company's system; the door is where every read passes.
 - **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `assistant-port-note.test.ts`; the
   helper's share in `assistant/research.test.ts` "a porta, as 50 e o arquivo".
+
+## @aws-sdk/client-ecs, client-ssm and client-sqs 3.1175.0, Mastra 1.83.0: the lake copy's start and its end (A primeira cópia chega ao lago)
+
+### The start: one door, `iniciarRodada`, with a start line of its own
+
+- **Library line.** `@aws-sdk/client-ecs` `dist-types/models/models_1.d.ts:3243-3343` (`RunTask`, its `clientToken`
+  and `overrides`) and `:2858`. The library runs a task; it keeps no schedule, no run record and no pace.
+  `@mastra/core` 1.83.0 `mastra.schedules` keeps a cron per workflow id, and runs the workflow's step.
+  The eight systems the study of the clock read keep the schedule in their own control plane, not in
+  a cloud scheduler. SSM `PutParameter` answers at most 3 writes a second by default (the study of
+  the start).
+- **Hand-made piece.** `iniciarRodada` in `apps/server/src/hub/copies/lake-run.ts` is the one door the
+  clock, "Rodar agora" and "Ler de novo desde a data" all call. It sweeps the connection's open
+  rounds (`lake-sweep.ts`), opens the round (the open-round index refuses a second one), then
+  queues the start: one start at a time, at most 3 `PutParameter` a second, then `RunTask` with
+  `clientToken` `<round>-<attempt>` and the machine size by `overrides`. `builder/copy-clock/` says only
+  when: `cronOf(interval, anchor)` in São Paulo time, set into `mastra.schedules` under the
+  connection's id, and a step that calls `iniciarRodada` and ends when it answers. `MANUAL` leaves no
+  row. The start line, the machine sizes and the 48 hours of `RUN_STALE_MS` have one owner each in
+  `lake-run.ts`.
+- **Why.** The library has no per-connection anchor, no start order and no rate keeper; a fixed
+  `*/15` cron drifts from the minute the copy was born, and ten starts in a second would meet the
+  quota. The workflow step must not run the copy inside the step (the task runs outside the Hub).
+- **Proof.** `lake-run.test.ts` "o disparo", "o tamanho da máquina", "uma partida por vez" (the
+  parameter double never receives more than 3 in a second), "dois disparos juntos", "a AWS recusa",
+  "a AWS não responde"; `lake-sweep.test.ts`; `clock.test.ts` "o relógio conta da hora em que a cópia
+  nasceu" and "o relógio só diz quando"; `mastra.test.ts` "o relógio da ligação". On AWS, L.9 ten
+  starts in a second (the laboratory output in the pull request of group G4).
+- **Revisit when** `@aws-sdk/client-ecs` or Mastra's schedules change, or SSM's default rate does.
+
+### The end: the result and the stop in one queue; the first to arrive closes
+
+- **Library line.** `@aws-sdk/client-sqs` `dist-types/models/models_0.d.ts:1373` (a standard queue
+  delivers at least once and keeps no order). The EventBridge rule sends ECS's `STOPPED` to the same
+  queue; ECS keeps no record of why a Conexus task ended.
+- **Hand-made piece.** `lake-queue.ts` reads the queue only while a round is open, and closes a round
+  through `closeLakeRun` in `lake-close.ts`: `UPDATE ... WHERE ended_at IS NULL`, so the first to
+  arrive writes the counts, the table's rows and the last run, and the message leaves the queue after
+  the close is written. A stop with exit 0 does not close at once: it waits `RESULT_GRACE_MS` for the
+  result, which the task sends before it exits (`apps/extraction/src/conexus_extraction/entry.py`), and
+  the sweep honours the same wait from the `stoppedAt` ECS gives. Any other stop closes at once.
+- **Why.** A standard queue may deliver the stop before the result; marking lost a copy that ended
+  is the one error the end must not make. The grace has one owner, `lake-close.ts`.
+- **Proof.** `lake-queue.test.ts` "o resultado e a parada", "as 100 mais novas", "a tarefa que
+  morreu", "o parâmetro sai no fim", "o banco fora", "o banco que dorme";
+  `lake-queue-order.test.ts` "a parada antes do resultado" and "a parada sem resultado depois da
+  graça"; `lake-sweep.test.ts` "a varredura espera a graça". The chain with its lines:
+  `prova-ordem-resultado-parada` in the pull request of group G4. On AWS, L.3 (the four ends).
+- **The grace's base (laboratory, 2026-11-25).** From the `stoppedAt` ECS gives to the stop event in
+  the queue: 0.12 s to 0.16 s, read by `ReceiveMessage` 0.34 s to 0.38 s (5 tasks). ECS keeps the task
+  about 24.5 s between its exit and `STOPPED`, so the result, which the task sends before it exits,
+  arrives about 25 s before the stop on the normal path. The grace does not cover that delay: it covers
+  the result's own redeliveries while the database is down, 3 receptions of 30 s plus the 20 s long
+  poll, about 110 s, with the margin to 300 s. The delay of a result sent late could not be measured:
+  the laboratory has no writer role, and the queue's policy denies the send to anyone else.
+- **Revisit when** the queue or the rule changes, or a measured delay of the result exceeds the
+  grace.

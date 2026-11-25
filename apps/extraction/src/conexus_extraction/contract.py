@@ -39,7 +39,7 @@ class Spec(t.TypedDict):
 
 
 class SystemMessage(t.TypedDict):
-    status: int
+    status: int | None
     code: str | None
     message: str | None
 
@@ -63,6 +63,23 @@ class TableCounts(t.TypedDict):
     whole: bool
 
 
+class Allocated(t.TypedDict):
+    vcpu: float
+    memoryMib: int
+
+
+class Peak(t.TypedDict):
+    vcpu: float
+    memoryMib: int
+
+
+class Machine(t.TypedDict):
+    allocated: Allocated
+    peak: Peak
+    everySeconds: int
+    samples: list[list[float]]
+
+
 class Result(t.TypedDict):
     type: t.Literal["RESULT"]
     version: t.Literal[1]
@@ -70,6 +87,7 @@ class Result(t.TypedDict):
     attempt: int
     outcome: Complete | Failed
     tables: list[TableCounts]
+    machine: t.NotRequired[Machine | None]
 
 
 class SpecInvalid(Exception):

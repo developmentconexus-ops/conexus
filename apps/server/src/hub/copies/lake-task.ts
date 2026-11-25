@@ -5,6 +5,7 @@ import {
   ConnectorId,
   LakeRunFailureCode,
   LakeRunId,
+  LakeRunMachine,
   LakeTableName,
   SourceTableId,
   SystemMessage,
@@ -56,6 +57,7 @@ export const CopyTaskResult = z.object({
       whole: z.boolean(),
     }),
   ),
+  machine: LakeRunMachine.nullable().optional(),
 })
 export type CopyTaskResult = z.infer<typeof CopyTaskResult>
 

@@ -12,18 +12,21 @@ from pathlib import Path
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
+from jsonschema import ValidationError
 
 from conexus_extraction.contract import (
     PROJECT,
     Complete,
     Failed,
     Lake,
+    Machine,
     Result,
     Spec,
     SpecInvalid,
     checked,
     parse_spec,
 )
+from conexus_extraction.machine import Meter
 
 MELTANO = str(Path(sys.executable).with_name("meltano"))
 
@@ -178,6 +181,14 @@ def _result(spec: Spec, outcome: Complete | Failed, report: Mapping[str, t.Any])
     )
 
 
+def _measured(result: Result, machine: Machine | None) -> Result:
+    try:
+        return checked(t.cast("Result", {**result, "machine": machine}))
+    except ValidationError:
+        log("MACHINE_INVALID", runId=result["runId"])
+        return t.cast("Result", {**result, "machine": None})
+
+
 def copied(
     spec: Spec, work: Path, base: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
 ) -> Result | None:
@@ -251,13 +262,18 @@ def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
     except SpecInvalid as invalid:
         log("SPEC_INVALID", field=str(invalid))
         return 1
-    with tempfile.TemporaryDirectory(prefix="copia-") as work:
-        result = copied(spec, Path(work), environ, catalog_of, stopping)
+    meter = Meter.start(environ, log)
+    try:
+        with tempfile.TemporaryDirectory(prefix="copia-") as work:
+            result = copied(spec, Path(work), environ, catalog_of, stopping)
+    finally:
+        machine = meter.stop()
     if stopping.asked:
         log("RUN_STOPPED", runId=spec["runId"])
         return 1
     if result is None:
         return 1
+    result = _measured(result, machine)
     try:
         aws.client("sqs").send_message(QueueUrl=spec["queueUrl"], MessageBody=json.dumps(result))
     except (BotoCoreError, ClientError) as error:

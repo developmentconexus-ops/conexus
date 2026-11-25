@@ -25,7 +25,7 @@ import type { Database, MastraPool } from './database.ts'
 import { DatabaseUrl, openDatabase, openMastraPool, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
-import { TEST_AWS_ACCOUNT, TEST_AWS_REGION, testAws, testAwsCredentials } from './test-aws.ts'
+import { testAws, testAwsEnvironment } from './test-aws.ts'
 import { testBuilderConfig, testGitRoot } from './test-builder-config.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
 import {
@@ -349,11 +349,6 @@ export function serveEnvironment(
     HUB_E2B_API_KEY_FILE: keyFile(t, 'hub_e2b_api_key', randomBytes(16).toString('hex')),
     HUB_E2B_TEMPLATE: 'conexus-builder:test',
     HUB_INSTALLATION_ID: 'testinstallation0',
-    HUB_AWS_ACCOUNT: TEST_AWS_ACCOUNT,
-    HUB_AWS_REGION: TEST_AWS_REGION,
-    HUB_AWS_HUB_ROLE_ARN: `arn:aws:iam::${TEST_AWS_ACCOUNT}:role/conexus-hub`,
-    HUB_AWS_SERVICE_ROLE_ARN: `arn:aws:iam::${TEST_AWS_ACCOUNT}:role/conexus-cfn`,
-    HUB_AWS_TEMPLATE_BUCKET: `conexus-receitas-${TEST_AWS_ACCOUNT}-${TEST_AWS_REGION}`,
-    AWS_SHARED_CREDENTIALS_FILE: testAwsCredentials(t),
+    ...testAwsEnvironment(t),
   }
 }

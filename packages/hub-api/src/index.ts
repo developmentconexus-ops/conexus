@@ -223,6 +223,7 @@ export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,
   AttemptKey,
+  bodyOfStatus,
   type DeclaredOperation,
   defineOperation,
   failuresOf,

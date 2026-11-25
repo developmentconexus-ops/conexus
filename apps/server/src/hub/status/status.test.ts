@@ -46,6 +46,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     connectors,
     requests,
     dataReads,
+    lakeCopies,
   } = subjectsOf({
     mastraPool: test.mastraPool,
     database: test.database,
@@ -71,6 +72,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     connectors,
     requests,
     dataReads,
+    lakeCopies,
   })
   t.after(() => app.close())
   return { app, status, test }
@@ -153,6 +155,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     connectors,
     requests,
     dataReads,
+    lakeCopies,
   } = subjectsOf({
     mastraPool: testMastraPool(t, config),
     database,
@@ -178,6 +181,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     connectors,
     requests,
     dataReads,
+    lakeCopies,
   })
   t.after(() => app.close())
   const response = await app.inject(STATUS)

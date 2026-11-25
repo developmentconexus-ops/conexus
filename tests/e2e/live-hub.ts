@@ -18,7 +18,7 @@ import { roleKit } from '../../apps/server/src/hub/connectors/public.ts'
 import { createIdentity } from '../../apps/server/src/hub/identity/public.ts'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
 import { createEdgeHub, createHub, subjectsOf } from '../../apps/server/src/main.ts'
-import { createLakeStacks } from '../../apps/server/src/platform/aws.ts'
+import { createAws, subjectPortsOf } from '../../apps/server/src/platform/aws.ts'
 import {
   createCloudflareApps,
   createCloudflareTools,
@@ -29,7 +29,8 @@ import { ConnectorApps } from '../../apps/server/src/platform/config-connectors.
 import { closeListeners } from '../../apps/server/src/platform/lifecycle.ts'
 import { createMail } from '../../apps/server/src/platform/mail.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
-import { awsServer, testAws } from '../../apps/server/src/platform/test-aws.ts'
+import { testAws } from '../../apps/server/src/platform/test-aws.ts'
+import { awsServer } from '../../apps/server/src/platform/test-aws-server.ts'
 import { pgTransport } from '../../apps/server/src/platform/test-company-postgres.ts'
 import {
   createTestDatabase,
@@ -110,8 +111,7 @@ export async function liveHub(
   const closing = { hub: (): Promise<unknown> => Promise.resolve() }
   t.after(() => closing.hub())
   const database = await createTestDatabase(t)
-  const neon = await neonServer(t)
-  const aws = await awsServer(t)
+  const [neon, aws] = await Promise.all([neonServer(t), awsServer(t)])
   // The kit's Sankhya double, whose switches the QA flips through `sankhya.switches`.
   const sankhya = sankhyaFake()
   const sankhyaServed = await sankhya.serve()
@@ -146,7 +146,7 @@ export async function liveHub(
     mastraPool: database.mastraPool,
     ...{ config, identity, sendMail },
     neon: createNeonProjects({ config, log: silent }),
-    lakeStacks: createLakeStacks({ config, log: silent }),
+    ...subjectPortsOf(createAws({ config, log: silent })),
     companyPostgres: createCompanyPostgres({
       transport: pgTransport,
       appLoginKey: config.appLoginKey,

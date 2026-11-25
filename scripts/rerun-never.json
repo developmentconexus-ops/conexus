@@ -987,6 +987,10 @@
       "name": "aws: o depósito de outra empresa recusa o resto"
     },
     {
+      "file": "apps/server/src/platform/aws-leftover.test.ts",
+      "name": "aws: o depósito sem área sai logo, e a lista de outra empresa é recusada"
+    },
+    {
       "file": "apps/server/src/platform/cloudflare.test.ts",
       "name": "quem a pediu desiste"
     },

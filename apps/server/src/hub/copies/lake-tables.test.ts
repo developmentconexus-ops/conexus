@@ -214,6 +214,33 @@ test('a rodada: o teto do código do sistema (#1135) e da mensagem, a tarefa e a
   }
 })
 
+test('a rodada: a máquina vem inteira ou não vem, só de rodada fechada, com picos não negativos', async (t) => {
+  const { asOwner } = await seeded(t)
+  await asOwner(copyOf(A, 'sankhya', CONNECTION_A1))
+  const id = await freshRun(asOwner, A, CONNECTION_A1)
+  const whole = `cpu_allocated = 1, memory_allocated_mib = 2048, cpu_peak = 0.97, memory_peak_mib = 771, machine_samples = '{"everySeconds":5,"samples":[[0.97,771]]}'`
+  function set(change: string) {
+    return asOwner(`update copies.lake_run set ${change} where id = '${id}'`)
+  }
+  await assert.rejects(set(whole), { code: '23514', constraint: 'lake_run_machine' })
+  await set(`ended_at = now(), outcome = 'COMPLETE'`)
+  for (const part of [`cpu_allocated = 1`, `memory_peak_mib = 771`, `machine_samples = '{}'`]) {
+    await assert.rejects(set(part), { code: '23514', constraint: 'lake_run_machine' }, part)
+  }
+  await assert.rejects(set(whole.replace('cpu_peak = 0.97', 'cpu_peak = -1')), {
+    code: '23514',
+    constraint: 'lake_run_machine',
+  })
+  await assert.rejects(set(whole.replace('memory_peak_mib = 771', 'memory_peak_mib = -1')), {
+    code: '23514',
+    constraint: 'lake_run_machine',
+  })
+  await set(whole)
+  await set(
+    `cpu_allocated = null, memory_allocated_mib = null, cpu_peak = null, memory_peak_mib = null, machine_samples = null`,
+  )
+})
+
 test('o catálogo das cópias: a segurança por linha e a política da empresa nas quatro tabelas', async (t) => {
   const { asOwner } = await createTestDatabase(t)
   assert.deepEqual(

@@ -1,11 +1,18 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import type { CompanyId } from '@conexus/hub-api'
-import type { AwsAnswer, FirstFailure, LakeId, LakeStacks, StackStatus, Where } from './aws.ts'
+import type {
+  AwsAnswer,
+  FirstFailure,
+  LakeId,
+  LakeStacks,
+  LakeTables,
+  StackStatus,
+  Where,
+} from './aws.ts'
 import { bucketName, StackId, stackName } from './aws.ts'
 import type { AwsConfig } from './config-aws.ts'
 import { AwsAccount, AwsRegion, LAKE_TEMPLATE, TemplateVersion } from './config-aws.ts'
@@ -27,7 +34,32 @@ export function testAws(endpoint = NO_AWS_SERVER, credentialsFile = '/nonexisten
     templateVersion: TemplateVersion.parse(
       createHash('sha256').update(readFileSync(LAKE_TEMPLATE)).digest('hex'),
     ),
+    copy: {
+      clusterArn: `arn:aws:ecs:${TEST_AWS_REGION}:${TEST_AWS_ACCOUNT}:cluster/conexus-copia`,
+      taskFamily: 'conexus-copia',
+      subnets: ['subnet-0aaaaaaaaaaaaaaa1', 'subnet-0aaaaaaaaaaaaaaa2'],
+      securityGroup: 'sg-0aaaaaaaaaaaaaaa1',
+      queueUrl: `https://sqs.${TEST_AWS_REGION}.amazonaws.com/${TEST_AWS_ACCOUNT}/conexus-copia-fim`,
+    },
     endpoint,
+  }
+}
+
+/** The AWS variables of a serving Hub's environment, with the platform's outputs, all invented (S40). */
+export function testAwsEnvironment(t: TestContext) {
+  const copy = testAws().copy
+  return {
+    HUB_AWS_ACCOUNT: TEST_AWS_ACCOUNT,
+    HUB_AWS_REGION: TEST_AWS_REGION,
+    HUB_AWS_HUB_ROLE_ARN: `arn:aws:iam::${TEST_AWS_ACCOUNT}:role/conexus-hub`,
+    HUB_AWS_SERVICE_ROLE_ARN: `arn:aws:iam::${TEST_AWS_ACCOUNT}:role/conexus-cfn`,
+    HUB_AWS_TEMPLATE_BUCKET: `conexus-receitas-${TEST_AWS_ACCOUNT}-${TEST_AWS_REGION}`,
+    HUB_AWS_COPY_CLUSTER_ARN: copy.clusterArn,
+    HUB_AWS_COPY_TASK_FAMILY: copy.taskFamily,
+    HUB_AWS_COPY_SUBNETS: copy.subnets.join(','),
+    HUB_AWS_COPY_SECURITY_GROUP: copy.securityGroup,
+    HUB_AWS_COPY_QUEUE_URL: copy.queueUrl,
+    AWS_SHARED_CREDENTIALS_FILE: testAwsCredentials(t),
   }
 }
 
@@ -166,6 +198,11 @@ class MemoryAws implements LakeStacks {
   }
 }
 
+const EMPTY_LAKE: LakeTables = {
+  list: async () => ({ kind: 'DONE', value: [] }),
+  drop: async () => ({ kind: 'DONE', value: undefined }),
+}
+
 /**
  * The AWS of memory (T14, T29) that answers like the adapter does. Stacks by id, tagged with their
  * company, as the Hub role's tag condition reads them. The same token answers the same stack while
@@ -178,6 +215,8 @@ export function fakeAws() {
   const aws: LakeStacks = memory
   return {
     aws,
+    /** The lake of memory holds no table: a client's deletion drops none. */
+    tables: EMPTY_LAKE,
     calls: memory.calls,
     /** The stacks AWS holds now, by id, the deleted ones included as AWS keeps them. */
     stacks: () => [...memory.stacks].map(([id, stack]) => ({ id, ...stack })),
@@ -206,10 +245,11 @@ export function fakeAws() {
   }
 }
 
-type ServedStack = { name: string; status: StackStatus }
+/** A stack the double serves: its name and where it is on the way to finishing or failing. */
+export type ServedStack = { name: string; status: StackStatus; creation: Creation }
+export type Creation = 'SUCCEEDS' | 'FAILS' | 'NAME_HELD'
 
-/** The CloudFormation answer of `name`'s recording with this stack in it. */
-function stackReply(recording: string, id: string, stack: ServedStack): string {
+export function stackReply(recording: string, id: string, stack: ServedStack): string {
   return awsRecording(recording)
     .body.replace(/<StackId>[^<]*<\/StackId>/g, `<StackId>${id}</StackId>`)
     .replace(/<StackName>[^<]*<\/StackName>/g, `<StackName>${stack.name}</StackName>`)
@@ -217,7 +257,7 @@ function stackReply(recording: string, id: string, stack: ServedStack): string {
 }
 
 /** AssumeRole's recorded answer, its session valid fifteen minutes from now. */
-function sessionReply(): string {
+export function sessionReply(): string {
   const expiration = new Date(Date.now() + 15 * 60_000).toISOString()
   return awsRecording('assume-role-aceito').body.replace(
     /<Expiration>[^<]*<\/Expiration>/,
@@ -226,76 +266,8 @@ function sessionReply(): string {
 }
 
 /** A stack's next status each time it is read: CloudFormation finishing between two looks. */
-const SETTLES: Partial<Record<StackStatus, StackStatus>> = {
-  CREATE_IN_PROGRESS: 'CREATE_COMPLETE',
-  DELETE_IN_PROGRESS: 'DELETE_COMPLETE',
-}
-
-/**
- * STS and CloudFormation behind a port, with state, from the recorded answers, for a Hub that runs
- * as a program and the QA (T14, card L.17): each creation finishes at the second read, as each
- * deletion does. S3 Tables waits for the U4 proof that records it, and answers 501 until then:
- * the leftover gets no answer, so a failed creation stays "Criando o lago…" here (the QA of PR 1248).
- */
-export async function awsServer(t: TestContext) {
-  const stacks = new Map<string, ServedStack>()
-  const tokens = new Map<string, string>()
-  const server = createServer((request, response) => {
-    const chunks: Buffer[] = []
-    request.on('data', (chunk: Buffer) => chunks.push(chunk))
-    request.on('end', () => {
-      const form = new URLSearchParams(Buffer.concat(chunks).toString('utf8'))
-      function send(status: number, body: string) {
-        response.writeHead(status, { 'content-type': 'text/xml' })
-        response.end(body)
-      }
-      const action = request.method === 'POST' ? form.get('Action') : null
-      if (action === 'AssumeRole') return send(200, sessionReply())
-      if (action === 'CreateStack') {
-        const token = form.get('ClientRequestToken') ?? ''
-        const id =
-          tokens.get(token) ??
-          `arn:aws:cloudformation:${TEST_AWS_REGION}:${TEST_AWS_ACCOUNT}:stack/${form.get('StackName')}/${randomUUID()}`
-        if (!stacks.has(id)) {
-          stacks.set(id, { name: form.get('StackName') ?? '', status: 'CREATE_IN_PROGRESS' })
-        }
-        tokens.set(token, id)
-        return send(
-          200,
-          stackReply('create-stack-mesma-chave', id, { name: '', status: 'CREATE_IN_PROGRESS' }),
-        )
-      }
-      // S3 Tables is REST, with no Action: it gets its 501 here, not CloudFormation's refusal.
-      if (action === null) {
-        response.writeHead(501).end()
-        return
-      }
-      const id = form.get('StackName') ?? ''
-      const stack = stacks.get(id)
-      if (stack === undefined) return send(403, awsRecording('describe-stacks-inexistente').body)
-      if (action === 'DescribeStacks') {
-        const reply = stackReply('describe-stacks-pronta', id, stack)
-        stack.status = SETTLES[stack.status] ?? stack.status
-        return send(200, reply)
-      }
-      if (action === 'DeleteStack') {
-        if (stack.status === 'CREATE_COMPLETE') stack.status = 'DELETE_IN_PROGRESS'
-        return send(200, awsRecording('delete-stack').body)
-      }
-      response.writeHead(501).end()
-    })
-  })
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => {
-    server.closeAllConnections()
-    server.close()
-  })
-  const address = server.address()
-  if (address === null || typeof address !== 'object') throw new Error('AWS server has no port')
-  return {
-    endpoint: new URL(`http://127.0.0.1:${address.port}`),
-    credentialsFile: testAwsCredentials(t),
-    /** The stacks it holds, by id and status. */
-    stacks: () => [...stacks].map(([id, stack]) => ({ id, ...stack })),
-  }
+export function settled(stack: ServedStack): StackStatus {
+  if (stack.status === 'DELETE_IN_PROGRESS') return 'DELETE_COMPLETE'
+  if (stack.status !== 'CREATE_IN_PROGRESS') return stack.status
+  return stack.creation === 'SUCCEEDS' ? 'CREATE_COMPLETE' : 'DELETE_COMPLETE'
 }

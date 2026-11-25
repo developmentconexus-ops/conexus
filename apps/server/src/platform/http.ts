@@ -4,7 +4,14 @@ import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import { join } from 'node:path'
 import type { DeclaredOperation, FailureCode, Operation, Person } from '@conexus/hub-api'
-import { FAILURES, failuresOf, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from '@conexus/hub-api'
+import {
+  bodyOfStatus,
+  FAILURES,
+  failuresOf,
+  PROBLEM_MEDIA_TYPE,
+  Problem,
+  phraseOf,
+} from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
@@ -214,7 +221,17 @@ export type Answer<T> = Readonly<{
   body: T
   setCookie: readonly string[]
   afterReply?: (() => Promise<void>) | undefined
+  /** The success status when it is not the operation's declared one. */
+  status?: 200 | 201 | 202 | undefined
 }>
+
+/** A success that answers with a status the operation declares in `alsoAnswers` (`runLakeCopy`: 200 when a round was already open); any other status is a program error. */
+export function answerAs<T>(operation: Operation, status: 200 | 201 | 202, body: T): Answer<T> {
+  if (bodyOfStatus(operation, status) === undefined) {
+    throw new Error(`${operation.id} does not declare a ${status} answer`)
+  }
+  return { body, setCookie: [], status }
+}
 
 export function answer<T>(
   body: T,
@@ -290,14 +307,18 @@ export function serve(
           ? sessionOf(request)
           : (optionalSessionOf(request) ?? { person: undefined, sessionToken: undefined })),
       }
-      const { body, setCookie, afterReply } = await handler(input)
+      const { body, setCookie, afterReply, status } = await handler(input)
       if (setCookie.length > 0) reply.header('set-cookie', setCookie)
       whenReplyEnds(reply, () => {
         afterReply?.().catch((error: unknown) => logFailure(request.log, failureOf(error)))
       })
       const { success } = operation
-      if ('body' in success) return reply.code(success.status).send(success.body.parse(body))
-      return reply.code(success.status).send()
+      const code = status ?? success.status
+      const schema = bodyOfStatus(operation, code)
+      if (schema) return reply.code(code).send(schema.parse(body))
+      if (code !== success.status)
+        throw new Error(`${operation.id} does not declare a ${code} answer`)
+      return reply.code(code).send()
     },
   })
 }

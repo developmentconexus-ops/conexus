@@ -9,6 +9,7 @@ import {
   listCompanies,
   listConnections,
   registerClient,
+  runLakeCopy,
   testConnection,
   unlinkConnection,
 } from '@conexus/hub-api'
@@ -122,4 +123,24 @@ test('as rotas das ligações estão no documento, com o seu sucesso e as suas f
   assert.deepEqual(declared(testConnection, 200), ['application/json'])
   assert.deepEqual(declared(testConnection, 500), [PROBLEM])
   assert.deepEqual(declared(unlinkConnection, 404), [PROBLEM])
+})
+
+test('rodar a cópia agora declara 202 e 200, os dois com o corpo { already }', () => {
+  const item = Document.parse(emitOpenApi()).paths[runLakeCopy.path]?.post
+  assert.deepEqual(
+    Object.keys(item?.responses ?? {}).filter((status) => status.startsWith('2')),
+    ['200', '202'],
+  )
+  const schemas = ['200', '202'].map((status) => item?.responses[status]?.content)
+  const answer = {
+    'application/json': {
+      schema: {
+        type: 'object',
+        properties: { already: { type: 'boolean' } },
+        required: ['already'],
+        additionalProperties: false,
+      },
+    },
+  }
+  assert.deepEqual(schemas, [answer, answer])
 })

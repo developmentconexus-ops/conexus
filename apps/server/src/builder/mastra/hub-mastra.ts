@@ -54,6 +54,8 @@ export function createHubMastra(deps: {
   schedulerTickMs: number | undefined
   /** What leaves before the conversations: the automations (24.2) and the agents (24.3). */
   releaseFirst: readonly ((scope: ReleaseScope) => Promise<void>)[]
+  /** What runs at start before the workers: the connections' copy clocks made to match their copies. */
+  startFirst: readonly (() => Promise<void>)[]
   /** What stops after `Mastra`: Google's calls (code C62). */
   closeLast: readonly (() => Promise<void>)[]
 }) {
@@ -98,6 +100,7 @@ export function createHubMastra(deps: {
      */
     async start(): Promise<void> {
       for (const part of parts) await part.beforeWorkers?.()
+      for (const first of deps.startFirst) await first()
       await mastra.startWorkers()
       log.info({}, 'MASTRA_WORKERS_STARTED')
     },

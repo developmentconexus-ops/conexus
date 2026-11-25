@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { codeOf } from '../identity/test-hub.ts'
+import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS } from '../copies/test-lake-copy.ts'
+import { call, codeOf, personOn } from '../identity/test-hub.ts'
 import {
   createLake,
   deleteLake,
@@ -84,3 +85,63 @@ test('lago: o apagar recusado numa pilha viva vai a não deu para apagar, que se
   assert.equal(lakeIn(await deleteLake(hub, ana, a)).state, 'DELETING')
   assert.equal(hub.aws.stacks()[0]?.status, 'DELETE_IN_PROGRESS')
 })
+
+const OPERATOR = { name: 'Operadora Teste', email: 'operadora@example.test', role: 'admin' }
+const SILENT = { kind: 'NO_ANSWER' } as const
+
+test('o lago com tabela: apaga as tabelas, depois a pilha, e na mesma passada as cópias do lago e os relógios; com a AWS fora, nada sai e repetir termina', async (t) => {
+  let down = true
+  const on = await lakeCopyOn(t, {
+    tables: (real) => ({
+      ...real,
+      drop: async (...asked) => (down ? SILENT : real.drop(...asked)),
+    }),
+  })
+  const operator = await personOn(on.hub, OPERATOR)
+  const [company] = await on.rows('select name from auth.company where id = $1', [on.companyId])
+  await on.rows(
+    `insert into operations.client (company_id, cnpj, legal_name, attempt_key, registered_at)
+     values ($1, '00000000000001', 'Empresa Teste Ltda', $1, now())`,
+    [on.companyId],
+  )
+  const connection = await on.linked()
+  assert.equal((await on.put(connection, { tables: [NOTAS, PARCEIROS], ...DAILY })).statusCode, 200)
+  await finished(on, connection, ['sankhya_notas', 'sankhya_parceiros'])
+  on.aws.seedTables(
+    'raw/sankhya_notas',
+    'current/sankhya_notas',
+    'raw/sankhya_parceiros',
+    'current/sankhya_parceiros',
+  )
+  const clockId = `schedule_${connection}`
+  assert.notEqual(await on.hub.mastra.schedules.get(clockId), null)
+  const url = `/api/clients/${on.companyId}/lake`
+  const asked = { name: String(company?.name) }
+
+  const refused = await call(on.hub, operator, 'DELETE', url, asked)
+  assert.equal(refused.statusCode, 202, refused.body)
+  assert.equal(Object(refused.json()).lake.state, 'DELETING')
+  assert.equal(on.aws.tables().length, 4, 'AWS out: no table dropped')
+  assert.deepEqual(await copiesLeft(on), { copies: 1, tables: 2 }, 'AWS out: the copies stay')
+  assert.notEqual(await on.hub.mastra.schedules.get(clockId), null, 'AWS out: the clock stays')
+  assert.equal(on.aws.stacks()[0]?.status, 'CREATE_COMPLETE', 'AWS out: the stack is not deleted')
+
+  down = false
+  const read = await call(on.hub, operator, 'GET', url)
+  assert.equal(read.statusCode, 200)
+  assert.deepEqual(on.aws.tables(), [])
+  assert.deepEqual(await copiesLeft(on), { copies: 0, tables: 0 })
+  assert.equal(await on.hub.mastra.schedules.get(clockId), null, 'the clock left with the lake')
+  assert.equal(on.aws.stacks()[0]?.status, 'DELETE_IN_PROGRESS')
+  await call(on.hub, operator, 'GET', url)
+  const settled = await call(on.hub, operator, 'GET', url)
+  assert.deepEqual(Object(settled.json()).lake, { state: 'NONE' })
+})
+
+async function copiesLeft(on: Awaited<ReturnType<typeof lakeCopyOn>>) {
+  const [row] = await on.rows(
+    `select (select count(*) from copies.lake_copy)::int as copies,
+            (select count(*) from copies.lake_table)::int as tables`,
+  )
+  return row
+}

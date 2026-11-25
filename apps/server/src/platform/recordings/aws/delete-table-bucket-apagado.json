@@ -7,5 +7,5 @@
   "status": 403,
   "contentType": "application/json",
   "errorType": "AccessDeniedException:http://internal.amazon.com/coral/com.amazon.coral.service/",
-  "body": "{\"Message\":\"User: arn:aws:sts::111122223333:assumed-role/conexus-hub/hub-EmpresaTesteA0000000000000000001 is not authorized to perform: s3tables:DeleteTableBucket on resource: arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-qsernp35vqu6 because no identity-based policy allows the s3tables:DeleteTableBucket action\"}"
+  "body": "{\"Message\":\"User: arn:aws:sts::111122223333:assumed-role/conexus-hub/hub-EmpresaTesteA0000000000000000001 is not authorized to perform: s3tables:DeleteTableBucket on resource: arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-e5f6a7b8c9d0 because no identity-based policy allows the s3tables:DeleteTableBucket action\"}"
 }

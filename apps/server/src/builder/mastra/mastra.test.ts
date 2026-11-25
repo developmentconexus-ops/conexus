@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { CompanyId, ConnectionId } from '@conexus/hub-api'
 import { call, personOn } from '../../hub/identity/test-hub.ts'
-import { conversing } from '../conversation/test-conversation.ts'
+import { silent } from '../../platform/test-database.ts'
+import { conversing, hubBeside } from '../conversation/test-conversation.ts'
 import { stepped } from '../conversation/test-questions.ts'
-import { schedulerOf } from './public.ts'
+import { createLakeClock } from '../copy-clock/public.ts'
+import { COPY_WORKFLOW, schedulerOf } from './public.ts'
 
 test('o agendador: a falha de publicação vai ao registro com o id da agenda', () => {
   const lines: { fields: Record<string, unknown>; message: string }[] = []
@@ -20,13 +23,44 @@ test('o agendador: a falha de publicação vai ao registro com o id da agenda', 
   assert.equal('tickIntervalMs' in schedulerOf(log, undefined), false)
 })
 
-test('nenhum relógio de cópia', async (t) => {
+test('o relógio da ligação: a subida deixa um por cópia fora de MANUAL e nenhum de ligação que saiu; remover a empresa tira os dela', async (t) => {
   const on = await conversing(t, stepped([]))
   const { hub } = on
-  function copyRows() {
-    return hub.mastra.schedules.list({ workflowId: 'conexus-copy-run' })
+  const companyId = CompanyId.parse(on.companyId)
+  function newConnection() {
+    return ConnectionId.parse(crypto.randomUUID())
   }
-  assert.deepEqual(await copyRows(), [], 'after the Hub boots')
+  const [clocked, manual, gone] = [newConnection(), newConnection(), newConnection()]
+  for (const [connection, interval] of [
+    [clocked, '2h'],
+    [manual, 'MANUAL'],
+  ] as const) {
+    await hub.test.asOwner(
+      `insert into connectors.connection (id, company_id, connector_id, name, connector_version, state,
+         sealed, key_id, linked_by, linked_at, attempt_key)
+       values ($1, $2, 'sankhya', $4, '1.0.0', 'ACTIVE', '\\x01', 'k1', $3, now(), $4)`,
+      [connection, companyId, on.ana.id, `Ligação ${interval}`],
+    )
+    await hub.test.asOwner(
+      `insert into copies.lake_copy (company_id, connector_id, connection_id, interval, created_at)
+       values ($1, 'sankhya', $2, $3, '2026-11-24T14:07:00Z')`,
+      [companyId, connection, interval],
+    )
+  }
+  const anchor = new Date('2026-11-24T13:07:00Z')
+  for (const connectionId of [manual, gone])
+    await createLakeClock({ mastra: hub.mastra, log: silent }).set({
+      ...{ companyId, connectionId, interval: '1h', anchor },
+    })
+
+  const beside = await hubBeside(t, hub)
+  const rows = await beside.mastra.schedules.list({ workflowId: COPY_WORKFLOW })
+  assert.deepEqual(
+    rows.map(({ id, cron }) => ({ id, cron })),
+    [{ id: `schedule_${clocked}`, cron: '7 1-23/2 * * *' }],
+    'after the Hub starts',
+  )
+
   const operator = await personOn(hub, {
     ...{ name: 'Olga Souza', email: 'olga@example.test' },
     role: 'admin',
@@ -34,15 +68,21 @@ test('nenhum relógio de cópia', async (t) => {
   await hub.test.asOwner(
     `insert into operations.client (company_id, cnpj, legal_name, attempt_key, registered_at)
      values ($1, '00000000000001', 'Empresa A Ltda', $1, now())`,
-    [on.companyId],
+    [companyId],
   )
   const body = { name: 'Empresa Teste', revision: 0 }
-  const deleted = await call(hub, operator, 'DELETE', `/api/clients/${on.companyId}`, body)
+  const deleted = await call(hub, operator, 'DELETE', `/api/clients/${companyId}`, body)
   assert.equal(deleted.statusCode, 204, deleted.body)
-  assert.deepEqual(await copyRows(), [], 'after the company is removed')
   assert.deepEqual(
-    hub.lines.filter(({ message }) => message === 'COPY_SCHEDULES_RELEASED'),
+    await hub.mastra.schedules.list({ workflowId: COPY_WORKFLOW }),
     [],
+    'after the company is removed',
+  )
+  assert.deepEqual(
+    hub.lines
+      .filter(({ message }) => message === 'LAKE_CLOCKS_RELEASED')
+      .map(({ fields }) => fields),
+    [{ companyId, count: 1 }],
   )
 })
 
