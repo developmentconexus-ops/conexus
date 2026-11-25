@@ -47,8 +47,10 @@ export class TurnTally {
   }
 }
 
+export type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
+
 /** How the model's turn ended when nothing of ours said a failure: its finish's code on an error, else none. */
-export function modelFailure(reason: string, tally: TurnTally): TurnFailureCode | undefined {
+export function modelFailure(reason: AgentEnd, tally: TurnTally): TurnFailureCode | undefined {
   if (reason !== 'error') return undefined
   const finish = tally.finishReason
   return (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED'

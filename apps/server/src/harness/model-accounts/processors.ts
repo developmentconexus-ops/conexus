@@ -171,7 +171,7 @@ function withOptions(
  * but does not search again (founder, card reading 3 A), since the search tool was resolved for
  * the first model (`agent.ts:5300-5301`). On CLIProxy's Google path the unions it
  * makes indistinguishable go flat (`docs/reference/boundaries.md`). The set it narrows is the mode's
- * own (`availableTools`, `permissions.ts`), never the agent's whole toolset.
+ * own (`availableTools`, `builder.ts`), never the agent's whole toolset.
  */
 export function accountPick(deps: QueueDeps): InputProcessor {
   return {

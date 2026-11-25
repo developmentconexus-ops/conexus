@@ -52,8 +52,8 @@ input processors (`harness/spec/factories.ts`):
 
 1. `turnOf` (`agents/app-builder/turn-of.ts`) finds the conversation's Project from the index
    and calls `Runs.take`. One run writes in a Project at a time, whoever started it. If another
-   conversation holds the Project, the run aborts with `RUN_BUSY` and the holder's name, before
-   any model call.
+   conversation holds the Project, the run aborts with `RUN_BUSY`, before any model call; the
+   holder's name goes to the end of the turn through the refusal record.
 2. `accountPick` (`harness/model-accounts/processors.ts`) picks the model account for each step
    from the person's queue, with its thinking effort. At step 100 it forces a last answer with no
    tools.

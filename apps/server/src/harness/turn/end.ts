@@ -19,9 +19,8 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import { logMemory } from '../../platform/memory.ts'
 import type { Phase } from '../machine/public.ts'
 import { ownerOfResource } from '../spec/public.ts'
+import type { AgentEnd } from './turn-line.ts'
 import { modelFailure, TurnTally, turnLine } from './turn-line.ts'
-
-type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
 
 /**
  * What this process knows of a Mastra run of a conversation, from its `agent_start` to its
@@ -106,16 +105,16 @@ function startThinking(run: Run, message: string, index: number): void {
   if (!run.thinking.has(key)) run.thinking.set(key, Date.now())
 }
 
-type Refused = () => FailureData | undefined
+type RefusalOf = () => FailureData | undefined
 
-function failedOn(run: Run, event: AgentControllerEvent, refused: Refused): void {
+function failedOn(run: Run, event: AgentControllerEvent, refused: RefusalOf): void {
   if (event.type !== 'error') return
   const aborted = event.finishReason === 'tripwire' ? refused() : undefined
   run.failure ??= aborted ?? failureOf(event.error)
 }
 
 /** What a run keeps of each event: its line's counts, its error's failure and the thinking clock. */
-function heard(run: Run, event: AgentControllerEvent, refused: Refused): void {
+function heard(run: Run, event: AgentControllerEvent, refused: RefusalOf): void {
   run.tally.heard(event)
   failedOn(run, event, refused)
   if (event.type === 'message_start' && event.message.role === 'assistant') {

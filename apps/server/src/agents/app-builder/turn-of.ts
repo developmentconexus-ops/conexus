@@ -32,6 +32,9 @@ export function createRefusals() {
     record(conversationId: ConversationId, refused: Refused): void {
       held.set(conversationId, refused)
     },
+    clear(conversationId: ConversationId): void {
+      held.delete(conversationId)
+    },
     /** The refusal the run's end reads, once: a later run of the conversation never meets it. */
     read(conversationId: ConversationId): Refused | undefined {
       const refused = held.get(conversationId)
@@ -54,7 +57,7 @@ function projectTurn(deps: {
   return async (requestContext) => {
     const found = await deps.projectOf(requestContext)
     if (found === undefined) return { kind: 'NONE' }
-    deps.refusals.read(found.conversationId)
+    deps.refusals.clear(found.conversationId)
     const turn = await turnOfOwner(deps.queue, found)
     const taken = await deps.runs.take({ ...found, onEnd: () => turn.end() })
     if (!taken.ok) {
