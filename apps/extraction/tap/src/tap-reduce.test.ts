@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Double, TapRun } from './test-tap.ts'
-import { lastState, recordsOf, sankhyaDouble, selected, tap } from './test-tap.ts'
+import { hubspotDouble, lastState, recordsOf, sankhyaDouble, selected, tap } from './test-tap.ts'
 
 const SECRET = 'CORPO-DO-ERRO-QUE-NAO-SAI'
 const FIRST_WAIT = 2500
@@ -203,4 +203,27 @@ test('o log da tentativa só leva escalares: nem o corpo do erro nem texto do pr
     run.logs.every(({ bodyBytes }) => typeof bodyBytes === 'number' && bodyBytes > 0),
     'o tamanho do corpo vai; o corpo não',
   )
+})
+
+test('a tabela de operação reduz como a de tabela: o 5xx corta o limite pedido, o corte fica, e nenhuma linha se perde', async () => {
+  const double = await hubspotDouble()
+  const asked: number[] = []
+  const run = await tap(double, {
+    streams: [selected('negocios', 'deals')],
+    fetch: async (request) => {
+      const limit = Number(new URL(request.url).searchParams.get('limit'))
+      if (Number.isNaN(limit)) return double.fake.handle(request)
+      asked.push(limit)
+      return limit > 30 ? internalError() : double.fake.handle(request)
+    },
+  })
+  assert.equal(run.code, 0)
+  assert.deepEqual(asked.slice(0, 3), [100, 50, 25], 'metade no mesmo ponto')
+  assert.ok(
+    asked.slice(2).every((limit) => limit === 25),
+    'o corte vale até o fim',
+  )
+  const ids = recordsOf(run, 'deals').map((row) => row.id)
+  assert.equal(new Set(ids).size, ids.length, 'cada negócio uma vez')
+  assert.ok(ids.length > 100)
 })
