@@ -45,7 +45,6 @@ function Stage(props: Props & { flow: Flow }) {
           since={flow.since}
           onSince={flow.setSince}
           onSubmit={flow.submit}
-          onClose={props.onClose}
         />
       )
     case 'TESTING':

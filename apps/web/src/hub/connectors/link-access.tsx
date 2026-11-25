@@ -5,7 +5,7 @@ import { Button } from '../../ui/button.tsx'
 import { DialogBody, DialogFooter } from '../../ui/dialog.tsx'
 import { Form, FormAlert } from '../../ui/form.tsx'
 import { isFuture } from './lake-pick.ts'
-import { CANCEL, CONTINUE, SEND_LEAD, SEND_LINK, SEND_TITLE } from './lake-text.ts'
+import { CONTINUE, SEND_LEAD, SEND_LINK, SEND_TITLE } from './lake-text.ts'
 import type { AccessForm } from './link-fields.tsx'
 import { BeforePasting, Fields, NAME } from './link-fields.tsx'
 import { SendPanel } from './link-send.tsx'
@@ -42,7 +42,6 @@ export function AccessStep(props: {
   since: string
   onSince: (since: string) => void
   onSubmit: (values: Values) => Promise<void>
-  onClose: () => void
 }) {
   const { entry, form } = props
   const [sending, setSending] = useState(false)
@@ -90,9 +89,6 @@ export function AccessStep(props: {
         <div className="flex flex-wrap gap-md">
           <Button type="submit" variant="primary" disabled={busy || isFuture(props.since)}>
             {CONTINUE}
-          </Button>
-          <Button type="button" disabled={busy} onClick={props.onClose}>
-            {CANCEL}
           </Button>
         </div>
       </DialogFooter>

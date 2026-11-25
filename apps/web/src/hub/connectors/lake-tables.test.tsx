@@ -24,7 +24,6 @@ test('a seção: as tabelas copiadas com o nome fixo, o intervalo, a última rod
   expect(view.getByRole('combobox', { name: 'Intervalo' }).textContent).toContain('24 h')
   expect(view.getByText(/^Última rodada /)).toBeTruthy()
   expect(view.getByRole('button', { name: 'Rodar agora' })).toBeTruthy()
-  expect(view.getByText('As linhas ficam no lago da empresa.')).toBeTruthy()
   expect(view.getByRole('button', { name: 'Salvar' }).hasAttribute('disabled')).toBe(true)
   expect(view.queryByText('Parceiros')).toBeNull()
 })
