@@ -23,7 +23,7 @@ the lake's sums equal the source's.
 
 ## Result
 
-- Path: Meltano, a ready Postgres tap and our target in a Fargate task copied 30 of 30 tables equal
+- Path: Meltano, a ready Postgres tap and our target in Fargate copied all 30 tables equal
   to the source.
 - Adapter: copied the kit's Sankhya double through 4 renewals and passed the SDK's 68 tests; a
   generic prototype read HubSpot.
@@ -44,7 +44,8 @@ A system's copy cannot be declared as data, or a client asks for a database sour
 ## State
 
 Accepted 2026-11-21. Founder, 2026-11-19: "A sim"; 2026-11-20: "sim" (the kit for credentials),
-"Confirma" (the adapter's tap); 2026-11-21: "G2 a". Amended by [0082](0082-the-lake-holds-tables-and-files.md).
+"Confirma" (the adapter's tap); 2026-11-21: "G2 a". Amended by [0082](0082-the-lake-holds-tables-and-files.md) and
+[0083](0083-money-takes-the-dictionarys-scale-and-rounds-past-it.md).
 
 [0056]: 0056-connectors-kit-and-one-executor.md
 [0057]: 0057-connections-by-oauth.md
