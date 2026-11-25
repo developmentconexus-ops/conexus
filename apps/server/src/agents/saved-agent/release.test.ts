@@ -103,7 +103,10 @@ test('a pessoa: tirar a Carla deixa os agentes, as versões e as ferramentas del
   const { id } = await withComputer(on)
   const removed = await call(on.hub, on.ana, 'DELETE', `${on.company}/members/${on.carla.id}`)
   assert.equal(removed.statusCode, 204, removed.body)
-  assert.ok(on.hub.conversationMachines.killed.includes(id), 'her conversation with a Computador left')
+  assert.ok(
+    on.hub.conversationMachines.killed.includes(id),
+    'her conversation with a Computador left',
+  )
   assert.deepEqual(await on.left(), { ana: [1, 1], carla: [1, 1], elsewhere: [0, 0] })
   const url = `${on.agents}/${on.ids.carla}`
   assert.equal(agentOf(await call(on.hub, on.ana, 'GET', url)).createdBy, null)
