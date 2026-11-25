@@ -3,8 +3,6 @@ from __future__ import annotations
 import time
 import typing as t
 from collections.abc import Callable, Sequence
-from datetime import date, datetime
-from zoneinfo import ZoneInfo
 
 from pyiceberg.catalog import Catalog
 
@@ -15,7 +13,6 @@ APPLIED = "conexus.passada.aplicada"
 SEQUENCE = "_sdc_sequence"
 DELETED = "_sdc_deleted_at"
 VERSION = "_sdc_table_version"
-CLOCK = ZoneInfo("America/Sao_Paulo")
 POLL_SECONDS = 0.2
 FINISHED = {"SUCCEEDED", "FAILED", "CANCELLED"}
 
@@ -126,23 +123,12 @@ def _merges(
     ]
 
 
-def _recent_start(today: date, reread: int) -> str:
-    index = today.year * 12 + today.month - 1 - (reread - 1)
-    return f"{index // 12:04d}-{index % 12 + 1:02d}"
-
-
 class Updater:
     """`current` follows `raw` at the mode's grain, then `raw` is cleaned."""
 
-    def __init__(
-        self,
-        catalog: Catalog,
-        athena: Athena,
-        today: Callable[[], date] = lambda: datetime.now(CLOCK).date(),
-    ) -> None:
+    def __init__(self, catalog: Catalog, athena: Athena) -> None:
         self._catalog = catalog
         self._athena = athena
-        self._today = today
 
     def update(
         self,
@@ -179,13 +165,16 @@ class Updater:
         complete = raw.properties.get(COMPLETE_VERSION)
         whole = complete is not None and complete != current.properties.get(APPLIED)
         bounds = (after, max(after, top))
-        if mode["kind"] == "WINDOW":
-            self._replace_months(table, mode, bounds, whole=whole, since=since)
         if top > after:
             for statement in _merges(table, key, columns, bounds):
                 self._athena.run(statement)
-        if whole and mode["kind"] != "WINDOW":
-            self._athena.run(self._absent(table, int(t.cast("str", complete))))
+        if whole:
+            scope = ""
+            if mode["kind"] == "WINDOW" and since is not None:
+                scope = f" AND {_month_of(mode['column'].lower())} >= '{since[:7]}'"
+            self._athena.run(self._absent(table, int(t.cast("str", complete))) + scope)
+        elif mode["kind"] == "WINDOW" and top > after:
+            self._athena.run(self._absent_in_months(table, mode, bounds))
         saved = {UP_TO: str(bounds[1])}
         if whole:
             saved[APPLIED] = t.cast("str", complete)
@@ -202,28 +191,12 @@ class Updater:
         """A row the whole pass did not rewrite keeps an older version: the source lost it."""
         return f"DELETE FROM {_name(CURRENT)}.{_name(table)} WHERE {VERSION} < {version}"
 
-    def _replace_months(
-        self,
-        table: str,
-        mode: Mode,
-        bounds: tuple[int, int],
-        *,
-        whole: bool,
-        since: str | None,
-    ) -> None:
-        """A window pass replaces the months it read, from the first one it reached."""
+    def _absent_in_months(self, table: str, mode: Mode, bounds: tuple[int, int]) -> str:
+        """A window pass deletes, in the months it brought, the rows it did not rewrite."""
         month = _month_of(mode["column"].lower())
-        target = f"{_name(CURRENT)}.{_name(table)}"
-        if whole:
-            where = "" if since is None else f" WHERE {month} >= '{since[:7]}'"
-            self._athena.run(f"DELETE FROM {target}{where}")
-            return
-        today = self._today()
-        brought = self._athena.text(
-            f"SELECT min({month}) FROM {_name(RAW)}.{_name(table)} "
-            f"WHERE {SEQUENCE} > {bounds[0]} AND {SEQUENCE} <= {bounds[1]}"
+        after, up_to = bounds
+        return (
+            f"DELETE FROM {_name(CURRENT)}.{_name(table)} WHERE {month} IN "
+            f"(SELECT {month} FROM {_name(RAW)}.{_name(table)} "
+            f"WHERE {SEQUENCE} > {after} AND {SEQUENCE} <= {up_to}) AND {SEQUENCE} <= {after}"
         )
-        recent = _recent_start(today, mode["reread"])
-        first = recent if brought is None else min(recent, brought)
-        last = f"{today.year:04d}-{today.month:02d}"
-        self._athena.run(f"DELETE FROM {target} WHERE {month} >= '{first}' AND {month} <= '{last}'")

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 import typing as t
-from datetime import date
 from decimal import Decimal
 
 import boto3
@@ -24,9 +23,9 @@ def _rows(task: Task, space: str, name: str) -> list[dict[str, t.Any]]:
     return rows
 
 
-def _updater(task: Task, today: date) -> Updater:
+def _updater(task: Task) -> Updater:
     athena = Athena(boto3.client("athena", region_name=REGION), "conexus-lago", "catalogo")
-    return Updater(task.lake, athena, lambda: today)
+    return Updater(task.lake, athena)
 
 
 def _source(task: Task, spec: t.Any, name: str) -> dict[int, dict[str, t.Any]]:
@@ -111,13 +110,13 @@ def test_a_limpeza_pula_o_historico(task: Task) -> None:
     task.athena.executions.clear()
     task.athena.keep_raw = False
     columns = {"nunota"}
-    updated = _updater(task, date(2026, 11, 25)).update(
+    updated = _updater(task).update(
         "sankhya_notas", key=sorted(columns), mode={"kind": "FULL"}, history=True, since=None
     )
     assert updated.rows == kept
     assert not [sql for sql in task.athena.statements if sql.startswith('DELETE FROM "raw"')]
     assert raw.refresh().scan().to_arrow().num_rows == kept
-    _updater(task, date(2026, 11, 25)).update(
+    _updater(task).update(
         "sankhya_notas", key=sorted(columns), mode={"kind": "FULL"}, history=False, since=None
     )
     assert raw.refresh().scan().to_arrow().num_rows == 0
@@ -148,7 +147,7 @@ def test_a_janela_troca_o_que_leu(task: Task) -> None:
     before = _rows(task, "current", "efd_st_media_diaria")
     assert len(before) == 12
     _window_pass(task, ["2026-10", "2026-11"], "99")
-    updater = _updater(task, date(2026, 11, 25))
+    updater = _updater(task)
     updated = updater.update(
         "efd_st_media_diaria", key=KEY_OF_WINDOW, mode=WINDOW, history=False, since=None
     )
@@ -213,3 +212,97 @@ def test_a_inteira_nao_aplicada_nao_apaga_o_que_veio_depois(task: Task) -> None:
     assert current.keys() == source.keys()
     assert current[100000]["vlrnota"] == Decimal("1.000000000")
     assert task.aws.sent[-1]["tables"][0]["rows"] == len(source)
+
+
+def _keys(task: Task, name: str = "sankhya_notas") -> list[int]:
+    return [row["nunota"] for row in _rows(task, "current", name)]
+
+
+def _changed_on(rows: t.Iterable[dict[str, t.Any]], day: str, *, since: bool) -> set[int]:
+    return {row["nunota"] for row in rows if (str(row["dtalter"])[:10] >= day) == since}
+
+
+def test_a_data_mais_antiga_relida(task: Task) -> None:
+    first = task.spec(NOTAS, whole=True, start_date="2026-10-01")
+    assert task.run(first) == 0
+    assert set(_keys(task)) == _changed_on(
+        _source(task, first, "sankhya_notas").values(), "2026-10-01", since=True
+    )
+    older = task.spec(NOTAS, whole=True, start_date="2026-09-01", connection=first["connectionId"])
+    assert task.run(older) == 0
+    source = _source(task, older, "sankhya_notas").values()
+    keys = _keys(task)
+    assert len(keys) == len(set(keys))
+    assert set(keys) == _changed_on(source, "2026-09-01", since=True)
+    assert _changed_on(source, "2026-09-01", since=False)
+
+
+def test_a_data_mais_nova_relida(task: Task) -> None:
+    first = task.spec(NOTAS, whole=True)
+    assert task.run(first) == 0
+    source = _source(task, first, "sankhya_notas").values()
+    assert set(_keys(task)) == {row["nunota"] for row in source}
+    newer = task.spec(NOTAS, whole=True, start_date="2026-10-01", connection=first["connectionId"])
+    assert task.run(newer) == 0
+    assert set(_keys(task)) == _changed_on(source, "2026-10-01", since=True)
+    assert _changed_on(source, "2026-10-01", since=False)
+
+
+def test_a_data_mais_nova_nao_apaga(task: Task) -> None:
+    first = task.spec(NOTAS, whole=True)
+    assert task.run(first) == 0
+    before = set(_keys(task))
+    task.change("notas/100000", {"acao": "ALTERAR"})
+    newer = task.spec(NOTAS, whole=False, start_date="2026-10-15", connection=first["connectionId"])
+    assert task.run(newer) == 0
+    assert set(_keys(task)) == before
+    assert task.aws.sent[-1]["tables"][0]["whole"] is False
+
+
+def _stale(task: Task, month: str, key: int) -> None:
+    current = task.lake.load_table(("current", "efd_st_media_diaria"))
+    rows = current.scan().to_arrow()
+    where = pc.and_(
+        pc.equal(pc.utf8_slice_codeunits(pc.cast(rows["dtref"], pa.string()), 0, 7), month),
+        pc.equal(rows["codprod"], 1),
+    )
+    stale = rows.filter(where)
+    for column, value in (("codprod", key), ("_sdc_table_version", 1)):
+        at = stale.schema.get_field_index(column)
+        stale = stale.set_column(
+            at, column, pa.array([value] * stale.num_rows, type=stale.schema.field(column).type)
+        )
+    current.append(stale)
+
+
+def test_a_janela_relida_desde_a_data(task: Task) -> None:
+    first = task.spec(JANELA, whole=True)
+    assert task.run(first) == 0
+    _stale(task, "2026-09", 9001)
+    _stale(task, "2026-11", 9002)
+    again = task.spec(JANELA, whole=True, start_date="2026-10-10", connection=first["connectionId"])
+    assert task.run(again) == 0
+    now = _rows(task, "current", "efd_st_media_diaria")
+    stale = {row["codprod"]: row["dtref"].isoformat()[:7] for row in now if row["codprod"] > 9000}
+    assert stale == {9001: "2026-09"}
+    months = {row["dtref"].isoformat()[:7] for row in now}
+    assert {"2026-08", "2026-09", "2026-10", "2026-11"} <= months
+
+
+def test_a_data_mais_nova_nao_apaga_a_janela(task: Task) -> None:
+    assert task.run(task.spec(JANELA, whole=False)) == 0
+    october = [
+        row
+        for row in _rows(task, "current", "efd_st_media_diaria")
+        if row["dtref"].isoformat()[:7] == "2026-10"
+    ]
+    _window_pass(task, ["2026-11"], "99")
+    _updater(task).update(
+        "efd_st_media_diaria", key=KEY_OF_WINDOW, mode=WINDOW, history=False, since="2026-11-10"
+    )
+    now = [
+        row
+        for row in _rows(task, "current", "efd_st_media_diaria")
+        if row["dtref"].isoformat()[:7] == "2026-10"
+    ]
+    assert len(now) == len(october)
