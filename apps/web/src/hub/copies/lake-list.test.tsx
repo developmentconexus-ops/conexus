@@ -127,7 +127,7 @@ test('um sistema sem tabela no lago diz a frase da matriz ao lado do que tem', a
   )
   const main = await list()
   expect(await main.findByText('Matriz · Lago · 1 tabela')).toBeTruthy()
-  expect(main.getByText('Mercado Livre · Loja A')).toBeTruthy()
+  expect(main.getByText('Loja A · Lago')).toBeTruthy()
   expect(main.getAllByText('Nenhuma tabela copiada')).toHaveLength(1)
 })
 

@@ -8,6 +8,7 @@ import {
   LINES_STAY,
   modeText,
   NAME_FIXED,
+  nativeText,
   runFailureText,
   sinceOfTableText,
   WHOLE_HISTORY,
@@ -32,7 +33,7 @@ import {
   runKindText,
   START_FACT,
   stoppedAtText,
-  systemSaidText,
+  systemAnswered,
   TABLE_COLUMNS,
 } from './text.ts'
 
@@ -54,7 +55,9 @@ export function Failed(props: { run: Extract<LakeRun, { outcome: 'ERROR' }>; sys
         {run.failedTable !== null && `${stoppedAtText(run.failedTable)} `}
         {runFailureText(run.code, props.system)}
       </span>
-      {run.system !== null && <span className="text-text-2">{systemSaidText(run.system)}</span>}
+      {run.system !== null && systemAnswered(run.code) && (
+        <span className="text-text-2">{nativeText(run.system, props.system)}</span>
+      )}
     </span>
   )
 }
@@ -79,7 +82,7 @@ export function Overview(props: { table: LakeTableSummary; system: string }) {
               {run.outcome !== 'RUNNING' && (
                 <>
                   <span className="tabular-nums">{whenText(run.endedAt)}</span>
-                  <span className="text-text-2">{runKindText(run.whole)}</span>
+                  <span className="text-text-2">{runKindText(run)}</span>
                 </>
               )}
             </span>

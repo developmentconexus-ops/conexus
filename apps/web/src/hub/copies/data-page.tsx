@@ -4,9 +4,9 @@ import { Link } from '@tanstack/react-router'
 import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
-import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
+import { ConnectorLogo, connectionsQuery, connectorName, stateBadge } from '../connectors/public.ts'
 import { AppsLayer } from './apps-layer.tsx'
-import { activeConnections } from './data-systems.ts'
+import { connectionsOfData } from './data-systems.ts'
 import { LakeList } from './lake-list.tsx'
 import { lakeTablesListQuery } from './lake-queries.ts'
 import { useMay } from './member.ts'
@@ -23,7 +23,6 @@ import {
   NO_SYSTEM_HINT,
   NO_TABLE_COPIED,
   NO_TABLE_OF_ROLE,
-  systemText,
 } from './text.ts'
 
 /** The **Negócio** layer: no concept is approved yet, and what a concept is. */
@@ -62,7 +61,7 @@ function SystemsLayer({ companyId }: { companyId: CompanyId }) {
     return <ReadFailure text={CATALOG_FAILED} onRetry={() => void failed.refetch()} />
   }
   const { connectors } = connections.data
-  const active = activeConnections(connections.data.connections)
+  const active = connectionsOfData(connections.data.connections, lake.data)
   if (active.length === 0) return <NoSystem companyId={companyId} />
   return (
     <div className="flex flex-col gap-lg">
@@ -70,10 +69,12 @@ function SystemsLayer({ companyId }: { companyId: CompanyId }) {
         const entry = connectors.find((one) => one.id === connection.connector)
         const system = connectorName(connectors, connection.connector)
         const tables = lake.data.filter((table) => table.connection.id === connection.id)
-        const title =
-          tables.length === 0
-            ? systemText(system, [connection.name], 0)
-            : lakeGroupText(connection.name, tables.length)
+        const badge =
+          connection.state === 'ACTIVE'
+            ? null
+            : stateBadge(connection, entry?.auth ?? 'client_credentials')
+        const state = badge?.text ?? null
+        const title = lakeGroupText(connection.name, tables.length, state)
         return (
           <section key={connection.id} className="flex flex-col gap-sm">
             <span className="flex items-center gap-sm font-medium">

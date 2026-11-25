@@ -10,7 +10,7 @@ import {
 } from '../../ui/sidebar.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { connectionsQuery } from '../connectors/public.ts'
-import { activeConnections } from './data-systems.ts'
+import { connectionsOfData } from './data-systems.ts'
 import { lakeTablesListQuery } from './lake-queries.ts'
 import { useMay } from './member.ts'
 import type { DataLayer } from './search.ts'
@@ -93,7 +93,7 @@ function RawNote({ companyId }: { companyId: CompanyId }) {
       </div>
     )
   }
-  const linked = activeConnections(connections.data.connections).length > 0
+  const linked = connectionsOfData(connections.data.connections, lake.data).length > 0
   if (lake.data.length > 0) return <p className={NOTE}>{lakeTablesNoteText(lake.data.length)}</p>
   return <p className={NOTE}>{linked ? NO_TABLE_COPIED : NO_SYSTEM}</p>
 }

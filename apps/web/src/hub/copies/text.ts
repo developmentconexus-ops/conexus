@@ -1,3 +1,5 @@
+import type { LakeRun } from '@conexus/hub-api'
+
 /** The words of the Dados screens (Capacidade 2, U4); the founder approves them at the step's end. */
 export const DATA_TITLE = 'Dados'
 export const DATA_INTRO =
@@ -25,9 +27,10 @@ export function systemText(system: string, accounts: readonly string[], tables: 
   const named = accounts.filter((account) => account !== system)
   return [system, named.join(', '), ...counted].filter((part) => part !== '').join(' · ')
 }
-/** A connection's header in the list: its name, where its tables live and how many there are. */
-export function lakeGroupText(connection: string, tables: number): string {
-  return `${lakeOfText(connection)} · ${tables} ${tables === 1 ? 'tabela' : 'tabelas'}`
+/** A connection's header in the list: its name, where its tables live, how many there are and, when it is not working, its state. */
+export function lakeGroupText(connection: string, tables: number, state: string | null): string {
+  const counted = tables === 0 ? [] : [`${tables} ${tables === 1 ? 'tabela' : 'tabelas'}`]
+  return [lakeOfText(connection), ...counted, ...(state === null ? [] : [state])].join(' · ')
 }
 
 /** What a table's page says it belongs to: the connection that copies it, in the lake. */
@@ -87,11 +90,18 @@ export const MACHINE_LENGTH = 'Duração'
 export const MACHINE_MEMORY = 'Pico de memória'
 export const MACHINE_CPU = 'Pico de CPU'
 export const NO_MACHINE = 'Sem medida da máquina nesta rodada.'
-const SYSTEM_SAID = 'O sistema disse:'
+type Ended = Exclude<LakeRun, { outcome: 'RUNNING' }>
 
-/** What a round read, said by how it read: every row of the table, or only what changed. */
-export function runKindText(whole: boolean): string {
-  return whole ? 'Completa · inteira' : 'Completa · só o que mudou'
+/** What a round read, said by how it read; only a round that ended complete says "Completa". */
+export function runKindText(run: Ended): string {
+  if (run.outcome === 'COMPLETE')
+    return run.whole ? 'Completa · inteira' : 'Completa · só o que mudou'
+  return run.whole ? 'Inteira' : 'Só o que mudou'
+}
+
+/** Whether the system of the company answered in the failure: the answer of the Hub's or the AWS's own codes is not the system's to say. */
+export function systemAnswered(code: Extract<LakeRun, { outcome: 'ERROR' }>['code']): boolean {
+  return code.startsWith('COPY_SOURCE_')
 }
 
 export function columnsCountText(count: number): string {
@@ -100,17 +110,6 @@ export function columnsCountText(count: number): string {
 
 export function stoppedAtText(table: string): string {
   return `Parou em ${table}.`
-}
-
-/** What the system answered, in full: its status and code, then its own words. */
-export function systemSaidText(system: {
-  status: number | null
-  code: string | null
-  message: string | null
-}): string {
-  const head = [system.status, system.code].filter((part) => part !== null).join(' ')
-  const said = [head, system.message].filter((part) => part !== null && part !== '').join(' · ')
-  return said === '' ? SYSTEM_SAID : `${SYSTEM_SAID} ${said}`
 }
 
 const NUMBER = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 })

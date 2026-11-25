@@ -66,14 +66,22 @@ function refusalText(answer: Refusal, name: string): string | null {
   }
 }
 
-/** What a Testar that did not work says, with what the provider answered. */
-export function TestRefusal(props: { answer: Refusal; name: string }) {
+function RefusalBody(props: { answer: Refusal; name: string }) {
   const { answer, name } = props
   const sentence = refusalText(answer, name)
   return (
-    <div role="alert" className="flex flex-col gap-xs">
+    <>
       {sentence !== null && <p className="text-danger">{sentence}</p>}
       {answer.native !== null && <Said native={answer.native} name={name} />}
+    </>
+  )
+}
+
+/** What a Testar that did not work says, with what the provider answered. */
+export function TestRefusal(props: { answer: Refusal; name: string }) {
+  return (
+    <div role="alert" className="flex flex-col gap-xs">
+      <RefusalBody answer={props.answer} name={props.name} />
     </div>
   )
 }
@@ -85,7 +93,7 @@ export function Refused(props: { answer: Refusal; name: string }) {
       {props.answer.result === 'AUTH_REFUSED' && (
         <p className="text-danger">{refusedKeysText(props.name)}</p>
       )}
-      <TestRefusal answer={props.answer} name={props.name} />
+      <RefusalBody answer={props.answer} name={props.name} />
     </div>
   )
 }

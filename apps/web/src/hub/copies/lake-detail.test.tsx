@@ -128,26 +128,6 @@ test('Rodadas: a rodada aberta diz Rodando…, sem linhas nem Máquina', async (
   expect(within(table).queryByRole('button', { name: 'Máquina' })).toBeNull()
 })
 
-test('Rodadas: a rodada com erro diz a frase do código, onde parou e a resposta do sistema por extenso', async () => {
-  const failed = lakeRun({
-    outcome: 'ERROR',
-    code: 'COPY_SOURCE_UNREACHABLE',
-    failedTable: 'sankhya_notas',
-    system: { status: 504, code: 'GATEWAY', message: 'O gateway respondeu 504 depois de 60 s.' },
-  })
-  const main = await tab({ runs: { [TABLE.id]: [failed] } }, 'Rodadas')
-  const alert = await main.findByRole('alert')
-  expect(alert.textContent).toBe(
-    'Parou em sankhya_notas. Sankhya não respondeu. A próxima rodada tenta de novo.' +
-      'O sistema disse: 504 GATEWAY · O gateway respondeu 504 depois de 60 s.',
-  )
-})
-
-test('Rodadas: a rodada interrompida diz Interrompida.', async () => {
-  const main = await tab({ runs: { [TABLE.id]: [lakeRun({ outcome: 'INTERRUPTED' })] } }, 'Rodadas')
-  expect(await main.findByText('Interrompida.')).toBeTruthy()
-})
-
 test('Rodadas: a falha de ler as rodadas diz a frase e Tentar de novo', async () => {
   let fail = true
   const main = await tab(

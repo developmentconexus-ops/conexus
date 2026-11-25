@@ -81,7 +81,7 @@ function lengthOf(run: LakeRun): string {
 }
 
 function kindOf(run: LakeRun): string {
-  return run.outcome === 'RUNNING' ? NO_VALUE : runKindText(run.whole)
+  return run.outcome === 'RUNNING' ? NO_VALUE : runKindText(run)
 }
 
 function readOf(run: LakeRun): string {

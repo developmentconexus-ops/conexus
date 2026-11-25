@@ -1,6 +1,13 @@
-import type { Connection } from '@conexus/hub-api'
+import type { Connection, LakeTableSummary } from '@conexus/hub-api'
 
-/** The company's connections that work: each one is a group of the lake's tables in Dados. */
-export function activeConnections(connections: readonly Connection[]): Connection[] {
-  return connections.filter((connection) => connection.state === 'ACTIVE')
+/** The connections that are a group of Dados: the ones that work and any other that still has a table in the lake. */
+export function connectionsOfData(
+  connections: readonly Connection[],
+  tables: readonly LakeTableSummary[],
+): Connection[] {
+  return connections.filter(
+    (connection) =>
+      connection.state === 'ACTIVE' ||
+      tables.some((table) => table.connection.id === connection.id),
+  )
 }
