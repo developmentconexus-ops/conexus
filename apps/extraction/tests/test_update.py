@@ -330,17 +330,6 @@ def _update_notas(task: Task) -> None:
     )
 
 
-def test_o_marcado_apagado_sai_da_atual(task: Task) -> None:
-    first = task.spec(NOTAS, whole=False)
-    assert task.run(first) == 0
-    [gone, kept, *_] = _keys(task)
-    _raw_row(task, gone, _sdc_deleted_at=datetime(2026, 11, 25, 12, 0, tzinfo=UTC))
-    _update_notas(task)
-    assert gone not in _keys(task)
-    assert kept in _keys(task)
-    assert any(sql.startswith("MERGE") and "THEN DELETE" in sql for sql in task.athena.statements)
-
-
 def test_a_mesma_chave_duas_vezes_fica_com_a_mudanca_mais_nova(task: Task) -> None:
     first = task.spec(NOTAS, whole=False)
     assert task.run(first) == 0

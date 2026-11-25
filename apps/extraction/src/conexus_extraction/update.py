@@ -11,7 +11,6 @@ from conexus_extraction.target import COMPLETE_VERSION, CURRENT, RAW
 UP_TO = "conexus.atualizado_ate"
 APPLIED = "conexus.passada.aplicada"
 SEQUENCE = "_sdc_sequence"
-DELETED = "_sdc_deleted_at"
 VERSION = "_sdc_table_version"
 POLL_SECONDS = 0.2
 FINISHED = {"SUCCEEDED", "FAILED", "CANCELLED"}
@@ -120,9 +119,8 @@ def _merges(
     names = ", ".join(_name(column) for column in columns)
     values = ", ".join(f"s.{_name(column)}" for column in columns)
     return [
-        f"{head}WHEN MATCHED AND s.{DELETED} IS NULL THEN UPDATE SET {sets}",
-        f"{head}WHEN MATCHED AND s.{DELETED} IS NOT NULL THEN DELETE",
-        f"{head}WHEN NOT MATCHED AND s.{DELETED} IS NULL THEN INSERT ({names}) VALUES ({values})",
+        f"{head}WHEN MATCHED THEN UPDATE SET {sets}",
+        f"{head}WHEN NOT MATCHED THEN INSERT ({names}) VALUES ({values})",
     ]
 
 

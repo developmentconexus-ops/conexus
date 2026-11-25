@@ -1371,17 +1371,18 @@ reference tool checks a read against its documentation.
   cases from about 230 to 337 columns and runs one case with 450 (`EST/achados-auditoria:49`,
   `:321`).
 - **Hand-made piece.** `Updater._merges` in `apps/extraction/src/conexus_extraction/update.py`:
-  three `MERGE` statements over the rows the pass added to the raw table, one case each. The first
-  updates the rows that match and are not marked deleted, the second deletes the ones marked
-  deleted, the third inserts what does not match. Our writer has no row hash, so the update rewrites
-  every matched row of the slice. The slice is the newest row of each key between the point of the
+  two `MERGE` statements over the rows the pass added to the raw table, one case each. The first
+  updates the rows that match, the second inserts what does not match. No connector marks a row
+  deleted (`_sdc_deleted_at`): Airbyte and dlt have a delete case only when the source brings the
+  mark, so the case comes with the first connector that does. Our writer has no row hash, so the
+  update rewrites every matched row of the slice. The slice is the newest row of each key between the point of the
   last update (`conexus.atualizado_ate`) and the highest `_sdc_sequence`, so a repeated update
   finds nothing new. A new column in the raw table reaches the current one before the first
   statement (`union_by_name`).
 - **Why.** Decision 0080: the raw table appends, the current one follows the mode. One case a
   statement is the form that passed on 450 columns.
 - **Proof.** `apps/extraction/tests/test_update.py`, "a atual segue a fonte" (the source's note,
-  changed, created and deleted, and no statement with two cases) and "a coluna nova na atual"; the
+  changed and created, and no statement with two cases) and "a coluna nova na atual"; the
   hand mutation that cleans before the `MERGE` turns "a limpeza" and "a atual segue a fonte" red.
 - **Not proved.** On Athena, with the real 450 columns: L.7. The tests run the statements in DuckDB,
   whose dialect is not Trino's, over the recorded Athena envelopes.
