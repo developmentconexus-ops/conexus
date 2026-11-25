@@ -7,12 +7,9 @@ const WHILE_RUNNING = 5_000
 /** How long after the person's own request the section reads on: the Hub may open the round after the first re-read. */
 const AFTER_REQUEST = 30_000
 
-/** A connection's tables, read again every 5 s while a round of its copy runs (web W12). */
+/** A connection's tables. `useLakeTables` is the one reader that follows a round. */
 export function lakeTablesQuery(companyId: CompanyId, connectionId: ConnectionId) {
-  return queryOptions({
-    ...hubQuery(getLakeTablesOfConnection, { params: { companyId, connectionId } }),
-    refetchInterval: (query) => (isRunning(query.state.data) ? WHILE_RUNNING : false),
-  })
+  return queryOptions(hubQuery(getLakeTablesOfConnection, { params: { companyId, connectionId } }))
 }
 
 function isRunning(lake: LakeTablesOfConnection | undefined): boolean {
@@ -22,13 +19,14 @@ function isRunning(lake: LakeTablesOfConnection | undefined): boolean {
 const OWN_WRITES: ReadonlySet<unknown> = new Set([setLakeCopy.id, runLakeCopy.id])
 
 /**
- * The same read, followed also for a bounded time after a Salvar, a Rodar agora or a Ligar of this
- * browser: the re-read the write makes can come before the Hub opens the round (web W12).
+ * The same read, read again every 5 s while a round of its copy runs, and for a bounded time after
+ * a Salvar, a Rodar agora or a Ligar of this browser: the re-read the write makes can come before
+ * the Hub opens the round (web W12).
  */
 export function useLakeTables(companyId: CompanyId, connectionId: ConnectionId) {
   const sent = useMutationState({
     filters: { predicate: (one) => OWN_WRITES.has(one.options.mutationKey?.[0]) },
-    select: (one) => (one.state.status === 'error' ? 0 : one.state.submittedAt),
+    select: (one) => one.state.submittedAt,
   })
   const lastSent = Math.max(0, ...sent)
   return useQuery({
