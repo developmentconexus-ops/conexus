@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+from conexus_extraction.contract import Machine
+from conexus_extraction.machine import Meter
 from tests.conftest import Metadata, Task, fargate
 
 NOTAS = ("TGFCAB", "sankhya_notas")
@@ -57,6 +59,25 @@ def test_o_resultado_sai_igual_sem_a_medida(
     assert result["outcome"] == {"kind": "COMPLETE"}
     assert result["tables"][0]["written"] > 0
     assert "MACHINE_NOT_MEASURED" in capfd.readouterr().err
+
+
+def test_uma_medida_fora_do_esquema_sai_sem_a_medida(
+    task: Task, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    invalid: Machine = {
+        "allocated": {"vcpu": 1, "memoryMib": -1},
+        "peak": {"vcpu": 0, "memoryMib": 0},
+        "everySeconds": 10,
+        "samples": [],
+    }
+    monkeypatch.setattr(Meter, "stop", lambda self: invalid)
+    spec = task.spec(NOTAS)
+    assert task.run(spec) == 0
+    [result] = task.aws.sent
+    assert result["machine"] is None
+    assert result["outcome"] == {"kind": "COMPLETE"}
+    assert result["tables"][0]["written"] > 0
+    assert "MACHINE_INVALID" in capfd.readouterr().err
 
 
 def test_a_falha_do_leitor_da_o_codigo_dele(task: Task) -> None:

@@ -31,6 +31,7 @@ _UNREADABLE = (
     ValueError,
     KeyError,
     TypeError,
+    OverflowError,
 )
 
 _OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))

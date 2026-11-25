@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import time
 import typing as t
 
@@ -181,6 +182,19 @@ def test_medir_nao_derruba_a_rodada(
         "MACHINE_READS_FAILED",
     }
     assert log.events(), "the failure is logged, never swallowed"
+
+
+def test_uma_leitura_que_estoura_e_registrada_e_nao_mata_a_medida(metadata: Metadata) -> None:
+    task, [zeroed, _, fresh] = fargate(1)
+    overflowing = json.loads(json.dumps(fresh))
+    only(overflowing)["memory_stats"]["usage"] = float("inf")
+    metadata.serve(task, zeroed, overflowing, fresh)
+    log = Lines()
+    result = measured(metadata.url, log, reads=3).stop()
+    assert result is not None
+    assert len(result["samples"]) == 1
+    assert log.events().count("MACHINE_READ_FAILED") == 1
+    assert dict(log.seen)["MACHINE_READ_FAILED"]["error"] == "OverflowError"
 
 
 def test_uma_leitura_que_falha_no_meio_nao_apaga_as_outras(metadata: Metadata) -> None:
