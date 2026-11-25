@@ -84,6 +84,321 @@ fossem ponto de partida, não trava. Onde a melhor forma diverge delas, a decis�
     administrador. O plano diz "a empresa ainda não tem identidade; usei a padrão".
   - **D.2.** O Builder pede a identidade antes do primeiro app e espera.
 
+## Como vai ser feito
+
+Esta seção mostra a etapa pronta, com exemplos reais. Os arquivos de exemplo saíram de um protótipo
+do gerador e da conferência, rodado sobre o `main` `fb371462`. Ele não está no repositório; as
+unidades U1 e U3 escrevem a versão de verdade. O que o protótipo provou:
+
+- A identidade padrão gera o `styles.css` de hoje byte a byte.
+- As duas empresas de teste passam na conta de contraste e geram `styles.css` diferentes.
+- O desvio de exemplo é pego (o item 4).
+- **Achado.** No starter de hoje, o texto branco sobre o dourado tem contraste de 3,73:1, abaixo de
+  4,5:1. A identidade padrão fica como está (critério 10), e o defeito vai para uma issue.
+
+### 1. O registro: o DESIGN.md da empresa
+
+Uma empresa guarda um DESIGN.md, no formato que o Impeccable lê e a Pauta do Hub usa. O frontmatter
+traz os tokens, e são eles que valem. O texto embaixo explica o uso. As chaves de cor são os nomes de
+variável do starter (`packages/app/starter/src/styles.css:8-44`), e o modo escuro usa o prefixo
+`dark-`, como a Pauta (`DESIGN.md:35-39`). Assim o gerador não traduz nome nenhum. O exemplo completo
+da Empresa de Teste A:
+
+```markdown
+---
+version: alpha
+name: Empresa de Teste A
+description: "Azul petróleo sobre neutros frios, IBM Plex Sans, cantos quase retos: sóbria e densa."
+colors:
+  background: "#F4F6F8"
+  foreground: "#121518"
+  card: "#FFFFFF"
+  card-foreground: "#121518"
+  popover: "#FFFFFF"
+  popover-foreground: "#121518"
+  primary: "#0B5568"
+  primary-foreground: "#FFFFFF"
+  secondary: "#E8EEF2"
+  secondary-foreground: "#121518"
+  muted: "#E8EEF2"
+  muted-foreground: "#59616A"
+  accent: "#DCE6EC"
+  accent-foreground: "#121518"
+  destructive: "#C0283D"
+  border: "#D3DDE3"
+  input: "#D3DDE3"
+  ring: "#0B5568"
+  scrim: "#121518"
+  brand: "#0B5568"
+  brand-foreground: "#FFFFFF"
+  success: "#1A7F4B"
+  warning: "#B54708"
+  chart-1: "#0B5568"
+  chart-2: "#C2410C"
+  chart-3: "#4D7C0F"
+  chart-4: "#7E22CE"
+  chart-5: "#475569"
+  sidebar: "#FFFFFF"
+  sidebar-foreground: "#121518"
+  sidebar-primary: "#0B5568"
+  sidebar-primary-foreground: "#FFFFFF"
+  sidebar-accent: "#E8EEF2"
+  sidebar-accent-foreground: "#121518"
+  sidebar-border: "#D3DDE3"
+  sidebar-ring: "#0B5568"
+  dark-background: "#0C1316"
+  dark-foreground: "#EEF0F2"
+  dark-card: "#121C20"
+  dark-card-foreground: "#EEF0F2"
+  dark-popover: "#121C20"
+  dark-popover-foreground: "#EEF0F2"
+  dark-primary: "#5CC3DA"
+  dark-primary-foreground: "#06222A"
+  dark-secondary: "#1D2125"
+  dark-secondary-foreground: "#EEF0F2"
+  dark-muted: "#1D2125"
+  dark-muted-foreground: "#A3ABB3"
+  dark-accent: "#262B30"
+  dark-accent-foreground: "#EEF0F2"
+  dark-destructive: "#F28B9A"
+  dark-border: "#2C3237"
+  dark-input: "#2C3237"
+  dark-ring: "#5CC3DA"
+  dark-scrim: "#000000"
+  dark-brand: "#5CC3DA"
+  dark-brand-foreground: "#06222A"
+  dark-success: "#6FD39A"
+  dark-warning: "#F5A25B"
+  dark-chart-1: "#5CC3DA"
+  dark-chart-2: "#FB923C"
+  dark-chart-3: "#A3E635"
+  dark-chart-4: "#C084FC"
+  dark-chart-5: "#94A3B8"
+  dark-sidebar: "#121C20"
+  dark-sidebar-foreground: "#EEF0F2"
+  dark-sidebar-primary: "#5CC3DA"
+  dark-sidebar-primary-foreground: "#06222A"
+  dark-sidebar-accent: "#1D2125"
+  dark-sidebar-accent-foreground: "#EEF0F2"
+  dark-sidebar-border: "#2C3237"
+  dark-sidebar-ring: "#5CC3DA"
+typography:
+  body:
+    fontFamily: IBM Plex Sans
+rounded:
+  base: 0.25rem
+---
+
+# Identidade: Empresa de Teste A
+
+## Overview
+
+Sóbria e densa: as telas de quem acompanha muitos números por dia. O azul petróleo marca só o que a
+pessoa escolheu e a ação principal; o resto é neutro frio.
+
+## Colors
+
+- **Azul petróleo** (#0B5568; no escuro #5CC3DA): botões principais, item ativo, foco e a primeira
+  série dos gráficos.
+- **Laranja queimado, verde musgo, violeta e ardósia**: as outras séries dos gráficos, nessa ordem.
+
+## Typography
+
+IBM Plex Sans em tudo, 400 no texto e 600 nos títulos.
+
+## Shapes
+
+Cantos de 4 px: cartões, campos e botões quase retos.
+```
+
+A Empresa de Teste B usa terracota `#A8431E` sobre neutros quentes, Nunito Sans e cantos de `1rem`.
+A pessoa não digita esse arquivo. A tela (o item 2) tem poucos controles e escreve o arquivo inteiro.
+Quem programa pode abrir "Ver como DESIGN.md" e colar um DESIGN.md próprio, que passa pela mesma
+validação.
+
+**Onde mora.** Uma coluna nova, `company.design text null`, ao lado do `logo` e do apelido em
+`apps/server/src/hub/identity/tables.ts:187-198`. Ela entra como campo extra do Better Auth, igual ao
+apelido: `{ type: 'string', required: false, input: false }` (`organization.ts:16`, `:36-41`). O
+`input: false` impede que o plugin grave o campo por conta própria; só a rota do Hub grava. A migração
+é uma `ALTER TABLE "company" ADD COLUMN "design" text` gerada pelo Drizzle Kit, na pasta
+`apps/server/migrations/` (a última de hoje é `20261124162233_lake_copy_grants`). `null` quer dizer
+"a identidade padrão". O logotipo (C.1) usa a coluna `logo`, que já existe e ninguém usa
+(`tables.ts:193`). Ele é guardado como `data:` URL de um SVG ou PNG de até 256 KB e mostrado sempre
+num `<img>`, nunca embutido na página, para que um SVG não rode script. A versão da identidade é o
+SHA-256 do DESIGN.md, sem coluna própria.
+
+**Quem grava.** A rota segue o apelido, que é o modelo dela: o contrato em
+`packages/hub-api/src/nickname.ts:6-23` (`defineOperation`) e o corpo em
+`apps/server/src/hub/identity/nickname.ts:32-70` (`database.command`, `lockCompany`, `admit`).
+
+```text
+PUT /api/companies/{companyId}/identity     If-Match: <versão lida>     { design, logo? }
+
+saveIdentity(database, { person, companyId, design, logo, ifMatch }):
+  database.command(scope COMPANY, tx =>
+    lockCompany(tx, companyId)
+    admit({ tx, personId, companyId, action: 'saveIdentity' })   // organization: ['update']:
+                                                                // só dono e administrador (403)
+    front = CompanyIdentity.parse(frontMatter(design))          // 400 IDENTITY_INVALID { field }
+    problems = contrastProblems(front)                         // 400 IDENTITY_CONTRAST { pair, mode }
+    current = sha256(company.design ?? DEFAULT_DESIGN)
+    if ifMatch != current: fail IDENTITY_STALE { version: current }   // 409
+    update company set design = design, logo = logo where id = companyId
+    log.info({ companyId, version: sha256(design) }, 'IDENTITY_SAVED')
+    return { version: sha256(design) })
+```
+
+A ação `saveIdentity` entra na tabela de ações de `apps/server/src/hub/identity/admission.ts:47-90`
+(`ACTIONS`), ao lado de `chooseNickname` (`:52`), com a declaração nativa `organization: ['update']`. Essa
+declaração só existe para dono e administrador (`better-auth@1.7.8`
+`dist/plugins/organization/access/statement.mjs:24-25`, `:44-45`; `roles.ts:91-108`).
+
+### 2. Como a pessoa vê no Hub
+
+- **Dono ou administrador.** Abre a empresa e vai em Configurações. A lista ganha "Identidade" (a rota
+  nova `settings/identity.tsx`, ao lado de `general.tsx`). À esquerda ficam destaque, neutros, fonte,
+  cantos, cores dos gráficos e logotipo. À direita, a prévia de uma tela de app (barra lateral, KPI,
+  tabela, gráfico) muda a cada clique, em Claro e Escuro. Ele clica em "Salvar" e lê "Identidade
+  salva". Se a cor do destaque deixa o texto ilegível, o campo mostra o erro antes de salvar. O
+  protótipo mostra cada passo (capturas em `data/conexus-a2-identidade-estudo/capturas/`, fora do
+  repositório).
+- **Desenvolvedor ou membro.** Vê os mesmos controles, desligados, e a prévia. Não há "Salvar", e a
+  tela diz "Só o dono e os administradores mudam a identidade."
+- **Empresa sem identidade (D.1).** A tela abre com a padrão e o aviso "A empresa ainda não tem
+  identidade. Os apps novos nascem com a padrão do Conexus."
+- **Identidade mudou e há apps que não seguiram (A.1).** Abaixo do botão, a tela lista "2 apps ainda
+  usam a identidade anterior: Vendas, Metas. Eles seguem na próxima versão que o Builder fizer." A
+  lista sai do arquivo `.conexus/identity.json` do `main` de cada app (o item 3), lido pelo
+  `file()` do repositório (`apps/server/src/builder/git/repository.ts:47`).
+
+### 3. Como o app nasce com ela
+
+**O gerador.** `stylesOf(design)` lê o frontmatter e reescreve só os valores do `styles.css` do
+starter. A forma, o `@theme inline` e as camadas continuam as de hoje. A fonte entra como
+`@import` do pacote `@fontsource`, que o Vite empacota no próprio app; a política do app só aceita a
+própria origem (`conexus-app/SKILL.md:116`). O começo dos dois arquivos gerados:
+
+```css
+/* Empresa de Teste A */                         /* Empresa de Teste B */
+@import "tailwindcss";                           @import "tailwindcss";
+@import "@fontsource/ibm-plex-sans/400.css";     @import "@fontsource/nunito-sans/400.css";
+@import "@fontsource/ibm-plex-sans/600.css";     @import "@fontsource/nunito-sans/700.css";
+:root {                                          :root {
+  --background: #f4f6f8;                           --background: #faf7f4;
+  --foreground: #121518;                           --foreground: #1f1a17;
+  --primary: #0b5568;                              --primary: #a8431e;
+  --brand: #0b5568;                                --brand: #a8431e;
+  --chart-1: #0b5568;                              --chart-1: #a8431e;
+  --chart-2: #c2410c;                              --chart-2: #2f6f8f;
+  --radius: 0.25rem;                               --radius: 1rem;
+  ...                                              ...
+@theme inline {                                  @theme inline {
+  --font-sans: "IBM Plex Sans", system-ui, ...     --font-sans: "Nunito Sans", system-ui, ...
+```
+
+**O primeiro commit.** Hoje, `ensure` grava o starter inteiro com `git add --all` sobre `STARTER_DIR`
+(`repository.ts:66-71`). Com a etapa, antes do `write-tree`, três blobs entram por
+`git hash-object -w` e `git update-index --add --cacheinfo`: `DESIGN.md` (a identidade da empresa
+naquele instante), `src/styles.css` (gerado dela) e `.conexus/identity.json`
+(`{ "version": "<sha256>" }`). Com C.1, entra também `src/assets/logo.svg` ou `.png`. Os outros
+arquivos do starter não mudam. Quem perde a corrida do `rename` lê o `main` do vencedor, como hoje
+(`:75-82`).
+
+**O que a skill do Builder lê.** A linha 8 da `conexus-app/SKILL.md` ("you never invent a palette, a
+typeface or a radius") sai. No lugar entra:
+
+```markdown
+The look comes from `DESIGN.md` at the app's root: the company's identity. Read it before you design.
+Colors, font and radius come only from its tokens, through `src/styles.css`. Change the font, the
+neutrals or the radius only when the person asks, and say in the plan that this app leaves the
+company's identity. Change `DESIGN.md` and `src/styles.css` together: the check refuses a token that
+differs.
+```
+
+**A direção no plano (B.2).** O modelo do plano (`plan-template.md:5-24`) ganha a seção em "Para a
+pessoa". Um exemplo, para "um acompanhamento de vendedores" na Empresa de Teste A:
+
+```markdown
+## A direção de design
+- Identidade: Empresa de Teste A (azul petróleo, IBM Plex Sans, cantos de 4 px).
+- Direção: painel denso para quem confere números o dia todo; a meta do mês é a primeira coisa, em
+  número grande; o azul só no vendedor escolhido e no botão principal.
+- Densidade: compacta, tabelas de linha baixa.
+- Destaque: o da empresa.
+- Gráficos: a série do vendedor em azul petróleo, a meta em ardósia.
+- Fica igual à identidade: fonte, neutros e cantos.
+```
+
+A direção fica no plano e não vai para o código do app. O Impeccable faz igual: a direção de uma
+superfície nunca entra no código entregue (`reference/new-work.md:77`). O dyad põe
+`design_direction` e `primary_color` no plano que a pessoa aprova (relay,
+`conexus-builder-output-study/notes/refs-builders.md:202`).
+
+### 4. Como a conferência pega o desvio
+
+A conferência de hoje roda passos fixos (`packages/app/src/check/report.ts:16-23`), e cada problema
+tem `file`, `line`, `code` e `message` (`:34-40`). O passo `telas` ganha um problema novo. Se o Builder
+muda o destaque só no `styles.css` da Empresa de Teste A, sem mexer no `DESIGN.md`, o Builder recebe:
+
+```json
+{
+  "file": "src/styles.css",
+  "line": 15,
+  "column": null,
+  "code": "TOKENS_DRIFT",
+  "message": "--primary (claro) é #15803d no styles.css e #0b5568 no DESIGN.md. Mude os dois juntos: o DESIGN.md é a identidade do app."
+}
+```
+
+O protótipo achou exatamente esse desvio, e só ele, no arquivo mexido
+(`prototipo/saida/empresa-a.styles-mexido.css`). O passo falha e a versão não sai. Quando a pessoa
+pede outro destaque, o Builder muda os dois arquivos, e o passo passa. O Hub tem o mesmo par para a
+Pauta (`apps/web/src/brand/tokens.test.ts:6-27`).
+
+### 5. A identidade muda e o app já existe (A.1)
+
+1. O dono salva a identidade nova. Nenhum app muda nessa hora.
+2. Na próxima conversa sobre o app Vendas, as instruções do turno (`instructions.ts:26-63`) comparam a
+   versão em `.conexus/identity.json` do `main` do app com a da empresa. Como diferem, entra um aviso
+   uma vez:
+
+   ```text
+   A identidade da empresa mudou desde a última versão deste app. A nova vem abaixo, inteira.
+   Proponha a atualização no plano antes de qualquer outra mudança, e mantenha o que a pessoa pediu
+   para este app (o destaque próprio, se houver).
+
+   <o DESIGN.md novo da empresa>
+   ```
+
+3. O Builder põe "Atualizar para a identidade nova da empresa" no plano. A pessoa aprova.
+4. O Builder reescreve `DESIGN.md`, `src/styles.css` e `.conexus/identity.json`. A conferência roda,
+   com o passo do item 4.
+5. A versão nova sai, conferida. A tela de identidade tira o Vendas da lista dos que não seguiram.
+
+O Appsmith grava o tema no app quando ele nasce (`ApplicationPageServiceCEImpl.java:470-474`), e o
+tema não muda sozinho depois. O Base44 e o v0 aplicam o sistema da empresa aos apps novos
+(documentado). Nenhuma referência lida muda um app publicado sem versão nova.
+
+### 6. O fluxo inteiro
+
+```mermaid
+flowchart LR
+  subgraph Hub
+    T[Configurações, Identidade<br/>dono ou administrador] -->|PUT identity, If-Match| R[saveIdentity<br/>admit organization:update]
+    R --> C[(company.design<br/>company.logo)]
+  end
+  subgraph Builder
+    C -->|o Projeto nasce| E[ensure: primeiro commit<br/>DESIGN.md, styles.css, identity.json, logo]
+    C -->|versão difere| I[instruções do turno:<br/>aviso de identidade nova]
+    E --> P[plano: A direção de design]
+    I --> P
+    P -->|aprovado| B[Builder escreve o app]
+    B --> K{conferência<br/>TOKENS_DRIFT, navegador}
+    K -->|falha| B
+  end
+  K -->|passa| V[versão publicada<br/>Prévia e app]
+```
+
 ## As unidades
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
@@ -109,14 +424,14 @@ implementador. A migração de U1 muda o retrato do catálogo e entra com o dono
 | 3 | U1 | Texto sobre o destaque abaixo de 4,5:1, ou uma cor de gráfico abaixo de 3:1 sobre a superfície, em claro ou escuro, é recusado com `400 IDENTITY_CONTRAST` e as duas cores nomeadas | `apps/server/src/hub/identity/identity.test.ts`, "contraste do destaque e das cores de gráfico" | must |
 | 4 | U1 | Dois salvamentos com a mesma versão de partida: o segundo recebe `409 IDENTITY_STALE` com a versão atual | `identity-routes.test.ts`, "o segundo salvamento com versão velha é recusado" | must |
 | 5 | U1 | A identidade de uma empresa nunca sai para outra: ler `/companies/B/identity` como membro só de A dá `404` | `identity-routes.test.ts`, "outra empresa não lê" | must |
-| 6 | U2 | Dono e administrador veem o editor; mudar o destaque muda a prévia antes de salvar, em claro e escuro; salvar mostra "Identidade salva" | `apps/web/src/hub/identity/company-identity.test.tsx`, "a prévia segue o rascunho" | must |
+| 6 | U2 | Dono e administrador veem o editor e, quando há, a lista dos apps que ainda usam a identidade anterior; mudar o destaque muda a prévia antes de salvar, em claro e escuro; salvar mostra "Identidade salva" | `apps/web/src/hub/identity/company-identity.test.tsx`, "a prévia segue o rascunho" | must |
 | 7 | U2 | Desenvolvedor e membro veem a identidade só para leitura, sem botão de salvar | `company-identity.test.tsx`, "só leitura sem a permissão" | must |
 | 8 | U2 | Um `409` mostra "Alguém salvou antes de você" e oferece recarregar, sem perder o rascunho | `company-identity.test.tsx`, "versão velha" | should |
 | 9 | U3 | O mesmo pedido de criação em duas empresas com identidades diferentes dá primeiros commits com `DESIGN.md` iguais às identidades e `styles.css` diferentes; o valor de `--primary` de cada um é o destaque da sua empresa | `apps/server/src/builder/git/repository.test.ts`, "o app nasce com a identidade da sua empresa" | must |
 | 10 | U3 | Empresa sem identidade: o app nasce com a identidade padrão, o `styles.css` de hoje byte a byte | `repository.test.ts`, "sem identidade, o padrão" | must |
 | 11 | U3 | A conferência recusa um `styles.css` cujo token difere do `DESIGN.md` do app, com `TOKENS_DRIFT` e o token nomeado; aceita quando os dois mudam juntos (a troca de destaque) | `packages/app/src/check/check.test.ts`, "tokens fora do DESIGN.md" | must |
 | 12 | U4 | O plano de um app novo traz "A direção de design" com a identidade usada, a direção em uma frase, a densidade, o destaque e as cores de gráfico; o portão de `submit_plan` não muda | `apps/server/src/builder/conversation/plan-tools.test.ts`, "o modelo do plano pede a direção" e o retrato T26 de um plano gravado | must |
-| 13 | U4 | Quando a versão da identidade da empresa difere da do `DESIGN.md` do app, as instruções do turno dizem isso uma vez; quando são iguais, não dizem nada | `apps/server/src/builder/conversation/instructions.test.ts`, "aviso de identidade nova" | must |
+| 13 | U4 | Quando a versão da identidade da empresa difere da de `.conexus/identity.json` no `main` do app, as instruções do turno dizem isso uma vez; quando são iguais, não dizem nada | `apps/server/src/builder/conversation/instructions.test.ts`, "aviso de identidade nova" | must |
 | 14 | U4 | O Builder da semana, com modelo real, nas duas empresas de teste: o fundador distingue as duas Prévias lado a lado | o roteiro do fundador, passo 4 | must |
 
 ## A matriz de estados
@@ -132,6 +447,8 @@ implementador. A migração de U1 muda o retrato do catálogo e entra com o dono
 | `CompanyIdentity.version` (o hash do DESIGN.md) | U1, calculado | U2 (o `If-Match` do salvamento), U4 (comparar com o do app) |
 | `CompanyIdentity.logo` | U1 | U2, U3 |
 | `DESIGN.md` do app | U3 no nascimento; o Builder ao trocar o destaque | U3 (a conferência), U4 (a skill) |
+| `.conexus/identity.json` do app | U3 no nascimento; o Builder ao seguir a identidade nova | U4 (o aviso), U1 (`behind`), U2 (a lista) |
+| `CompanyIdentity.behind` | U1, ao ler | U2 ("2 apps ainda usam a identidade anterior") |
 
 **A tela.** Precisa de protótipo antes da aprovação, feito com Impeccable `shape` (permitido na fase
 do cartão, [Impeccable](../reference/impeccable.md)) sobre a Pauta do Hub, com as perguntas do `shape`
@@ -195,7 +512,7 @@ linhas deles são **relay** do estudo que leu o código, e nenhuma decisão do f
 
 **A medida do transplante.** Nada é trazido do produto antigo: ele não tinha identidade de empresa.
 
-**A dívida.** Nenhuma.
+**A dívida.** O texto branco sobre o dourado do starter tem contraste de 3,73:1, abaixo de 4,5:1 (provado pelo protótipo do estudo). A identidade padrão fica byte a byte (critério 10); o conserto vai numa issue.
 
 ## As decisões do firstmate
 
@@ -226,9 +543,9 @@ lista); O logotipo.
 
 ### Os contratos que a unidade cria
 
-- `GET /api/companies/:companyId/identity` (membro da empresa): `200 { design: string | null, version: IdentityVersion, defaults: string }`; `404` fora da empresa.
-- `PUT /api/companies/:companyId/identity` (`organization: ['update']`), cabeçalho `If-Match: <version>`, corpo `{ design: string }`: `200 { version }`; `400 IDENTITY_INVALID { field }`; `400 IDENTITY_CONTRAST { pair: [string, string], mode: 'light' | 'dark' }`; `403 FORBIDDEN`; `409 IDENTITY_STALE { version }`.
-- Coluna `company.design text null` (sem chave estrangeira); `null` é a padrão.
+- `GET /api/companies/:companyId/identity` (membro da empresa): `200 { design: string | null, logo: string | null, version: IdentityVersion, defaults: string, behind: { projectId: ProjectId, name: string }[] }`; `behind` são os apps cujo `.conexus/identity.json` no `main` tem outra versão; `404` fora da empresa.
+- `PUT /api/companies/:companyId/identity` (`organization: ['update']`), cabeçalho `If-Match: <version>`, corpo `{ design: string, logo?: string | null }` (o logotipo, `data:` URL de SVG ou PNG até 256 KB): `200 { version }`; `400 IDENTITY_INVALID { field }`; `400 IDENTITY_CONTRAST { pair: [string, string], mode: 'light' | 'dark' }`; `403 FORBIDDEN`; `409 IDENTITY_STALE { version }`.
+- Coluna `company.design text null` (sem chave estrangeira); `null` é a padrão. O logotipo usa a coluna `company.logo`, que já existe (`tables.ts:193`).
 - `IdentityVersion`: `z.string().regex(/^[0-9a-f]{64}$/).brand<'IdentityVersion'>()`, conferida na rota (C23).
 - `CompanyIdentity` (Zod, C27): o frontmatter com `colors` (chaves fixas: `accent`, `on-accent`, `canvas`, `surface`, `text`, `text-2`, `line`, `chart-1`..`chart-5`, e as mesmas com `dark-`), `typography.body.fontFamily` (da lista `IDENTITY_FONTS`, dona única, C26), `rounded.base`, e o corpo em prosa até 16 KB.
 - O arquivo modelo: `packages/hub-api/src/company-memory.ts` (marca nos ids, constante dona do limite).
@@ -299,9 +616,9 @@ O app nasce com a identidade; O `styles.css` segue o `DESIGN.md`; As cores dos g
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/app/src/identity.ts` | Cria: `stylesOf(design): string`, o bloco de tokens do `styles.css` | `repository.ts`, a conferência |
+| `packages/app/src/identity.ts` | Cria: `stylesOf(design): string` (o `styles.css` inteiro) e `IDENTITY_FILE = '.conexus/identity.json'` | `repository.ts`, a conferência, U4, a rota `GET` de U1 |
 | `packages/app/src/check/` | Cria `tokens.ts`, o passo `TOKENS_DRIFT` | a conferência |
-| `apps/server/src/builder/git/repository.ts` | Muda `ensure`: recebe a identidade e grava `DESIGN.md` e `styles.css` no primeiro commit | quem cria o Projeto |
+| `apps/server/src/builder/git/repository.ts` | Muda `ensure`: recebe a identidade e grava `DESIGN.md`, `src/styles.css`, `.conexus/identity.json` e o logotipo no primeiro commit | quem cria o Projeto |
 
 ### A ordem do trabalho
 
