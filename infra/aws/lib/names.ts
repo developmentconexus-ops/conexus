@@ -7,6 +7,8 @@ export const STACK_PREFIX = 'conexus-lago-'
 export const BUCKET_PREFIX = 'conexus-'
 /** A company's reader role: conexus-<lakeId>-leitor. */
 export const READER_SUFFIX = '-leitor'
+/** A company's writer role, which the copy task runs as: conexus-<lakeId>-escritor. */
+export const WRITER_SUFFIX = '-escritor'
 /** The company, on the Hub's session, the stack and the table bucket. */
 export const TAG_COMPANY = 'conexus-empresa'
 /** Only on a reader's session, from step 3. */
@@ -26,15 +28,32 @@ export const PLATFORM_STACK = 'conexus-plataforma'
 export const HUB_ROLE = 'conexus-hub'
 export const SERVICE_ROLE = 'conexus-cfn'
 export const RELEASE_ROLE = 'conexus-release'
-export const PLATFORM_ROLES = [HUB_ROLE, SERVICE_ROLE, RELEASE_ROLE] as const
+export const COPY_EXECUTION_ROLE = 'conexus-copia-execucao'
+export const PLATFORM_ROLES = [HUB_ROLE, SERVICE_ROLE, RELEASE_ROLE, COPY_EXECUTION_ROLE] as const
 export const BOUNDARY = 'conexus-limite'
 export const HUB_KEY_USER = 'conexus-hub-chave'
 export const CDK_EXECUTION_POLICY = 'conexus-cdk-execucao'
+export const CDK_COPY_EXECUTION_POLICY = 'conexus-cdk-execucao-copia'
 export const LAKE_FORMATION_ROLE = 'conexus-lf-s3tables'
 /** The role of the function that registers the table buckets and creates their catalog. */
 export const TABLES_CATALOG_ROLE = 'conexus-s3tables-catalogo'
 /** That function's log group, which the platform stack owns and deletes. */
 export const TABLES_CATALOG_LOGS = `${PLATFORM_STACK}-catalogo`
+
+export const COPY_CLUSTER = 'conexus-copia'
+export const COPY_TASK_FAMILY = 'conexus-copia'
+export const COPY_REPOSITORY = 'conexus-copia'
+export const COPY_QUEUE = 'conexus-copia-fim'
+export const COPY_DEAD_LETTERS = 'conexus-copia-fim-mortos'
+/** A round's parameter: /conexus/copia/<companyId>/<runId>. */
+export const RUN_PARAMETER_PREFIX = '/conexus/copia/'
+/** The copy task's log group, which the platform stack owns. */
+export const COPY_LOGS = `${PLATFORM_STACK}-copia`
+
+/** The bucket of the copies' stopping points, with one prefix per company (T.1); U10 creates it. */
+export function stateBucket(account: string, region: string): string {
+  return `conexus-estado-${account}-${region}`
+}
 
 /** The templates bucket, one per account and region, in the region of the stacks. */
 export function templateBucket(account: string, region: string): string {

@@ -6,7 +6,16 @@ import { conexusApp } from '../lib/app.ts'
 import type { Call } from './iam.ts'
 import { mayAssume } from './iam.ts'
 import type { Statement } from './policies.ts'
-import { ACCOUNT, find, readable, readableResources, statementsOf, trustOf } from './policies.ts'
+import {
+  ACCOUNT,
+  actionsOf,
+  find,
+  REGION,
+  readable,
+  readableResources,
+  statementsOf,
+  trustOf,
+} from './policies.ts'
 
 const stored = readFileSync(new URL('../lake.template.json', import.meta.url), 'utf8')
 const lake = readableResources(JSON.parse(stored))
@@ -16,7 +25,7 @@ test('o modelo guardado é o que a síntese escreve', () => {
   assert.deepEqual(JSON.parse(stored), Template.fromStack(stack).toJSON())
 })
 
-test('o modelo leva só as sete peças da empresa', () => {
+test('o modelo leva só as peças da empresa', () => {
   const { app, lake: stack } = conexusApp()
   const template = Template.fromStack(stack).toJSON()
   assert.deepEqual(Object.keys(template), ['Parameters', 'Resources', 'Outputs'])
@@ -29,8 +38,8 @@ test('o modelo leva só as sete peças da empresa', () => {
     [
       'AWS::Athena::WorkGroup',
       'AWS::IAM::Role',
-      'AWS::LakeFormation::PrincipalPermissions',
-      'AWS::LakeFormation::PrincipalPermissions',
+      'AWS::IAM::Role',
+      ...Array(6).fill('AWS::LakeFormation::PrincipalPermissions'),
       'AWS::S3Tables::Namespace',
       'AWS::S3Tables::Namespace',
       'AWS::S3Tables::TableBucket',
@@ -68,6 +77,92 @@ test('o modelo leva só as sete peças da empresa', () => {
     Principal: reader,
     Resource: { Database: { CatalogId: catalogId, Name: 'current' } },
   })
+})
+
+test('o papel que escreve', () => {
+  const writer = find(lake, 'Writer')
+  assert.partialDeepStrictEqual(writer.Properties, {
+    RoleName: 'conexus-{LakeId}-escritor',
+    PermissionsBoundary: `arn:aws:iam::${ACCOUNT}:policy/conexus-limite`,
+    Tags: [{ Key: 'conexus-empresa', Value: '{CompanyId}' }],
+  })
+  assert.deepEqual(trustOf(writer), [
+    {
+      Action: 'sts:AssumeRole',
+      Effect: 'Allow',
+      Principal: { Service: 'ecs-tasks.amazonaws.com' },
+      Condition: { StringEquals: { 'aws:SourceAccount': ACCOUNT } },
+    },
+  ])
+  const statements = statementsOf(writer)
+  const glue = `arn:aws:glue:${REGION}:${ACCOUNT}`
+  const state = `arn:aws:s3:::conexus-estado-${ACCOUNT}-${REGION}`
+  assert.deepEqual(
+    statements.map((statement) => [statement.Sid, statement.Resource, statement.Condition]),
+    [
+      [
+        'WriteTheCompanyTables',
+        ['<Bucket.TableBucketARN>', '<Bucket.TableBucketARN>/table/*'],
+        undefined,
+      ],
+      [
+        'TheCompanyCatalog',
+        [
+          `${glue}:catalog`,
+          `${glue}:catalog/s3tablescatalog`,
+          `${glue}:catalog/s3tablescatalog/conexus-{LakeId}`,
+          `${glue}:database/s3tablescatalog/conexus-{LakeId}/*`,
+          `${glue}:table/s3tablescatalog/conexus-{LakeId}/*/*`,
+        ],
+        undefined,
+      ],
+      [
+        'ChangeTheCompanyTables',
+        [
+          `${glue}:table/s3tablescatalog/conexus-{LakeId}/raw/*`,
+          `${glue}:table/s3tablescatalog/conexus-{LakeId}/current/*`,
+        ],
+        undefined,
+      ],
+      [undefined, '*', undefined],
+      [
+        'QueryInTheCompanyWorkGroup',
+        `arn:aws:athena:${REGION}:${ACCOUNT}:workgroup/conexus-{LakeId}`,
+        undefined,
+      ],
+      [
+        'ReadTheCompanyRunParameters',
+        `arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/conexus/copia/{CompanyId}/*`,
+        undefined,
+      ],
+      ['SendTheResult', `arn:aws:sqs:${REGION}:${ACCOUNT}:conexus-copia-fim`, undefined],
+      ['TheCompanyStoppingPoints', `${state}/{CompanyId}/*`, undefined],
+      ['ListTheCompanyStoppingPoints', state, { StringLike: { 's3:prefix': '{CompanyId}/*' } }],
+    ],
+  )
+  assert.ok(!statements.flatMap(actionsOf).some((action) => /^(iam|sts):/.test(action)))
+})
+
+test('o que escreve grava nas duas áreas pelo Lake Formation', () => {
+  const writerPrincipal = { DataLakePrincipalIdentifier: '<Writer.Arn>' }
+  const catalogId = `${ACCOUNT}:s3tablescatalog/conexus-{LakeId}`
+  for (const [area, name] of [
+    ['Raw', 'raw'],
+    ['Current', 'current'],
+  ]) {
+    assert.deepEqual(find(lake, `WriterWrites${area}`).Properties, {
+      Permissions: ['SELECT', 'INSERT', 'DELETE', 'DESCRIBE', 'ALTER'],
+      PermissionsWithGrantOption: [],
+      Principal: writerPrincipal,
+      Resource: { Table: { CatalogId: catalogId, DatabaseName: name, TableWildcard: {} } },
+    })
+    assert.deepEqual(find(lake, `WriterDescribes${area}`).Properties, {
+      Permissions: ['DESCRIBE'],
+      PermissionsWithGrantOption: [],
+      Principal: writerPrincipal,
+      Resource: { Database: { CatalogId: catalogId, Name: name } },
+    })
+  }
 })
 
 const HUB = `arn:aws:iam::${ACCOUNT}:role/conexus-hub`

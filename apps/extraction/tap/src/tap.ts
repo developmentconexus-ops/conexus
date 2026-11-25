@@ -20,10 +20,10 @@ import { senderOf, sessionFor } from './source.ts'
 
 const Config = z.object({
   connector: z.string().min(1),
-  account: AccountRef.nullable(),
+  account: AccountRef.nullable().default(null),
   secret_path: z.string().min(1),
   result_path: z.string().min(1),
-  start_date: z.iso.date().nullable(),
+  start_date: z.iso.date().nullable().default(null),
   tables: z
     .array(
       z.object({
@@ -104,7 +104,8 @@ async function discover(config: Config, deps: TapDeps, reach: TableReach): Promi
           }),
         ],
   )
-  await deps.write(JSON.stringify({ streams }))
+  // Meltano 4.4.1 reads discovery line by line on asyncio's default 64 KiB limit (core/plugin/singer/tap.py:70).
+  await deps.write(JSON.stringify({ streams }, null, 2))
   return 0
 }
 
@@ -183,7 +184,7 @@ export async function runTap(argv: readonly string[], deps: TapDeps): Promise<nu
   return withReach(config, deps, (reach) => sync(config, { catalog, state, deps, reach }))
 }
 
-function writeLine(line: string): Promise<void> {
+export function writeLine(line: string): Promise<void> {
   return new Promise((done) => {
     if (process.stdout.write(`${line}\n`)) done()
     else process.stdout.once('drain', done)

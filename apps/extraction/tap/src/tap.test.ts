@@ -9,7 +9,7 @@ import {
 } from '@conexus/connectors'
 import { z } from 'zod'
 import type { Double } from './test-tap.ts'
-import { hubspotDouble, recordsOf, sankhyaDouble, selected, tap } from './test-tap.ts'
+import { hubspotDouble, lastState, recordsOf, sankhyaDouble, selected, tap } from './test-tap.ts'
 
 const Entry = z.object({
   stream: z.string(),
@@ -144,6 +144,21 @@ test('duas tabelas numa rodada: só as escolhidas, uma depois da outra, com o no
   const first = recordsOf(run, 'vendas_notas')[0] ?? assert.fail()
   assert.equal(Object.keys(first).length, 450)
   assert.partialDeepStrictEqual(first, { nunota: 100000, dtneg: '2026-09-01', vlrnota: '353.8' })
+})
+
+test('a coluna do modo fora do dicionário: a TSIEMP inteira é lida, e o ponto é o teto de DHALTER (L.2)', async () => {
+  const run = await tap(sankhyaDouble(), {
+    streams: [selected('TSIEMP', 'empresas')],
+    whole: ['TSIEMP'],
+  })
+  assert.equal(run.code, 0)
+  assert.deepEqual(
+    recordsOf(run, 'empresas').map((row) => row.dhalter),
+    ['2026-11-10T08:30:00', '2026-11-11T08:30:00'],
+  )
+  assert.deepEqual(lastState(run).bookmarks?.empresas, {
+    replication_key_value: '2026-11-11T08:30:00',
+  })
 })
 
 test('a linha sem data: a primeira passada sem data inicial lê o item sem DTALTER (#940)', async () => {

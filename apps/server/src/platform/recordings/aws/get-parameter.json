@@ -1,0 +1,10 @@
+{
+  "service": "ssm",
+  "api": "GetParameter",
+  "sdk": "boto3 1.44.6 (botocore 1.44.10)",
+  "recordedAt": "2026-11-24",
+  "source": "U5 step 3, boto3 from this machine on a temporary parameter and queue of the laboratory account, both deleted; values changed (S40)",
+  "status": 200,
+  "contentType": "application/x-amz-json-1.1",
+  "body": "{\"Parameter\":{\"ARN\":\"arn:aws:ssm:us-east-2:111122223333:parameter/conexus/copia/Aa0Bb1Cc2Dd3Ee4Ff5Gg6Hh7Ii8Jj9Kk/00000000-0000-4000-8000-0000000000a1\",\"DataType\":\"text\",\"LastModifiedDate\":1.7954e9,\"Name\":\"/conexus/copia/Aa0Bb1Cc2Dd3Ee4Ff5Gg6Hh7Ii8Jj9Kk/00000000-0000-4000-8000-0000000000a1\",\"Type\":\"SecureString\",\"Value\":\"{\\\"inventado\\\": true}\",\"Version\":1}}"
+}

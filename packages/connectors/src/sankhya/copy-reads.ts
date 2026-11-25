@@ -55,12 +55,28 @@ const TIPCAMPO: Readonly<Record<string, TableColumnType>> = {
   H: 'timestamp',
   B: 'binary',
 }
+/** ALL_TAB_COLUMNS.DATA_TYPE for a column the dictionary does not list: an Oracle DATE keeps the hour. */
+const ORACLE: Readonly<Record<string, TableColumnType>> = {
+  DATE: 'timestamp',
+  NUMBER: 'numeric',
+  FLOAT: 'numeric',
+  VARCHAR2: 'text',
+  NVARCHAR2: 'text',
+  CHAR: 'text',
+  NCHAR: 'text',
+}
+
+function oracleType(dataType: string): TableColumnType | undefined {
+  return dataType.startsWith('TIMESTAMP') ? 'timestamp' : ORACLE[dataType]
+}
 
 const DESCRIPTION_MAX = 200
 
 /** A column's type by the map, or text with the dictionary's type in its description when the map does not know it. */
 function columnOf(row: z.infer<typeof DictionaryRow>): TableColumn {
-  const type = LARGE[row.DATA_TYPE] ?? (row.TIPCAMPO === null ? undefined : TIPCAMPO[row.TIPCAMPO])
+  const type =
+    LARGE[row.DATA_TYPE] ??
+    (row.TIPCAMPO === null ? oracleType(row.DATA_TYPE) : TIPCAMPO[row.TIPCAMPO])
   const said = row.DESCRCAMPO ?? row.NOMECAMPO
   if (type !== undefined)
     return { name: row.NOMECAMPO, type, description: said.slice(0, DESCRIPTION_MAX) }
@@ -97,14 +113,19 @@ const Dictionary = z
   })
   .pipe(z.object({ completo: z.boolean(), tables: z.array(DiscoveredTableSchema) }))
 
-/** The fields of each table, the physical ones only (the join leaves out a calculated field, which exists on the screen alone); a table the dictionary lacks is absent. */
+/**
+ * Every physical column of each table, as tap-oracle reads `all_tab_columns`, with the dictionary's
+ * description and type when it lists the column: an installation's dictionary can miss one, as a
+ * real TSIEMP misses DHALTER. A calculated field exists on the screen alone, so it has no column; a
+ * table the dictionary lacks is absent.
+ */
 function dictionarySql(tables: readonly SourceTableType[]): string {
   return [
-    'SELECT T.NOMETAB, T.DESCRTAB, C.NOMECAMPO, C.DESCRCAMPO, C.TIPCAMPO, A.DATA_TYPE FROM TDDTAB T',
-    'JOIN TDDCAM C ON C.NOMETAB = T.NOMETAB',
-    `JOIN ALL_TAB_COLUMNS A ON A.OWNER = ${SCHEMA} AND A.TABLE_NAME = C.NOMETAB AND A.COLUMN_NAME = C.NOMECAMPO`,
-    `WHERE T.NOMETAB IN (${tables.map(quoted).join(', ')})`,
-    'ORDER BY T.NOMETAB, A.COLUMN_ID',
+    'SELECT A.TABLE_NAME AS NOMETAB, T.DESCRTAB, A.COLUMN_NAME AS NOMECAMPO, C.DESCRCAMPO, C.TIPCAMPO, A.DATA_TYPE',
+    'FROM ALL_TAB_COLUMNS A JOIN TDDTAB T ON T.NOMETAB = A.TABLE_NAME',
+    'LEFT JOIN TDDCAM C ON C.NOMETAB = A.TABLE_NAME AND C.NOMECAMPO = A.COLUMN_NAME',
+    `WHERE A.OWNER = ${SCHEMA} AND A.TABLE_NAME IN (${tables.map(quoted).join(', ')})`,
+    'ORDER BY A.TABLE_NAME, A.COLUMN_ID',
   ].join(' ')
 }
 

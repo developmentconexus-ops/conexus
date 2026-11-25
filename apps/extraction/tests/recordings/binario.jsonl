@@ -1,0 +1,4 @@
+{"library":"@conexus/tap (apps/extraction/tap/src/messages.ts: schemaOf, recordLine, lineOf)","version":"main 50e11616","source":"U5, the adapter's own emitters on invented rows: a BLOB column as base64 (criterion 106)","recordedAt":"2026-11-24"}
+{"type":"SCHEMA","stream":"teste_binario","schema":{"type":"object","properties":{"codigo":{"type":["integer","null"]},"imagem":{"type":["string","null"],"contentEncoding":"base64"}}},"key_properties":["codigo"]}
+{"type":"RECORD","stream":"teste_binario","record":{"codigo":1,"imagem":"iVBORw0KGgoA/w=="},"version":1}
+{"type":"RECORD","stream":"teste_binario","record":{"codigo":2,"imagem":null},"version":1}

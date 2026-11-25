@@ -33,8 +33,8 @@ mudança ao fundador>
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
 
-<um grupo por pull request ([delivery L9](../../../../docs/guides/delivery.md)); quais correm em
-paralelo, porque não dividem pasta>
+<os grupos de [delivery L9](../../../../docs/guides/delivery.md): duas ou três unidades por pull
+request>
 
 **Orçamento de código alterado.** U<k>: <linhas, sem testes nem gerados>. Total da etapa: <linhas>.
 
@@ -144,12 +144,12 @@ rodam neste grupo (servidor, rota, migração, tela, comandos), sem repetir a sk
 - Someone who did not write the code checks every criterion outside, and each says what is
   refused and what works.
 - Every folder the build will touch is in a unit's blast radius, with its importers, and so is the
-  owner of each contract the unit creates (the failure table, the config, its test door). A file
+  owner of each contract the unit creates. A file
   outside them stops the build only as [delivery L7](../../../../docs/guides/delivery.md) says. A
   unit that adds a package lists the shared root files it changes (`package.json`,
   `package-lock.json`, `biome.json`, `ci.yml`). A check the step needs is no unit
   ([delivery L20](../../../../docs/guides/delivery.md)).
-- A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
+- A contract is a signature to compare with the diff, not a design to re-derive.
 - A criterion about a provider's behaviour cites the installed provider's code.
 - The founder's page holds only his real decisions: a product choice, references diverging on what
   a person sees, a remendo row of his ([delivery L6](../../../../docs/guides/delivery.md)), a
@@ -187,3 +187,4 @@ The reader answers each with the card's line.
    line a unit cites, say what the card claims? Has every row its unit or a reason to stay out, and
    every built row its trace?
 8. Has every foreign key its "ao apagar"?
+9. Does the unit table plan more pull requests than [delivery L9](../../../../docs/guides/delivery.md) allows?

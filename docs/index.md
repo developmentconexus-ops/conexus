@@ -14,7 +14,7 @@ One line per document.
 - [how-to/hub-server.md](how-to/hub-server.md): server; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md); [connector](how-to/add-a-connector.md), [subject](how-to/add-a-subject.md); [mail](how-to/hub-mail.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): apps' edge, [token, key](how-to/apps-token-and-key.md), [tools](how-to/apps-tools-host.md).
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restore; [Git](how-to/hub-git-restore.md).
-- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key; [lab AWS account](how-to/aws-conta-de-laboratorio.md).
+- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key; [AWS lab](how-to/aws-conta-de-laboratorio.md), [copy](how-to/aws-segunda-preparacao.md).
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md); [CI health](how-to/ci-health.md).
 - [how-to/rastro-de-uma-conversa.md](how-to/rastro-de-uma-conversa.md): traces.
 - [steps/](steps/): cards; [Data spec](steps/trilhas/dados-spec/README.md).

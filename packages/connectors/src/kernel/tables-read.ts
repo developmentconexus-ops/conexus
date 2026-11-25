@@ -93,18 +93,18 @@ export async function tableMonths(
 /**
  * A CHANGED pass saves this ceiling, asked before its first page, not the latest value it read: a
  * row changed behind the key walk then comes again in the next pass (Airbyte's
- * `cursorUpperBoundQuery`).
+ * `cursorUpperBoundQuery`). Columns without the mode's one are a source the copy cannot read.
  */
 export async function tableCeiling(
   reach: TableReach & Readonly<{ table: TableDeclaration; columns: readonly TableColumn[] }>,
 ): Promise<Readonly<{ kind: 'CEILING'; value: string | null }> | TableReadFailed> {
   const { table, columns } = reach
+  const { mode } = table
   const ceiling = reach.connector.tables?.ceiling
-  const column = columns.find(
-    ({ name }) => table.mode.kind === 'CHANGED' && name === table.mode.column,
-  )
-  if (table.source.kind !== 'TABLE' || ceiling === undefined || column === undefined)
+  if (table.source.kind !== 'TABLE' || ceiling === undefined || mode.kind !== 'CHANGED')
     throw new Error(`${table.name} is no CHANGED table of a source table`)
+  const column = columns.find(({ name }) => name === mode.column)
+  if (column === undefined) return UNREADABLE
   const read = await called(reach, ceiling, {
     table: table.source.table,
     column: { name: column.name, type: column.type },

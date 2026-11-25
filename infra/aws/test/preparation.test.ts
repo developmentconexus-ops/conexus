@@ -130,6 +130,7 @@ test('a execução do CDK não é administradora', () => {
   assert.deepEqual(resourcesOf(preparationItself), [
     `arn:aws:iam::${ACCOUNT}:role/conexus-release`,
     `arn:aws:iam::${ACCOUNT}:policy/conexus-cdk-execucao`,
+    `arn:aws:iam::${ACCOUNT}:policy/conexus-cdk-execucao-copia`,
     `arn:aws:iam::${ACCOUNT}:user/conexus-hub-chave`,
   ])
 })
@@ -220,4 +221,23 @@ test('a execução do CDK só cria a função do catálogo, e não registra nem 
     Action: ['s3:GetObject', 's3:GetObjectVersion'],
     Resource: `arn:aws:s3:::cdk-hnb659fds-assets-${ACCOUNT}-*/*`,
   })
+})
+
+test('a segunda preparação', () => {
+  assert.deepEqual(
+    statementsOf(find(preparation, 'CdkExecution')).map((statement) => statement.Sid),
+    [
+      'OurRolesAndPolicies',
+      'NeverThePreparation',
+      'LakeFormationSettings',
+      'TheCatalogFunction',
+      'TheCatalogFunctionCode',
+      'TheCatalogFunctionLogs',
+      'DescribeLogGroups',
+      'TheTemplatesBucket',
+      'BudgetAndAnomalies',
+      'ThePlatformStack',
+      'ReadBootstrapVersion',
+    ],
+  )
 })

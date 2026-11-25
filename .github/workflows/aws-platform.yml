@@ -39,17 +39,38 @@ jobs:
           role-to-assume: ${{ vars.AWS_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION }}
           role-session-name: conexus-release
+      # The repository's tags are immutable: a commit already published keeps its image, and the
+      # digest the platform points at is read back from the repository either way.
+      - name: The copy image
+        id: copy-image
+        env:
+          REPOSITORY: conexus-copia
+        run: |
+          registry="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$AWS_REGION.amazonaws.com"
+          image="$registry/$REPOSITORY:$GITHUB_SHA"
+          if ! aws ecr describe-images --repository-name "$REPOSITORY" --image-ids "imageTag=$GITHUB_SHA" >/dev/null 2>&1; then
+            docker build --platform linux/amd64 --file apps/extraction/Dockerfile --tag "$image" .
+            docker run --rm --entrypoint tap-conexus "$image" --about
+            docker run --rm --entrypoint meltano "$image" --version
+            aws ecr get-login-password | docker login --username AWS --password-stdin "$registry"
+            docker push "$image"
+          fi
+          digest="$(aws ecr describe-images --repository-name "$REPOSITORY" --image-ids "imageTag=$GITHUB_SHA" \
+            --query 'imageDetails[0].imageDigest' --output text)"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
       - name: The platform
         working-directory: infra/aws
         env:
           BUDGET_USD: ${{ vars.AWS_BUDGET_USD }}
           ALARM_EMAIL: ${{ vars.AWS_ALARM_EMAIL }}
           HUB_SOURCE_IP: ${{ vars.HUB_SOURCE_IP }}
+          COPY_IMAGE_DIGEST: ${{ steps.copy-image.outputs.digest }}
         run: |
           npx cdk deploy PlatformStack --require-approval never --outputs-file "$RUNNER_TEMP/platform.json" \
             --parameters "BudgetUsd=$BUDGET_USD" \
             --parameters "AlarmEmail=$ALARM_EMAIL" \
-            --parameters "HubSourceIp=$HUB_SOURCE_IP"
+            --parameters "HubSourceIp=$HUB_SOURCE_IP" \
+            --parameters "CopyImageDigest=$COPY_IMAGE_DIGEST"
       # The address is the platform's TemplatesBucket and TemplatesPrefix, then <sha-256 of the file>.json.
       # A version already there is never rewritten: the bucket refuses a put without If-None-Match,
       # and with it answers 412, which counts as done.
