@@ -91,7 +91,7 @@ export type PageAsk = TableReach &
     columns: readonly TableColumn[]
     filter: TableFilter
     after: TablePosition | null
-    // the most rows any page of this pass asks, set when a 5xx or a deadline cut the page
+    /** The most rows any page of this pass asks, set when a 5xx or a deadline cut the page. */
     ceiling?: number
   }>
 
