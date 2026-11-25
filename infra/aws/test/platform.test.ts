@@ -83,6 +83,7 @@ test('o Hub só cria da receita, pelo papel de serviço, na própria empresa', (
     'ecs:StopTask',
     'iam:PassRole',
     's3:GetObject',
+    's3:ListBucket',
     's3:PutObject',
     's3tables:DeleteNamespace',
     's3tables:DeleteTable',

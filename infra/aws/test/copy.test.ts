@@ -88,6 +88,17 @@ test('o Hub lê e grava só o estado da própria empresa', () => {
   })
 })
 
+test('o Hub lista só o prefixo da própria empresa, para que um arquivo ausente seja 404 e não 403', () => {
+  const hub = statementsOf(find(platform, 'HubRole'))
+  assert.deepEqual(bySid(hub, 'ListTheCompanyStoppingPoints'), {
+    Sid: 'ListTheCompanyStoppingPoints',
+    Effect: 'Allow',
+    Action: 's3:ListBucket',
+    Resource: `arn:aws:s3:::conexus-estado-${ACCOUNT}-${REGION}`,
+    Condition: { StringLike: { 's3:prefix': `\${aws:PrincipalTag/conexus-empresa}/*` } },
+  })
+})
+
 test('o depósito do ponto de parada', () => {
   const bucket = find(platform, 'StoppingPoints')
   assert.equal(bucket.Type, 'AWS::S3::Bucket')

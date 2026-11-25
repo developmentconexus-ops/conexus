@@ -177,5 +177,11 @@ function copyStatements(stack: Stack, place: Place, copy: CopyPlatform): iam.Pol
         `arn:${stack.partition}:s3:::${stateBucket(stack.account, stack.region)}/\${aws:PrincipalTag/${TAG_COMPANY}}/*`,
       ],
     }),
+    new iam.PolicyStatement({
+      sid: 'ListTheCompanyStoppingPoints',
+      actions: ['s3:ListBucket'],
+      resources: [`arn:${stack.partition}:s3:::${stateBucket(stack.account, stack.region)}`],
+      conditions: { StringLike: { 's3:prefix': `\${aws:PrincipalTag/${TAG_COMPANY}}/*` } },
+    }),
   ]
 }
