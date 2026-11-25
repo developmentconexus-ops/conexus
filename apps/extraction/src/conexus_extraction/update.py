@@ -185,7 +185,7 @@ class Updater:
             for statement in _merges(table, key, columns, bounds):
                 self._athena.run(statement)
         if whole and mode["kind"] != "WINDOW":
-            self._athena.run(self._absent(table, key, int(t.cast("str", complete))))
+            self._athena.run(self._absent(table, int(t.cast("str", complete))))
         saved = {UP_TO: str(bounds[1])}
         if whole:
             saved[APPLIED] = t.cast("str", complete)
@@ -198,12 +198,9 @@ class Updater:
         rows = self._athena.number(f"SELECT count(*) FROM {_name(CURRENT)}.{_name(table)}")
         return UpdateCounts(rows=rows, whole=whole)
 
-    def _absent(self, table: str, key: Sequence[str], version: int) -> str:
-        keys = ", ".join(_name(column) for column in key)
-        return (
-            f"DELETE FROM {_name(CURRENT)}.{_name(table)} WHERE ({keys}) NOT IN "
-            f"(SELECT {keys} FROM {_name(RAW)}.{_name(table)} WHERE {VERSION} >= {version})"
-        )
+    def _absent(self, table: str, version: int) -> str:
+        """A row the whole pass did not rewrite keeps an older version: the source lost it."""
+        return f"DELETE FROM {_name(CURRENT)}.{_name(table)} WHERE {VERSION} < {version}"
 
     def _replace_months(
         self,
