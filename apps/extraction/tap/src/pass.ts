@@ -101,8 +101,10 @@ function logTry(
 /**
  * One page, asked until it reads or its tries end. A 5xx or an ended deadline asks half the rows at
  * the same point, since the identical ask only fails again (Airbyte `source-github`, `AGENTS.md`
- * 618-622), and the cut is the pass's ceiling to its end. At one row, or when the failure is a 429
- * or a dead network, the ask repeats after the wait `tried` takes, up to `TRIES`.
+ * 618-622), and the cut is the pass's ceiling to its end. At one row, when the failure is a 429 or a
+ * dead network, or when a cut would not lower the ceiling because the reader ignored it, the ask
+ * repeats after the wait `tried` takes, up to `TRIES`: a reader that ignores the ceiling fails the
+ * table instead of hanging the pass.
  */
 async function pageOf(
   ask: PageAsk,
@@ -114,8 +116,8 @@ async function pageOf(
     const started = deps.now()
     const page = await readTablePage({ ...ask, ...(ceiling === undefined ? {} : { ceiling }) })
     if (page.kind !== 'FAILED' || page.code !== 'COPY_SOURCE_UNREACHABLE') return { page, ceiling }
-    const cut =
-      page.smaller && page.rows !== null && page.rows > 1 ? Math.floor(page.rows / 2) : null
+    const half = page.smaller && page.rows !== null ? Math.floor(page.rows / 2) : 0
+    const cut = half >= 1 && half < (ceiling ?? Infinity) ? half : null
     const last = cut === null && tries === TRIES
     const wait = last ? null : waitMs(page, cut === null ? tries : 1, deps.random)
     const event = last ? 'PAGE_FAILED' : cut === null ? 'PAGE_RETRIED' : 'PAGE_REDUCED'
