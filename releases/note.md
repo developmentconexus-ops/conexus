@@ -1,43 +1,56 @@
-# v0.24.130
+# v0.24.131
 
-Esta versão publica o que entrou no `main` em 25/11 depois da v0.24.129: o protótipo da seção **Tabelas no
-lago**, a regra do que **Dados** lista e as ações que ficam à vista, desligadas, para quem não gerencia
-cópias. Todas são da etapa "A primeira cópia chega ao lago".
+Esta versão publica o que entrou no `main` em 25/11 depois da v0.24.130: a cópia que lê só o que mudou, o
+lago com a versão de hoje de cada tabela, o conserto da tabela de notas NF-e e correções nos testes do
+projeto. A cópia e o lago são da etapa "A primeira cópia chega ao lago".
 
-**Dados lista só o que pode ir para o lago.** Antes, toda ligação ativa aparecia em **Dados**, e a do
-Mercado Livre mostrava "Escolha o que copiar na página da ligação" numa página onde não há o que escolher
-(https://github.com/developmentconexus-ops/conexus/issues/1394). Agora **Dados**, na página e na árvore,
-lista a ligação ativa cujas tabelas podem ir para o lago e a ligação, de qualquer estado, que já tem
-tabela no lago. O Mercado Livre e o HubSpot deixam de aparecer. Uma ligação parada que nunca teve tabela
-no lago também não aparece. Sem nenhuma ligação na lista, a página e a árvore dizem "Nenhum sistema ligado
-ainda".
+**Da segunda cópia em diante, a leitura é só do que mudou, conforme a tabela.** A primeira rodada de
+cada ligação depois desta publicação ainda lê as tabelas por inteiro, porque nenhuma cópia guardou até
+onde leu. A partir da seguinte, a leitura segue o **Modo** de cada tabela:
 
-**Quem não gerencia cópias vê as ações e sabe quem pode.** **Escolher o que copiar** e **Ler de novo desde
-a data** ficam à vista e desligados para quem não gerencia cópias, com a frase "Só quem gerencia as cópias
-muda o que se copia." **Outras tabelas** continua escondido para essa
-pessoa. O painel do link gerado diz a quem não gerencia cópias: "Peça a quem gerencia as cópias para
-escolher o que copiar."
+- Em **Só o que mudou**, a rodada continua do ponto em que a anterior parou.
+- Em **Janela por mês**, a rodada lê de novo os meses recentes e os que passaram desde a rodada anterior,
+  e troca esses meses no lago.
+- Em **Inteira**, a rodada lê a tabela toda, como antes.
 
-**A seção Tabelas no lago fala como o protótipo.** A seção abre com "As linhas ficam no lago da empresa.
-Marque outra tabela e salve: ela começa inteira, numa rodada só dela. O nome das que já existem não muda
-mais." Numa ligação sem cópia, quem gerencia cópias lê "Escolha as tabelas do <sistema>, quando copiar e
-desde que data. As linhas ficam no lago da empresa." e quem não gerencia lê só "As linhas ficam no lago da
-empresa." Havendo data, a linha de cada tabela diz "· desde <data>", e a tabela que a data não limita diz
-"· todo o histórico". Os detalhes e o resumo ao lado de **Salvar** seguem com "Desde <data>".
+Uma tabela recém-marcada começa com uma leitura inteira. **Rodar agora** segue as mesmas regras, e **Ler
+de novo desde a data** relê por inteiro, desde a data, as tabelas que ela limita. Na aba **Rodadas** de uma
+tabela, a coluna **Tipo** diz se a rodada leu a tabela inteira ou só o que mudou.
 
-**As abas cabem no celular.** A faixa de abas da página de uma tabela em **Dados** não mostra mais as
-setas de rolagem vertical que apareciam em navegadores com barra de rolagem clássica
-(https://github.com/developmentconexus-ops/conexus/issues/1385). Em telas estreitas, as abas encolhem para
-caber, como as abas do Projeto, e a página não estoura de lado.
+**O lago fica com uma linha por registro, com o valor de hoje.** Um registro que mudou no sistema de origem
+substitui a linha antiga em vez de somar outra. Uma linha apagada na origem sai do lago assim:
 
-**O passo Acesso da janela Ligar.** Tem só **Continuar** e o X. O botão **Cancelar** saiu.
+- Numa tabela **Inteira**, na rodada seguinte.
+- Numa tabela **Janela por mês**, quando o mês dela é lido de novo. Se a origem esvaziou o mês inteiro, só
+  numa leitura inteira da tabela.
+- Numa tabela **Só o que mudou**, só numa leitura inteira dela, como a de **Ler de novo desde a data** nas
+  tabelas que a data limita.
 
-**O que a segunda cópia real mostrou na v0.24.129.** O conserto do decimal funcionou. Com a cópia de três
-tabelas do Sankhya, as notas (2.685 linhas de 2.685) e as de EFD (226.064 de 226.064) foram lidas e
-gravadas no lago. A tabela de notas NFe parou: o Sankhya respondeu com um erro 500 (Internal Server
-Error), a rodada fechou com erro e nada dessa tabela chegou ao lago (0 de 0). O Hub mostra isso como "a
-próxima rodada tenta de novo", e a tela não deixa ver que a tabela pode falhar sempre. Ainda não se sabe se
-o erro vem do Sankhya ou do que a cópia pede. Isso segue aberto, na issue
-https://github.com/developmentconexus-ops/conexus/issues/1400, e esta versão não muda nada nisso.
+**Linhas no lago**, na **Visão geral** de uma tabela, e a coluna **Linhas** da lista em **Dados** passam a
+dizer quantas linhas a tabela tem no lago depois da rodada. Antes mostravam um traço.
+
+**Quando uma tabela falha, as que terminaram entram no lago.** As tabelas lidas até o fim naquela rodada
+são atualizadas, com as contagens delas. A que parou no meio e as que nem começaram ficam como estavam. A
+rodada continua fechando com erro, e a tela diz em qual tabela parou, em **Parou em <tabela>.**, com o
+motivo.
+
+**Desmarcar uma tabela e desligar uma ligação.** Desmarcar agora apaga também o registro de até onde a
+cópia da tabela leu, e a tabela marcada de novo começa inteira. Desmarcar e **Desligar** funcionam também
+quando a cópia nunca guardou esse registro, como nas ligações copiadas antes desta versão.
+
+**A tabela de notas NF-e agora é copiada inteira.** Na v0.24.129, o Sankhya respondeu a essa tabela com um
+erro 500 e nada dela chegou ao lago, e a v0.24.130 deixou o problema aberto
+(https://github.com/developmentconexus-ops/conexus/issues/1400). Agora a cópia de uma tabela do Sankhya
+começa pedindo poucas linhas e ajusta os pedidos seguintes ao tamanho dos dados. Se o Sankhya responde com
+erro de servidor ou demora mais de 2 minutos, a cópia pede metade das linhas a partir do mesmo ponto, sem
+pular nenhuma. Textos longos, como o XML da nota, chegam inteiros. Se nem uma linha passar, a tabela falha
+como antes. Uma cópia real feita com este conserto, antes desta publicação, leu e gravou a tabela por
+inteiro, com 261.444 linhas e sem nenhum erro 500.
+
+**O que ainda não está provado no ar.** Falta ver a máquina de cópia na nuvem gravar no lago a versão de
+hoje de cada tabela. Isso é conferido logo depois desta publicação.
+
+**Testes do projeto.** As correções nos testes automáticos
+(https://github.com/developmentconexus-ops/conexus/pull/1402) não mudam nenhuma tela.
 
 Segue a etapa A primeira cópia chega ao lago.
