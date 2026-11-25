@@ -196,3 +196,20 @@ def test_o_athena_recusa(task: Task) -> None:
     assert result["outcome"]["table"] == "sankhya_notas"
     assert result["tables"][0]["rows"] is None
     assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows > 100
+
+
+def test_a_inteira_nao_aplicada_nao_apaga_o_que_veio_depois(task: Task) -> None:
+    task.athena.refuse = lambda sql: sql.startswith("MERGE")
+    first = task.spec(NOTAS, whole=False)
+    assert task.run(first) == 0
+    assert task.aws.sent[-1]["outcome"]["code"] == "COPY_LAKE_WRITE_FAILED"
+    task.athena.refuse = lambda _sql: False
+    task.change("notas/199998", {"acao": "CRIAR"})
+    task.change("notas/100000", {"acao": "ALTERAR"})
+    second = task.spec(NOTAS, whole=False, connection=first["connectionId"])
+    assert task.run(second) == 0
+    current = {row["nunota"]: row for row in _rows(task, "current", "sankhya_notas")}
+    source = _source(task, second, "sankhya_notas")
+    assert current.keys() == source.keys()
+    assert current[100000]["vlrnota"] == Decimal("1.000000000")
+    assert task.aws.sent[-1]["tables"][0]["rows"] == len(source)

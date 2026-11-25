@@ -202,7 +202,7 @@ class Updater:
         keys = ", ".join(_name(column) for column in key)
         return (
             f"DELETE FROM {_name(CURRENT)}.{_name(table)} WHERE ({keys}) NOT IN "
-            f"(SELECT {keys} FROM {_name(RAW)}.{_name(table)} WHERE {VERSION} = {version})"
+            f"(SELECT {keys} FROM {_name(RAW)}.{_name(table)} WHERE {VERSION} >= {version})"
         )
 
     def _replace_months(
