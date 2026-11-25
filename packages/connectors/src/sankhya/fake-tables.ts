@@ -26,6 +26,14 @@ export type CopyTables = Readonly<{
   addColumn(): string
 }>
 
+/** A column Oracle declares with a scale, as the real `TGFCAB.VLRDESCPARCERIA` is `NUMBER(18,4)`; every other number declares none. */
+export const DECLARED_DECIMAL = {
+  table: 'TGFEFDVMRSTDIA',
+  column: 'VLRMEDIA',
+  precision: 18,
+  scale: 4,
+} as const
+
 const CHANGED_BY_TEST = '2026-11-20 10:00:00'
 
 const DESCRIPTIONS: Readonly<Record<string, string>> = {
@@ -145,12 +153,24 @@ function dictionary(database: DatabaseSync): (table: string) => void {
     CREATE TABLE TDDTAB (NOMETAB TEXT PRIMARY KEY, DESCRTAB TEXT, ADICIONAL TEXT);
     CREATE TABLE TDDCAM (NUCAMPO INTEGER PRIMARY KEY, NOMETAB TEXT, NOMECAMPO TEXT, DESCRCAMPO TEXT,
       TIPCAMPO TEXT, CALCULADO TEXT, ADICIONAL TEXT);
+    CREATE TABLE DECLARED_DECIMAL (table_name TEXT, column_name TEXT, precision INTEGER, scale INTEGER);
     CREATE VIEW ALL_TAB_COLUMNS AS
       SELECT '${OWNER}' AS OWNER, m.name AS TABLE_NAME, p.name AS COLUMN_NAME, p.cid + 1 AS COLUMN_ID,
         CASE p.type WHEN 'INTEGER' THEN 'NUMBER' WHEN 'REAL' THEN 'NUMBER' WHEN 'DECIMAL_TEXT' THEN 'NUMBER'
-          WHEN 'DATE' THEN 'DATE' WHEN 'CLOB' THEN 'CLOB' WHEN 'BLOB' THEN 'BLOB' ELSE 'VARCHAR2' END AS DATA_TYPE
-      FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type = 'table';
+          WHEN 'DATE' THEN 'DATE' WHEN 'CLOB' THEN 'CLOB' WHEN 'BLOB' THEN 'BLOB' ELSE 'VARCHAR2' END AS DATA_TYPE,
+        d.precision AS DATA_PRECISION, d.scale AS DATA_SCALE
+      FROM sqlite_master m JOIN pragma_table_info(m.name) p
+        LEFT JOIN DECLARED_DECIMAL d ON d.table_name = m.name AND d.column_name = p.name
+      WHERE m.type = 'table';
   `)
+  database
+    .prepare('INSERT INTO DECLARED_DECIMAL VALUES (?, ?, ?, ?)')
+    .run(
+      DECLARED_DECIMAL.table,
+      DECLARED_DECIMAL.column,
+      DECLARED_DECIMAL.precision,
+      DECLARED_DECIMAL.scale,
+    )
   const field = database.prepare(
     'INSERT INTO TDDCAM (NOMETAB, NOMECAMPO, DESCRCAMPO, TIPCAMPO, CALCULADO, ADICIONAL) VALUES (?, ?, ?, ?, ?, ?)',
   )

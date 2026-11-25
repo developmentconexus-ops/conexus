@@ -11,6 +11,8 @@ type ColumnSchema = Readonly<{
   type: readonly string[]
   format?: string
   contentEncoding?: 'base64'
+  precision?: number
+  scale?: number
   description?: string
 }>
 export type JsonSchema = Readonly<{
@@ -79,11 +81,14 @@ const TYPES: Readonly<Record<TableColumnType, Omit<ColumnSchema, 'description'>>
   binary: { type: ['string', 'null'], contentEncoding: 'base64' },
 }
 
+/** A decimal the source declares travels as `precision` and `scale` beside `x-singer.decimal`, the keys singer-sdk reads (`sql/connector.py:376`). */
+function columnSchema({ type, description, decimal }: TableColumn): ColumnSchema {
+  const typed = decimal === undefined ? TYPES[type] : { ...TYPES[type], ...decimal }
+  return description === null ? typed : { ...typed, description }
+}
+
 export function schemaOf(columns: readonly TableColumn[]): JsonSchema {
-  const properties = columns.map(({ name, type, description }) => [
-    name.toLowerCase(),
-    description === null ? TYPES[type] : { ...TYPES[type], description },
-  ])
+  const properties = columns.map((column) => [column.name.toLowerCase(), columnSchema(column)])
   return { type: 'object', properties: Object.fromEntries(properties) }
 }
 

@@ -12,6 +12,7 @@ import type {
 } from '../kernel/tables.ts'
 import {
   CeilingInput,
+  DeclaredDecimal,
   DiscoveredTable as DiscoveredTableSchema,
   SourceColumn,
   SourceTable,
@@ -72,12 +73,28 @@ function oracleType(dataType: string): TableColumnType | undefined {
 
 const DESCRIPTION_MAX = 200
 
+/**
+ * What Oracle declares of a number: `NUMBER(p, s)` and `NUMBER(*, s)` (no precision: 38). A `FLOAT`
+ * (binary precision, no scale), a bare `NUMBER` and a scale past the precision declare none.
+ */
+function decimalOf(row: z.infer<typeof DictionaryRow>): TableColumn['decimal'] {
+  const { DATA_PRECISION: precision, DATA_SCALE: scale } = row
+  if (scale === null) return undefined
+  const declared = DeclaredDecimal.safeParse({ precision: precision ?? 38, scale })
+  return declared.success ? declared.data : undefined
+}
+
 /** A column's type by the map, or text with the dictionary's type in its description when the map does not know it. */
 function columnOf(row: z.infer<typeof DictionaryRow>): TableColumn {
   const type =
     LARGE[row.DATA_TYPE] ??
     (row.TIPCAMPO === null ? oracleType(row.DATA_TYPE) : TIPCAMPO[row.TIPCAMPO])
   const said = row.DESCRCAMPO ?? row.NOMECAMPO
+  if (type === 'numeric') {
+    const decimal = decimalOf(row)
+    const column = { name: row.NOMECAMPO, type, description: said.slice(0, DESCRIPTION_MAX) }
+    return decimal === undefined ? column : { ...column, decimal }
+  }
   if (type !== undefined)
     return { name: row.NOMECAMPO, type, description: said.slice(0, DESCRIPTION_MAX) }
   const note = ` (tipo ${row.TIPCAMPO ?? '?'}, ${row.DATA_TYPE})`
@@ -88,6 +105,16 @@ function columnOf(row: z.infer<typeof DictionaryRow>): TableColumn {
   }
 }
 
+/** `ALL_TAB_COLUMNS.DATA_PRECISION` and `DATA_SCALE`: a number or its text, null when the column declares none. */
+const DeclaredNumber = z.union([
+  z.null(),
+  z.int(),
+  z
+    .string()
+    .regex(/^-?\d+$/)
+    .transform(Number),
+])
+
 const DictionaryRow = z.object({
   NOMETAB: z.string(),
   DESCRTAB: z.string().nullable(),
@@ -95,6 +122,8 @@ const DictionaryRow = z.object({
   DESCRCAMPO: z.string().nullable(),
   TIPCAMPO: z.string().nullable(),
   DATA_TYPE: z.string(),
+  DATA_PRECISION: DeclaredNumber,
+  DATA_SCALE: DeclaredNumber,
 })
 
 /** The dictionary's rows, a table's fields in a row each, as the tables they describe. */
@@ -121,7 +150,7 @@ const Dictionary = z
  */
 function dictionarySql(tables: readonly SourceTableType[]): string {
   return [
-    'SELECT A.TABLE_NAME AS NOMETAB, T.DESCRTAB, A.COLUMN_NAME AS NOMECAMPO, C.DESCRCAMPO, C.TIPCAMPO, A.DATA_TYPE',
+    'SELECT A.TABLE_NAME AS NOMETAB, T.DESCRTAB, A.COLUMN_NAME AS NOMECAMPO, C.DESCRCAMPO, C.TIPCAMPO, A.DATA_TYPE, A.DATA_PRECISION, A.DATA_SCALE',
     'FROM ALL_TAB_COLUMNS A JOIN TDDTAB T ON T.NOMETAB = A.TABLE_NAME',
     'LEFT JOIN TDDCAM C ON C.NOMETAB = A.TABLE_NAME AND C.NOMECAMPO = A.COLUMN_NAME',
     `WHERE A.OWNER = ${SCHEMA} AND A.TABLE_NAME IN (${tables.map(quoted).join(', ')})`,
