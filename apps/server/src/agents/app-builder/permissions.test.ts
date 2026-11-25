@@ -24,7 +24,7 @@ import {
 } from '../../harness/model-accounts/public.ts'
 import { asked, conversing, endOf, MODEL, title } from '../../harness/routes/test-conversation.ts'
 import { partsOf } from '../../harness/routes/test-parts.ts'
-import { initialStateOf } from '../../harness/spec/public.ts'
+import { CONTROLLER_KINDS, initialStateOf } from '../../harness/spec/public.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 
 const CARD_TOOLS = [
@@ -195,6 +195,15 @@ test('em yolo, uma ferramenta fora da lista do modo não é oferecida nem execut
   assert.deepEqual(ran, [], 'the tool outside the set never ran')
   assert.equal(events.includes('tool_approval_required'), false)
   assert.ok(events.includes('tool_end'), events.join(' '))
+})
+
+test('a ficha do Construtor de apps oferece o conjunto fechado da tela, e nenhuma ferramenta a mais (issue 1286)', async (t) => {
+  const { hub } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const modes = hub.mastra.getAgentController(CONTROLLER_KINDS.builder.id)?.listModes()
+  assert.deepEqual(
+    modes?.map((mode) => [mode.id, new Set(mode.availableTools)]),
+    [['conversa', new Set(CLOSED_TOOLS)]],
+  )
 })
 
 function unused(): Promise<never> {
