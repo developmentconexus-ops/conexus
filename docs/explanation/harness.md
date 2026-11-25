@@ -8,7 +8,7 @@ builds it on Mastra (decisions [0027](../decisions/0027-mastra-builder-engine.md
 Conexus uses, how it configures them, what it wraps around them, and which installed pieces it
 leaves alone. `builder/` below means `apps/server/src/builder/`. The import law keeps every
 `@mastra/*` import inside `builder/` folders (`.dependency-cruiser.cjs`, rule
-`mastra-only-in-builder`).
+`mastra-only-in-harness`).
 
 ## One Mastra, four controllers
 
@@ -198,7 +198,7 @@ them is missing from the installed server; every other Mastra route is a 404.
 Each route is marked `access: 'session'`, so the Hub's own access hook reads the session first and
 Mastra's auth stays off. A guard then checks the thread belongs to the signed-in person and to the
 controller in the path, admits the person again, refuses a `requestContext` or `include` sent by
-the browser, and refuses a new message while the Hub is updating. `BuilderServer` overrides the
+the browser, and refuses a new message while the Hub is updating. `ConversationServer` overrides the
 stream to slim the state events, pace writes to the socket and drop a client more than 8 MiB
 behind (`harness/routes/stream.ts`). Creating, listing and deleting conversations are the
 Hub's own Fastify routes, not Mastra's. So is changing a conversation's model: each agent's route

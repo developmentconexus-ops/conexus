@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { ErrorCategory, ErrorDomain, MastraError } from '@mastra/core/error'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, title } from '../routes/test-conversation.ts'
-import { BuilderLogger } from './public.ts'
+import { HubLogger } from './public.ts'
 
 test('o erro do Mastra num turno vai ao rastro com o texto, e o log do contêiner fica com escalares e os ids do rastro', async (t) => {
   const on = await conversing(t, (each: Sent) => title(each) ?? { kind: 'refuse', status: 400 })
@@ -46,7 +46,7 @@ function attached() {
   const lines: { fields: Record<string, unknown>; message: string }[] = []
   const exported: { level: string; message: string; data: Record<string, unknown> | undefined }[] =
     []
-  const logger = new BuilderLogger({
+  const logger = new HubLogger({
     info: (fields, message) => lines.push({ fields, message }),
     error: (fields, message) => lines.push({ fields, message }),
   })

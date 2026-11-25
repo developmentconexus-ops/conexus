@@ -186,7 +186,7 @@ module.exports = {
     },
     ...ADAPTERS,
     {
-      name: 'mastra-only-in-builder',
+      name: 'mastra-only-in-harness',
       comment:
         'W7, decision 0033: @mastra/* is imported only inside harness/ and agents/ on the server and inside harness/ on the web.',
       severity: 'error',
@@ -310,7 +310,7 @@ module.exports = {
       conditionNames: ['import', 'node', 'default', 'types'],
       mainFields: ['module', 'main', 'types'],
     },
-    // Packages stay out of the graph except Mastra's, each a leaf (doNotFollow), so mastra-only-in-builder and no-mastra-ee see an import that resolves.
+    // Packages stay out of the graph except Mastra's, each a leaf (doNotFollow), so mastra-only-in-harness and no-mastra-ee see an import that resolves.
     // .lab/ is a builder's scratch folder, listed in .gitignore: git does not hold it, so it stays out here too (check-suppressions reads git's list).
     exclude: { path: '^(?!.*node_modules/@mastra/).*(^|/)(node_modules|dist|coverage)/|^\\.lab/' },
   },

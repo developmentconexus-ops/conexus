@@ -43,7 +43,7 @@ function fieldsOf(args: unknown[]): Record<string, Scalar> {
  * (security S41). Its debug and info lines are dropped. Through Mastra's adapter hook the same
  * warnings and errors go to the trace whole (decision 0068), and our line carries the trace's ids.
  */
-export class BuilderLogger extends MastraLogger {
+export class HubLogger extends MastraLogger {
   readonly #log: FailureLog
   #observability: LoggerAdapterContext | undefined
 

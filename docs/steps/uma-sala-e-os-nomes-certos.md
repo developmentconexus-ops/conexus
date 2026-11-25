@@ -859,7 +859,7 @@ com eles; a árvore de topo (a decisão 2 do firstmate) fica.
 | `routes/.../$projectId_.agents.construtor.$conversationId.tsx` | Muda: só o `beforeLoad` que redireciona | — |
 | `routes/.../$projectId_.agents.agent-builder.$conversationId.tsx` | Cria: a rota com o conteúdo da antiga | os links do Construtor de agentes |
 | `packages/hub-api/src/pages.ts` | Muda: o endereço novo entra na lista das páginas que o Hub abre (`PAGES`), ao lado do antigo | o Hub, o `pages.layout.test.ts` |
-| `.dependency-cruiser.cjs` | Muda: a regra W7 (`mastra-only-in-builder`, `:187-191`) passa a valer para `apps/web/src/harness/` | `npm run deps` |
+| `.dependency-cruiser.cjs` | Muda: a regra W7 (`mastra-only-in-harness`, `:187-191`) passa a valer para `apps/web/src/harness/` | `npm run deps` |
 | `scripts/codemod-web.ts` e os seus módulos | Cria: o script | o revisor |
 
 O nome de cada arquivo que já diz o que ele é fica; o script não renomeia arquivo, só move e

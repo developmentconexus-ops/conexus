@@ -160,7 +160,7 @@ function named(error: unknown): Record<string, string> {
  * Mastra's Fastify adapter with its stream paced and slimmed (`paced`); every ended stream is
  * logged with why.
  */
-export class BuilderServer extends MastraServer {
+export class ConversationServer extends MastraServer {
   readonly #log: FailureLog
 
   constructor(options: ConstructorParameters<typeof MastraServer>[0] & { log: FailureLog }) {

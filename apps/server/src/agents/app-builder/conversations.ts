@@ -4,7 +4,7 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { FastifyInstance } from 'fastify'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import type { GuardedMastra } from '../../harness/routes/public.ts'
-import { registerBuilderRoutes } from '../../harness/routes/public.ts'
+import { registerSessionRoutes } from '../../harness/routes/public.ts'
 import type { Owner, ReleaseScope } from '../../harness/spec/public.ts'
 import { resourceOf } from '../../harness/spec/public.ts'
 import type { BuilderConnectors } from '../../harness/tools/public.ts'
@@ -107,7 +107,7 @@ export function createBuilderConversations(deps: {
     },
     routes: (app: FastifyInstance, hub: GuardedMastra) => {
       registerConversationRoutes(app, { store, builder, queue })
-      registerBuilderRoutes(app, { hub, builder, streams, log: deps.log })
+      registerSessionRoutes(app, { hub, conversations: builder, streams, log: deps.log })
       registerSourceRoutes(app, {
         ...{ database, identity, projects: deps.projects },
         repository: (ids) => deps.runs.repositoryOf(ids),

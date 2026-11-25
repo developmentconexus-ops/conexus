@@ -155,7 +155,7 @@ separate act by a person.
 The browser subscribes to the session's stream and reconnects with backoff. On every connect it
 reads the transcript and the session state again, because the server does not replay what the
 stream missed (`apps/web/src/harness/room/use-session.ts`). The server's
-`BuilderServer` slims Mastra's state events to four fields, writes at the socket's pace and drops
+`ConversationServer` slims Mastra's state events to four fields, writes at the socket's pace and drops
 a client more than 8 MiB behind (`harness/routes/stream.ts`).
 
 ## Stopping, deleting and shutting down

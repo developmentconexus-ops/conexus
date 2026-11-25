@@ -5,7 +5,7 @@ import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { AnyWorkflow, SchedulerConfig } from '@mastra/core/workflows'
 import { MastraStorageExporter, Observability } from '@mastra/observability'
 import type { FailureLog } from '../../platform/failure.ts'
-import { BuilderLogger } from './logger.ts'
+import { HubLogger } from './logger.ts'
 
 /** The messages of a step the trace keeps whole. */
 const MESSAGES_KEPT = 500
@@ -39,7 +39,7 @@ export function createMastra(deps: {
   schedulerTickMs: number | undefined
 }): Mastra {
   const mastra = new Mastra({
-    logger: new BuilderLogger(deps.log),
+    logger: new HubLogger(deps.log),
     storage: deps.storage,
     agentControllers: { ...deps.controllers },
     workflows: { ...deps.workflows },

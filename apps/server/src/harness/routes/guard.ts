@@ -21,7 +21,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { ControllerKind, RunMark } from '../spec/public.ts'
 import { CONTROLLER_KINDS, markIn, ownerOfResource } from '../spec/public.ts'
-import { BuilderServer } from './stream.ts'
+import { ConversationServer } from './stream.ts'
 
 /** What the guard reads of a conversation's agent: the thread that says whose it is. */
 export type Guarded = { memory: Pick<Memory, 'getThreadById'> }
@@ -117,7 +117,7 @@ function sendsFileUrl(input: unknown): boolean {
 }
 
 /** Mastra's routes of the fixed list, each found in the installed server, or the Hub does not start. */
-function builderRoutes() {
+function sessionRoutes() {
   const found = SERVER_ROUTES.filter((route) => FIXED_LIST.has(`${route.method} ${route.path}`))
   if (found.length !== FIXED_LIST.size) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'MASTRA_ROUTE_MISSING' } })
@@ -174,7 +174,10 @@ export type GuardedMastra = {
  * of the person's other conversations. So is a file that is not a `data:` URL. While the Hub
  * settles before it stops, a new message is refused before Mastra starts a turn (founder E1).
  */
-async function guard(deps: { builder: Guarded; hub: GuardedMastra }, request: FastifyRequest) {
+async function guard(
+  deps: { conversations: Guarded; hub: GuardedMastra },
+  request: FastifyRequest,
+) {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
     throw new Failure('REQUEST_MALFORMED')
   }
@@ -265,7 +268,7 @@ async function refuseApprover(
 
 /** The person's thread of the controller the path names, marked for them and admitted now; else the 404. */
 async function held(
-  deps: { builder: Guarded; hub: GuardedMastra },
+  deps: { conversations: Guarded; hub: GuardedMastra },
   asked: {
     person: Person
     controllerId: z.infer<typeof Params>['controllerId']
@@ -273,7 +276,7 @@ async function held(
   },
 ) {
   const { person, controllerId, conversationId } = asked
-  const thread = await deps.builder.memory.getThreadById({ threadId: conversationId })
+  const thread = await deps.conversations.memory.getThreadById({ threadId: conversationId })
   const owner = ownerOfResource(thread?.resourceId)
   const part = owner === undefined ? undefined : deps.hub.part(owner.kind)
   if (
@@ -311,20 +314,20 @@ async function admittedBy(admit: Admission, input: Parameters<Admission>[0]) {
  * request leaves, so the open ones are kept in `streams` for the Hub's close to close; its stream is
  * slimmed and paced (`stream.ts`).
  */
-export function registerBuilderRoutes(
+export function registerSessionRoutes(
   app: FastifyInstance,
   deps: {
     hub: GuardedMastra
-    builder: Guarded
+    conversations: Guarded
     streams: Set<ServerResponse>
     log: FailureLog
   },
 ): void {
-  const routes = builderRoutes()
+  const routes = sessionRoutes()
   app.register(async (scope) => {
     // `onError` is required by the type; the Fastify adapter never calls it, and a body over the
     // limit goes to the Hub's error handler as a 413 (`@mastra/fastify@1.5.23` `dist/index.js:542-571`).
-    const server = new BuilderServer({
+    const server = new ConversationServer({
       app: scope,
       mastra: deps.hub.mastra,
       bodyLimitOptions: { maxSize: BODY_LIMIT, onError: (error) => error },
