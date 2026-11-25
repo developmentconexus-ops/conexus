@@ -1378,6 +1378,10 @@
     {
       "file": "apps/server/src/hub/copies/lake-list-stopped.test.ts",
       "name": "as rodadas de uma tabela: nenhuma rodada de outra ligação nem anterior à cópia aparece, qualquer que seja o resultado"
+    },
+    {
+      "file": "apps/web/src/hub/connectors/lake-tabs.test.tsx",
+      "name": "uma ligação de outro sistema não tem abas nem a seção"
     }
   ]
 }
