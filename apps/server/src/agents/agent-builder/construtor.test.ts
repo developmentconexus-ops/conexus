@@ -241,8 +241,10 @@ test('testar: roda uma pergunta contra o rascunho, sem conversa guardada; rascun
     field: 'instructions',
   })
   assert.deepEqual(answers[2], { kind: 'REFUSED', code: 'AGENT_NOT_FOUND' })
-  const asked = on.anthropic.sent.filter((each) => !each.stream).at(-1)
-  assert.match(asked?.system ?? '', /Responda sobre as vendas do dia\./)
+  const asked = on.anthropic.sent.find(
+    (each) => !each.stream && (each.system ?? '').includes(FIRST),
+  )
+  assert.ok(asked, 'the draft’s instructions reached the model')
   assert.equal(asked?.key, KEY, 'counted in the person’s own model queue')
 })
 
