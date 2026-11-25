@@ -1,5 +1,5 @@
 // Defect: apps/server/src/builder/ is split by hand into harness/ and agents/, so the new tree and the import paths drift
-// (card "Uma sala e os nomes certos", U7). `node scripts/codemod-server.ts <area>` (g5a to g5f, the six pull requests) moves
+// (card "Uma sala e os nomes certos", U7). `node scripts/codemod-server.ts <area>` (g5a to g5f: six areas, delivered in two pull requests, G5-harness and G5-agents) moves
 // the files of that area's rows to their owner's folder with git mv, rewrites every import and every path a document cites,
 // and lists the move in scripts/codemod-server.json; run again it finds nothing to move. `--plan` writes the list only.
 // Revalidate by 2027-05-24, or when a step moves server files.
