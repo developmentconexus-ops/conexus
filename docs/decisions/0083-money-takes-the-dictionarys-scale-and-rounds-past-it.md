@@ -37,10 +37,12 @@ None yet.
 
 Amends [0071]. A column whose type changes in a table that already exists keeps its old type:
 pyiceberg 0.12.0 accepts the union of `decimal(18,4)` over `decimal(38,9)` without changing the column
-(`pyiceberg/schema.py:1700` compares a scale with itself), so the next real run passes and
-`VLRDESCPARCERIA` stays `decimal(38,9)`, exact. Dropping the lake's two empty tables
-`raw.sankhya_notas` and `current.sankhya_notas` before the next real run is what gives the lake the
-declared scale; that is the founder's word.
+(`pyiceberg/schema.py:1700` compares a scale with itself). So the lab lake's two empty tables
+`raw.sankhya_notas` and `current.sankhya_notas` were dropped, with the founder's word, before the first
+run with data, and `VLRDESCPARCERIA` is created `decimal(18,4)`. In a table that already has data, a
+scale change is issue 1387. The count of rounded cells stays in the round's result and in the
+`COPY_RUN_ENDED` record, and no cell is marked (founder, 2026-11-25: "1. A / 2. A / 3. A"); the count on
+the Data page is issue 1388.
 
 ## Reopens when
 
