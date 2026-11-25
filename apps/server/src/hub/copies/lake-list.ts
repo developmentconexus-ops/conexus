@@ -1,6 +1,6 @@
 import type { CompanyId, LakeRun, LakeTableId, PersonId } from '@conexus/hub-api'
 import { ConnectionId, LakeTableSummary, listLakeTableRuns, listLakeTables } from '@conexus/hub-api'
-import { and, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
+import { and, desc, eq, getTableColumns, gte, inArray, isNull, or } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
@@ -90,21 +90,55 @@ function summaryOf(stored: Stored, row: Stored['marked'][number], found: Found, 
   })
 }
 
+/**
+ * A round that ended in error before its table gave a result has no `lake_table_run` row of that
+ * table, yet it is the table's round: it stopped in this table, or in none (the task was lost). The
+ * table has no mark date of its own, so the copy's creation bounds how far back such rounds count.
+ */
 function runsOf(deps: Deps, viewer: Viewer, tableId: LakeTableId) {
   return deps.database.read(scopeOf(viewer), async (tx) => {
     await admit(deps, tx, viewer)
     const [table] = await tx
-      .select({ id: lakeTable.id })
+      .select({
+        connectionId: lakeTable.connectionId,
+        name: lakeTable.name,
+        since: lakeCopy.createdAt,
+      })
       .from(lakeTable)
+      .innerJoin(
+        lakeCopy,
+        and(
+          eq(lakeCopy.companyId, lakeTable.companyId),
+          eq(lakeCopy.connectionId, lakeTable.connectionId),
+        ),
+      )
       .where(eq(lakeTable.id, tableId))
     if (table === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'TABLE' } })
-    const rows = await tx
+    const carried = await tx
       .select({ run: lakeRun, ...getTableColumns(lakeTableRun) })
       .from(lakeTableRun)
       .innerJoin(lakeRun, eq(lakeRun.id, lakeTableRun.runId))
       .where(eq(lakeTableRun.tableId, tableId))
-      .orderBy(desc(lakeRun.startedAt))
-    return rows.map(({ run, ...carried }): LakeRun => runViewOf(run, carried))
+    const stopped = await tx
+      .select()
+      .from(lakeRun)
+      .where(
+        and(
+          eq(lakeRun.connectionId, table.connectionId),
+          eq(lakeRun.outcome, 'ERROR'),
+          gte(lakeRun.startedAt, table.since),
+          or(isNull(lakeRun.failedTable), eq(lakeRun.failedTable, table.name)),
+        ),
+      )
+    const own = new Set(carried.map(({ run }) => run.id))
+    return [
+      ...carried.map(({ run, ...counts }) => ({ run, counts })),
+      ...stopped
+        .filter((run) => !own.has(run.id))
+        .map((run) => ({ run, counts: { read: 0, written: 0, whole: run.whole } })),
+    ]
+      .sort((a, b) => b.run.startedAt.getTime() - a.run.startedAt.getTime())
+      .map(({ run, counts }): LakeRun => runViewOf(run, counts))
   })
 }
 
