@@ -1,51 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { LakeRun, LakeRunId, LakeTableSummary } from '@conexus/hub-api'
-import { z } from 'zod'
-import { call, codeOf, personOn } from '../identity/test-hub.ts'
+import { codeOf, personOn } from '../identity/test-hub.ts'
 import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS } from './test-lake-copy.ts'
-
-const ORIGENS = { source: 'TGFVAR', name: 'sankhya_origens' }
-const Summaries = z.array(LakeTableSummary)
-const Runs = z.array(LakeRun)
-
-type On = Awaited<ReturnType<typeof lakeCopyOn>>
-
-function read(on: On, path: string, who = on.ana) {
-  return call(on.hub, who, 'GET', path)
-}
-
-async function listed(on: On) {
-  const answered = await read(on, `/api/companies/${on.companyId}/lake-tables`)
-  assert.equal(answered.statusCode, 200, answered.body)
-  return Summaries.parse(answered.json())
-}
-
-function named(tables: readonly LakeTableSummary[], name: string) {
-  const found = tables.find((table) => table.name === name)
-  assert.ok(found !== undefined, name)
-  return found
-}
-
-async function runsOf(on: On, table: LakeTableSummary) {
-  const answered = await read(on, `/api/companies/${on.companyId}/lake-tables/${table.id}/runs`)
-  assert.equal(answered.statusCode, 200, answered.body)
-  return Runs.parse(answered.json())
-}
-
-const SINCE = '2024-01-01'
-
-async function twoConnections(on: On) {
-  const matriz = await on.linked('Matriz')
-  const filial = await on.linked('Filial')
-  const body = { tables: [NOTAS, PARCEIROS, ORIGENS], interval: '24h', startDate: SINCE }
-  assert.equal((await on.put(matriz, body)).statusCode, 200)
-  const own = { tables: [{ source: 'TGFCAB', name: 'sankhya_filial_notas' }], interval: 'MANUAL' }
-  assert.equal((await on.put(filial, { ...own, startDate: null })).statusCode, 200)
-  await finished(on, matriz, ['sankhya_notas', 'sankhya_parceiros', 'sankhya_origens'])
-  await finished(on, filial, ['sankhya_filial_notas'])
-  return { matriz, filial }
-}
+import { listed, named, read, runsOf, SINCE, Summaries, twoConnections } from './test-lake-list.ts'
 
 test('a lista de Dados: agrupada pela ligação, com o rótulo, o modo, o estado, as linhas, as colunas e o relógio', async (t) => {
   const on = await lakeCopyOn(t)
@@ -136,92 +93,6 @@ test('as rodadas de uma tabela: a máquina da rodada vai com ela, na lista e nas
     [machine, null],
     'newest first; the first round had no measure',
   )
-})
-
-type Stop = Readonly<{ ago: string; code: string; failedTable: string | null }>
-
-async function stoppedRun(on: On, connection: string, stop: Stop) {
-  const [row] = await on.rows(
-    `insert into copies.lake_run (id, company_id, connection_id, started_at, ended_at, outcome, whole, attempt, code, failed_table)
-     values ($1, $2, $3, now() + $4::interval, now() + $4::interval, 'ERROR', false, 1, $5, $6) returning id`,
-    [crypto.randomUUID(), on.companyId, connection, stop.ago, stop.code, stop.failedTable],
-  )
-  assert.ok(row !== undefined)
-  return LakeRunId.parse(row.id)
-}
-
-function errorsOf(runs: readonly LakeRun[]) {
-  return runs.map((run) => [run.id, run.outcome === 'ERROR' ? run.code : run.outcome])
-}
-
-test('as rodadas de uma tabela: a rodada com erro sem linha da tabela aparece, parada pela tarefa em cada tabela, e na tabela em que parou só nela', async (t) => {
-  const on = await lakeCopyOn(t)
-  const { matriz, filial } = await twoConnections(on)
-  const tables = await listed(on)
-  const [notas, parceiros, filialNotas] = [
-    'sankhya_notas',
-    'sankhya_parceiros',
-    'sankhya_filial_notas',
-  ].map((name) => named(tables, name))
-  assert.ok(notas && parceiros && filialNotas)
-  const [first] = await runsOf(on, notas)
-  assert.ok(first?.outcome === 'COMPLETE')
-
-  const lost = await stoppedRun(on, matriz, {
-    ago: '2 minutes',
-    code: 'COPY_TASK_LOST',
-    failedTable: null,
-  })
-  const inNotas = await stoppedRun(on, matriz, {
-    ago: '1 minute',
-    code: 'COPY_SOURCE_REFUSED',
-    failedTable: 'sankhya_notas',
-  })
-  const other = await stoppedRun(on, filial, {
-    ago: '3 minutes',
-    code: 'COPY_TASK_LOST',
-    failedTable: null,
-  })
-  const before = await stoppedRun(on, matriz, {
-    ago: '-10 days',
-    code: 'COPY_TASK_LOST',
-    failedTable: null,
-  })
-
-  assert.deepEqual(
-    errorsOf(await runsOf(on, notas)),
-    [
-      [lost, 'COPY_TASK_LOST'],
-      [inNotas, 'COPY_SOURCE_REFUSED'],
-      [first.id, 'COMPLETE'],
-    ],
-    'newest first; stopped by the task and stopped in this table, with their codes',
-  )
-  const stopped = (await runsOf(on, notas)).find((run) => run.id === inNotas)
-  assert.deepEqual(
-    stopped?.outcome === 'ERROR' && [stopped.read, stopped.written, stopped.failedTable],
-    [0, 0, 'sankhya_notas'],
-  )
-  const ids = (await runsOf(on, parceiros)).map((run) => run.id)
-  assert.equal(ids.includes(lost), true, 'the task lost every marked table`s round')
-  assert.equal(ids.includes(inNotas), false, 'it stopped in another table')
-  const filialIds = (await runsOf(on, filialNotas)).map((run) => run.id)
-  assert.equal(filialIds.includes(other), true)
-  for (const id of [lost, inNotas, before])
-    assert.equal(filialIds.includes(id), false, 'other connection')
-  const stranger = await personOn(on.hub, { name: 'Fora', email: 'fora@example.test' })
-  const refused = await read(
-    on,
-    `/api/companies/${on.companyId}/lake-tables/${notas.id}/runs`,
-    stranger,
-  )
-  assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
-  assert.equal(refused.body.includes('COPY_TASK_LOST'), false, 'no round of the stopped task leaks')
-  for (const table of [notas, parceiros]) {
-    const own = (await runsOf(on, table)).map((run) => run.id)
-    assert.equal(own.includes(other), false, 'a round of another connection')
-    assert.equal(own.includes(before), false, 'a round from before the copy existed')
-  }
 })
 
 test('a lista de Dados: quem não lê a ligação não vê a tabela', async (t) => {

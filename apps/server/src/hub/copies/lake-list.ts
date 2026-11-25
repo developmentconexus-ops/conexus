@@ -91,9 +91,11 @@ function summaryOf(stored: Stored, row: Stored['marked'][number], found: Found, 
 }
 
 /**
- * A round that ended in error before its table gave a result has no `lake_table_run` row of that
- * table, yet it is the table's round: it stopped in this table, or in none (the task was lost). The
- * table has no mark date of its own, so the copy's creation bounds how far back such rounds count.
+ * A round that stopped before its table gave a result (an error, an interruption) or is still open
+ * has no `lake_table_run` row of that table, yet it is the table's round: it stopped in this table, or
+ * in none (the task was lost, the Hub stopped it). A completed round without the table's row is not
+ * its round: the table was marked later. The table has no mark date of its own, so the copy's
+ * creation bounds how far back such rounds count.
  */
 function runsOf(deps: Deps, viewer: Viewer, tableId: LakeTableId) {
   return deps.database.read(scopeOf(viewer), async (tx) => {
@@ -125,7 +127,7 @@ function runsOf(deps: Deps, viewer: Viewer, tableId: LakeTableId) {
       .where(
         and(
           eq(lakeRun.connectionId, table.connectionId),
-          eq(lakeRun.outcome, 'ERROR'),
+          or(isNull(lakeRun.outcome), inArray(lakeRun.outcome, ['ERROR', 'INTERRUPTED'])),
           gte(lakeRun.startedAt, table.since),
           or(isNull(lakeRun.failedTable), eq(lakeRun.failedTable, table.name)),
         ),
