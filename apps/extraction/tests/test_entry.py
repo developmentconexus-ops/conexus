@@ -335,7 +335,7 @@ def _tap_stops_after(task: Task, kind: str) -> None:
             [
                 "#!/bin/sh",
                 f'case "$*" in *--discover*) exec {tap} ;; esac',
-                f"{tap} | awk '{{print}} /\"type\":\"{kind}\"/ {{exit}}'",
+                f'{tap} | awk \'{{print}} /"type":"{kind}"/ {{exit}}\'',
                 f"echo '{json.dumps(failure)}' > \"$TAP_CONEXUS_RESULT_PATH\"",
                 "exit 1",
             ]
