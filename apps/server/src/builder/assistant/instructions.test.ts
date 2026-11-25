@@ -20,7 +20,7 @@ function weekdayOf(date: string) {
   })
 }
 
-const FIXED = `${read('../conversation/prompt/conexus.md')}\n\n${read('./prompt/assistant.md')}`
+const FIXED = `${read('../../harness/prompt/conexus.md')}\n\n${read('./prompt/assistant.md')}`
 
 test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes do bloco da conversa; nenhuma frase do trabalho do Builder', async (t) => {
   const on = await assisting(t)
