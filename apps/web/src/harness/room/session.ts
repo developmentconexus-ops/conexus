@@ -69,6 +69,11 @@ export function sessionOf(conversationId: ConversationId, controller: Controller
      */
     switchModel: (choice: { model: ModelId; effort: Effort }) =>
       said(session.switchModel(choice.model, { thinkingLevel: choice.effort })),
+    /**
+     * The conversation's new title, on Mastra's own route behind the Hub's guard, as the Mastra Code
+     * remote session does (`session.renameThread`): the title stays, the memory no longer replaces it.
+     */
+    rename: (title: string) => said(session.renameThread(conversationId, title)),
     /** The person's answer to the card of a write that asks (step 24.5), on Mastra's own route behind the Hub's guard. */
     approve: (toolCallId: string, approved: boolean) =>
       said(session.approveTool(toolCallId, approved)),

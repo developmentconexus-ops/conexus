@@ -1,12 +1,15 @@
 import type { ConversationId } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { CheckIcon, ChevronDownIcon, SquarePenIcon } from 'lucide-react'
 import { useState } from 'react'
 import {
+  ConversationMenu,
   conversationsQuery,
   titleOf,
   UNCONFIRMED_CREATION,
+  useRenameConversation,
   useStartConversation,
 } from '../../harness/room/public.ts'
 import { sentenceOf, writeFailureText } from '../../platform/hub.ts'
@@ -79,6 +82,7 @@ function ConversationSheet(props: {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const { start, pending } = useNewConversation(props.onFailure)
+  const renameOf = useRenameConversation(BUILDER_CONTROLLER)
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger
@@ -103,31 +107,33 @@ function ConversationSheet(props: {
             Nova conversa
           </Button>
           {props.items.map((item) => (
-            <DrawerClose
-              key={item.value}
-              render={
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    'justify-start gap-md px-sm text-text',
-                    item.value === props.current?.value && 'bg-accent-soft',
-                  )}
-                />
-              }
-              aria-current={item.value === props.current?.value || undefined}
-              onClick={() =>
-                void navigate({
-                  to: CONVERSATION,
-                  params: { companyId, projectId, conversationId: item.value },
-                  search: (previous) => previous,
-                })
-              }
-            >
-              <span className="truncate">{item.label}</span>
-              {item.value === props.current?.value && (
-                <CheckIcon aria-hidden="true" className="ms-auto" />
-              )}
-            </DrawerClose>
+            <div key={item.value} className="group/menu-item relative">
+              <DrawerClose
+                render={
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      'w-full justify-start gap-md px-sm pr-11 text-text',
+                      item.value === props.current?.value && 'bg-accent-soft',
+                    )}
+                  />
+                }
+                aria-current={item.value === props.current?.value || undefined}
+                onClick={() =>
+                  void navigate({
+                    to: CONVERSATION,
+                    params: { companyId, projectId, conversationId: item.value },
+                    search: (previous) => previous,
+                  })
+                }
+              >
+                <span className="truncate">{item.label}</span>
+                {item.value === props.current?.value && (
+                  <CheckIcon aria-hidden="true" className="ms-auto" />
+                )}
+              </DrawerClose>
+              <ConversationMenu title={item.label} actions={{ rename: renameOf(item.value) }} />
+            </div>
           ))}
         </div>
         {props.readFailure !== undefined && (
@@ -152,6 +158,7 @@ export function ConversationSwitch(props: { current: Item | undefined }) {
   const [failure, setFailure] = useState<string>()
   const { current } = props
   const phoneView = usePhoneView()
+  const renameOf = useRenameConversation(BUILDER_CONTROLLER)
   const items: Item[] = (list.data?.conversations ?? []).map((one) => ({
     value: one.id,
     label: one.id === current?.value ? current.label : titleOf(one),
@@ -208,6 +215,13 @@ export function ConversationSwitch(props: { current: Item | undefined }) {
                 </ComboboxList>
               </ComboboxContent>
             </Combobox>
+          )}
+          {current !== undefined && (
+            <ConversationMenu
+              title={current.label}
+              actions={{ rename: renameOf(current.value) }}
+              placement="BESIDE"
+            />
           )}
           <NewConversation onFailure={setFailure} />
         </div>

@@ -20,13 +20,15 @@ import type { setupServer } from 'msw/node'
 import { z } from 'zod'
 import type { View } from '../../harness/room/test-hub.tsx'
 import { screens, view } from '../../harness/room/test-hub.tsx'
+import { renameRoute } from '../../harness/room/test-rename.tsx'
 import { START } from '../../harness/room/test-start.tsx'
 import { displayOf, openLine } from '../../harness/room/test-stream.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import type { ChosenModels } from '../assistant/test-model.tsx'
 import { modelWrite } from '../assistant/test-model.tsx'
-import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
+import { CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
+import { construtorRoutes } from './test-hub-construtor.tsx'
 import type { ToolHeld } from './test-hub-tools.tsx'
 import { catalogRoute, toolRoutes, writesRoute } from './test-hub-tools.tsx'
 
@@ -209,21 +211,12 @@ function conversationRoutes(held: Held, note: Note) {
       return HttpResponse.json({ tool: made }, { status: 201 })
     }),
     ...toolRoutes(held, PROJECT_API, note),
-    http.get(`${PROJECT_API}/construtor/conversations`, () =>
-      HttpResponse.json({ conversations: held.construtor ?? [] }),
-    ),
-    http.post(`${PROJECT_API}/construtor/conversations`, async ({ request }) => {
-      await note(request)
-      const replaced = held.answers?.openConstrutor?.()
-      if (replaced) return replaced
-      const made = {
-        id: BUILDER_CHAT,
-        title: null,
-        createdAt: '2026-11-02T12:00:00.000Z',
-        updatedAt: '2026-11-02T12:00:00.000Z',
-      }
-      held.construtor = [made, ...(held.construtor ?? [])]
-      return HttpResponse.json({ conversation: made }, { status: 201 })
+    renameRoute(SESSION(AGENTS_CONTROLLER), () => held.conversations ?? [], note),
+    ...construtorRoutes({
+      held,
+      projectApi: PROJECT_API,
+      session: SESSION(CONSTRUTOR_CONTROLLER),
+      note,
     }),
   ]
 }

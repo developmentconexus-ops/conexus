@@ -16,7 +16,6 @@ import {
   listAssistantConversations,
   ProjectId as ProjectIdSchema,
   readAssistantConversation,
-  renameAssistantConversation,
   setAssistantConnections,
 } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
@@ -214,24 +213,8 @@ function registerReads(app: FastifyInstance, deps: Deps): void {
   })
 }
 
-/** What the person does to a conversation she has: Renomear and Apagar. */
+/** What the person does to a conversation she has: Apagar (Renomear is Mastra's own route, behind the guard). */
 function registerChanges(app: FastifyInstance, deps: Deps): void {
-  serve(app, renameAssistantConversation, async (input) => {
-    const owner = ownerOf(input)
-    const { conversationId } = input.params
-    await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
-    await ownThread(deps.memory, 'assistant', owner, conversationId)
-    const { title } = input.body
-    // `titlePinned`: the memory's own titling no longer replaces the one the person chose. The
-    // memory merges the metadata with what is stored.
-    await deps.memory.updateThread({ id: conversationId, title, metadata: { titlePinned: true } })
-    deps.log.info(
-      { companyId: owner.companyId, traceId: input.traceId, conversationId },
-      'ASSISTANT_CONVERSATION_RENAMED',
-    )
-    return answer({ title })
-  })
-
   serve(app, deleteAssistantConversation, async (input) => {
     const owner = ownerOf(input)
     const { conversationId } = input.params

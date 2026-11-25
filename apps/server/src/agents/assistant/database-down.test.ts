@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hubBeside, MODEL, sent } from '../../harness/routes/test-conversation.ts'
-import { switched } from '../../harness/routes/test-questions.ts'
+import { renamed, switched } from '../../harness/routes/test-questions.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
 import type { Outage } from '../../platform/test-mastra-database.ts'
 import { mastraDoor, mastraPoolAt } from '../../platform/test-mastra-database.ts'
@@ -30,7 +30,7 @@ async function everyRouteUnavailable(t: TestContext, outage: Outage) {
     choose: call(down, on.ana, 'PUT', `${url}/connections`, { connections: [] }),
     model: switched(down, on.ana, url, { model: MODEL, effort: 'off' }),
     message: sent(down, on.ana, url, 'Quanto vendemos?'),
-    rename: call(down, on.ana, 'PATCH', url, { title: 'Pedidos' }),
+    rename: renamed(down, on.ana, url, 'Pedidos'),
     delete: call(down, on.ana, 'DELETE', url),
   }
   const answers = Object.fromEntries(

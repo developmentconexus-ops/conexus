@@ -1015,9 +1015,9 @@ changes, reread the line it names.
 
 ## Mastra 1.83.0 and @mastra/fastify 1.5.27: session routes behind the Hub's guard (step 14.2)
 
-- **A fixed list, one guard.** `harness/routes/guard.ts` registers eight of Mastra's own
+- **A fixed list, one guard.** `harness/routes/guard.ts` registers nine of Mastra's own
   agent-controller routes (a session's state, stream, message, Parar, a card's answer, a write's approval, transcript,
-  the change of model; `FIXED_LIST`)
+  the change of model, a conversation's rename; `FIXED_LIST`)
   through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
   of `SERVER_ROUTES` is not registered, so it is a 404 (decision 0050, S39). Mastra's `server.auth`
   stays off: the guard reads the Hub's session, finds the thread's owner in its `resourceId` and the
@@ -1030,6 +1030,17 @@ changes, reread the line it names.
   agent's log line (from its ficha) only after Mastra's `{ ok: true }`; an agent whose ficha says the
   model is the version's (a saved agent) is a 404. Proof: `guard.test.ts` ("a troca de modelo…"),
   `lines.test.ts`.
+- **Renomear is Mastra's own route too.** `PUT …/sessions/:sessionId/threads/:threadId`
+  (`@mastra/server` 1.83.0 `agent-controller.js:1244-1269`, `session.renameThread`), whose body is
+  any `{ title }`: the guard trims and checks it (`RenameBody`, one to `CONVERSATION_TITLE_MAX`
+  characters) and puts the trimmed body in `request.body`, which `@mastra/fastify` reads
+  (`dist/index.js:198`). A `threadId` that is not the session's is a 404 (Mastra would switch the
+  session's active thread). Mastra's `rename` pins the title (`titlePinned`) against the memory's own
+  and keeps the thread's other metadata, so the marks that say whose a conversation is stay. The
+  line `CONVERSATION_RENAMED` names the conversation and the agent, never the title, and waits for
+  Mastra's `{ ok: true }`. Proof: `rename.test.ts` (four agents, refusals, after a restart),
+  `assistant/rename.test.ts` (the memory's title does not replace it). Issue 655 (the first answer's
+  automatic title can erase a rename made during it) stays open.
 - **The Hub's close closes the open streams.** Mastra's stream route ends only when its request
   leaves (`@mastra/server` `dist/server/handlers/agent-controller.js:577-666` at 1.83.0, `abortSignal` at `:651-655`), so the guard keeps each open stream's
   response and the close destroys them once the runs have said their end, which `@mastra/fastify`

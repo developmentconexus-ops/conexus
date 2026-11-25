@@ -229,3 +229,9 @@ export function switched(
   const body = { modelId: choice.model, thinkingLevel: choice.effort }
   return post(hub, person, `${sessionUrl(url)}/model`, body)
 }
+
+/** The person's new title for a conversation, through Mastra's own route, as the screen sends it. */
+export function renamed(hub: Hub, person: Person, url: string, title: unknown) {
+  const id = sessionUrl(url).slice(sessionUrl(url).lastIndexOf('/') + 1)
+  return call(hub, person, 'PUT', `${sessionUrl(url)}/threads/${id}`, { title })
+}

@@ -1,17 +1,18 @@
 import type { CompanyId, ConversationId, Person } from '@conexus/hub-api'
-import { Effort, ModelId } from '@conexus/hub-api'
+import { CONVERSATION_TITLE_MAX, Effort, ModelId } from '@conexus/hub-api'
 import type { FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationModel, effortsOf } from '../model-accounts/public.ts'
-import type { ModelSource } from '../spec/public.ts'
+import type { CONTROLLER_KINDS, ControllerKind, ModelSource } from '../spec/public.ts'
 
 /** The conversation a request names, once the guard has found it the person's and admitted it. */
 type Asked = {
   person: Person
   companyId: CompanyId
   conversationId: ConversationId
+  controllerId: (typeof CONTROLLER_KINDS)[ControllerKind]['id']
   part: { model: ModelSource }
 }
 
@@ -50,5 +51,29 @@ export async function modelChoice(
   return {
     fields: { companyId: at.companyId, traceId: request.id, conversationId: at.conversationId },
     message: model.switched,
+  }
+}
+
+/** The title Mastra's body leaves loose: trimmed and between one and `CONVERSATION_TITLE_MAX` characters. */
+const RenameBody = z.strictObject({ title: z.string().trim().min(1).max(CONVERSATION_TITLE_MAX) })
+
+/**
+ * A rename reaches Mastra's route (`PUT …/threads/:threadId`, which pins the title against the
+ * memory's own) with the title the person sees in the field: the body Mastra reads is the trimmed
+ * one (`@mastra/fastify` reads `request.body`). The line names the conversation and the agent,
+ * never the title, which may carry the company's data.
+ */
+export function renaming(request: FastifyRequest, at: Asked): Told {
+  const body = RenameBody.safeParse(request.body)
+  if (!body.success) throw new Failure('REQUEST_MALFORMED')
+  request.body = body.data
+  return {
+    fields: {
+      companyId: at.companyId,
+      traceId: request.id,
+      conversationId: at.conversationId,
+      agent: at.controllerId,
+    },
+    message: 'CONVERSATION_RENAMED',
   }
 }

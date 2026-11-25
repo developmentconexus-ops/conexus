@@ -22,7 +22,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ControllerKind, ModelSource, RunMark } from '../spec/public.ts'
 import { CONTROLLER_KINDS, controllerKindOf, markIn, ownerOfResource } from '../spec/public.ts'
-import { modelChoice } from './changes.ts'
+import { modelChoice, renaming } from './changes.ts'
 import { ConversationServer } from './stream.ts'
 
 const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
@@ -30,7 +30,7 @@ const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
 /**
  * The only routes of Mastra's server the Hub exposes (security S39, decision 0050): a session's
  * state, stream, a message, Parar, a card's answer, a write's Aprovar or Recusar (step 24.5), the
- * transcript and the change of the model. Any other is not registered, so it is a 404.
+ * transcript, the change of the model and a conversation's rename. Any other is not registered, so it is a 404.
  */
 const FIXED_LIST: ReadonlySet<string> = new Set([
   `GET ${SESSION}`,
@@ -40,6 +40,7 @@ const FIXED_LIST: ReadonlySet<string> = new Set([
   `POST ${SESSION}/tool-suspension`,
   `POST ${SESSION}/tool-approval`,
   `POST ${SESSION}/model`,
+  `PUT ${SESSION}/threads/:threadId`,
   `GET ${SESSION}/threads/:threadId/messages`,
 ])
 
@@ -356,6 +357,10 @@ export function registerSessionRoutes(
       }
       if (request.routeOptions.url?.endsWith('/model')) {
         request.requestContext.set(TOLD, await modelChoice(deps, request, at))
+        return
+      }
+      if (request.method === 'PUT') {
+        request.requestContext.set(TOLD, renaming(request, at))
         return
       }
       if (!request.routeOptions.url?.endsWith('/stream')) return

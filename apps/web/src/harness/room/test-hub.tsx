@@ -24,6 +24,7 @@ import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from './messages.ts'
 import { PROVIDERS } from './test-providers.ts'
+import { renameRoute } from './test-rename.tsx'
 import type { Line } from './test-stream.tsx'
 import { displayOf, newest, openLine, personSent } from './test-stream.tsx'
 
@@ -157,6 +158,7 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       )
       return HttpResponse.json({ ok: true })
     }),
+    renameRoute(SESSION, () => view.conversations, note),
   ]
 }
 

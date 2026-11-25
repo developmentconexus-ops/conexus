@@ -1,7 +1,8 @@
-import { CONVERSATION_TITLE_MAX, renameAssistantConversation } from '@conexus/hub-api'
+import { CONVERSATION_TITLE_MAX } from '@conexus/hub-api'
 import { MoreVerticalIcon } from 'lucide-react'
 import type { RefObject } from 'react'
 import { useRef, useState } from 'react'
+import { z } from 'zod'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
@@ -41,6 +42,8 @@ export type ConversationActions = {
   remove?: () => Promise<void>
 }
 
+const RenameBody = z.object({ title: z.string().trim().min(1).max(CONVERSATION_TITLE_MAX) })
+
 /** "Já foi": the Hub no longer holds the conversation, which is what the person wanted. */
 function isGone(error: unknown) {
   return error instanceof HubFailure && error.code === 'CONVERSATION_NOT_FOUND'
@@ -51,7 +54,7 @@ function RenameForm(props: {
   rename: (title: string) => Promise<void>
   onDone: () => void
 }) {
-  const form = useSchemaForm(renameAssistantConversation.input.body, { title: props.title })
+  const form = useSchemaForm(RenameBody, { title: props.title })
   async function submit({ title }: { title: string }) {
     try {
       await props.rename(title)
@@ -120,8 +123,14 @@ function DeleteConfirm(props: {
  * gives its action. It shows on hover and focus, and always on a touch screen, where there is no
  * hover. Apagar is a two-button confirmation; closing it while it deletes does not undo it.
  */
-export function ConversationMenu(props: { title: string; actions: ConversationActions }) {
+export function ConversationMenu(props: {
+  title: string
+  actions: ConversationActions
+  /** `ROW`: over the end of a list's row. `BESIDE`: next to the list's switch, for the open conversation. */
+  placement?: 'ROW' | 'BESIDE'
+}) {
   const { rename, remove } = props.actions
+  const beside = props.placement === 'BESIDE'
   const [shown, setShown] = useState<'RENAME' | 'DELETE' | undefined>()
   const cancelRef = useRef<HTMLButtonElement>(null)
   function close() {
@@ -135,9 +144,13 @@ export function ConversationMenu(props: { title: string; actions: ConversationAc
           render={
             <Button
               variant="ghost"
-              size="icon-sm"
+              size={beside ? 'icon' : 'icon-sm'}
               aria-label={`${CONVERSATION_MENU}: ${props.title}`}
-              className="absolute top-1/2 right-xs -translate-y-1/2 bg-surface-3 opacity-0 group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-popup-open:opacity-100 pointer-coarse:opacity-100"
+              className={
+                beside
+                  ? undefined
+                  : 'absolute top-1/2 right-xs -translate-y-1/2 bg-surface-3 opacity-0 group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-popup-open:opacity-100 pointer-coarse:opacity-100'
+              }
             />
           }
         >

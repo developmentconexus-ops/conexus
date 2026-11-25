@@ -319,7 +319,7 @@ test('no celular, o título da conversa é um botão que abre a lista por baixo,
     const sheet = await screen.findByRole('dialog', { name: 'Conversas' })
     await waitFor(() => {
       const rows = within(sheet)
-        .getAllByRole('button')
+        .getAllByRole('button', { name: (name) => !name.startsWith('Ações da conversa') })
         .map((one) => one.textContent)
       expect(rows.slice(0, 3)).toEqual(['Nova conversa', 'Padarias', 'Entregas'])
     })

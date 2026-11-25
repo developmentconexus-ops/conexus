@@ -12,7 +12,6 @@ import {
   readCompanyMemoryPage,
   removeCompanyMemoryNote,
   removeCompanyMemoryPage,
-  renameAssistantConversation,
   setAssistantConnections,
   setProfileMemory,
   writeCompanyMemoryInstructions,
@@ -52,7 +51,6 @@ export function assistantConnectionsQuery(companyId: CompanyId, projectId: Proje
 
 export const sendAssistantConnections = hubMutation(setAssistantConnections)
 export const sendAssistantDeletion = hubMutation(deleteAssistantConversation)
-export const sendAssistantRename = hubMutation(renameAssistantConversation)
 
 /** What the Assistant keeps about the person in the company, across their conversations. */
 export function profileMemoryQuery(companyId: CompanyId) {

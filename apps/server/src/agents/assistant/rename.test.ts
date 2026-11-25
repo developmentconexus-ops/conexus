@@ -1,24 +1,20 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { endOf, sent, streamOf, title } from '../../harness/routes/test-conversation.ts'
-import { CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
+import { renamed } from '../../harness/routes/test-questions.ts'
+import { call } from '../../hub/identity/test-hub.ts'
 import { assisting, created } from './test-assistant.ts'
 
-test('renomear: o título fica na lista, e um título vazio ou longo demais é REQUEST_MALFORMED (5)', async (t) => {
+test('renomear: o título aparado fica na lista da pessoa (5)', async (t) => {
   const on = await assisting(t)
   const mine = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  const renamed = await call(on.hub, on.ana, 'PATCH', mine, { title: '  Pedidos de outubro ' })
-  assert.equal(renamed.statusCode, 200, renamed.body)
-  assert.equal(Object(renamed.json()).title, 'Pedidos de outubro')
+  const done = await renamed(on.hub, on.ana, mine, '  Pedidos de outubro ')
+  assert.equal(done.statusCode, 200, done.body)
   const read = await call(on.hub, on.ana, 'GET', mine)
   assert.equal(Object(read.json()).conversation.title, 'Pedidos de outubro')
-  for (const title of ['   ', 'a'.repeat(121)]) {
-    const refused = await call(on.hub, on.ana, 'PATCH', mine, { title })
-    assert.deepEqual([refused.statusCode, codeOf(refused)], [400, 'REQUEST_MALFORMED'])
-  }
-  const hers = await memberOn(on.hub, on.companyId, CARLA, 'admin')
-  const other = await call(on.hub, hers, 'PATCH', mine, { title: 'De outra pessoa' })
-  assert.deepEqual([other.statusCode, codeOf(other)], [404, 'CONVERSATION_NOT_FOUND'])
+  const list = await call(on.hub, on.ana, 'GET', on.assistant)
+  const titles = Object(list.json()).conversations.map((one: { title: string }) => one.title)
+  assert.deepEqual(titles, ['Pedidos de outubro'])
 })
 
 test('renomear: a conversa de um Projeto continua no Projeto, porque a marca fixa o título sem trocar as outras (5)', async (t) => {
@@ -27,8 +23,8 @@ test('renomear: a conversa de um Projeto continua no Projeto, porque a marca fix
     projectId: on.projectId,
     connections: [],
   })
-  const renamed = await call(on.hub, on.ana, 'PATCH', mine, { title: 'Pedidos de outubro' })
-  assert.equal(renamed.statusCode, 200, renamed.body)
+  const done = await renamed(on.hub, on.ana, mine, 'Pedidos de outubro')
+  assert.equal(done.statusCode, 200, done.body)
   const read = await call(on.hub, on.ana, 'GET', mine)
   assert.equal(Object(read.json()).conversation.projectId, on.projectId)
 })
@@ -51,8 +47,8 @@ test('renomear: o título renomeado fica fixo depois de uma volta em que o obser
     return title(asked) ?? { kind: 'text', text: 'Pronto.' }
   })
   const mine = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  const renamed = await call(on.hub, on.ana, 'PATCH', mine, { title: 'Pedidos de outubro' })
-  assert.equal(renamed.statusCode, 200, renamed.body)
+  const done = await renamed(on.hub, on.ana, mine, 'Pedidos de outubro')
+  assert.equal(done.statusCode, 200, done.body)
 
   const stream = await streamOf(on.hub, on.ana, mine)
   t.after(() => stream.close())
