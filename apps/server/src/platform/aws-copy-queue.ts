@@ -1,10 +1,12 @@
 import { DeleteTableCommand, ListTablesCommand } from '@aws-sdk/client-s3tables'
 import { DeleteMessageCommand, ReceiveMessageCommand } from '@aws-sdk/client-sqs'
+import type { ConnectionId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { LakeId } from './aws-names.ts'
 import { bucketName } from './aws-names.ts'
 import type { Attempt, AwsAnswer, Session, Where } from './aws-session.ts'
 import { isNamed, POLL_SECONDS } from './aws-session.ts'
+import { forgetStoppingPoint } from './aws-state.ts'
 import type { AwsConfig } from './config-aws.ts'
 
 type LakeTable = Readonly<{ namespace: 'raw' | 'current'; name: string }>
@@ -18,6 +20,8 @@ export type LakeTables = {
   list(at: Where, lake: LakeId): Promise<AwsAnswer<readonly LakeTable[]>>
   /** A table AWS does not have counts as dropped. */
   drop(at: Where, lake: LakeId, table: LakeTable): Promise<AwsAnswer<void>>
+  /** A table's stopping point, its stream (the table's name in the lake) in the connection's state file; one AWS does not have counts as forgotten. */
+  forget(at: Where, connection: ConnectionId, stream: string): Promise<AwsAnswer<void>>
 }
 
 const Received = z.object({
@@ -112,6 +116,10 @@ export function copyQueuePorts(
       list: (at, lake) => attempt('ListTables', at, (session) => listTables(session, at, lake)),
       drop: (at, lake, table) =>
         attempt('DeleteTable', at, (session) => dropTable(session, at, lake, table)),
+      forget: (at, connection, stream) =>
+        attempt('ForgetStoppingPoint', at, (session) =>
+          forgetStoppingPoint(session, at, connection, stream),
+        ),
     },
   }
 }

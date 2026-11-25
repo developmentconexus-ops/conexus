@@ -2,6 +2,7 @@ import type { Readable } from 'node:stream'
 import { pipeline, Transform } from 'node:stream'
 import { CloudFormationClient } from '@aws-sdk/client-cloudformation'
 import { ECSClient } from '@aws-sdk/client-ecs'
+import { S3Client } from '@aws-sdk/client-s3'
 import { S3TablesClient } from '@aws-sdk/client-s3tables'
 import { SQSClient } from '@aws-sdk/client-sqs'
 import { SSMClient } from '@aws-sdk/client-ssm'
@@ -35,6 +36,7 @@ type AwsCall =
   | 'DeleteMessage'
   | 'ListTables'
   | 'DeleteTable'
+  | 'ForgetStoppingPoint'
 
 // The screen gives up on the Hub at 10 s (web platform/hub.ts), and a read of a moving lake makes
 // up to three calls in a row: the stack, then its first failure and the leftover, or the deletion
@@ -112,6 +114,8 @@ export function isNamed(error: unknown, ...names: readonly string[]): boolean {
 type Clients = {
   stacks: CloudFormationClient
   tables: S3TablesClient
+  /** The copies' stopping points, in the bucket the task's Meltano writes them to. */
+  state: S3Client
   ecs: ECSClient
   ssm: SSMClient
   sqs: SQSClient
@@ -135,6 +139,7 @@ function sessionsOf(
     throwOnRequestTimeout: true,
   })
   const endpoint = aws.endpoint === undefined ? {} : { endpoint: aws.endpoint }
+  const pathStyle = aws.endpoint === undefined ? {} : { forcePathStyle: true }
   // The base key's file, as the config owner checked it, and only its default profile (S31).
   const base = fromIni({
     filepath: aws.credentialsFile,
@@ -160,6 +165,7 @@ function sessionsOf(
     const clients = {
       stacks: new CloudFormationClient({ ...shared, credentials }),
       tables: new S3TablesClient({ ...shared, credentials }),
+      state: new S3Client({ ...shared, ...pathStyle, credentials }),
       ecs: new ECSClient({ ...shared, credentials }),
       ssm: new SSMClient({ ...shared, credentials }),
       sqs: new SQSClient({ ...shared, credentials }),

@@ -64,6 +64,7 @@ test('desligar sem cópia não chama a AWS', async (t) => {
     tables: () => ({
       list: () => Promise.reject(new Error('AWS called')),
       drop: () => Promise.reject(new Error('AWS called')),
+      forget: () => Promise.reject(new Error('AWS called')),
     }),
     tasks: (real) => ({ ...real, stop: () => Promise.reject(new Error('AWS called')) }),
   })
@@ -138,10 +139,8 @@ test('desligar espera a tarefa parar: o parâmetro sai antes do StopTask, e nenh
     'DescribeTasks',
     'DescribeTasks',
     'DeleteParameter',
-    'DeleteTable',
-    'DeleteTable',
-    'DeleteTable',
-    'DeleteTable',
+    ...['DeleteTable', 'DeleteTable', 'GetObject'],
+    ...['DeleteTable', 'DeleteTable', 'GetObject'],
   ])
   assert.ok(clock.now() > started, 'the leave waited on its clock')
   assert.deepEqual(on.aws.tables(), [])

@@ -1,0 +1,10 @@
+{
+  "service": "athena",
+  "api": "GetQueryResults",
+  "sdk": "boto3 1.44.6",
+  "recordedAt": "2026-11-25",
+  "source": "U10 step 6, tests/record_athena.py from this machine on a read-only query of the laboratory lake's workgroup, nothing created; ids and names changed (S40)",
+  "status": 200,
+  "contentType": "application/x-amz-json-1.1",
+  "body": "{\"ResultSet\":{\"ColumnInfos\":[{\"CaseSensitive\":false,\"CatalogName\":\"hive\",\"Label\":\"_col0\",\"Name\":\"_col0\",\"Nullable\":\"UNKNOWN\",\"Precision\":19,\"Scale\":0,\"SchemaName\":\"\",\"TableName\":\"\",\"Type\":\"bigint\"}],\"ResultRows\":[{\"Data\":[\"_col0\"]},{\"Data\":[\"7\"]}],\"ResultSetMetadata\":{\"ColumnInfo\":[{\"CaseSensitive\":false,\"CatalogName\":\"hive\",\"Label\":\"_col0\",\"Name\":\"_col0\",\"Nullable\":\"UNKNOWN\",\"Precision\":19,\"Scale\":0,\"SchemaName\":\"\",\"TableName\":\"\",\"Type\":\"bigint\"}]},\"Rows\":[{\"Data\":[{\"VarCharValue\":\"_col0\"}]},{\"Data\":[{\"VarCharValue\":\"7\"}]}]},\"UpdateCount\":0}"
+}

@@ -11,9 +11,9 @@ a table is copied [0071]. Singer and the Airbyte manifest declare it per table.
 - Each connector declares per table: the key (any columns and type, apart from the page cursor),
   pagination and page size, the copy mode (incremental by a column or filter, a date window with
   step and re-read, or a full pass), and discovery, by a hook or a declared list.
-- The raw layer only appends each run; it is the history. Athena rebuilds the current layer in
-  three statements, by mode: incremental updates and inserts, never deletes; a window or a full
-  pass replaces what it read, so what vanished leaves; a keyless table is replaced whole.
+- The raw layer only appends each run; it is the history. Athena updates the current one by two
+  `MERGE`, update and insert; a full or window pass then deletes unrewritten rows in its scope;
+  a keyless table is replaced whole.
 - Case, the Sankhya: 5,000-row pages, the gateway's measured ceiling; a month window for the two
   large fiscal tables without a change column; incremental where one exists; a full pass for the
   rest.
@@ -43,7 +43,8 @@ A source's change cannot be declared in these modes.
 ## State
 
 Accepted for the incremental mode, a technical call (delivery L6) on measured proof; proposed for
-the others. Founder, 2026-11-20: "de mês em mês" (the fiscal window), A0-c "okay". Amended by [0082](0082-the-lake-holds-tables-and-files.md).
+the others. Founder, 2026-11-20: "de mês em mês" (the fiscal window), A0-c "okay". Amended by
+[0082](0082-the-lake-holds-tables-and-files.md) and the first copy card.
 
 [0063]: 0063-copy-models-proof.md
 [0071]: 0071-connectors-kit-live-copies-singer.md

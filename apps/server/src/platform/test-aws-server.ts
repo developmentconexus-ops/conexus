@@ -12,6 +12,7 @@ import {
   TEST_AWS_REGION,
   testAwsCredentials,
 } from './test-aws.ts'
+import { objectAnswer } from './test-aws-objects.ts'
 import type { ServedTask, TaskStop } from './test-aws-scripts.ts'
 import {
   aboutTask,
@@ -50,6 +51,7 @@ class AwsState {
   readonly parameters = new Map<string, string>()
   readonly tasks = new Map<string, ServedTask>()
   readonly tables = new Set<string>()
+  readonly objects = new Map<string, string>()
   readonly queue: { handle: string; body: string }[] = []
   readonly start = new CopyStart()
   creation: Creation = 'SUCCEEDS'
@@ -203,7 +205,7 @@ class AwsState {
     return awsRecording('delete-message')
   }
 
-  rest(method: string, path: string): WireAnswer {
+  rest(method: string, path: string, text = ''): WireAnswer {
     if (method === 'GET' && path.startsWith('/tables/')) return this.listTables()
     if (method === 'DELETE' && path.startsWith('/tables/')) {
       const [namespace, name] = path.split('/').slice(-2)
@@ -218,7 +220,7 @@ class AwsState {
           : 'get-table-bucket-nunca-existiu',
       )
     }
-    return { status: 501, body: '' }
+    return objectAnswer(this.objects, method, decodeURIComponent(path.slice(1)), text, this.calls)
   }
 
   private listTables(): WireAnswer {
@@ -285,6 +287,8 @@ export async function awsServer(t: TestContext, options: { creation?: Creation }
       for (const table of tables) state.tables.add(table)
     },
     tables: () => [...state.tables],
+    objects: () => new Map(state.objects),
+    putObject: (key: string, text: string) => state.objects.set(key, text),
     /** A message the task sent to the queue. */
     enqueue: (body: string) => state.queue.push({ handle: randomUUID(), body }),
     /** The task ends: its STOPPED event reaches the queue, as the Hub's stop or as the container's exit. */
@@ -322,5 +326,5 @@ async function answerOf(
   if (method === 'POST' && new URLSearchParams(text).has('Action')) {
     return state.query(new URLSearchParams(text))
   }
-  return state.rest(method, new URL(url, 'http://double').pathname)
+  return state.rest(method, new URL(url, 'http://double').pathname, text)
 }

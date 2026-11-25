@@ -58,10 +58,10 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
   }
 })
 
-// Only a 204 has no body (S3 Tables answers DeleteNamespace and DeleteTableBucket so), and SQS's DeleteMessage, whose 200 is empty.
+// Only a 204 has no body (S3 Tables answers DeleteNamespace and DeleteTableBucket so), and the 200s of SQS's DeleteMessage and S3's PutObject, which are empty.
 const AwsRecording = z
   .object({
-    service: z.enum(['sts', 'cloudformation', 's3tables', 'ssm', 'sqs', 'ecs']),
+    service: z.enum(['sts', 'cloudformation', 's3tables', 's3', 'athena', 'ssm', 'sqs', 'ecs']),
     api: z.string().min(1),
     sdk: z.string().min(1),
     recordedAt: z.iso.date(),
@@ -69,8 +69,8 @@ const AwsRecording = z
     body: z.string(),
   })
   .refine(
-    (r) => r.body.length > 0 || r.status === 204 || r.api === 'DeleteMessage',
-    'only a 204 or a DeleteMessage has no body',
+    (r) => r.body.length > 0 || r.status === 204 || ['DeleteMessage', 'PutObject'].includes(r.api),
+    'only a 204, a DeleteMessage or a PutObject has no body',
   )
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 

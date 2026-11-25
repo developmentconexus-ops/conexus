@@ -1,0 +1,10 @@
+{
+  "service": "athena",
+  "api": "StartQueryExecution",
+  "sdk": "boto3 1.44.6",
+  "recordedAt": "2026-11-25",
+  "source": "U10 step 6, tests/record_athena.py from this machine on a read-only query of the laboratory lake's workgroup, nothing created; ids and names changed (S40)",
+  "status": 200,
+  "contentType": "application/x-amz-json-1.1",
+  "body": "{\"QueryExecutionId\":\"00000000-0000-4000-8000-000000000001\"}"
+}

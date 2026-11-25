@@ -1340,18 +1340,78 @@ reference tool checks a read against its documentation.
   that is earlier, up to the current one, so a copy stopped for months misses none: Airbyte's
   `DatetimeBasedCursor` starts its `lookback_window` from the saved point
   (the `source-shipstation` connector's `manifest.yaml:116`, at `82db089b`), as dlt's `lag` does
-  (`dlt/extract/incremental/__init__.py:142`, at `8fa90a97`).
+  (`dlt/extract/incremental/__init__.py:142`, at `8fa90a97`). The current layer takes the months
+  from the rows themselves: after the `MERGE` statements,
+  `Updater._delete_unwritten_in_brought_months`
+  (`apps/extraction/src/conexus_extraction/update.py`) deletes, in the months the new raw rows
+  brought, the current rows they did not rewrite, so a row the source dropped from a re-read month
+  leaves the lake. A whole pass deletes the current rows of an older version, in a window table
+  only in the months since the start date. The form is dlt's `merge_key`, which limits the deletes
+  to the partitions of the loaded rows (dlt's `merge-loading.md:968-984`, at `8fa90a97`).
 - **Why.** The fiscal tables have no change column, and the A0D measurement read 3,140 rows per
   second by month against 442 without the window (`EST/a0d-sankhya-kit-mes:93-106`). The month
   window is our extension of decision 0080.
 - **Proof.** `sankhya/copy-tables.test.ts`, "os meses da contagem": the double's months come back
   with the two out of the calendar, and each month's page holds that month's rows only.
   `apps/extraction/tap/src/tap-pass.test.ts`, "a janela parada": a point five months back rereads
-  every month since.
+  every month since. `apps/extraction/tests/test_update.py`, "a janela troca o que leu": the month
+  that lost a row in the source loses it in the lake, and the months before the re-read stay.
   `kernel/conformance.test.ts`, "a declaração por tabela", refuses a window on a column that is not
   a date.
-- **Not proved.** The count on the real Oracle: the double runs the same SQL in SQLite.
+- **Not proved.** The count on the real Oracle: the double runs the same SQL in SQLite. The
+  delete by month on Athena (the double runs it in DuckDB): L.7. A month the source emptied whole
+  brings no row, so it stays in the lake until a whole pass, the limit dlt documents for an empty
+  snapshot (`merge-loading.md:999-1003`).
 - **Revisit when** `singer-sdk` or `meltano` gains a partition or window mode.
+
+## Connectors (A primeira cópia chega ao lago): the current layer, one case a statement
+
+- **Library line.** No library updates the current table of a lake from Singer rows.
+  Airbyte's destination writes one `MERGE` with the update, the delete and the insert as cases
+  (`AB JdbcSqlGenerator.kt:219-238`), and dlt's merge job is the other form read
+  (`DLT dlt/destinations/sql_jobs.py:1120-1139`). Athena on `S3 Tables` fails a `MERGE` of two or more
+  cases from about 230 to 337 columns and runs one case with 450 (`EST/achados-auditoria:49`,
+  `:321`).
+- **Hand-made piece.** `Updater._merges` in `apps/extraction/src/conexus_extraction/update.py`:
+  two `MERGE` statements over the rows the pass added to the raw table, one case each. The first
+  updates the rows that match, the second inserts what does not match. No connector marks a row
+  deleted (`_sdc_deleted_at`): Airbyte and dlt have a delete case only when the source brings the
+  mark, so the case comes with the first connector that does. Our writer has no row hash, so the
+  update rewrites every matched row of the slice. The slice is the newest row of each key between the point of the
+  last update (`conexus.atualizado_ate`) and the highest `_sdc_sequence`, so a repeated update
+  finds nothing new. A new column in the raw table reaches the current one before the first
+  statement (`union_by_name`). After a whole pass, one `DELETE` drops the current rows of a
+  version older than the pass (`_sdc_table_version`), the form of singer-sdk 0.54.9
+  `delete_old_versions` (`singer_sdk/sql/connector.py:1883`). In a round where a table fails, only
+  the tables whose pass ended, with their batch written, are updated: Airbyte runs the upsert of
+  every stream and skips only what destroys (`DestinationLifecycle.kt:82-88`,
+  `DirectLoadTableStreamLoader.kt:122-140`, `:263-275`, at `82db089b`).
+- **Why.** Decision 0080: the raw table appends, the current one follows the mode. One case a
+  statement is the form that passed on 450 columns.
+- **Proof.** `apps/extraction/tests/test_update.py`, "a atual segue a fonte" (the source's note,
+  changed and created, and no statement with two cases) and "a coluna nova na atual"; the
+  hand mutation that cleans before the `MERGE` turns "a limpeza" and "a atual segue a fonte" red.
+- **Not proved.** On Athena, with the real 450 columns: L.7. The tests run the statements in DuckDB,
+  whose dialect is not Trino's, over the recorded Athena envelopes.
+- **Revisit when** Athena runs a multi-case `MERGE` on a wide table, or `S3 Tables` maintains
+  the history itself.
+
+## Connectors (A primeira cópia chega ao lago): the raw history is cleaned once it is in the current layer
+
+- **Library line.** No reference cleans a raw layer: Nekt keeps the history as an optional module of
+  each table (`NK:8635`), Databricks keeps a type 2 history per table, Airbyte kept everything, and
+  `S3 Tables` keeps 120 hours of snapshots.
+- **Hand-made piece.** The last step of `Updater._update`: `DELETE FROM raw` of every row up to the
+  update's highest `_sdc_sequence`, after the current table and its properties are written, in every
+  table, the NF-e's XML included. A table declared `history: true` skips it. A crash between the
+  properties and the cleaning repeats the cleaning, and the next update finds no new row.
+- **Why.** The founder, 2026-11-24: the XML has no history either, and the raw layer is a passage,
+  not an archive. Decision 0080.
+- **Proof.** `apps/extraction/tests/test_update.py`, "a limpeza", "o xml sem historico" and "a
+  limpeza pula o historico".
+- **Not proved.** The cleaning on Athena's real `DELETE`: L.7.
+- **Revisit when** the founder asks for history of a table, or the raw tables hold more than the
+  rounds in flight.
 
 ## Connectors (A primeira cópia chega ao lago): the adapter speaks Singer in TypeScript
 

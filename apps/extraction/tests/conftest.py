@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import typing as t
+import urllib.request
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass, field
@@ -23,6 +24,7 @@ from pyiceberg.catalog import Catalog, load_catalog
 
 from conexus_extraction import entry
 from conexus_extraction.contract import Lake, Spec
+from tests.athena_double import AthenaDouble
 
 REPO = Path(__file__).parents[3]
 RECORDINGS = REPO / "apps/server/src/platform/recordings/aws"
@@ -129,8 +131,12 @@ class Aws:
     gets: int = 0
     refuse_after_gets: int | None = None
     refusal: str = "get-parameter-apagado"
+    athena: AthenaDouble | None = None
 
     def answer(self, target: str, request: dict[str, t.Any]) -> tuple[dict[str, t.Any], str]:
+        if target.startswith("AmazonAthena."):
+            assert self.athena is not None
+            return self.athena.answer(target, request)
         if target == "AmazonSSM.GetParameter":
             self.gets += 1
             if self.refuse_after_gets is not None and self.gets > self.refuse_after_gets:
@@ -174,6 +180,7 @@ def aws(monkeypatch: pytest.MonkeyPatch) -> Iterator[Aws]:
     for name, value in {
         "AWS_ENDPOINT_URL_SSM": origin,
         "AWS_ENDPOINT_URL_SQS": origin,
+        "AWS_ENDPOINT_URL_ATHENA": origin,
         "AWS_ACCESS_KEY_ID": "AKIAINVENTED00000001",
         "AWS_SECRET_ACCESS_KEY": "invented",
         "AWS_REGION": REGION,
@@ -214,19 +221,27 @@ class Task:
     plugins: Path
     lake: Catalog
     catalog: dict[str, str]
+    athena: AthenaDouble
+    state: Path
 
-    def spec(self, *tables: tuple[str, str], start_date: str | None = None) -> Spec:
+    def spec(
+        self,
+        *tables: tuple[str, str],
+        start_date: str | None = None,
+        whole: bool = True,
+        connection: str | None = None,
+    ) -> Spec:
         return {
             "version": 1,
             "runId": str(uuid.uuid4()),
             "attempt": 1,
             "companyId": COMPANY,
             "connector": "sankhya",
-            "connectionId": str(uuid.uuid4()),
+            "connectionId": connection or str(uuid.uuid4()),
             "account": None,
             "startDate": start_date,
             "credential": self.double.credential,
-            "tables": [{"source": s, "name": n, "whole": True} for s, n in tables],
+            "tables": [{"source": s, "name": n, "whole": whole} for s, n in tables],
             "lake": {
                 "bucketArn": f"arn:aws:s3tables:{REGION}:111122223333:bucket/x",
                 "region": REGION,
@@ -304,6 +319,14 @@ class Task:
         )
         return t.cast("dict[str, t.Any]", json.loads(report.read_text()))
 
+    def change(self, path: str, body: dict[str, str] | None = None) -> dict[str, t.Any]:
+        request = urllib.request.Request(
+            f"{self.double.origin}/__teste/{path}",
+            data=None if body is None else json.dumps(body).encode(),
+            method="POST",
+        )
+        return t.cast("dict[str, t.Any]", json.loads(urllib.request.urlopen(request).read()))
+
     def seen(self, name: str) -> str:
         return (self.dumps / name).read_text()
 
@@ -345,4 +368,16 @@ def task(aws: Aws, double: Double, tmp_path: Path, monkeypatch: pytest.MonkeyPat
     lake = load_catalog("lake", **catalog)
     for namespace in ("raw", "current"):
         lake.create_namespace(namespace)
-    return Task(aws=aws, double=double, dumps=dumps, plugins=plugins, lake=lake, catalog=catalog)
+    aws.athena = AthenaDouble(lake)
+    state = tmp_path / "state"
+    monkeypatch.setenv("CONEXUS_STATE_URI", f"file://{state}")
+    return Task(
+        aws=aws,
+        double=double,
+        dumps=dumps,
+        plugins=plugins,
+        lake=lake,
+        catalog=catalog,
+        athena=aws.athena,
+        state=state,
+    )

@@ -1,0 +1,10 @@
+{
+  "service": "s3",
+  "api": "GetObject",
+  "sdk": "@aws-sdk/client-s3 3.1146.0",
+  "recordedAt": "2026-11-25",
+  "source": "U10 step 5, scripts/record-aws.ts state from this machine on the laboratory account, one scratch bucket made and deleted at the end; account and names changed (S40)",
+  "status": 404,
+  "contentType": "application/xml",
+  "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message><Key>EmpresaTesteA0000000000000000001/EmpresaTesteConexao00000000001/copia:tap-conexus-to-target-conexus/state.json</Key><RequestId>Z7C0GDHABDR77S09</RequestId><HostId>lGKGJQoHqxWi7tZSsmfYLQjoFpR0GkhugI2+0yQ1kbYsD/+9LLHZw36TENuY/B7rzszIO+vi/UvakB+8uiDGyJFHosX4XEFQ</HostId></Error>"
+}

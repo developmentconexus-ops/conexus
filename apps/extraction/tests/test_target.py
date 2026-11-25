@@ -4,6 +4,7 @@ import json
 import urllib.request
 from decimal import Decimal
 
+import pytest
 from pyiceberg.serializers import FromInputFile
 from pyiceberg.table import Table
 
@@ -20,6 +21,11 @@ SDC = {
     "_sdc_table_version",
     "_sdc_sync_started_at",
 }
+
+
+@pytest.fixture(autouse=True)
+def _raw_stays(task: Task) -> None:
+    task.athena.keep_raw = True
 
 
 def _rows_when_marked(table: Table) -> int | None:

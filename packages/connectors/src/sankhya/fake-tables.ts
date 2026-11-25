@@ -213,6 +213,7 @@ export function copyTablesOn(database: DatabaseSync, decimal: string): CopyTable
   let added = 0
   return {
     note(nunota, action, at = CHANGED_BY_TEST) {
+      if (action === 'APAGAR') database.prepare('DELETE FROM TGFNFE WHERE NUNOTA = ?').run(nunota)
       const done =
         action === 'APAGAR'
           ? database.prepare('DELETE FROM TGFCAB WHERE NUNOTA = ?').run(nunota)

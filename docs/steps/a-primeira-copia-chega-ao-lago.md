@@ -506,6 +506,15 @@ da trilha e está na página dela. O que cada decisão faz no cartão:
   que o Hub diz que pode copiar, pela mesma regra que a página da ligação segue (`unavailableFor`, a
   credencial exclusiva ou o kit sem tabela), lida do catálogo (`ConnectorEntry.lakeUnavailable`) e nunca
   copiada na web; a ligação parada que ainda tem tabela no lago segue em Dados (o critério 121).
+- **As decisões da revisão do G5** (fundador, 2026-11-25: "1. Seguir as referencias com certeza
+  conforme noss oguia e metodologia / 2. Seguir nativo conforme referecnias / 3. Okay"): numa rodada
+  em que uma tabela falha, a atual recebe as tabelas cuja leitura terminou, e a rodada continua
+  dizendo a falha da que falhou (o critério 122); sai o `MERGE` que apagava a linha marcada como
+  apagada, porque nenhum conector traz a marca (linha 28); a passada inteira apaga da atual a linha
+  que ela não reescreveu, e a da janela apaga, só nos meses que trouxe, a que não reescreveu (linhas
+  28 e 66). Um mês que o Sankhya esvaziar por inteiro fica na atual até uma passada inteira, o mesmo
+  limite do dlt. Saem ainda as frases que o código não segue: o estado mora no caminho do Meltano, o
+  Hub tira dele a tabela desmarcada, e o `meltano.yml` e o `lake-run.ts` não mudam.
 
 ## As unidades
 
@@ -735,8 +744,9 @@ velha, que passa ao índice do kit.
 | 56 | U10 | Pelo `meltano run`, a segunda rodada de uma ligação do Sankhya lê, de cada tabela só do que mudou, só o que mudou desde o ponto de parada dela, guardado no depósito do estado com o prefixo da empresa; uma tabela sem coluna de alteração (o negócio do HubSpot) lê tudo | `apps/extraction/tests/test_state.py`, "a segunda rodada" | must |
 | 57 | U10 | Na AWS (L.4): uma rodada morta no meio retoma lendo menos que o total; o estado salvo nunca está adiante das linhas gravadas; o papel de A não lê o prefixo de B | Lab, no pull request do G5 | must |
 | 58 | U10 | Pela entrada da tarefa (`meltano run` e a atualização depois), depois de uma rodada inteira e uma só do que mudou, a atual tem uma linha por chave, igual à fonte, com o valor de hoje; o `MERGE` roda um caso por instrução e passa com as 450 colunas do dublê | `apps/extraction/tests/test_update.py`, pela entrada, contra as gravações do Athena; Lab (L.7) | must |
-| 103 | U10 | Numa tabela de janela, depois da passada da janela, a atual tem nos meses da janela exatamente as linhas da fonte, e a linha que saiu da janela na fonte sai da atual; os meses fora da janela ficam. Numa tabela inteira, a atual é a última passada | `test_update.py`, "a janela troca o que leu" e "a inteira troca tudo" | must |
+| 103 | U10 | Numa tabela de janela, depois da passada da janela, a atual tem nos meses da janela exatamente as linhas da fonte, e a linha que saiu da janela na fonte sai da atual; os meses fora da janela ficam, e um mês que a fonte esvaziou por inteiro fica até uma passada inteira. Numa tabela inteira, a atual é a última passada | `test_update.py`, "a janela troca o que leu" e "a inteira troca tudo" | must |
 | 59 | U10 | Depois de cada atualização, a bruta não tem mais as linhas que já entraram na atual, nem as passadas inteiras anteriores; a atual não muda com a limpeza (decisão A) | `test_update.py`, "a limpeza"; Lab (L.7) | must |
+| 122 | U10 | Pela entrada da tarefa, numa rodada em que uma tabela falha, as tabelas cuja passada terminou nesta rodada chegam à atual, com as contagens delas no resultado, e a rodada diz a falha da tabela que falhou; uma tabela de passada parada no meio, ou nunca começada, não muda a atual; uma falha antes do primeiro ponto salvo também chega no resultado | `apps/extraction/tests/test_entry.py`, "a tabela que falha não trava a atual das que terminaram", "a tabela que terminou com linhas no lote entra inteira", "a passada parada no meio não entra na atual", "a tabela nunca começada não trava a atual das que terminaram" e "a falha antes do primeiro ponto chega no resultado" | must |
 | 106 | U3, U4, U5 | Uma regra só, para todo conector, pelo tipo que a descoberta lê: `CLOB`, `NCLOB` e `LONG` viram texto; `BLOB`, `RAW` e `LONG RAW` viram o tipo binário do Iceberg, com os bytes iguais aos da fonte; nenhuma coluna se marca como arquivo à mão. O significado declarado de uma coluna (`NFE_XML`) vai às propriedades da tabela (`conexus.significado.<coluna>`) e não muda a cópia | `sankhya/copy-tables.test.ts`, "o tipo da coluna"; `tap.test.ts`, "o binário"; `test_target.py`, "o binário chega igual" | must |
 | 115 | U4 | Uma consulta (o teto, a contagem por mês) que responde 5xx, 429 (`BUSY`, esperando o `waitMs` que o provedor pediu) ou cai por erro de rede e depois responde é lida e emitida uma vez, sem `TapFailure`; a que falha cinco vezes escreve `COPY_SOURCE_UNREACHABLE` e a tabela em que parou e sai com código diferente de zero, com a espera crescendo entre as tentativas (relógio de teste); um 4xx que não é 429 não é repetido. Uma página que responde 5xx ou estoura o prazo pede metade das linhas no mesmo ponto, o corte vale até o fim da tabela e fica no `STATE`, sem pular linha; no piso de 1 linha são as 5 tentativas; o 429 não corta; cada tentativa deixa uma linha de log sem o corpo | `apps/extraction/tap/src/tap-pass.test.ts`, "a consulta que cai e volta"; `tap-reduce.test.ts` | must |
 | 104 | U10 | Nenhuma tabela guarda histórico nesta etapa (o fundador, 2026-11-24, 16:19Z: "Outra coisa sobre o histórico de NFE, vamos deixar sem o histórico, porque eu acho que o jeito que você está querendo montar o histórico não é como as referências fazem."): a limpeza lê o `history` da declaração e roda também na tabela dos dados da NF-e, com o XML. Depois de duas passadas que leem a mesma nota com XML diferente (a segunda forçada inteira no teste), a atual tem a versão nova e a bruta não guarda mais as linhas que já entraram nela; uma nota apagada no dublê sai da atual na passada inteira. Numa tabela de teste com `history: true`, a limpeza não roda | `test_update.py`, "o XML sem histórico" e "a limpeza pula o histórico", pela entrada da tarefa com o modo da declaração | must |
@@ -930,7 +940,7 @@ Impeccable roda na QA da parte 1 ([Impeccable](../reference/impeccable.md)).
 | Apagar o lago com tabelas, as cópias do lago e os relógios | A trava do lago de hoje (etapa 1) | Tabelas apagadas e pilha não: o próximo **Apagar o lago** termina; as linhas de `lake_copy` e os relógios saem depois das tabelas, e repetir termina | A AWS fora: o estado `delete_failed` de hoje | o de hoje do lago | 48 |
 | A Release publica a imagem e a plataforma | O grupo de concorrência da Release de hoje | Imagem publicada e plataforma não: a próxima Release publica a mesma versão | O ECR fora: a Release falha antes do `deploy` | o do workflow | 26, 34 |
 | O ponto de parada do Meltano | Uma rodada por ligação; o Meltano grava a cada linha de estado | Morte no meio: o estado é o do último lote gravado | O `S3` fora: o Meltano falha, e a rodada termina com o código do gravador | o de hoje do Meltano | 56, 57 |
-| O atualizar e a limpeza (três `MERGE`, um `DELETE` na passada inteira e na janela, e um da limpeza, que a tabela dos dados da NF-e pula) | Uma rodada por ligação | Entre duas instruções a atual fica num estado do meio; a próxima rodada refaz | O Athena fora: a rodada termina `COPY_LAKE_WRITE_FAILED`; a bruta guarda as linhas | `UPDATE_FAILED` com o código do Athena | 58, 59, 103, 104 |
+| O atualizar e a limpeza (dois `MERGE`, um `DELETE` na passada inteira ou na da janela, e um da limpeza, que roda em todas as tabelas) | Uma rodada por ligação | Entre duas instruções a atual fica num estado do meio; a próxima rodada refaz. Uma tabela que falha na leitura ou na gravação não impede as que terminaram a passada | O Athena fora: a rodada termina `COPY_LAKE_WRITE_FAILED`; a bruta guarda as linhas | `UPDATE_FAILED` com o código do Athena | 58, 59, 103, 104, 122 |
 
 ## A tabela de referência
 
@@ -983,7 +993,7 @@ limpeza; L.8, apagar sem sobra; L.9, a cota do parâmetro.
 | 25 | A rede da tarefa até o sistema | fica | nenhum | as provas: sub-rede pública, IP público, sem NAT | nativo | Não provado: o Sankhya do fundador de dentro da AWS: L.2 | T.6 | U6 | `infra/aws/lib/copy.ts` |
 | 26 | A plataforma da cópia: fila, tarefa, regra, rede; o depósito de imagens, na preparação | fica | nenhum | `aws-cdk-lib@2.278.0` `aws-ecs/lib/fargate/fargate-task-definition.d.ts`, `aws-sqs/lib/queue.d.ts`, `aws-events/lib/rule.d.ts`, `aws-ecr/lib/repository.d.ts` | nativo | À mão, `conexus-lab-trilho/fases2a4/plataforma.py:80-90` | 0073, 0076 | U6 | `infra/aws/lib/copy.ts`; o depósito, `infra/aws/lib/copy-preparation.ts` |
 | 27 | A receita muda: o papel que escreve, as três travas, os lagos já criados | fica | `C/infra/aws/lib/platform.ts:114-123`, `:127`, `:139-144`; `preparation.ts:209-262`; `hub.ts:14-20` | 0073: "A change to every company is one `UpdateStack` each" | nativo | Não provado: o papel dentro da pilha, L.6 | E; T.5 | U6 | — |
-| 28 | A camada atual: o atualizar, um caso por instrução | fica | nenhum | `AB .../JdbcSqlGenerator.kt:219-238`; `DLT dlt/destinations/sql_jobs.py:1120-1139` | remendo, do 0080 | 449 de 449 tabelas com diferença zero; a forma do airbyte 2.0.0 (`AB`) lida; o `MERGE` de dois casos falha de ~230 a ~337 colunas, o de um caso passa com 450 (`EST/achados-auditoria:49`, `:321`). Não medido na `TGFCAB` real: L.7 | 0080 | U10 | `apps/extraction/src/conexus_extraction/update.py` |
+| 28 | A camada atual: o atualizar, um caso por instrução | fica | nenhum | `AB .../JdbcSqlGenerator.kt:219-238`; `DLT dlt/destinations/sql_jobs.py:1120-1139`; o `DELETE` pela versão, `singer-sdk@0.54.9 singer_sdk/sql/connector.py:1883`; a tabela que falha, `airbyte@82db089b DestinationLifecycle.kt:82-88`; sem ramo de apagar sem a marca, `dlt@8fa90a97 merge-loading.md:964-966` | remendo, do 0080 | 449 de 449 tabelas com diferença zero; a forma do airbyte 2.0.0 (`AB`) lida; o `MERGE` de dois casos falha de ~230 a ~337 colunas, o de um caso passa com 450 (`EST/achados-auditoria:49`, `:321`). Não medido na `TGFCAB` real: L.7 | 0080 | U10 | `apps/extraction/src/conexus_extraction/update.py` |
 | 29 | O histórico da bruta: limpa até entrar na atual, em todas as tabelas, a dos dados da NF-e incluída | fica | nenhum | nenhuma faz a limpeza: na Nekt o histórico é um módulo opcional por tabela (`NK:8635`); no Databricks, SCD 2 por tabela (`MAPA` 1.2); o Airbyte guardava tudo; o `S3 Tables` guarda 120 h de fotos | remendo (a limpeza) | Não provado: L.7 (`docs/decisions/0080-copy-declared-per-table-raw-appends.md`) | A; o histórico do XML: sem histórico, 2026-11-24 | U10 | — (em `update.py`) |
 | 30 | Onde fica o ponto de parada | fica | `C/apps/server/src/hub/copies/tables.ts:274-312` | `meltano@4.4.1 core/plugin/singer/target.py:100-120`; `core/state_store/filesystem.py:45`, `:191-228` | nativo | Local, em arquivo. Não provado no `S3`: L.4 | T.1 | U10 | — (muda `meltano.yml`) |
 | 31 | A página Dados: lista, Visão geral, Colunas, Rodadas | refeita: a de hoje sai na parte 0 e a nova lê as tabelas do lago | `C/apps/web/src/hub/copies/` (3.389 linhas sem os testes); `copy-detail.tsx:105-109`, `:170-305`; `text.ts:88-89` | `AP .../locales/en.json:1088-1094`, `:577-578`; Nekt, `NK:22429-22431`; a captura `cloud-status-page.png` | embrulhado | As capturas do estudo | NT3; não precisa | U14, U8, U9 | `apps/web/src/hub/copies/lake-list.tsx`, `lake-detail.tsx` |
@@ -1021,7 +1031,7 @@ limpeza; L.8, apagar sem sobra; L.9, a cota do parâmetro.
 | 63 | O texto longo e o binário pelo tipo que a descoberta lê, para todo conector; o XML da NF-e como coluna de texto | nova | `copy-read.ts` lê só as colunas declaradas; a A0d excluía LOB (`EST/a0d-sankhya-kit-mes:42`) | Nekt, fonte Oracle: o `CLOB` "as standard strings" e o binário em hexadecimal (`NK:132602`); Airbyte Oracle, `clob` e `blob` viram `string` (`ARQ` seção 0); Iceberg, o tipo `binary` (`pyiceberg@0.12.0`, `BinaryType`); o Athena lê até 32 MB numa linha (PS4) | nativo | Não provado: PS1, PS2, PS4 | XML; "E, não, beleza" | U3, U4, U5 | — (no mapa dos tipos de `sankhya/copy-tables.ts` e em `target.py`) |
 | 64 | A origem e o rótulo no catálogo do lago | nova | nenhum | Iceberg, as propriedades da tabela (`pyiceberg@0.12.0`, `create_table(properties=...)`); Nekt, "Add descriptions to tables" (`NK:405`) | nativo | — | Nome | U5 | — (em `target.py`) |
 | 65 | Uma descoberta só, para a janela e para o catálogo da tarefa | nova | nenhum | Nekt: a validação descobre os streams, e a escolha é o `selected` do catálogo (`MAPA` 1.1, 3b e 4; `NK:12198-12203`); Singer `--discover` | nativo (o `--discover`); a janela chama a mesma função | — | o fluxo | U3, U4, U8 | — (`discoverTables` em `kernel/tables.ts`) |
-| 66 | A janela por mês | nova | só a janela junto da coluna de alteração (`EST/a0-alteracao-fiscais:66-68`) | singer-sdk: sem chave de replicação, passada inteira; a skill da AWS: trocar a partição (`EST/a0-alteracao-fiscais:166`, `:169`) | remendo (a extensão nossa da 0080) | A A0D: 3.140 linhas/s por mês, contra 442 sem janela (`EST/a0d-sankhya-kit-mes:93-106`); `singer-sdk@0.54.9` não tem modo de janela, e o `meltano@4.4.1` guarda o ponto de cada fluxo | Completo; A0-n, A0-c | U3, U4, U10 | — |
+| 66 | A janela por mês | nova | só a janela junto da coluna de alteração (`EST/a0-alteracao-fiscais:66-68`) | singer-sdk: sem chave de replicação, passada inteira; a skill da AWS: trocar a partição (`EST/a0-alteracao-fiscais:166`, `:169`); o apagar só nas partições dos dados carregados, `dlt@8fa90a97 merge-loading.md:968-1003` (`merge_key`) | remendo (a extensão nossa da 0080) | A A0D: 3.140 linhas/s por mês, contra 442 sem janela (`EST/a0d-sankhya-kit-mes:93-106`); `singer-sdk@0.54.9` não tem modo de janela, e o `meltano@4.4.1` guarda o ponto de cada fluxo | Completo; A0-n, A0-c | U3, U4, U10 | — |
 | 67 | As 49 tabelas do Sankhya, núcleo, fiscal e contábil | nova | cinco modelos de consulta, `C/packages/connectors/src/sankhya/copies.ts:89-155` | Nekt: uma lista fixa por ERP de API, Protheus e TOTVS RM (`EST/conector-estilo-novo-estudo:44-51`) | embrulhado: a lista do kit | As 42 contadas no dicionário (`SK` seção 3.1); faltam a P1 e a P2 | Completo | U3 | — (em `sankhya/copy-tables.ts`) |
 | 68 | Ler o XML em linhas (`nfe_notas`, `nfe_itens`) | fica de fora | nenhum | Databricks, `read_files(format => 'xml')` (`ARQ` seção 7) | embrulhado, na etapa nova, com uma biblioteca do XSD oficial | — | XML: "Etapa própria, depois da 3" | fica de fora: a etapa nova da trilha | — |
 | 69 | Todas as colunas, atuais e futuras | nova | nenhum | Databricks: "By default, managed connectors in Lakeflow Connect ingest all current and future columns" (`MAPA` 1.2); Nekt, "Auto-add fields" ligado (`MAPA` 1.1); `pyiceberg@0.12.0`, `update_schema().union_by_name`; o `SCHEMA` novo do Singer a cada rodada | nativo | — | o desenho, área 4; K3 | U5, U10 | — (em `target.py` e `update.py`) |
@@ -2965,14 +2975,22 @@ instruções a tabela fica num estado do meio.
   `core/state_store/filesystem.py:45`, `:191-228`, com o depósito `S3` nativo (T.1); a opção
   `state_backend.uri` (`meltano/core/bundle/settings.yml:18-19`, `:54-68`). Não depender de
   `lock_retry_seconds` (`state_store/base.py:160`): quem garante uma rodada por ligação é o Hub.
-- **Linha 28.** A forma medida na AWS, `conexus-lab-trilho/fases2a4/atualizar.py:66-127`: três `MERGE`
-  do Athena, um caso por instrução, e um `DELETE` para a passada inteira; `DLT
-  dlt/destinations/sql_jobs.py:1120-1139`; um caso por instrução passou com 450 colunas
-  (`EST/achados-auditoria:321`).
+- **Linha 28.** A forma medida na AWS, `conexus-lab-trilho/fases2a4/atualizar.py:66-127`, um caso por
+  instrução, passou com 450 colunas (`EST/achados-auditoria:321`); aqui são dois `MERGE` do Athena, o
+  que atualiza e o que insere, porque nenhum conector marca linha apagada (`_sdc_deleted_at`) e o dlt
+  só apaga por essa marca quando a fonte a traz (`dlt@8fa90a97 merge-loading.md:964-966`); a forma do
+  `MERGE` segue a `DLT dlt/destinations/sql_jobs.py:1120-1139`. A passada inteira apaga da atual, pela
+  versão, a linha que não reescreveu (`DELETE ... WHERE _sdc_table_version < V`, a forma do
+  `singer-sdk@0.54.9 singer_sdk/sql/connector.py:1883`). Com uma tabela que falha, o Airbyte aplica o
+  upsert de todas e pula só o que destrói (`airbyte@82db089b` `DestinationLifecycle.kt:82-88`,
+  `DirectLoadTableStreamLoader.kt:122-140`, `:263-275`).
 - **Linha 29.** A limpeza da bruta (A): um `DELETE` do Athena das linhas que já entraram na atual.
 - **Linha 8.** O modo da declaração do kit, já lido pelo adaptador (U4).
-- **Linha 66.** A janela por mês na atual: um `DELETE` do Athena dos meses relidos e o `INSERT` deles,
-  como a passada inteira faz com a tabela toda.
+- **Linha 66.** A janela por mês na atual: depois dos `MERGE`, um `DELETE` do Athena, só nos meses que
+  as linhas novas da bruta trouxeram, das linhas que elas não reescreveram, a forma do `merge_key` do
+  dlt (`dlt@8fa90a97 merge-loading.md:968-984`). Na passada inteira vale o `DELETE` da linha 28, numa
+  janela só nos meses desde o mês da data. Um mês que a fonte esvaziou por inteiro não vem nas linhas e
+  fica até uma passada inteira, o mesmo limite do dlt (`:999-1003`).
 - **Linha 73.** A releitura desde a data troca a tabela como o Full Sync da Nekt troca a dela
   (`NKH:22494`, `:117134`): é a passada inteira da linha 28, lida desde a data.
 - **Linha 29.** A limpeza lê o `history` da declaração e roda em todas as tabelas, a dos dados da NF-e incluída: nenhuma guarda
@@ -2984,16 +3002,23 @@ instruções a tabela fica num estado do meio.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/extraction/` | Cria `src/conexus_extraction/update.py`; muda `entry.py`, `meltano.yml`, `tests/` | a imagem |
+| `apps/extraction/` | Cria `src/conexus_extraction/update.py`; muda `entry.py`, `target.py`, `tests/` e o `pyproject.toml` com o `uv.lock` (o DuckDB, só nos testes); o `meltano.yml` não muda | a imagem |
 | `apps/extraction/tap/` | Muda: a retomada pelo `--state` e o modo incremental | o `meltano.yml` |
-| `infra/aws/lib/` | Muda `copy.ts` (o depósito do estado) e `platform.ts` (o Hub apaga o prefixo de uma tabela); a receita do lago não muda: o prefixo e o grupo de consultas nasceram na U6 | o Hub, pela Release |
-| `apps/server/src/hub/copies/` | Muda `lake-run.ts` (`whole` pelo modo), `lake-copy.ts` (desmarcar apaga o estado) | — |
-| `apps/server/src/platform/aws.ts`, `recordings/aws/` | Muda: apagar o prefixo do estado; as gravações do Athena | — |
+| `infra/aws/lib/` | Muda `copy.ts` (o depósito do estado, com as versões antigas guardadas por 30 dias) e `hub.ts` (o Hub lê, grava e lista o estado da própria empresa); a receita do lago não muda: o prefixo e o grupo de consultas nasceram na U6 | o Hub, pela Release |
+| `apps/server/src/hub/copies/` | Muda `lake-copy.ts` (desmarcar tira o fluxo da tabela do estado); o `lake-run.ts` não muda: ele já pede `whole` | — |
+| `apps/server/src/platform/` (`aws-state.ts`, novo; `aws-copy-queue.ts`, `aws-names.ts`, `aws-session.ts`), `recordings/aws/` | Cria a leitura e a gravação do estado; as gravações do Athena e do `S3` | `lake-copy.ts` |
+| `packages/connectors/src/sankhya/fake-tables.ts`, `scripts/record-aws*.ts` | Muda: a nota apagada no dublê leva a NF-e dela; os gravadores do Athena e do estado | os testes |
 
 ### Os contratos que a unidade cria
 
-- **O estado** de uma ligação mora em `s3://<depósito do estado>/<empresa>/<ligação>/state.json`, na
-  forma do Meltano, com o ponto de cada fluxo; só o papel da empresa lê e escreve o prefixo dela.
+- **O estado** de uma ligação mora em `s3://<depósito do estado>/<empresa>/<ligação>/copia:tap-conexus-to-target-conexus/state.json`,
+  o caminho que o Meltano forma com o `state_backend.uri` em `<empresa>/<ligação>` e o id dele, com o
+  ponto de cada fluxo; só o papel da empresa lê e escreve o prefixo dela. Desmarcar uma tabela tira o
+  fluxo dela desse arquivo.
+- **Uma tabela falha:** a atualização roda nas tabelas cuja passada terminou nesta rodada, com o lote
+  delas já na bruta (o gravador o escreve quando o estado fecha a passada); a rodada diz a falha da
+  tabela que falhou, e o resultado leva as contagens das que terminaram. Uma tabela de passada parada
+  no meio, ou nunca começada, não muda. Uma falha da própria atualização para nela, como antes.
 - **`CopyTaskResult.tables[].rows`** passa a ser a contagem da atual depois da atualização.
 - **`CopyTaskSpec.tables[].whole`**: o Hub o pede verdadeiro só na primeira rodada de uma tabela
   recém-marcada e em **Ler de novo desde a data**, nas tabelas que a data limita (T.45); a tarefa lê
@@ -3002,8 +3027,9 @@ instruções a tabela fica num estado do meio.
 - **A releitura desde a data** é a passada inteira de sempre, lida desde a data: numa tabela só do que
   mudou, o `DELETE` troca a atual, e o que é anterior à data, ou foi apagado na fonte, sai; numa de
   janela, os meses desde o mês da data se trocam, e os anteriores ficam.
-- `update.py`: `update(table, mode, whole, history) -> UpdateCounts` com as três instruções, o
-  `DELETE` da passada inteira, a troca dos meses da janela e a limpeza, que não roda numa tabela de
+- `update.py`: `Updater.update(table, key, mode, history, since) -> UpdateCounts` com os dois
+  `MERGE`, o `DELETE` da passada inteira (a bruta diz que a passada foi inteira pela propriedade que o
+  gravador marca no `ACTIVATE_VERSION`) ou o dos meses da janela, e a limpeza, que não roda numa tabela de
   histórico; uma falha termina a rodada `COPY_LAKE_WRITE_FAILED`.
 - **O arquivo modelo**: `conexus_extraction/target.py` (U5).
 
@@ -3015,7 +3041,7 @@ D25.
 ### A ordem do trabalho
 
 1. **O estado.** Critérios: 56, 57. Testes: `test_state.py` com um depósito local.
-2. **A atual e a limpeza.** Critérios: 58, 59.
+2. **A atual e a limpeza.** Critérios: 58, 59, 122.
    - **Mutações à mão:** limpar antes do `MERGE`: a atual perde as linhas da rodada e o 58 fica
      vermelho.
 3. **O modo por tabela.** Critérios: 60, 103, 112. O Hub pede; a tarefa decide pelo estado e pelo modo e
@@ -3025,7 +3051,9 @@ D25.
 4. **O XML sem histórico.** Critério: 104. A limpeza roda na tabela dos dados da NF-e e pula uma de `history: true`.
    **A coluna nova.** Critério: 105. A atual ganha a coluna antes do `MERGE`.
 5. **Desmarcar.** Critério: 61.
-6. **Os testes na AWS.** Critérios: 57, 58, 59 (L.4, L.7), na `sankhya_notas` do dublê de 450 colunas.
+6. **Os testes na AWS.** Critérios: 57, 58, 59 (L.4, L.7), na `sankhya_notas` do dublê de 450 colunas e
+   numa tabela de chave composta (`sankhya_notas_origens`); no L.4, com o papel do Hub, o estado que não
+   existe responde 404.
 
 - **A entrada em `docs/reference/boundaries.md`** das linhas 28 e 29, remendo, com a prova de cada
   uma, no commit da unidade; a da linha 66 ganha a troca dos meses na atual.

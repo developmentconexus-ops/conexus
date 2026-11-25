@@ -122,6 +122,7 @@ change.
 | `ruff` | `apps/extraction` | `docs.astral.sh/ruff` | none | — | 0074 | The version `apps/extraction/uv.lock` pins; the CI job runs `ruff format --check` and `ruff check` |
 | `mypy` | `apps/extraction` | `mypy.readthedocs.io` | none | — | 0074 | The version `apps/extraction/uv.lock` pins; the CI job runs it over the project |
 | `pytest` | `apps/extraction` | `docs.pytest.org` | none | — | 0074, T26 | The version `apps/extraction/uv.lock` pins; the CI job runs it |
+| `duckdb` | `apps/extraction` | `duckdb.org/docs` (2.0.1) | none | — | 0074, T26 | 2.0.1, a dev dependency of the tests only. It runs the SQL the Athena double receives over the local Iceberg tables; its dialect is not Trino's, and L.7 proves the statements on Athena |
 | uv | `apps/extraction`, CI | `docs.astral.sh/uv` | none | — | 0074 | Manages the project on Python 3.13: `uv sync --locked` installs what `uv.lock` pins and fails when the lock is stale |
 | `smol-toml` | `scripts/check-docs-python.ts` | `node_modules/smol-toml/README.md` | none | — | L20, C75 | Parses TOML 1.1 as the spec says, so `check-docs` reads the extraction project's pyproject.toml whatever the key's form (quoted, dotted, an inline table); it comes with `knip`, declared here because a script of ours imports it |
 | `yaml` | `scripts` | README | none | — | — | — |

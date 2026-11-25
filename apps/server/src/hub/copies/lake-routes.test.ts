@@ -5,7 +5,11 @@ import { readerAt } from '../access/test-principal.ts'
 import { linkMercadoLivre, mercadoLivreOn, testOf } from '../connectors/test-connections.ts'
 import { SANKHYA_DISCOVERY, SANKHYA_GROUPS } from '../connectors/test-copy-source.ts'
 import { call, codeOf, personOn } from '../identity/test-hub.ts'
-import { DAILY, lakeCopyOn, NOTAS, PARCEIROS } from './test-lake-copy.ts'
+import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS } from './test-lake-copy.ts'
+
+function point(value: string) {
+  return { replication_key: 'dtalter', replication_key_value: value }
+}
 
 function modeText(mode: { kind: string; column?: string; registry?: boolean }): string {
   if (mode.kind === 'FULL') return 'FULL'
@@ -179,4 +183,31 @@ test('a skill com os nomes reais: só as marcadas, com o nome da empresa, a orig
   assert.ok(parceiros?.includes('Origem: `TGFPAR`.'), parceiros)
   assert.equal(parceiros?.includes('Desde'), false, 'a registry table is not limited by the date')
   assert.equal(content.includes('sankhya_produtos'), false, 'an unmarked table is not listed')
+})
+
+test('o ponto de parada sai: desmarcar tira o fluxo da tabela do arquivo da ligação, e o das outras fica', async (t) => {
+  const on = await lakeCopyOn(t)
+  const connection = await on.linked()
+  assert.equal((await on.put(connection, { tables: [NOTAS, PARCEIROS], ...DAILY })).statusCode, 200)
+  await finished(on, connection, ['sankhya_notas', 'sankhya_parceiros'])
+  const key = [
+    `conexus-estado-${on.config.aws.account}-${on.config.aws.region}`,
+    `${on.companyId}/${connection}/copia:tap-conexus-to-target-conexus/state.json`,
+  ].join('/')
+  const kept = { sankhya_notas: point('2026-11-20'), sankhya_parceiros: point('2026-11-21') }
+  on.aws.putObject(key, JSON.stringify({ completed: { singer_state: { bookmarks: kept } } }))
+
+  assert.equal((await on.put(connection, { tables: [PARCEIROS], ...DAILY })).statusCode, 200)
+  const saved = Object(JSON.parse(on.aws.objects().get(key) ?? ''))
+  assert.deepEqual(saved.completed.singer_state.bookmarks, {
+    sankhya_parceiros: point('2026-11-21'),
+  })
+
+  const puts = on.aws.calls().filter((call) => call === 'PutObject')
+  assert.equal((await on.put(connection, { tables: [PARCEIROS], ...DAILY })).statusCode, 200)
+  assert.deepEqual(
+    on.aws.calls().filter((call) => call === 'PutObject'),
+    puts,
+    'the same set writes nothing',
+  )
 })
