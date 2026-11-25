@@ -11,7 +11,13 @@ import type {
   ConversationMachines,
   MachineTuning,
 } from '../../harness/machine/public.ts'
-import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../../harness/machine/public.ts'
+import {
+  createConversationMachines,
+  machineMarksOf,
+  machinePart,
+  PACKAGE_HOSTS,
+} from '../../harness/machine/public.ts'
+import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { TITLE } from '../../harness/prompt/public.ts'
 import type { ConversationSpec, Owner, ReleaseScope } from '../../harness/spec/public.ts'
@@ -118,11 +124,11 @@ function machineMarks(runOf: RunOf, resolvedOf: Resolved) {
     if (run === undefined) return undefined
     const { machine } = await planOf(await resolvedOf(requestContext), requestContext)
     if (!machine) return undefined
-    return {
-      [MARK.company]: run.scope.companyId,
-      [MARK.project]: run.scope.projectId,
-      [MARK.agent]: run.agentId,
-    }
+    return machineMarksOf({
+      companyId: run.scope.companyId,
+      projectId: run.scope.projectId,
+      agentId: run.agentId,
+    })
   }
 }
 
@@ -235,11 +241,14 @@ export function createAgentConversations(deps: Deps) {
   })
   const machines = createConversationMachines(
     {
-      ...{ ...deps.machine, log, hosts: PACKAGE_HOSTS, otherTemplate: 'replace' },
-      marksOf: machineMarks(runOf, resolvedOf),
+      hosts: PACKAGE_HOSTS,
+      otherTemplate: 'replace',
+      marks: machineMarks(runOf, resolvedOf),
     },
+    { ...deps.machine, log },
     deps.machineTuning,
   )
+  const { each, ...wired } = machinePart(machines)
   const spec = agentsSpec(
     { queue, own: { database, log } },
     { ...{ runOf, resolvedOf, activationOfRun }, threads: memory, machines },
@@ -247,9 +256,7 @@ export function createAgentConversations(deps: Deps) {
   const { controller } = mountAgent(spec, { queue, storage })
 
   async function sweep(marks: Record<string, string>): Promise<number> {
-    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), (id) =>
-      machines.kill(id),
-    )
+    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), each)
   }
   deps.agents.onChange((event) => followed(event, { registry, sweep, log }))
 
@@ -276,7 +283,7 @@ export function createAgentConversations(deps: Deps) {
             kind: 'agents',
             scope,
             code: 'AGENT_CONVERSATIONS_RELEASED',
-            each: (id) => machines.kill(id),
+            each,
           },
         )
       },
@@ -284,10 +291,9 @@ export function createAgentConversations(deps: Deps) {
       async beforeWorkers(): Promise<void> {
         await registry.hydrate()
       },
-      // Where its machine starts, which the turn's end tells (QA F1); the machines stop after the runs `drain` stopped.
-      ends: { onPhase: machines.onPhase.bind(machines) },
-      close: () => machines.stopAll(),
-    },
+      // Where its machine starts, which the turn's end tells (QA F1).
+      ...wired,
+    } satisfies HubPart,
   } as const)
 }
 

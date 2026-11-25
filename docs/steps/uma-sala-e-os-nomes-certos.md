@@ -210,7 +210,7 @@ A Pergunte 3: b", e antes 1 a ("Mas queria detalhes e exemplos para entender mel
 | G4 | U15 | Dois consertos fora do codemod: a frase da ferramenta do Assistente que cita o botão, com o retrato dele regravado; o agendador que não apaga uma automação cujo fluxo ele não acha registrado (`missesBeforeDelete`, a U-i da auditoria), com a linha de log da poda que não terminou | `B/assistant/`, `B/mastra/`, `docs/explanation/agents-and-automations.md` | testing | o fechamento do `A1` |
 | G5a a G5f | U7 | O codemod do servidor, em dois pull requests (o G5-harness, uma área por commit de G5a a G5e, e o G5-agents, o G5f): `harness/mastra`, `harness/model-accounts` (com a lista do MA-8), `harness/machine`, `harness/spec` com `turn`, `memory`, `prompt` e `routes`, `harness/tools`, e por fim os quatro `agents/` | `apps/server/src/`, `packages/hub-api/src/` e `apps/web/src/` (as constantes que mudam de nome), `.dependency-cruiser.cjs`, `biome.json`, `scripts/`, os documentos que citam `apps/server/src/builder` | testing | U5, U6, U15 |
 | G6 | U8 | As marcas da conversa por um esquema só (U-e: SPEC-4) | `harness/spec/` | testing | G5d |
-| G6 | U9 | A máquina como campo da ficha (U-f: MACH-3, AGT-1) | `harness/machine/`, `harness/spec/`, `agents/*/` | testing | G5c, G5f, U8 |
+| G6 | U9 | A máquina montada uma vez (U-f: MACH-3, AGT-1) | `harness/machine/`, `harness/spec/`, `agents/*/` | testing | G5c, G5f, U8 |
 | G6 | U10 | Uma lista de ferramentas e um "nunca pergunta" (U-g: FERR-3, FERR-9) | `harness/tools/`, `harness/spec/`, `harness/machine/`, `agents/app-builder/`, `agents/saved-agent/`, `packages/hub-api/src/tools.ts` | testing | G5d, G5e, G5f |
 | G6 | U11 | O turno sem ler texto de erro (U-h: TURN-3, TURN-4) | `agents/app-builder/` | testing | G5d, G5f |
 | G7 | U12 | A troca de modelo pela rota nativa (U-a), e uma `ModelChoice` só na web | `harness/routes/`, `agents/*/`, `packages/hub-api/src/`, `apps/web/src/harness/` | testing | G5d |
@@ -264,7 +264,7 @@ conta, porque cada arquivo movido sai igual.
 | 18 | U7 | Cada área do codemod do servidor só move: o script roda de novo e dá a mesma árvore, os mesmos testes passam com o mesmo número de casos, os quatro `request.test.ts` passam sem regravar, `npm run deps` passa com as regras novas no mesmo pull request; no fim, `apps/server/src/builder/` não existe e o dublê das máquinas se chama `conversationMachines` (issue 808); nenhuma migração nasce, e o retrato do catálogo do banco não muda | por pull request: a contagem dos testes antes e depois, `npm run deps`, `npm run migrations -- --base origin/main`, o script de novo com `git diff --exit-code` | must |
 | 19 | U15 | O agendador das automações não apaga uma agenda cujo fluxo ele não acha registrado (`isTargetReady` falso, `@mastra/core` 1.83.0 `dist/worker-DCnErilX.js:342-348`): `schedulerOf` passa `missesBeforeDelete`, e a agenda de um fluxo ausente sobrevive a quatro tiques seguidos e é apagada na quinta falta seguida, com um aviso do Mastra na primeira (um tique dura 10 segundos, `DEFAULT_TICK_INTERVAL_MS`, `dist/scheduler-DOueSa7x.js:7`: uns 50 segundos). Hoje ela é apagada na terceira, uns 30 segundos (`DEFAULT_MISSES_BEFORE_DELETE`, `dist/scheduler-DOueSa7x.js:9`; `scheduler.ts:12` na prateleira). A poda diária que não terminou (`prune` devolve `done: false`, `B/mastra/retention.ts:26-29`) grava a linha nova `RETENTION_STILL_DRAINING`, sem dado | `B/mastra/mastra.test.ts`, o caso da agenda órfã com o relógio do agendador; `retention.test.ts`, o caso `done: false` | must |
 | 20 | U8 | As marcas de uma conversa gravada com as chaves de hoje (Assistente, Construtor de agentes, agente salvo, automação) são lidas igual por um esquema só; uma marca que falta ou tem outro tipo é recusada como hoje (`CONVERSATION_NOT_FOUND`) | `harness/spec/run.test.ts`, uma conversa de cada tipo gravada antes da mudança | must |
-| 21 | U9 | Cada agente abre, usa e solta a máquina pela montagem, por um campo da ficha, numa montagem só do `Workspace`; o Assistente solta as máquinas ao apagar uma conversa, como hoje | um teste por agente em `agents/*/machine.test.ts`; `agents/assistant/routes.test.ts`, o apagar de hoje | must |
+| 21 | U9 | Cada agente abre, usa e solta a máquina pelo `workspace` da ficha, montado por um construtor só e numa montagem só do `Workspace`; o Assistente solta as máquinas ao apagar uma conversa, como hoje | um teste por agente em `agents/*/machine.test.ts`; `agents/assistant/routes.test.ts`, o apagar de hoje | must |
 | 22 | U10 | A lista de ferramentas de cada agente vem de uma lista só, e "nunca pergunta" de um lugar só; os quatro retratos não mudam; o teste da lista fechada lê a ficha (issue 1286) | `harness/tools/*.test.ts`; `request.test.ts` dos quatro | must |
 | 23 | U11 | Um turno recusado porque o Projeto está ocupado responde o mesmo `RUN_BUSY` de hoje, com o mesmo status, sem que o código leia o texto do erro | `agents/app-builder/turn.test.ts`, o caso de hoje sem mudar a asserção | must |
 | 24 | U12 | Trocar o modelo de uma conversa do Construtor de apps, do Assistente ou do Construtor de agentes passa pela rota nativa `POST …/sessions/:id/model` e fica gravado na conversa; recarregar mostra o modelo novo. Recusas, as mesmas de hoje: um modelo sem conta que a pessoa possa usar recebe `MODEL_NO_ACCOUNT`, um modelo que não existe `MODEL_UNKNOWN`, um esforço que o modelo não oferece `EFFORT_UNSUPPORTED` (os três 422), um corpo sem `thinkingLevel` ou com campo a mais `REQUEST_MALFORMED` (400); outra pessoa, outra empresa ou outro Projeto recebe `CONVERSATION_NOT_FOUND` (404), e o agente salvo também, porque a ficha dele diz que o modelo é o da versão. Uma recusa não muda o modelo lido depois. As linhas `CONVERSATION_MODEL_SET`, `ASSISTANT_MODEL_SET` e `CONSTRUTOR_MODEL_SET` saem só depois do `{ ok: true }` do Mastra. As três rotas `…/model` de hoje respondem 404. A marca do Assistente passa à sessão recuperada (issue 1287) | `harness/routes/guard.test.ts`, um caso por recusa; `harness/controller-kit/lines.test.ts` para as linhas; o teste da marca depois de um reinício, no lugar de `B/construtor/routes.test.ts:198-213`; `assistant/model.test.tsx` na web | must |
@@ -498,7 +498,7 @@ não toca.
 | A ficha sem `base` | `base` (`B/controller-kit/spec.ts:87-88`), `agentOfBase` (`mount.ts:137-145`), um uso (`B/conversation/builder.ts:139`) | Mastra Code, **mesma situação** para os sinais: `mastracode/sdk/src/index.ts:1304` (`new TaskSignalProvider()`), `:1496-1500`; `@mastra/core` 1.83.0 `dist/coding-agent/index.js:219-243`; `TaskSignalProvider` em `@mastra/core/signals` (`dist/signals/index.d.ts:3`) | `new Agent({ signals: [new TaskSignalProvider()] })` | nativo | — | U6 | — |
 | A ficha sem os campos que só repassam | `description`, `skills`, `signals`, `scopes`, `knowledge` (`spec.ts:86,96-99`, `mount.ts:163,172-175`); `ended` (`turns.ts:80`, nunca passado); `ONE_STRING` e `DELEGATED` (`spec.ts:28-38`) | `@mastra/core` 1.83.0 `dist/agent/types.d.ts:955` (`AgentConfig`); na prateleira, `packages/core/src/agent/types.ts:640`, `:834`, `:873`, `:931`, `:1010` | os cinco campos já são do `AgentConfig` | nativo: `Pick<AgentConfig, …>` | — | U6 | — |
 | As marcas da conversa | três esquemas (`B/controller-kit/run.ts:80`, `:99`, `:113`) e um quarto leitor (`B/assistant/open.ts:65-79`) | Factory, **situação parecida**: `mastracode/factory/src/tools/scope.ts:52-80` confere a marca contra a linha guardada; o Mastra Code lê as marcas à mão | — | nativo: um esquema Zod sobre `RUN_MARKS` (C27); as marcas são dado nosso, e nenhuma referência tem um esquema delas | critério 20 | U8 | — |
-| A máquina como campo da ficha | duas montagens de `Workspace` (`B/machine/machines.ts:268`, `B/machine/conversation.ts:288`) e três chamadas de `createConversationMachines` (`B/agents/controller.ts:233`, `B/construtor/construtor.ts:300`, `B/assistant/assistant.ts:276`) | Mastra Code, **situação parecida**: um `Workspace` por controlador, `mastracode/sdk/src/index.ts:1801-1802`, `:1852`; reusado pelo id em `sdk/src/agents/workspace.ts:226-256`. Factory: `mastracode/factory/src/workspace.ts:1798-1830` | uma montagem por escopo, com o contexto como parâmetro | embrulhado: o `Workspace` nativo e o nosso kit; o campo na ficha é nosso, porque o Conexus tem quatro agentes | critério 21 | U9 | `harness/machine/spec.ts` |
+| A máquina montada uma vez | duas montagens de `Workspace` (`B/machine/machines.ts:268`, `B/machine/conversation.ts:288`) e três chamadas de `createConversationMachines` (`B/agents/controller.ts:233`, `B/construtor/construtor.ts:300`, `B/assistant/assistant.ts:276`) | Mastra Code, **situação parecida**: um `Workspace` por controlador, `mastracode/sdk/src/index.ts:1801-1802`, `:1852`; reusado pelo id em `sdk/src/agents/workspace.ts:226-256`. Factory: `mastracode/factory/src/workspace.ts:1798-1830` | uma montagem por escopo, com o contexto como parâmetro | embrulhado: o `Workspace` nativo e o nosso kit; a ficha segue com o `workspace` nativo, e o `MachineSpec` é o parâmetro do construtor, porque o Conexus tem três agentes com máquina de conversa (emenda de 2026-11-25) | critério 21 | U9 | `harness/machine/spec.ts` |
 | Uma lista de ferramentas | quatro `Set` em `B/conversation/permissions.ts`, `TOOLS_OF` (`B/company-tools/names.ts:18-39`), `B/assistant/available-tools.ts:23-39`, `B/construtor/construtor.ts:69-77` | Mastra Code, **mesma situação**: `mastracode/sdk/src/agents/tool-availability.ts:140`, `:166`; `agents/modes/plan.ts:48`. `@mastra/core` 1.83.0 na prateleira, `agent-controller/agent-controller.ts:2160-2215` (`availableTools` vira a lista de `activeTools`), `:2575-2579` (`disableBuiltinTools`) | uma constante por modo, espalhada no modo | nativo: `availableTools = [...CLOSED_TOOLS]` | — | U10 | — |
 | Um "nunca pergunta" | `NEVER_ASKS` (`B/controller-kit/mount.ts:87`, `:99-110`), a cópia em `B/agents/tools.ts:96` e `requireApproval: () => false` (`B/machine/conversation.ts:296`) | `@mastra/core` 1.83.0 na prateleira, `loop/workflows/agentic-execution/tool-approval-verdict.ts:85-93` | sem função, vale `global` ou `tool.requireApproval`; só uma função vence a sessão | embrulhado: a função de `mount.ts` fica; as duas cópias saem | critério 22 | U10 | — |
 | O turno recusado | o texto do erro lido (`B/conversation/turn-of.ts:11`, `:111-114`; `end.ts:64-73`) | `@mastra/core` 1.83.0 `agent-controller-BhkzVgCi.js:738-746` e `:1186-1200`: o controlador junta o motivo num texto (`Processor "<id>" stopped the run: <reason>`) e guarda só `finishReason: 'tripwire'`; `processorId` e `metadata` não chegam ao evento `error`. `docs-agents-processors.md:1045-1063` (`abort(reason, { metadata })`) vale só fora do controlador | — | embrulhado: `finishReason` é nativo; o código vem de um registro nosso, que o processador grava ao recusar. O que a referência deixa aberto tem o seu teste: o caso que mostra que o evento `error` do controlador não traz `processorId` na 1.83.0 | critérios 23 e 27 | U11 | nenhum |
@@ -1384,19 +1384,39 @@ As chaves gravadas não mudam (são dado). C27.
 
 - Uma conversa gravada tiver uma chave que nenhum esquema de hoje lê: é dado, não se apaga; parar.
 
-## U9 A máquina como campo da ficha
+## U9 A máquina montada uma vez
 
-**Base e modelo.** O commit de U8. Opus: a montagem da máquina cruza a ficha, a máquina e os quatro
-agentes, e o `A1` mudou a do Construtor de apps (`closeAgain`, `networkOpen` em
-`B/machine/machines.ts:95-114`).
+**Base e modelo.** O commit de U8. Sonnet: a forma já está decidida abaixo, e a unidade só move
+linhas que três agentes repetem. Subir para Opus só se a montagem do `Workspace` pedir mexer na
+concorrência da máquina (`inLane`), e dizer por quê.
+
+**A emenda de 2026-11-25.** A U9 ficou fora do G6 (pull request 1368) porque o texto da primeira
+versão não fechava: o `MachineSpec` usava `FilesGo`, um tipo da web
+(`apps/web/src/harness/room/attachments.ts:10`) que o servidor não tem e que diz para onde vai um
+anexo, não o que é a máquina; `network: 'CHECK'` não tinha leitor, porque a conferência do `A1`
+(`closeAgain`, `networkOpen`) vive no ciclo do Projeto em `harness/machine/machines.ts`; o
+`mountAgent` devolve só `{ agent, controller }` e não alcança o que a AGT-1 quer tirar dos agentes
+(`ends.onPhase`, `close`, `each`), que mora no `Part` de `harness/mastra/hub-mastra.ts`; e o agente
+salvo cria a máquina entre o registro e o `mountAgent`. A revisão do G6 e a proposta da U9 (fora do
+repositório, delivery L21) deram três caminhos, e o fundador escolheu o (b), a proposta sem a
+quarta peça (a máquina como campo da ficha), em 2026-11-25: "3. Okay, mas quero entender", ao item
+"A emenda do cartão do harness, U9 e U10: a revisão recomenda a proposta sem a quarta peça (a
+máquina como parâmetro do construtor, e a ficha com o workspace nativo do Mastra)". Esta seção é a
+emendada. A ficha segue com o campo nativo `workspace` (`harness/spec/spec.ts`, o
+`AgentControllerConfig['workspace']` do Mastra), que os três agentes já preenchem; `MachineSpec` não
+entra na `ConversationSpec`, e `harness/spec` não importa `harness/machine` (sem ciclo, porque
+`harness/machine` já importa `NEVER_ASKS` de `harness/spec`). O `Workspace` por sessão no Construtor
+de apps fica de fora: muda a sonda de busca a cada turno, é mudança de comportamento e não de
+forma, e vem depois, com medida.
 
 ### As linhas da tabela
 
-- **A máquina como campo da ficha.** Na base (caminhos de antes do G5): `B/machine/machines.ts:268`
+- **A máquina montada uma vez.** Na base (caminhos de antes do G5): `B/machine/machines.ts:268`
   (o `new Workspace` do Construtor de apps, `new SandboxFilesystem` em `:273`, `workspaceFor` em
   `:258`), `B/machine/conversation.ts:288` (o dos outros três) e `:296`; as três chamadas de
   `createConversationMachines` (`B/agents/controller.ts:233`, `B/construtor/construtor.ts:300`,
-  `B/assistant/assistant.ts:276`); `B/assistant/release.ts`. Na referência:
+  `B/assistant/assistant.ts:276`); as três `machineMarks`; as três linhas do `part` de cada agente
+  (`ends.onPhase`, `close`, o `each` do release); `B/assistant/release.ts`. Na referência:
   `mastracode/sdk/src/index.ts:1801-1802`, `:1852`; `mastracode/sdk/src/agents/workspace.ts:226-256`;
   `mastracode/factory/src/workspace.ts:1798-1830`.
 
@@ -1404,47 +1424,69 @@ agentes, e o `A1` mudou a do Construtor de apps (`closeAgain`, `networkOpen` em
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `harness/machine/spec.ts` | Cria: `MachineSpec` | `harness/spec/` |
-| `harness/machine/machines.ts`, `conversation.ts` | Muda: uma montagem do `Workspace` | `mount` |
-| `harness/spec/mount.ts` | Muda: monta a máquina pelo campo | os quatro agentes |
-| `agents/*/` | Muda: as três chamadas e os três `machineMarks` saem; `agents/assistant/release.ts` sai | — |
+| `harness/machine/workspace.ts` | Cria: `workspaceOf`, a única montagem do `Workspace` | `machines.ts`, `conversation.ts` |
+| `harness/machine/part.ts` | Cria: `machinePart(machines)` | os três agentes |
+| `harness/machine/spec.ts` | Cria: `MachineSpec`, o parâmetro do construtor | os três agentes |
+| `harness/machine/marks.ts` | Cria: `machineMarksOf` | os três agentes |
+| `harness/machine/machines.ts`, `conversation.ts` | Muda: chamam `workspaceOf`; `createConversationMachines(spec, deps)` | os agentes |
+| `agents/{assistant,saved-agent,agent-builder}/` | Muda: a chamada leva o `MachineSpec`, o `part` leva `...machinePart(machines)`, as marcas saem por `machineMarksOf`; `agents/assistant/release.ts` sai | — |
+| `agents/app-builder/runs/runs.ts` | Sem mudança: `#openWorkspace` chama `workspaceFor`, que passa a chamar `workspaceOf` | — |
 
 ### Os contratos que a unidade cria
 
 ```ts
-// harness/machine/spec.ts
-export type MachineSpec =
-  | { kind: 'PROJECT'; network: 'CHECK' }        // o Construtor de apps: a máquina do Projeto, com a conferência do A1
-  | { kind: 'CONVERSATION'; files: FilesGo }      // os outros três
-// harness/spec/spec.ts
-export type ConversationSpec = { /* o de hoje */ machine?: MachineSpec }
+// harness/machine/spec.ts: o parâmetro do único construtor, sem variante PROJECT e sem campo da ficha
+export type MachineSpec = {
+  hosts: readonly string[]
+  otherTemplate: 'resume' | 'replace'
+  readMedia?: readonly string[]
+  /** A função de cada agente: o agente salvo devolve `undefined` quando a versão não tem Computador. */
+  marks(requestContext: RequestContext): Promise<Record<string, string> | undefined>
+}
+// harness/machine/conversation.ts
+export function createConversationMachines(spec: MachineSpec, deps: ..., tuning?: MachineTuning): ConversationMachines
+// harness/machine/workspace.ts
+export function workspaceOf(parts: { name; ensure; instructions; filesystem; neverAsks; readMedia? }): Workspace
+// harness/machine/part.ts
+export function machinePart(machines: ConversationMachines): { ends: { onPhase }; close; each }
+// harness/machine/marks.ts
+export function machineMarksOf(where: { companyId; projectId?; agentId? }): Record<string, string>
 ```
 
-`machine` é opcional porque um agente sem máquina é um estado de verdade (o agente salvo sem
-Computador). C21.
+Sem `FilesGo`, sem `network: 'CHECK'` e sem `ConversationSpec.machine`. O `RunScope` não ganha
+`agentId`: as marcas do agente salvo vão como a função do `MachineSpec`. A conferência do `A1`
+continua no ciclo do Projeto; se o fundador quiser que a ficha diga "esta máquina fecha a rede na
+conferência", é outra emenda.
 
 ### As skills e a leitura
 
 `mastra`, `@mastra/e2b`; ler primeiro a decisão 0051 e o cartão do `A1` no histórico (a conferência
-na máquina).
+na máquina). `WorkspaceConfig` e `AgentControllerConfig['workspace']` no `@mastra/core` instalado
+(`dist/workspace`, `dist/agent-controller`).
 
 ### A ordem do trabalho
 
 1. **O teste antes.** Critérios: 21. Um teste por agente que abre, usa e solta a máquina pela
    montagem.
 2. **Uma montagem.** Critérios: 21. `workspaceFor` e a montagem de `conversation.ts` viram uma,
-   com o `MachineSpec` como parâmetro.
+   `workspaceOf`; o que as duas diferem (`verifySymlinks`, `neverAsks`, `readMedia`, o texto das
+   instruções) entra como parte.
+3. **O `part` dos agentes.** Critérios: 21. `machinePart(machines)` no lugar das três linhas;
+   `agents/assistant/release.ts` sai e o Assistente chama `releaseByMarks`, como os outros dois.
    - **Mutações à mão:** esquecer de soltar a máquina no apagar do Assistente deixa vermelho
      `agents/assistant/routes.test.ts`.
+4. **As marcas.** Critérios: 21. As três `machineMarks` passam por `machineMarksOf`, e a chamada de
+   cada agente leva o `MachineSpec`.
 
 ### Como se prova
 
-Os quatro testes novos, os cinco retratos, e um turno do Construtor de apps com a conferência no
-navegador do `A1` no Hub local.
+Os testes por agente de `agents/*/machine.test.ts`, os cinco retratos sem regravar, e um turno do
+Construtor de apps com a conferência no navegador do `A1` no Hub local.
 
 ### Parar se
 
-- A conferência do `A1` precisar de um estado da máquina que o `MachineSpec` não diz: parar.
+- A conferência do `A1` precisar de um estado da máquina que `workspaceOf` não diga: parar.
+- Um retrato mudar, ou a ordem das chaves das ferramentas do `Workspace` mudar: parar.
 
 ## U10 Uma lista de ferramentas e um "nunca pergunta"
 
@@ -1466,15 +1508,20 @@ navegador do `A1` no Hub local.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `harness/tools/` | Muda: uma lista por agente, de `CLOSED_TOOLS` | a ficha |
+| `harness/tools/` | Muda: uma lista por agente, de `CLOSED_TOOLS` (Construtor de apps) e de `TOOLS_OF[seat]` mais as ferramentas próprias (os outros) | a ficha |
 | `agents/app-builder/permissions.ts` | Apaga os quatro `Set` e o teste de igualdade (`permissions.test.ts:261`) | — |
 | `agents/saved-agent/tools.ts`, `harness/machine/conversation.ts` | Muda: as duas cópias do "nunca pergunta" saem | — |
 
 ### Os contratos que a unidade cria
 
-A ficha de cada agente diz `availableTools: readonly ClosedTool[]`; o Construtor de apps tem
-`[...CLOSED_TOOLS]`. `disableBuiltinTools` fica só para as ferramentas nativas trocadas pelo mesmo
-id (`ask_user`, `submit_plan`). C26.
+**A emenda de 2026-11-25.** A revisão do G6 achou que `availableTools: readonly ClosedTool[]` em
+toda ficha não cabe no Assistente nem no Construtor de agentes, porque as listas deles têm
+ferramentas que não são `ClosedTool` (`CONSTRUTOR_TOOL`, `ASSISTANT_TOOL`, `DATA_TOOL`, as da
+memória). O contrato passa a ser: a lista de cada agente é montada de `CLOSED_TOOLS` (Construtor de
+apps) e de `TOOLS_OF[seat]` mais as ferramentas próprias (os outros), sem repetir um nome; o
+Construtor de apps tem `[...CLOSED_TOOLS]`. `disableBuiltinTools` fica só para as ferramentas
+nativas trocadas pelo mesmo id (`ask_user`, `submit_plan`). O fundador, em 2026-11-25: "3. Okay, mas
+quero entender", ao item "A emenda do cartão do harness, U9 e U10". C26.
 
 ### As skills e a leitura
 

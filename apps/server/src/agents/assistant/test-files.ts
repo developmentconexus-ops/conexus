@@ -6,7 +6,7 @@ import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import type { Upload } from './test-assistant.ts'
 import { assisting, created, talking } from './test-assistant.ts'
 
-export { kindOf, sentFilesOf } from './files.ts'
+export { kindOf, READ_MEDIA, sentFilesOf } from './files.ts'
 
 export const PDF_TYPE = 'application/pdf'
 const NOTE = '[File uploaded to the sandbox]'
