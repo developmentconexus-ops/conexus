@@ -13,7 +13,7 @@ import { lakeTablesOf } from './lake-view.ts'
 type Asked = Readonly<{ person: PersonId; companyId: CompanyId; connectionId: ConnectionId }>
 
 /**
- * The routes of a connection's lake copy (card U8): the list, the writing of the copy and the
+ * The routes of a connection's lake copy: the list, the writing of the copy and the
  * run now. Each admits the person first (the list: who reads the connections; the other two: who
  * manages copies), and a connection that is not the company's, or of a connector the kit lacks, is
  * the same not-found as a refusal (S10).

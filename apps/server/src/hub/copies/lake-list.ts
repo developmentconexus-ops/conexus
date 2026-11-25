@@ -128,7 +128,7 @@ function byConnectionThenName(a: LakeTableSummary, b: LakeTableSummary): number 
 }
 
 /**
- * The company's lake tables, for the page Dados (criterion 49): the copies of the connections the
+ * The company's lake tables, for the page Dados: the copies of the connections the
  * viewer reads (every member reads them, as `readConnections` says), and the rounds of one table.
  */
 export function createLakeList(deps: Deps) {

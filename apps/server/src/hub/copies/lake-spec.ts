@@ -25,7 +25,7 @@ export type CopyRead = Readonly<{
   lake: Awaited<ReturnType<typeof lakeOf>>
 }>
 
-/** A round being started: whose, which, and whether Ler de novo desde a data asked it (T.45). */
+/** A round being started: whose, which, and whether Ler de novo desde a data asked it. */
 export type Started = Readonly<{
   at: CompanyScope
   connection: ConnectionId
@@ -81,7 +81,7 @@ export async function writeColumns(
 }
 
 /**
- * The round's spec, the one value the task receives (T.11): the tables with the name and `whole` of
+ * The round's spec, the one value the task receives: the tables with the name and `whole` of
  * each (a first load, or Ler de novo where the start date limits it), the start date in every
  * round, and the connection's fields opened from their seal (S8). Null: the connection left.
  */

@@ -9,7 +9,7 @@ type Dropping = {
 
 /**
  * The lake's tables dropped from AWS's own list, never the Hub's rows (a table AWS lacks counts as
- * dropped), then the company's copies and clocks (criterion 48): so a repeat ends what an
+ * dropped), then the company's copies and clocks: so a repeat ends what an
  * interrupted try began. Gives the answer AWS failed with, or null when the lake holds no table.
  */
 export async function dropTables(

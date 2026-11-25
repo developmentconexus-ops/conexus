@@ -55,9 +55,9 @@ function sumOf(carried: readonly { read: number; written: number }[]) {
 }
 
 /**
- * The connection's tables as the window and the section read them (criteria 37, 88): the kit's
+ * The connection's tables as the window and the section read them: the kit's
  * declaration passed through the contract's schema, the dictionary's column counts (absent when it
- * does not answer), the company's names for each suggestion (T.16), and the copy's marks with the
+ * does not answer), the company's names for each suggestion, and the copy's marks with the
  * last round. Read in the company's own login; the caller has admitted the person.
  */
 export async function lakeTablesOf(

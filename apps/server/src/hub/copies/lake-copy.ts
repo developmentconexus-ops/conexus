@@ -178,7 +178,7 @@ async function ensureReady(deps: LakeCopyDeps, at: Marker, lake: State['lake']) 
 }
 
 /**
- * An unmarked table's two areas, the AWS first and the row after (T.19, failure table): a table AWS
+ * An unmarked table's two areas, the AWS first and the row after: a table AWS
  * does not have counts as dropped, so a repeat ends what an interrupted one began. Nothing is
  * dropped under an open round.
  */
@@ -248,10 +248,10 @@ async function dropUnmarked(deps: LakeCopyDeps, at: Marker, state: State, plan: 
 }
 
 /**
- * Writes a connection's copy (criteria 38, 96, 110): the request checked, the unmarked tables
+ * Writes a connection's copy: the request checked, the unmarked tables
  * dropped in AWS, then the copy and its rows in one transaction; after it, the clock (none under
- * MANUAL) and, if a table was born, one round that reads only it whole (T.39). Changing only the
- * date or the interval starts nothing (T.45). The last table unmarked takes the copy and its clock.
+ * MANUAL) and, if a table was born, one round that reads only it whole. Changing only the
+ * date or the interval starts nothing. The last table unmarked takes the copy and its clock.
  */
 export function createLakeCopy(deps: LakeCopyDeps) {
   const now = deps.now ?? (() => new Date())
