@@ -19,9 +19,9 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import { logMemory } from '../../platform/memory.ts'
 import type { Phase } from '../machine/public.ts'
 import { ownerOfResource } from '../spec/public.ts'
-import { FINISHES, TurnTally, turnLine } from './turn-line.ts'
+import { modelFailure, TurnTally, turnLine } from './turn-line.ts'
 
-export type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
+type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
 
 /**
  * What this process knows of a Mastra run of a conversation, from its `agent_start` to its
@@ -92,13 +92,6 @@ function decided(run: Run, reason: AgentEnd, outcome: Outcome): FailureData | un
   return code === undefined ? undefined : { code }
 }
 
-/** How the model's turn ended when nothing of ours said a failure: its finish's code on an error, else none. */
-export function modelFailure(reason: AgentEnd, tally: TurnTally): TurnFailureCode | undefined {
-  if (reason !== 'error') return undefined
-  const finish = tally.finishReason
-  return (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED'
-}
-
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
 function settleThinking(run: Run): void {
   for (const [id, since] of run.thinking) {
@@ -115,13 +108,16 @@ function startThinking(run: Run, message: string, index: number): void {
 
 type Refused = () => FailureData | undefined
 
+function failedOn(run: Run, event: AgentControllerEvent, refused: Refused): void {
+  if (event.type !== 'error') return
+  const aborted = event.finishReason === 'tripwire' ? refused() : undefined
+  run.failure ??= aborted ?? failureOf(event.error)
+}
+
 /** What a run keeps of each event: its line's counts, its error's failure and the thinking clock. */
 function heard(run: Run, event: AgentControllerEvent, refused: Refused): void {
   run.tally.heard(event)
-  if (event.type === 'error') {
-    const aborted = event.finishReason === 'tripwire' ? refused() : undefined
-    run.failure ??= aborted ?? failureOf(event.error)
-  }
+  failedOn(run, event, refused)
   if (event.type === 'message_start' && event.message.role === 'assistant') {
     for (const [index, part] of event.message.content.parts.entries()) {
       if (part.type === 'reasoning') startThinking(run, event.message.id, index)
