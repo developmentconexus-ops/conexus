@@ -151,11 +151,8 @@ export async function withRoleLock<T>(work: () => Promise<T>): Promise<T> {
     await client.query('select pg_advisory_xact_lock($1)', [SERVER_ROLES_LOCK_KEY])
     return await work()
   } finally {
-    try {
-      await client.query('commit')
-    } finally {
-      await client.end()
-    }
+    await client.query('commit')
+    await client.end()
   }
 }
 
