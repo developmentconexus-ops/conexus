@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
 import type {
   CompanyId,
   ConnectionId,
+  ConnectionLinkId,
   ConnectionSignInId,
   ModelAccountId,
   PersonId,
@@ -47,8 +48,13 @@ export function parseSealKeys(text: string): SealKeys {
  * have their own purpose.
  */
 export type SealContext = {
-  purpose: 'model-account' | 'model-account-sign-in' | 'connection' | 'connection-sign-in'
-  rowId: ModelAccountId | SignInId | ConnectionId | ConnectionSignInId
+  purpose:
+    | 'model-account'
+    | 'model-account-sign-in'
+    | 'connection'
+    | 'connection-sign-in'
+    | 'connection-link'
+  rowId: ModelAccountId | SignInId | ConnectionId | ConnectionSignInId | ConnectionLinkId
   companyId: CompanyId
   personId: PersonId | null
   kind: string

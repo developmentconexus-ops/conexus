@@ -100,6 +100,7 @@ export {
   VersionCheck,
   VersionData,
 } from './conexus-parts.ts'
+export * from './connection-links.ts'
 export {
   CALL_DEADLINE_MS,
   CONNECTION_STATES,

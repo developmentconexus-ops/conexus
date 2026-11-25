@@ -17,6 +17,7 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { Auth } from './auth.ts'
 import {
+  CONNECTION_LINK_PATH,
   inLibrary,
   PASSWORD_RECOVERY_PATH,
   RESET_PASSWORD_PATH,
@@ -60,6 +61,16 @@ export async function countAttempt(
     ),
   )
   if (!reply.ok) throw await refusedReply(reply, { 429: input.exceeded })
+}
+
+/** The port the connection link's two public routes count through: the same address past the limit gets 429 (S29). */
+export function connectionLinkCounter(deps: { auth: Auth; config: Config }) {
+  return (input: { headers: Headers; log: FailureLog }) =>
+    countAttempt(deps, {
+      ...input,
+      path: CONNECTION_LINK_PATH,
+      exceeded: 'SIGN_IN_ATTEMPTS_EXCEEDED',
+    })
 }
 
 export function registerIdentityRoutes(

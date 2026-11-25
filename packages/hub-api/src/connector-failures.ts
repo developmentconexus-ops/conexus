@@ -67,6 +67,14 @@ export const CONNECTOR_FAILURES = {
     action: '',
     actionKind: 'NONE',
   },
+  LINK_NOT_FOR_SIGN_IN: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Esse sistema liga por autorização, não por campos. Não dá para mandar um link.',
+    action: '',
+    actionKind: 'NONE',
+  },
   CONNECTION_NOT_WORKING: {
     category: 'USER',
     settles: true,
