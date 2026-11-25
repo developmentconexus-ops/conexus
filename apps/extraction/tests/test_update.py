@@ -88,16 +88,17 @@ def test_a_inteira_troca_tudo(task: Task) -> None:
 def test_o_xml_sem_historico(task: Task) -> None:
     first = task.spec(NOTAS, NFE, whole=False)
     assert task.run(first) == 0
-    nunota = _rows(task, "current", "sankhya_notas_nfe")[0]["nunota"]
+    [nunota, gone, *_] = [row["nunota"] for row in _rows(task, "current", "sankhya_notas_nfe")]
     before = {row["nunota"]: row["xmlcanc"] for row in _rows(task, "current", "sankhya_notas_nfe")}
     task.change(f"nfe/{nunota}")
-    task.change("notas/100001", {"acao": "APAGAR"})
+    task.change(f"notas/{gone}", {"acao": "APAGAR"})
     forced = task.spec(NOTAS, NFE, whole=True, connection=first["connectionId"])
     assert task.run(forced) == 0
     now = {row["nunota"]: row["xmlcanc"] for row in _rows(task, "current", "sankhya_notas_nfe")}
     assert now[nunota] != before[nunota]
     assert task.lake.load_table(("raw", "sankhya_notas_nfe")).scan().to_arrow().num_rows == 0
-    assert 100001 not in {row["nunota"] for row in _rows(task, "current", "sankhya_notas")}
+    assert gone not in {row["nunota"] for row in _rows(task, "current", "sankhya_notas")}
+    assert gone not in now
     assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows == 0
 
 
