@@ -16,6 +16,7 @@ import {
   PACKAGE_HOSTS,
   showFileTool,
 } from '../../harness/machine/public.ts'
+import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { subagentModel } from '../../harness/model-accounts/public.ts'
 import type {
@@ -297,7 +298,7 @@ export function createAssistant(deps: Deps) {
     { ...deps.machine, log: deps.log },
     deps.machineTuning,
   )
-  const wired = machinePart(machines)
+  const { each, ...wired } = machinePart(machines)
   const tools = companyDeps(deps)
   const { speakersFor, maysFor, toolScopeOf } = runReads(deps, scopeOf)
   const { controller } = mountAgent(
@@ -326,14 +327,14 @@ export function createAssistant(deps: Deps) {
       async release(scope: ReleaseScope): Promise<void> {
         await releaseByMarks(
           { controller, memory, log: deps.log },
-          { kind: 'assistant', scope, code: 'ASSISTANT_CONVERSATIONS_RELEASED', each: wired.each },
+          { kind: 'assistant', scope, code: 'ASSISTANT_CONVERSATIONS_RELEASED', each },
         )
       },
       // Its turn writes in no Projeto: its end saves only the failure it said, and tells where its
       // machine starts (QA F1), as the Builder's tells its steps; the machines close after the
       // runs `drain` stopped, before Mastra stops.
       ...wired,
-    },
+    } satisfies HubPart,
     /** Admits the person who may ask now, in the place; else `NOT_FOUND` (S10). */
     admit: (owner: Owner, place: Place) => admitted(deps, owner, place, 'askAssistant'),
     /** Admits the person who may create automations now, in the place; else `NOT_FOUND` (S10). */

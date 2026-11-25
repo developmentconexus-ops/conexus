@@ -16,6 +16,7 @@ import {
   machineMarksOf,
   machinePart,
 } from '../../harness/machine/public.ts'
+import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { CONEXUS_PROMPT, TITLE } from '../../harness/prompt/public.ts'
 import type {
@@ -308,7 +309,7 @@ export function createConstrutor(deps: Deps) {
     { ...deps.machine, log },
     deps.machineTuning,
   )
-  const wired = machinePart(machines)
+  const { each, ...wired } = machinePart(machines)
   const { controller } = mountAgent(construtorSpec(deps, { memory, scopeOf, machines }), {
     queue,
     storage,
@@ -335,11 +336,11 @@ export function createConstrutor(deps: Deps) {
             kind: 'construtor',
             scope,
             code: 'CONSTRUTOR_CONVERSATIONS_RELEASED',
-            each: wired.each,
+            each,
           },
         )
       },
-    },
+    } satisfies HubPart,
     routes: (app: FastifyInstance) =>
       registerConstrutorRoutes(app, { ...deps, conversations: { controller, memory } }),
   } as const)

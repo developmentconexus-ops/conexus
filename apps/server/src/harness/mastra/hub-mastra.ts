@@ -17,7 +17,7 @@ import { createMastra } from './mastra.ts'
 import { RETENTION_WORKFLOW, retentionOf, storageOf } from './retention.ts'
 
 /** A conversation controller on the one `Mastra`, with what the Hub does to its conversations. */
-type Part = {
+export type Part = {
   kind: ControllerKind
   controller: AgentController
   memory: Watched['memory'] & Pick<Memory, 'getThreadById' | 'settled'>

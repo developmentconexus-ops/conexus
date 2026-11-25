@@ -17,6 +17,7 @@ import {
   machinePart,
   PACKAGE_HOSTS,
 } from '../../harness/machine/public.ts'
+import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { TITLE } from '../../harness/prompt/public.ts'
 import type { ConversationSpec, Owner, ReleaseScope } from '../../harness/spec/public.ts'
@@ -247,7 +248,7 @@ export function createAgentConversations(deps: Deps) {
     { ...deps.machine, log },
     deps.machineTuning,
   )
-  const wired = machinePart(machines)
+  const { each, ...wired } = machinePart(machines)
   const spec = agentsSpec(
     { queue, own: { database, log } },
     { ...{ runOf, resolvedOf, activationOfRun }, threads: memory, machines },
@@ -255,7 +256,7 @@ export function createAgentConversations(deps: Deps) {
   const { controller } = mountAgent(spec, { queue, storage })
 
   async function sweep(marks: Record<string, string>): Promise<number> {
-    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), wired.each)
+    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), each)
   }
   deps.agents.onChange((event) => followed(event, { registry, sweep, log }))
 
@@ -282,7 +283,7 @@ export function createAgentConversations(deps: Deps) {
             kind: 'agents',
             scope,
             code: 'AGENT_CONVERSATIONS_RELEASED',
-            each: wired.each,
+            each,
           },
         )
       },
@@ -292,7 +293,7 @@ export function createAgentConversations(deps: Deps) {
       },
       // Where its machine starts, which the turn's end tells (QA F1); the machines stop after the runs `drain` stopped.
       ...wired,
-    },
+    } satisfies HubPart,
   } as const)
 }
 
