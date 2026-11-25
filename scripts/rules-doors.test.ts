@@ -90,27 +90,31 @@ test('dependency-cruiser aceita a raiz, o tables.ts, a porta .tsx, o ajudante te
 
 /** The files that still reach the data directly today: the list only shrinks, and a name that leaves leaves here in the same commit. */
 const MIGRATION_TODAY = [
-  ...['agents/saved-agent/agent', 'agents/saved-agent/choose', 'agents/saved-agent/code-tools'],
   ...[
+    'agents/agent-builder/code-tool',
+    'agents/agent-builder/construtor',
+    'agents/app-builder/builder',
+  ],
+  ...[
+    'agents/assistant/assistant',
+    'agents/assistant/automations/automations',
+    'agents/assistant/connector-access',
+  ],
+  ...['agents/assistant/context', 'agents/assistant/open', 'agents/assistant/propose'],
+  ...['agents/assistant/routes', 'agents/saved-agent/agent', 'agents/saved-agent/choose'],
+  ...[
+    'agents/saved-agent/code-tools',
     'agents/saved-agent/controller',
     'agents/saved-agent/conversation-routes',
-    'agents/saved-agent/legacy',
   ],
-  ...['agents/saved-agent/publish', 'agents/saved-agent/tools', 'agents/saved-agent/write-of'],
+  ...['agents/saved-agent/legacy', 'agents/saved-agent/publish', 'agents/saved-agent/tools'],
+  ...['agents/saved-agent/tools/check', 'agents/saved-agent/write-of', 'harness/spec/turns'],
   ...[
     'harness/tools/app-data/context',
     'harness/tools/app-data/tools',
-    'agents/assistant/assistant',
+    'harness/tools/connectors/connector-tools',
   ],
-  ...['agents/assistant/connector-access', 'agents/assistant/context', 'agents/assistant/open'],
-  ...[
-    'agents/assistant/propose',
-    'agents/assistant/routes',
-    'agents/assistant/automations/automations',
-  ],
-  ...['harness/tools/connectors/connector-tools', 'harness/tools/connectors/typed-reads'],
-  ...['agents/agent-builder/code-tool', 'agents/agent-builder/construtor'],
-  ...['harness/spec/turns', 'agents/app-builder/builder', 'agents/saved-agent/tools/check'],
+  ...['harness/tools/connectors/typed-reads'],
 ]
   .map((file) => `^apps/server/src/${file}\\.ts$`)
   .concat('^packages/app/src/connectors\\.ts$')
