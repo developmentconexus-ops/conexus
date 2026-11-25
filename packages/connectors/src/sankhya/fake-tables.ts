@@ -34,6 +34,9 @@ export const DECLARED_DECIMAL = {
   scale: 4,
 } as const
 
+/** A calculated number in the first note of `TGFCAB`, with ten places and no declared scale, as the real table carries (issue 1380). */
+export const CALCULATED = { column: 'CAMPO003', value: '2.1234567895' } as const
+
 const CHANGED_BY_TEST = '2026-11-20 10:00:00'
 
 const DESCRIPTIONS: Readonly<Record<string, string>> = {
@@ -107,6 +110,9 @@ function create(database: DatabaseSync, decimal: string): void {
   for (const [name, type] of wide) database.exec(`ALTER TABLE TGFCAB ADD COLUMN ${name} ${type}`)
   database.exec(
     `UPDATE TGFCAB SET ${wide.map(([name, , value]) => `${name} = ${value}`).join(', ')}`,
+  )
+  database.exec(
+    `UPDATE TGFCAB SET ${CALCULATED.column} = '${CALCULATED.value}' WHERE NUNOTA = (SELECT MIN(NUNOTA) FROM TGFCAB)`,
   )
   database.exec(`
     ALTER TABLE TGFITE ADD COLUMN DTALTER DATE;
