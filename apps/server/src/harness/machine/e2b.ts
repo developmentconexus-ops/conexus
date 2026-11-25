@@ -3,8 +3,8 @@ import type { CodeModeTransport } from '@mastra/core/tools'
 import { E2BCodeModeTransport, E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
-import type { ConversationMachineApi, Kit, KitFactory } from './kit.ts'
-import { MARK } from './kit.ts'
+import type { ConversationMachine, ConversationMachineApi, Kit, KitFactory } from './kit.ts'
+import { MARK, markOf } from './kit.ts'
 
 /**
  * How long a machine runs before E2B pauses it, for every agent: the Mastra Factory's default
@@ -64,6 +64,19 @@ export function createE2bKit(config: Credentials): KitFactory {
 /** The transport that runs an agent's program in its E2B machine (step 24.4, U5): the `E2BSandbox` is the workspace's. */
 export function createE2bCodeMode(): CodeModeTransport {
   return new E2BCodeModeTransport()
+}
+
+/** What the conversations of the Assistant, the Construtor, the agents and the Builder open a machine with (code C26). */
+export function conversationMachineOf(config: Config): ConversationMachine {
+  const mark = markOf(config)
+  return {
+    kit: createE2bKit(config),
+    api: createE2bApi(config, mark),
+    template: config.machineTemplate,
+    installation: config.installationId,
+    mark,
+    codeMode: createE2bCodeMode(),
+  }
 }
 
 /**

@@ -1,15 +1,10 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import type {
-  ConversationMachine,
-  Machines,
-  MachineTuning,
-} from '../../../harness/machine/public.ts'
+import type { Machines } from '../../../harness/machine/public.ts'
 import {
   createE2bApi,
-  createE2bCodeMode,
   createE2bKit,
   createMachines,
-  MARK,
+  markOf,
 } from '../../../harness/machine/public.ts'
 import type { Config } from '../../../platform/config.ts'
 import type { FailureLog } from '../../../platform/failure.ts'
@@ -19,24 +14,22 @@ import { restoreGuarded } from '../git/guard.ts'
 import type { Repository } from '../git/repository.ts'
 import { openRepository } from '../git/repository.ts'
 
-export type { ConversationMachine, MachineTuning }
 export type RepositoryOf = (ids: { companyId: CompanyId; projectId: ProjectId }) => Repository
 /** The machines of the conversations, found at the provider by their names. */
 export type MachinesOf = () => Machines
 
-/** The Builder's Git on the server's volume and its machines on E2B (decision 0051). */
+/** The Builder's Git on the server's volume and the machines of its Projeto on E2B (decision 0051). */
 export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
   machinesOf: MachinesOf
   repository: RepositoryOf
   copy: GitCopy
-  conversationMachine: ConversationMachine
 } {
   const { config, log } = deps
   const copy = createGitCopy(config, config.gitCopyUrl)
   function repository(ids: { companyId: CompanyId; projectId: ProjectId }): Repository {
     return restoreGuarded(openRepository({ root: config.gitRoot, ...ids, log }), copy, ids)
   }
-  const mark = { [MARK.origin]: config.installationId }
+  const mark = markOf(config)
   function machinesOf() {
     return createMachines({
       ...{ log, mark, installation: config.installationId },
@@ -50,13 +43,5 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
       },
     })
   }
-  const conversationMachine: ConversationMachine = {
-    kit: createE2bKit(config),
-    api: createE2bApi(config, mark),
-    template: config.machineTemplate,
-    installation: config.installationId,
-    mark,
-    codeMode: createE2bCodeMode(),
-  }
-  return { machinesOf, repository, copy, conversationMachine }
+  return { machinesOf, repository, copy }
 }

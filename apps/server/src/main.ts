@@ -3,15 +3,15 @@ import { getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type {
   BuilderConfer,
-  ConversationMachine,
   GitCopy,
   MachinesOf,
-  MachineTuning,
   RepositoryOf,
 } from './agents/app-builder/public.ts'
 import { builderPortsOf, createRuns, repositoriesIn } from './agents/app-builder/public.ts'
 import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
+import type { ConversationMachine, MachineTuning } from './harness/machine/public.ts'
+import { conversationMachineOf } from './harness/machine/public.ts'
 import {
   createModelAccounts,
   openGoogleCalls,
@@ -259,6 +259,7 @@ async function runServer(): Promise<void> {
       ...{ database, config, identity, sendMail },
       ...{ neon, lakeStacks, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...builderPortsOf({ config, log }),
+      conversationMachine: conversationMachineOf(config),
     })
     const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
     await conversations.prepare()

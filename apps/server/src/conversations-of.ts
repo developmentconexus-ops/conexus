@@ -1,7 +1,7 @@
 import type { CompanyData } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { createConstrutor, tablesWithColumnNamesOf } from './agents/agent-builder/public.ts'
-import type { ConversationMachine, MachineTuning, Runs } from './agents/app-builder/public.ts'
+import type { Runs } from './agents/app-builder/public.ts'
 import { createBuilderConversations } from './agents/app-builder/public.ts'
 import type { HandOffDoors } from './agents/assistant/public.ts'
 import {
@@ -13,6 +13,7 @@ import {
   speakersOf,
 } from './agents/assistant/public.ts'
 import { agentsAlive } from './agents/saved-agent/public.ts'
+import type { ConversationMachine, MachineTuning } from './harness/machine/public.ts'
 import { createHubMastra } from './harness/mastra/public.ts'
 import { createMastraStorage } from './harness/memory/public.ts'
 import type { openGoogleCalls } from './harness/model-accounts/public.ts'
