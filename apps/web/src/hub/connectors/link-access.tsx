@@ -5,7 +5,7 @@ import { Button } from '../../ui/button.tsx'
 import { DialogBody, DialogFooter } from '../../ui/dialog.tsx'
 import { Form, FormAlert } from '../../ui/form.tsx'
 import { isFuture } from './lake-pick.ts'
-import { CONTINUE, SEND_LEAD, SEND_LINK, SEND_TITLE } from './lake-text.ts'
+import { CANCEL, CONTINUE, SEND_LEAD, SEND_LINK, SEND_TITLE } from './lake-text.ts'
 import type { AccessForm } from './link-fields.tsx'
 import { BeforePasting, Fields, NAME } from './link-fields.tsx'
 import { SendPanel } from './link-send.tsx'
@@ -92,7 +92,7 @@ export function AccessStep(props: {
             {CONTINUE}
           </Button>
           <Button type="button" disabled={busy} onClick={props.onClose}>
-            Cancelar
+            {CANCEL}
           </Button>
         </div>
       </DialogFooter>

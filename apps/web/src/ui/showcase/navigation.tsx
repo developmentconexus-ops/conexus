@@ -83,6 +83,7 @@ export const NAVIGATION: readonly ShowcaseEntry[] = [
         label="Passos"
         steps={['Acesso', 'Testando e lendo', 'O que copiar', 'Quando copiar']}
         current={2}
+        doneLabel="feito"
         phoneLine="Passo 3 de 4 · O que copiar"
       />
     ),
@@ -94,6 +95,7 @@ export const NAVIGATION: readonly ShowcaseEntry[] = [
             label="Passos"
             steps={['Acesso', 'Testando e lendo', 'O que copiar', 'Quando copiar']}
             current={null}
+            doneLabel="feito"
             phoneLine="Todos os passos feitos"
           />
         ),

@@ -6,7 +6,7 @@ import type {
 } from '@conexus/hub-api'
 import { Dialog, DialogContent } from '../../ui/dialog.tsx'
 import { StepBar } from '../../ui/step-bar.tsx'
-import { LINKED_STEP, phoneStepText, STEPS, STEPS_LABEL } from './lake-text.ts'
+import { LINKED_STEP, phoneStepText, STEP_DONE, STEPS, STEPS_LABEL } from './lake-text.ts'
 import { AccessStep } from './link-access.tsx'
 import { barOf, useLinkFlow } from './link-flow.ts'
 import { ChooseStep, LinkedStep, TestingStep, WhenStep } from './link-steps.tsx'
@@ -82,7 +82,12 @@ function Stage(props: Props & { flow: Flow }) {
       )
     case 'LINKED':
       return (
-        <LinkedStep companyId={props.companyId} outcome={stage.outcome} onClose={props.onClose} />
+        <LinkedStep
+          companyId={props.companyId}
+          system={entry.name}
+          stage={stage}
+          onClose={props.onClose}
+        />
       )
   }
 }
@@ -103,6 +108,7 @@ export function LinkWindow(props: Props) {
           label={STEPS_LABEL}
           steps={STEPS}
           current={number}
+          doneLabel={STEP_DONE}
           phoneLine={number === null ? LINKED_STEP : phoneStepText(number)}
         />
         <Stage {...props} flow={flow} />

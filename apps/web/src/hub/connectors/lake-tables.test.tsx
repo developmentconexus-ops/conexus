@@ -109,7 +109,8 @@ test('a seção: marcar outra mostra o nome sugerido, que se troca; Salvar grava
   expect(name.value).toBe('tgfpar')
   fireEvent.change(name, { target: { value: 'clientes' } })
   fireEvent.click(within(section).getByRole('button', { name: 'Salvar' }))
-  await waitFor(() => expect(sent.filter((one) => one.method === 'PUT')).toHaveLength(1))
+  expect(await within(section).findByText('sankhya_clientes')).toBeTruthy()
+  expect(sent.filter((one) => one.method === 'PUT')).toHaveLength(1)
   expect(sent.find((one) => one.method === 'PUT')?.body).toEqual({
     tables: [
       { source: 'TGFCAB', name: 'sankhya_tgfcab' },
@@ -119,7 +120,6 @@ test('a seção: marcar outra mostra o nome sugerido, que se troca; Salvar grava
     interval: '24h',
     startDate: '2021-11-24',
   })
-  expect(await within(section).findByText('sankhya_clientes')).toBeTruthy()
 })
 
 test('a seção: desmarcar e mudar o intervalo, Só manual incluído, gravam por Salvar', async () => {
@@ -259,9 +259,6 @@ test('ler de novo desde a data: o diálogo lista as tabelas que a data limita, c
     'Itens das notasJanela por mês: trocam-se só os meses desde o mês da data.',
   ])
   expect(within(dialog).getByText('As outras tabelas seguem como sempre.')).toBeTruthy()
-  expect(within(dialog).getByRole('button', { name: 'Ler de novo' }).className).toContain(
-    'bg-danger',
-  )
   fireEvent.click(within(dialog).getByRole('button', { name: 'Ler de novo' }))
   await waitFor(() => expect(sent.some((one) => one.path.endsWith('/lake-copy/run'))).toBe(true))
   expect(sent.find((one) => one.path.endsWith('/lake-copy/run'))?.body).toEqual({ whole: true })

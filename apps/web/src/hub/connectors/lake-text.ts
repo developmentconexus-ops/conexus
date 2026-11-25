@@ -4,6 +4,7 @@ import { isoDayText } from './lake-words.ts'
 /** The words of the window "Ligar" and of the section "Tabelas no lago" (U9). */
 export const STEPS = ['Acesso', 'Testando e lendo', 'O que copiar', 'Quando copiar'] as const
 export const STEPS_LABEL = 'Passos'
+export const STEP_DONE = 'feito'
 export const LINKED_STEP = 'Ligado'
 
 export function phoneStepText(step: number | null): string {
@@ -13,6 +14,7 @@ export function phoneStepText(step: number | null): string {
 
 export const CONTINUE = 'Continuar'
 export const BACK = 'Voltar'
+export const CANCEL = 'Cancelar'
 export const CLOSE = 'Fechar'
 export const SEND_LINK = 'Enviar link'
 export const SEND_TITLE = 'Outra pessoa tem a senha?'
@@ -87,6 +89,14 @@ export function reviewSinceText(since: string): string {
 }
 
 export const STARTED = 'A primeira carga começou.'
+
+export function startedText(tables: number, system: string): string {
+  const [going, each] =
+    tables === 1
+      ? ['1 tabela está', 'ela aparece']
+      : [`${tables} tabelas estão`, 'cada uma aparece']
+  return `${going} indo para o lago da empresa. Em Dados, ${each} como ${RUNNING} e vira ${UP_TO_DATE} quando termina. No ${system} de uma empresa grande a primeira carga leva horas; você pode fechar esta janela.`
+}
 export const SEE_IN_DATA = 'Ver em Dados'
 export const ASK_COPY_MANAGER = 'Peça a quem gerencia as cópias para escolher o que copiar.'
 

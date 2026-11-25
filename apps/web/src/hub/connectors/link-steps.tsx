@@ -19,6 +19,7 @@ import { LakePicker } from './lake-picker.tsx'
 import {
   ASK_COPY_MANAGER,
   BACK,
+  CANCEL,
   CLOSE,
   CONTINUE,
   everyText,
@@ -34,9 +35,11 @@ import {
   reviewSinceText,
   SEE_IN_DATA,
   STARTED,
+  startedText,
   TESTING_LINE,
 } from './lake-text.ts'
 import { intervalText } from './lake-words.ts'
+import type { Stage } from './link-flow.ts'
 import { SinceField } from './since-field.tsx'
 import { WORKING_TEXT } from './text.ts'
 
@@ -59,7 +62,7 @@ export function TestingStep(props: {
       </DialogBody>
       <DialogFooter>
         <div className="flex flex-wrap gap-md">
-          <Button onClick={props.onClose}>Cancelar</Button>
+          <Button onClick={props.onClose}>{CANCEL}</Button>
         </div>
       </DialogFooter>
     </>
@@ -188,20 +191,25 @@ export function WhenStep(props: {
 /** "Ligado": the first load began, or the connection is linked and there is nothing here to copy. */
 export function LinkedStep(props: {
   companyId: CompanyId
-  outcome: 'STARTED' | 'NO_COPY' | 'NOT_ALLOWED'
+  system: string
+  stage: Extract<Stage, { step: 'LINKED' }>
   onClose: () => void
 }) {
+  const { stage } = props
   return (
     <>
       <DialogBody>
         <div role="status" className="flex max-w-message flex-col gap-md">
-          <p className="font-medium">{props.outcome === 'STARTED' ? STARTED : WORKING_TEXT}</p>
-          {props.outcome === 'NOT_ALLOWED' && <p className="text-text-2">{ASK_COPY_MANAGER}</p>}
+          <p className="font-medium">{stage.outcome === 'STARTED' ? STARTED : WORKING_TEXT}</p>
+          {stage.outcome === 'STARTED' && (
+            <p className="text-text-2">{startedText(stage.tables, props.system)}</p>
+          )}
+          {stage.outcome === 'NOT_ALLOWED' && <p className="text-text-2">{ASK_COPY_MANAGER}</p>}
         </div>
       </DialogBody>
       <DialogFooter>
         <div className="flex flex-wrap gap-md">
-          {props.outcome === 'STARTED' && (
+          {stage.outcome === 'STARTED' && (
             <Button
               variant="primary"
               render={
@@ -212,7 +220,7 @@ export function LinkedStep(props: {
             </Button>
           )}
           <Button
-            variant={props.outcome === 'STARTED' ? 'default' : 'primary'}
+            variant={stage.outcome === 'STARTED' ? 'default' : 'primary'}
             onClick={props.onClose}
           >
             {CLOSE}

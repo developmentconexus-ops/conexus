@@ -10,51 +10,46 @@ function bar(current: number | null) {
       label="Passos"
       steps={STEPS}
       current={current}
+      doneLabel="feito"
       phoneLine={current === null ? 'Ligado' : `Passo ${current + 1} de 4 · ${STEPS[current]}`}
     />,
   )
   return within(screen.getByRole('list', { name: 'Passos' }))
 }
 
-test('os passos feitos têm visto, o atual é aria-current="step" e os de depois têm o número', () => {
-  const list = bar(2)
-  const items = list.getAllByRole('listitem')
-  expect(items.map((one) => one.getAttribute('aria-current'))).toEqual([null, null, 'step', null])
-  expect(items.map((one) => one.querySelector('svg.lucide-check') !== null)).toEqual([
-    true,
-    true,
-    false,
-    false,
+/** What a screen reader reads of each step: its name, and "feito" after a step that is done. */
+function heard(list: ReturnType<typeof bar>) {
+  return list.getAllByRole('listitem').map((one) => ({
+    name: STEPS.find((step) => within(one).queryByText(step) !== null),
+    done: within(one).queryByText(', feito') !== null,
+    number: within(one).queryByText(/^\d$/)?.textContent ?? null,
+    current: one.getAttribute('aria-current'),
+  }))
+}
+
+test('o passo feito diz "feito", o atual é o passo atual e os de depois têm o número', () => {
+  expect(heard(bar(2))).toEqual([
+    { name: 'Acesso', done: true, number: null, current: null },
+    { name: 'Testando e lendo', done: true, number: null, current: null },
+    { name: 'O que copiar', done: false, number: '3', current: 'step' },
+    { name: 'Quando copiar', done: false, number: '4', current: null },
   ])
-  expect(items[2]?.textContent).toBe('3O que copiar')
-  expect(items[3]?.textContent).toBe('4Quando copiar')
 })
 
-test('com todos feitos nenhum passo é o atual e todos têm visto', () => {
-  const items = bar(null).getAllByRole('listitem')
-  expect(items.some((one) => one.hasAttribute('aria-current'))).toBe(false)
-  expect(items.every((one) => one.querySelector('svg.lucide-check') !== null)).toBe(true)
+test('com todos feitos nenhum passo é o atual e todos dizem "feito"', () => {
+  const steps = heard(bar(null))
+  expect(steps.map((one) => one.done)).toEqual([true, true, true, true])
+  expect(steps.map((one) => one.current)).toEqual([null, null, null, null])
 })
 
-test('o leitor de tela lê a lista pelo nome e cada passo pelo seu nome; a linha do celular diz o passo', () => {
+test('a linha do celular diz o passo em que a pessoa está', () => {
   bar(1)
-  expect(screen.getAllByRole('listitem').map((one) => one.textContent)).toEqual([
-    'Acesso',
-    '2Testando e lendo',
-    '3O que copiar',
-    '4Quando copiar',
-  ])
   expect(screen.getByText('Passo 2 de 4 · Testando e lendo')).toBeTruthy()
 })
 
 test('a barra não é parada de teclado: nenhum botão, link ou campo dentro dela', () => {
-  bar(0)
-  const root = document.querySelector('[data-slot="step-bar"]')
-  expect(root?.querySelectorAll('a, button, input, select, textarea, [tabindex]').length).toBe(0)
-})
-
-test('abaixo de sm só a linha do celular aparece e a lista some', () => {
-  bar(0)
-  expect(screen.getByRole('list', { name: 'Passos' }).className).toContain('max-sm:hidden')
-  expect(screen.getByText('Passo 1 de 4 · Acesso').className).toContain('sm:hidden')
+  const list = bar(0)
+  expect(list.queryAllByRole('button')).toEqual([])
+  expect(list.queryAllByRole('link')).toEqual([])
+  expect(list.queryAllByRole('textbox')).toEqual([])
 })

@@ -78,11 +78,6 @@ function Controls(props: {
   )
 }
 
-/**
- * The copied tables of a connection and everything that changes them: the boxes, the other tables
- * of the system, the interval and "Desde", "Salvar", "Rodar agora" and "Ler de novo desde a data".
- * Who does not manage copies reads the list and nothing else.
- */
 /** What the person has edited so far: the picks, the interval and the date, against what is saved. */
 function useCopyEdit(props: Props) {
   const { lake } = props
@@ -111,6 +106,7 @@ type Edit = ReturnType<typeof useCopyEdit>
 function useCopyWrites(props: Props, edit: Edit) {
   const { companyId, connectionId, entry, lake } = props
   const { picks, interval, since, savedSince, setReading } = edit
+  const hasTypedName = Object.keys(picks.parts).some((source) => picks.marked.has(source))
   const [note, setNote] = useState<string | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
   const [nameRefusal, setNameRefusal] = useState<string | null>(null)
@@ -137,9 +133,11 @@ function useCopyWrites(props: Props, edit: Edit) {
       })
       await save.mutateAsync({ params, body })
     } catch (error) {
-      if (error instanceof HubFailure && NAME_REFUSALS.has(error.code))
+      if (error instanceof HubFailure && NAME_REFUSALS.has(error.code) && hasTypedName) {
         setNameRefusal(sentenceOf(error))
-      setFailure(sentenceOf(error))
+      } else {
+        setFailure(sentenceOf(error))
+      }
       return
     }
     setNote(dateEffectText(savedSince, since))
@@ -199,6 +197,11 @@ function RunBar(props: {
   )
 }
 
+/**
+ * The copied tables of a connection and everything that changes them: the boxes, the other tables
+ * of the system, the interval and "Desde", "Salvar", "Rodar agora" and "Ler de novo desde a data".
+ * Who does not manage copies reads the list and nothing else.
+ */
 export function CopiedTables(props: Props & { editable: boolean }) {
   const { entry, lake } = props
   const edit = useCopyEdit(props)

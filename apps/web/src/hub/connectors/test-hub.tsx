@@ -304,3 +304,24 @@ export async function choose(trigger: HTMLElement, name: string) {
   fireEvent.mouseUp(option)
   fireEvent.click(option)
 }
+
+export const NEEDS_TABLE = 'Marque ao menos uma tabela para continuar.'
+
+/** Links by the keys and waits for "O que copiar", the date typed at the access when given. */
+export async function toChoose(since = '') {
+  const dialog = await openForm()
+  fill('Comercial')
+  if (since !== '')
+    fireEvent.change(within(dialog).getByLabelText('Desde'), { target: { value: since } })
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Continuar' }))
+  await screen.findByText(NEEDS_TABLE)
+  return dialog
+}
+
+export function mark(dialog: HTMLElement, label: string) {
+  fireEvent.click(within(dialog).getByRole('checkbox', { name: label }))
+}
+
+export function next(dialog: HTMLElement) {
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Continuar' }))
+}

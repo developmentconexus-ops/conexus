@@ -31,9 +31,18 @@ test('a primeira vez: a frase, o logotipo e o resumo do conector, e Ligar para q
 
 test('a página que chega de Ligar e testar mostra "Testando a ligação…" enquanto espera', async () => {
   const connection = connectionOf()
-  open(viewOf({ connections: [connection] }), {}, `${pageOf(connection)}?testar=true`)
+  const gate = Promise.withResolvers<void>()
+  server.use(
+    http.post('*/api/companies/*/connections/*/test', async () => {
+      await gate.promise
+      return undefined
+    }),
+    ...connectionsHub(viewOf({ connections: [connection] })).handlers,
+  )
+  mount(`${pageOf(connection)}?testar=true`)
   expect(await screen.findByText('Testando a ligação…')).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Testando…' })).toBeTruthy()
+  expect(await screen.findByRole('button', { name: 'Testando…' })).toBeTruthy()
+  gate.resolve()
   expect(await screen.findByText('Ligado e funcionando.')).toBeTruthy()
   await waitFor(() => expect(screen.queryByText('Testando a ligação…')).toBeNull())
 })

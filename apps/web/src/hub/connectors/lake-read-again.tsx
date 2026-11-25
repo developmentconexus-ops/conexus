@@ -2,6 +2,7 @@ import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import type { Table } from './lake-pick.ts'
 import {
+  CANCEL,
   READ_AGAIN_CONFIRM,
   READ_AGAIN_LEAD,
   READ_AGAIN_OTHERS,
@@ -53,7 +54,7 @@ export function ReadAgainDialog(props: {
           <Button variant="danger-confirm" disabled={props.pending} onClick={props.onConfirm}>
             {READ_AGAIN_CONFIRM}
           </Button>
-          <Button onClick={props.onCancel}>Cancelar</Button>
+          <Button onClick={props.onCancel}>{CANCEL}</Button>
         </div>
       </AlertDialogContent>
     </AlertDialog>

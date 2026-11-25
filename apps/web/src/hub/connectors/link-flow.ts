@@ -29,7 +29,8 @@ export type Stage =
   | { step: 'REFUSED'; answer: Refusal }
   | { step: 'CHOOSE'; lake: Lake }
   | { step: 'WHEN'; lake: Lake }
-  | { step: 'LINKED'; outcome: 'STARTED' | 'NO_COPY' | 'NOT_ALLOWED' }
+  | { step: 'LINKED'; outcome: 'STARTED'; tables: number }
+  | { step: 'LINKED'; outcome: 'NO_COPY' | 'NOT_ALLOWED' }
 
 const UNCONFIRMED = unconfirmedText('a ligação', 'Tente de novo.')
 const NAME_REFUSALS: ReadonlySet<string> = new Set(['COPY_NAME_INVALID', 'COPY_NAME_TAKEN'])
@@ -197,7 +198,8 @@ function useFinish(props: Props, state: State) {
       return
     }
     void queryClient.invalidateQueries({ queryKey: lakeTablesPrefix(companyId, connection.id) })
-    setStage({ step: 'LINKED', outcome: 'STARTED' })
+    const tables = lake.tables.filter((one) => picks.marked.has(one.source)).length
+    setStage({ step: 'LINKED', outcome: 'STARTED', tables })
   }
 
   return { finish, saving: save.isPending }

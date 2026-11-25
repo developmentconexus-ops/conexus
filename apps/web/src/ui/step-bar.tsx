@@ -11,6 +11,8 @@ export function StepBar(props: {
   steps: readonly string[]
   /** The step being done, from 0; null when all are done. */
   current: number | null
+  /** What a screen reader hears after a step already done, which the tick alone does not say. */
+  doneLabel: string
   /** The one line that stands for the bar under `sm`. */
   phoneLine: string
   className?: string
@@ -41,6 +43,7 @@ export function StepBar(props: {
                 {done ? <CheckIcon aria-hidden="true" className="size-3" /> : at + 1}
               </span>
               <span className={now ? 'font-medium text-text' : undefined}>{name}</span>
+              {done && <span className="sr-only">, {props.doneLabel}</span>}
             </li>
           )
         })}

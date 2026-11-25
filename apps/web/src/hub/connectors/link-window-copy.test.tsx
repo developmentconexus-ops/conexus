@@ -9,37 +9,21 @@ import {
   choose,
   connectionsHub,
   fill,
+  mark,
   mount,
+  NEEDS_TABLE,
+  next,
   openForm,
   openIntegrations,
   pageOf,
+  toChoose,
   viewOf,
 } from './test-hub.tsx'
 
 const server = hubServer()
-const NEEDS_TABLE = 'Marque ao menos uma tabela para continuar.'
 
 function open(view: View = viewOf({ lake: readyLake() }), answers: Answers = {}) {
   return openIntegrations(server, view, answers)
-}
-
-/** Links by the keys and waits for "O que copiar", the date typed at the access when given. */
-async function toChoose(since = '') {
-  const dialog = await openForm()
-  fill('Comercial')
-  if (since !== '')
-    fireEvent.change(within(dialog).getByLabelText('Desde'), { target: { value: since } })
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Continuar' }))
-  await screen.findByText(NEEDS_TABLE)
-  return dialog
-}
-
-function mark(dialog: HTMLElement, label: string) {
-  fireEvent.click(within(dialog).getByRole('checkbox', { name: label }))
-}
-
-function next(dialog: HTMLElement) {
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Continuar' }))
 }
 
 test('o que copiar: as tabelas por assunto, nada marcado, com rótulo, origem, descrição, colunas e modo; o nome só depois de marcar', async () => {
