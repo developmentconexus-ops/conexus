@@ -1,29 +1,14 @@
 import type { LakeTablesOfConnection } from '@conexus/hub-api'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { HttpResponse, http } from 'msw'
+import { screen, waitFor } from '@testing-library/react'
+import { http } from 'msw'
 import { expect, test } from 'vitest'
-import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { hubServer } from '../../platform/test-hub.tsx'
 import { connectionOf, MERCADO_LIVRE } from './fixtures.ts'
-import { copiedLake, NO_LAKE, RUNNING_ROUND, readyLake } from './lake-fixtures.ts'
-import type { Answers, View } from './test-hub.tsx'
-import { choose, connectionsHub, mount, pageOf, viewOf } from './test-hub.tsx'
+import { copiedLake, NO_LAKE } from './lake-fixtures.ts'
+import { connectionsHub, mount, pageOf, viewOf } from './test-hub.tsx'
+import { MATRIZ } from './test-lake.tsx'
 
 const server = hubServer()
-const MATRIZ = connectionOf({ name: 'Matriz', state: 'ACTIVE' })
-
-/** The connection's page on a Hub that holds `fields`, with the tab "Tabelas" open when it has one. */
-async function openTables(fields: Partial<View> = {}, answers: Answers = {}) {
-  const view = viewOf({ connections: [MATRIZ], ...fields })
-  const hub = connectionsHub(view, answers)
-  server.use(...hub.handlers)
-  mount(pageOf(MATRIZ))
-  fireEvent.click(await screen.findByRole('tab', { name: 'Tabelas' }))
-  return {
-    view,
-    sent: hub.sent,
-    section: await screen.findByRole('region', { name: 'Tabelas no lago' }),
-  }
-}
 
 const COPIED = ['TGFCAB', 'TGFITE']
 function lake(fields: Partial<LakeTablesOfConnection> = {}) {

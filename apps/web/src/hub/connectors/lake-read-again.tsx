@@ -1,14 +1,14 @@
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
-import type { Table } from './lake-pick.ts'
+import type { MarkedTable, Table } from './lake-pick.ts'
 import {
   CANCEL,
   LEAVE_CONFIRM,
   LEAVE_LEAD,
   leaveTitle,
+  OTHERS_STAY,
   READ_AGAIN_CONFIRM,
   READ_AGAIN_LEAD,
-  READ_AGAIN_OTHERS,
   readAgainEffectText,
   readAgainTitle,
 } from './lake-text.ts'
@@ -20,7 +20,7 @@ export function readAgainTables(tables: readonly Table[]): Table[] {
   )
 }
 
-type Row = { key: string; label: string; detail: string }
+type Row = { key: string; label: string; detail: string; fact: boolean }
 
 /**
  * A confirmation that lists what a write does to the lake, table by table, in one line each, and
@@ -46,11 +46,13 @@ function TablesDialog(props: {
               className="flex flex-col gap-xs border-b border-line py-sm first:border-t"
             >
               <span className="font-medium">{row.label}</span>
-              <span className="text-text-2">{row.detail}</span>
+              <span className={row.fact ? 'font-mono text-fact text-text-2' : 'text-text-2'}>
+                {row.detail}
+              </span>
             </li>
           ))}
         </ul>
-        <p>{READ_AGAIN_OTHERS}</p>
+        <p>{OTHERS_STAY}</p>
         <div className="flex flex-wrap gap-md">
           <Button variant="danger-confirm" disabled={props.pending} onClick={props.onConfirm}>
             {props.confirm}
@@ -81,13 +83,14 @@ export function ReadAgainDialog(
           table.mode.kind === 'WINDOW' ? 'WINDOW' : 'CHANGED',
           props.system,
         ),
+        fact: false,
       }))}
     />
   )
 }
 
 /** "Salvar" with a table unmarked: the tables the lake drops, each with its name in the lake. */
-export function LeaveDialog(props: Ask & { open: boolean; tables: readonly Table[] }) {
+export function LeaveDialog(props: Ask & { open: boolean; tables: readonly MarkedTable[] }) {
   return (
     <TablesDialog
       {...props}
@@ -97,7 +100,8 @@ export function LeaveDialog(props: Ask & { open: boolean; tables: readonly Table
       rows={props.tables.map((table) => ({
         key: table.source,
         label: table.label,
-        detail: table.copy.kind === 'MARKED' ? table.copy.name : '',
+        detail: table.copy.name,
+        fact: true,
       }))}
     />
   )

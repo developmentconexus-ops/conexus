@@ -16,7 +16,7 @@ import { SectionTitle } from '../../ui/list.tsx'
 import { Controls, RunBar } from './lake-copied-controls.tsx'
 import { CopiedRow } from './lake-copied-row.tsx'
 import type { Picks, Table } from './lake-pick.ts'
-import { copyBody, groupsOf, picksOfCopied, prefixOf } from './lake-pick.ts'
+import { copyBody, groupsOf, isMarked, picksOfCopied, prefixOf } from './lake-pick.ts'
 import { Group, LakePicker } from './lake-picker.tsx'
 import { lakeTablesPrefix, sendLakeCopy, sendLakeRun } from './lake-queries.ts'
 import { LeaveDialog, ReadAgainDialog, readAgainTables } from './lake-read-again.tsx'
@@ -42,7 +42,7 @@ function useCopyEdit(props: Props) {
   const [since, setSince] = useState(savedSince)
   const [reading, setReading] = useState(false)
   const [confirming, setConfirming] = useState(false)
-  const copied = lake.tables.filter((one) => one.copy.kind === 'MARKED')
+  const copied = lake.tables.filter(isMarked)
   const others = lake.tables.filter((one) => one.copy.kind === 'UNMARKED')
   const leaving = copied.filter((one) => !picks.marked.has(one.source))
   const dirty =
@@ -266,9 +266,9 @@ export function CopiedTables(props: Props & { editable: boolean }) {
         open={confirming}
         tables={leaving}
         pending={writes.saving}
-        onConfirm={() => {
+        onConfirm={async () => {
+          await submit()
           setConfirming(false)
-          void submit()
         }}
         onCancel={() => setConfirming(false)}
       />

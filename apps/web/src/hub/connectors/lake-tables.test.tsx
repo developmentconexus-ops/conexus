@@ -3,27 +3,12 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { connectionOf, MERCADO_LIVRE } from './fixtures.ts'
-import { copiedLake, NO_LAKE, RUNNING_ROUND, readyLake } from './lake-fixtures.ts'
-import type { Answers, View } from './test-hub.tsx'
-import { choose, connectionsHub, mount, pageOf, viewOf } from './test-hub.tsx'
+import { copiedLake, RUNNING_ROUND, readyLake } from './lake-fixtures.ts'
+import type { View } from './test-hub.tsx'
+import { choose } from './test-hub.tsx'
+import { openTables } from './test-lake.tsx'
 
 const server = hubServer()
-const MATRIZ = connectionOf({ name: 'Matriz', state: 'ACTIVE' })
-
-/** The connection's page on a Hub that holds `fields`, with the tab "Tabelas" open when it has one. */
-async function openTables(fields: Partial<View> = {}, answers: Answers = {}) {
-  const view = viewOf({ connections: [MATRIZ], ...fields })
-  const hub = connectionsHub(view, answers)
-  server.use(...hub.handlers)
-  mount(pageOf(MATRIZ))
-  fireEvent.click(await screen.findByRole('tab', { name: 'Tabelas' }))
-  return {
-    view,
-    sent: hub.sent,
-    section: await screen.findByRole('region', { name: 'Tabelas no lago' }),
-  }
-}
 
 const COPIED = ['TGFCAB', 'TGFITE']
 function lake(fields: Partial<LakeTablesOfConnection> = {}) {
@@ -31,7 +16,7 @@ function lake(fields: Partial<LakeTablesOfConnection> = {}) {
 }
 
 test('a seção: as tabelas copiadas com o nome fixo, o intervalo, a última rodada e Rodar agora', async () => {
-  const { section } = await openTables({ lake: lake() })
+  const { section } = await openTables(server, { lake: lake() })
   const view = within(section)
   expect(view.getByText('Notas e pedidos')).toBeTruthy()
   expect(view.getByText('sankhya_tgfcab')).toBeTruthy()
@@ -46,7 +31,7 @@ test('a seção: as tabelas copiadas com o nome fixo, o intervalo, a última rod
 
 test('a seção: as tabelas copiadas ficam sob o assunto, com o número de colunas e a nota de que o nome não muda mais', async () => {
   const marked = copiedLake(['TGFCAB', 'TGFITE', 'TGFNFE'])
-  const { section } = await openTables({ lake: marked })
+  const { section } = await openTables(server, { lake: marked })
   const view = within(section)
   const vendas = within(view.getByRole('region', { name: 'Vendas' }))
   expect(vendas.getByText('Notas e pedidos')).toBeTruthy()
@@ -62,14 +47,14 @@ test('a seção: as tabelas copiadas ficam sob o assunto, com o número de colun
 
 test('a seção: com o dicionário fora a tabela copiada não ganha número de colunas', async () => {
   const dark = copiedLake(['TGFCAB']).tables.map((one) => ({ ...one, columns: null }))
-  const { section } = await openTables({ lake: copiedLake(['TGFCAB'], { tables: dark }) })
+  const { section } = await openTables(server, { lake: copiedLake(['TGFCAB'], { tables: dark }) })
   const view = within(section)
   expect(view.getByText('TGFCAB')).toBeTruthy()
   expect(view.queryByText(/colunas/)).toBeNull()
 })
 
 test('a seção: marcar outra mostra o nome sugerido, que se troca; Salvar grava num pedido só com os nomes que não mudam', async () => {
-  const { section, sent } = await openTables({ lake: lake() })
+  const { section, sent } = await openTables(server, { lake: lake() })
   fireEvent.click(within(section).getByRole('button', { name: /^Outras tabelas do Sankhya \(2\)/ }))
   fireEvent.click(await within(section).findByRole('checkbox', { name: 'Parceiros' }))
   const name = within(section).getByLabelText<HTMLInputElement>('Nome no lago: Parceiros')
@@ -90,7 +75,7 @@ test('a seção: marcar outra mostra o nome sugerido, que se troca; Salvar grava
 })
 
 test('a seção: desmarcar e mudar o intervalo, Só manual incluído, gravam por Salvar', async () => {
-  const { section, sent } = await openTables({ lake: lake() })
+  const { section, sent } = await openTables(server, { lake: lake() })
   fireEvent.click(within(section).getByRole('checkbox', { name: 'Itens das notas' }))
   await choose(within(section).getByRole('combobox', { name: 'Intervalo' }), 'Só manual')
   fireEvent.click(within(section).getByRole('button', { name: 'Salvar' }))
@@ -107,7 +92,7 @@ test('a seção: desmarcar e mudar o intervalo, Só manual incluído, gravam por
 })
 
 test('a seção: Rodar agora pede a rodada sem relê-la inteira', async () => {
-  const { section, sent } = await openTables({ lake: lake() })
+  const { section, sent } = await openTables(server, { lake: lake() })
   fireEvent.click(within(section).getByRole('button', { name: 'Rodar agora' }))
   await waitFor(() => expect(sent.some((one) => one.path.endsWith('/lake-copy/run'))).toBe(true))
   expect(sent.find((one) => one.path.endsWith('/lake-copy/run'))?.body).toEqual({ whole: false })
@@ -115,13 +100,13 @@ test('a seção: Rodar agora pede a rodada sem relê-la inteira', async () => {
 })
 
 test('a seção: sem cópia diz que nada é copiado e oferece Escolher o que copiar', async () => {
-  const { section } = await openTables({ lake: readyLake() })
+  const { section } = await openTables(server, { lake: readyLake() })
   expect(within(section).getByText('Nada desta ligação é copiado para o lago.')).toBeTruthy()
   expect(within(section).getByRole('button', { name: 'Escolher o que copiar' })).toBeTruthy()
 })
 
 test('a seção: sem lago pronto diz a frase da matriz e não oferece escolher', async () => {
-  const { section } = await openTables({ lake: readyLake({ lake: { kind: 'NOT_READY' } }) })
+  const { section } = await openTables(server, { lake: readyLake({ lake: { kind: 'NOT_READY' } }) })
   expect(
     within(section).getByText('O lago desta empresa não está pronto. Peça ao operador do Conexus.'),
   ).toBeTruthy()
@@ -129,7 +114,11 @@ test('a seção: sem lago pronto diz a frase da matriz e não oferece escolher',
 })
 
 test('a seção: quem não gerencia cópias vê as caixas, Salvar e Rodar agora à vista e desligados, com a frase de quem muda; clicar neles não chama rota', async () => {
-  const { section, sent } = await openTables({ role: 'member', mayManage: false, lake: lake() })
+  const { section, sent } = await openTables(server, {
+    role: 'member',
+    mayManage: false,
+    lake: lake(),
+  })
   const view = within(section)
   expect(view.getByText('Notas e pedidos')).toBeTruthy()
   expect(view.getByText('sankhya_tgfcab')).toBeTruthy()
@@ -154,7 +143,7 @@ test('a seção: quem não gerencia cópias vê as caixas, Salvar e Rodar agora 
 })
 
 test('a seção: quem gerencia cópias não vê a frase de quem muda e tem tudo ligado', async () => {
-  const { section } = await openTables({ lake: lake() })
+  const { section } = await openTables(server, { lake: lake() })
   const view = within(section)
   expect(view.queryByText('Só quem gerencia as cópias muda o que se copia.')).toBeNull()
   expect(view.getByRole('button', { name: 'Rodar agora' }).hasAttribute('disabled')).toBe(false)
@@ -165,7 +154,11 @@ test('a seção: quem gerencia cópias não vê a frase de quem muda e tem tudo 
 
 test('a seção: a rodada aberta no Hub aparece como Rodando…, e a recusa por rodada aberta diz a frase do código', async () => {
   const running = copiedLake(COPIED, { lastRun: RUNNING_ROUND })
-  const { section } = await openTables({ lake: running }, { copy: () => refusal('COPY_RUN_OPEN') })
+  const { section } = await openTables(
+    server,
+    { lake: running },
+    { copy: () => refusal('COPY_RUN_OPEN') },
+  )
   expect(within(section).getAllByText('Rodando…')).toHaveLength(2)
   fireEvent.click(within(section).getByRole('checkbox', { name: 'Itens das notas' }))
   fireEvent.click(within(section).getByRole('button', { name: 'Salvar' }))
@@ -180,7 +173,7 @@ test('a seção: a rodada aberta no Hub aparece como Rodando…, e a recusa por 
 })
 
 test('ler de novo desde a data: o diálogo lista as tabelas que a data limita, cada uma com o que o lago troca, e Ler de novo pede whole: true', async () => {
-  const { section, sent } = await openTables({
+  const { section, sent } = await openTables(server, {
     lake: copiedLake(['TGFCAB', 'TGFITE', 'TGFPAR'], { startDate: '2021-11-24' }),
   })
   fireEvent.click(within(section).getByRole('button', { name: 'Ler de novo desde a data' }))
@@ -202,7 +195,7 @@ test('ler de novo desde a data: o diálogo lista as tabelas que a data limita, c
 })
 
 test('ler de novo desde a data: sem data o título diz "desde o começo" e Cancelar não chama nada', async () => {
-  const { section, sent } = await openTables({ lake: copiedLake(COPIED) })
+  const { section, sent } = await openTables(server, { lake: copiedLake(COPIED) })
   fireEvent.click(within(section).getByRole('button', { name: 'Ler de novo desde a data' }))
   const dialog = await screen.findByRole('alertdialog', { name: 'Ler de novo desde o começo?' })
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
@@ -211,7 +204,7 @@ test('ler de novo desde a data: sem data o título diz "desde o começo" e Cance
 })
 
 test('ler de novo desde a data: sem tabela que a data limite o botão não aparece', async () => {
-  const { section } = await openTables({
+  const { section } = await openTables(server, {
     lake: copiedLake(['TGFPAR', 'TGFNFE'], { startDate: '2021-11-24' }),
   })
   expect(within(section).getByText('Parceiros')).toBeTruthy()
@@ -221,6 +214,7 @@ test('ler de novo desde a data: sem tabela que a data limite o botão não apare
 test('ler de novo desde a data: com a resposta already nada muda e as tabelas seguem Rodando…', async () => {
   const held: { view?: View } = {}
   const { view, section, sent } = await openTables(
+    server,
     { lake: lake() },
     {
       run: () => {
@@ -243,7 +237,7 @@ function PUTS<Call extends { method: string }>(sent: Call[]) {
 }
 
 test('desmarcar pede confirmação: Salvar lista as tabelas que saem, com o nome no lago, e Tirar do lago grava uma vez com as que ficam', async () => {
-  const { section, sent } = await openTables({ lake: lake() })
+  const { section, sent } = await openTables(server, { lake: lake() })
   fireEvent.click(within(section).getByRole('checkbox', { name: 'Itens das notas' }))
   fireEvent.click(within(section).getByRole('button', { name: 'Salvar' }))
   const dialog = await screen.findByRole('alertdialog', { name: 'Tirar 1 tabela do lago?' })
@@ -261,8 +255,37 @@ test('desmarcar pede confirmação: Salvar lista as tabelas que saem, com o nome
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
 })
 
+test('desmarcar pede confirmação: com a gravação em andamento o diálogo segue aberto e Tirar do lago desligado, e fecha quando ela termina', async () => {
+  const { section } = await openTables(server, { lake: lake() })
+  let writes = 0
+  let finish: () => void = () => undefined
+  const held = new Promise<void>((resolve) => {
+    finish = resolve
+  })
+  server.use(
+    http.put('*/api/companies/*/connections/*/lake-copy', async () => {
+      writes += 1
+      await held
+      return refusal('COPY_RUN_OPEN')
+    }),
+  )
+  fireEvent.click(within(section).getByRole('checkbox', { name: 'Itens das notas' }))
+  fireEvent.click(within(section).getByRole('button', { name: 'Salvar' }))
+  const dialog = await screen.findByRole('alertdialog')
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Tirar do lago' }))
+  await waitFor(() =>
+    expect(
+      within(dialog).getByRole('button', { name: 'Tirar do lago' }).hasAttribute('disabled'),
+    ).toBe(true),
+  )
+  expect(screen.getByRole('alertdialog')).toBeTruthy()
+  expect(writes).toBe(1)
+  finish()
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+})
+
 test('desmarcar pede confirmação: com duas saindo o título diz o plural, e Cancelar não chama nada e mantém as marcas', async () => {
-  const { section, sent } = await openTables({ lake: lake() })
+  const { section, sent } = await openTables(server, { lake: lake() })
   fireEvent.click(within(section).getByRole('checkbox', { name: 'Itens das notas' }))
   fireEvent.click(within(section).getByRole('checkbox', { name: 'Notas e pedidos' }))
   fireEvent.click(within(section).getByRole('button', { name: 'Salvar' }))
@@ -279,7 +302,7 @@ test('desmarcar pede confirmação: com duas saindo o título diz o plural, e Ca
 })
 
 test('desmarcar pede confirmação: Salvar que não desmarca nenhuma grava sem diálogo', async () => {
-  const { section, sent } = await openTables({ lake: lake() })
+  const { section, sent } = await openTables(server, { lake: lake() })
   await choose(within(section).getByRole('combobox', { name: 'Intervalo' }), 'Só manual')
   fireEvent.click(within(section).getByRole('button', { name: 'Salvar' }))
   await waitFor(() => expect(PUTS(sent)).toHaveLength(1))
@@ -287,7 +310,7 @@ test('desmarcar pede confirmação: Salvar que não desmarca nenhuma grava sem d
 })
 
 test('desmarcar pede confirmação: marcar outra e desmarcar uma juntas também abre, e só a que sai está na lista', async () => {
-  const { section, sent } = await openTables({ lake: lake() })
+  const { section, sent } = await openTables(server, { lake: lake() })
   fireEvent.click(within(section).getByRole('button', { name: /^Outras tabelas do Sankhya \(2\)/ }))
   fireEvent.click(await within(section).findByRole('checkbox', { name: 'Parceiros' }))
   fireEvent.click(within(section).getByRole('checkbox', { name: 'Itens das notas' }))

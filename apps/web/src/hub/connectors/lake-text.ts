@@ -156,7 +156,7 @@ export function leaveTitle(count: number): string {
 
 export const LEAVE_LEAD = 'O lago apaga estas tabelas e as linhas delas:'
 export const LEAVE_CONFIRM = 'Tirar do lago'
-export const READ_AGAIN_OTHERS = 'As outras tabelas seguem como sempre.'
+export const OTHERS_STAY = 'As outras tabelas seguem como sempre.'
 
 export function readAgainEffectText(kind: 'CHANGED' | 'WINDOW', system: string): string {
   return kind === 'WINDOW'
