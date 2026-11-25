@@ -109,14 +109,15 @@ export function readRefusedText(name: string, read: string): string {
   return `O ${name} aceitou a ligação, mas não deixou ler ${read}. Peça ao responsável pela conta no ${name} para liberar.`
 }
 
-/** What the provider answered, on one line: "Sankhya respondeu 403, código ACESSO". */
+/** What the provider answered, on one line: "Sankhya respondeu 403, código ACESSO"; no status where the system is not an HTTP one. */
 export function nativeText(
-  native: { status: number; code: string | null; message: string | null },
+  native: { status: number | null; code: string | null; message: string | null },
   name: string,
 ): string {
-  const code = native.code === null ? '' : `, código ${native.code}`
+  const status = native.status === null ? '' : ` ${native.status}`
+  const code = native.code === null ? '' : `${status === '' ? '' : ','} código ${native.code}`
   const message = native.message === null ? '' : `: ${native.message}`
-  return `${name} respondeu ${native.status}${code}${message}`
+  return `${name} respondeu${status}${code}${message}`
 }
 
 /** A kind as Zod's issues and the Hub name it, in the founder's words. */

@@ -42,7 +42,9 @@ test('a árvore: Negócio 0, Bruto 0, Apps, e nenhuma tabela nem sistema aberto'
   expect(await nav.findByRole('link', { name: 'Negócio 0' })).toBeTruthy()
   expect(nav.getByRole('link', { name: 'Bruto 0' })).toBeTruthy()
   expect(nav.getByRole('link', { name: 'Apps' })).toBeTruthy()
-  expect(await nav.findByText('Nenhuma tabela copiada')).toBeTruthy()
+  expect(
+    await nav.findByText('Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'),
+  ).toBeTruthy()
   expect(nav.queryByRole('button', { name: /^Sankhya/ })).toBeNull()
 })
 
@@ -97,7 +99,9 @@ test('a árvore: a falha das conexões e Tentar de novo', async () => {
   )
   fail = false
   fireEvent.click(nav.getByRole('button', { name: 'Tentar de novo' }))
-  expect(await nav.findByText('Nenhuma tabela copiada')).toBeTruthy()
+  expect(
+    await nav.findByText('Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'),
+  ).toBeTruthy()
 })
 
 test('a árvore: sem sistema, Bruto 0 e a frase', async () => {

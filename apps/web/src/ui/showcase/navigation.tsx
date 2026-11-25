@@ -24,6 +24,7 @@ import {
 import { SidebarRailButton } from '../sidebar-rail-button.tsx'
 import { SidebarSelector } from '../sidebar-selector.tsx'
 import { SidebarTrigger } from '../sidebar-trigger.tsx'
+import { StepBar } from '../step-bar.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../tabs.tsx'
 import { WelcomeFrame } from '../welcome-frame.tsx'
 
@@ -73,6 +74,34 @@ export const NAVIGATION: readonly ShowcaseEntry[] = [
       <TabsContent value="project">Os arquivos do Projeto.</TabsContent>
     </Tabs>
   )),
+  entry(
+    'step-bar.tsx',
+    'Navegação',
+    'Mostrar em que passo de uma janela de vários passos a pessoa está.',
+    () => (
+      <StepBar
+        label="Passos"
+        steps={['Acesso', 'Testando e lendo', 'O que copiar', 'Quando copiar']}
+        current={2}
+        doneLabel="feito"
+        phoneLine="Passo 3 de 4 · O que copiar"
+      />
+    ),
+    [
+      [
+        'default',
+        () => (
+          <StepBar
+            label="Passos"
+            steps={['Acesso', 'Testando e lendo', 'O que copiar', 'Quando copiar']}
+            current={null}
+            doneLabel="feito"
+            phoneLine="Todos os passos feitos"
+          />
+        ),
+      ],
+    ],
+  ),
   entry('pager.tsx', 'Navegação', 'Andar por uma lista que o endereço guarda.', () => (
     <Pager next={{ kind: 'MORE', page: 'p2' }} param="pagina" page="p1" list="Clientes" />
   )),
