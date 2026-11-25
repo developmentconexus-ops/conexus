@@ -1,4 +1,4 @@
-import { BUILDER_TOOL, CONSTRUTOR_CONTROLLER, CONVERSATION_ROUTES } from '@conexus/hub-api'
+import { CONSTRUTOR_CONTROLLER, CONVERSATION_ROUTES, CONVERSATION_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
@@ -104,7 +104,11 @@ test('a conversa do Construtor lê "Leu Sankhya · Matriz" (F-A2, step 24.3)', a
       () =>
         HttpResponse.json({
           messages: [
-            toolSaid(BUILDER_TOOL.connectorRead, read, { kind: 'OK', value: {}, complete: true }),
+            toolSaid(CONVERSATION_TOOL.connectorRead, read, {
+              kind: 'OK',
+              value: {},
+              complete: true,
+            }),
           ],
         }),
     ),

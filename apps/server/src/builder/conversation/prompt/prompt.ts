@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { Sha } from '../../../harness/machine/public.ts'
-import type { GrantedConnection } from '../../connectors/public.ts'
+import type { GrantedConnection } from '../../../harness/tools/public.ts'
 import type { Repository } from '../../git/public.ts'
 
 /** The prompt (card of step 14, U7): Conexus OS `e0353c36` `builder.md`, as the card's table adapts it. */

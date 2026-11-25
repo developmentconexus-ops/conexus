@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { runOf } from '../../builder/company-tools/test-company-tools.ts'
+import { runOf } from '../tools/company/test-company-tools.ts'
 import { dataContextOf } from './public.ts'
 
 test('o contexto de dados leva a conversa da execução, e nenhuma na prova de um rascunho', () => {

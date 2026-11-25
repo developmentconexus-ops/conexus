@@ -694,5 +694,135 @@
       "from": "apps/server/src/builder/schema/tables.ts",
       "to": "apps/server/src/harness/schema/tables.ts"
     }
+  ],
+  "g5e": [
+    {
+      "from": "apps/server/src/builder/app-data/access.test.ts",
+      "to": "apps/server/src/harness/tools/app-data/access.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/app-data/check.test.ts",
+      "to": "apps/server/src/harness/tools/app-data/check.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/app-data/context.test.ts",
+      "to": "apps/server/src/harness/tools/app-data/context.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/app-data/port.ts",
+      "to": "apps/server/src/harness/tools/app-data/port.ts"
+    },
+    {
+      "from": "apps/server/src/builder/app-data/tools.ts",
+      "to": "apps/server/src/harness/tools/app-data/tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/conformance.test.ts",
+      "to": "apps/server/src/harness/tools/company/conformance.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/factory.ts",
+      "to": "apps/server/src/harness/tools/company/factory.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/listed.ts",
+      "to": "apps/server/src/harness/tools/company/listed.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/names.ts",
+      "to": "apps/server/src/harness/tools/company/names.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/overview.ts",
+      "to": "apps/server/src/harness/tools/company/overview.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/ports.ts",
+      "to": "apps/server/src/harness/tools/company/ports.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/scope.ts",
+      "to": "apps/server/src/harness/tools/company/scope.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/search.ts",
+      "to": "apps/server/src/harness/tools/company/search.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/test-company-tools.ts",
+      "to": "apps/server/src/harness/tools/company/test-company-tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/company-tools/tool-sets.test.ts",
+      "to": "apps/server/src/harness/tools/company/tool-sets.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/connectors/connector-tools-at.test.ts",
+      "to": "apps/server/src/harness/tools/connectors/connector-tools-at.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/connectors/connector-tools-cap.test.ts",
+      "to": "apps/server/src/harness/tools/connectors/connector-tools-cap.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/connectors/connector-tools-scope.test.ts",
+      "to": "apps/server/src/harness/tools/connectors/connector-tools-scope.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/connectors/connector-tools.test.ts",
+      "to": "apps/server/src/harness/tools/connectors/connector-tools.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/connectors/connector-tools.ts",
+      "to": "apps/server/src/harness/tools/connectors/connector-tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/connectors/test-access.ts",
+      "to": "apps/server/src/harness/tools/connectors/test-access.ts"
+    },
+    {
+      "from": "apps/server/src/builder/connectors/typed-reads-openai.test.ts",
+      "to": "apps/server/src/harness/tools/connectors/typed-reads-openai.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/connectors/typed-reads.ts",
+      "to": "apps/server/src/harness/tools/connectors/typed-reads.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/mounted.test.ts",
+      "to": "apps/server/src/harness/tools/data/mounted.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/order.test.ts",
+      "to": "apps/server/src/harness/tools/data/order.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/order.ts",
+      "to": "apps/server/src/harness/tools/data/order.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/reader-zone.ts",
+      "to": "apps/server/src/harness/tools/data/reader-zone.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/test-data.ts",
+      "to": "apps/server/src/harness/tools/data/test-data.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/test-world.ts",
+      "to": "apps/server/src/harness/tools/data/test-world.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/tools-refusals.test.ts",
+      "to": "apps/server/src/harness/tools/data/tools-refusals.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/tools.test.ts",
+      "to": "apps/server/src/harness/tools/data/tools.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/data-tools/tools.ts",
+      "to": "apps/server/src/harness/tools/data/tools.ts"
+    }
   ]
 }

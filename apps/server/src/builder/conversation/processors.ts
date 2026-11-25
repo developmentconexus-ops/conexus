@@ -1,5 +1,5 @@
 import { CHECK_LIMITS } from '@conexus/app/check'
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL } from '@conexus/hub-api'
 import { createScorer } from '@mastra/core/evals'
 import { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
@@ -31,7 +31,7 @@ class CheckPlatformRefused extends Error {
 /** `conexus_check`: the same check as the end of the turn, by the same path (`Runs.check`). */
 export function checkTool(runs: Runs) {
   return createTool({
-    id: BUILDER_TOOL.check,
+    id: CONVERSATION_TOOL.check,
     description: CHECK_DESCRIPTION,
     inputSchema: z.object({}),
     execute: async (_input, { requestContext }) => {

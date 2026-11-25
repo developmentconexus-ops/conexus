@@ -1,15 +1,15 @@
 {
   "files": [
     "apps/server/src/builder/agents/approval-refused.test.ts",
-    "apps/server/src/builder/app-data/access.test.ts",
+    "apps/server/src/harness/tools/app-data/access.test.ts",
     "apps/server/src/builder/assistant/run-scope.test.ts",
-    "apps/server/src/builder/company-tools/conformance.test.ts",
-    "apps/server/src/builder/connectors/connector-tools-scope.test.ts",
+    "apps/server/src/harness/tools/company/conformance.test.ts",
+    "apps/server/src/harness/tools/connectors/connector-tools-scope.test.ts",
     "apps/server/src/builder/construtor/run-scope.test.ts",
     "apps/server/src/builder/conversation/conversation-refusal.test.ts",
     "apps/server/src/builder/conversation/permissions.test.ts",
-    "apps/server/src/builder/data-tools/tools-refusals.test.ts",
-    "apps/server/src/builder/data-tools/tools.test.ts",
+    "apps/server/src/harness/tools/data/tools-refusals.test.ts",
+    "apps/server/src/harness/tools/data/tools.test.ts",
     "apps/server/src/harness/model-accounts/openai/sign-in-refusals.test.ts",
     "apps/server/src/hub/access/conformance.test.ts",
     "apps/server/src/hub/access/principal.test.ts",
@@ -351,7 +351,7 @@
       "name": "o dono virou membro"
     },
     {
-      "file": "apps/server/src/builder/connectors/connector-tools.test.ts",
+      "file": "apps/server/src/harness/tools/connectors/connector-tools.test.ts",
       "name": "a ligação de um sistema com a leitura de outro: a ferramenta recusa dizendo de quem é cada uma, fica no registro, e nenhuma porta é chamada \\(F-A\\)"
     },
     {

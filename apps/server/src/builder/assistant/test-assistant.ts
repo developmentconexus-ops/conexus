@@ -15,6 +15,7 @@ import { RequestContext } from '@mastra/core/request-context'
 import { conversing, sessionUrl, streamOf } from '../../harness/routes/test-conversation.ts'
 import { stepped, tool } from '../../harness/routes/test-questions.ts'
 import type { RunScope } from '../../harness/spec/public.ts'
+import { companyToolScope, companyTools } from '../../harness/tools/public.ts'
 import type { Principal } from '../../hub/access/public.ts'
 import { chooserAt } from '../../hub/access/test-principal.ts'
 import type { TurnKey } from '../../hub/connectors/public.ts'
@@ -25,7 +26,6 @@ import type { Config } from '../../platform/config.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
 import { silent as silentLog, TEST_ORIGIN } from '../../platform/test-database.ts'
-import { companyToolScope, companyTools } from '../company-tools/public.ts'
 
 type Block = ReturnType<typeof tool>
 

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { BUILDER_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import {
   asked,
@@ -28,7 +28,7 @@ import {
   talking,
 } from './test-assistant.ts'
 
-const READ = BUILDER_TOOL.connectorRead
+const READ = CONVERSATION_TOOL.connectorRead
 const WORKSPACE_READS = [
   WORKSPACE_TOOL.readFile,
   WORKSPACE_TOOL.listFiles,

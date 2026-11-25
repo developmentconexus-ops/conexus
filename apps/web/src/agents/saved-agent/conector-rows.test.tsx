@@ -1,4 +1,4 @@
-import { AGENTS_CONTROLLER, BUILDER_TOOL, CONVERSATION_ROUTES } from '@conexus/hub-api'
+import { AGENTS_CONTROLLER, CONVERSATION_ROUTES, CONVERSATION_TOOL } from '@conexus/hub-api'
 import { screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -23,7 +23,11 @@ function stored(controller: string) {
       () =>
         HttpResponse.json({
           messages: [
-            toolSaid(BUILDER_TOOL.connectorRead, READ, { kind: 'OK', value: {}, complete: true }),
+            toolSaid(CONVERSATION_TOOL.connectorRead, READ, {
+              kind: 'OK',
+              value: {},
+              complete: true,
+            }),
           ],
         }),
     ),

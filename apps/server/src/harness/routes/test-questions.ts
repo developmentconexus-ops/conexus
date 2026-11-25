@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { SUBMIT_PLAN_TOOL } from '../../builder/conversation/plan-tools.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
@@ -19,7 +19,7 @@ type Suspended = Extract<StreamEvent, { type: 'tool_suspended' }>
 const CARD_TOOL = {
   question: ASK_USER_TOOL,
   plan: SUBMIT_PLAN_TOOL,
-  note: BUILDER_TOOL.connectorNoteSave,
+  note: CONVERSATION_TOOL.connectorNoteSave,
 } as const
 
 /** How long a test waits for the card a turn parks, which the double answers at once. */

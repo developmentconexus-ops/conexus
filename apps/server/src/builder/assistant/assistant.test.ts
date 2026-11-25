@@ -11,11 +11,11 @@ import {
   title,
 } from '../../harness/routes/test-conversation.ts'
 import { sessionStateOf, tool } from '../../harness/routes/test-questions.ts'
+import { TOTAL_OUTUBRO } from '../../harness/tools/data/test-data.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { until } from '../../platform/test-until.ts'
 import { approving } from '../agents/test-approval.ts'
-import { TOTAL_OUTUBRO } from '../data-tools/test-data.ts'
 import {
   anasChoice,
   assisting,

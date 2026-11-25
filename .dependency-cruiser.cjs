@@ -19,7 +19,7 @@ const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-
 // only through packages/hub-api/src/company-data.ts. Data is the data track's code; the agents and
 // the apps are the conversations, their tool adapters and the app packages.
 const DATA = `^(${SERVER}/hub/(connectors|copies|ontology|data)/|packages/connectors/)`
-const AGENTS_AND_APPS = `^(${SERVER}/(builder/(conversation|assistant|agents|construtor|automations|connectors|app-data|data-tools|tools|company-tools)|harness/(spec|turn|memory|prompt|routes))/|packages/app(-contract)?/)`
+const AGENTS_AND_APPS = `^(${SERVER}/(builder/(conversation|assistant|agents|construtor|automations|tools)|harness/(spec|turn|memory|prompt|routes|tools))/|packages/app(-contract)?/)`
 // C56: each SDK of a provider only in its adapter.
 const ADAPTERS = require('./.dependency-cruiser-adapters.cjs')
 // The connectors the kit holds: each folder of packages/connectors/src but the kernel.

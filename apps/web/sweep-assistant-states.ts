@@ -1,7 +1,7 @@
 import {
   ASSISTANT_CONTROLLER,
   ASSISTANT_TOOL,
-  BUILDER_TOOL,
+  CONVERSATION_TOOL,
   DATA_TOOL,
   readAssistantConversation,
 } from '@conexus/hub-api'
@@ -45,11 +45,11 @@ const MESSAGES: Said[] = [
     id: 'm2',
     role: 'builder',
     parts: [
-      tool(BUILDER_TOOL.connectorRead, READ, { kind: 'BUSY', waitMs: 90_000 }, 'c1'),
-      tool(BUILDER_TOOL.connectorRead, READ, { kind: 'UNREACHABLE' }, 'c2'),
-      tool(BUILDER_TOOL.connectorRead, READ, { kind: 'CALLS_SPENT' }, 'c3'),
+      tool(CONVERSATION_TOOL.connectorRead, READ, { kind: 'BUSY', waitMs: 90_000 }, 'c1'),
+      tool(CONVERSATION_TOOL.connectorRead, READ, { kind: 'UNREACHABLE' }, 'c2'),
+      tool(CONVERSATION_TOOL.connectorRead, READ, { kind: 'CALLS_SPENT' }, 'c3'),
       tool(
-        BUILDER_TOOL.connectorRead,
+        CONVERSATION_TOOL.connectorRead,
         READ,
         { kind: 'OK', value: { linhas: [{ a: 1 }] }, complete: false },
         'c4',

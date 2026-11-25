@@ -1,4 +1,4 @@
-import { BUILDER_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import {
@@ -163,7 +163,7 @@ describe('as leituras e os comandos', () => {
       conversations: [
         assistantConversation({
           messages: [
-            toolSaid(BUILDER_TOOL.connectorRead, READ, {
+            toolSaid(CONVERSATION_TOOL.connectorRead, READ, {
               kind: 'OK',
               value: { linhas: [{}, {}, {}] },
               complete: false,
@@ -178,11 +178,11 @@ describe('as leituras e os comandos', () => {
 
   test('uma leitura em andamento aparece como "Lendo <Conector> · <ligação>" e termina como "Leu"', async () => {
     const line = await running(at(OPEN, { conversations: [assistantConversation()] }))
-    line.emit(stepStarted('step-1', [toolCall(BUILDER_TOOL.connectorRead, READ)]))
+    line.emit(stepStarted('step-1', [toolCall(CONVERSATION_TOOL.connectorRead, READ)]))
     expect(await screen.findByText('Lendo Sankhya · Vendas')).toBeTruthy()
     line.emit(
       updatePart(
-        toolCall(BUILDER_TOOL.connectorRead, READ, { kind: 'OK', value: { linhas: [{}] } }),
+        toolCall(CONVERSATION_TOOL.connectorRead, READ, { kind: 'OK', value: { linhas: [{}] } }),
         0,
         'step-1',
       ),
@@ -197,7 +197,7 @@ describe('as leituras e os comandos', () => {
       conversations: [
         assistantConversation({
           messages: [
-            toolSaid(BUILDER_TOOL.connectorRead, READ, { kind: 'OK', value: { linhas: [] } }),
+            toolSaid(CONVERSATION_TOOL.connectorRead, READ, { kind: 'OK', value: { linhas: [] } }),
           ],
         }),
       ],
@@ -209,7 +209,7 @@ describe('as leituras e os comandos', () => {
     at(OPEN, {
       conversations: [
         assistantConversation({
-          messages: [toolSaid(BUILDER_TOOL.connectorRead, READ, { kind: 'AUTH_REFUSED' })],
+          messages: [toolSaid(CONVERSATION_TOOL.connectorRead, READ, { kind: 'AUTH_REFUSED' })],
         }),
       ],
     })
@@ -223,7 +223,7 @@ describe('as leituras e os comandos', () => {
     at(OPEN, {
       conversations: [
         assistantConversation({
-          messages: [toolSaid(BUILDER_TOOL.connectorRead, READ, { kind: 'DEADLINE' })],
+          messages: [toolSaid(CONVERSATION_TOOL.connectorRead, READ, { kind: 'DEADLINE' })],
         }),
       ],
     })

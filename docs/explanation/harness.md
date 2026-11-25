@@ -42,7 +42,7 @@ and the mount copies every other tool whose rule is not a function with a rule t
 (`askingOnlyByOwnRule`, `harness/spec/mount.ts`; [agents and
 automations](agents-and-automations.md)). The Builder and the Assistant stay in `yolo`, which approves
 every approval gate on its own, so the notebook's `connector_note_save` asks by `suspend()`, as `ask_user`
-and `submit_plan` do, and the person's yes or no resumes it (`builder/connectors/connector-tools.ts`).
+and `submit_plan` do, and the person's yes or no resumes it (`harness/tools/connectors/connector-tools.ts`).
 
 ## A ficha and the mount
 
@@ -160,7 +160,7 @@ Builder and agent conversations keep sending the whole file in the message.
 ## Tools, skills and the scorer
 
 Conexus writes its tools with `createTool`: `conexus_check`, `ask_user`, `submit_plan`, the
-connector tools (`builder/connectors/connector-tools.ts`), the Assistant's own tools and the
+connector tools (`harness/tools/connectors/connector-tools.ts`), the Assistant's own tools and the
 Project agents' tools. From Mastra it takes `webFetchTool`, `webSearchTool` (only for Anthropic,
 OpenAI and xAI models), the workspace tools and the controller's task tools.
 

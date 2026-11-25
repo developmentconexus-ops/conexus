@@ -91,7 +91,7 @@ The mode's tool list is closed (`builder/conversation/permissions.ts`):
 
 The session starts with `yolo: true`, so no tool waits for approval
 ([0053](../decisions/0053-builder-tools-run-without-asking.md)). `ask_user` and `submit_plan`
-suspend the run on a card. `app_data_read` and `app_data_check` are offered to whoever the company lets converse with the Builder in the Projeto (`useConversations`, read in the Hub once per turn and again on each call); `app_data_check` answers a count, the columns and the time of a read on the real data, never a row (`builder/app-data/`). The run ends there, and the answer resumes it. A message sent while a
+suspend the run on a card. `app_data_read` and `app_data_check` are offered to whoever the company lets converse with the Builder in the Projeto (`useConversations`, read in the Hub once per turn and again on each call); `app_data_check` answers a count, the columns and the time of a read on the real data, never a row (`harness/tools/app-data/`). The run ends there, and the answer resumes it. A message sent while a
 card is open is accepted, and Mastra holds it until the card is answered, then carries it into
 the run the answer opens (`builder/conversation/conversation-steer.test.ts`). `web_search` exists only for models whose
 provider search Mastra supports.

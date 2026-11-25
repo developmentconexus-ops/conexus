@@ -38,21 +38,25 @@ import {
   skillOf,
   toolsOf,
 } from '../../harness/spec/public.ts'
+import type {
+  CompanyProjects,
+  CompanyToolDeps,
+  CompanyToolScope,
+} from '../../harness/tools/public.ts'
+import {
+  byPrincipal,
+  companyConnections,
+  companyReadSearch,
+  companyTools,
+  dataOrder,
+  projectsOf,
+} from '../../harness/tools/public.ts'
 import type { Access, Place, Principal } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { CompanyProjects, CompanyToolDeps, CompanyToolScope } from '../company-tools/public.ts'
-import {
-  byPrincipal,
-  companyConnections,
-  companyReadSearch,
-  companyTools,
-  projectsOf,
-} from '../company-tools/public.ts'
-import { dataOrder } from '../data-tools/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { AVAILABLE_TOOLS } from './available-tools.ts'
 import { chosenConnections } from './chosen.ts'

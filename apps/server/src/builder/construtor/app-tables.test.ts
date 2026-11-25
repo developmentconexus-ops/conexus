@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, PersonId, ProjectId, AppTableName as TableName } from '@conexus/hub-api'
+import type { AppDataPort } from '../../harness/tools/public.ts'
 import type { AppTablesRead } from '../../hub/apps/public.ts'
-import type { AppDataPort } from '../app-data/public.ts'
 import { tablesWithColumnNamesOf } from './public.ts'
 
 const scope = {

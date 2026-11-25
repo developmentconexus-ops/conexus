@@ -1,11 +1,11 @@
-import { BUILDER_TOOL, ReadBusy, ReadCut, ReadRows } from '@conexus/hub-api'
+import { CONVERSATION_TOOL, ReadBusy, ReadCut, ReadRows } from '@conexus/hub-api'
 import { CircleAlertIcon, DatabaseIcon, NotebookPenIcon, NotebookTextIcon } from 'lucide-react'
 import { z } from 'zod'
 import type { ToolItem } from './rows.ts'
 import { connectorOf, stringArg } from './tool-args.ts'
 import type { ConnectorWords, Presented, Refusal, ToolSpec, ToolStatus } from './tool-spec.ts'
 
-const { connectorRead, connectorNotes, connectorNoteSave } = BUILDER_TOOL
+const { connectorRead, connectorNotes, connectorNoteSave } = CONVERSATION_TOOL
 
 /** The rows of the tools of a Projeto's granted connections (card of step 20, U5). */
 export const CONNECTOR_SPECS: Record<
@@ -183,7 +183,7 @@ export function presentRead(
   if (status === 'error' || status === 'denied') return said(TOOL_FAILED)
   const detail = rowsText(outcome)
   return {
-    icon: CONNECTOR_SPECS[BUILDER_TOOL.connectorRead].icon,
+    icon: CONNECTOR_SPECS[CONVERSATION_TOOL.connectorRead].icon,
     sentence: status === 'running' ? `Lendo ${named}` : `Leu ${named}`,
     detail,
     beside: status !== 'running' && detail !== undefined,

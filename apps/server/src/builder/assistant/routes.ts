@@ -35,13 +35,13 @@ import {
   RUN_MARKS,
   releaseThreads,
 } from '../../harness/spec/public.ts'
+import type { CompanyProjects } from '../../harness/tools/public.ts'
 import type { Access, Place } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import type { CompanyProjects } from '../company-tools/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { CompanyMemory } from './company-memory.ts'
 import { registerCompanyMemoryRoutes } from './company-memory-routes.ts'

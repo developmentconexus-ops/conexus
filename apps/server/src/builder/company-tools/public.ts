@@ -1,8 +1,0 @@
-export type { CompanyToolDeps, PrincipalDoor } from './factory.ts'
-export { byPrincipal, companyConnections, companyTools } from './factory.ts'
-export type { CompanyToolSeat } from './names.ts'
-export { projectsOf } from './overview.ts'
-export type { CompanyProjects } from './ports.ts'
-export type { CompanyConnection, CompanyToolScope } from './scope.ts'
-export { companyToolScope } from './scope.ts'
-export { companyReadSearch } from './search.ts'

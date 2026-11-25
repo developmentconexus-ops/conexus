@@ -2,7 +2,7 @@ import type { ConnectionId } from '@conexus/hub-api'
 import { ASSISTANT_TOOL, ProposedAutomation } from '@conexus/hub-api'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { connectionField } from '../connectors/public.ts'
+import { connectionField } from '../../harness/tools/public.ts'
 
 /**
  * `propose_automation` (step 24.2, U3, `E1`): when what the person asks repeats at a time, the

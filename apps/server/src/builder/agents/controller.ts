@@ -26,13 +26,13 @@ import {
   routedModel,
   threadsByMarks,
 } from '../../harness/spec/public.ts'
+import type { AppDataPort } from '../../harness/tools/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import type { AppDataPort } from '../app-data/public.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
 import { agentOf, agentTurnOf, planOf } from './agent.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
