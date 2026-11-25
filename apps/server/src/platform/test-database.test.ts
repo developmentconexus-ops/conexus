@@ -11,9 +11,15 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { setTimeout } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
-import { templateNameOf } from './test-database-template.ts'
+import pg from 'pg'
+import { createCompanyDatabase } from './test-company-postgres.ts'
+import { createTestDatabase } from './test-database.ts'
+import type { Lifetime } from './test-database-admin.ts'
+import { templateNameOf, withDatabase } from './test-database-template.ts'
 import { startHub } from './test-hub-process.ts'
+import { mastraDoor } from './test-mastra-database.ts'
 
 function lifetime() {
   const cleanups: (() => Promise<void> | void)[] = []
@@ -87,4 +93,67 @@ test('modelo: uma migração mudada, acrescentada ou apagada leva a outro modelo
   rmSync(join(folder, first), { recursive: true })
   const removed = templateNameOf(folder)
   assert.equal(new Set([shipped, changed, added, removed]).size, 4)
+})
+
+const databases = [
+  ['createTestDatabase', async (t: Lifetime) => (await createTestDatabase(t)).ownerUrl],
+  ['createCompanyDatabase', createCompanyDatabase],
+] as const
+
+for (const [maker, make] of databases)
+  test(`banco de ${maker}: o que o teste registra depois dele fecha antes de ele ser apagado, e uma conexão aberta não deixa o apagar recusar`, async (t) => {
+    let name = ''
+    let server: pg.Client | undefined
+    let held: pg.Client | undefined
+    try {
+      await t.test('um teste cujo gancho fecha uma conexão ao banco', async (inner) => {
+        const url = await make(inner)
+        name = new URL(url.reveal()).pathname.slice(1)
+        server = new pg.Client({ connectionString: withDatabase(url, 'postgres').reveal() })
+        await server.connect()
+        const open = new pg.Client({ connectionString: url.reveal() })
+        held = open
+        await open.connect()
+        inner.after(async () => {
+          const present = await server?.query('select 1 from pg_database where datname = $1', [
+            name,
+          ])
+          assert.equal(present?.rowCount, 1)
+          await open.end()
+        })
+      })
+      const left = await server?.query('select 1 from pg_database where datname like $1', [
+        `${name}%`,
+      ])
+      assert.equal(left?.rowCount, 0)
+    } finally {
+      await held?.end().catch(() => undefined)
+      await server?.end()
+    }
+  })
+
+test('porta do Mastra: o cliente destruído leva junto a ligação ao Postgres, que não segura mais o banco', async (t) => {
+  const test = await createTestDatabase(t)
+  const server = new pg.Client({
+    connectionString: withDatabase(test.ownerUrl, 'postgres').reveal(),
+  })
+  await server.connect()
+  t.after(() => server.end())
+  const door = await mastraDoor(test.mastraUrl, 'SILENT')
+  await door.open()
+  const client = new pg.Client({ connectionString: door.address })
+  client.on('error', () => undefined)
+  await client.connect()
+  const database = new URL(test.mastraUrl.reveal()).pathname.slice(1)
+  async function sessions() {
+    const found = await server.query('select 1 from pg_stat_activity where datname = $1', [
+      database,
+    ])
+    return found.rowCount
+  }
+  assert.equal(await sessions(), 1)
+  await door.close()
+  const deadline = Date.now() + 3_000
+  while ((await sessions()) !== 0 && Date.now() < deadline) await setTimeout(50)
+  assert.equal(await sessions(), 0)
 })
