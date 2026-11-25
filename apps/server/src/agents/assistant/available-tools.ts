@@ -1,14 +1,13 @@
 import {
   ASSISTANT_TOOL,
   CONVERSATION_TOOL,
-  DATA_TOOL,
   SKILL_TOOLS,
   SUBAGENT_TOOL,
   TASK_TOOLS,
   WORKSPACE_TOOL,
 } from '@conexus/hub-api'
 import { ASK_USER_TOOL } from '../../harness/spec/public.ts'
-import { TYPED_READ_NAMES } from '../../harness/tools/public.ts'
+import { TOOLS_OF, TYPED_READ_NAMES } from '../../harness/tools/public.ts'
 import { COMPANY_MEMORY_TOOLS } from './company-memory.ts'
 
 /** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */
@@ -21,19 +20,19 @@ const MEMORY_TOOLS = ['recall', 'updateWorkingMemory'] as const
  * `ask_user`, the task list and one subagent type, `pesquisar` (`research.ts`).
  */
 export const AVAILABLE_TOOLS: readonly string[] = [
-  ...Object.values(WORKSPACE_TOOL),
-  ...MEMORY_TOOLS,
-  ...COMPANY_MEMORY_TOOLS,
-  SEARCH_TOOLS,
-  ...TYPED_READ_NAMES,
-  CONVERSATION_TOOL.connectorNotes,
-  CONVERSATION_TOOL.connectorNoteSave,
-  ...Object.values(DATA_TOOL),
-  ...Object.values(ASSISTANT_TOOL),
-  CONVERSATION_TOOL.webFetch,
-  CONVERSATION_TOOL.webSearch,
-  ...SKILL_TOOLS,
-  ASK_USER_TOOL,
-  SUBAGENT_TOOL,
-  ...TASK_TOOLS,
+  ...new Set([
+    ...Object.values(WORKSPACE_TOOL),
+    ...MEMORY_TOOLS,
+    ...COMPANY_MEMORY_TOOLS,
+    SEARCH_TOOLS,
+    ...TOOLS_OF.assistant,
+    ...TYPED_READ_NAMES,
+    ...Object.values(ASSISTANT_TOOL),
+    CONVERSATION_TOOL.webFetch,
+    CONVERSATION_TOOL.webSearch,
+    ...SKILL_TOOLS,
+    ASK_USER_TOOL,
+    SUBAGENT_TOOL,
+    ...TASK_TOOLS,
+  ]),
 ]
