@@ -70,6 +70,7 @@ for (const viewport of [DESKTOP, PHONE, SMALL_PHONE]) {
     const tabs = page.getByRole('tablist')
     await tabs.waitFor()
     const drawn = await tabs.evaluate((list) => {
+      if (!(list instanceof HTMLElement)) throw new Error('the tab list is not an HTML element')
       const style = getComputedStyle(list)
       const borderBelow = Number.parseFloat(style.borderBottomWidth)
       return {

@@ -6,6 +6,12 @@ import { openTables } from './test-lake.tsx'
 
 const server = hubServer()
 
+function rowOf(section: HTMLElement, label: string): HTMLElement {
+  const row = within(section).getByText(label).closest('li')
+  if (row === null) throw new Error(`no row for ${label}`)
+  return row
+}
+
 test('a seção abre com a frase inteira do protótipo', async () => {
   const { section } = await openTables(server, { lake: copiedLake(['TGFCAB', 'TGFITE']) })
   expect(
@@ -19,11 +25,12 @@ test('a seção: com data, a tabela que ela limita diz desde a data e a que não
   const dated = await openTables(server, {
     lake: copiedLake(['TGFCAB', 'TGFPAR'], { startDate: '2021-11-24' }),
   })
-  const [limited, whole] = within(dated.section).getAllByRole('listitem')
-  expect(within(limited).getByText('Desde 24/11/2021')).toBeTruthy()
-  expect(within(limited).queryByText('todo o histórico')).toBeNull()
-  expect(within(whole).getByText('todo o histórico')).toBeTruthy()
-  expect(within(whole).queryByText(/^Desde /)).toBeNull()
+  const limited = within(rowOf(dated.section, 'Notas e pedidos'))
+  const whole = within(rowOf(dated.section, 'Parceiros'))
+  expect(limited.getByText('Desde 24/11/2021')).toBeTruthy()
+  expect(limited.queryByText('todo o histórico')).toBeNull()
+  expect(whole.getByText('todo o histórico')).toBeTruthy()
+  expect(whole.queryByText(/^Desde /)).toBeNull()
 })
 
 test('a seção: sem data a linha das tabelas não diz desde nem todo o histórico', async () => {
