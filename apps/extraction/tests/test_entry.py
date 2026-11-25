@@ -150,6 +150,21 @@ def test_a_rodada_fechada_no_meio_da_copia(
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
 
 
+def test_a_rodada_fechada_durante_a_atualizacao_nao_toca_a_atual(
+    task: Task, capfd: pytest.CaptureFixture[str]
+) -> None:
+    assert task.run(task.spec(NOTAS, whole=False)) == 0
+    assert any(sql.startswith("MERGE") for sql in task.athena.statements)
+    task.athena.executions.clear()
+    task.aws.sent.clear()
+    task.aws.refuse_after_gets = task.aws.gets - 1
+    task.aws.gets = 0
+    task.run(task.spec(NOTAS, whole=False))
+    assert task.aws.sent == []
+    assert not [sql for sql in task.athena.statements if sql.startswith(("MERGE", "DELETE"))]
+    assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
+
+
 def test_o_stoptask_para_o_meltano_e_nao_manda_resultado(
     task: Task, capfd: pytest.CaptureFixture[str]
 ) -> None:

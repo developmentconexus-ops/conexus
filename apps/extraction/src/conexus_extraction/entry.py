@@ -249,7 +249,10 @@ def _updated(
     for asked in spec["tables"]:
         if asked["name"] not in settled:
             continue
-        if stopping.asked or not still_open():
+        if stopping.asked:
+            return None
+        if not still_open():
+            log("RUN_CLOSED", runId=spec["runId"])
             return None
         plan = plans[asked["name"]]
         try:
