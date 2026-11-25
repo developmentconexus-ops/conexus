@@ -20,6 +20,7 @@ import type {
 import { say, screens, view } from '../../harness/room/test-hub.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { KIT_SANKHYA } from '../../platform/test-kit.ts'
 
 export { conversationOf as builderConversation } from '../../harness/room/test-hub.tsx'
 export type { BuilderAnswers }
@@ -122,17 +123,7 @@ function chosenOf(body: unknown): ConnectionId[] {
 
 const BASE = `*/api/companies/${COMPANY.id}/assistant`
 
-export const SANKHYA = {
-  id: 'sankhya',
-  name: 'Sankhya',
-  version: '1',
-  category: 'ERP',
-  summary: 'ERP',
-  logo: 'data:image/svg+xml,',
-  auth: 'client_credentials',
-  subjects: [],
-  fields: [],
-}
+export const SANKHYA = { ...KIT_SANKHYA, subjects: [] }
 
 /** The Hub's reads of the Assistant's screens: the connections a place offers and the conversations. */
 function readsOf(held: Held, asked: string[]) {

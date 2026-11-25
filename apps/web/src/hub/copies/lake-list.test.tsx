@@ -117,10 +117,7 @@ test('um sistema sem tabela no lago diz a frase da matriz ao lado do que tem', a
   openData(
     server,
     {
-      connections: [
-        connection(),
-        connection({ id: FILIAL, connector: 'mercado-livre', name: 'Loja A' }),
-      ],
+      connections: [connection(), connection({ id: FILIAL, name: 'Loja A' })],
       tables: [lakeTable()],
     },
     LIST,

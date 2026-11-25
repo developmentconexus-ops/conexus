@@ -61,7 +61,7 @@ function SystemsLayer({ companyId }: { companyId: CompanyId }) {
     return <ReadFailure text={CATALOG_FAILED} onRetry={() => void failed.refetch()} />
   }
   const { connectors } = connections.data
-  const active = connectionsOfData(connections.data.connections, lake.data)
+  const active = connectionsOfData(connections.data.connections, connectors, lake.data)
   if (active.length === 0) return <NoSystem companyId={companyId} />
   return (
     <div className="flex flex-col gap-lg">

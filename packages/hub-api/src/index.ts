@@ -116,6 +116,7 @@ export {
   completeConnectionSignIn,
   GRANT_DEADLINE_MS,
   getConnection,
+  LakeUnavailable,
   linkConnection,
   listConnections,
   Native,

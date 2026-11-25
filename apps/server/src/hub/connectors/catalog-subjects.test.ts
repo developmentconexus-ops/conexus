@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CONNECTORS } from '@conexus/connectors'
+import { connectorEntryOf } from './catalog-subjects.ts'
 import { subjectsOf } from './public.ts'
 
 test('o catálogo traz os assuntos do kit com as operações, e marca as da porta de leitura', () => {
@@ -22,4 +23,15 @@ test('o catálogo traz os assuntos do kit com as operações, e marca as da port
   const every = subjects.flatMap(({ operations }) => operations.map(({ id }) => id))
   const kit = [...Object.values(sankhya.readDoor ?? {}), ...sankhya.operations].map(({ id }) => id)
   assert.deepEqual([...every].sort(), [...kit].sort())
+})
+
+test('o catálogo diz por que um conector não copia para o lago: a regra única de copy-source', () => {
+  const reasons = Object.fromEntries(
+    CONNECTORS.map((connector) => [connector.id, connectorEntryOf(connector).lakeUnavailable]),
+  )
+  assert.deepEqual(reasons, {
+    sankhya: null,
+    'mercado-livre': 'EXCLUSIVE_CREDENTIAL',
+    hubspot: 'EXCLUSIVE_CREDENTIAL',
+  })
 })

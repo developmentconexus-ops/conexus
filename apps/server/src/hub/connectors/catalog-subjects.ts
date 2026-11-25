@@ -1,6 +1,7 @@
 import type { Connector } from '@conexus/connectors'
 import type { CatalogSystem, ConnectionId, ConnectorEntry } from '@conexus/hub-api'
 import { ConnectorId } from '@conexus/hub-api'
+import { unavailableFor } from './copy-source.ts'
 
 const EFFECT_OF = { read: 'READ', write: 'WRITE', destructive: 'DESTROY' } as const
 
@@ -62,6 +63,7 @@ export function connectorEntryOf(connector: Connector): ConnectorEntry {
     logo: connector.logo,
     subjects: subjectsOf(connector),
     auth: connector.auth.kind,
+    lakeUnavailable: unavailableFor(connector),
     fields:
       connector.auth.kind === 'client_credentials'
         ? Object.entries(connector.auth.fields).map(([name, field]) => ({ name, ...field }))
