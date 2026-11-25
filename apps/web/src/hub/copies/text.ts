@@ -8,7 +8,7 @@ export const NO_SYSTEM = 'Nenhum sistema ligado ainda'
 export const NO_SYSTEM_HINT =
   'Ligue um sistema da empresa, como o Sankhya, e as tabelas copiadas dele aparecem aqui.'
 export const LINK_SYSTEM = 'Ligar um sistema'
-export const NO_TABLE_COPIED = 'Nenhuma tabela copiada'
+export const NO_TABLE_COPIED = 'Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'
 export const NO_TABLE_OF_ROLE =
   'Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa.'
 export const NO_TABLE_OF_ROLE_SHORT = 'Seu papel ainda não lê nenhuma tabela.'

@@ -41,18 +41,17 @@ export function CopiedRow(props: {
   const name = table.copy.kind === 'MARKED' ? table.copy.name : ''
   return (
     <li className="flex gap-md border-b border-line py-md last:border-b-0">
-      {props.editable && (
-        <Checkbox
-          aria-label={table.label}
-          checked={picks.marked.has(table.source)}
-          onCheckedChange={(next) => {
-            const marked = new Set(picks.marked)
-            if (next) marked.add(table.source)
-            else marked.delete(table.source)
-            props.onPicks({ ...picks, marked })
-          }}
-        />
-      )}
+      <Checkbox
+        aria-label={table.label}
+        checked={picks.marked.has(table.source)}
+        disabled={!props.editable}
+        onCheckedChange={(next) => {
+          const marked = new Set(picks.marked)
+          if (next) marked.add(table.source)
+          else marked.delete(table.source)
+          props.onPicks({ ...picks, marked })
+        }}
+      />
       <div className="flex min-w-0 flex-1 flex-col gap-xs">
         <div className="flex flex-wrap items-center gap-x-md gap-y-xs">
           <span className="font-medium">{table.label}</span>

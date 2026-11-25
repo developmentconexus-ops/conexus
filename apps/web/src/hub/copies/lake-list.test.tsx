@@ -128,7 +128,9 @@ test('um sistema sem tabela no lago diz a frase da matriz ao lado do que tem', a
   const main = await list()
   expect(await main.findByText('Matriz · Lago · 1 tabela')).toBeTruthy()
   expect(main.getByText('Loja A · Lago')).toBeTruthy()
-  expect(main.getAllByText('Nenhuma tabela copiada')).toHaveLength(1)
+  expect(
+    main.getAllByText('Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'),
+  ).toHaveLength(1)
 })
 
 test('a árvore conta as tabelas do lago em Bruto e diz quantas são', async () => {

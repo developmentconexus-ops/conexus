@@ -7,6 +7,8 @@ import type { Answers } from './test-hub.tsx'
 import { fill, openForm, openIntegrations, viewOf } from './test-hub.tsx'
 
 const server = hubServer()
+const NEXT_STEPS =
+  'Quando a outra pessoa enviar, a ligação nova aparece em Integrações. Abra-a e clique em Escolher o que copiar.'
 
 async function toSend(answers: Answers = {}) {
   const sent = openIntegrations(server, viewOf({ lake: readyLake() }), answers)
@@ -20,6 +22,7 @@ test('enviar link: marca o que a outra pessoa preenche e o resto vai do que foi 
   const { sent, dialog } = await toSend()
   const make = within(dialog).getByRole('button', { name: 'Gerar o link' })
   expect(make.hasAttribute('disabled')).toBe(true)
+  expect(within(dialog).queryByText(NEXT_STEPS)).toBeNull()
   fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Client Secret' }))
   fireEvent.click(within(dialog).getByRole('checkbox', { name: 'X-Token' }))
   fireEvent.click(make)
@@ -33,6 +36,7 @@ test('enviar link: marca o que a outra pessoa preenche e o resto vai do que foi 
     filled: { clientId: 'id-plantado-1' },
   })
   expect(within(dialog).getByText(/^Vale até \d\d:\d\d\.$/)).toBeTruthy()
+  expect(within(dialog).getByText(NEXT_STEPS)).toBeTruthy()
   expect(within(dialog).getByRole('button', { name: 'Copiar' })).toBeTruthy()
   expect(
     within(dialog).getByRole('checkbox', { name: 'X-Token' }).getAttribute('aria-disabled'),

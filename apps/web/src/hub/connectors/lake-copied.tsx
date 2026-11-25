@@ -9,74 +9,29 @@ import { LAKE_INTERVAL_DEFAULT } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
-import { dayAndHour } from '../../platform/dates.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
-import { Button } from '../../ui/button.tsx'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
 import { SectionTitle } from '../../ui/list.tsx'
-import { IntervalField } from './interval-field.tsx'
+import { Controls, RunBar } from './lake-copied-controls.tsx'
 import { CopiedRow } from './lake-copied-row.tsx'
-import type { Picks } from './lake-pick.ts'
-import { copyBody, groupsOf, isFuture, picksOfCopied, prefixOf } from './lake-pick.ts'
+import type { Picks, Table } from './lake-pick.ts'
+import { copyBody, groupsOf, isMarked, picksOfCopied, prefixOf } from './lake-pick.ts'
 import { Group, LakePicker } from './lake-picker.tsx'
 import { lakeTablesPrefix, sendLakeCopy, sendLakeRun } from './lake-queries.ts'
-import { ReadAgainDialog, readAgainTables } from './lake-read-again.tsx'
+import { LeaveDialog, ReadAgainDialog, readAgainTables } from './lake-read-again.tsx'
 import {
   dateEffectText,
   LAKE_TABLES,
   LINES_STAY,
-  lastRunText,
+  ONLY_COPY_MANAGER,
   otherTablesText,
-  READ_AGAIN,
-  RUN_NOW,
-  SAVE,
-  sinceOfTableText,
-  WHOLE_HISTORY,
 } from './lake-text.ts'
-import { intervalText } from './lake-words.ts'
-import { SinceField } from './since-field.tsx'
 
 type Lake = LakeTablesOfConnection
 type Props = { companyId: CompanyId; connectionId: ConnectionId; entry: ConnectorEntry; lake: Lake }
 
 const NAME_REFUSALS: ReadonlySet<string> = new Set(['COPY_NAME_INVALID', 'COPY_NAME_TAKEN'])
-
-function Controls(props: {
-  editable: boolean
-  interval: LakeInterval
-  since: string
-  savedSince: string
-  dirty: boolean
-  saving: boolean
-  onInterval: (interval: LakeInterval) => void
-  onSince: (since: string) => void
-  onSave: () => void
-}) {
-  if (!props.editable) {
-    return (
-      <p className="text-text-2">
-        {intervalText(props.interval)} ·{' '}
-        {props.savedSince === '' ? WHOLE_HISTORY : sinceOfTableText(props.savedSince)}
-      </p>
-    )
-  }
-  return (
-    <div className="grid gap-lg md:grid-cols-2">
-      <IntervalField value={props.interval} onChange={props.onInterval} />
-      <SinceField value={props.since} onChange={props.onSince} help={false} />
-      <div className="flex flex-wrap gap-md md:col-span-2">
-        <Button
-          variant="primary"
-          disabled={!props.dirty || props.saving || isFuture(props.since)}
-          onClick={props.onSave}
-        >
-          {SAVE}
-        </Button>
-      </div>
-    </div>
-  )
-}
 
 /** What the person has edited so far: the picks, the interval and the date, against what is saved. */
 function useCopyEdit(props: Props) {
@@ -86,17 +41,19 @@ function useCopyEdit(props: Props) {
   const savedSince = lake.startDate ?? ''
   const [since, setSince] = useState(savedSince)
   const [reading, setReading] = useState(false)
-  const copied = lake.tables.filter((one) => one.copy.kind === 'MARKED')
+  const [confirming, setConfirming] = useState(false)
+  const copied = lake.tables.filter(isMarked)
   const others = lake.tables.filter((one) => one.copy.kind === 'UNMARKED')
-  const marks = copied.filter((one) => picks.marked.has(one.source)).length
+  const leaving = copied.filter((one) => !picks.marked.has(one.source))
   const dirty =
     interval !== (lake.interval ?? LAKE_INTERVAL_DEFAULT) ||
     since !== savedSince ||
-    marks !== copied.length ||
+    leaving.length > 0 ||
     others.some((one) => picks.marked.has(one.source))
   return {
     ...{ picks, setPicks, interval, setInterval, since, setSince, savedSince },
-    ...{ reading, setReading, copied, others, dirty, again: readAgainTables(lake.tables) },
+    ...{ reading, setReading, confirming, setConfirming, leaving },
+    ...{ copied, others, dirty, again: readAgainTables(lake.tables) },
   }
 }
 
@@ -167,40 +124,80 @@ function useCopyWrites(props: Props, edit: Edit) {
   }
 }
 
-/** "Rodar agora", "Ler de novo desde a data" and the last round, under the controls. */
-function RunBar(props: {
-  lake: Props['lake']
-  editable: boolean
+/** The copied tables under their subjects. */
+function CopiedList(props: {
+  tables: Table[]
+  entry: ConnectorEntry
+  picks: Picks
+  since: string | null
   running: boolean
-  stale: boolean
-  again: number
-  onRun: () => void
-  onReadAgain: () => void
+  editable: boolean
+  onPicks: (picks: Picks) => void
 }) {
-  const { lake } = props
+  return groupsOf(props.tables, props.entry.subjects).map((group) => (
+    <Group key={group.id} label={group.label}>
+      {group.tables.map((table) => (
+        <CopiedRow
+          key={table.source}
+          table={table}
+          picks={props.picks}
+          since={props.since}
+          running={props.running}
+          system={props.entry.name}
+          editable={props.editable}
+          onPicks={props.onPicks}
+        />
+      ))}
+    </Group>
+  ))
+}
+
+/** What the last "Salvar" or run said: the effect of the date once saved, or why it did not go. */
+function Outcome(props: { note: string | null; failure: string | null }) {
   return (
-    <div className="flex flex-wrap items-center gap-md border-t border-line pt-md">
-      {props.editable && (
-        <Button disabled={props.running} onClick={props.onRun}>
-          {RUN_NOW}
-        </Button>
+    <>
+      {props.note !== null && (
+        <p role="status" className="max-w-message">
+          {props.note}
+        </p>
       )}
-      {props.editable && props.again > 0 && (
-        <Button disabled={props.stale || props.running} onClick={props.onReadAgain}>
-          {READ_AGAIN}
-        </Button>
-      )}
-      {lake.lastRun !== null && lake.lastRun.outcome !== 'RUNNING' && (
-        <p className="text-text-2 tabular-nums">{lastRunText(dayAndHour(lake.lastRun.endedAt))}</p>
-      )}
-    </div>
+      {props.failure !== null && <Alert tone="danger">{props.failure}</Alert>}
+    </>
+  )
+}
+
+/** The system's other tables, folded away, to mark one more for the lake. */
+function OtherTables(props: {
+  entry: ConnectorEntry
+  others: Table[]
+  picks: Picks
+  refusal: string | null
+  onPicks: (picks: Picks) => void
+}) {
+  return (
+    <Collapsible>
+      <CollapsibleTrigger className="inline-flex h-control items-center gap-xs rounded-control text-label text-text-2 hover:text-text">
+        <ChevronDownIcon aria-hidden="true" className="size-4" />
+        {otherTablesText(props.entry.name, props.others.length)}
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <LakePicker
+          entry={props.entry}
+          tables={props.others}
+          picks={props.picks}
+          refusal={props.refusal}
+          search={false}
+          onPicks={props.onPicks}
+        />
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 
 /**
  * The copied tables of a connection and everything that changes them: the boxes, the other tables
  * of the system, the interval and "Desde", "Salvar", "Rodar agora" and "Ler de novo desde a data".
- * Who does not manage copies reads the list and nothing else.
+ * Who does not manage copies sees the same controls turned off, with the sentence that says who can.
  */
 export function CopiedTables(props: Props & { editable: boolean }) {
   const { entry, lake } = props
@@ -208,46 +205,32 @@ export function CopiedTables(props: Props & { editable: boolean }) {
   const writes = useCopyWrites(props, edit)
   const { picks, setPicks, interval, setInterval, since, setSince, savedSince } = edit
   const { copied, others, dirty, again, reading, setReading } = edit
+  const { leaving, confirming, setConfirming } = edit
   const { note, failure, nameRefusal, running, submit, start } = writes
   return (
     <section aria-label={LAKE_TABLES} className="flex flex-col gap-lg">
       <div className="flex flex-col gap-xs">
         <SectionTitle>{LAKE_TABLES}</SectionTitle>
         <p className="max-w-message text-text-2">{LINES_STAY}</p>
+        {!props.editable && <p className="max-w-message text-text-2">{ONLY_COPY_MANAGER}</p>}
       </div>
-      {groupsOf(copied, entry.subjects).map((group) => (
-        <Group key={group.id} label={group.label}>
-          {group.tables.map((table) => (
-            <CopiedRow
-              key={table.source}
-              table={table}
-              picks={picks}
-              since={lake.startDate}
-              running={running}
-              system={entry.name}
-              editable={props.editable}
-              onPicks={setPicks}
-            />
-          ))}
-        </Group>
-      ))}
+      <CopiedList
+        tables={copied}
+        entry={entry}
+        picks={picks}
+        since={lake.startDate}
+        running={running}
+        editable={props.editable}
+        onPicks={setPicks}
+      />
       {props.editable && others.length > 0 && (
-        <Collapsible>
-          <CollapsibleTrigger className="inline-flex h-control items-center gap-xs rounded-control text-label text-text-2 hover:text-text">
-            <ChevronDownIcon aria-hidden="true" className="size-4" />
-            {otherTablesText(entry.name, others.length)}
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <LakePicker
-              entry={entry}
-              tables={others}
-              picks={picks}
-              refusal={nameRefusal}
-              search={false}
-              onPicks={setPicks}
-            />
-          </CollapsibleContent>
-        </Collapsible>
+        <OtherTables
+          entry={entry}
+          others={others}
+          picks={picks}
+          refusal={nameRefusal}
+          onPicks={setPicks}
+        />
       )}
       <Controls
         editable={props.editable}
@@ -258,14 +241,9 @@ export function CopiedTables(props: Props & { editable: boolean }) {
         saving={writes.saving}
         onInterval={setInterval}
         onSince={setSince}
-        onSave={() => void submit()}
+        onSave={() => (leaving.length > 0 ? setConfirming(true) : void submit())}
       />
-      {note !== null && !dirty && (
-        <p role="status" className="max-w-message">
-          {note}
-        </p>
-      )}
-      {failure !== null && <Alert tone="danger">{failure}</Alert>}
+      <Outcome note={dirty ? null : note} failure={failure} />
       <RunBar
         lake={lake}
         editable={props.editable}
@@ -283,6 +261,16 @@ export function CopiedTables(props: Props & { editable: boolean }) {
         pending={writes.pending}
         onConfirm={() => void start(true)}
         onCancel={() => setReading(false)}
+      />
+      <LeaveDialog
+        open={confirming}
+        tables={leaving}
+        pending={writes.saving}
+        onConfirm={async () => {
+          await submit()
+          setConfirming(false)
+        }}
+        onCancel={() => setConfirming(false)}
       />
     </section>
   )

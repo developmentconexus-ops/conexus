@@ -1364,10 +1364,6 @@
       "name": "renomear: um título vazio"
     },
     {
-      "file": "apps/web/src/hub/connectors/lake-tables.test.tsx",
-      "name": "uma ligação de outro sistema não tem abas nem a seção"
-    },
-    {
       "file": "apps/web/src/hub/connectors/link-window-send.test.tsx",
       "name": "enviar link: marca o que a outra pessoa preenche e o resto vai do que foi digitado; o endereço sai uma vez com Copiar e a hora"
     },
@@ -1378,6 +1374,10 @@
     {
       "file": "apps/server/src/hub/copies/lake-list-stopped.test.ts",
       "name": "as rodadas de uma tabela: nenhuma rodada de outra ligação nem anterior à cópia aparece, qualquer que seja o resultado"
+    },
+    {
+      "file": "apps/web/src/hub/connectors/lake-tabs.test.tsx",
+      "name": "uma ligação de outro sistema não tem abas nem a seção"
     }
   ]
 }

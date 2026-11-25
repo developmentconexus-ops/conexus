@@ -27,6 +27,8 @@ export const MAKE_LINK = 'Gerar o link'
 export const MAKING_LINK = 'Gerando…'
 export const COPY_LINK = 'Copiar'
 export const BACK_TO_ACCESS = 'Voltar ao acesso'
+export const LINK_NEXT =
+  'Quando a outra pessoa enviar, a ligação nova aparece em Integrações. Abra-a e clique em Escolher o que copiar.'
 
 export function linkValidText(expiresAt: string, clock: (instant: string) => string): string {
   return `Vale até ${clock(expiresAt)}.`
@@ -106,6 +108,7 @@ export const TABLES_TAB = 'Tabelas'
 export const NOTHING_COPIED = 'Nada desta ligação é copiado para o lago.'
 export const CHOOSE_WHAT = 'Escolher o que copiar'
 export const NAME_FIXED = 'o nome não muda mais'
+export const ONLY_COPY_MANAGER = 'Só quem gerencia as cópias muda o que se copia.'
 export const LINES_STAY = 'As linhas ficam no lago da empresa.'
 export const SAVE = 'Salvar'
 export const RUN_NOW = 'Rodar agora'
@@ -147,7 +150,13 @@ export function readAgainTitle(since: string): string {
 }
 
 export const READ_AGAIN_LEAD = 'O lago troca o que tem destas tabelas:'
-export const READ_AGAIN_OTHERS = 'As outras tabelas seguem como sempre.'
+export function leaveTitle(count: number): string {
+  return count === 1 ? 'Tirar 1 tabela do lago?' : `Tirar ${count} tabelas do lago?`
+}
+
+export const LEAVE_LEAD = 'O lago apaga estas tabelas e as linhas delas:'
+export const LEAVE_CONFIRM = 'Tirar do lago'
+export const OTHERS_STAY = 'As outras tabelas seguem como sempre.'
 
 export function readAgainEffectText(kind: 'CHANGED' | 'WINDOW', system: string): string {
   return kind === 'WINDOW'

@@ -14,6 +14,7 @@ import {
   BACK,
   BACK_TO_ACCESS,
   COPY_LINK,
+  LINK_NEXT,
   linkValidText,
   MAKE_LINK,
   MAKING_LINK,
@@ -40,6 +41,7 @@ function Made(props: { link: ConnectionLink }) {
           {linkValidText(props.link.expiresAt, clockOf)}
         </span>
       </p>
+      <p className="max-w-message text-text-2">{LINK_NEXT}</p>
       {copy.error !== null && <Alert tone="danger">{sentenceOf(copy.error)}</Alert>}
     </div>
   )

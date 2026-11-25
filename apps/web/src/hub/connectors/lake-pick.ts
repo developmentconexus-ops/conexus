@@ -6,6 +6,12 @@ import type {
 } from '@conexus/hub-api'
 
 export type Table = LakeTablesOfConnection['tables'][number]
+/** A table the lake already copies: its name in the lake is fixed. */
+export type MarkedTable = Table & { copy: Extract<Table['copy'], { kind: 'MARKED' }> }
+
+export function isMarked(table: Table): table is MarkedTable {
+  return table.copy.kind === 'MARKED'
+}
 
 /** What the person marked in the picker, and the part of each name after the prefix that they typed. */
 export type Picks = {
