@@ -32,7 +32,7 @@ rodada real confirma que a tabela das notas chega ao lago.
 
 **A máquina das conversas, num lugar só.** Nada muda na tela. A máquina do **Assistente**, do **Construtor
 de agentes** e de um agente salvo passa a ser montada num lugar só, a partir da ficha de cada agente, em
-vez de em três. Ter um Workspace por sessão no **Construtor de apps** fica para depois, guardado na issue
+vez de repetida em cada um. Ter um Workspace por sessão no **Construtor de apps** fica para depois, guardado na issue
 https://github.com/developmentconexus-ops/conexus/issues/1395.
 
 Segue a etapa A primeira cópia chega ao lago.
