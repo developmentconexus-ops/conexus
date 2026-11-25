@@ -14,7 +14,6 @@ import {
   removeCompanyMemoryPage,
   renameAssistantConversation,
   setAssistantConnections,
-  setAssistantModel,
   setProfileMemory,
   writeCompanyMemoryInstructions,
   writeCompanyMemoryNote,
@@ -52,7 +51,6 @@ export function assistantConnectionsQuery(companyId: CompanyId, projectId: Proje
 }
 
 export const sendAssistantConnections = hubMutation(setAssistantConnections)
-export const sendAssistantModel = hubMutation(setAssistantModel)
 export const sendAssistantDeletion = hubMutation(deleteAssistantConversation)
 export const sendAssistantRename = hubMutation(renameAssistantConversation)
 

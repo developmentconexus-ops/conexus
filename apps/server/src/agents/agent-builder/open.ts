@@ -11,7 +11,7 @@ import type { InProject } from '../saved-agent/public.ts'
  * carry too: its own keys, so no other controller's sweep takes it and the Projeto's removal finds
  * it. The Hub keeps no row.
  */
-export function construtorMarks(scope: InProject): Record<string, string> {
+function construtorMarks(scope: InProject): Record<string, string> {
   return marksOf('construtor', scope)
 }
 

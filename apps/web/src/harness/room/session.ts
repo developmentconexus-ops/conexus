@@ -5,6 +5,8 @@ import type {
   BUILDER_CONTROLLER,
   CONSTRUTOR_CONTROLLER,
   ConversationId,
+  Effort,
+  ModelId,
   ProjectId,
 } from '@conexus/hub-api'
 import { CONVERSATION_ROUTES } from '@conexus/hub-api'
@@ -61,6 +63,12 @@ export function sessionOf(conversationId: ConversationId, controller: Controller
      * thread (`useAgentControllerThreadMessages.ts`, `session.listMessages(threadId, limit)`).
      */
     read: (limit: number) => said(session.listMessages(conversationId, limit)),
+    /**
+     * The model and effort the person chose, on Mastra's own route behind the Hub's guard, as the
+     * Factory UI switches them (`useAgentControllerStateMutations.ts`, `session.switchModel`).
+     */
+    switchModel: (choice: { model: ModelId; effort: Effort }) =>
+      said(session.switchModel(choice.model, { thinkingLevel: choice.effort })),
     /** The person's answer to the card of a write that asks (step 24.5), on Mastra's own route behind the Hub's guard. */
     approve: (toolCallId: string, approved: boolean) =>
       said(session.approveTool(toolCallId, approved)),

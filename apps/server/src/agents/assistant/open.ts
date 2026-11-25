@@ -111,7 +111,7 @@ export async function offeredAmong(
 }
 
 /** The marks a conversation's thread is stamped with (`createSession({ tags })`), one rule for opening and for resuming. */
-export function assistantMarks(
+function assistantMarks(
   owner: Owner,
   opened: { projectId?: ProjectId | undefined; automation?: ConversationAutomation | undefined },
 ): Record<string, string> {

@@ -218,3 +218,14 @@ export async function sessionStateOf(hub: Hub, person: Person, url: string) {
   const state = Object(read.json())
   return { model: state.modelId, effort: state.settings.thinkingLevel ?? 'off', tasks: state.tasks }
 }
+
+/** The person's change of the conversation's model and effort, through Mastra's own route, as the screen sends it. */
+export function switched(
+  hub: Hub,
+  person: Person,
+  url: string,
+  choice: { model: string; effort: string },
+) {
+  const body = { modelId: choice.model, thinkingLevel: choice.effort }
+  return post(hub, person, `${sessionUrl(url)}/model`, body)
+}

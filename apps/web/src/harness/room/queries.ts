@@ -9,7 +9,6 @@ import {
   listConversations,
   ModelId,
   readConversation,
-  setConversationModel,
   Task,
 } from '@conexus/hub-api'
 import { z } from 'zod'
@@ -58,6 +57,5 @@ export const sendCreation = hubMutation(createConversation)
 export const sendAssistantCreation = hubMutation(createAssistantConversation)
 export const sendConstrutorConversation = hubMutation(createConstrutorConversation)
 export const sendAgentConversation = hubMutation(createAgentConversation)
-export const sendModel = hubMutation(setConversationModel)
 /** The Assistant's proposal handed to the Builder (step 24.3.2): the card's touch, then the Builder's conversation. */
 export const sendAssistantHandOff = hubMutation(handAssistantProposal)

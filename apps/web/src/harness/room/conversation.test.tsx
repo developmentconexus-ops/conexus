@@ -116,9 +116,9 @@ test('trocar de modelo envia o novo modelo, para as próximas respostas', async 
   const { sent } = await openConversation(conversationOf({ id: FIRST }))
   await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'Gemini 2.5 Pro')
   await waitFor(() =>
-    expect(sent.at(-1)?.body).toEqual({ model: 'google/gemini-2.5-pro', effort: 'off' }),
+    expect(sent.at(-1)?.body).toEqual({ modelId: 'google/gemini-2.5-pro', thinkingLevel: 'off' }),
   )
-  expect(sent.at(-1)?.method).toBe('PUT')
+  expect(sent.at(-1)?.method).toBe('POST')
 })
 
 test('uma troca de modelo sem resposta lida diz que não foi confirmada', async () => {

@@ -135,18 +135,3 @@ export const readConversation = defineOperation({
   success: { status: 200, body: z.object({ conversation: ConversationSummary }) },
   failures: READ_FAILURES,
 })
-
-/** The body of a model change, the same on the wire for the Builder and the Assistant. */
-export const ModelChoice = z.object({ model: ModelId, effort: Effort })
-
-export const setConversationModel = defineOperation({
-  id: 'setConversationModel',
-  summary: 'Changes the model of a conversation and its reasoning effort, for its next answers.',
-  access: 'session',
-  method: 'PUT',
-  path: `${BASE}/{conversationId}/model`,
-  bodyLimit: 1024,
-  input: { params: OfConversation, body: ModelChoice },
-  success: { status: 200, body: ModelChoice },
-  failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT', 'EFFORT_UNSUPPORTED'],
-})

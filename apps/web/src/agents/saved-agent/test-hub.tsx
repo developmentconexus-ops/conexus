@@ -159,7 +159,7 @@ function versionRoutes(held: Held, note: Note, find: (id: unknown) => AgentDetai
 
 const OpenConversation = z.object({ draft: z.boolean().optional() })
 
-function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
+function conversationRoutes(held: Held, note: Note) {
   return [
     writesRoute(held, PROJECT_API),
     http.get(`${PROJECT_API}/agents/:id/conversations`, () =>
@@ -225,16 +225,19 @@ function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
       held.construtor = [made, ...(held.construtor ?? [])]
       return HttpResponse.json({ conversation: made }, { status: 201 })
     }),
-    modelWrite(`${PROJECT_API}/construtor`, { chosen, answers: held.answers ?? {} }, note),
   ]
 }
 
 function sessionRoutes(
   chosen: ChosenModels,
+  answers: Pick<Answers, 'model'>,
   note: Note,
   lines: ReturnType<typeof openLine>['line'][],
 ) {
   return [AGENTS_CONTROLLER, CONSTRUTOR_CONTROLLER].flatMap((controller) => [
+    ...(controller === CONSTRUTOR_CONTROLLER
+      ? [modelWrite(SESSION(controller), { chosen, answers }, note)]
+      : []),
     http.get(`${SESSION(controller)}/stream`, ({ request }) => {
       const { line, response } = openLine(displayOf())
       lines.push(line)
@@ -305,8 +308,8 @@ function agentsHub(server: ReturnType<typeof setupServer>, held: Held) {
       : [
           catalogRoute(),
           ...draftRoutes(held, note),
-          ...conversationRoutes(held, chosen, note),
-          ...sessionRoutes(chosen, note, lines),
+          ...conversationRoutes(held, note),
+          ...sessionRoutes(chosen, held.answers ?? {}, note, lines),
         ]),
   )
   return { sent, writes: () => sent.filter((one) => one.method !== 'GET'), lines, held }

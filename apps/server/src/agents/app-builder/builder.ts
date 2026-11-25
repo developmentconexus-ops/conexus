@@ -34,6 +34,9 @@ import type { Runs } from './runs/runs.ts'
 import type { ConversationIndex, Refusals } from './turn-of.ts'
 import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
 
+/** The conversation's model is the session's; the guard writes this line once Mastra has switched it. */
+const MODEL = { kind: 'SESSION', switched: 'CONVERSATION_MODEL_SET' } as const
+
 type Ids = { companyId: CompanyId; personId: PersonId; projectId: ProjectId }
 
 function idsOf(run: RunScope): Ids {
@@ -148,7 +151,7 @@ export function createBuilder(deps: {
           skillOf({ directory: each.skill.name, ...each.skill }),
         ),
       ],
-      model: { kind: 'SESSION' },
+      model: MODEL,
       tools: async (requestContext) => {
         const scope = await scopeOf(requestContext)
         // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
@@ -179,7 +182,7 @@ export function createBuilder(deps: {
     },
     { queue, storage },
   )
-  return { controller, memory, agent, queue: deps.queue }
+  return { controller, memory, agent, queue: deps.queue, model: MODEL }
 }
 
 export type Builder = ReturnType<typeof createBuilder>

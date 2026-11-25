@@ -18,7 +18,6 @@ import {
   readAssistantConversation,
   renameAssistantConversation,
   setAssistantConnections,
-  setAssistantModel,
 } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { StorageThreadType } from '@mastra/core/memory'
@@ -28,13 +27,7 @@ import type { ConversationMachines } from '../../harness/machine/public.ts'
 import { registerFile } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import type { Owner } from '../../harness/spec/public.ts'
-import {
-  answerModelChange,
-  attemptIdOf,
-  ownThread,
-  RUN_MARKS,
-  releaseThreads,
-} from '../../harness/spec/public.ts'
+import { attemptIdOf, ownThread, RUN_MARKS, releaseThreads } from '../../harness/spec/public.ts'
 import type { CompanyProjects } from '../../harness/tools/public.ts'
 import type { Access, Place } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -48,7 +41,6 @@ import { registerCompanyMemoryRoutes } from './company-memory-routes.ts'
 import type { assistantMemory } from './memory.ts'
 import {
   admitted,
-  assistantMarks,
   automationOf,
   offeredAmong,
   offeredBy,
@@ -290,35 +282,6 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     )
     const conversation = await conversationOf(deps, owner, thread, { ...scope, chosen })
     return answer({ conversation })
-  })
-
-  serve(app, setAssistantModel, (input) => {
-    const owner = ownerOf(input)
-    const { conversationId } = input.params
-    return answerModelChange(
-      {
-        kind: 'assistant',
-        controller: deps.controller,
-        queue: deps.queue,
-        owned: async () => {
-          const {
-            thread,
-            scope: { place },
-          } = await ownScoped(deps, owner, conversationId)
-          const tags = assistantMarks(owner, {
-            projectId: place.kind === 'PROJECT' ? place.projectId : undefined,
-            automation: automationOf(thread.metadata) ?? undefined,
-          })
-          return { owner, id: conversationId, tags }
-        },
-        logged: ({ companyId, conversationId }) =>
-          deps.log.info(
-            { companyId, traceId: input.traceId, conversationId },
-            'ASSISTANT_MODEL_SET',
-          ),
-      },
-      input.body,
-    )
   })
 }
 

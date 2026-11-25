@@ -3,9 +3,9 @@ import { test } from 'node:test'
 import { opened } from '../../agents/agent-builder/test-construtor.ts'
 import { created } from '../../agents/assistant/test-assistant.ts'
 import { agentsOn, publishedAgent, talkedTo } from '../../agents/saved-agent/test-agents.ts'
-import { CARLA, call, memberOn } from '../../hub/identity/test-hub.ts'
-import { MODEL, started } from '../routes/test-conversation.ts'
-import { printedOf } from '../routes/test-research.ts'
+import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { MODEL, sessionUrl, started } from '../routes/test-conversation.ts'
+import { switched } from '../routes/test-questions.ts'
 
 // In the order the removal releases them today.
 const RELEASED = [
@@ -49,37 +49,42 @@ test('apagar um agente varre as conversas dele: AGENT_CONVERSATIONS_SWEPT com a 
   )
 })
 
-test('trocar o modelo de uma conversa do Builder, do Assistente e do Construtor: a linha de cada um, com os campos', async (t) => {
-  const printed = printedOf(t)
-  const on = await agentsOn(t, [], (config) => ({ ...config, logLevel: 'info' }))
+test('trocar o modelo de uma conversa do Builder, do Assistente e do Construtor: a linha de cada um, com os campos, só depois do ok do Mastra', async (t) => {
+  const on = await agentsOn(t)
   const builder = `${on.conversations}/${await started(on.hub, on.ana, on.conversations)}`
   const assistant = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const construtor = await opened(on)
-  const choice = { model: MODEL, effort: 'off' }
-  for (const url of [builder, assistant, construtor]) {
-    const set = await call(on.hub, on.ana, 'PUT', `${url}/model`, choice)
+  const urls = [builder, assistant, construtor]
+  function named() {
+    return on.lines.filter((line) => line.message.endsWith('_MODEL_SET'))
+  }
+
+  for (const url of urls) {
+    for (const choice of [
+      { model: 'openai/gpt-5.4', effort: 'off' },
+      { model: 'nada/nenhum', effort: 'off' },
+      { model: MODEL, effort: 'xhigh' },
+    ]) {
+      assert.equal((await switched(on.hub, on.ana, url, choice)).statusCode, 422)
+    }
+    const malformed = await post(on.hub, on.ana, `${sessionUrl(url)}/model`, { modelId: MODEL })
+    assert.equal(malformed.statusCode, 400)
+  }
+  assert.deepEqual(named(), [], 'a refusal writes no line')
+
+  for (const url of urls) {
+    const set = await switched(on.hub, on.ana, url, { model: MODEL, effort: 'off' })
     assert.equal(set.statusCode, 200, set.body)
   }
-  // The Builder's line goes through the request's logger, which prints it.
-  const ofBuilder = printed
-    .flatMap((chunk) => chunk.split('\n'))
-    .flatMap((text) => (text.includes('"CONVERSATION_MODEL_SET"') ? [JSON.parse(text)] : []))
-  assert.equal(ofBuilder.length, 1)
-  assert.deepEqual(
-    [ofBuilder[0]?.msg, ofBuilder[0]?.companyId, ofBuilder[0]?.conversationId],
-    ['CONVERSATION_MODEL_SET', on.companyId, idOf(builder)],
-  )
-  const lines = on.lines.filter((line) => line.message.endsWith('_MODEL_SET'))
+  const lines = named()
   assert.deepEqual(
     lines.map((line) => line.message),
-    ['ASSISTANT_MODEL_SET', 'CONSTRUTOR_MODEL_SET'],
+    ['CONVERSATION_MODEL_SET', 'ASSISTANT_MODEL_SET', 'CONSTRUTOR_MODEL_SET'],
   )
-  for (const [line, url] of [
-    [lines[0], assistant],
-    [lines[1], construtor],
-  ] as const) {
-    const traceId = String(line?.fields.traceId)
+  for (const [index, line] of lines.entries()) {
+    const traceId = String(line.fields.traceId)
     assert.match(traceId, /\S/)
-    assert.deepEqual(line?.fields, { companyId: on.companyId, traceId, conversationId: idOf(url) })
+    const conversationId = idOf(urls[index] ?? '')
+    assert.deepEqual(line.fields, { companyId: on.companyId, traceId, conversationId })
   }
 })

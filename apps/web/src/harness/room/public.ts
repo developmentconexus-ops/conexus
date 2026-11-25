@@ -22,7 +22,6 @@ export {
   conversationQuery,
   conversationsQuery,
   sendAssistantHandOff,
-  sendModel,
   sessionReadQuery,
 } from './queries.ts'
 export type { OpenedFile, RoomOf, WriteTool } from './room.ts'

@@ -208,6 +208,9 @@ function blockOfRun(parts: Parts) {
   }
 }
 
+/** The conversation's model is the session's; the guard writes this line once Mastra has switched it. */
+const MODEL = { kind: 'SESSION', switched: 'ASSISTANT_MODEL_SET' } as const
+
 /**
  * The Assistant's ficha: its instructions, tools and skills from the run's scope, the session's
  * model, and the Builder's processors by name around the account's pick (the reads' search, the
@@ -229,7 +232,7 @@ function assistantSpec(deps: Deps, parts: Parts): ConversationSpec {
         { kind: 'OF_RUN', of: blockOfRun(parts) },
       ],
     },
-    model: { kind: 'SESSION' },
+    model: MODEL,
     tools: assistantTools(parts),
     // Decision 0053: nothing waits to be approved; the systems get no write.
     approval: { kind: 'NOTHING_ASKS' },
@@ -312,6 +315,7 @@ export function createAssistant(deps: Deps) {
       kind: 'assistant',
       controller,
       memory,
+      model: MODEL,
       /** Whether the person may ask the Assistant in the company now (`askAssistant`). */
       async admit(input: { person: Person; companyId: CompanyId }): Promise<void> {
         const owner = { companyId: input.companyId, personId: input.person.id }

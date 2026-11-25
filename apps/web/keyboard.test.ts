@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import {
+  BUILDER_CONTROLLER,
+  CONVERSATION_ROUTES,
   listModelAccounts,
   ModelFallback,
   orderModelAccounts,
-  setConversationModel,
 } from '@conexus/hub-api'
 import type { Locator } from 'playwright-core'
 import { atRest } from './at-rest.ts'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, ok, presses } from './layout-harness.ts'
+import { createHarness, DESKTOP, presses } from './layout-harness.ts'
 import { PLACES, popupOf, triggerOf } from './picker-places.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { withAccounts } from './sweep-accounts-states.ts'
@@ -27,10 +28,10 @@ after(async () => {
 
 const COMPANIES = '/api/companies'
 const CONVERSATION = '11111111-1111-4111-8111-111111111111'
-/** The Hub takes the level the slider sends. */
+/** The session takes the level the slider sends. */
 const CHOSEN: Replies = {
-  [`PUT /api/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations/${CONVERSATION}/model`]:
-    ok(setConversationModel, { model: 'anthropic/claude-sonnet-4', effort: 'low' }),
+  [`POST ${CONVERSATION_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${CONVERSATION}/model`]:
+    { status: 200, json: { ok: true } },
 }
 
 /** Opens Início, then reloads it: the company switcher reads the company list on each load. */

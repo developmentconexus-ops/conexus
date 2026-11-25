@@ -3,7 +3,7 @@ import { ProblemField, ProblemReason } from './agent-failures.ts'
 import { AgentDetail, AgentListed, AgentSummary, OfferedConnection } from './agents.ts'
 import { AutomationId } from './assistant.ts'
 import { CompanyId } from './companies.ts'
-import { ConversationId, ModelChoice, START_FAILURES, StartChoice } from './conversations.ts'
+import { ConversationId, START_FAILURES, StartChoice } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { Problem } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
@@ -136,23 +136,4 @@ export const listConstrutorConversations = defineOperation({
     body: z.object({ conversations: z.array(ConstrutorConversationSummary) }),
   },
   failures: READ_FAILURES,
-})
-
-export const setConstrutorModel = defineOperation({
-  id: 'setConstrutorModel',
-  summary:
-    'Changes the model of a Construtor conversation and its reasoning effort, for its next answers.',
-  access: 'session',
-  method: 'PUT',
-  path: `${BASE}/{conversationId}/model`,
-  bodyLimit: 1024,
-  input: { params: InProject.extend({ conversationId: ConversationId }), body: ModelChoice },
-  success: { status: 200, body: ModelChoice },
-  failures: [
-    ...READ_FAILURES,
-    'CONVERSATION_NOT_FOUND',
-    'MODEL_UNKNOWN',
-    'MODEL_NO_ACCOUNT',
-    'EFFORT_UNSUPPORTED',
-  ],
 })

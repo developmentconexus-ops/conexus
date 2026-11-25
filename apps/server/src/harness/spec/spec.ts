@@ -35,9 +35,13 @@ export type Prompt =
       of: (requestContext: RequestContext) => Promise<AgentInstructions>
     }>
 
-/** Whose model a turn runs: the session's, or the one the run's own plan names. */
+/**
+ * Whose model a turn runs: the session's, which a person changes (`switched` is the log line the
+ * guard writes once Mastra has taken the change), or the one the run's own plan names, the
+ * version's, which no one changes by the conversation.
+ */
 export type ModelSource =
-  | Readonly<{ kind: 'SESSION' }>
+  | Readonly<{ kind: 'SESSION'; switched: string }>
   | Readonly<{
       kind: 'OF_RUN'
       of: (requestContext: RequestContext) => Promise<ReturnType<typeof routedModel>>

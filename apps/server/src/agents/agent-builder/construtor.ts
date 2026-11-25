@@ -60,6 +60,8 @@ import { registerConstrutorRoutes } from './routes.ts'
 import { construtorTools } from './tools.ts'
 
 const turnKey = turnKeyOn('conexus-construtor-turn-key')
+/** The conversation's model is the session's; the guard writes this line once Mastra has switched it. */
+const MODEL = { kind: 'SESSION', switched: 'CONSTRUTOR_MODEL_SET' } as const
 const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 'utf8').trim()
 
 /**
@@ -251,7 +253,7 @@ function construtorSpec(
         { kind: 'TEXT', text: MANUAL },
       ],
     },
-    model: { kind: 'SESSION' },
+    model: MODEL,
     tools: async (requestContext) => {
       const { run, scope, toolScope } = await runScope(requestContext)
       function read(
@@ -320,6 +322,7 @@ export function createConstrutor(deps: Deps) {
       kind: 'construtor',
       controller,
       memory,
+      model: MODEL,
       // Its tool that writes code starts the conversation's machine, as the Assistant's: the screen hears it.
       ends: { onPhase: machines.onPhase.bind(machines) },
       /** The machines, after the runs `drain` stopped, before Mastra stops. */

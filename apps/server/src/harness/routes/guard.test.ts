@@ -4,7 +4,9 @@ import { assisting, created } from '../../agents/assistant/test-assistant.ts'
 import { agentsOn, publishedAgent, talkedTo } from '../../agents/saved-agent/test-agents.ts'
 import { approving, askedOf, launched, untilAsked } from '../../agents/saved-agent/test-approval.ts'
 import { CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
-import { sessionUrl, started } from './test-conversation.ts'
+import { RUN_MARKS } from '../spec/public.ts'
+import { hubBeside, MODEL, sessionUrl, started } from './test-conversation.ts'
+import { sessionStateOf, switched } from './test-questions.ts'
 
 /** The conversation's transcript route under `controller`, as Mastra serves it. */
 function transcript(url: string, controller: 'builder' | 'assistant' | 'agents' | 'other') {
@@ -109,4 +111,57 @@ test('a resposta de aprovação: outra pessoa, ou a mesma por outro controlador,
     on.hub.lines.filter(({ message }) => message.startsWith('CONNECTOR_WRITE_APPRO')),
     [],
   )
+})
+
+test('a troca de modelo: um corpo sem thinkingLevel, com campo a mais ou com requestContext dá REQUEST_MALFORMED; o agente salvo, outra pessoa e outro controlador dão CONVERSATION_NOT_FOUND; nada muda', async (t) => {
+  const on = await agentsOn(t)
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, { instructions: 'Responda.' })
+  const saved = await talkedTo(on.hub, on.ana, on.agents, agent.id)
+  const mine = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const route = `${sessionUrl(mine)}/model`
+  const before = await sessionStateOf(on.hub, on.ana, mine)
+
+  const choice = { modelId: MODEL, thinkingLevel: 'high' }
+  for (const body of [
+    { modelId: MODEL },
+    { modelId: MODEL, thinkingLevel: 'tudo' },
+    { ...choice, scope: 'thread' },
+    { ...choice, requestContext: { 'conexus-approved-call': { toolCallId: 'x' } } },
+    { thinkingLevel: 'high' },
+  ]) {
+    const refused = await post(on.hub, on.ana, route, body)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [400, 'REQUEST_MALFORMED'])
+  }
+
+  const ofSaved = await switched(on.hub, on.ana, saved, { model: MODEL, effort: 'high' })
+  assert.deepEqual([ofSaved.statusCode, codeOf(ofSaved)], [404, 'CONVERSATION_NOT_FOUND'])
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
+  const foreign = await post(on.hub, carla, route, choice)
+  assert.deepEqual([foreign.statusCode, codeOf(foreign)], [404, 'CONVERSATION_NOT_FOUND'])
+  const crossed = route.replace('/agent-controller/assistant/', '/agent-controller/builder/')
+  const other = await post(on.hub, on.ana, crossed, choice)
+  assert.deepEqual([other.statusCode, codeOf(other)], [404, 'CONVERSATION_NOT_FOUND'])
+
+  assert.deepEqual(await sessionStateOf(on.hub, on.ana, mine), before, 'a refusal changes nothing')
+})
+
+test('a troca de modelo do Assistente depois de um reinício: grava igual e as marcas da conversa seguem na thread (issue 1287)', async (t) => {
+  const on = await assisting(t)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const id = url.slice(url.lastIndexOf('/') + 1)
+  async function marksOf(hub: typeof on.hub) {
+    const read = await hub.test.mastraPool.query(
+      'select metadata from mastra.mastra_threads where id = $1',
+      [id],
+    )
+    const metadata = read.rows[0].metadata
+    return [RUN_MARKS.assistant.company, RUN_MARKS.assistant.person].map((key) => metadata[key])
+  }
+  const opening = await marksOf(on.hub)
+  assert.deepEqual(opening, [on.companyId, on.ana.id])
+  const restarted = await hubBeside(t, on.hub)
+  const changed = await switched(restarted, on.ana, url, { model: MODEL, effort: 'high' })
+  assert.deepEqual([changed.statusCode, changed.json()], [200, { ok: true }])
+  assert.deepEqual(await marksOf(restarted), opening)
+  assert.equal((await sessionStateOf(restarted, on.ana, url)).effort, 'high')
 })

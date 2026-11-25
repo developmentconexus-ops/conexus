@@ -10,7 +10,7 @@ import {
   sent,
   title,
 } from '../../harness/routes/test-conversation.ts'
-import { sessionStateOf, tool } from '../../harness/routes/test-questions.ts'
+import { sessionStateOf, switched, tool } from '../../harness/routes/test-questions.ts'
 import { TOTAL_OUTUBRO } from '../../harness/tools/data/test-data.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
@@ -209,11 +209,8 @@ test('a troca do modelo: uma resposta em andamento termina no modelo em que come
   const first = await sent(on.hub, on.ana, url, 'Primeira')
   assert.equal(first.statusCode, 200, first.body)
   await until(() => used.length === 1, 'the model was asked')
-  const switched = await call(on.hub, on.ana, 'PUT', `${url}/model`, {
-    model: OTHER_MODEL,
-    effort: 'off',
-  })
-  assert.equal(switched.statusCode, 200, switched.body)
+  const changed = await switched(on.hub, on.ana, url, { model: OTHER_MODEL, effort: 'off' })
+  assert.equal(changed.statusCode, 200, changed.body)
   held.release()
   assert.equal(endOf(await stream.turn()), 'complete')
   assert.equal(used.length, 1, 'the turn in flight made no call on the new model')
