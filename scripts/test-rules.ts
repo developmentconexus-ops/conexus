@@ -96,7 +96,7 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     {},
   ],
   // @mastra/core resolves (rules.test.ts links it), as a real import does: the cruise keeps Mastra's packages as leaves.
-  'mastra-only-in-harness': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
+  'mastra-only-in-harness-and-agents': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
   'e2b-only-in-the-machine': ['apps/server/src/agents/app-builder/runs/sandbox.ts', 'e2b', {}],
   's3-only-in-the-git-copy': [
     'apps/server/src/agents/app-builder/git/bucket.ts',

@@ -128,8 +128,7 @@ module.exports = {
     },
     {
       name: 'hub-does-not-import-harness-or-agents',
-      comment:
-        'C4, W4: the Hub imports neither harness/ nor agents/; main.ts hands it over.',
+      comment: 'C4, W4: the Hub imports neither harness/ nor agents/; main.ts hands it over.',
       severity: 'error',
       from: { path: '^apps/(server|web)/src/hub/' },
       to: { path: '^apps/$1/src/(harness|agents)/' },
@@ -186,7 +185,7 @@ module.exports = {
     },
     ...ADAPTERS,
     {
-      name: 'mastra-only-in-harness',
+      name: 'mastra-only-in-harness-and-agents',
       comment:
         'W7, decision 0033: @mastra/* is imported only inside harness/ and agents/ on the server and inside harness/ on the web.',
       severity: 'error',
@@ -310,7 +309,7 @@ module.exports = {
       conditionNames: ['import', 'node', 'default', 'types'],
       mainFields: ['module', 'main', 'types'],
     },
-    // Packages stay out of the graph except Mastra's, each a leaf (doNotFollow), so mastra-only-in-harness and no-mastra-ee see an import that resolves.
+    // Packages stay out of the graph except Mastra's, each a leaf (doNotFollow), so mastra-only-in-harness-and-agents and no-mastra-ee see an import that resolves.
     // .lab/ is a builder's scratch folder, listed in .gitignore: git does not hold it, so it stays out here too (check-suppressions reads git's list).
     exclude: { path: '^(?!.*node_modules/@mastra/).*(^|/)(node_modules|dist|coverage)/|^\\.lab/' },
   },

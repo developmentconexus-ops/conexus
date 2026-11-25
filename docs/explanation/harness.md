@@ -8,7 +8,7 @@ builds it on Mastra (decisions [0027](../decisions/0027-mastra-builder-engine.md
 Conexus uses, how it configures them, what it wraps around them, and which installed pieces it
 leaves alone. `builder/` below means `apps/server/src/builder/`. The import law keeps every
 `@mastra/*` import inside `builder/` folders (`.dependency-cruiser.cjs`, rule
-`mastra-only-in-harness`).
+`mastra-only-in-harness-and-agents`).
 
 ## One Mastra, four controllers
 

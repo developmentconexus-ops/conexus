@@ -245,7 +245,7 @@ test('testar: roda uma pergunta contra o rascunho, sem conversa guardada; rascun
     (each) => !each.stream && (each.system ?? '').includes(FIRST),
   )
   assert.ok(asked, 'the draft’s instructions reached the model')
-  assert.equal(asked?.key, KEY, 'counted in the person’s own model queue')
+  assert.equal(asked.key, KEY, 'counted in the person’s own model queue')
 })
 
 test('o registro diz quem gravou: CONSTRUTOR nas ferramentas do Construtor, PERSON nas rotas da pessoa', async (t) => {

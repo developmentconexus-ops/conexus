@@ -34,7 +34,7 @@ write those.
    or a workflow is registered in `apps/server/src/conversations-of.ts` (`workflows`, `releaseFirst`).
    dependency-cruiser refuses a wiring that goes around the doors.
 9. **The Builder's part.** `apps/server/src/builder/<subject>/`, the only place `@mastra/*` may be
-   imported (`mastra-only-in-harness`). The tools are bound in `agents/app-builder/builder.ts`,
+   imported (`mastra-only-in-harness-and-agents`). The tools are bound in `agents/app-builder/builder.ts`,
    `agents/assistant/assistant.ts` and `agents/app-builder/permissions.ts`, with their text in the
    prompt. The prompt tests and the recorded-model tests prove them.
 10. **The screens.** `apps/web/src/hub/<subject>/`, its routes in `apps/web/src/routes/`, its lines in
