@@ -52,8 +52,8 @@ roteiro, diz o que viu e aprova os textos novos.
 **A visão.** A etapa serve a linha da visão em que o Conexus entrega o que a pessoa pediu e mostra o que fez: o
 pedido vira plano aprovado e o plano vira conferência. Não abre dado, não muda permissão de tabela e não cria
 rota: a aprovação já passa pela rota nativa `tool-suspension`, atrás do guarda de hoje. A segurança muda num
-ponto só: o Code Mode entra em duas conversas da plataforma, e no programa entram só leituras (as escritas
-continuam diretas, com a aprovação de hoje).
+ponto só: o Code Mode entra nas três conversas da plataforma (Construir, Agentes e Conversas); o que entra no
+programa é a decisão 4 abaixo, e o que pede aprovação ou cartão fica sempre fora dele.
 
 **O que as referências fazem, em palavras simples.** O time do Mastra quase não usa o modo plano: o CTO disse em
 2026-09-29 "I don't even use plan mode anymore in Mastra Code. I just plan with build mode", e a Factory deles
@@ -79,34 +79,61 @@ precisa lembrar de ligar.
   idioma por mecanismo, e a prova pede modelo real. Fica para a primeira rodada de Lab depois desta etapa.
 - **O supervisor** (o Conexus que propõe, passa ao Construir e acompanha): é do `A6` (cartão 4, 2026-11-24).
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** Respondidas em 2026-11-25, no quadro desta etapa: "1 A", "2 A" e "3 B",
+com a observação na 3: "Mastra code usa code mode e quero seguir o padrão da harness deles também, ver todas
+features e como fazem e factory também que a utiliza e acrescenta". Falta a 4, que a observação abriu.
 
-- **1. Quando o Construir planeja, e o que trava.** (a) O plano continua o arquivo que o Conexus escreve; a trava
-  é código e entra quando há plano: a conversa de um app novo começa travada, e um plano proposto trava a escrita
-  até "Aprovar e construir"; a mudança pequena segue direto. **[Recomendado.** Factory, Replit, Lovable; e é a
-  regra do prompt de hoje, "Plan a new app, and any request that leaves open what the app must do". Nativo: o modo
-  do controlador do Mastra com `transitionsTo`, que a aprovação já troca sozinha, e a guarda de escrita do Mastra
-  Code; você nunca vê o modo.**]** (b) Todo pedido do Construir passa por um plano aprovado, até "troque o título"
-  (nenhuma referência da mesma situação faz). (c) Sem trava em código: só o plano e a frase do prompt, como hoje
-  (Abhi Aiyer, Replit); o teste do roteiro "o controlador recusa" sai. (d) Um botão "Planejar" na caixa, que você
-  liga (Lovable, Base44, Bolt, Claude Code); pede tela, rota e protótipo. Veredito: embrulhado.
-- **2. Quem confere o plano no fim.** (a) O juiz por código que já existe prende o fim pelos pedidos abertos e pela
-  conferência do app; o goal nativo guarda o plano aprovado como objetivo e um juiz de modelo, só de leitura,
-  confere os pedidos, até 20 rodadas, como a Factory. Custa uma chamada de modelo por fim candidato, na conta da
-  empresa. **[Recomendado.** Factory (`maxRuns: 20`), Mastra Code (juiz só de leitura).**]** (b) Só o código: o
-  goal guarda o objetivo, sem juiz de modelo (nenhuma chamada a mais; a conferência de cada pedido fica com as
-  tarefas que o modelo marca). (c) O juiz de modelo no lugar do nosso. Veredito: nativo.
-- **3. Onde entra o Code Mode da plataforma.** Você disse "Sim colocar Code Mode Conexus da plataforma" (2026-11-24).
-  (a) Nas Conversas e no Construtor de agentes, com as leituras do lago e dos conectores; as escritas ficam fora do
-  programa **[recomendado:** o Code Mode do Mastra pula a aprovação; o Construtor de apps já escreve e roda código
-  na própria máquina**]**. (b) Também no Construir. Veredito: nativo (`createCodeMode`, como o agente salvo já usa).
+- **1. Quando o Construir planeja, e o que trava: (a).** O plano continua o arquivo que o Conexus escreve; a
+  trava é código e entra quando há plano: a conversa de um app novo começa travada, e um plano proposto trava a
+  escrita até "Aprovar e construir"; a mudança pequena segue direto. Factory, Replit, Lovable; nativo: o modo do
+  controlador do Mastra com `transitionsTo`, que a aprovação já troca sozinha, e a guarda de escrita do Mastra
+  Code; você nunca vê o modo. Veredito: embrulhado.
+- **2. Quem confere o plano no fim: (a).** O juiz por código que já existe prende o fim pelos pedidos abertos e
+  pela conferência do app; o goal nativo guarda o plano aprovado como objetivo, e um juiz de modelo, só de
+  leitura, confere os pedidos, até 20 rodadas, como a Factory. Custa uma chamada de modelo por fim candidato, na
+  conta da empresa. Veredito: nativo.
+- **3. Onde entra o Code Mode da plataforma: (b), também no Construir.** As três conversas da plataforma e o
+  agente salvo usam a mesma peça.
+
+  **O que o padrão do Mastra é, rastreado.** A observação parte de que o Mastra Code e a Factory usam o Code
+  Mode. No código, nenhum dos dois usa: nem na prateleira 1.83 nem no `main` do Mastra de 2026-11-25 (commit
+  `187a7a86`; nenhum `createCodeMode` em `mastracode/`). A Factory usa as ferramentas do Mastra Connect direto,
+  uma a uma, e acrescenta por cima dois filtros: tira das sessões, por padrão, as ferramentas que apagam ou
+  arquivam (`/delete|archive/i`) e as de GitHub e GitLab, que ela mesma refaz com a sua checagem, e espera as
+  ferramentas no máximo 15 segundos (`mastracode/factory/src/integrations/platform/connect/session-tools.ts:6-12`,
+  `:21-25`, `:59-73`). O padrão de Code Mode do Mastra mora no Mastra Connect, `tools().codeMode()`
+  (`@mastra/connect` 1.4.0, `packages/connect/src/code-mode.ts`, lançado em 2026-11-11): (1) a cada pedido, as
+  ferramentas se dividem em duas, e **fica direta toda ferramenta que pausa a execução** (pede aprovação, ou
+  suspende num cartão), porque o programa chama a ferramenta sem passar pela aprovação; **todas as outras entram
+  no programa, escritas incluídas** (`:57-72`, `:81-93`); (2) quando as declarações passam de uns 10 mil tokens,
+  o programa só lista os nomes e o modelo ganha uma ferramenta `search_functions` que devolve a declaração de que
+  ele precisa (`:54-55`, `:94-102`); (3) as instruções e as ferramentas de um pedido saem da mesma montagem, para
+  o texto nunca descrever uma função que o programa não alcança (`:46-52`, `:105-117`); (4) a tela mostra a
+  chamada pelo formato, com o código, os registros e o resultado (`packages/playground-ui/src/domains/chat/tools/code-mode.ts:15-43`).
+  O cartão segue (2), (3) e (4) como estão, e o (1) pede a sua decisão 4.
+
+- **4. O que entra no programa.** Exemplo: no Construtor de agentes, `agent_draft`, `agent_set`, `tool_save` e
+  `tool_code_save` gravam o rascunho do agente sem pedir aprovação (o regime dele é "nada pergunta",
+  `B/construtor/construtor.ts:270`); no Construir, `connector_note_save` grava uma anotação da conexão. Hoje você
+  vê cada uma como uma linha na conversa. (a) **O padrão do Mastra**: entra no programa toda ferramenta da
+  empresa que não pausa a execução, escritas incluídas; o que pede aprovação ou cartão (a escrita num sistema da
+  empresa, `ask_user`, `submit_plan`) fica direto. Um programa pode então gravar vários rascunhos de uma vez, e
+  você vê uma linha só, com o código e o resultado. (b) **Só leituras no programa**, como o agente salvo já faz
+  (`B/agents/agent.ts:251-252`): o lago, as leituras dos conectores e as anotações entram; toda escrita fica
+  direta, uma linha por escrita. Mais estreito que o Mastra. **[Recomendado (b):** o Mastra escreveu a regra para
+  quem pede aprovação em toda escrita que importa; no Conexus, as três conversas da plataforma rodam sem pedir
+  aprovação, então "não pausa" inclui escritas que você só vê como linha, e o programa as esconderia dentro de
+  uma. Veredito das duas: embrulhado, com `createCodeMode` do core e a divisão do Connect.**]** Nas duas, as
+  ferramentas da máquina (ler, escrever e rodar arquivos) ficam diretas, como o Mastra Code as deixa, e a guarda do
+  plano vale dentro do programa também, porque mora no próprio `execute` da ferramenta
+  (`packages/core/src/workspace/tools/tools.ts:376-400`).
 
 **Já respondidas, no quadro do estudo irmão (2026-11-25).** Elas entram como estão:
 
 - **A pesquisa antes do plano:** "A: etapa Pesquisar no playbook do plano e o ajudante pesquisar no Construir,
   oferecido". A skill do plano ganha a etapa Pesquisar (uma referência que você admira, o que um bom app deste tipo
   tem, sugestões com a origem, nada da empresa na busca), e o Construir ganha um ajudante só de leitura, que lê os
-  sistemas e a web e que ele decide quando chamar (U3 e U5).
+  sistemas e a web e que ele decide quando chamar (U3).
 - **O plano do app grande:** "A: um plano por rodada, Ordem em fases, uma aprovação, constrói até cada pedido
   conferido" (U3).
 - **A rede sob pedido:** "B: lista da empresa mantida por dono ou administrador em Configurações". Fica fora desta
@@ -118,18 +145,19 @@ precisa lembrar de ligar.
 | --- | --- | --- | --- | --- | --- |
 | P1 | U1 | Os dois modos do Construtor de apps: `plano` (leitura, fala e a escrita só pela guarda) com `transitionsTo: 'conversa'`; a conversa de um Projeto sem versão salva começa em `plano`; um `submit_plan` em `conversa` passa a sessão a `plano` antes de suspender | `H/spec/`, `A/app-builder/` | testing | o fechamento da etapa 2 |
 | P1 | U2 | As guardas da escrita: o gancho da máquina recusa, em `plano`, escrever fora de `.conexus/plans/*.md`, e, em qualquer modo, reescrever um plano aprovado; o plano aprovado vai ao estado do fio (TURN-2); cada recusa diz o que fazer em vez dela; saem as frases do prompt e das skills que o código passa a garantir | `H/machine/`, `A/app-builder/`, `packages/app/skills/` | testing | U1 |
-| P1 | U3 | A pesquisa e o plano numerado: a skill do plano ganha a etapa Pesquisar e o modelo do plano os pedidos `P1…Pn`, as fases e as Referências; o `submit_plan` recusa um plano sem pedidos numerados; a aprovação escreve uma tarefa por fase, com os pedidos dela, e liga o goal com o plano | `A/app-builder/`, `H/spec/`, `packages/app/skills/` | testing | U2 |
+| P1 | U3 | A pesquisa e o plano numerado: a skill do plano ganha a etapa Pesquisar e o modelo do plano os pedidos `P1…Pn`, as fases e as Referências; o ajudante `pesquisar` sobe ao comum e o Construir ganha o seu, só de leitura, com os sistemas e a `web_fetch` do Hub; o `submit_plan` recusa um plano sem pedidos numerados; a aprovação escreve uma tarefa por fase, com os pedidos dela, e liga o goal com o plano | `A/app-builder/`, `H/spec/`, `H/tools/research.ts`, `A/assistant/`, `packages/app/skills/` | testing | U2 |
 | P2 | U4 | O juiz das tarefas abertas nos quatro: a parte comum do `conexusCheck` sobe a `H/turn/`; o Assistente, o Construtor de agentes e o agente salvo a registram (o agente salvo ganha o `TaskSignalProvider`); a conferência do app fica do Construtor de apps; saem as frases de "rode `task_check` antes de terminar" | `H/turn/`, `A/*/` | testing | o fechamento da etapa 2 |
-| P2 | U5 | O ajudante de pesquisa no Construir e o Code Mode da plataforma: o tipo de ajudante `pesquisar` sobe ao comum, e o Construtor de apps ganha o seu, com as leituras de sistema e a `web_fetch` do Hub; `codeModeOf` e a escolha das leituras sobem ao comum e entram nas Conversas e no Construtor de agentes | `H/tools/`, `A/assistant/`, `A/agent-builder/`, `A/app-builder/` | testing | U4 |
+| P2 | U5 | O Code Mode da plataforma no padrão do Mastra Connect: uma peça comum divide as ferramentas da empresa de cada pedido em diretas e do programa (a regra da decisão 4), monta instruções e ferramentas juntas e passa à busca de funções acima de uns 10 mil tokens; entra no Construir, nas Conversas e no Construtor de agentes, e o agente salvo passa a usar a mesma peça | `H/tools/code-mode.ts`, `A/*/` | testing | U4, P1, a decisão 4 |
 | P2 | U6 | As recusas como erro da ferramenta (FERR-2 e AGT-7 da auditoria, issue 1016): a recusa do fornecedor chega ao modelo pelo caminho nativo do erro (C79), com uma dona | `H/tools/`, `A/*/` | testing | U4 |
 | P3 | U7 | O fim do plano na tela: o cartão do plano mostra cada pedido conferido ou aberto; a caixa diz que o Conexus espera a aprovação; o painel de tarefas mostra a fase e os pedidos | `apps/web/src/harness/room/`, `apps/web/src/agents/app-builder/`, `packages/hub-api/src/` | design | U3, o protótipo |
 
-P1 trava e fecha o plano; P2 leva o juiz e as leituras aos quatro e não divide arquivo com P1, então os dois
-correm ao mesmo tempo; P3 espera o protótipo e o P1. Uma unidade nunca cruza dois pull requests (delivery L9).
+P1 trava e fecha o plano; P2 leva o juiz, o Code Mode e as recusas aos quatro. Os dois dividem só a ficha do Assistente
+(o ajudante sai dela na U3, o Code Mode entra na U5), então P2 parte do P1 integrado; P3 espera o protótipo e o P1. Uma unidade nunca cruza dois pull requests (delivery L9).
 
 **Orçamento de código alterado.** Hipótese, sem testes nem retratos. U1: 180. U2: 200 (menos 40: sai a leitura por
-`getMessages`). U3: 250, mais as skills. U4: 200 (menos 60 nos agentes). U5: 300 (o ajudante 150, o Code Mode 150).
-U6: 250 (menos 80: as três cópias de AGT-7). U7: 200. Total: 1.580 linhas, dentro das 4.000 de delivery L2.
+`getMessages`). U3: 400, mais as skills (o plano 250, o ajudante 150). U4: 200 (menos 60 nos agentes). U5: 250 (a
+peça comum e a busca de funções 200, as três fichas 50; menos 40 no agente salvo).
+U6: 250 (menos 80: as três cópias de AGT-7). U7: 200. Total: 1.680 linhas, dentro das 4.000 de delivery L2.
 
 ## Os critérios de aceite
 
@@ -147,8 +175,10 @@ U6: 250 (menos 80: as três cópias de AGT-7). U7: 200. Total: 1.580 linhas, den
 | 10 | U3 | Com a decisão 2 (a): o juiz de modelo do goal roda só depois do juiz por código, com ferramentas só de leitura, e para em 20 rodadas | `A/app-builder/conversation-goal.test.ts`, com o dublê de modelo | must |
 | 11 | U4 | **Recusa.** O mesmo fim com tarefa aberta no Assistente, no Construtor de agentes e no agente salvo | `A/assistant/assistant-turn.test.ts`, `A/agent-builder/construtor.test.ts`, `A/saved-agent/agent.test.ts`, o caso novo | must |
 | 12 | U4 | As frases "rode `task_check` antes de terminar" saem dos quatro prompts; os retratos `request.test.ts` mudam só nelas e no provedor de tarefas do agente salvo | os quatro `request.test.ts`, regravados, com a diferença listada no pull request | must |
-| 13 | U5 | **Recusa.** O ajudante de pesquisa do Construir lê sistemas e a web e não escreve: uma escrita dele é recusada | `A/app-builder/research.test.ts` | must |
-| 14 | U5 | Nas Conversas, um `execute_typescript` lê duas tabelas do lago numa chamada; uma ferramenta de escrita não está no programa | `A/assistant/code-mode.test.ts` | must |
+| 13 | U3 | **Recusa.** O ajudante de pesquisa do Construir lê sistemas e a web e não escreve: uma escrita dele é recusada | `A/app-builder/research.test.ts` | must |
+| 14 | U5 | Nas Conversas e no Construir, um `execute_typescript` lê duas tabelas do lago numa chamada; no Construtor de agentes, lê duas conexões | `H/tools/code-mode.test.ts` e o caso de cada agente | must |
+| 14a | U5 | **Recusa.** Uma ferramenta que pausa a execução (a escrita num sistema da empresa, `ask_user`, `submit_plan`) nunca está no programa: chamá-la de dentro dele dá "função desconhecida"; com a decisão 4 (b), nenhuma escrita está; as ferramentas da máquina não estão | `H/tools/code-mode.test.ts` | must |
+| 14b | U5 | Com as declarações acima do limite, as instruções só listam os nomes e `search_functions` devolve a declaração pedida; abaixo, as declarações vêm inteiras | `H/tools/code-mode.test.ts` | must |
 | 15 | U6 | **Recusa.** A recusa de um fornecedor chega ao modelo como erro da ferramenta nos quatro agentes, com o corpo cortado | os testes de conector de cada agente, o caso de recusa | must |
 | 16 | U7 | Na tela, cada pedido do plano aprovado aparece conferido ou aberto no fim; enquanto o plano espera, a caixa diz que o Conexus espera a sua aprovação | `W/plan-card.test.tsx`; captura a 1366 e 390 px, os dois temas | must |
 | 17 | todas | O pedido ao modelo muda só onde as frases saem e as ferramentas entram | os quatro retratos `request.test.ts` | must |
@@ -190,7 +220,7 @@ Uma tela muda: o cartão do plano e a caixa. Protótipo antes, a 1366 e 390 px e
 | A volta a construir na aprovação | U1 | idem | `B/conversation/plan-tools.ts:96` só retoma | `@mastra/core@1.83.0` | `handlePlanApprovalResume` troca para o `transitionsTo` do modo em que o plano foi enviado antes de retomar (`C/agent-controller/session.ts:6235-6285`; `agent-controller.ts:2431-2441`), **lido** | nativo | — | não precisa | — |
 | O plano aprovado não muda | U2 | 0055: "unchanged once approved. Founder: 'Plano A'" | `approvedPlans` por `getMessages` (`plan-tools.ts:26-44`); o disco aceita (`conversation-plan.test.ts:64-85`) | Mastra Code (outra) | o plano aprovado no estado da sessão (`MC/schema.ts:275-283`), **lido**; o estado durável do fio é o `threadState`, como as tarefas (`C/tools/builtin/task-tools.ts`), **lido** | embrulhado: o registro no `threadState`; a recusa no mesmo gancho | critérios 5 e 6 | não precisa | `A/app-builder/plan-guard.ts` |
 | A recusa diz o que fazer | U2 | nada registrado | as recusas do `submit_plan` (`plan-tools.ts:85`, `:88`) | Mastra Code (outra) | "Plan mode can only write plan files inside …" (`tool-availability.ts:82-93`), **lido**; firstmate, a guarda que nomeia a forma certa (estudo irmão, seção 3) | nativo | — | não precisa | — |
-| A pesquisa antes do plano | U3, U5 | 2026-11-25, estudo irmão: "A: etapa Pesquisar no playbook do plano e o ajudante pesquisar no Construir, oferecido" | o ajudante `pesquisar` só no Assistente (`B/assistant/research.ts:16-30`) | Lovable, Replit, Base44, v0 (mesma) | ajudante só de leitura que "browse the web when needed"; a busca do agente e a referência da pessoa, **documentado** (estudo irmão, seção 5) | embrulhado: o tipo de subagente nativo, as ferramentas nossas | critério 13 | a resposta 1 do irmão | `H/tools/research.ts`, `packages/app/skills/conexus-plan-new/SKILL.md` |
+| A pesquisa antes do plano | U3 | 2026-11-25, estudo irmão: "A: etapa Pesquisar no playbook do plano e o ajudante pesquisar no Construir, oferecido" | o ajudante `pesquisar` só no Assistente (`B/assistant/research.ts:16-30`) | Lovable, Replit, Base44, v0 (mesma) | ajudante só de leitura que "browse the web when needed"; a busca do agente e a referência da pessoa, **documentado** (estudo irmão, seção 5) | embrulhado: o tipo de subagente nativo, as ferramentas nossas | critério 13 | a resposta 1 do irmão | `H/tools/research.ts`, `packages/app/skills/conexus-plan-new/SKILL.md` |
 | Os pedidos numerados e as fases | U3 | roteiro: "Cada pedido numerado do plano aparece conferido no fim"; 2026-11-25, estudo irmão: "A: um plano por rodada, Ordem em fases, uma aprovação, constrói até cada pedido conferido" | texto livre (`packages/app/skills/conexus-plan-new/plan-template.md:11,32`) | Factory (outra): "every step of that plan" (`F/boards/work.ts:17-25`), **lido**; vibesdk (mesma): fases (`state.ts:30`), **lido** pelo irmão; bolt.diy (mesma), o juiz por critério, pelo irmão | o objetivo é o plano, o juiz lê os passos | embrulhado: a lista conferida na borda do `submit_plan` (C27) | critério 7 | a resposta 2 do irmão | `A/app-builder/plan-tools.ts` |
 | Cada fase vira tarefa | U3 | idem | as tarefas não se ligam a nada | Mastra Code (outra) | o build pede a lista a partir do plano (`MC/agents/prompts/build.ts:38-42`), por prompt, **lido** | embrulhado: na aprovação, o servidor escreve a lista no `threadState` nativo | critério 8 | firstmate, decisão 1 abaixo | `A/app-builder/plan-tools.ts` |
 | O goal ao aprovar | U3 | 2026-11-24, cartão 4: "A3 com o plano nativo, o goal ao aprovar" | nenhum | Mastra Code, Factory (outra) | `setGoal` no `onApprove` da TUI (`mastracode/tui/src/tui/handlers/prompts.ts` ~`:455-500`); Building com `maxRuns: 20` (`F/boards/work.ts:55`); juiz só de leitura (`MC/index.ts:1507-1525`); o passo `goal` depois do `isTaskComplete` (`C/loop/loop-builder.ts:425-427`), **lido** | nativo | — | decisão 2 | `H/spec/` (o campo `goal` da ficha) |
@@ -198,7 +228,8 @@ Uma tela muda: o cartão do plano e a caixa. Protótipo antes, a 1366 e 390 px e
 | O juiz nos quatro | U4 | roteiro `A3`: "O juiz de fim de turno roda nos quatro agentes" | só o Construtor de apps | nenhuma faz (procurado: Mastra Code, que não usa `isTaskComplete`; Factory; Codex) | — | embrulhado: a parte das tarefas abertas no comum | critério 11 | não precisa | `H/turn/open-tasks.ts` |
 | As frases que saem dos prompts | U2, U3, U4 | roteiro `A3`: "as frases saem dos prompts" | `builder.md:15`, `:29`; `construtor.md:12`; `assistant.md:43`; `conexus-plan-new/SKILL.md:69,75,77`; `conexus-plan-change/SKILL.md:80,86,88` | Mastra Code (outra) | o prompt do build não repete a trava que o código faz (`MC/agents/prompts/build.ts`), **lido** | nativo: a frase sai, o código garante | critérios 12, 17 | não precisa | — |
 | As recusas como erro da ferramenta | U6 | guia de código C79 | sucesso com texto (`B/connectors/connector-tools.ts:219-222`, `B/app-data/tools.ts:56-68`); três cópias no Construtor (AGT-7) | `@mastra/core@1.83.0` | só o lançamento marca erro (`tool-result-commit-core.ts:173`, pela auditoria), **lido** pela auditoria | nativo | critério 15 | não precisa | `H/tools/refusal.ts` |
-| O Code Mode da plataforma | U5 | 2026-11-24: "Sim colocar Code Mode COnexus da plataforma" | só o agente salvo (`B/agents/code-mode.ts:14-19`, `B/agents/agent.ts:248-285`) | `@mastra/core@1.83.0` | `createCodeMode`; despacho sem aprovação (`C/tools/code-mode/code-mode.ts:104-119`); sandbox obrigatório (`:84-100`), **lido** | nativo; só leituras no programa | critério 14 | decisão 3 | `H/tools/code-mode.ts` |
+| O Code Mode da plataforma | U5 | 2026-11-24: "Sim colocar Code Mode COnexus da plataforma"; 2026-11-25: "3 B" e "quero seguir o padrão da harness deles" | só o agente salvo, só leituras (`B/agents/code-mode.ts:14-19`, `B/agents/agent.ts:248-285`) | `@mastra/connect` 1.4.0 na prateleira 1.83 (outra situação: as ferramentas conectadas de um projeto, que mudam a cada pedido, como as nossas); Mastra Code e Factory, procurados, **nenhum usa** (prateleira 1.83 e `mastra@187a7a86`) | `connectCodeMode`: a divisão por "pausa a execução" (`packages/connect/src/code-mode.ts:57-72`, `:81-93`), a busca de funções acima de 40 mil caracteres (`:54-55`, `:94-102`, `function-search.ts`), a montagem única por pedido (`:46-52`, `:105-117`), **lido**; core: `createCodeMode`, `createCodeModeTool`, `generateStubs` (`node_modules/@mastra/core/dist/tools/code-mode/code-mode.d.ts:20,30`, `stub-generator.d.ts:40`), o despacho sem aprovação (`C/tools/code-mode/code-mode.ts:104-119`); a tela pelo formato (`packages/playground-ui/src/domains/chat/tools/code-mode.ts:15-43`), **lido** | embrulhado: as peças do core; a divisão e a busca do Connect, que não instalamos, na nossa peça; o que entra é a decisão 4 | critérios 14, 14a, 14b | decisões 3 e 4 | `H/tools/code-mode.ts` |
+| As ferramentas que a Factory tira das sessões | fica de fora: no Conexus a escrita num sistema da empresa já pede cartão (e245), e o Construir não tem ferramentas de Git | nada registrado | — | Factory `mastra@187a7a86` (outra) | `connectToolExclusion` tira `delete`/`archive` e GitHub/GitLab (`session-tools.ts:21-25`, `:59-73`), **lido** | nativo, e fica de fora | — | não precisa | — |
 | Os detectores prontos | fica de fora: chamada de modelo na conta da empresa e `abort` sem tela | cartão 4: "as guardas uma a uma" | nenhum | `@mastra/core@1.83.0` | cada um é um `new Agent` (`C/processors/processors/`), **lido** | nativo, e fica de fora | — | página do fundador, "Fica de fora" | — |
 
 **A medida do transplante.** Nada vem do repositório antigo.
@@ -349,7 +380,7 @@ sobre o plano aprovado. O que falha hoje: `conversation-plan.test.ts:64-85` rees
 ### As linhas da tabela
 
 - **A pesquisa antes do plano**, **os pedidos numerados e as fases**, **cada fase vira tarefa**, **o goal ao
-  aprovar**. Na base: `packages/app/skills/conexus-plan-new/SKILL.md`, `plan-template.md`,
+  aprovar**. Na base: `B/assistant/research.ts:16-30` (o ajudante de hoje), `packages/app/skills/conexus-plan-new/SKILL.md`, `plan-template.md`,
   `conexus-plan-change/SKILL.md`; `A/app-builder/plan-tools.ts`; `A/app-builder/builder.ts`. Na referência:
   `F/boards/work.ts:17-25`, `:55`; `MC/index.ts:1507-1525`; `docs-harness-goals.md` (instalado);
   `C/agent/goal/scorer.ts:185-209`; `C/tools/builtin/task-tools.ts` (o `threadState` `task`).
@@ -379,6 +410,9 @@ const PlanPhase = z.object({ title: z.string().min(1), requests: z.array(PlanReq
 
 1. **O modelo do plano.** Critério: 7. A skill ganha a etapa Pesquisar (estudo irmão, seção 11, item 2), os
    pedidos `P1…Pn` e as fases.
+1a. **O ajudante de pesquisa no Construir.** Critério: 13. O tipo `pesquisar` sobe de `A/assistant/research.ts` (hoje
+   `B/assistant/research.ts:16-30`) ao comum; o do Construir lê os sistemas e a `web_fetch` do Hub, e o
+   `researchOnly` fecha o `forked` nos dois. Antes, provar se a `web_search` do fornecedor chega a um subagente.
 2. **A conferência na borda.** Critério: 7.
 3. **As fases como tarefas e o objetivo.** Critérios: 8, 9, 10. Na aprovação, antes de retomar.
    - **Mutações à mão:** não escrever uma fase deixa vermelho o 8.
@@ -428,42 +462,77 @@ O caso novo em cada agente, pelo dublê, com uma tarefa aberta.
 
 - A U11 da etapa 2 deixar o turno do Construtor de apps em outra forma: reler e seguir a forma dela.
 
-## U5 O ajudante de pesquisa e o Code Mode da plataforma
+## U5 O Code Mode da plataforma
 
-**Base e modelo.** O commit da U4. Sonnet.
+**Base e modelo.** O commit da U4 e a resposta à decisão 4. Sonnet.
 
 ### As linhas da tabela
 
-- **A pesquisa antes do plano**, **o Code Mode da plataforma**. Na base: `A/assistant/research.ts` (hoje
-  `B/assistant/research.ts:16-30`), `A/saved-agent/code-mode.ts` e `agent.ts` (hoje `B/agents/code-mode.ts:14-19`,
-  `B/agents/agent.ts:248-285`). Na referência: `C/tools/code-mode/code-mode.ts:84-119`.
+- **O Code Mode da plataforma.** Na base: `A/saved-agent/code-mode.ts` e `agent.ts` (hoje
+  `B/agents/code-mode.ts:14-19`, `B/agents/agent.ts:243-285`), o transporte E2B (hoje `B/machine/e2b.ts:66-68`),
+  as ferramentas da empresa de cada agente (`H/tools/`, hoje `B/company-tools/names.ts:18-39`), a linha da tela
+  (`W/machine-specs.ts:8`, `:47-58`, que já desenha `execute_typescript`). Na referência:
+  `packages/connect/src/code-mode.ts:46-123` e `function-search.ts` (`@mastra/connect` 1.4.0);
+  `C/tools/code-mode/code-mode.ts:84-119`; `node_modules/@mastra/core/dist/docs/references/docs-agents-code-mode.md`
+  e `reference-tools-create-code-mode.md`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `H/tools/research.ts`, `H/tools/code-mode.ts` | Cria: as peças comuns | os agentes |
-| `A/assistant/`, `A/agent-builder/`, `A/app-builder/`, `A/saved-agent/` | Muda | — |
+| `H/tools/code-mode.ts` | Cria: a divisão, a montagem por pedido e a busca de funções | as quatro fichas |
+| `A/saved-agent/code-mode.ts` | Apaga: o agente salvo passa à peça comum | — |
+| `A/app-builder/`, `A/assistant/`, `A/agent-builder/`, `A/saved-agent/` | Muda: ferramentas e instruções pela peça | — |
 
 ### Os contratos que a unidade cria
 
-O programa recebe só as leituras: `data_describe`, `data_query`, `connector_notes`, as leituras tipadas; as
-escritas ficam diretas. O dono da escolha é `H/tools/code-mode.ts` (C26).
+```ts
+// H/tools/code-mode.ts
+type InProgram = (tool: { id: string }) => boolean        // a regra da decisão 4, uma dona (C26)
+type ConversationCodeMode = Readonly<{
+  tools: (requestContext: RequestContext) => Promise<ToolsInput>          // diretas + execute_typescript (+ search_functions)
+  instructions: (requestContext: RequestContext) => Promise<string>       // vazio quando nada entra no programa
+}>
+export function conversationCodeMode(input: {
+  tools: (requestContext: RequestContext) => Promise<ToolsInput>          // as ferramentas da empresa do pedido
+  transport: CodeModeTransport                                            // o E2B da máquina da conversa
+  inProgram: InProgram
+}): ConversationCodeMode
+export const SEARCH_THRESHOLD_CHARS = 40_000                              // o limite do Connect (`code-mode.ts:55`)
+```
+
+Fica direta, nas duas respostas da decisão 4, toda ferramenta com aprovação, `needsApprovalFn`, `suspendSchema` ou
+`resumeSchema` (a regra do Connect, `code-mode.ts:62-72`); nunca entram as ferramentas da máquina, a web, as skills,
+as tarefas nem `show_file`. A montagem de um pedido serve as instruções e as ferramentas juntas, como o Connect
+(`:105-117`), com o `oncePerRun` que as fichas já usam.
 
 ### As skills e a leitura
 
-`mastra` (`docs-agents-code-mode.md`, `reference-tools-create-code-mode.md`).
+`mastra` (`docs-agents-code-mode.md`, `reference-tools-create-code-mode.md`); `pstack:typescript-best-practices`.
 
 ### A ordem do trabalho
 
-1. **O Code Mode no comum**, sem mudar o agente salvo. Critério: 17.
-2. **Nas Conversas e no Construtor de agentes.** Critério: 14.
-3. **O ajudante no comum e o do Construir.** Critério: 13. Antes, provar se a `web_search` do fornecedor chega a
-   um subagente (estudo irmão, seção 11).
+1. **A peça comum, com o agente salvo.** Critérios: 14a, 17. O agente salvo passa a ela sem mudar o pedido ao modelo
+   (o retrato dele igual).
+   - **O que sai:** `B/agents/code-mode.ts` e a escolha das leituras em `agent.ts:248-285`.
+   - **Mutações à mão:** pôr uma ferramenta com aprovação no programa deixa vermelho o 14a.
+2. **A busca de funções.** Critério: 14b. A forma do `function-search.ts` do Connect (nome pesa mais que descrição,
+   palavra rara mais que comum, nome exato sempre volta).
+3. **Nas três conversas da plataforma.** Critério: 14. Os retratos `request.test.ts` mudam só nas ferramentas e nas
+   instruções do programa.
+
+### Como se prova
+
+O dublê de modelo escreve um programa que chama duas leituras e o resultado volta numa linha; o mesmo programa
+chamando uma escrita que pede cartão recebe "função desconhecida".
 
 ### Parar se
 
-- A decisão 3 for (b): o Construir também recebe o Code Mode no passo 2.
+- O Assistente já procura as leituras tipadas pelo `ToolSearchProcessor` (`search_tools`): se as duas buscas se
+  sobrepuserem no mesmo pedido, parar e provar com um teste qual fica; o Connect troca a busca de ferramentas pela
+  de funções.
+- A máquina da conversa não tiver começado quando o programa roda: o transporte espera o `start()` como o gancho da
+  máquina já faz (`B/machine/conversation.ts:296-300`); se não esperar, parar.
 
 ## U6 As recusas como erro da ferramenta
 
@@ -518,5 +587,5 @@ Depois da U7: o QA da etapa (testing T25) a 1366 e 390 px, os dois temas.
 
 Os critérios 1 a 17 se provam com dublê de modelo, sem custo. Duas medições pedem modelo real e esperam a sua
 palavra: (1) com a decisão 2 (a), quantas chamadas o juiz de modelo acrescenta por construção (três pedidos da
-régua, três tentativas, Claude e GPT: 18 construções); (2) o Code Mode nas Conversas (cinco perguntas de conta
-sobre o lago, três tentativas, com e sem: 30 turnos). Rodam nas assinaturas de modelo que você já deu.
+régua, três tentativas, Claude e GPT: 18 construções); (2) o Code Mode nas Conversas e no Construir (cinco perguntas de conta
+sobre o lago em cada, três tentativas, com e sem: 60 turnos). Rodam nas assinaturas de modelo que você já deu.
