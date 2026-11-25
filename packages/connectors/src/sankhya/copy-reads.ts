@@ -79,7 +79,6 @@ const DESCRIPTION_MAX = 200
  */
 function decimalOf(row: z.infer<typeof DictionaryRow>): TableColumn['decimal'] {
   const { DATA_PRECISION: precision, DATA_SCALE: scale } = row
-  if (scale === null) return undefined
   const declared = DeclaredDecimal.safeParse({ precision: precision ?? 38, scale })
   return declared.success ? declared.data : undefined
 }
