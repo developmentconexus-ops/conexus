@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { LakeRun, LakeTableSummary } from '@conexus/hub-api'
+import { LakeRun, LakeRunId, LakeTableSummary } from '@conexus/hub-api'
 import { z } from 'zod'
 import { call, codeOf, personOn } from '../identity/test-hub.ts'
 import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS } from './test-lake-copy.ts'
@@ -147,7 +147,7 @@ async function stoppedRun(on: On, connection: string, stop: Stop) {
     [crypto.randomUUID(), on.companyId, connection, stop.ago, stop.code, stop.failedTable],
   )
   assert.ok(row !== undefined)
-  return String(row.id)
+  return LakeRunId.parse(row.id)
 }
 
 function errorsOf(runs: readonly LakeRun[]) {

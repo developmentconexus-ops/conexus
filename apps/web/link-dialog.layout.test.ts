@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { getLakeTablesOfConnection } from '@conexus/hub-api'
-import { createHarness, ok, PHONE } from './layout-harness.ts'
-import { readyLake } from './src/hub/connectors/lake-fixtures.ts'
+import { createHarness, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionOf, connectionPage, connectionsPage } from './sweep-connections.ts'
 import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
@@ -91,10 +89,6 @@ test('no celular o prefixo e o nome no lago têm 16 px, abaixo disso o navegador
     ...OWNER,
     ...connectionsPage(COMPANY.id, true, [connection]),
     ...connectionPage(COMPANY.id, connection),
-    [`GET /api/companies/${COMPANY.id}/connections/${connection.id}/lake-tables`]: ok(
-      getLakeTablesOfConnection,
-      readyLake(),
-    ),
   }
   const page = await harness.open(`/companies/${COMPANY.id}/integrations/${connection.id}`, {
     viewport: PHONE,
