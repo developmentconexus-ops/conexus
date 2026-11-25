@@ -32,6 +32,9 @@ export const NO_EXECUTOR: Executor = {
   grant: unused,
   revoke: unused,
   who: unused,
+  tableSend: () => {
+    throw new Error('the executor is not used by this test')
+  },
 }
 
 /** An executor that logs in and out in `events`, each token living `expiresInSeconds`. */

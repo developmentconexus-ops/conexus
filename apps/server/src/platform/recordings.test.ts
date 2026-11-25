@@ -58,19 +58,20 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
   }
 })
 
-// AWS's answers as the U4 proof, the study's P5 and the copy task (U5) recorded them (testing T29):
-// each names its service, API, SDK and date; the account is the invented one and no key is real (S40).
-// Only a 204 has no body: S3 Tables answers DeleteNamespace and DeleteTableBucket so.
+// Only a 204 has no body (S3 Tables answers DeleteNamespace and DeleteTableBucket so), and SQS's DeleteMessage, whose 200 is empty.
 const AwsRecording = z
   .object({
-    service: z.enum(['sts', 'cloudformation', 's3tables', 'ssm', 'sqs']),
+    service: z.enum(['sts', 'cloudformation', 's3tables', 'ssm', 'sqs', 'ecs']),
     api: z.string().min(1),
     sdk: z.string().min(1),
     recordedAt: z.iso.date(),
     status: z.number().int(),
     body: z.string(),
   })
-  .refine((r) => r.body.length > 0 || r.status === 204, 'only a 204 has no body')
+  .refine(
+    (r) => r.body.length > 0 || r.status === 204 || r.api === 'DeleteMessage',
+    'only a 204 or a DeleteMessage has no body',
+  )
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 
 test('cada gravação da AWS tem serviço, API, SDK e data; só a conta inventada e nenhuma chave de verdade (T29, S40)', () => {
@@ -177,4 +178,42 @@ test('as gravações desta etapa são da Mastra instalada e guardam o resultado 
   const [read] = toolResultsOf('reads')
   assert.equal(read?.tool, 'connector_read')
   assert.ok(ReadCut.parse(read.result).at, 'the recorded live read carries the time it came back')
+})
+
+const READERS = [
+  join(import.meta.dirname, '..'),
+  join(import.meta.dirname, '../../../extraction/tests'),
+]
+
+function readersText(folder: string): string[] {
+  return readdirSync(folder, { withFileTypes: true, recursive: true })
+    .filter((entry) => entry.isFile() && /\.(ts|py)$/.test(entry.name))
+    .map((entry) => join(entry.parentPath, entry.name))
+    .filter((path) => !path.includes('/recordings/') && !path.includes('/node_modules/'))
+    .map((path) => readFileSync(path, 'utf8'))
+}
+
+test('toda gravação da AWS tem um leitor, e nenhuma é lida sem existir (53)', () => {
+  const folder = join(RECORDINGS, 'aws')
+  const names = readdirSync(folder).map((file) => file.replace(/\.json$/, ''))
+  const text = READERS.flatMap(readersText).join('\n')
+  assert.deepEqual(
+    names.filter((name) => !new RegExp(`['"]${name}['"]`).test(text)),
+    [],
+  )
+})
+
+test('a gravação da AWS não leva id do laboratório: o UUID, a área, o código do lago e a tarefa são inventados (S40, 1266)', () => {
+  const folder = join(RECORDINGS, 'aws')
+  for (const file of readdirSync(folder)) {
+    const text = readFileSync(join(folder, file), 'utf8')
+    const real = (text.match(UUID) ?? []).filter((id) => !id.startsWith('00000000-0000-4000-8000-'))
+    assert.deepEqual(real, [], file)
+    const tasks = text.match(/task\/conexus-copia\/[0-9a-f]{32}/g) ?? []
+    assert.deepEqual(
+      tasks.filter((task) => !/\/0{20,}[0-9a-f]{1,12}$/.test(task)),
+      [],
+      file,
+    )
+  }
 })

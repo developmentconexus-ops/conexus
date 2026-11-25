@@ -100,6 +100,7 @@ export {
   VersionCheck,
   VersionData,
 } from './conexus-parts.ts'
+export * from './connection-links.ts'
 export {
   CALL_DEADLINE_MS,
   CONNECTION_STATES,
@@ -222,6 +223,7 @@ export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,
   AttemptKey,
+  bodyOfStatus,
   type DeclaredOperation,
   defineOperation,
   failuresOf,

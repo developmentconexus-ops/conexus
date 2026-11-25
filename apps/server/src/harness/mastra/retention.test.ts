@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { Mastra } from '@mastra/core/mastra'
+import type { WorkflowRunState } from '@mastra/core/workflows'
+import { AUTOMATION_WORKFLOW } from '../../agents/assistant/public.ts'
 import { createTestDatabase } from '../../platform/test-database.ts'
-import { createMastraStorage } from '../memory/public.ts'
-import { retentionOf } from './public.ts'
+import { createMastraStorage, RETENTION_DAYS } from '../memory/public.ts'
+import { COPY_WORKFLOW, retentionOf } from './public.ts'
+import { pruneCopyRuns } from './test-retention.ts'
 
 const DAY_MS = 86_400_000
 const TABLE = 'mastra.mastra_span_events'
@@ -96,4 +99,88 @@ test('a poda que parou no limite de linhas deixa uma linha com o nome do passo e
   assert.equal(stopped.status, 'success')
   assert.deepEqual(Object(stopped).result, { done: false })
   assert.deepEqual(lines, [{ fields: { step: 'prune' }, message: 'RETENTION_STILL_DRAINING' }])
+})
+
+function snapshotOf(runId: string): WorkflowRunState {
+  return {
+    runId,
+    status: 'success',
+    value: {},
+    context: {},
+    serializedStepGraph: [],
+    activePaths: [],
+    activeStepsPath: {},
+    suspendedPaths: {},
+    resumeLabels: {},
+    waitingPaths: {},
+    timestamp: Date.now(),
+  }
+}
+
+test('a poda do relógio', { timeout: 60_000 }, async (t) => {
+  const { mastraPool: pool } = await createTestDatabase(t)
+  const storage = createMastraStorage(pool)
+  t.after(() => storage.close())
+  await storage.init()
+  const workflows = await storage.getStore('workflows')
+  const schedules = await storage.getStore('schedules')
+  assert.ok(workflows !== undefined && schedules !== undefined)
+
+  const now = Date.now()
+  const old = new Date(now - (RETENTION_DAYS + 2) * DAY_MS)
+  const fresh = new Date(now - DAY_MS)
+  const runs = {
+    copyOld: randomUUID(),
+    copyFresh: randomUUID(),
+    automationOld: randomUUID(),
+  }
+  for (const [workflowName, runId, createdAt] of [
+    [COPY_WORKFLOW, runs.copyOld, old],
+    [COPY_WORKFLOW, runs.copyFresh, fresh],
+    [AUTOMATION_WORKFLOW, runs.automationOld, old],
+  ] as const) {
+    await workflows.persistWorkflowSnapshot({
+      workflowName,
+      runId,
+      snapshot: snapshotOf(runId),
+      createdAt,
+      updatedAt: createdAt,
+    })
+  }
+  const fires = { old: randomUUID(), fresh: randomUUID() }
+  for (const [runId, at] of [
+    [fires.old, old.getTime()],
+    [fires.fresh, fresh.getTime()],
+  ] as const) {
+    await schedules.recordTrigger({
+      scheduleId: 'clock_a',
+      runId,
+      scheduledFireAt: at,
+      actualFireAt: at,
+      outcome: 'published',
+    })
+  }
+
+  const results = await storage.prune({ maxRows: 50_000 })
+  assert.deepEqual(await pruneCopyRuns(storage, { maxRows: 50_000 }), { done: true })
+  assert.ok(results.every((each) => each.done))
+
+  const fired = await schedules.listTriggers('clock_a')
+  assert.deepEqual(
+    fired.map((each) => each.runId),
+    [fires.fresh],
+    'the old fire is dropped, the new one stays',
+  )
+  async function left(workflowName: string) {
+    const listed = await workflows?.listWorkflowRuns({ workflowName })
+    return listed?.runs.map((each) => each.runId)
+  }
+  assert.deepEqual(await left(COPY_WORKFLOW), [runs.copyFresh])
+  assert.deepEqual(
+    await left(AUTOMATION_WORKFLOW),
+    [runs.automationOld],
+    "the Assistant's automation run, as old as the copy's, stays",
+  )
+
+  assert.deepEqual(await pruneCopyRuns(storage, { maxRows: 50_000 }), { done: true }, 'twice')
 })

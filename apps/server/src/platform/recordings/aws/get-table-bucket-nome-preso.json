@@ -7,5 +7,5 @@
   "status": 403,
   "contentType": "application/json",
   "errorType": "AccessDeniedException:http://internal.amazon.com/coral/com.amazon.coral.service/",
-  "body": "{\"Message\":\"User: arn:aws:sts::111122223333:assumed-role/conexus-hub/hub-EmpresaTesteA0000000000000000001 is not authorized to perform: s3tables:GetTableBucket on resource: arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-ysdnurtkdqh3 because no identity-based policy allows the s3tables:GetTableBucket action\"}"
+  "body": "{\"Message\":\"User: arn:aws:sts::111122223333:assumed-role/conexus-hub/hub-EmpresaTesteA0000000000000000001 is not authorized to perform: s3tables:GetTableBucket on resource: arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-b8c9d0e1f2a3 because no identity-based policy allows the s3tables:GetTableBucket action\"}"
 }

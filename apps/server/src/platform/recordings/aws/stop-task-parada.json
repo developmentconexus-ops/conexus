@@ -1,0 +1,10 @@
+{
+  "service": "ecs",
+  "api": "StopTask",
+  "sdk": "@aws-sdk/client-ecs 3.1175.0",
+  "recordedAt": "2026-11-25",
+  "source": "U8 step 1, scripts/record-aws.ts from this machine on the laboratory account, temporary resources deleted at the end; account and ids changed (S40)",
+  "status": 200,
+  "contentType": "application/x-amz-json-1.1",
+  "body": "{\"task\":{\"attachments\":[],\"availabilityZone\":\"us-east-2b\",\"clusterArn\":\"arn:aws:ecs:us-east-2:111122223333:cluster/conexus-copia\",\"connectivity\":\"CONNECTED\",\"connectivityAt\":1.795E9,\"containers\":[],\"cpu\":\"1024\",\"createdAt\":1.795E9,\"desiredStatus\":\"STOPPED\",\"enableExecuteCommand\":false,\"ephemeralStorage\":{\"sizeInGiB\":20},\"fargateEphemeralStorage\":{\"sizeInGiB\":20},\"group\":\"family:conexus-copia\",\"lastStatus\":\"STOPPED\",\"launchType\":\"FARGATE\",\"memory\":\"2048\",\"overrides\":{\"containerOverrides\":[],\"cpu\":\"1024\",\"inferenceAcceleratorOverrides\":[],\"memory\":\"2048\",\"taskRoleArn\":\"arn:aws:iam::111122223333:role/conexus-copia-execucao\"},\"platformFamily\":\"Linux\",\"platformVersion\":\"1.4.0\",\"startedBy\":\"00000000-0000-4000-8000-0000000000a1\",\"stopCode\":\"UserInitiated\",\"stoppedAt\":1.795E9,\"stoppedReason\":\"conexus: stopped by the Hub\",\"stoppingAt\":1.795E9,\"tags\":[],\"taskArn\":\"arn:aws:ecs:us-east-2:111122223333:task/conexus-copia/00000000000000000000000000000001\",\"taskDefinitionArn\":\"arn:aws:ecs:us-east-2:111122223333:task-definition/conexus-copia:5\",\"version\":4}}"
+}

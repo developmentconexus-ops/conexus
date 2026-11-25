@@ -1,9 +1,0 @@
-{
-  "service": "cloudformation",
-  "api": "DescribeStacks",
-  "sdk": "@aws-sdk/client-cloudformation 3.1175.0 reads it; recorded by aws-cli --debug",
-  "recordedAt": "2026-11-21",
-  "source": "study P5, laboratory account, values changed (S40); status from the error code",
-  "status": 400,
-  "body": "<ErrorResponse xmlns=\"http://cloudformation.amazonaws.com/doc/2010-05-15/\">\n  <Error>\n    <Type>Sender</Type>\n    <Code>ValidationError</Code>\n    <Message>Stack with id conexus-lago-naoexiste001 does not exist</Message>\n  </Error>\n  <RequestId>00000000-0000-4000-8000-000000000001</RequestId>\n</ErrorResponse>\n"
-}

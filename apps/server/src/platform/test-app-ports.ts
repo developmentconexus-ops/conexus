@@ -1,5 +1,6 @@
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import { testBuilderPorts } from '../agents/app-builder/runs/test-runs.ts'
+import { createAws } from './aws.ts'
 import type { CompanyPostgres } from './company-postgres.ts'
 import { createCompanyPostgres } from './company-postgres.ts'
 import type { Config } from './config.ts'
@@ -87,9 +88,14 @@ export function testAppPorts(
   },
   machineFolder?: string,
 ) {
+  const copyAws = createAws({ config, log: silent })
+  const memoryAws = fakeAws()
   return {
     neon: doubles.neon.neon,
-    lakeStacks: (doubles.aws ?? fakeAws()).aws,
+    lakeStacks: (doubles.aws ?? memoryAws).aws,
+    copyTasks: copyAws.tasks,
+    lakeTables: (doubles.aws ?? memoryAws).tables,
+    copyQueue: copyAws.queue,
     companyPostgres: doubles.postgres.companyPostgres,
     cloudflare: doubles.cloudflare.cloudflare,
     cloudflareTools: (doubles.tools ?? fakeCloudflare()).cloudflare,

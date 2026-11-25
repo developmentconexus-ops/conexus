@@ -31,7 +31,7 @@ import { createPasswordRecovery } from './password-recovery.ts'
 import { companyRoleRows, roleMembers } from './role-rows.ts'
 import type { RoleKit } from './roles.ts'
 import { rolesFor } from './roles.ts'
-import { registerIdentityRoutes } from './routes.ts'
+import { connectionLinkCounter, registerIdentityRoutes } from './routes.ts'
 import { addressOf, createSessionReader, liveHubSession, personNameOf } from './session.ts'
 
 export type { ProjectApps } from './app-invitations.ts'
@@ -129,6 +129,7 @@ export function createIdentity(deps: {
       personNameOf,
       memberProfileOf,
       mailOwnerInvitation: ownerMailer(deps),
+      countConnectionLinkAttempt: connectionLinkCounter({ auth, config }),
     }),
     // The Builder's release and the Projetos' apps come with the routes: identity exists before
     // either (code C4).

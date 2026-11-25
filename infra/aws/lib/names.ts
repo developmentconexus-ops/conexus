@@ -42,6 +42,8 @@ export const TABLES_CATALOG_LOGS = `${PLATFORM_STACK}-catalogo`
 
 export const COPY_CLUSTER = 'conexus-copia'
 export const COPY_TASK_FAMILY = 'conexus-copia'
+/** The copy task definition's one container, which each round's overrides name. */
+export const COPY_CONTAINER = 'copia'
 export const COPY_REPOSITORY = 'conexus-copia'
 export const COPY_QUEUE = 'conexus-copia-fim'
 export const COPY_DEAD_LETTERS = 'conexus-copia-fim-mortos'

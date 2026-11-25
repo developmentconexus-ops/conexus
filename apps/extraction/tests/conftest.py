@@ -8,10 +8,12 @@ import stat
 import subprocess
 import sys
 import threading
+import time
 import typing as t
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from decimal import Decimal
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -27,11 +29,97 @@ RECORDINGS = REPO / "apps/server/src/platform/recordings/aws"
 TAP_DOUBLE = REPO / "apps/extraction/tap/src/test-double.ts"
 REGION = "us-east-2"
 COMPANY = "Aa0Bb1Cc2Dd3Ee4Ff5Gg6Hh7Ii8Jj9Kk"
+FIXTURES = Path(__file__).parent / "fixtures"
 QUEUE = f"https://sqs.{REGION}.amazonaws.com/111122223333/conexus-copia-fim"
 
 
 def recording(name: str) -> dict[str, t.Any]:
     return t.cast("dict[str, t.Any]", json.loads((RECORDINGS / f"{name}.json").read_text()))
+
+
+def docker_stats(number: int) -> dict[str, t.Any]:
+    """A body of Docker's `GET /containers/<id>/stats?stream=false`, recorded from a container run
+    with `--cpus 1 --memory 2g` (ids replaced); the task's `/task/stats` repeats it by container."""
+    return t.cast(
+        "dict[str, t.Any]", json.loads((FIXTURES / f"docker-stats-{number}.json").read_text())
+    )
+
+
+def fargate(vcpu: int) -> tuple[dict[str, t.Any], list[dict[str, t.Any]]]:
+    """The recorded `/task` and `/task/stats` bodies of a Fargate task of this size (cgroup v1)."""
+    recorded = json.loads((FIXTURES / "fargate-metadata.json").read_text())
+    reads = next(task["reads"] for task in recorded["tasks"] if task["vcpu"] == vcpu)
+    task = next(read["body"] for read in reads if read["path"] == "/task")
+    return task, [read["body"] for read in reads if read["path"] == "/task/stats"]
+
+
+def docker_task(body: dict[str, t.Any]) -> dict[str, t.Any]:
+    """Docker has no `/task`: the limits are those the recorded container ran with."""
+    return {"Limits": {"CPU": 1, "Memory": body["memory_stats"]["limit"] // (1024 * 1024)}}
+
+
+@dataclass
+class Metadata:
+    """The task's metadata endpoint, v4: `/task` and `/task/stats` as the task reads them."""
+
+    url: str
+    task: object = None
+    stats: list[object] = field(default_factory=list)
+    status: int = 200
+    delay: float = 0.0
+    asked: list[str] = field(default_factory=list)
+    advancing: dict[str, t.Any] | None = None
+
+    def serve(self, task: object, *stats: object) -> None:
+        """Each `/task/stats` answer is the next body, the last one again after them."""
+        self.task, self.stats = task, list(stats)
+
+    def serve_docker(self, *stats: dict[str, t.Any]) -> None:
+        self.serve(docker_task(stats[0]), *({body["id"]: body} for body in stats))
+
+    def advance(self, body: dict[str, t.Any]) -> None:
+        """A recorded container body whose `read` and CPU time move on 10 s at each answer."""
+        self.task, self.advancing = docker_task(body), body
+
+    def _advanced(self, count: int) -> object:
+        assert self.advancing is not None
+        body = json.loads(json.dumps(self.advancing))
+        step = 10 * (count - 1)
+        moment = datetime.fromisoformat(body["read"]) + timedelta(seconds=step)
+        body["read"] = moment.isoformat()
+        body["cpu_stats"]["cpu_usage"]["total_usage"] += step * 10**9
+        return {body["id"]: body}
+
+
+@pytest.fixture
+def metadata(monkeypatch: pytest.MonkeyPatch) -> Iterator[Metadata]:
+    state = Metadata(url="")
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            state.asked.append(self.path)
+            time.sleep(state.delay)
+            if self.path == "/task":
+                body: object = state.task
+            else:
+                served = len([path for path in state.asked if path == "/task/stats"])
+                if state.advancing is not None:
+                    body = state._advanced(served)
+                else:
+                    body = state.stats[min(served, len(state.stats)) - 1] if state.stats else None
+            self.send_response(state.status)
+            self.end_headers()
+            self.wfile.write(body if isinstance(body, bytes) else json.dumps(body).encode())
+
+        def log_message(self, *_: object) -> None:
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    state.url = f"http://127.0.0.1:{server.server_port}"
+    monkeypatch.setenv("ECS_CONTAINER_METADATA_URI_V4", state.url)
+    yield state
+    server.shutdown()
 
 
 @dataclass

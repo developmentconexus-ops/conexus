@@ -1,7 +1,9 @@
 import {
+  answerConnectionLink,
   callAppConnector,
   callToolConnector,
   completeConnectionSignIn,
+  createConnectionLink,
   deleteConnectionNote,
   getConnection,
   grantProjectConnection,
@@ -9,6 +11,7 @@ import {
   listAppConnections,
   listConnections,
   listProjectConnections,
+  readConnectionLink,
   reconnectConnection,
   revokeProjectConnection,
   startConnectionSignIn,
@@ -18,6 +21,7 @@ import {
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
 import type { AppCalls } from './app-calls.ts'
+import { answerLink, createLink, readLink } from './connection-links.ts'
 import { detail, link, list, reconnect, unlink } from './connections.ts'
 import { grant, list as listGrants, revoke } from './grants.ts'
 import { erase } from './notes.ts'
@@ -90,6 +94,8 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
     answer(await completeSignIn(deps, { person, ...params, answer: body, log })),
   )
 
+  registerLinkRoutes(app, deps)
+
   registerGrantRoutes(app, deps)
 
   serve(app, unlinkConnection, async ({ person, params, log }) => {
@@ -97,6 +103,23 @@ export function registerConnectionRoutes(app: FastifyInstance, deps: Deps): void
     const { connectionId } = params
     if (removed) log.info({ by: person.id, connectionId }, 'CONNECTION_REMOVED')
     return answer({ revocation })
+  })
+}
+
+/** The link for another person (U20): made with a session; read and answered with none, each counted against the address. */
+function registerLinkRoutes(app: FastifyInstance, deps: Deps): void {
+  serve(app, createConnectionLink, async ({ person, params, body }) =>
+    answer(await createLink(deps, { person, ...params, ...body })),
+  )
+
+  serve(app, readConnectionLink, async ({ params, headers, log }) => {
+    await deps.identity.countConnectionLinkAttempt({ headers, log })
+    return answer(await readLink(deps, params.secret))
+  })
+
+  serve(app, answerConnectionLink, async ({ params, body, headers, log }) => {
+    await deps.identity.countConnectionLinkAttempt({ headers, log })
+    return answer(await answerLink(deps, { secret: params.secret, fields: body.fields }))
   })
 }
 

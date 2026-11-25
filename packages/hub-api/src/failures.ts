@@ -9,6 +9,7 @@ import { CONNECTOR_FAILURES } from './connector-failures.ts'
 import { CONVERSATION_FAILURES } from './conversation-failures.ts'
 import type { FailureRow } from './failure-row.ts'
 import { IDENTITY_FAILURES } from './identity-failures.ts'
+import { LAKE_COPY_FAILURES } from './lake-copy-failures.ts'
 import { MODEL_ACCOUNT_FAILURES } from './model-account-failures.ts'
 import { PEOPLE_FAILURES } from './people-failures.ts'
 import { PROJECT_FAILURES } from './project-failures.ts'
@@ -230,6 +231,7 @@ export const FAILURES = {
   ...APP_DATA_FAILURES,
   ...MODEL_ACCOUNT_FAILURES,
   ...CONNECTOR_FAILURES,
+  ...LAKE_COPY_FAILURES,
   ...ASSISTANT_FAILURES,
   ...AGENT_FAILURES,
   ...REQUEST_FAILURES,

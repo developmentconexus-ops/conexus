@@ -50,3 +50,21 @@ export function systemOf(
     })),
   }
 }
+
+/** A connector as the screen offers it: its fields by their labels, help and visibility. */
+export function connectorEntryOf(connector: Connector): ConnectorEntry {
+  return {
+    id: connector.id,
+    name: connector.name,
+    version: connector.version,
+    category: connector.category,
+    summary: connector.summary,
+    logo: connector.logo,
+    subjects: subjectsOf(connector),
+    auth: connector.auth.kind,
+    fields:
+      connector.auth.kind === 'client_credentials'
+        ? Object.entries(connector.auth.fields).map(([name, field]) => ({ name, ...field }))
+        : [],
+  }
+}

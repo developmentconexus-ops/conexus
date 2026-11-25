@@ -3,9 +3,9 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { defineOperation, Person } from '@conexus/hub-api'
+import { defineOperation, getHealth, Person, runLakeCopy } from '@conexus/hub-api'
 import { z } from 'zod'
-import { answer, CONNECTION_TIMEOUT_MS, createServer, serve } from './http.ts'
+import { answer, answerAs, CONNECTION_TIMEOUT_MS, createServer, serve } from './http.ts'
 import {
   TEST_ORIGIN,
   takeUndeclared,
@@ -304,4 +304,10 @@ test('o CSP da página: as miniaturas do compositor vêm de data:, e nada mais m
     "form-action 'self'",
     "frame-ancestors 'none'",
   ])
+})
+
+test('answerAs só responde um status que a operação declara', () => {
+  assert.equal(answerAs(runLakeCopy, 200, { already: true }).status, 200)
+  assert.throws(() => answerAs(runLakeCopy, 201, { already: true }), /does not declare a 201/)
+  assert.throws(() => answerAs(getHealth, 202, {}), /does not declare a 202/)
 })

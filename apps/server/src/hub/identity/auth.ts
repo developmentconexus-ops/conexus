@@ -38,6 +38,7 @@ const BASE_PATH = '/api/auth'
 export const INVITATION_PASSWORD_PATH = '/invitation-password-attempt'
 export const INVITATION_DECLINATION_PATH = '/invitation-declination-attempt'
 export const PASSWORD_RECOVERY_PATH = '/password-recovery-attempt'
+export const CONNECTION_LINK_PATH = '/connection-link-attempt'
 const INVITATION_ATTEMPTS = {
   id: 'invitation-attempts',
   endpoints: {
@@ -60,6 +61,17 @@ const RECOVERY_ATTEMPTS = {
   endpoints: {
     passwordRecoveryAttempt: createAuthEndpoint(
       PASSWORD_RECOVERY_PATH,
+      { method: 'POST' },
+      async () => new Response(null, { status: 204 }),
+    ),
+  },
+}
+// The two public routes of a connection link count here: the address that reads or answers too often is refused.
+const CONNECTION_LINK_ATTEMPTS = {
+  id: 'connection-link-attempts',
+  endpoints: {
+    connectionLinkAttempt: createAuthEndpoint(
+      CONNECTION_LINK_PATH,
       { method: 'POST' },
       async () => new Response(null, { status: 204 }),
     ),
@@ -316,6 +328,7 @@ export function createAuth(deps: {
         [INVITATION_PASSWORD_PATH]: SIGN_IN_ATTEMPTS,
         [INVITATION_DECLINATION_PATH]: SIGN_IN_ATTEMPTS,
         [PASSWORD_RECOVERY_PATH]: RECOVERY_REQUESTS,
+        [CONNECTION_LINK_PATH]: SIGN_IN_ATTEMPTS,
       },
     },
     advanced: {
@@ -335,6 +348,7 @@ export function createAuth(deps: {
     plugins: [
       INVITATION_ATTEMPTS,
       RECOVERY_ATTEMPTS,
+      CONNECTION_LINK_ATTEMPTS,
       organization(organizationWith(deps.roles)),
       admin(),
     ],

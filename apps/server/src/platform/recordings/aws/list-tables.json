@@ -1,0 +1,10 @@
+{
+  "service": "s3tables",
+  "api": "ListTables",
+  "sdk": "@aws-sdk/client-s3tables 3.1175.0",
+  "recordedAt": "2026-11-25",
+  "source": "U8 step 1, scripts/record-aws.ts from this machine on the laboratory account, temporary resources deleted at the end; account and ids changed (S40)",
+  "status": 200,
+  "contentType": "application/json",
+  "body": "{\"tables\":[{\"createdAt\":\"2026-11-25T00:23:55.448874663Z\",\"modifiedAt\":\"2026-11-25T00:23:55.448874663Z\",\"name\":\"tabela_a\",\"namespace\":[\"raw\"],\"tableARN\":\"arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-k3x9a0b1c2d3/table/00000000-0000-4000-8000-000000000001\",\"type\":\"customer\"},{\"createdAt\":\"2026-11-25T00:23:56.027485133Z\",\"modifiedAt\":\"2026-11-25T00:23:56.027485133Z\",\"name\":\"tabela_a\",\"namespace\":[\"current\"],\"tableARN\":\"arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-k3x9a0b1c2d3/table/00000000-0000-4000-8000-000000000002\",\"type\":\"customer\"}]}"
+}

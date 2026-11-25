@@ -136,6 +136,45 @@ test('aws: a recusa da AWS, depois que o diário mandou procurar, vira REFUSED c
   await refusedBy(t, 'get-table-bucket-nome-preso')
 })
 
+// A bucket that never existed answers the Hub's session as one it may not read, the same 403.
+test('aws: o depósito que nunca existiu, depois que o diário mandou procurar, é recusado', async (t) => {
+  await refusedBy(t, 'get-table-bucket-nunca-existiu')
+})
+
+test('aws: o depósito sem área sai logo, e a lista de outra empresa é recusada', async (t) => {
+  const empty = await awsAt(
+    t,
+    leftoverAt(awsRecording(HELD_NAME), [
+      'get-table-bucket',
+      'list-namespaces-vazio',
+      'delete-table-bucket',
+    ]),
+  )
+  assert.deepEqual(await empty.stacks.leftover(AT, FAILED_LAKE), { kind: 'DONE', value: 'DELETED' })
+  assert.equal(tablesCalls(empty.received).length, 3)
+  const other = await awsAt(
+    t,
+    leftoverAt(awsRecording(HELD_NAME), ['get-table-bucket', 'list-namespaces-outra-empresa']),
+  )
+  assert.deepEqual(await other.stacks.leftover(AT, FAILED_LAKE), {
+    kind: 'REFUSED',
+    code: 'AccessDeniedException',
+  })
+})
+
+test('aws: a recusa de apagar o depósito, depois de lê-lo, vira REFUSED com a classe gravada', async (t) => {
+  for (const recording of ['delete-table-bucket-apagado', 'delete-table-bucket-outra-empresa']) {
+    const { stacks } = await awsAt(
+      t,
+      leftoverAt(awsRecording(HELD_NAME), ['get-table-bucket', 'list-namespaces-vazio', recording]),
+    )
+    assert.deepEqual(await stacks.leftover(AT, FAILED_LAKE), {
+      kind: 'REFUSED',
+      code: 'AccessDeniedException',
+    })
+  }
+})
+
 test('aws: o depósito de outra empresa recusa o resto, com a classe que a AWS gravou', async (t) => {
   await refusedBy(t, 'get-table-bucket-outra-empresa')
 })

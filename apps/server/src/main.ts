@@ -22,6 +22,8 @@ import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
 import type { Connectors, ConnectorTuning } from './hub/connectors/public.ts'
 import { createConnectors, roleKit } from './hub/connectors/public.ts'
+import type { StartClock } from './hub/copies/public.ts'
+import { lakeCopiesOf } from './hub/copies/public.ts'
 import type { DataDeps } from './hub/data/public.ts'
 import { createCompanyData, createDataReads, recordRead } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
@@ -33,8 +35,8 @@ import { createProjects } from './hub/projects/public.ts'
 import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
-import type { LakeStacks } from './platform/aws.ts'
-import { createLakeStacks } from './platform/aws.ts'
+import type { CopyQueue, CopyTasks, LakeStacks, LakeTables } from './platform/aws.ts'
+import { createAws, subjectPortsOf } from './platform/aws.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
 import { createCloudflareApps, createCloudflareTools } from './platform/cloudflare.ts'
 import type { CompanyPostgres } from './platform/company-postgres.ts'
@@ -72,7 +74,7 @@ const SHUTDOWN_LOGOUT_MS = 5_000
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: Omit<Subjects, 'runs' | 'data' | 'access'> & {
+  deps: Omit<Subjects, 'runs' | 'data' | 'access' | 'lakeRuns' | 'lakeClock'> & {
     status: Status
     identity: Identity
     webRoot?: string
@@ -91,7 +93,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.dataReads, deps.lakes],
+    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies],
   ]) {
     part.routes(app)
   }
@@ -113,14 +115,7 @@ export async function createEdgeHub(
   return edge
 }
 
-/**
- * The subjects past identity, each reaching another only through its ports (code C4), and Neon,
- * the companies' databases and Cloudflare only through the ports it is given (C56). Deleting a
- * Projeto or a client reaches its apps through the apps' removal, made before either subject. The
- * Builder's model accounts reach identity the same way, with the installation's seal keys, and its
- * conversations reach Mastra's database only through the pool of Mastra's own login (0010).
- */
-export function subjectsOf(deps: {
+type SubjectDeps = {
   database: Database
   config: Config
   identity: Identity
@@ -128,6 +123,12 @@ export function subjectsOf(deps: {
   neon: NeonProjects
   /** The companies' lakes in AWS (card o-lago-da-empresa-nasce-e-some). */
   lakeStacks: LakeStacks
+  /** The copy's tasks, its end queue and the lake's tables in AWS (step "A primeira cópia chega ao lago"). */
+  copyTasks: CopyTasks
+  copyQueue: CopyQueue
+  lakeTables: LakeTables
+  /** A test's clock for a disconnection's wait on its copy task's stop (`test-lake-copy.ts`). */
+  copyStopWait?: StartClock
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
   /** The saved tools' namespace (step 24.4); the Hub calls their host through `createEdgeTools`. */
@@ -147,7 +148,16 @@ export function subjectsOf(deps: {
   pruneBudgetMs?: number
   /** The tests' deadline for one look at an app's database (`test-hub.ts`); the apps' call limit by default. */
   appDataDeadlineMs?: number
-}) {
+}
+
+/**
+ * The subjects past identity, each reaching another only through its ports (code C4), and Neon,
+ * the companies' databases and Cloudflare only through the ports it is given (C56). Deleting a
+ * Projeto or a client reaches its apps through the apps' removal, made before either subject. The
+ * Builder's model accounts reach identity the same way, with the installation's seal keys, and its
+ * conversations reach Mastra's database only through the pool of Mastra's own login (0010).
+ */
+export function subjectsOf(deps: SubjectDeps) {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
@@ -167,7 +177,7 @@ export function subjectsOf(deps: {
     },
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const { conversations, assistant, automations, agents } = conversationsOf({
+  const { conversations, assistant, automations, agents, lakeClock } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
@@ -176,6 +186,7 @@ export function subjectsOf(deps: {
     companyData: (principal, context) => data(principal, context),
     access: { viewOf: (principal) => access.viewOf(principal) },
     ...{ notify: notifications.notify, automationClock: config.automationClock },
+    lakeRuns: () => lakeRuns,
   })
   const releaseConversations = conversations.release
   const projects = createProjects({
@@ -186,7 +197,8 @@ export function subjectsOf(deps: {
   })
   const { lakes, operations } = centralOf({
     ...{ database, identity, config, log, aws: deps.lakeStacks, projects: projects.ports },
-    ...{ appRemoval, releaseConversations },
+    ...{ appRemoval, releaseConversations, tables: deps.lakeTables },
+    eraseCopies: (company) => lakeCopies.erase(company),
   })
   // The connectors come below, after the apps whose door they read; a publish comes long after.
   const ungranted: Ungranted = (tx, ids, declared, by) =>
@@ -204,12 +216,11 @@ export function subjectsOf(deps: {
   })
   const connectors = createConnectors({
     ...{ ...deps, identity, door: apps.connectorCall, recordRead: recordRead(deps) },
+    leaveCopy: (at) => lakeCopies.leave(at),
   })
-  const access = createAccess({
-    database,
-    identity,
-    sources: { systems: connectors.access.systems },
-  })
+  const lake = { ...deps, identity, source: connectors.copies, clock: lakeClock }
+  const { lakeRuns, lakeCopies } = lakeCopiesOf(lake)
+  const access = createAccess({ database, identity, sources: connectors.access })
   const { data, dataReads } = dataOf({
     ...{ database, identity, log, access, projects: projects.ports },
     connectors: () => connectors,
@@ -217,6 +228,7 @@ export function subjectsOf(deps: {
   return {
     ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, data },
+    ...{ lakeRuns, lakeClock, lakeCopies },
   }
 }
 
@@ -248,7 +260,7 @@ async function runServer(): Promise<void> {
     const sendMail = createMail({ config, log })
     const identity = createIdentity({ database, config, log, sendMail, kit: roleKit() })
     const neon = createNeonProjects({ config, log })
-    const lakeStacks = createLakeStacks({ config, log })
+    const aws = createAws({ config, log })
     const companyPostgres = createCompanyPostgres({
       transport: neonTransport,
       appLoginKey: config.appLoginKey,
@@ -257,7 +269,8 @@ async function runServer(): Promise<void> {
     const cloudflareTools = createCloudflareTools({ config, log })
     const subjects = subjectsOf({
       ...{ database, config, identity, sendMail },
-      ...{ neon, lakeStacks, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
+      ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
+      ...subjectPortsOf(aws),
       ...builderPortsOf({ config, log }),
       conversationMachine: conversationMachineOf(config),
     })

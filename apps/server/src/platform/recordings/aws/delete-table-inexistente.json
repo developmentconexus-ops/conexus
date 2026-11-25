@@ -1,0 +1,11 @@
+{
+  "service": "s3tables",
+  "api": "DeleteTable",
+  "sdk": "@aws-sdk/client-s3tables 3.1175.0",
+  "recordedAt": "2026-11-25",
+  "source": "U8 step 1, scripts/record-aws.ts from this machine on the laboratory account, temporary resources deleted at the end; account and ids changed (S40)",
+  "status": 404,
+  "contentType": "application/json",
+  "errorType": "NotFoundException:http://internal.amazon.com/coral/com.amazon.s3tablebuckets/",
+  "body": "{\"message\":\"The specified table does not exist.\"}"
+}

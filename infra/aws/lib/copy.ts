@@ -14,6 +14,7 @@ import {
 } from 'aws-cdk-lib'
 import {
   COPY_CLUSTER,
+  COPY_CONTAINER,
   COPY_DEAD_LETTERS,
   COPY_EXECUTION_ROLE,
   COPY_LOGS,
@@ -66,7 +67,7 @@ export function copyPlatform(stack: Stack, place: Place): CopyPlatform {
     executionRoleArn: executionRole.roleArn,
     containerDefinitions: [
       {
-        name: 'copia',
+        name: COPY_CONTAINER,
         image: repository.repositoryUriForDigest(digest.valueAsString),
         essential: true,
         linuxParameters: { initProcessEnabled: true },

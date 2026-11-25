@@ -1,0 +1,804 @@
+{
+  "recordedAt": "2026-11-25",
+  "source": "Fargate task metadata endpoint v4 (ECS_CONTAINER_METADATA_URI_V4), lab account, us-east-2; bodies as the endpoint sent them, logged by awslogs one line each and read by get-log-events; every account, ARN, id, name, digest and address changed for an invented one, keys and shape kept (S40, T26)",
+  "tasks": [
+    {
+      "vcpu": 1,
+      "reads": [
+        {
+          "path": "/task",
+          "ms": 27.2,
+          "body": {
+            "Cluster": "arn:aws:ecs:us-east-2:111122223333:cluster/cluster-inventado",
+            "TaskARN": "arn:aws:ecs:us-east-2:111122223333:task/cluster-inventado/00000000000000000000000000000001",
+            "Family": "definicao-inventada",
+            "Revision": "1",
+            "DesiredStatus": "RUNNING",
+            "KnownStatus": "RUNNING",
+            "Limits": {
+              "CPU": 1,
+              "Memory": 2048
+            },
+            "PullStartedAt": "2026-11-25T03:16:37.526822325Z",
+            "PullStoppedAt": "2026-11-25T03:16:48.101467383Z",
+            "AvailabilityZone": "us-east-2b",
+            "LaunchType": "FARGATE",
+            "Containers": [
+              {
+                "DockerId": "00000000000000000000000000000001-1608374799",
+                "Name": "copia",
+                "DockerName": "copia",
+                "Image": "111122223333.dkr.ecr.us-east-2.amazonaws.com/cluster-inventado@sha256:0000000000000000000000000000000000000000000000000000000000000001",
+                "ImageID": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+                "Labels": {
+                  "com.amazonaws.ecs.cluster": "arn:aws:ecs:us-east-2:111122223333:cluster/cluster-inventado",
+                  "com.amazonaws.ecs.container-name": "copia",
+                  "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-east-2:111122223333:task/cluster-inventado/00000000000000000000000000000001",
+                  "com.amazonaws.ecs.task-definition-family": "definicao-inventada",
+                  "com.amazonaws.ecs.task-definition-version": "1"
+                },
+                "DesiredStatus": "RUNNING",
+                "KnownStatus": "RUNNING",
+                "Limits": {
+                  "CPU": 2
+                },
+                "CreatedAt": "2026-11-25T03:16:50.235459311Z",
+                "StartedAt": "2026-11-25T03:16:50.235459311Z",
+                "Type": "NORMAL",
+                "LogDriver": "awslogs",
+                "LogOptions": {
+                  "awslogs-group": "grupo-de-log-inventado",
+                  "awslogs-region": "us-east-2",
+                  "awslogs-stream": "prefixo-inventado/copia/00000000000000000000000000000001",
+                  "mode": "non-blocking"
+                },
+                "ContainerARN": "arn:aws:ecs:us-east-2:111122223333:container/cluster-inventado/00000000000000000000000000000001/00000000-0000-4000-8000-000000000001",
+                "Networks": [
+                  {
+                    "NetworkMode": "awsvpc",
+                    "IPv4Addresses": ["192.0.2.1"],
+                    "AttachmentIndex": 0,
+                    "MACAddress": "02:00:00:00:00:01",
+                    "IPv4SubnetCIDRBlock": "192.0.2.2/17",
+                    "DomainNameServers": ["192.0.2.3"],
+                    "DomainNameSearchList": ["us-east-2.compute.internal"],
+                    "PrivateDNSName": "ip-10-0-0-1.us-east-2.compute.internal",
+                    "SubnetGatewayIpv4Address": "192.0.2.4/17"
+                  }
+                ],
+                "Snapshotter": "overlayfs"
+              }
+            ],
+            "Group": "family:definicao-inventada",
+            "ClockDrift": {
+              "ClockErrorBound": 1.3615095000000002,
+              "ReferenceTimestamp": "2026-11-25T03:15:45Z",
+              "ClockSynchronizationStatus": "SYNCHRONIZED"
+            },
+            "EphemeralStorageMetrics": {
+              "Utilized": 823,
+              "Reserved": 20496
+            },
+            "FaultInjectionEnabled": false,
+            "AvailabilityZoneID": "use2-az2"
+          }
+        },
+        {
+          "path": "/task/stats",
+          "ms": 3.9,
+          "body": {
+            "00000000000000000000000000000001-1608374799": {
+              "read": "2026-11-25T03:16:50.235745536Z",
+              "preread": "0001-01-01T00:00:00Z",
+              "pids_stats": {},
+              "blkio_stats": {
+                "io_service_bytes_recursive": [],
+                "io_serviced_recursive": [],
+                "io_queue_recursive": [],
+                "io_service_time_recursive": [],
+                "io_wait_time_recursive": [],
+                "io_merged_recursive": [],
+                "io_time_recursive": [],
+                "sectors_recursive": []
+              },
+              "num_procs": 0,
+              "storage_stats": {},
+              "cpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 57320399,
+                  "percpu_usage": [24254396, 33568029],
+                  "usage_in_kernelmode": 20000000,
+                  "usage_in_usermode": 20000000
+                },
+                "system_cpu_usage": 279670000000,
+                "online_cpus": 2,
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "precpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 0,
+                  "usage_in_kernelmode": 0,
+                  "usage_in_usermode": 0
+                },
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "memory_stats": {
+                "usage": 2207744,
+                "max_usage": 5328896,
+                "stats": {
+                  "active_anon": 4096,
+                  "active_file": 0,
+                  "cache": 0,
+                  "dirty": 0,
+                  "hierarchical_memory_limit": 2147483648,
+                  "hierarchical_memsw_limit": 9223372036854771712,
+                  "inactive_anon": 1552384,
+                  "inactive_file": 0,
+                  "mapped_file": 0,
+                  "pgfault": 1829,
+                  "pgmajfault": 0,
+                  "pgpgin": 1454,
+                  "pgpgout": 1069,
+                  "rss": 1576960,
+                  "rss_huge": 0,
+                  "total_active_anon": 4096,
+                  "total_active_file": 0,
+                  "total_cache": 0,
+                  "total_dirty": 0,
+                  "total_inactive_anon": 1552384,
+                  "total_inactive_file": 0,
+                  "total_mapped_file": 0,
+                  "total_pgfault": 1828,
+                  "total_pgmajfault": 0,
+                  "total_pgpgin": 1454,
+                  "total_pgpgout": 1069,
+                  "total_rss": 1576960,
+                  "total_rss_huge": 0,
+                  "total_unevictable": 0,
+                  "total_writeback": 0,
+                  "unevictable": 0,
+                  "writeback": 0
+                },
+                "limit": 9223372036854771712
+              },
+              "name": "copia",
+              "id": "00000000000000000000000000000001-1608374799",
+              "networks": {
+                "eth1": {
+                  "rx_bytes": 221239179,
+                  "rx_packets": 134453,
+                  "rx_errors": 0,
+                  "rx_dropped": 0,
+                  "tx_bytes": 346565,
+                  "tx_packets": 4053,
+                  "tx_errors": 0,
+                  "tx_dropped": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "path": "/task/stats",
+          "ms": 2.0,
+          "body": {
+            "00000000000000000000000000000001-1608374799": {
+              "read": "2026-11-25T03:16:50.235745536Z",
+              "preread": "0001-01-01T00:00:00Z",
+              "pids_stats": {},
+              "blkio_stats": {
+                "io_service_bytes_recursive": [],
+                "io_serviced_recursive": [],
+                "io_queue_recursive": [],
+                "io_service_time_recursive": [],
+                "io_wait_time_recursive": [],
+                "io_merged_recursive": [],
+                "io_time_recursive": [],
+                "sectors_recursive": []
+              },
+              "num_procs": 0,
+              "storage_stats": {},
+              "cpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 57320399,
+                  "percpu_usage": [24254396, 33568029],
+                  "usage_in_kernelmode": 20000000,
+                  "usage_in_usermode": 20000000
+                },
+                "system_cpu_usage": 279670000000,
+                "online_cpus": 2,
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "precpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 0,
+                  "usage_in_kernelmode": 0,
+                  "usage_in_usermode": 0
+                },
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "memory_stats": {
+                "usage": 2207744,
+                "max_usage": 5328896,
+                "stats": {
+                  "active_anon": 4096,
+                  "active_file": 0,
+                  "cache": 0,
+                  "dirty": 0,
+                  "hierarchical_memory_limit": 2147483648,
+                  "hierarchical_memsw_limit": 9223372036854771712,
+                  "inactive_anon": 1552384,
+                  "inactive_file": 0,
+                  "mapped_file": 0,
+                  "pgfault": 1829,
+                  "pgmajfault": 0,
+                  "pgpgin": 1454,
+                  "pgpgout": 1069,
+                  "rss": 1576960,
+                  "rss_huge": 0,
+                  "total_active_anon": 4096,
+                  "total_active_file": 0,
+                  "total_cache": 0,
+                  "total_dirty": 0,
+                  "total_inactive_anon": 1552384,
+                  "total_inactive_file": 0,
+                  "total_mapped_file": 0,
+                  "total_pgfault": 1828,
+                  "total_pgmajfault": 0,
+                  "total_pgpgin": 1454,
+                  "total_pgpgout": 1069,
+                  "total_rss": 1576960,
+                  "total_rss_huge": 0,
+                  "total_unevictable": 0,
+                  "total_writeback": 0,
+                  "unevictable": 0,
+                  "writeback": 0
+                },
+                "limit": 9223372036854771712
+              },
+              "name": "copia",
+              "id": "00000000000000000000000000000001-1608374799",
+              "networks": {
+                "eth1": {
+                  "rx_bytes": 221239179,
+                  "rx_packets": 134453,
+                  "rx_errors": 0,
+                  "rx_dropped": 0,
+                  "tx_bytes": 346565,
+                  "tx_packets": 4053,
+                  "tx_errors": 0,
+                  "tx_dropped": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "path": "/task/stats",
+          "ms": 2.1,
+          "body": {
+            "00000000000000000000000000000001-1608374799": {
+              "read": "2026-11-25T03:17:00.242775329Z",
+              "preread": "2026-11-25T03:16:50.235745536Z",
+              "pids_stats": {},
+              "blkio_stats": {
+                "io_service_bytes_recursive": [],
+                "io_serviced_recursive": [],
+                "io_queue_recursive": [],
+                "io_service_time_recursive": [],
+                "io_wait_time_recursive": [],
+                "io_merged_recursive": [],
+                "io_time_recursive": [],
+                "sectors_recursive": []
+              },
+              "num_procs": 0,
+              "storage_stats": {},
+              "cpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 9963120574,
+                  "percpu_usage": [1960892382, 8002228192],
+                  "usage_in_kernelmode": 140000000,
+                  "usage_in_usermode": 9810000000
+                },
+                "system_cpu_usage": 299460000000,
+                "online_cpus": 2,
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "precpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 57320399,
+                  "percpu_usage": [24254396, 33568029],
+                  "usage_in_kernelmode": 20000000,
+                  "usage_in_usermode": 20000000
+                },
+                "system_cpu_usage": 279670000000,
+                "online_cpus": 2,
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "memory_stats": {
+                "usage": 225239040,
+                "max_usage": 226562048,
+                "stats": {
+                  "active_anon": 4096,
+                  "active_file": 0,
+                  "cache": 0,
+                  "dirty": 0,
+                  "hierarchical_memory_limit": 2147483648,
+                  "hierarchical_memsw_limit": 9223372036854771712,
+                  "inactive_anon": 224223232,
+                  "inactive_file": 0,
+                  "mapped_file": 0,
+                  "pgfault": 57365,
+                  "pgmajfault": 0,
+                  "pgpgin": 56775,
+                  "pgpgout": 2032,
+                  "rss": 224227328,
+                  "rss_huge": 0,
+                  "total_active_anon": 4096,
+                  "total_active_file": 0,
+                  "total_cache": 0,
+                  "total_dirty": 0,
+                  "total_inactive_anon": 224223232,
+                  "total_inactive_file": 0,
+                  "total_mapped_file": 0,
+                  "total_pgfault": 57365,
+                  "total_pgmajfault": 0,
+                  "total_pgpgin": 56775,
+                  "total_pgpgout": 2032,
+                  "total_rss": 224227328,
+                  "total_rss_huge": 0,
+                  "total_unevictable": 0,
+                  "total_writeback": 0,
+                  "unevictable": 0,
+                  "writeback": 0
+                },
+                "limit": 9223372036854771712
+              },
+              "name": "copia",
+              "id": "00000000000000000000000000000001-1608374799",
+              "networks": {
+                "eth1": {
+                  "rx_bytes": 221247484,
+                  "rx_packets": 134474,
+                  "rx_errors": 0,
+                  "rx_dropped": 0,
+                  "tx_bytes": 361078,
+                  "tx_packets": 4080,
+                  "tx_errors": 0,
+                  "tx_dropped": 0
+                }
+              },
+              "network_rate_stats": {
+                "rx_bytes_per_sec": 829.9165645885031,
+                "tx_bytes_per_sec": 1450.2804457402704
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "vcpu": 2,
+      "reads": [
+        {
+          "path": "/task",
+          "ms": 15.2,
+          "body": {
+            "Cluster": "arn:aws:ecs:us-east-2:111122223333:cluster/cluster-inventado",
+            "TaskARN": "arn:aws:ecs:us-east-2:111122223333:task/cluster-inventado/00000000000000000000000000000002",
+            "Family": "definicao-inventada",
+            "Revision": "1",
+            "DesiredStatus": "RUNNING",
+            "KnownStatus": "RUNNING",
+            "Limits": {
+              "CPU": 2,
+              "Memory": 4096
+            },
+            "PullStartedAt": "2026-11-25T03:16:37.862899996Z",
+            "PullStoppedAt": "2026-11-25T03:16:44.05559451Z",
+            "AvailabilityZone": "us-east-2a",
+            "LaunchType": "FARGATE",
+            "Containers": [
+              {
+                "DockerId": "00000000000000000000000000000002-1608374799",
+                "Name": "copia",
+                "DockerName": "copia",
+                "Image": "111122223333.dkr.ecr.us-east-2.amazonaws.com/cluster-inventado@sha256:0000000000000000000000000000000000000000000000000000000000000001",
+                "ImageID": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+                "Labels": {
+                  "com.amazonaws.ecs.cluster": "arn:aws:ecs:us-east-2:111122223333:cluster/cluster-inventado",
+                  "com.amazonaws.ecs.container-name": "copia",
+                  "com.amazonaws.ecs.task-arn": "arn:aws:ecs:us-east-2:111122223333:task/cluster-inventado/00000000000000000000000000000002",
+                  "com.amazonaws.ecs.task-definition-family": "definicao-inventada",
+                  "com.amazonaws.ecs.task-definition-version": "1"
+                },
+                "DesiredStatus": "RUNNING",
+                "KnownStatus": "RUNNING",
+                "Limits": {
+                  "CPU": 2
+                },
+                "CreatedAt": "2026-11-25T03:16:48.46276397Z",
+                "StartedAt": "2026-11-25T03:16:48.46276397Z",
+                "Type": "NORMAL",
+                "LogDriver": "awslogs",
+                "LogOptions": {
+                  "awslogs-group": "grupo-de-log-inventado",
+                  "awslogs-region": "us-east-2",
+                  "awslogs-stream": "prefixo-inventado/copia/00000000000000000000000000000002",
+                  "mode": "non-blocking"
+                },
+                "ContainerARN": "arn:aws:ecs:us-east-2:111122223333:container/cluster-inventado/00000000000000000000000000000002/00000000-0000-4000-8000-000000000002",
+                "Networks": [
+                  {
+                    "NetworkMode": "awsvpc",
+                    "IPv4Addresses": ["192.0.2.5"],
+                    "AttachmentIndex": 0,
+                    "MACAddress": "02:00:00:00:00:02",
+                    "IPv4SubnetCIDRBlock": "192.0.2.6/17",
+                    "DomainNameServers": ["192.0.2.3"],
+                    "DomainNameSearchList": ["us-east-2.compute.internal"],
+                    "PrivateDNSName": "ip-10-0-0-2.us-east-2.compute.internal",
+                    "SubnetGatewayIpv4Address": "192.0.2.7/17"
+                  }
+                ],
+                "Snapshotter": "overlayfs"
+              }
+            ],
+            "Group": "family:definicao-inventada",
+            "ClockDrift": {
+              "ClockErrorBound": 2.1675050000000002,
+              "ReferenceTimestamp": "2026-11-25T03:15:39Z",
+              "ClockSynchronizationStatus": "SYNCHRONIZED"
+            },
+            "EphemeralStorageMetrics": {
+              "Utilized": 823,
+              "Reserved": 20496
+            },
+            "FaultInjectionEnabled": false,
+            "AvailabilityZoneID": "use2-az1"
+          }
+        },
+        {
+          "path": "/task/stats",
+          "ms": 2.7,
+          "body": {
+            "00000000000000000000000000000002-1608374799": {
+              "read": "2026-11-25T03:16:48.46283984Z",
+              "preread": "0001-01-01T00:00:00Z",
+              "pids_stats": {},
+              "blkio_stats": {
+                "io_service_bytes_recursive": [],
+                "io_serviced_recursive": [],
+                "io_queue_recursive": [],
+                "io_service_time_recursive": [],
+                "io_wait_time_recursive": [],
+                "io_merged_recursive": [],
+                "io_time_recursive": [],
+                "sectors_recursive": []
+              },
+              "num_procs": 0,
+              "storage_stats": {},
+              "cpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 65885393,
+                  "percpu_usage": [3285695, 35369204],
+                  "usage_in_kernelmode": 20000000,
+                  "usage_in_usermode": 10000000
+                },
+                "system_cpu_usage": 156690000000,
+                "online_cpus": 2,
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "precpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 0,
+                  "usage_in_kernelmode": 0,
+                  "usage_in_usermode": 0
+                },
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "memory_stats": {
+                "usage": 1097728,
+                "max_usage": 5947392,
+                "stats": {
+                  "active_anon": 4096,
+                  "active_file": 0,
+                  "cache": 0,
+                  "dirty": 0,
+                  "hierarchical_memory_limit": 4294967296,
+                  "hierarchical_memsw_limit": 9223372036854771712,
+                  "inactive_anon": 512000,
+                  "inactive_file": 0,
+                  "mapped_file": 0,
+                  "pgfault": 1629,
+                  "pgmajfault": 0,
+                  "pgpgin": 1295,
+                  "pgpgout": 1158,
+                  "rss": 561152,
+                  "rss_huge": 0,
+                  "total_active_anon": 4096,
+                  "total_active_file": 0,
+                  "total_cache": 0,
+                  "total_dirty": 0,
+                  "total_inactive_anon": 512000,
+                  "total_inactive_file": 0,
+                  "total_mapped_file": 0,
+                  "total_pgfault": 1629,
+                  "total_pgmajfault": 0,
+                  "total_pgpgin": 1295,
+                  "total_pgpgout": 1158,
+                  "total_rss": 561152,
+                  "total_rss_huge": 0,
+                  "total_unevictable": 0,
+                  "total_writeback": 0,
+                  "unevictable": 0,
+                  "writeback": 0
+                },
+                "limit": 9223372036854771712
+              },
+              "name": "copia",
+              "id": "00000000000000000000000000000002-1608374799",
+              "networks": {
+                "eth1": {
+                  "rx_bytes": 215720732,
+                  "rx_packets": 27553,
+                  "rx_errors": 0,
+                  "rx_dropped": 0,
+                  "tx_bytes": 292722,
+                  "tx_packets": 2547,
+                  "tx_errors": 0,
+                  "tx_dropped": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "path": "/task/stats",
+          "ms": 1.5,
+          "body": {
+            "00000000000000000000000000000002-1608374799": {
+              "read": "2026-11-25T03:16:48.46283984Z",
+              "preread": "0001-01-01T00:00:00Z",
+              "pids_stats": {},
+              "blkio_stats": {
+                "io_service_bytes_recursive": [],
+                "io_serviced_recursive": [],
+                "io_queue_recursive": [],
+                "io_service_time_recursive": [],
+                "io_wait_time_recursive": [],
+                "io_merged_recursive": [],
+                "io_time_recursive": [],
+                "sectors_recursive": []
+              },
+              "num_procs": 0,
+              "storage_stats": {},
+              "cpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 65885393,
+                  "percpu_usage": [3285695, 35369204],
+                  "usage_in_kernelmode": 20000000,
+                  "usage_in_usermode": 10000000
+                },
+                "system_cpu_usage": 156690000000,
+                "online_cpus": 2,
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "precpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 0,
+                  "usage_in_kernelmode": 0,
+                  "usage_in_usermode": 0
+                },
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "memory_stats": {
+                "usage": 1097728,
+                "max_usage": 5947392,
+                "stats": {
+                  "active_anon": 4096,
+                  "active_file": 0,
+                  "cache": 0,
+                  "dirty": 0,
+                  "hierarchical_memory_limit": 4294967296,
+                  "hierarchical_memsw_limit": 9223372036854771712,
+                  "inactive_anon": 512000,
+                  "inactive_file": 0,
+                  "mapped_file": 0,
+                  "pgfault": 1629,
+                  "pgmajfault": 0,
+                  "pgpgin": 1295,
+                  "pgpgout": 1158,
+                  "rss": 561152,
+                  "rss_huge": 0,
+                  "total_active_anon": 4096,
+                  "total_active_file": 0,
+                  "total_cache": 0,
+                  "total_dirty": 0,
+                  "total_inactive_anon": 512000,
+                  "total_inactive_file": 0,
+                  "total_mapped_file": 0,
+                  "total_pgfault": 1629,
+                  "total_pgmajfault": 0,
+                  "total_pgpgin": 1295,
+                  "total_pgpgout": 1158,
+                  "total_rss": 561152,
+                  "total_rss_huge": 0,
+                  "total_unevictable": 0,
+                  "total_writeback": 0,
+                  "unevictable": 0,
+                  "writeback": 0
+                },
+                "limit": 9223372036854771712
+              },
+              "name": "copia",
+              "id": "00000000000000000000000000000002-1608374799",
+              "networks": {
+                "eth1": {
+                  "rx_bytes": 215720732,
+                  "rx_packets": 27553,
+                  "rx_errors": 0,
+                  "rx_dropped": 0,
+                  "tx_bytes": 292722,
+                  "tx_packets": 2547,
+                  "tx_errors": 0,
+                  "tx_dropped": 0
+                }
+              }
+            }
+          }
+        },
+        {
+          "path": "/task/stats",
+          "ms": 1.4,
+          "body": {
+            "00000000000000000000000000000002-1608374799": {
+              "read": "2026-11-25T03:16:58.468234714Z",
+              "preread": "2026-11-25T03:16:48.46283984Z",
+              "pids_stats": {},
+              "blkio_stats": {
+                "io_service_bytes_recursive": [],
+                "io_serviced_recursive": [],
+                "io_queue_recursive": [],
+                "io_service_time_recursive": [],
+                "io_wait_time_recursive": [],
+                "io_merged_recursive": [],
+                "io_time_recursive": [],
+                "sectors_recursive": []
+              },
+              "num_procs": 0,
+              "storage_stats": {},
+              "cpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 17301099281,
+                  "percpu_usage": [9997712268, 36925315],
+                  "usage_in_kernelmode": 110000000,
+                  "usage_in_usermode": 9920000000
+                },
+                "system_cpu_usage": 176660000000,
+                "online_cpus": 2,
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "precpu_stats": {
+                "cpu_usage": {
+                  "total_usage": 65885393,
+                  "percpu_usage": [3285695, 35369204],
+                  "usage_in_kernelmode": 20000000,
+                  "usage_in_usermode": 10000000
+                },
+                "system_cpu_usage": 156690000000,
+                "online_cpus": 2,
+                "throttling_data": {
+                  "periods": 0,
+                  "throttled_periods": 0,
+                  "throttled_time": 0
+                }
+              },
+              "memory_stats": {
+                "usage": 225243136,
+                "max_usage": 226492416,
+                "stats": {
+                  "active_anon": 4096,
+                  "active_file": 0,
+                  "cache": 0,
+                  "dirty": 0,
+                  "hierarchical_memory_limit": 4294967296,
+                  "hierarchical_memsw_limit": 9223372036854771712,
+                  "inactive_anon": 224223232,
+                  "inactive_file": 0,
+                  "mapped_file": 0,
+                  "pgfault": 57467,
+                  "pgmajfault": 0,
+                  "pgpgin": 56864,
+                  "pgpgout": 2121,
+                  "rss": 224227328,
+                  "rss_huge": 0,
+                  "total_active_anon": 4096,
+                  "total_active_file": 0,
+                  "total_cache": 0,
+                  "total_dirty": 0,
+                  "total_inactive_anon": 224223232,
+                  "total_inactive_file": 0,
+                  "total_mapped_file": 0,
+                  "total_pgfault": 57467,
+                  "total_pgmajfault": 0,
+                  "total_pgpgin": 56864,
+                  "total_pgpgout": 2121,
+                  "total_rss": 224227328,
+                  "total_rss_huge": 0,
+                  "total_unevictable": 0,
+                  "total_writeback": 0,
+                  "unevictable": 0,
+                  "writeback": 0
+                },
+                "limit": 9223372036854771712
+              },
+              "name": "copia",
+              "id": "00000000000000000000000000000002-1608374799",
+              "networks": {
+                "eth1": {
+                  "rx_bytes": 215729068,
+                  "rx_packets": 27574,
+                  "rx_errors": 0,
+                  "rx_dropped": 0,
+                  "tx_bytes": 307348,
+                  "tx_packets": 2576,
+                  "tx_errors": 0,
+                  "tx_dropped": 0
+                }
+              },
+              "network_rate_stats": {
+                "rx_bytes_per_sec": 833.1505257890334,
+                "tx_bytes_per_sec": 1461.8113711840695
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

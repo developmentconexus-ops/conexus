@@ -1,6 +1,7 @@
 import type { Connector, ConnectorId } from '@conexus/connectors'
 import { CONNECTORS } from '@conexus/connectors'
-import { CALL_DEADLINE_MS } from '@conexus/hub-api'
+import { CALL_DEADLINE_MS, CompanyId } from '@conexus/hub-api'
+import { sql } from 'drizzle-orm'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { ConnectorApp } from '../../platform/config-connectors.ts'
@@ -15,6 +16,7 @@ import { createAppCalls } from './app-calls.ts'
 import { isOAuth } from './apps.ts'
 import { createAssistantConnectors } from './assistant-port.ts'
 import { createBuilderConnectors } from './builder-port.ts'
+import { createCopySource } from './copy-source.ts'
 import { createExecutor } from './executor.ts'
 import type { OfGrant } from './grants.ts'
 import { grant, mayGrant } from './grants.ts'
@@ -37,6 +39,12 @@ export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
 export type { WriteShape } from './assistant-port.ts'
 export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
 export { subjectsOf } from './catalog-subjects.ts'
+export type {
+  CopyColumn,
+  CopyConnection,
+  CopySource,
+  CopyTable,
+} from './copy-source.ts'
 /** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
 export { shaped } from './cut.ts'
 export type { KitRead } from './kit-reads.ts'
@@ -75,6 +83,7 @@ export function createConnectors(deps: {
   door: AppDoorPort
   /** The Registro's one writer, which every live read leaves its line through. */
   recordRead: Deps['recordRead']
+  leaveCopy: Deps['leaveCopy']
   tuning?: ConnectorTuning
 }) {
   const catalog = deps.tuning?.catalog ?? CONNECTORS
@@ -140,11 +149,21 @@ export function createConnectors(deps: {
       may: (viewer: Parameters<typeof mayGrant>[1]) => mayGrant(routeDeps, viewer),
       grant: (input: OfGrant) => grant(routeDeps, input),
     },
+    /** The lake copy's reach of a connection: its opened fields for a round, and the dictionary's columns. */
+    copies: createCopySource(routeDeps),
     /** The connections a place offers, for the access door. */
     access: Object.freeze({ systems: accessSystems(routeDeps) }),
     /** The Hub's end: every live token logged out before the database closes. */
     closeAll: limits.closeAll,
   })
+}
+
+/** The companies with a connection, read by the Hub's own login: the lake copies' clocks at start look at no other. */
+export async function companiesWithConnections(database: Database): Promise<CompanyId[]> {
+  const found = await database.installationRead((tx) =>
+    tx.execute(sql`select company_id from connectors.companies_with_seals()`),
+  )
+  return found.rows.map((row) => CompanyId.parse(Object(row).company_id))
 }
 
 /** The `reseal` command's work for the connections: every one on the key that seals. */

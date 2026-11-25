@@ -17,3 +17,7 @@ Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primei
 Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-24 (commit a101650955ea0b98c78a5f8b094eecce39b4c47d), com o Caderno que pergunta por suspensão (U19), as citações que a auditoria do kit corrigiu e a repetição de 5xx e 429 da U4: "Aprovo as emendas".
 
 Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-24 (commit 18ef23cc80d7ef43766f3eb9013f2cf4a9d5f255), o depósito de imagens na preparação (opção A), com o texto final que o fundador leu: "Aprovo"
+
+Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-24 (commit 9abcdef38b5b4d202ffbecdd8a89a48f656aa056), a janela pelo protótipo (a barra de passos, o Desde no Acesso e no alto de O que copiar no caminho de Escolher o que copiar, a aba Tabelas, o Ler de novo em lista, sem busca em Integrações, as 49 tabelas) e a NF-e sem histórico, com o texto que o fundador leu: "Aprovo"; "3. A"
+
+Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-25 (commit 8aef1abc36fa9a26559ba83b5bf5ba08139fa165), as métricas de máquina de cada rodada (o alocado, os picos de CPU e de memória e as amostras gravados já no G4; os gráficos na etapa seguinte do lago, opção A): "1. Aprovo emenda do cartao lago" / "2 A".
