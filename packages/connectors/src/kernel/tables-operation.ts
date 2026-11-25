@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Operation } from './operation.ts'
+import type { ListRead, Operation } from './operation.ts'
 import { Instant, valueAt } from './operation.ts'
 import type { Rows } from './rows.ts'
 import { Rows as RowsSchema } from './rows.ts'
@@ -120,6 +120,12 @@ function nextOf(
   }
 }
 
+/** The most rows a page of this read asks: its paging's own, or the pass's ceiling when a 5xx or a deadline cut it lower. */
+function rowsMax(paging: ListRead['paging'] | undefined, ceiling: number | undefined): number {
+  const most = paging === undefined || paging.kind === 'NONE' ? 1 : paging.max
+  return Math.min(most, ceiling ?? most)
+}
+
 export async function operationPage(
   ask: PageAsk,
   source: Extract<TableSource, { kind: 'OPERATION' }>,
@@ -129,10 +135,10 @@ export async function operationPage(
     (each) => each.id === source.operation,
   )
   if (operation === undefined) throw new Error(`${source.operation} is no read of ${connector.id}`)
-  const paging = operation.list?.paging
-  const limit = ask.after?.rows ?? (paging === undefined || paging.kind === 'NONE' ? 1 : paging.max)
+  const max = rowsMax(operation.list?.paging, ask.ceiling)
+  const limit = Math.min(ask.after?.rows ?? max, max)
   const read = await called(ask, operation, operationInputOf(ask, source, operation, limit))
-  if (read.kind !== 'READ') return read
+  if (read.kind !== 'READ') return { ...read, rows: limit }
   const answered = RowsSchema.safeParse(read.value)
   if (!answered.success) return UNREADABLE
   const columns = ask.table.columns.kind === 'DECLARED' ? ask.table.columns.columns : ([] as const)
@@ -146,6 +152,11 @@ export async function operationPage(
     }
     rows.push(Object.fromEntries(cells))
   }
-  const next = nextOf(operation, ask, answered.data, rowsAfter(limit, rows, OPERATION_PAGE_BYTES))
+  const next = nextOf(
+    operation,
+    ask,
+    answered.data,
+    rowsAfter(limit, rows, OPERATION_PAGE_BYTES, max),
+  )
   return next.kind === 'NEXT' ? { kind: 'PAGE', rows, next: next.place } : next
 }

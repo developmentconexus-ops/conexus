@@ -189,7 +189,7 @@ function failing(double: Double, failures: number, fail: () => Response | never)
 
 const VENDEDORES = [selected('TGFVEN', 'vendedores')]
 
-test('a página que cai e volta: 5xx, 429 e a rede repetidos até cinco vezes, com a espera crescendo; um 4xx não', async () => {
+test('a consulta que cai e volta: 5xx, 429 e a rede repetidos até cinco vezes, com a espera crescendo; um 4xx não', async () => {
   const kinds: [string, () => Response][] = [
     ['5xx', () => new Response('{}', { status: 503 })],
     ['429', () => new Response('{}', { status: 429, headers: { 'retry-after-ms': '1500' } })],

@@ -36,6 +36,7 @@ const Pass = z.object({
   point: z.string().nullable(),
   /** The pass reads the table from its start, so it alone ends with ACTIVATE_VERSION: the lake's `current` takes it as the whole table. */
   whole: z.boolean(),
+  ceiling: z.int().min(1).optional(),
 })
 export type Pass = z.infer<typeof Pass>
 

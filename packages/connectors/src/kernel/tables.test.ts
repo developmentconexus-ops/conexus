@@ -79,8 +79,10 @@ test('uma página de cada origem: a tabela pela leitura do conector, a operaçã
   })
   assert.equal(page.kind, 'PAGE')
   if (page.kind !== 'PAGE') return
-  assert.equal(page.rows.length, 184, 'as notas do dublê numa página de 5.000')
-  assert.equal(page.next, null, 'a página mais curta que a pedida é a última')
+  assert.equal(page.rows.length, 10, 'a primeira página pede poucas linhas')
+  assert.equal(page.next?.kind, 'KEY', 'a página cheia diz de onde segue')
+  const notes = await walkTable(reach, tableOf(sankhya, 'notas'), { kind: 'ALL' }, columns)
+  assert.equal(notes.length, 184, 'as notas do dublê, em várias páginas até a mais curta')
   assert.deepEqual(
     Object.keys(page.rows[0] ?? {}),
     columns.map(({ name }) => name),
@@ -167,11 +169,13 @@ test('a fonte recusa: um dos quatro códigos, o que o sistema disse sem o corpo,
     assert.ok(read.system === null || !('body' in read.system), 'nunca o corpo')
     return read
   }
-  assert.deepEqual(await failed((fake) => fake.switches.refuse.add('consultar')), {
+  assert.partialDeepStrictEqual(await failed((fake) => fake.switches.refuse.add('consultar')), {
     kind: 'FAILED',
     code: 'COPY_SOURCE_REFUSED',
     system: { status: 200, code: '0', message: 'Serviço recusado' },
     waitMs: null,
+    smaller: false,
+    rows: 10,
   })
   assert.equal(
     (await failed((fake) => fake.expireTokens())).code,
