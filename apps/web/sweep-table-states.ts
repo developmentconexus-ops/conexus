@@ -73,7 +73,7 @@ export const LAYER_STATES: State[] = [
     name: 'Dados, a primeira vez: o sistema sem tabela copiada',
     path: PAGE,
     replies: dataPage([MATRIZ]),
-    settle: (p) => waitFor(p, 'Nenhuma tabela copiada'),
+    settle: (p) => waitFor(p, 'Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'),
   },
   {
     name: 'Dados, a leitura que falhou',

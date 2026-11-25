@@ -29,7 +29,9 @@ test('Dados sem cópias: cada sistema com a frase da matriz, sem lista nem pági
   expect(await screen.findByText('Matriz · Lago')).toBeTruthy()
   const main = within(screen.getByRole('main'))
   expect(main.getByText('Loja A · Lago')).toBeTruthy()
-  expect(main.getAllByText('Nenhuma tabela copiada')).toHaveLength(2)
+  expect(
+    main.getAllByText('Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'),
+  ).toHaveLength(2)
   const body = main.getByRole('heading', { name: 'Dados' }).parentElement?.parentElement
   if (!(body instanceof HTMLElement)) throw new Error('the page under the title')
   expect(body.textContent).toBe(
@@ -37,9 +39,9 @@ test('Dados sem cópias: cada sistema com a frase da matriz, sem lista nem pági
       'Dados',
       'O que os agentes e os apps da empresa podem ler: cada tabela, de qual sistema veio, o que guarda e de quando é.',
       'Matriz · Lago',
-      'Nenhuma tabela copiada',
+      'Nenhuma tabela copiada. Escolha o que copiar na página da ligação.',
       'Loja A · Lago',
-      'Nenhuma tabela copiada',
+      'Nenhuma tabela copiada. Escolha o que copiar na página da ligação.',
     ].join(''),
   )
   expect(within(body).queryAllByRole('button')).toEqual([])
@@ -98,14 +100,16 @@ test('Dados: a ligação sem tabela tem o título da ligação no lago', async (
   openData(server, { connections: [connection()] }, LIST)
   const main = await page()
   expect(await main.findByText('Matriz · Lago')).toBeTruthy()
-  expect(main.getByText('Nenhuma tabela copiada')).toBeTruthy()
+  expect(
+    main.getByText('Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'),
+  ).toBeTruthy()
 })
 
 test('Dados: uma conexão que não está ativa e sem tabela não vira sistema', async () => {
   openData(server, { connections: [connection({ state: 'NEEDS_REAUTH' })] }, LIST)
   const main = await page()
   expect(await main.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
-  expect(main.queryByText('Nenhuma tabela copiada')).toBeNull()
+  expect(main.queryByText(/Nenhuma tabela copiada/)).toBeNull()
 })
 
 test('Dados: a falha da leitura das conexões tem Tentar de novo', async () => {
@@ -149,4 +153,11 @@ test('Dados: a camada fica no endereço', async () => {
   expect((await nav.findByRole('link', { name: 'Apps' })).getAttribute('aria-current')).toBe('page')
   expect(await (await page()).findByText(/^As tabelas que cada app guarda/)).toBeTruthy()
   expect(nav.getByRole('link', { name: 'Negócio 0' }).getAttribute('aria-current')).toBeNull()
+})
+
+test('Dados: sem nenhum sistema ligado não manda escolher o que copiar', async () => {
+  openData(server, { connections: [] }, LIST)
+  const main = await page()
+  expect(await main.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
+  expect(main.queryByText(/Escolha o que copiar/)).toBeNull()
 })
