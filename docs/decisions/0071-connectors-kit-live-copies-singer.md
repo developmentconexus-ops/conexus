@@ -23,7 +23,7 @@ the lake's sums equal the source's.
 
 ## Result
 
-- Path: Meltano, a ready Postgres tap and our target in Fargate copied all 30 tables equal
+- Path: Meltano, a ready Postgres tap and our target in a Fargate task copied 30 of 30 tables equal
   to the source.
 - Adapter: copied the kit's Sankhya double through 4 renewals and passed the SDK's 68 tests; a
   generic prototype read HubSpot.
