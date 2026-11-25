@@ -164,7 +164,7 @@ export function createBuilder(deps: {
         scorers: [conexusCheck({ runs: deps.runs, storage, log: deps.log })],
         strategy: 'all',
       },
-      turn: turnOf({ ...deps, projectOf, refusals: deps.refusals }),
+      turn: turnOf({ queue, runs: deps.runs, projectOf, refusals: deps.refusals }),
       threads: memory,
       mode: { id: CONVERSATION_MODE, availableTools: [...CLOSED_TOOLS] },
       // `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`).

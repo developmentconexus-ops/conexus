@@ -79,13 +79,14 @@ async function turnWith(t: TestContext, input: { kept: boolean; holder?: { perso
   }
   const turn = turnOf({ queue: await queueOf(t), runs, projectOf, refusals })
   assert.ok(turn.kind === 'RUN')
-  return { turn, reads, taken, refusals }
+  return { turn, projectOf, reads, taken, refusals }
 }
 
-test('o turno acha o Projeto da conversa uma vez, pelo projectOfRun, sem reler o índice do Hub', async (t) => {
-  const { turn, reads, taken } = await turnWith(t, { kept: true })
-  const answer = await turn.take(runContext())
-  assert.equal(answer.kind, 'TAKEN')
+test('as instruções e o turno acham o Projeto da conversa pelo mesmo projectOf, e o índice do Hub é lido uma vez por execução', async (t) => {
+  const { turn, projectOf, reads, taken } = await turnWith(t, { kept: true })
+  const context = runContext()
+  assert.equal((await projectOf(context))?.projectId, PROJECT)
+  assert.equal((await turn.take(context)).kind, 'TAKEN')
   assert.deepEqual(reads, [CONVERSATION])
   assert.deepEqual(taken, [CONVERSATION])
 })
