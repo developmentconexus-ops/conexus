@@ -1,3 +1,4 @@
+export { builderAccess } from './connector-access.ts'
 export { createBuilderConversations } from './conversations.ts'
 export type { GitCopy } from './git/copy/copy.ts'
 export { copyKey, createGitCopy } from './git/copy/copy.ts'

@@ -2,8 +2,9 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ConnectionId, PersonId, RunId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
-import type { BuilderConnectors, ConnectorAccess, GrantedConnection } from '../public.ts'
-import { builderAccess, connectorTools } from '../public.ts'
+import { builderAccess } from '../../../agents/app-builder/public.ts'
+import type { ConnectorAccess, ConnectorPort, GrantedConnection } from '../public.ts'
+import { connectorTools } from '../public.ts'
 import { YES } from './test-access.ts'
 
 const SANKHYA = ConnectionId.parse('11111111-1111-4111-8111-111111111111')
@@ -29,7 +30,7 @@ function granted(
 
 function tools() {
   const seen: { notes: string[]; saved: string[] } = { notes: [], saved: [] }
-  const port: BuilderConnectors = {
+  const port: ConnectorPort = {
     granted: async () => [],
     read: async () => ({ kind: 'NOT_GRANTED' }),
     notes: async (_ids, connectionId) => {

@@ -9,12 +9,13 @@ export type { CompanyConnection, CompanyToolScope } from './company/scope.ts'
 export { companyToolScope } from './company/scope.ts'
 export { companyReadSearch } from './company/search.ts'
 export type {
-  BuilderConnectors,
+  Asker,
   ConnectorAccess,
+  ConnectorPort,
   GrantedConnection,
+  NoteSave,
 } from './connectors/connector-tools.ts'
 export {
-  builderAccess,
   connectionField,
   connectorTools,
   unansweredRead,

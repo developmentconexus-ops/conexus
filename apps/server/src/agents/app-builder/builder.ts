@@ -20,17 +20,13 @@ import {
   skillOf,
   toolsOf,
 } from '../../harness/spec/public.ts'
-import type { BuilderConnectors, CompanyToolDeps } from '../../harness/tools/public.ts'
-import {
-  builderAccess,
-  companyConnections,
-  companyToolScope,
-  companyTools,
-} from '../../harness/tools/public.ts'
+import type { CompanyToolDeps, ConnectorPort } from '../../harness/tools/public.ts'
+import { companyConnections, companyToolScope, companyTools } from '../../harness/tools/public.ts'
 import type { Access, Principal } from '../../hub/access/public.ts'
 import type { BuilderData } from '../../hub/apps/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import { builderAccess } from './connector-access.ts'
 import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { createSubmitPlanTool, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
@@ -49,7 +45,7 @@ function idsOf(run: RunScope): Ids {
 }
 
 function companyDeps(deps: {
-  connectors: BuilderConnectors
+  connectors: ConnectorPort
   runs: Runs
   companyData: (principal: Principal, context: DataBinding) => CompanyData
   log: FailureLog
@@ -75,7 +71,7 @@ function companyDeps(deps: {
  * admitted again.
  */
 function toolScopes(
-  deps: { access: Pick<Access, 'viewOf'>; connectors: BuilderConnectors; data: BuilderData },
+  deps: { access: Pick<Access, 'viewOf'>; connectors: ConnectorPort; data: BuilderData },
   runOf: ReturnType<typeof builderRuns>,
 ) {
   return oncePerRun(async (requestContext: RequestContext) => {
@@ -109,7 +105,7 @@ export function createBuilder(deps: {
   queue: QueueDeps
   runs: Runs
   index: ConversationIndex
-  connectors: BuilderConnectors
+  connectors: ConnectorPort
   data: BuilderData
   /** The access door: what the Projeto offers the person, which every company tool names. */
   access: Pick<Access, 'viewOf'>

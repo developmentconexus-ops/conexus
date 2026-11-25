@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import type { ConnectionId, OfProject, PersonId } from '@conexus/hub-api'
-import { CONVERSATION_TOOL, RunId } from '@conexus/hub-api'
+import type { ConnectionId, OfProject, PersonId, RunId } from '@conexus/hub-api'
+import { CONVERSATION_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
@@ -13,13 +13,14 @@ import { Failure, logFailure } from '../../../platform/failure.ts'
 import { toldNative } from '../../../platform/model-text.ts'
 import { INSTANTS_NOTE, inZone, zoneOf } from '../data/reader-zone.ts'
 
-export type BuilderConnectors = Connectors['builder']
-export type GrantedConnection = Awaited<ReturnType<BuilderConnectors['granted']>>[number]
-type Notes = Awaited<ReturnType<BuilderConnectors['notes']>>
-type Answer = Awaited<ReturnType<BuilderConnectors['read']>>
+/** What a conversation's tools ask of the Hub: the connections granted to its Projeto, its reads and its notebook. */
+export type ConnectorPort = Connectors['builder']
+export type GrantedConnection = Awaited<ReturnType<ConnectorPort['granted']>>[number]
+type Notes = Awaited<ReturnType<ConnectorPort['notes']>>
+type Answer = Awaited<ReturnType<ConnectorPort['read']>>
 /** An OK read that also carries the connector's answer before the cut: the Assistant's, for its machine. */
 type WholeAnswer = Extract<Answer, { kind: 'OK' }> & { whole: unknown }
-type Saved = Awaited<ReturnType<BuilderConnectors['saveNote']>>
+type Saved = Awaited<ReturnType<ConnectorPort['saveNote']>>
 
 /** Who asks, and the run the port counts its `CONNECTOR_CALLS_PER_TURN` calls by, known only when a tool runs. */
 export type Asker = OfProject & {
@@ -60,43 +61,6 @@ export const NOT_GRANTED = { kind: 'NOT_GRANTED' } as const
 
 /** The person said no on the notebook's card: nothing was proved and nothing written. */
 const NOT_SAVED = { kind: 'NOT_SAVED' } as const
-
-function runIn(who: Asker, requestContext: RequestContext): RunId {
-  const runId = who.runIdOf(requestContext)
-  if (runId === undefined) {
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONNECTOR_TOOL_WITHOUT_RUN' } })
-  }
-  return runId
-}
-
-/** The Builder's access: its Projeto's granted connections through its door, counted by run. */
-export function builderAccess(
-  port: BuilderConnectors,
-  granted: readonly GrantedConnection[],
-  who: Asker,
-  log: FailureLog,
-): { access: ConnectorAccess; save: NoteSave } {
-  const access: ConnectorAccess = {
-    connections: granted,
-    log,
-    read: (call, requestContext) =>
-      port.read(who, {
-        ...call,
-        personId: who.personId,
-        runId: runIn(who, requestContext),
-      }),
-    notes: (connectionId) => port.notes(who, connectionId),
-    wording: { whose: "this Project's owner released" },
-  }
-  // The yes resumes the save before the run takes the Projeto again, so it counts as a run of its own.
-  const save: NoteSave = (call, requestContext) =>
-    port.saveNote(who, {
-      ...call,
-      personId: who.personId,
-      runId: who.runIdOf(requestContext) ?? RunId.parse(randomUUID()),
-    })
-  return { access, save }
-}
 
 /** The connection a name says; the connector too when the call names one, since two systems may share a name. */
 function named(connections: readonly Connection[], name: string, connector?: string) {

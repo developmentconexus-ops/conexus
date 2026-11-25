@@ -2,15 +2,16 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { PersonId, RunId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
-import type { BuilderConnectors } from '../public.ts'
-import { builderAccess, connectorTools } from '../public.ts'
+import { builderAccess } from '../../../agents/app-builder/public.ts'
+import type { ConnectorPort } from '../public.ts'
+import { connectorTools } from '../public.ts'
 import { accessOver, granted, LOJA, QUIET, runOn, SANKHYA, YES } from './test-access.ts'
 
 const RUN = RunId.parse('33333333-3333-4333-8333-333333333333')
 
 test('a leitura do Builder chega à porta com a ligação, a operação e a consulta, e a escrita do caderno leva a corrida', async () => {
   const seen: unknown[] = []
-  const port: BuilderConnectors = {
+  const port: ConnectorPort = {
     granted: async () => [],
     read: async (_ids, call) => {
       seen.push(call)
@@ -61,7 +62,7 @@ test('a leitura do Builder chega à porta com a ligação, a operação e a cons
 
 test('uma leitura fora de uma corrida do Builder lança CONNECTOR_TOOL_WITHOUT_RUN e nada chega à porta; o sim do cartão do caderno, que retoma antes de a corrida tomar o Projeto, grava como uma corrida só dele', async () => {
   const calls: unknown[] = []
-  const port: BuilderConnectors = {
+  const port: ConnectorPort = {
     granted: async () => [],
     read: async (...args) => {
       calls.push(args)

@@ -7,7 +7,7 @@ import type { GuardedMastra } from '../../harness/routes/public.ts'
 import { registerSessionRoutes } from '../../harness/routes/public.ts'
 import type { Owner, ReleaseScope } from '../../harness/spec/public.ts'
 import { resourceOf } from '../../harness/spec/public.ts'
-import type { BuilderConnectors } from '../../harness/tools/public.ts'
+import type { ConnectorPort } from '../../harness/tools/public.ts'
 import type { BuilderData } from '../../hub/apps/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
@@ -56,7 +56,7 @@ export function createBuilderConversations(deps: {
   storage: MastraCompositeStore
   queue: QueueDeps
   runs: Runs
-  connectors: BuilderConnectors
+  connectors: ConnectorPort
   data: BuilderData
   companyData: Parameters<typeof createBuilder>[0]['companyData']
   access: Parameters<typeof createBuilder>[0]['access']
