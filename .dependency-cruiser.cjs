@@ -8,9 +8,9 @@ const WEB = '^apps/web/src'
 // The helpers a web test shares are the files named test-*, in any folder of the web: they drive a subject's inside, and a test of another subject reads them (T5).
 const WEB_TEST_HELPER = `${WEB}/.*/test-[^/]+\\.tsx?$`
 // The door of a subject is the public.ts at its root, or a public-<name>.tsx there (Node strips no types from .tsx, so public.ts cannot re-export one); a file deeper in is the inside (C4).
-const PUBLIC_DOOR = '(^|/)(hub|builder|harness|agents)/[^/]+/public(-[a-z]+\\.tsx|\\.ts)$'
+const PUBLIC_DOOR = '(^|/)(hub|harness|agents)/[^/]+/public(-[a-z]+\\.tsx|\\.ts)$'
 // The door of a subject's tables: only a tables.ts (a foreign key) imports it (C8).
-const TABLE_DOOR = '(^|/)(hub|builder|harness|agents)/[^/]+/public-tables\\.ts$'
+const TABLE_DOOR = '(^|/)(hub|harness|agents)/[^/]+/public-tables\\.ts$'
 // The helpers a test shares are the files named test-*.ts, in any folder of the server (T5).
 const TEST_HELPER = `${SERVER}/.*/test-[^/]+\\.ts$`
 const MASTRA_EE = 'node_modules/@mastra/(core/dist/(agent-builder|auth)/ee|editor)'
@@ -41,10 +41,10 @@ module.exports = {
       to: { circular: true },
     },
     {
-      name: 'no-loose-file-in-hub-or-builder',
-      comment: 'C6: a file in hub/, builder/, harness/ or agents/ belongs to a subject folder.',
+      name: 'no-loose-file-in-a-subject',
+      comment: 'C6: a file in hub/, harness/ or agents/ belongs to a subject folder.',
       severity: 'error',
-      from: { path: `${SERVER}/(hub|builder|harness|agents)/[^/]+\\.tsx?$` },
+      from: { path: `${SERVER}/(hub|harness|agents)/[^/]+\\.tsx?$` },
       to: {},
     },
     {
@@ -53,11 +53,11 @@ module.exports = {
         'C4, W4: another subject is reached only through its public.ts. A server test is held by T5 below, which also lets it use the test Hub.',
       severity: 'error',
       from: {
-        path: `^apps/(server|web)/src/(hub|builder|harness|agents)/([^/]+)/`,
+        path: `^apps/(server|web)/src/(hub|harness|agents)/([^/]+)/`,
         pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER, WEB_TEST_HELPER],
       },
       to: {
-        path: `^apps/$1/src/(hub|builder|harness|agents)/[^/]+/`,
+        path: `^apps/$1/src/(hub|harness|agents)/[^/]+/`,
         pathNot: [`^apps/$1/src/$2/$3/`, PUBLIC_DOOR, TABLE_DOOR, WEB_TEST_HELPER],
       },
     },
@@ -116,7 +116,7 @@ module.exports = {
         'C4: main.ts, conversations-of.ts and first-person-arguments.ts, at the root of the server, reach a subject only through its public.ts.',
       severity: 'error',
       from: { path: `${SERVER}/[^/]+\\.tsx?$`, pathNot: `${SERVER}/.*\\.test\\.tsx?$` },
-      to: { path: `${SERVER}/(hub|builder|harness|agents)/`, pathNot: PUBLIC_DOOR },
+      to: { path: `${SERVER}/(hub|harness|agents)/`, pathNot: PUBLIC_DOOR },
     },
     {
       name: 'table-door-only-for-foreign-keys-and-schema',
@@ -127,12 +127,12 @@ module.exports = {
       to: { path: TABLE_DOOR },
     },
     {
-      name: 'hub-does-not-import-builder',
+      name: 'hub-does-not-import-harness-or-agents',
       comment:
-        'C4, W4: the Hub never imports the Builder (the server) nor harness/ and agents/ (the web); main.ts hands it over.',
+        'C4, W4: the Hub imports neither harness/ nor agents/; main.ts hands it over.',
       severity: 'error',
       from: { path: '^apps/(server|web)/src/hub/' },
-      to: { path: '^apps/$1/src/(builder|harness|agents)/' },
+      to: { path: '^apps/$1/src/(harness|agents)/' },
     },
     {
       name: 'platform-does-not-import-subject',
@@ -141,7 +141,7 @@ module.exports = {
       from: { path: `${SERVER}/platform/` },
       // The test ports hand every test Hub the Builder's doubles (T14), as they hand it Neon's.
       to: {
-        path: `${SERVER}/(hub|builder|harness|agents)/`,
+        path: `${SERVER}/(hub|harness|agents)/`,
         pathNot: `${SERVER}/agents/app-builder/runs/test-runs\\.ts$`,
       },
     },

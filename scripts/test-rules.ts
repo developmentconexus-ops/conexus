@@ -49,7 +49,7 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     './b.ts',
     { 'apps/server/src/platform/b.ts': importing('./a.ts') },
   ],
-  'no-loose-file-in-hub-or-builder': [
+  'no-loose-file-in-a-subject': [
     'apps/server/src/hub/loose.ts',
     '../platform/config.ts',
     { 'apps/server/src/platform/config.ts': PUBLIC },
@@ -59,7 +59,7 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     '../b/inner.ts',
     { 'apps/server/src/hub/b/inner.ts': PUBLIC },
   ],
-  'hub-does-not-import-builder': [
+  'hub-does-not-import-harness-or-agents': [
     'apps/server/src/hub/a/h.ts',
     '../../agents/c/public.ts',
     { 'apps/server/src/agents/c/public.ts': PUBLIC },
