@@ -8,6 +8,8 @@ fim de turno roda nos quatro agentes. Entram também a pesquisa antes do plano e
 (o roteiro põe "pesquisa e plano em `A3`") e o Code Mode do Conexus da plataforma. A ordem é a do roteiro: depois
 da etapa 2 do harness ("Uma sala e os nomes certos") e do `A2`. O cartão é escrito enquanto a etapa 2 termina e
 constrói sobre as pastas que ela deixa (`apps/server/src/harness/` e `apps/server/src/agents/<agente>/`).
+Aprovado pelo fundador em 2026-11-25, espera num pull request em rascunho (delivery L5) a vez dele no roteiro:
+a etapa 2, depois o `A2`, depois o `A3`.
 
 Lido em `main` `a1d85d32` (2026-11-24). Versões: `@mastra/core` 1.83.0, `@mastra/server` 1.83.0. A prateleira do
 Mastra é a 1.83 (commit `d60ba71b`), com o Mastra Code (`@mastra/code-sdk` 1.19.0) e a Factory em `mastracode/`.
@@ -44,7 +46,7 @@ aberta.
 6. Abra **Conversas** e pergunte algo que cruza duas tabelas copiadas ("quantos chamados por cliente, este mês").
    A resposta vem de uma leitura só, e diz de quando é o dado.
 
-**O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde as três decisões abaixo. Depois:
+**O que você faz, e quando.** Antes: nada. No começo: nada, esta página e as decisões já estão aprovadas. Depois:
 vê o protótipo do fim do plano (cada pedido conferido) e o estado "esperando a sua aprovação", a 1366 e 390 px,
 e o aprova. Se quiser as duas medições com modelo real (seção "O custo do Lab"), dá a palavra. No fim: faz o
 roteiro, diz o que viu e aprova os textos novos.
@@ -82,6 +84,7 @@ precisa lembrar de ligar.
 **As decisões suas nesta etapa.** Respondidas em 2026-11-25, no quadro desta etapa: "1 A", "2 A" e "3 B",
 com a observação na 3: "Mastra code usa code mode e quero seguir o padrão da harness deles também, ver todas
 features e como fazem e factory também que a utiliza e acrescenta". E a 4, que a observação abriu, no chat: "B".
+As palavras estão no [arquivo de aprovação](../approvals/o-plano-que-trava-e-fecha.md).
 
 - **1. Quando o Construir planeja, e o que trava: (a).** O plano continua o arquivo que o Conexus escreve; a
   trava é código e entra quando há plano: a conversa de um app novo começa travada, e um plano proposto trava a
