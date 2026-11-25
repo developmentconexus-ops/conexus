@@ -177,13 +177,19 @@ class TargetConexus(Target):
             "tables": {},
             "closed": False,
             "failed": None,
-            "unfinished": None,
+            "ended": [],
         }
 
     def _process_state_message(self, message_dict: dict[str, t.Any]) -> None:
+        """A bookmark without `pass` ends a stream's pass: its batch is written before the report
+        says the pass ended."""
         super()._process_state_message(message_dict)
-        bookmarks = message_dict["value"].get("bookmarks", {})
-        self.report(unfinished=sorted(name for name, mark in bookmarks.items() if "pass" in mark))
+        for stream, bookmark in message_dict["value"].get("bookmarks", {}).items():
+            ended = self._report["ended"]
+            if "pass" in bookmark or stream in ended or not self.sink_exists(stream):
+                continue
+            self.drain_one(self.get_sink(stream))
+            self.report(ended=[*ended, stream])
 
     @functools.cached_property
     def catalog(self) -> Catalog:

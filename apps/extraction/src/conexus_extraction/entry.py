@@ -146,7 +146,7 @@ class Round:
 
     def target_report(self) -> dict[str, t.Any]:
         if not self.report.exists():
-            return {"tables": {}, "closed": False, "failed": None}
+            return {"tables": {}, "closed": False, "failed": None, "ended": []}
         return t.cast("dict[str, t.Any]", json.loads(self.report.read_text()))
 
 
@@ -219,21 +219,13 @@ def _measured(result: Result, machine: Machine | None) -> Result:
 
 
 def _settled(spec: Spec, report: Mapping[str, t.Any], failed: Failed | None) -> list[str]:
-    """The tables whose last pass ended: only those can enter `current` when another one failed.
+    """When a table fails, only the tables whose pass ended in this round enter `current`.
 
     A pass that stopped midway leaves part of a month or of a table in `raw`, and replacing a
     window by the months it brought would delete the rows not read yet.
     """
-    if failed is None:
-        return [asked["name"] for asked in spec["tables"]]
-    unfinished = report["unfinished"]
-    if unfinished is None:
-        return []
-    return [
-        asked["name"]
-        for asked in spec["tables"]
-        if asked["name"] not in unfinished and asked["name"] != failed["table"]
-    ]
+    names = [asked["name"] for asked in spec["tables"]]
+    return names if failed is None else [name for name in names if name in report["ended"]]
 
 
 def _updated(

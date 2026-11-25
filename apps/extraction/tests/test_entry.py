@@ -5,7 +5,6 @@ import os
 import signal
 import threading
 import time
-import typing as t
 from decimal import Decimal
 from pathlib import Path
 
@@ -13,9 +12,8 @@ import pyarrow as pa
 import pytest
 
 from conexus_extraction.contract import Machine
-from conexus_extraction.entry import _settled
 from conexus_extraction.machine import Meter
-from tests.conftest import Metadata, Task, fargate
+from tests.conftest import TAP_DOUBLE, Metadata, Task, fargate
 
 NOTAS = ("TGFCAB", "sankhya_notas")
 
@@ -229,6 +227,8 @@ def test_o_catalogo_chega_inteiro_ao_gravador(task: Task) -> None:
 
 
 ITENS = ("TGFITE", "sankhya_itens")
+NFE = ("TGFNFE", "sankhya_notas_nfe")
+JANELA = ("TGFEFDVMRSTDIA", "efd_st_media_diaria")
 
 
 def test_a_tabela_que_falha_nao_trava_a_atual_das_que_terminaram(task: Task) -> None:
@@ -250,10 +250,81 @@ def test_a_tabela_que_falha_nao_trava_a_atual_das_que_terminaram(task: Task) -> 
     assert not task.lake.load_table(("current", "sankhya_itens")).scan().to_arrow().num_rows
 
 
-def test_so_a_tabela_de_passada_terminada_entra_na_atual() -> None:
-    spec = {"tables": [{"name": "a"}, {"name": "b"}, {"name": "c"}]}
-    failed: dict[str, t.Any] = {"kind": "ERROR", "table": "c"}
-    report = {"unfinished": ["b"]}
-    assert _settled(spec, report, failed) == ["a"]  # type: ignore[arg-type]
-    assert _settled(spec, report, None) == ["a", "b", "c"]  # type: ignore[arg-type]
-    assert _settled(spec, {"unfinished": None}, failed) == []  # type: ignore[arg-type]
+def test_a_tabela_nunca_comecada_nao_trava_a_atual_das_que_terminaram(task: Task) -> None:
+    _unwritable(task, "sankhya_itens")
+    spec = task.spec(JANELA, ITENS, NOTAS, whole=False)
+    assert task.run(spec) == 0
+    [result] = task.aws.sent
+    assert result["outcome"]["table"] == "sankhya_itens"
+    rows = {table["name"]: table["rows"] for table in result["tables"]}
+    assert rows == {
+        "efd_st_media_diaria": None,
+        "sankhya_itens": None,
+        "sankhya_notas": len(task.source(spec)["sankhya_notas"]),
+    }
+
+
+def test_a_tabela_que_terminou_com_linhas_no_lote_entra_inteira(
+    task: Task, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = task.spec(JANELA, whole=False)
+    assert task.run(first) == 0
+    before = _window_keys(task)
+    monkeypatch.setenv("TARGET_CONEXUS_BATCH_SIZE_ROWS", "3")
+    _unwritable(task, "sankhya_notas_nfe")
+    second = task.spec(JANELA, NFE, whole=False, connection=first["connectionId"])
+    assert task.run(second) == 0
+    assert task.aws.sent[-1]["outcome"]["table"] == "sankhya_notas_nfe"
+    assert _window_keys(task) == before
+    assert task.aws.sent[-1]["tables"][0]["rows"] == len(before)
+
+
+def test_a_passada_parada_no_meio_nao_entra_na_atual(task: Task) -> None:
+    first = task.spec(JANELA, whole=False)
+    assert task.run(first) == 0
+    before = _window_keys(task)
+    task.athena.executions.clear()
+    _tap_stops_after(task, "STATE")
+    second = task.spec(JANELA, whole=False, connection=first["connectionId"])
+    assert task.run(second) == 0
+    assert task.aws.sent[-1]["outcome"]["code"] == "COPY_SOURCE_UNREACHABLE"
+    assert task.aws.sent[-1]["tables"][0]["rows"] is None
+    assert not task.athena.statements
+    assert _window_keys(task) == before
+
+
+def test_a_falha_antes_do_primeiro_ponto_chega_no_resultado(task: Task) -> None:
+    _tap_stops_after(task, "SCHEMA")
+    assert task.run(task.spec(NOTAS)) == 0
+    [result] = task.aws.sent
+    assert result["outcome"]["code"] == "COPY_SOURCE_UNREACHABLE"
+    assert result["tables"][0]["rows"] is None
+
+
+def _unwritable(task: Task, name: str) -> None:
+    """A raw table whose key has another type, so the writer fails on that table."""
+    task.lake.create_table(("raw", name), schema=pa.schema([("nunota", pa.string())]))
+
+
+def _window_keys(task: Task) -> list[str]:
+    table = task.lake.load_table(("current", "efd_st_media_diaria")).scan().to_arrow()
+    columns = ("codemp", "dtref", "codprod", "tipimposto", "tipmedia", "dtmov")
+    return sorted(str([row[column] for column in columns]) for row in table.to_pylist())
+
+
+def _tap_stops_after(task: Task, kind: str) -> None:
+    """The tap's own lines up to the first of `kind`, then the reader's failure."""
+    program = task.plugins / "tap-conexus"
+    failure = {"code": "COPY_SOURCE_UNREACHABLE", "table": "", "system": None}
+    tap = f'node "{TAP_DOUBLE}" --origin "{task.double.origin}" "$@"'
+    program.write_text(
+        "\n".join(
+            [
+                "#!/bin/sh",
+                f'case "$*" in *--discover*) exec {tap} ;; esac',
+                f"{tap} | awk '{{print}} /\"type\":\"{kind}\"/ {{exit}}'",
+                f"echo '{json.dumps(failure)}' > \"$TAP_CONEXUS_RESULT_PATH\"",
+                "exit 1",
+            ]
+        )
+    )
