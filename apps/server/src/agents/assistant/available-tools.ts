@@ -7,7 +7,7 @@ import {
   WORKSPACE_TOOL,
 } from '@conexus/hub-api'
 import { ASK_USER_TOOL } from '../../harness/spec/public.ts'
-import { TOOLS_OF, TYPED_READ_NAMES } from '../../harness/tools/public.ts'
+import { TOOLS_OF, TYPED_READ_NAMES, TYPED_READS } from '../../harness/tools/public.ts'
 import { COMPANY_MEMORY_TOOLS } from './company-memory.ts'
 
 /** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */
@@ -25,7 +25,7 @@ export const AVAILABLE_TOOLS: readonly string[] = [
     ...MEMORY_TOOLS,
     ...COMPANY_MEMORY_TOOLS,
     SEARCH_TOOLS,
-    ...TOOLS_OF.assistant,
+    ...TOOLS_OF.assistant.filter((name) => name !== TYPED_READS),
     ...TYPED_READ_NAMES,
     ...Object.values(ASSISTANT_TOOL),
     CONVERSATION_TOOL.webFetch,

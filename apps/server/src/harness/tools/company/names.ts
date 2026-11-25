@@ -2,7 +2,7 @@ import { APP_DATA_TOOL, ASSISTANT_TOOL, CONVERSATION_TOOL, DATA_TOOL } from '@co
 import type { ControllerKind } from '../../spec/public.ts'
 
 /** The typed reads (`TYPED_READ_NAMES`) as one entry: the model gets them only through `search_tools`. */
-const TYPED_READS = 'typed_reads'
+export const TYPED_READS = 'typed_reads'
 
 export type CompanyToolName =
   | (typeof DATA_TOOL)[keyof typeof DATA_TOOL]

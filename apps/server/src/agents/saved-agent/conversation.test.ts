@@ -74,13 +74,11 @@ test('abrir: a conversa com o publicado e a de teste com o rascunho nascem no mo
 
   const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
   await talkedTo(on.hub, carla, on.agents, haiku.id)
+  await talkedTo(on.hub, on.ana, on.agents, haiku.id, { draft: true })
   const listed = await call(on.hub, on.ana, 'GET', `${on.agents}/${haiku.id}/conversations`)
   assert.equal(listed.statusCode, 200, listed.body)
   const conversations: { id: string; draft: boolean }[] = Object(listed.json()).conversations
-  assert.deepEqual(
-    conversations.map((each) => [each.id, each.draft]),
-    [[url.slice(url.lastIndexOf('/') + 1), false]],
-  )
+  assert.deepEqual(conversations.map((each) => each.draft).sort(), [false, true])
 })
 
 test('as ferramentas: o modelo recebe a mensagem do Conexus, as instruções da versão e só as ferramentas dela; a conversa de teste relê o rascunho a cada turno', async (t) => {
