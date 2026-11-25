@@ -86,7 +86,6 @@ export type TapRun = Readonly<{
   lines: readonly string[]
   messages: readonly Message[]
   result: unknown
-  months: unknown
   waits: readonly number[]
 }>
 
@@ -113,7 +112,6 @@ export async function tap(
     account: null,
     secret_path: await file('secret.json', double.secret),
     result_path: join(dir, 'result.json'),
-    months_path: join(dir, 'months.json'),
     start_date: a.startDate ?? null,
     tables:
       a.configTables ??
@@ -148,15 +146,11 @@ export async function tap(
     (text) => z.unknown().parse(JSON.parse(text)),
     () => null,
   )
-  const months = await readFile(join(dir, 'months.json'), 'utf8').then(
-    (text) => z.unknown().parse(JSON.parse(text)),
-    () => null,
-  )
   const messages = lines.flatMap((line) => {
     const message = z.looseObject({ type: z.string() }).safeParse(JSON.parse(line))
     return message.success ? [message.data] : []
   })
-  return { code, lines, messages, result, months, waits }
+  return { code, lines, messages, result, waits }
 }
 
 export function recordsOf(run: TapRun, stream: string): readonly Record<string, unknown>[] {

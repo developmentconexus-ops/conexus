@@ -147,9 +147,6 @@ function advanced(
   return { pass: { ...pass, point }, done: true }
 }
 
-/** What a finished pass read: the months it went through, which the task replaces in `current`. */
-export type TableRead = Readonly<{ months: readonly string[] }>
-
 export async function readTable(
   reach: TableReach,
   run: RunTable,
@@ -158,7 +155,7 @@ export async function readTable(
     startDate: string | null
     deps: PassDeps
   }>,
-): Promise<TableRead | TableReadFailed> {
+): Promise<TableReadFailed | null> {
   const { deps, bookmarks } = a
   const before = bookmarks[run.stream]
   function emit(message: SingerMessage) {
@@ -214,7 +211,5 @@ export async function readTable(
     await emit({ type: 'ACTIVATE_VERSION', stream: run.stream, version: pass.version })
   bookmarks[run.stream] = doneOf(run, pass, before, deps.now())
   await emit({ type: 'STATE', value: { bookmarks } })
-  return {
-    months: pass.filters.flatMap((filter) => (filter.kind === 'MONTH' ? [filter.month] : [])),
-  }
+  return null
 }

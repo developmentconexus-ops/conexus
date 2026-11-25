@@ -270,7 +270,6 @@ class Task:
                     "connector": "sankhya",
                     "secret_path": str(secret),
                     "result_path": str(work / "result.json"),
-                    "months_path": str(work / "months.json"),
                     "tables": spec["tables"],
                 }
             )

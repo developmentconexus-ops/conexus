@@ -23,7 +23,6 @@ const Config = z.object({
   account: AccountRef.nullable().default(null),
   secret_path: z.string().min(1),
   result_path: z.string().min(1),
-  months_path: z.string().min(1),
   start_date: z.iso.date().nullable().default(null),
   tables: z
     .array(
@@ -137,7 +136,6 @@ async function sync(
   const listed = await columnsOf(reach, { ...reach.connector, tables: only }, a.deps)
   if (listed.kind === 'FAILED') return stopped(config, failureOf(listed.failure, first))
   const { bookmarks } = a.state
-  const months: Record<string, readonly string[]> = {}
   for (const chose of tables) {
     const found = listed.found.find(({ declaration }) => declaration === chose.table)
     const columns: readonly TableColumn[] | null = found?.columns ?? null
@@ -149,16 +147,12 @@ async function sync(
           : failureOf(found.failed, chose.stream),
       )
     const run: RunTable = { ...chose, columns }
-    const read = await readTable(reach, run, {
+    const failed = await readTable(reach, run, {
       bookmarks,
       startDate: config.start_date,
       deps: a.deps,
     })
-    if ('code' in read) return stopped(config, failureOf(read, chose.stream))
-    if (chose.table.mode.kind === 'WINDOW') {
-      months[chose.stream] = read.months
-      await writeFile(config.months_path, JSON.stringify(months))
-    }
+    if (failed !== null) return stopped(config, failureOf(failed, chose.stream))
   }
   return 0
 }
