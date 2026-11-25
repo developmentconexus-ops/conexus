@@ -8,7 +8,7 @@
     "apps/server/src/agents/agent-builder/run-scope.test.ts",
     "apps/server/src/agents/app-builder/connector-access.test.ts",
     "apps/server/src/agents/app-builder/conversation-refusal.test.ts",
-    "apps/server/src/agents/app-builder/permissions.test.ts",
+    "apps/server/src/agents/app-builder/closure.test.ts",
     "apps/server/src/harness/tools/data/tools-refusals.test.ts",
     "apps/server/src/harness/tools/data/tools.test.ts",
     "apps/server/src/harness/model-accounts/openai/sign-in-refusals.test.ts",
