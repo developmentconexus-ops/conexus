@@ -124,12 +124,12 @@ test('enviar link: repetir o nome de uma ligação do mesmo sistema é recusado 
 })
 
 test.each([
-  ['owner', NEXT_STEPS],
-  ['admin', NEXT_STEPS],
-  ['member', ASK_MANAGER],
+  ['o dono', 'owner', NEXT_STEPS],
+  ['o administrador', 'admin', NEXT_STEPS],
+  ['quem liga e não gerencia cópias', 'member', ASK_MANAGER],
 ] as const)(
-  'enviar link: o painel do endereço, para o papel %s, diz o caminho que ele pode seguir',
-  async (role, sentence) => {
+  'enviar link: o painel do endereço, para %s, diz o caminho que ele pode seguir',
+  async (_who, role, sentence) => {
     const { dialog } = await toSend({}, role)
     fireEvent.click(within(dialog).getByRole('checkbox', { name: 'X-Token' }))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Gerar o link' }))
