@@ -339,3 +339,16 @@ def test_o_marcado_apagado_sai_da_atual(task: Task) -> None:
     assert gone not in _keys(task)
     assert kept in _keys(task)
     assert any(sql.startswith("MERGE") and "THEN DELETE" in sql for sql in task.athena.statements)
+
+
+def test_a_mesma_chave_duas_vezes_fica_com_a_mudanca_mais_nova(task: Task) -> None:
+    first = task.spec(NOTAS, whole=False)
+    assert task.run(first) == 0
+    [nunota, *_] = _keys(task)
+    newer = datetime(2026, 11, 20, tzinfo=UTC)
+    older = datetime(2026, 11, 1, tzinfo=UTC)
+    _raw_row(task, nunota, dtalter=newer, vlrnota=Decimal("5"), _sdc_sequence=10**15 + 1)
+    _raw_row(task, nunota, dtalter=older, vlrnota=Decimal("7"), _sdc_sequence=10**15 + 2)
+    _update_notas(task)
+    [row] = [r for r in _rows(task, "current", "sankhya_notas") if r["nunota"] == nunota]
+    assert row["vlrnota"] == Decimal("5")

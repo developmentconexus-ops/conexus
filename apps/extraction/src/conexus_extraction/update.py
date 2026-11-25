@@ -93,24 +93,27 @@ def _month_of(column: str) -> str:
     return f"substr(CAST({_name(column)} AS varchar), 1, 7)"
 
 
-def _slice(table: str, key: Sequence[str], bounds: tuple[int, int]) -> str:
-    """The latest raw row of each key that has not entered `current`."""
+def _slice(table: str, key: Sequence[str], mode: Mode, bounds: tuple[int, int]) -> str:
+    """The latest raw row of each key that has not entered `current`, by change, then arrival."""
     keys = ", ".join(_name(column) for column in key)
     after, up_to = bounds
+    changed = (
+        f"{_name(mode['column'].lower())} DESC NULLS LAST, " if mode["kind"] == "CHANGED" else ""
+    )
     return (
         f"(SELECT * FROM (SELECT b.*, row_number() OVER (PARTITION BY {keys} "
-        f"ORDER BY {SEQUENCE} DESC) AS rn FROM {_name(RAW)}.{_name(table)} b "
+        f"ORDER BY {changed}{SEQUENCE} DESC) AS rn FROM {_name(RAW)}.{_name(table)} b "
         f"WHERE {SEQUENCE} > {after} AND {SEQUENCE} <= {up_to}) WHERE rn = 1)"
     )
 
 
 def _merges(
-    table: str, key: Sequence[str], columns: Sequence[str], bounds: tuple[int, int]
+    table: str, key: Sequence[str], columns: Sequence[str], mode: Mode, bounds: tuple[int, int]
 ) -> list[str]:
     """One case per statement: Athena fails a `MERGE` of two cases on a wide table."""
     on = " AND ".join(f"a.{_name(column)} = s.{_name(column)}" for column in key)
     head = (
-        f"MERGE INTO {_name(CURRENT)}.{_name(table)} a USING {_slice(table, key, bounds)} s "
+        f"MERGE INTO {_name(CURRENT)}.{_name(table)} a USING {_slice(table, key, mode, bounds)} s "
         f"ON ({on}) "
     )
     sets = ", ".join(f"{_name(c)} = s.{_name(c)}" for c in columns if c not in key)
@@ -166,7 +169,7 @@ class Updater:
         whole = complete is not None and complete != current.properties.get(APPLIED)
         bounds = (after, max(after, top))
         if top > after:
-            for statement in _merges(table, key, columns, bounds):
+            for statement in _merges(table, key, columns, mode, bounds):
                 self._athena.run(statement)
         if whole:
             scope = ""
