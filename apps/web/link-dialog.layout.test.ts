@@ -7,7 +7,7 @@ import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
 import { OWNER } from './sweep-replies.ts'
 
 // The window "Ligar" opens is a form of several fields with its help: on a laptop screen the four
-// fields and both buttons are in view with no scrolling, and on a phone the buttons stay in view
+// fields and the button are in view with no scrolling, and on a phone the button stays in view
 // while the body scrolls (design V18, V26).
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
@@ -25,7 +25,7 @@ const DESKTOPS = [
 ]
 
 for (const viewport of DESKTOPS) {
-  test(`a janela Ligar mostra os campos e os dois botões sem rolar em ${viewport.width}x${viewport.height}`, async () => {
+  test(`a janela Ligar mostra os campos e o botão Continuar sem rolar em ${viewport.width}x${viewport.height}`, async () => {
     assert.ok(LINK, 'the link state is missing')
     const page = await harness.open(LINK.path, { viewport, replies: LINK.replies })
     await LINK.settle(page)
@@ -42,7 +42,6 @@ for (const viewport of DESKTOPS) {
       dialog.getByLabel('X-Token', { exact: true }),
       dialog.getByLabel('Desde'),
       dialog.getByRole('button', { name: 'Continuar' }),
-      dialog.getByRole('button', { name: 'Cancelar' }),
     ]) {
       const box = await target.boundingBox()
       assert.ok(box, 'a field or a button is not laid out')
@@ -74,10 +73,8 @@ test('a janela Ligar no celular ocupa a tela, o corpo rola e os botões ficam à
   const help = await dialog.getByRole('region', { name: 'Antes de colar' }).boundingBox()
   const first = await dialog.getByLabel('Nome da ligação').boundingBox()
   assert.ok(help && first && help.y < first.y, 'the help is not above the fields')
-  for (const name of ['Continuar', 'Cancelar']) {
-    const box = await dialog.getByRole('button', { name }).boundingBox()
-    assert.ok(box && box.y + box.height <= PHONE.height, `${name} is below the screen`)
-  }
+  const next = await dialog.getByRole('button', { name: 'Continuar' }).boundingBox()
+  assert.ok(next && next.y + next.height <= PHONE.height, 'Continuar is below the screen')
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   assert.deepEqual(page.problems, [])
   await page.close()

@@ -46,6 +46,8 @@ function Head(props: { table: LakeTableSummary; system: string }) {
   )
 }
 
+const TAB_NAMES = ['overview', 'columns', 'runs', 'details'] as const
+
 function Page(props: {
   companyId: CompanyId
   table: LakeTableSummary
@@ -58,11 +60,12 @@ function Page(props: {
       <Back companyId={companyId} />
       <Head table={table} system={system} />
       <Tabs defaultValue="overview" className="gap-lg">
-        <TabsList className="w-full overflow-x-auto border-b border-line">
-          <TabsTrigger value="overview">{TABLE_TABS.overview}</TabsTrigger>
-          <TabsTrigger value="columns">{TABLE_TABS.columns}</TabsTrigger>
-          <TabsTrigger value="runs">{TABLE_TABS.runs}</TabsTrigger>
-          <TabsTrigger value="details">{TABLE_TABS.details}</TabsTrigger>
+        <TabsList className="w-full border-b border-line max-md:gap-0">
+          {TAB_NAMES.map((name) => (
+            <TabsTrigger key={name} value={name} className="max-md:px-sm max-md:after:inset-x-sm">
+              {TABLE_TABS[name]}
+            </TabsTrigger>
+          ))}
         </TabsList>
         <TabsContent value="overview">
           <Overview table={table} system={system} />
