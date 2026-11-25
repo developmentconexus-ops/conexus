@@ -8,6 +8,7 @@ import { Button } from '../../ui/button.tsx'
 import { List, PageTitle, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { LinkDialog } from './link-dialog.tsx'
+import { LinkWindow } from './link-window.tsx'
 import { ConnectorLogo } from './logo.tsx'
 import { connectionsQuery } from './queries.ts'
 import {
@@ -165,8 +166,16 @@ export function Integrations() {
           ))}
         </List>
       </section>
-      {linking && (
+      {linking && linking.auth === 'oauth2_code' && (
         <LinkDialog
+          companyId={companyId}
+          entry={linking}
+          connections={connections}
+          onClose={() => setLinking(undefined)}
+        />
+      )}
+      {linking && linking.auth !== 'oauth2_code' && (
+        <LinkWindow
           companyId={companyId}
           entry={linking}
           connections={connections}

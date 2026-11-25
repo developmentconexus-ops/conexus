@@ -1,7 +1,13 @@
-import { Connection, getConnection, listConnections } from '@conexus/hub-api'
+import {
+  Connection,
+  getConnection,
+  getLakeTablesOfConnection,
+  listConnections,
+} from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
 import { connectionOf as fixtureOf, SANKHYA } from './src/hub/connectors/fixtures.ts'
+import { readyLake } from './src/hub/connectors/lake-fixtures.ts'
 
 let made = 0
 
@@ -38,5 +44,19 @@ export function connectionPage(id: string, connection: ReturnType<typeof connect
       connection,
       notes: [],
     }),
+    ...lakeTablesPage(id, connection),
+  }
+}
+
+/** The lake tables a connection's page asks for, with nothing copied yet. */
+export function lakeTablesPage(
+  id: string,
+  connection: Pick<ReturnType<typeof connectionOf>, 'id'>,
+): Replies {
+  return {
+    [`GET /api/companies/${id}/connections/${connection.id}/lake-tables`]: ok(
+      getLakeTablesOfConnection,
+      readyLake(),
+    ),
   }
 }

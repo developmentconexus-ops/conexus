@@ -10,13 +10,15 @@ import {
 } from '../../ui/sidebar.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { connectionsQuery } from '../connectors/public.ts'
-import { systemsOf } from './data-systems.ts'
+import { connectionsOfData } from './data-systems.ts'
+import { lakeTablesListQuery } from './lake-queries.ts'
 import { useMay } from './member.ts'
 import type { DataLayer } from './search.ts'
 import {
   CATALOG_FAILED,
   DATA_LAYERS,
   LOADING_LABEL,
+  lakeTablesNoteText,
   NO_SYSTEM,
   NO_TABLE_COPIED,
   NO_TABLE_OF_ROLE_SHORT,
@@ -56,9 +58,11 @@ function LayerGroup(props: { companyId: CompanyId; layer: DataLayer; count?: num
 }
 
 function RawGroup({ companyId }: { companyId: CompanyId }) {
+  const manage = useMay().manageCopies
+  const lake = useQuery({ ...lakeTablesListQuery(companyId), enabled: manage })
   return (
     <>
-      <LayerGroup companyId={companyId} layer="raw" count={0} />
+      <LayerGroup companyId={companyId} layer="raw" count={lake.data?.length ?? 0} />
       <SidebarGroup className="pt-0">
         <RawNote companyId={companyId} />
       </SidebarGroup>
@@ -69,8 +73,9 @@ function RawGroup({ companyId }: { companyId: CompanyId }) {
 function RawNote({ companyId }: { companyId: CompanyId }) {
   const manage = useMay().manageCopies
   const connections = useQuery({ ...connectionsQuery(companyId), enabled: manage })
+  const lake = useQuery({ ...lakeTablesListQuery(companyId), enabled: manage })
   if (!manage) return <p className={NOTE}>{NO_TABLE_OF_ROLE_SHORT}</p>
-  if (connections.isPending) {
+  if (connections.isPending || lake.isPending) {
     return (
       <div role="status">
         <span className="sr-only">{LOADING_LABEL}</span>
@@ -80,14 +85,16 @@ function RawNote({ companyId }: { companyId: CompanyId }) {
       </div>
     )
   }
-  if (connections.isError) {
+  if (connections.isError || lake.isError) {
+    const failed = connections.isError ? connections : lake
     return (
       <div className="px-[0.6rem]">
-        <ReadFailure text={CATALOG_FAILED} onRetry={() => void connections.refetch()} />
+        <ReadFailure text={CATALOG_FAILED} onRetry={() => void failed.refetch()} />
       </div>
     )
   }
-  const linked = systemsOf(connections.data.connections).length > 0
+  const linked = connectionsOfData(connections.data.connections, lake.data).length > 0
+  if (lake.data.length > 0) return <p className={NOTE}>{lakeTablesNoteText(lake.data.length)}</p>
   return <p className={NOTE}>{linked ? NO_TABLE_COPIED : NO_SYSTEM}</p>
 }
 

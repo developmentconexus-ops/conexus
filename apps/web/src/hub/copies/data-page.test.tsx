@@ -3,7 +3,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { connection, LIST, openData } from './test-hub.tsx'
+import { connection, LIST, lakeTable, openData } from './test-hub.tsx'
 
 // Dados: the systems of the connections, the empty sentence, the layers in the address.
 const server = hubServer()
@@ -26,9 +26,9 @@ test('Dados sem cópias: cada sistema com a frase da matriz, sem lista nem pági
     if (request.url.includes('/copies')) asked.push(request.url)
   })
   openData(server, { connections: [connection(), LOJA] }, LIST)
-  expect(await screen.findByText('Sankhya · Matriz')).toBeTruthy()
+  expect(await screen.findByText('Matriz · Lago')).toBeTruthy()
   const main = within(screen.getByRole('main'))
-  expect(main.getByText('Mercado Livre · Loja A')).toBeTruthy()
+  expect(main.getByText('Loja A · Lago')).toBeTruthy()
   expect(main.getAllByText('Nenhuma tabela copiada')).toHaveLength(2)
   const body = main.getByRole('heading', { name: 'Dados' }).parentElement?.parentElement
   if (!(body instanceof HTMLElement)) throw new Error('the page under the title')
@@ -36,9 +36,9 @@ test('Dados sem cópias: cada sistema com a frase da matriz, sem lista nem pági
     [
       'Dados',
       'O que os agentes e os apps da empresa podem ler: cada tabela, de qual sistema veio, o que guarda e de quando é.',
-      'Sankhya · Matriz',
+      'Matriz · Lago',
       'Nenhuma tabela copiada',
-      'Mercado Livre · Loja A',
+      'Loja A · Lago',
       'Nenhuma tabela copiada',
     ].join(''),
   )
@@ -68,7 +68,40 @@ test('Dados: nenhum sistema ligado', async () => {
   )
 })
 
-test('Dados: uma conexão que não está ativa não vira sistema', async () => {
+test('Dados: uma ligação que pede reconexão e tem tabela no lago mostra as tabelas dela, com o estado no título', async () => {
+  openData(
+    server,
+    { connections: [connection({ state: 'NEEDS_REAUTH' })], tables: [lakeTable()] },
+    LIST,
+  )
+  const main = await page()
+  expect(await main.findByText('Matriz · Lago · 1 tabela · Chaves recusadas')).toBeTruthy()
+  expect(main.getByRole('link', { name: /Notas e pedidos/ })).toBeTruthy()
+  expect(
+    within(screen.getByRole('navigation', { name: 'Dados' })).getByText('1 tabela no lago'),
+  ).toBeTruthy()
+})
+
+test('Dados: a ligação por autorização que pede reconexão diz o estado da autorização', async () => {
+  const sign = connection({ ...LOJA, state: 'NEEDS_REAUTH' })
+  const table = lakeTable({
+    connection: { id: sign.id, name: 'Loja A', connector: 'mercado-livre' },
+  })
+  openData(server, { connections: [sign], tables: [table] }, LIST)
+  const main = await page()
+  expect(
+    await main.findByText('Loja A · Lago · 1 tabela · Pede para conectar de novo'),
+  ).toBeTruthy()
+})
+
+test('Dados: a ligação sem tabela tem o título da ligação no lago', async () => {
+  openData(server, { connections: [connection()] }, LIST)
+  const main = await page()
+  expect(await main.findByText('Matriz · Lago')).toBeTruthy()
+  expect(main.getByText('Nenhuma tabela copiada')).toBeTruthy()
+})
+
+test('Dados: uma conexão que não está ativa e sem tabela não vira sistema', async () => {
   openData(server, { connections: [connection({ state: 'NEEDS_REAUTH' })] }, LIST)
   const main = await page()
   expect(await main.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
@@ -87,7 +120,7 @@ test('Dados: a falha da leitura das conexões tem Tentar de novo', async () => {
   ).toBeTruthy()
   fail = false
   fireEvent.click(retry)
-  expect(await main.findByText('Sankhya · Matriz')).toBeTruthy()
+  expect(await main.findByText('Matriz · Lago')).toBeTruthy()
 })
 
 test('Dados: o membro vê a frase do papel, sem sistemas', async () => {
@@ -98,7 +131,7 @@ test('Dados: o membro vê a frase do papel, sem sistemas', async () => {
       'Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa.',
     ),
   ).toBeTruthy()
-  expect(main.queryByText('Sankhya · Matriz')).toBeNull()
+  expect(main.queryByText('Matriz · Lago')).toBeNull()
 })
 
 test('Dados: o grupo Negócio abre a camada Negócio', async () => {

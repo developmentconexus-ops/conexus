@@ -1,51 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { LakeRun, LakeTableSummary } from '@conexus/hub-api'
-import { z } from 'zod'
-import { call, codeOf, personOn } from '../identity/test-hub.ts'
+import { codeOf, personOn } from '../identity/test-hub.ts'
 import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS } from './test-lake-copy.ts'
-
-const ORIGENS = { source: 'TGFVAR', name: 'sankhya_origens' }
-const Summaries = z.array(LakeTableSummary)
-const Runs = z.array(LakeRun)
-
-type On = Awaited<ReturnType<typeof lakeCopyOn>>
-
-function read(on: On, path: string, who = on.ana) {
-  return call(on.hub, who, 'GET', path)
-}
-
-async function listed(on: On) {
-  const answered = await read(on, `/api/companies/${on.companyId}/lake-tables`)
-  assert.equal(answered.statusCode, 200, answered.body)
-  return Summaries.parse(answered.json())
-}
-
-function named(tables: readonly LakeTableSummary[], name: string) {
-  const found = tables.find((table) => table.name === name)
-  assert.ok(found !== undefined, name)
-  return found
-}
-
-async function runsOf(on: On, table: LakeTableSummary) {
-  const answered = await read(on, `/api/companies/${on.companyId}/lake-tables/${table.id}/runs`)
-  assert.equal(answered.statusCode, 200, answered.body)
-  return Runs.parse(answered.json())
-}
-
-const SINCE = '2024-01-01'
-
-async function twoConnections(on: On) {
-  const matriz = await on.linked('Matriz')
-  const filial = await on.linked('Filial')
-  const body = { tables: [NOTAS, PARCEIROS, ORIGENS], interval: '24h', startDate: SINCE }
-  assert.equal((await on.put(matriz, body)).statusCode, 200)
-  const own = { tables: [{ source: 'TGFCAB', name: 'sankhya_filial_notas' }], interval: 'MANUAL' }
-  assert.equal((await on.put(filial, { ...own, startDate: null })).statusCode, 200)
-  await finished(on, matriz, ['sankhya_notas', 'sankhya_parceiros', 'sankhya_origens'])
-  await finished(on, filial, ['sankhya_filial_notas'])
-  return { matriz, filial }
-}
+import { listed, named, read, runsOf, SINCE, Summaries, twoConnections } from './test-lake-list.ts'
 
 test('a lista de Dados: agrupada pela ligação, com o rótulo, o modo, o estado, as linhas, as colunas e o relógio', async (t) => {
   const on = await lakeCopyOn(t)

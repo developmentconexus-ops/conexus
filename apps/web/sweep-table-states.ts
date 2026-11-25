@@ -1,4 +1,10 @@
-import { AppTableName, listAppTables, listConnections, listProjects } from '@conexus/hub-api'
+import {
+  AppTableName,
+  listAppTables,
+  listConnections,
+  listLakeTables,
+  listProjects,
+} from '@conexus/hub-api'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
@@ -31,6 +37,7 @@ function dataPage(connections: (typeof MATRIZ)[]) {
       connections,
       mayManage: true,
     }),
+    [`GET ${COMPANY_API}/lake-tables`]: ok(listLakeTables, []),
   }
 }
 
