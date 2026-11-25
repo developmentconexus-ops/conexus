@@ -136,7 +136,9 @@ test('porta do Mastra: o cliente destruído leva junto a ligação ao Postgres, 
   await client.connect()
   const database = new URL(test.mastraUrl.reveal()).pathname.slice(1)
   async function sessions() {
-    const found = await server.query('select 1 from pg_stat_activity where datname = $1', [database])
+    const found = await server.query('select 1 from pg_stat_activity where datname = $1', [
+      database,
+    ])
     return found.rowCount
   }
   assert.equal(await sessions(), 1)
