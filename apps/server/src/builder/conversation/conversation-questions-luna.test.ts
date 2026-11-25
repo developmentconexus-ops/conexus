@@ -2,10 +2,6 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
-import { call, post } from '../../hub/identity/test-hub.ts'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { ofTurn, plantCodex } from '../../platform/test-openai-codex.ts'
-import { recordedBody } from '../../platform/test-recordings.ts'
 import {
   answeredOf,
   conversing,
@@ -14,8 +10,12 @@ import {
   started,
   streamOf,
   title,
-} from './test-conversation.ts'
-import { answerTo, invocations, untilCard } from './test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { answerTo, invocations, untilCard } from '../../harness/routes/test-questions.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { ofTurn, plantCodex } from '../../platform/test-openai-codex.ts'
+import { recordedBody } from '../../platform/test-recordings.ts'
 
 /**
  * What the model sends under OpenAI's strict mode: Mastra's schema compat makes each optional field

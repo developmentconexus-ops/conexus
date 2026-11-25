@@ -4,9 +4,9 @@ import { CatalogSystem, CompanyId, ConversationId, PersonId, ProjectId } from '@
 import type { ToolsInput } from '@mastra/core/agent'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
+import type { RunScope } from '../../harness/spec/public.ts'
 import { listing } from '../../hub/access/test-view.ts'
 import { granted, LOJA, QUIET, SANKHYA } from '../connectors/test-access.ts'
-import type { RunScope } from '../controller-kit/public.ts'
 import type { CompanyToolDeps, CompanyToolSeat } from './public.ts'
 import { companyToolScope, companyTools } from './public.ts'
 

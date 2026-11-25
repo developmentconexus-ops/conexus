@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { env } from 'node:process'
 import { test } from 'node:test'
-import { answeredOf, endOf, turnNotices } from '../../builder/conversation/test-conversation.ts'
-import { failuresOf } from '../../builder/conversation/test-parts.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { answeredOf, endOf, turnNotices } from '../routes/test-conversation.ts'
+import { failuresOf } from '../routes/test-parts.ts'
 import { EXHAUSTED, fleet, saidLive } from './test-fleet.ts'
 
 const MINUTE = 60_000

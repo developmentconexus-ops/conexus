@@ -4,7 +4,11 @@ import { test } from 'node:test'
 import { PostgresStore } from '@mastra/pg'
 import { agentsOn, madeAgent, talkedTo } from '../../builder/agents/test-agents.ts'
 import { created } from '../../builder/assistant/test-assistant.ts'
-import { createMastraStorage } from '../../builder/conversation/public.ts'
+import type { Hub } from '../../hub/identity/test-hub.ts'
+import { post } from '../../hub/identity/test-hub.ts'
+import type { Sent } from '../../platform/test-anthropic.ts'
+import { createTestDatabase } from '../../platform/test-database.ts'
+import { createMastraStorage } from '../memory/public.ts'
 import {
   asked,
   conversing,
@@ -14,11 +18,7 @@ import {
   started,
   streamOf,
   title,
-} from '../../builder/conversation/test-conversation.ts'
-import type { Hub } from '../../hub/identity/test-hub.ts'
-import { post } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
-import { createTestDatabase } from '../../platform/test-database.ts'
+} from '../routes/test-conversation.ts'
 
 /**
  * The ended spans of `threadId`'s traces, as Mastra reads them back (`listTraces`, `getTrace`): the

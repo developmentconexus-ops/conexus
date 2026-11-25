@@ -7,8 +7,8 @@ import {
   TASK_TOOLS,
   WORKSPACE_TOOL,
 } from '@conexus/hub-api'
+import { ASK_USER_TOOL } from '../../harness/spec/public.ts'
 import { TYPED_READ_NAMES } from '../connectors/public.ts'
-import { ASK_USER_TOOL } from '../controller-kit/public.ts'
 import { COMPANY_MEMORY_TOOLS } from './company-memory.ts'
 
 /** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */

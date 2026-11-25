@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { endOf, streamOf } from '../../harness/routes/test-conversation.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import { alive, googleOnly, within } from '../assistant/test-google-assistant.ts'
-import { endOf, streamOf } from '../conversation/test-conversation.ts'
 
 test('o fim do turno do Construtor solta o processo do Google: a sessão devolve a vez no agent_end', async (t) => {
   const on = await googleOnly(t)

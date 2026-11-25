@@ -14,11 +14,11 @@ import {
   callModel,
   turnContext,
 } from '../../harness/model-accounts/public.ts'
+import { asked, conversing, endOf, MODEL, title } from '../../harness/routes/test-conversation.ts'
+import { partsOf } from '../../harness/routes/test-parts.ts'
+import { initialStateOf } from '../../harness/spec/public.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { initialStateOf } from '../controller-kit/public.ts'
 import { TOOL_CLOSURE } from './public.ts'
-import { asked, conversing, endOf, MODEL, title } from './test-conversation.ts'
-import { partsOf } from './test-parts.ts'
 
 const CARD_TOOLS = [
   'ask_user',

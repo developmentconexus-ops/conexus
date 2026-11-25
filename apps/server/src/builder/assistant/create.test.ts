@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { hubBeside, MODEL } from '../../harness/routes/test-conversation.ts'
+import { sessionStateOf } from '../../harness/routes/test-questions.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
-import { hubBeside, MODEL } from '../conversation/test-conversation.ts'
-import { sessionStateOf } from '../conversation/test-questions.ts'
 import { assisting } from './test-assistant.ts'
 
 /** The lines a Hub logs, as the tests read them. */

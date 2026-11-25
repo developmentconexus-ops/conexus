@@ -65,7 +65,7 @@ A turn of a published agent carries its version and its answering person as a Ma
 written once when the turn starts (`builder/agents/activation.ts`). A run resumed from a card
 therefore keeps the version it started with, even if someone published a new one meanwhile.
 
-The Hub's guard answers the card (`builder/conversation/guard.ts`). Only a card parked in the
+The Hub's guard answers the card (`harness/routes/guard.ts`). Only a card parked in the
 live session can be answered, and an approver must hold the write in their own role. The write
 then goes through the Hub's write path (`apps/server/src/hub/connectors/write.ts`). It checks
 admission again, writes a mark derived from the thread and the tool call into the input, records

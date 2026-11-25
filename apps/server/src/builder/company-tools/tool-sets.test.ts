@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { endOf, started } from '../../harness/routes/test-conversation.ts'
+import { stepped } from '../../harness/routes/test-questions.ts'
 import { ASK, folder, MIGRATION, send, versionWriting } from '../../hub/apps/test-versions.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
@@ -13,8 +15,6 @@ import {
   ranNow,
 } from '../automations/test-automations.ts'
 import { building } from '../construtor/test-construtor.ts'
-import { endOf, started } from '../conversation/test-conversation.ts'
-import { stepped } from '../conversation/test-questions.ts'
 
 /** What every seat of the Assistant gets beside the company's tools: the web, the machine, the memories and the controller's own. */
 const ASSISTANT_REST = [

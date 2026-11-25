@@ -315,7 +315,7 @@
       "includes": [
         "**/*.test.ts",
         "**/*.test.tsx",
-        "!apps/server/src/builder/conversation/conversation-stream.test.ts",
+        "!apps/server/src/harness/routes/conversation-stream.test.ts",
         "!apps/server/src/hub/connectors/limits.test.ts",
         "!scripts/test-reporter.test.ts"
       ],

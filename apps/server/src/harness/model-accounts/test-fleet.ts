@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
-import type { StreamEvent } from '../../builder/conversation/test-conversation.ts'
-import { asked, conversing, KEY } from '../../builder/conversation/test-conversation.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import type { StreamEvent } from '../routes/test-conversation.ts'
+import { asked, conversing, KEY } from '../routes/test-conversation.ts'
 
 export const EXHAUSTED =
   'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'

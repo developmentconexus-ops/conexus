@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { sent } from '../../harness/routes/test-conversation.ts'
 import { call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { said } from '../assistant/test-assistant.ts'
-import { sent } from '../conversation/test-conversation.ts'
 import { agentOf, drafted, publishedAgent, publishedNow } from './test-agents.ts'
 import {
   answer,

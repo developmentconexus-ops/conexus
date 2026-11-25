@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { call, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import {
   endOf,
   MODEL,
@@ -8,10 +10,8 @@ import {
   sent,
   streamOf,
   turnNotices,
-} from '../../builder/conversation/test-conversation.ts'
-import { failuresOf } from '../../builder/conversation/test-parts.ts'
-import { call, post } from '../../hub/identity/test-hub.ts'
-import { until } from '../../platform/test-until.ts'
+} from '../routes/test-conversation.ts'
+import { failuresOf } from '../routes/test-parts.ts'
 import { EXHAUSTED, fleet, saidLive } from './test-fleet.ts'
 
 type Fleet = Awaited<ReturnType<typeof fleet>>

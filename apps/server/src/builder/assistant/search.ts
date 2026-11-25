@@ -1,7 +1,7 @@
 import type { ProjectId } from '@conexus/hub-api'
 import type { StorageThreadType } from '@mastra/core/memory'
-import type { Owner } from '../controller-kit/public.ts'
-import { RUN_MARKS, resourceOf } from '../controller-kit/public.ts'
+import type { Owner } from '../../harness/spec/public.ts'
+import { RUN_MARKS, resourceOf } from '../../harness/spec/public.ts'
 import type { assistantMemory } from './memory.ts'
 import { automationOf } from './open.ts'
 

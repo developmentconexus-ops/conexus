@@ -59,6 +59,15 @@ function writeList(area: Area, moves: readonly Move[]): void {
   writeFileSync(LIST, `${JSON.stringify(Object.fromEntries(ordered), null, 2)}\n`)
 }
 
+function movedOf(
+  full: string,
+  moves: ReadonlyMap<string, string>,
+  folders: readonly (readonly [string, string])[],
+): string | undefined {
+  const folder = folders.find(([from]) => full === from || full.startsWith(`${from}/`))
+  return moves.get(full) ?? (folder === undefined ? undefined : full.replace(folder[0], folder[1]))
+}
+
 /** A path a document or a comment cites, moved as its file or its folder moved; the others stay as written. */
 function citedPaths(
   text: string,
@@ -67,19 +76,13 @@ function citedPaths(
   area: Area,
 ): string {
   const folders = [...folderRows(area)].sort(([a], [b]) => b.length - a.length)
-  const movedOf = (full: string): string | undefined => {
-    const folder = folders.find(([from]) => full === from || full.startsWith(`${from}/`))
-    return (
-      moves.get(full) ?? (folder === undefined ? undefined : full.replace(folder[0], folder[1]))
-    )
-  }
   const whole = text.replace(CITED, (cited, prefix: string, rest: string) => {
-    const moved = movedOf(`${OLD}/${rest}`)
+    const moved = movedOf(`${OLD}/${rest}`, moves, folders)
     return moved === undefined ? cited : `${prefix}${moved.slice(SRC.length + 1)}`
   })
   if (!SHORT_DOCS.test(file)) return whole
   return whole.replace(SHORT, (cited) => {
-    const moved = movedOf(`${OLD}/${cited}`)
+    const moved = movedOf(`${OLD}/${cited}`, moves, folders)
     return moved === undefined ? cited : moved.slice(SRC.length + 1)
   })
 }

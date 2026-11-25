@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { sameRequests } from '../../harness/spec/test-request.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { ofTurn, plantCodex } from '../../platform/test-openai-codex.ts'
 import {
@@ -11,8 +13,6 @@ import {
   ranNow,
   salesSummary,
 } from '../automations/test-automations.ts'
-import { sameRequests } from '../controller-kit/test-request.ts'
-import { endOf } from '../conversation/test-conversation.ts'
 import {
   assisting,
   created,

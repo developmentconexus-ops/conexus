@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { Role } from '@conexus/hub-api'
 import { MemoryPG } from '@mastra/pg'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
+import { blockOf, turnDate } from '../../harness/spec/public.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
-import { blockOf, turnDate } from '../controller-kit/public.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 function read(path: string) {

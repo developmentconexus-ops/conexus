@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { answeredOf, endOf } from './test-conversation.ts'
-import { partsOf } from './test-parts.ts'
+import { answeredOf, endOf } from '../../harness/routes/test-conversation.ts'
+import { partsOf } from '../../harness/routes/test-parts.ts'
 import {
   answerTo,
   ask,
@@ -11,7 +11,7 @@ import {
   invocations,
   untilCard,
   WHO,
-} from './test-questions.ts'
+} from '../../harness/routes/test-questions.ts'
 
 const Asked = z.object({ questions: z.array(z.object({ question: z.string() })) })
 

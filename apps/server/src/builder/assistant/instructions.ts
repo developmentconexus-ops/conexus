@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { CONEXUS_PROMPT, TITLE } from '../controller-kit/public.ts'
+import { CONEXUS_PROMPT, TITLE } from '../../harness/prompt/public.ts'
 
 /**
  * The Assistant's observer: the conversation's title and what a business conversation keeps, never

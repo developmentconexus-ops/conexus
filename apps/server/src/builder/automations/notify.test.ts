@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { title } from '../../harness/routes/test-conversation.ts'
 import { bellOf } from '../../hub/notifications/test-notifications.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { title } from '../conversation/test-conversation.ts'
 import {
   answering,
   automating,

@@ -3,8 +3,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
-import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import type { StreamEvent } from './test-conversation.ts'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
 import {
   conversing,
   endOf,
@@ -16,8 +15,16 @@ import {
   stopped,
   streamOf,
   title,
-} from './test-conversation.ts'
-import { answerTo, ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import {
+  answerTo,
+  ask,
+  conversingWith,
+  tool,
+  untilCard,
+  WHO,
+} from '../../harness/routes/test-questions.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { rolesAndParts } from './test-transcript.ts'
 
 const STEER = 'Só eu cadastro.'

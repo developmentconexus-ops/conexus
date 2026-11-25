@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId, ProjectId } from '@conexus/hub-api'
+import { endOf, hubBeside, messagesOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { chooserAt } from '../../hub/access/test-principal.ts'
 import { TurnKey } from '../../hub/connectors/public.ts'
 import { BRUNO, memberOn, post } from '../../hub/identity/test-hub.ts'
-import { endOf, hubBeside, messagesOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import {
   assisting,
   created,

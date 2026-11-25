@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { CodeSaveResult } from '@conexus/hub-api'
-import { tool } from '../conversation/test-questions.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import type { Step } from './test-construtor.ts'
 import { listOf, resultOf } from './test-construtor.ts'
 

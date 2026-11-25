@@ -1,4 +1,4 @@
-import { BUILDER_ROUTES, BUILDER_TOOL, CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
+import { BUILDER_TOOL, CONSTRUTOR_CONTROLLER, CONVERSATION_ROUTES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
@@ -100,7 +100,7 @@ test('a conversa do Construtor lê "Leu Sankhya · Matriz" (F-A2, step 24.3)', a
       HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: false }),
     ),
     http.get(
-      `*${BUILDER_ROUTES}/agent-controller/${CONSTRUTOR_CONTROLLER}/sessions/:id/threads/:t/messages`,
+      `*${CONVERSATION_ROUTES}/agent-controller/${CONSTRUTOR_CONTROLLER}/sessions/:id/threads/:t/messages`,
       () =>
         HttpResponse.json({
           messages: [

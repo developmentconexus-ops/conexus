@@ -5,15 +5,8 @@ import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
-import type { Access, Principal } from '../../hub/access/public.ts'
-import type { BuilderData } from '../../hub/apps/public.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
-import type { CompanyToolDeps } from '../company-tools/public.ts'
-import { companyConnections, companyToolScope, companyTools } from '../company-tools/public.ts'
-import type { BuilderConnectors } from '../connectors/public.ts'
-import { builderAccess } from '../connectors/public.ts'
-import type { DataBinding, RunScope } from '../controller-kit/public.ts'
+import { TITLE } from '../../harness/prompt/public.ts'
+import type { DataBinding, RunScope } from '../../harness/spec/public.ts'
 import {
   ASK_USER_TOOL,
   CONVERSATION_MODE,
@@ -25,9 +18,16 @@ import {
   principalOf,
   sessionModel,
   skillOf,
-  TITLE,
   toolsOf,
-} from '../controller-kit/public.ts'
+} from '../../harness/spec/public.ts'
+import type { Access, Principal } from '../../hub/access/public.ts'
+import type { BuilderData } from '../../hub/apps/public.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
+import type { CompanyToolDeps } from '../company-tools/public.ts'
+import { companyConnections, companyToolScope, companyTools } from '../company-tools/public.ts'
+import type { BuilderConnectors } from '../connectors/public.ts'
+import { builderAccess } from '../connectors/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'

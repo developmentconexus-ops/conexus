@@ -17,6 +17,27 @@ import {
 } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { subagentModel } from '../../harness/model-accounts/public.ts'
+import type {
+  ConversationSpec,
+  DataBinding,
+  Owner,
+  ReleaseScope,
+  Speakers,
+} from '../../harness/spec/public.ts'
+import {
+  ASK_USER_TOOL,
+  admitAsker,
+  blockOf,
+  CONVERSATION_MODE,
+  createAskUserTool,
+  dataContextOf,
+  MODEL_TIMEOUT,
+  mountAgent,
+  principalOf,
+  sessionModel,
+  skillOf,
+  toolsOf,
+} from '../../harness/spec/public.ts'
 import type { Access, Place, Principal } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -31,27 +52,6 @@ import {
   companyTools,
   projectsOf,
 } from '../company-tools/public.ts'
-import type {
-  ConversationSpec,
-  DataBinding,
-  Owner,
-  ReleaseScope,
-  Speakers,
-} from '../controller-kit/public.ts'
-import {
-  ASK_USER_TOOL,
-  admitAsker,
-  blockOf,
-  CONVERSATION_MODE,
-  createAskUserTool,
-  dataContextOf,
-  MODEL_TIMEOUT,
-  mountAgent,
-  principalOf,
-  sessionModel,
-  skillOf,
-  toolsOf,
-} from '../controller-kit/public.ts'
 import { dataOrder } from '../data-tools/public.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { AVAILABLE_TOOLS } from './available-tools.ts'

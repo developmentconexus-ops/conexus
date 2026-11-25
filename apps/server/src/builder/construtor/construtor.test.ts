@@ -8,6 +8,8 @@ import {
   TestedResult,
   ToolSearchResult,
 } from '@conexus/hub-api'
+import { endOf, KEY } from '../../harness/routes/test-conversation.ts'
+import { stepped, tool } from '../../harness/routes/test-questions.ts'
 import { ASK, folder, MIGRATION, send, versionWriting } from '../../hub/apps/test-versions.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
@@ -22,8 +24,6 @@ import {
 } from '../agents/test-agents.ts'
 import { talking } from '../assistant/test-assistant.ts'
 import { created, salesSummary } from '../automations/test-automations.ts'
-import { endOf, KEY } from '../conversation/test-conversation.ts'
-import { stepped, tool } from '../conversation/test-questions.ts'
 import type { Step } from './test-construtor.ts'
 import { building, keeping, listOf, opened, resultOf } from './test-construtor.ts'
 

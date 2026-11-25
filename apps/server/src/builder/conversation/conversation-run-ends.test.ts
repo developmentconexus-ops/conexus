@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ANA } from '../../hub/identity/test-hub.ts'
-import { until } from '../../platform/test-until.ts'
 import {
   conversing,
   endOf,
@@ -12,8 +10,10 @@ import {
   started,
   streamOf,
   title,
-} from './test-conversation.ts'
-import { dataOf, failuresOf } from './test-parts.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { dataOf, failuresOf } from '../../harness/routes/test-parts.ts'
+import { ANA } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 
 /** Whether `promise` settles within `ms`. */
 async function within(promise: Promise<unknown>, ms: number): Promise<'settled' | 'hung'> {

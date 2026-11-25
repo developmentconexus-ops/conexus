@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { answeredOf, endOf } from './test-conversation.ts'
+import { answeredOf, endOf } from '../../harness/routes/test-conversation.ts'
 import {
   answerTo,
   conversingWith,
@@ -13,7 +13,7 @@ import {
   untilCard,
   WRITE_PLAN,
   writePlan,
-} from './test-questions.ts'
+} from '../../harness/routes/test-questions.ts'
 
 const Planned = z.object({ title: z.string(), plan: z.string() })
 

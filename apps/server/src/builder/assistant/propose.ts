@@ -11,7 +11,7 @@ import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import type { ConversationMachines } from '../../harness/machine/public.ts'
 import { withFile } from '../../harness/machine/public.ts'
-import type { RunScope } from '../controller-kit/public.ts'
+import type { RunScope } from '../../harness/spec/public.ts'
 
 const BRIEFING_EXTENSIONS = ['.md', '.txt']
 

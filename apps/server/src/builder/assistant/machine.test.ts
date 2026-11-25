@@ -5,8 +5,6 @@ import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
 import { createConversationMachines, PACKAGE_HOSTS } from '../../harness/machine/public.ts'
 import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../../harness/machine/test-machine.ts'
-import { servedSankhya } from '../../hub/connectors/test-connections.ts'
-import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
 import {
   asked,
   conversing,
@@ -16,8 +14,10 @@ import {
   PARTIAL,
   sent,
   streamOf,
-} from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
+import { servedSankhya } from '../../hub/connectors/test-connections.ts'
+import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
 import { assisting, COUNT, created, reading, said, searching, talking } from './test-assistant.ts'
 
 const WRITE = 'mastra_workspace_write_file'

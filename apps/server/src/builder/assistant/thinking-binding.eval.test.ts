@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { test } from 'node:test'
-import { endOf } from '../conversation/test-conversation.ts'
+import { endOf } from '../../harness/routes/test-conversation.ts'
 import { created, talking } from './test-assistant.ts'
 import { API_KEY_FILE, subscribed, XLSX_FILE } from './test-real-model.ts'
 

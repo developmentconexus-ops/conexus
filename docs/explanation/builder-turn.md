@@ -27,14 +27,14 @@ The Project page's box calls `createConversation` with an attempt key
 (`builder/conversation/routes.ts`). The server admits the person (a member whose role allows
 `useConversations`, on a live Project), derives the conversation id from the attempt key, writes
 the index row and creates the controller session with the conversation's model and effort
-(`builder/controller-kit/open.ts`). A repeated attempt finds the same conversation.
+(`harness/spec/open.ts`). A repeated attempt finds the same conversation.
 
 ## Sending a message
 
 The browser sends through `@mastra/client-js` to `POST /api/builder/agent-controller/builder/sessions/<id>/messages`,
 one of the seven Mastra routes the Hub exposes. Its client never retries, because a retried write
 would say a message twice (`apps/web/src/harness/room/session.ts`). Before Mastra sees the
-request, the Hub's guard (`builder/conversation/guard.ts`):
+request, the Hub's guard (`harness/routes/guard.ts`):
 
 1. refuses a `requestContext` or `include` sent by the browser;
 2. reads the thread and checks it belongs to the signed-in person and to the `builder` controller;
@@ -48,7 +48,7 @@ Steps 2 and 3 refuse with the same `CONVERSATION_NOT_FOUND`, so a stranger learn
 ## The run takes the Project
 
 Mastra resolves the agent's workspace, instructions, tools and skills for the run, then calls the
-input processors (`builder/controller-kit/factories.ts`):
+input processors (`harness/spec/factories.ts`):
 
 1. `turnOf` (`builder/conversation/turn-of.ts`) finds the conversation's Project from the index
    and calls `Runs.take`. One run writes in a Project at a time, whoever started it. If another
@@ -119,7 +119,7 @@ also call `conexus_check` itself during the turn, through the same `Runs.check`.
 ## Saving the version
 
 Every end of a run, whether complete, suspended on a card, stopped with Parar or failed, reaches
-`onBeforeAgentEnd` and then `Runs.finish` (`builder/conversation/end.ts`). Parar therefore keeps
+`onBeforeAgentEnd` and then `Runs.finish` (`harness/turn/end.ts`). Parar therefore keeps
 what the model wrote. `saveRun` (`builder/runs/save.ts`):
 
 1. does nothing if the machine was never touched;
@@ -156,7 +156,7 @@ The browser subscribes to the session's stream and reconnects with backoff. On e
 reads the transcript and the session state again, because the server does not replay what the
 stream missed (`apps/web/src/harness/room/use-session.ts`). The server's
 `BuilderServer` slims Mastra's state events to four fields, writes at the socket's pace and drops
-a client more than 8 MiB behind (`builder/conversation/stream.ts`).
+a client more than 8 MiB behind (`harness/routes/stream.ts`).
 
 ## Stopping, deleting and shutting down
 

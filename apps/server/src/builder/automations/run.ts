@@ -12,12 +12,12 @@ import {
 import type { Mastra } from '@mastra/core/mastra'
 import { createStep, createWorkflow } from '@mastra/core/workflows'
 import { z } from 'zod'
+import { attemptIdOf } from '../../harness/spec/public.ts'
 import type { Notify } from '../../hub/notifications/public.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Assistant } from '../assistant/public.ts'
-import { attemptIdOf } from '../controller-kit/public.ts'
 
 /**
  * Stored contract: every schedule row names this workflow, so renaming it deletes every automation

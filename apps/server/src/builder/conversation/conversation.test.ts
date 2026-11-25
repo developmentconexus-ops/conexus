@@ -3,11 +3,7 @@ import dns from 'node:dns'
 import { syncBuiltinESMExports } from 'node:module'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { call } from '../../hub/identity/test-hub.ts'
-import type { Anthropic } from '../../platform/test-anthropic.ts'
-import { until } from '../../platform/test-until.ts'
-import type { StreamEvent } from './test-conversation.ts'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
 import {
   answeredOf,
   conversing,
@@ -17,10 +13,14 @@ import {
   sent,
   started,
   streamOf,
-} from './test-conversation.ts'
-import { failuresOf, textsOf } from './test-parts.ts'
-import { sessionStateOf } from './test-questions.ts'
-import { onGroq, printedOf, routedTo, served } from './test-research.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf, textsOf } from '../../harness/routes/test-parts.ts'
+import { sessionStateOf } from '../../harness/routes/test-questions.ts'
+import { onGroq, printedOf, routedTo, served } from '../../harness/routes/test-research.ts'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import { call } from '../../hub/identity/test-hub.ts'
+import type { Anthropic } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import { rolesAndParts } from './test-transcript.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/

@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict'
 import { createServer } from 'node:http'
 import { test } from 'node:test'
-import { post } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
 import {
   conversing,
   endOf,
@@ -12,7 +10,9 @@ import {
   started,
   streamOf,
   title,
-} from './test-conversation.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { post } from '../../hub/identity/test-hub.ts'
+import type { Sent } from '../../platform/test-anthropic.ts'
 
 const ANSWER = 'Recebi os arquivos.'
 const BUILDER_SYSTEM = 'You are the Conexus Builder'

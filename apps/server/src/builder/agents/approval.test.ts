@@ -1,9 +1,15 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import {
+  endOf,
+  hubBeside,
+  sent,
+  stopped,
+  streamOf,
+} from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { said } from '../assistant/test-assistant.ts'
-import { endOf, hubBeside, sent, stopped, streamOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import {
   drafted,
   madeTool,

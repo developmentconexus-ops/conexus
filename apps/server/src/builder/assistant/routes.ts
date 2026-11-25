@@ -27,6 +27,14 @@ import { z } from 'zod'
 import type { ConversationMachines } from '../../harness/machine/public.ts'
 import { registerFile } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import type { Owner } from '../../harness/spec/public.ts'
+import {
+  answerModelChange,
+  attemptIdOf,
+  ownThread,
+  RUN_MARKS,
+  releaseThreads,
+} from '../../harness/spec/public.ts'
 import type { Access, Place } from '../../hub/access/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -34,14 +42,6 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { CompanyProjects } from '../company-tools/public.ts'
-import type { Owner } from '../controller-kit/public.ts'
-import {
-  answerModelChange,
-  attemptIdOf,
-  ownThread,
-  RUN_MARKS,
-  releaseThreads,
-} from '../controller-kit/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { CompanyMemory } from './company-memory.ts'
 import { registerCompanyMemoryRoutes } from './company-memory-routes.ts'

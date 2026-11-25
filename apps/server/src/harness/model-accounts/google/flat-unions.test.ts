@@ -5,10 +5,10 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ProposedAutomation } from '@conexus/hub-api'
 import { assisting, created, said, talking } from '../../../builder/assistant/test-assistant.ts'
-import { endOf, messagesOf, title } from '../../../builder/conversation/test-conversation.ts'
-import { tool } from '../../../builder/conversation/test-questions.ts'
 import { post } from '../../../hub/identity/test-hub.ts'
 import { testCliProxy } from '../../../platform/test-cliproxy-binary.ts'
+import { endOf, messagesOf, title } from '../../routes/test-conversation.ts'
+import { tool } from '../../routes/test-questions.ts'
 
 const PROPOSE = 'propose_automation'
 

@@ -1,14 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
-  asked,
-  conversing,
-  endOf,
-  MODEL,
-  turnNotices,
-} from '../../builder/conversation/test-conversation.ts'
-import { failuresOf } from '../../builder/conversation/test-parts.ts'
-import {
   BRUNO,
   CARLA,
   call,
@@ -17,6 +9,8 @@ import {
   memberOn,
   post,
 } from '../../hub/identity/test-hub.ts'
+import { asked, conversing, endOf, MODEL, turnNotices } from '../routes/test-conversation.ts'
+import { failuresOf } from '../routes/test-parts.ts'
 import { GROQ_MODEL } from './test-defaults.ts'
 
 const FIRST = 'anthropic/claude-sonnet-4-6'

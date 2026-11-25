@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ErrorCategory, ErrorDomain, MastraError } from '@mastra/core/error'
-import { asked, conversing, title } from '../../builder/conversation/test-conversation.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
+import { asked, conversing, title } from '../routes/test-conversation.ts'
 import { BuilderLogger } from './public.ts'
 
 test('o erro do Mastra num turno vai ao rastro com o texto, e o log do contêiner fica com escalares e os ids do rastro', async (t) => {

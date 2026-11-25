@@ -97,54 +97,77 @@ export function planOf(area: Area, files: readonly string[]): Plan {
   }
 }
 
+type Flow = {
+  /** The old subjects each new subject takes files from. */
+  sources: Map<string, Set<string>>
+  /** The new subjects each old subject sends files to. */
+  targets: Map<string, Set<string>>
+  /** The old subjects that keep a file in place. */
+  staying: Set<string>
+}
+
+function flowOf(old: readonly string[], to: ReadonlyMap<string, string>, stays: readonly string[]) {
+  const stayed = new Set(stays)
+  const flow: Flow = { sources: new Map(), targets: new Map(), staying: new Set() }
+  for (const file of old.filter((one) => !isDoor(one) || subjectOf(one) === undefined)) {
+    const from = subjectOf(file)
+    const into = to.get(file)
+    if (from === undefined) continue
+    if (stayed.has(file) || into === undefined) {
+      flow.staying.add(from)
+      continue
+    }
+    const dest = subjectOf(into)
+    if (dest === undefined) continue
+    flow.sources.set(dest, (flow.sources.get(dest) ?? new Set()).add(from))
+    flow.targets.set(from, (flow.targets.get(from) ?? new Set()).add(dest))
+  }
+  return flow
+}
+
+function kindOf(from: string, flow: Flow): DoorKind {
+  const dests = flow.targets.get(from)
+  if (dests === undefined) return 'kept'
+  const [only] = dests
+  const alone = dests.size === 1 && only !== undefined && flow.sources.get(only)?.size === 1
+  if (alone && !flow.staying.has(from)) return 'carried'
+  return flow.staying.has(from) ? 'trimmed' : 'dissolved'
+}
+
 function doorsOf(
   old: readonly string[],
   to: ReadonlyMap<string, string>,
   stays: readonly string[],
 ): Pick<Plan, 'kinds' | 'synthesized'> {
-  const stayed = new Set(stays)
-  const sources = new Map<string, Set<string>>()
-  const targets = new Map<string, Set<string>>()
-  const staying = new Set<string>()
-  for (const file of old.filter((one) => !isDoor(one) || subjectOf(one) === undefined)) {
-    const from = subjectOf(file)
-    if (from === undefined) continue
-    const into = to.get(file)
-    if (stayed.has(file) || into === undefined) {
-      staying.add(from)
-      continue
-    }
-    const dest = subjectOf(into)
-    if (dest === undefined) continue
-    sources.set(dest, (sources.get(dest) ?? new Set()).add(from))
-    targets.set(from, (targets.get(from) ?? new Set()).add(dest))
-  }
+  const flow = flowOf(old, to, stays)
+  const doors = old.filter((one) => isDoor(one) && subjectOf(one) !== undefined)
   const kinds = new Map<string, DoorKind>()
   const synthesized = new Set<string>()
-  for (const door of old.filter((one) => isDoor(one) && subjectOf(one) !== undefined)) {
+  for (const door of doors) {
     const from = subjectOf(door)
     if (from === undefined) continue
-    const dests = targets.get(from)
-    if (dests === undefined) {
-      kinds.set(door, 'kept')
-      continue
-    }
-    const [only] = dests
-    const alone = dests.size === 1 && only !== undefined && sources.get(only)?.size === 1
-    if (alone && !staying.has(from)) {
-      kinds.set(door, 'carried')
-      continue
-    }
-    kinds.set(door, staying.has(from) ? 'trimmed' : 'dissolved')
-    for (const dest of dests) synthesized.add(dest)
+    const kind = kindOf(from, flow)
+    kinds.set(door, kind)
+    if (kind === 'trimmed' || kind === 'dissolved')
+      for (const dest of flow.targets.get(from) ?? []) synthesized.add(dest)
   }
-  for (const [dest, from] of sources)
-    if (from.size > 1) {
-      synthesized.add(dest)
-      for (const door of old.filter((one) => isDoor(one) && from.has(subjectOf(one) ?? '')))
-        if (kinds.get(door) === 'carried') kinds.set(door, 'dissolved')
-    }
+  joined(flow, doors, kinds, synthesized)
   return { kinds, synthesized }
+}
+
+/** A new subject that takes files from several old ones is made, and the doors that were carried to it dissolve. */
+function joined(
+  flow: Flow,
+  doors: readonly string[],
+  kinds: Map<string, DoorKind>,
+  synthesized: Set<string>,
+): void {
+  for (const [dest, from] of flow.sources) {
+    if (from.size < 2) continue
+    synthesized.add(dest)
+    for (const door of doors.filter((one) => from.has(subjectOf(one) ?? '')))
+      if (kinds.get(door) === 'carried') kinds.set(door, 'dissolved')
+  }
 }
 
 /** The file each name of a ref reaches: through the old door when it is dissolved or trimmed, else the ref's own target. */
@@ -180,6 +203,11 @@ function exempt(file: string): boolean {
   return isTest(file) || isHelper(file)
 }
 
+function goesAgainst(from: string, to: string | undefined): boolean {
+  if (to === undefined || to === from || READS.get(from) === to) return false
+  return from === 'harness' || to !== 'harness'
+}
+
 /**
  * The imports of the final tree that go against the direction of the card (U7): the harness never reads an
  * agent, and an agent reads another only by the one declared direction. A test or a test helper reads what it
@@ -194,12 +222,10 @@ export function againstDirection(graph: Graph, plan: Plan): string[] {
     if (from === undefined || exempt(at)) continue
     for (const ref of refs)
       seen(graph, ref).forEach((target, index) => {
-        if (!moving.has(file) && !moving.has(target)) return
         const into = finalOf(target)
-        const to = ownerOf(into)
-        if (to === undefined || to === from || READS.get(from) === to) return
-        if (from !== 'harness' && to === 'harness') return
-        found.push(`${at} reads ${ref.names[index]?.imported ?? '*'} of ${into}`)
+        const touched = moving.has(file) || moving.has(target)
+        if (touched && goesAgainst(from, ownerOf(into)))
+          found.push(`${at} reads ${ref.names[index]?.imported ?? '*'} of ${into}`)
       })
   }
   return found

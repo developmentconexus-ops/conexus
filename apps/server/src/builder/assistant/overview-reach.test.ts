@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ASSISTANT_TOOL } from '@conexus/hub-api'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { sankhyaFake } from '../../hub/connectors/test-sales.ts'
 import { BRUNO, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { ATENDENTE } from '../../hub/identity/test-roles.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, runOverviewOnSilentHub, said, talking } from './test-assistant.ts'
 
 async function world(t: TestContext) {

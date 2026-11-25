@@ -1,6 +1,6 @@
 import type { ConversationId } from '@conexus/hub-api'
-import type { Owner } from '../controller-kit/public.ts'
-import { resourceOf } from '../controller-kit/public.ts'
+import type { Owner } from '../../harness/spec/public.ts'
+import { resourceOf } from '../../harness/spec/public.ts'
 import type { Builder } from './builder.ts'
 
 /** The titles of a page of the person's threads, read from Mastra by each id (at most a page). */

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { endOf } from '../conversation/test-conversation.ts'
+import { endOf } from '../../harness/routes/test-conversation.ts'
 import { assisting, created, reading, said, searching, talking } from './test-assistant.ts'
 
 test('o fuso que o navegador manda no cabeçalho chega à leitura: a hora em que a leitura voltou vai no deslocamento de quem lê', async (t) => {

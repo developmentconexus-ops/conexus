@@ -1,6 +1,6 @@
 import { DATA_TOOL, DataResult } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
-import type { StreamEvent } from '../conversation/test-conversation.ts'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
 import { textOf } from './test-real-model.ts'
 import { expectedOf, meets } from './test-truths.ts'
 

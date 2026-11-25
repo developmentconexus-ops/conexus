@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { KEY, MODEL } from '../../harness/routes/test-conversation.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   BRUNO,
@@ -12,7 +13,6 @@ import {
   plantCompany,
   post,
 } from '../../hub/identity/test-hub.ts'
-import { KEY, MODEL } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 
 /**

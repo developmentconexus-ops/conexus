@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ConnectionId } from '@conexus/hub-api'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import type { Principal } from '../../hub/access/public.ts'
 import { call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { said, talking } from '../assistant/test-assistant.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import {
   agentOf,
   agentsOn,

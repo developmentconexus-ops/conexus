@@ -3,8 +3,14 @@ import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { test } from 'node:test'
 import { APP_FOLDER } from '../../harness/machine/public.ts'
+import {
+  asked,
+  conversing,
+  started,
+  streamOf,
+  title,
+} from '../../harness/routes/test-conversation.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, started, streamOf, title } from './test-conversation.ts'
 
 const PWD = {
   type: 'tool_use',

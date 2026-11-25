@@ -1,10 +1,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
+import {
+  asked,
+  conversing,
+  endOf,
+  messagesOf,
+  title,
+} from '../../harness/routes/test-conversation.ts'
+import { dataOf, partsOf } from '../../harness/routes/test-parts.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import type { StreamEvent } from './test-conversation.ts'
-import { asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
-import { dataOf, partsOf } from './test-parts.ts'
 
 const VALUE = 'abc123'
 const WRITE = { name: 'mastra_workspace_write_file', input: { path: 'a.ts', content: 'x\n' } }

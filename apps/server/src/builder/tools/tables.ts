@@ -1,9 +1,9 @@
 import { sql } from 'drizzle-orm'
 import { check, foreignKey, integer, jsonb, text, unique, uuid } from 'drizzle-orm/pg-core'
+import { authored, builder, instant, OWN_COMPANY } from '../../harness/schema/public.ts'
 import { policy } from '../../hub/identity/public.ts'
 import { company } from '../../hub/identity/public-tables.ts'
 import { SCOPE_ROLES } from '../../platform/database.ts'
-import { authored, builder, instant, OWN_COMPANY } from '../schema/public.ts'
 
 /**
  * A tool of the company's library (step 24.3, `T1`): one read of one connection, the same in every

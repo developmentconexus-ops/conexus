@@ -10,17 +10,17 @@ import type { StorageThreadType } from '@mastra/core/memory'
 import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
-import type { Database } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
-import { answer, serve } from '../../platform/http.ts'
 import {
   answerModelChange,
   attemptIdOf,
   listOwned,
   ownThread,
   RUN_MARKS,
-} from '../controller-kit/public.ts'
+} from '../../harness/spec/public.ts'
+import type { Database } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
+import { answer, serve } from '../../platform/http.ts'
 import type { InProject, ToolsDeps } from '../tools/public.ts'
 import { admitted, databaseScopeOf, inProjectOf } from '../tools/public.ts'
 import { construtorMarks, openConstrutor } from './open.ts'

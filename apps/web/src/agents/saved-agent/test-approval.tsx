@@ -1,7 +1,7 @@
 import type { AgentDetail, WrittenRow } from '@conexus/hub-api'
 import {
   AGENTS_CONTROLLER,
-  BUILDER_ROUTES,
+  CONVERSATION_ROUTES,
   OperationId,
   ToolCallId,
   ToolId,
@@ -21,7 +21,7 @@ import { agentScreens } from './test-hub.tsx'
 // The conversation with an agent whose write asks the person (step 24.5), fed with what Mastra's
 // controller emitted and stored in `platform/recordings/mastra/approval*.jsonl` (testing T26).
 
-export const SESSION = `*${BUILDER_ROUTES}/agent-controller/${AGENTS_CONTROLLER}/sessions/:id`
+export const SESSION = `*${CONVERSATION_ROUTES}/agent-controller/${AGENTS_CONTROLLER}/sessions/:id`
 const PAGE = `${AREA}/${AGENT}/${CHAT}`
 const READ_TOOL = ToolId.parse('99999999-aaaa-4aaa-8aaa-999999999999')
 const UPDATED = '2026-11-07T12:00:00.000Z'

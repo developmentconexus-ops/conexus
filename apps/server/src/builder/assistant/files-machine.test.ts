@@ -5,18 +5,18 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { setImmediate } from 'node:timers/promises'
 import type { Control } from '../../harness/machine/test-machine.ts'
-import { post } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
-import { until } from '../../platform/test-until.ts'
 import {
   endOf,
   hubBeside,
   messagesOf,
   sessionUrl,
   stopped,
-} from '../conversation/test-conversation.ts'
-import { failuresOf } from '../conversation/test-parts.ts'
-import { tool } from '../conversation/test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf } from '../../harness/routes/test-parts.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
+import { post } from '../../hub/identity/test-hub.ts'
+import type { Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import { assisting, created, talking } from './test-assistant.ts'
 import {
   conversation,

@@ -383,15 +383,15 @@
       "name": "a conversa de outra pessoa ou de outra empresa: o mesmo 404 em toda rota; Diego não recebe evento de Ana; nenhuma rota do Mastra"
     },
     {
-      "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "file": "apps/server/src/harness/routes/guard.test.ts",
       "name": "a resposta de aprovação: outra pessoa, ou a mesma por outro controlador, recebe CONVERSATION_NOT_FOUND; alwaysAllowCategory ou um requestContext dão REQUEST_MALFORMED; um toolCallId que não é um portão vivo da sessão responde not_pending; nada roda \\(7\\)"
     },
     {
-      "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "file": "apps/server/src/harness/routes/guard.test.ts",
       "name": "o Assistente: as rotas do Mastra"
     },
     {
-      "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "file": "apps/server/src/harness/routes/guard.test.ts",
       "name": "os controladores novos: as seis rotas servem o controlador agents ao dono da conversa enquanto ele gerencia agentes; a de outra pessoa, a de outro controlador e a de quem virou membro dão CONVERSATION_NOT_FOUND"
     },
     {

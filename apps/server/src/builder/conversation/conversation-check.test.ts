@@ -3,12 +3,19 @@ import { test } from 'node:test'
 import { CHECK_LIMITS } from '@conexus/app/check'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { z } from 'zod'
+import {
+  answeredOf,
+  asked,
+  conversing,
+  endOf,
+  messagesOf,
+  title,
+} from '../../harness/routes/test-conversation.ts'
+import { partsOf, shownPartsOf, versionsOf } from '../../harness/routes/test-parts.ts'
+import { ask, conversingWith, tool, untilCard, WHO } from '../../harness/routes/test-questions.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import type { Blocks } from './test-check.ts'
 import { CHECK, checkCalls, checking, FAILED, FIX, reportsIn, turnOf, WRITE } from './test-check.ts'
-import { answeredOf, asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
-import { partsOf, shownPartsOf, versionsOf } from './test-parts.ts'
-import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
 test('conexus_check e o fim do turno dão o mesmo relatório; o fim que passa guarda a versão que montou (12, 13)', async (t) => {
   const model = turnOf([WRITE, CHECK])

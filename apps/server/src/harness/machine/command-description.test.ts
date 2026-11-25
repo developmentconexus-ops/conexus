@@ -4,9 +4,9 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { STEP_NAMES } from '@conexus/app/check'
 import { assisting, created, said, talking } from '../../builder/assistant/test-assistant.ts'
-import { asked, conversing, endOf } from '../../builder/conversation/test-conversation.ts'
-import { tool } from '../../builder/conversation/test-questions.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { asked, conversing, endOf } from '../routes/test-conversation.ts'
+import { tool } from '../routes/test-questions.ts'
 
 const COMMAND = 'mastra_workspace_execute_command'
 

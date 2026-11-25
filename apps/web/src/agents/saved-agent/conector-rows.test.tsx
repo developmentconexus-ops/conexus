@@ -1,4 +1,4 @@
-import { AGENTS_CONTROLLER, BUILDER_ROUTES, BUILDER_TOOL } from '@conexus/hub-api'
+import { AGENTS_CONTROLLER, BUILDER_TOOL, CONVERSATION_ROUTES } from '@conexus/hub-api'
 import { screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -19,7 +19,7 @@ function stored(controller: string) {
       HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: false }),
     ),
     http.get(
-      `*${BUILDER_ROUTES}/agent-controller/${controller}/sessions/:id/threads/:t/messages`,
+      `*${CONVERSATION_ROUTES}/agent-controller/${controller}/sessions/:id/threads/:t/messages`,
       () =>
         HttpResponse.json({
           messages: [

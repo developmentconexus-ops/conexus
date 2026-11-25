@@ -1,6 +1,7 @@
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
-import { conversationMemory, TITLE } from '../controller-kit/public.ts'
+import { TITLE } from '../../harness/prompt/public.ts'
+import { conversationMemory } from '../../harness/spec/public.ts'
 import { OBSERVED } from './files.ts'
 import { ASSISTANT_OBSERVER } from './instructions.ts'
 

@@ -10,8 +10,8 @@ import {
   AgentId,
   AgentListed,
   ATTEMPT_KEY_HEADER,
-  BUILDER_ROUTES,
   CONSTRUTOR_CONTROLLER,
+  CONVERSATION_ROUTES,
   DraftPatch,
   ToolInput,
 } from '@conexus/hub-api'
@@ -33,7 +33,7 @@ import { catalogRoute, toolRoutes, writesRoute } from './test-hub-tools.tsx'
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
 function SESSION(controller: string) {
-  return `*${BUILDER_ROUTES}/agent-controller/${controller}/sessions/:id`
+  return `*${CONVERSATION_ROUTES}/agent-controller/${controller}/sessions/:id`
 }
 
 type Answers = {

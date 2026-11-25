@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { endOf } from '../conversation/test-conversation.ts'
-import { dataOf } from '../conversation/test-parts.ts'
-import { tool } from '../conversation/test-questions.ts'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { dataOf } from '../../harness/routes/test-parts.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 test('a sala do Assistente diz "Ligando a máquina": a primeira ferramenta de arquivo do turno conta a partida na conversa, como no Builder; um turno sem máquina não conta nada (QA F1)', async (t) => {

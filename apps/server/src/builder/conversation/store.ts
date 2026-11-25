@@ -1,12 +1,12 @@
 import type { CompanyId, Person, PersonId } from '@conexus/hub-api'
 import { ConversationId, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm'
+import type { ReleaseScope } from '../../harness/spec/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database, Scope } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { pageOf } from '../../platform/pages.ts'
-import type { ReleaseScope } from '../controller-kit/public.ts'
 import { conversation } from './tables.ts'
 
 type Deps = {

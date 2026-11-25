@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
   answeredOf,
   asked,
@@ -11,9 +10,10 @@ import {
   started,
   streamOf,
   title,
-} from './test-conversation.ts'
-import { failuresOf, partsOf, versionsOf } from './test-parts.ts'
-import { WHO } from './test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf, partsOf, versionsOf } from '../../harness/routes/test-parts.ts'
+import { WHO } from '../../harness/routes/test-questions.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 
 const WRITE = {
   type: 'tool_use',

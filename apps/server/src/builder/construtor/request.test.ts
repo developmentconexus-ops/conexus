@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { sameRequests } from '../controller-kit/test-request.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
+import { sameRequests } from '../../harness/spec/test-request.ts'
 import { building, resultOf } from './test-construtor.ts'
 
 const INSTRUCTIONS = 'Responda sobre as vendas do dia.'

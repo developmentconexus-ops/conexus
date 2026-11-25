@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { appLogin, ProjectId } from '@conexus/hub-api'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { stepped, tool } from '../../harness/routes/test-questions.ts'
 import { ASK, folder, MIGRATION, send, versionWriting } from '../../hub/apps/test-versions.ts'
 import type { Anthropic } from '../../platform/test-anthropic.ts'
 import {
@@ -13,8 +15,6 @@ import {
 } from '../../platform/test-company-postgres.ts'
 import { unreachableDatabaseUrl } from '../../platform/test-database.ts'
 import { talking } from '../assistant/test-assistant.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { stepped, tool } from '../conversation/test-questions.ts'
 import { agentsOn, publishedAgent, talkedTo } from './test-agents.ts'
 
 const READ = 'app_data_read'

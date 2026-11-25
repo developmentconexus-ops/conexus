@@ -5,12 +5,12 @@ import { test } from 'node:test'
 import { CHECK_LIMITS } from '@conexus/app/check'
 import { z } from 'zod'
 import type { BrowserReport } from '../../harness/machine/public.ts'
+import { asked, conversing, title } from '../../harness/routes/test-conversation.ts'
+import { shownPartsOf, versionsOf } from '../../harness/routes/test-parts.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { folder, checking as versionChecking } from '../../hub/apps/test-versions.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { CHECK, checking, checksIn, FAILED, turnOf, WRITE } from './test-check.ts'
-import { asked, conversing, title } from './test-conversation.ts'
-import { shownPartsOf, versionsOf } from './test-parts.ts'
-import { tool } from './test-questions.ts'
 
 const Image = z.looseObject({
   type: z.literal('image'),

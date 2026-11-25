@@ -3,10 +3,10 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { conversing, endOf, sent, streamOf, title } from '../../harness/routes/test-conversation.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
-import { conversing, endOf, sent, streamOf, title } from '../conversation/test-conversation.ts'
 import { created } from './test-assistant.ts'
 
 /** Whether the process `pid` still runs. */

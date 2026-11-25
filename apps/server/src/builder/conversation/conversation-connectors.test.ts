@@ -1,74 +1,17 @@
 import assert from 'node:assert/strict'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
-import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
-import { call } from '../../hub/identity/test-hub.ts'
+import { endOf, messagesOf, sent } from '../../harness/routes/test-conversation.ts'
+import { answerTo, ask, tool, untilCard, WHO } from '../../harness/routes/test-questions.ts'
+import { PLANTED } from '../../hub/connectors/test-rows.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import { conversing, endOf, messagesOf, sent, started, streamOf } from './test-conversation.ts'
-import { answerTo, ask, stepped, tool, untilCard, WHO } from './test-questions.ts'
+import type { Block } from './test-connecting.ts'
+import { COUNT, connecting, NOTES, READ, SAVE } from './test-connecting.ts'
 
-const READ = 'connector_read'
-const NOTES = 'connector_notes'
-const SAVE = 'connector_note_save'
 /** How Mastra lists a skill the model may load. */
 const SKILL = '<name>conexus-sankhya</name>'
-const COUNT = 'SELECT COUNT(*) AS N FROM TSIEMP'
-
-type Block = ReturnType<typeof tool>
 
 function reading(sql = COUNT): Block {
   return tool(READ, { connection: 'Matriz', operation: 'sankhya.consultar', input: { sql } })
-}
-
-/** A conversation whose Projeto may read the company's Sankhya double (`rows` rows when it answers a query), and the model's steps. */
-async function connecting(t: TestContext, steps: Block[][], rows = 3) {
-  const calls: Sent[] = []
-  const fake = await servedSankhya(t)
-  const origin = await withRows(t, fake.origin, rows)
-  const on = await conversing(
-    t,
-    stepped(
-      steps.map((blocks) => () => blocks),
-      calls,
-    ),
-    (config) => ({
-      ...config,
-      connectorOrigins: new Map([['sankhya', origin]]),
-    }),
-  )
-  const { hub, ana, companyId, projectId } = on
-  const connections = `/api/companies/${companyId}/connections`
-  const grant = `/api/companies/${companyId}/projects/${projectId}/connections`
-  async function link(name = 'Matriz') {
-    const linked = await linkSankhya(hub, ana, connections, fake.credential, undefined, name)
-    const id = String(Object(linked.json()).connection.id)
-    assert.equal(Object((await testOf(hub, ana, connections, id)).json()).result, 'WORKING')
-    return id
-  }
-  async function release(id: string) {
-    assert.equal((await call(hub, ana, 'PUT', `${grant}/${id}`)).statusCode, 200)
-  }
-  async function withdraw(id: string) {
-    assert.equal((await call(hub, ana, 'DELETE', `${grant}/${id}`)).statusCode, 204)
-  }
-  const url = `${on.conversations}/${await started(hub, ana, on.conversations)}`
-  const stream = await streamOf(hub, ana, url)
-  t.after(() => stream.close())
-  async function say(content = 'Veja as empresas') {
-    assert.equal((await sent(hub, ana, url, content)).statusCode, 200)
-    return stream.turn()
-  }
-  /** Says `content` and answers each card of the notebook's save in order (`true` is Aprovar); the turn's events. */
-  async function sayAnswering(replies: boolean[], content = 'Veja as empresas') {
-    assert.equal((await sent(hub, ana, url, content)).statusCode, 200)
-    for (const approved of replies) {
-      const { card } = await untilCard(stream, 'note')
-      await answerTo(hub, ana, url, card.toolCallId, { kind: 'note', approved })
-    }
-    return stream.turn()
-  }
-  return { ...on, calls, link, release, withdraw, url, stream, say, sayAnswering }
 }
 
 function connectorTools(call: Sent | undefined): string[] {
@@ -239,77 +182,4 @@ test('o Builder diz o teto como os outros: a descrição do connector_read conta
   const described = on.calls.at(0)?.descriptions[READ] ?? ''
   assert.ok(described.includes('At most 50 connector calls per answer.'), described)
   assert.doesNotMatch(described, /per run/)
-})
-
-test('connector_notes devolve as anotações da ligação com a consulta de cada uma', async (t) => {
-  const on = await connecting(t, [
-    [
-      tool(SAVE, {
-        connection: 'Matriz',
-        concept: 'Empresa',
-        mapping: 'TSIEMP.CODEMP',
-        provingQuery: COUNT,
-      }),
-    ],
-    [tool(NOTES, { connection: 'Matriz' })],
-  ])
-  await on.release(await on.link())
-  assert.equal(endOf(await on.sayAnswering([true])), 'complete')
-  assert.equal(endOf(await on.say()), 'complete')
-  const listed = (await messagesOf(on.hub, on.ana, on.url))
-    .flatMap((message) => message.parts)
-    .flatMap((part) =>
-      part.type === 'tool-invocation' && part.toolInvocation.toolName === NOTES
-        ? [Object(part.toolInvocation.result)]
-        : [],
-    )
-  assert.equal(listed.length, 1)
-  assert.equal(listed[0].Empresa.provingQuery, COUNT)
-})
-
-/** A tool's answer: its kind, or the refusal of its input by Mastra's check of the tool's schema. */
-function answerOf(result: unknown) {
-  const answer = Object(result)
-  return answer.kind ?? (answer.error === true ? 'TOOL_INPUT_REFUSED' : undefined)
-}
-
-test('o bloco das ligações mostra o conceito salvo no turno seguinte; um nome que não é de ligação liberada é recusado pelo esquema da ferramenta', async (t) => {
-  const missing = { connection: 'Filial', connector: 'sankhya' }
-  const on = await connecting(t, [
-    [
-      tool(SAVE, {
-        connection: 'Matriz',
-        concept: 'Empresa',
-        mapping: 'TSIEMP.CODEMP',
-        provingQuery: COUNT,
-      }),
-      tool(READ, { connection: 'Filial', operation: 'sankhya.consultar', input: { sql: COUNT } }),
-      tool(NOTES, missing),
-      tool(SAVE, { ...missing, concept: 'X', mapping: 'm', provingQuery: COUNT }),
-    ],
-  ])
-  await on.release(await on.link())
-  assert.equal(endOf(await on.sayAnswering([true])), 'complete')
-  const refused = (await messagesOf(on.hub, on.ana, on.url))
-    .flatMap((message) => message.parts)
-    .flatMap((part) =>
-      part.type === 'tool-invocation' && part.toolInvocation.toolName !== SAVE
-        ? [[part.toolInvocation.toolName, answerOf(part.toolInvocation.result)]]
-        : [],
-    )
-    .filter(([name]) => [READ, NOTES].includes(String(name)))
-  assert.deepEqual(refused, [
-    [READ, 'TOOL_INPUT_REFUSED'],
-    [NOTES, 'TOOL_INPUT_REFUSED'],
-  ])
-  assert.equal(endOf(await on.say()), 'complete')
-  assert.ok(on.calls.at(-1)?.system.includes('Notebook: Empresa.'))
-  const saves = (await messagesOf(on.hub, on.ana, on.url))
-    .flatMap((message) => message.parts)
-    .flatMap((part) =>
-      part.type === 'tool-invocation' && part.toolInvocation.toolName === SAVE
-        ? [answerOf(part.toolInvocation.result)]
-        : [],
-    )
-  assert.deepEqual(saves, ['SAVED', 'TOOL_INPUT_REFUSED'])
 })

@@ -5,6 +5,8 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
+import { approvedCallOf } from '../../harness/routes/public.ts'
+import { NEVER_ASKS } from '../../harness/spec/public.ts'
 import type { Principal } from '../../hub/access/public.ts'
 import type {
   ApprovalDeps,
@@ -19,8 +21,6 @@ import type {
 import { mustAsk, openText, uncertainText } from '../../hub/connectors/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { toldBody, toldText } from '../../platform/model-text.ts'
-import { NEVER_ASKS } from '../controller-kit/public.ts'
-import { approvedCallOf } from '../conversation/public.ts'
 import { unfixedOf } from '../tools/public.ts'
 import type { FrozenTool, PresetFrozenTool } from './frozen.ts'
 import { targetOf } from './publish.ts'

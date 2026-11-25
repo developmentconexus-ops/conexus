@@ -2,13 +2,13 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { PreviewData } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
+import { asked, conversing, title } from '../../harness/routes/test-conversation.ts'
 import type { Checked } from '../../hub/apps/test-versions.ts'
 import { checking, folder } from '../../hub/apps/test-versions.ts'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
-import { asked, conversing, title } from './test-conversation.ts'
 
 const WRITE = {
   type: 'tool_use',

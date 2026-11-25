@@ -21,17 +21,17 @@ Mastra down.
 
 Each kind of conversation runs on its own `AgentController`, Mastra's harness for a long-lived
 session: `builder`, `assistant`, `agents` and `construtor` (the screen that edits a Project agent's
-draft). All four are built by `mountAgent` in `builder/controller-kit/mount.ts` from the agent's
-ficha (see below), which calls `controllerOf` in `builder/controller-kit/factories.ts`, each with one
+draft). All four are built by `mountAgent` in `harness/spec/mount.ts` from the agent's
+ficha (see below), which calls `controllerOf` in `harness/spec/factories.ts`, each with one
 mode, `conversa`. For the Builder, the Assistant and the Construtor the mode's `availableTools`
 is a closed list; the `agents` controller has none, and the tool set each version's code builds is
 the closed set. The controller's built-in tools stay off
 unless the mode offers them; Conexus supplies its own `ask_user` and, for the Builder,
-`submit_plan`, under the native ids (`builder/controller-kit/ask-user.ts` and `builder/conversation/plan-tools.ts`). The `subagent` tool is
+`submit_plan`, under the native ids (`harness/spec/ask-user.ts` and `builder/conversation/plan-tools.ts`). The `subagent` tool is
 on only for the Assistant, with one helper type that reads (`builder/assistant/research.ts`).
 
 A session's id is the thread's id and Conexus's conversation id. The thread's resource encodes the
-kind and the owner, `<prefix>company:<c>:person:<p>` (`builder/controller-kit/kinds.ts`), and the
+kind and the owner, `<prefix>company:<c>:person:<p>` (`harness/spec/kinds.ts`), and the
 guard reads it to learn whose a thread is.
 
 `initialState.yolo` decides approvals, and the ficha's `approval` writes it. The Builder, the
@@ -39,7 +39,7 @@ Assistant and the Construtor have `NOTHING_ASKS`, so they run with `yolo: true` 
 a person ([0053](../decisions/0053-builder-tools-run-without-asking.md)). The `agents` controller has
 `THE_WRITE_ASKS`, so it runs with `yolo: false`: each write tool carries its own `requireApproval`,
 and the mount copies every other tool whose rule is not a function with a rule that never asks
-(`askingOnlyByOwnRule`, `builder/controller-kit/mount.ts`; [agents and
+(`askingOnlyByOwnRule`, `harness/spec/mount.ts`; [agents and
 automations](agents-and-automations.md)). The Builder and the Assistant stay in `yolo`, which approves
 every approval gate on its own, so the notebook's `connector_note_save` asks by `suspend()`, as `ask_user`
 and `submit_plan` do, and the person's yes or no resumes it (`builder/connectors/connector-tools.ts`).
@@ -48,8 +48,8 @@ and `submit_plan` do, and the person's yes or no resumes it (`builder/connectors
 
 Each agent is written as a **ficha**, a plain value that says what is its own, and one **mount**
 turns any ficha into an `Agent` and its controller, the same way for the four. The types are in
-`builder/controller-kit/spec.ts` (`AgentSpec`, and `ConversationSpec` for an agent that has a
-controller) and the functions in `builder/controller-kit/mount.ts`. `agentOfSpec` is the only place
+`harness/spec/spec.ts` (`AgentSpec`, and `ConversationSpec` for an agent that has a
+controller) and the functions in `harness/spec/mount.ts`. `agentOfSpec` is the only place
 that calls Mastra's `Agent` constructor; `mountAgent` adds the controller
 (`controllerOf`), its mode, the controller's own tools, the helpers and the machine. A ficha holds:
 
@@ -92,15 +92,15 @@ alters one byte of it turns that agent's tests red.
 | Project agent | `new Agent` per published version, key `agent-<id>`, by a ficha made from the version (`builder/agents/agent.ts`) | the version's, or the person's | observational or plain, per version | per conversation, when the version asks |
 
 No agent names a model in code. The model is read from the run's `RequestContext`, as Mastra's
-router string `provider/model` (`routedModel` in `builder/controller-kit/model.ts`). Every agent
-shares `agentDefaults` (`builder/controller-kit/factories.ts`): the same processors,
+router string `provider/model` (`routedModel` in `harness/spec/model.ts`). Every agent
+shares `agentDefaults` (`harness/spec/factories.ts`): the same processors,
 `maxRetries: 0`, and a model timeout of 60 seconds to the first chunk and 10 minutes a step.
 
 ## Processors carry the model accounts
 
 Model accounts live in processors, not in the agents
 ([0049](../decisions/0049-model-accounts-keys-sign-ins-queues.md)). The input processors are
-the turn processor (`turnProcessor`, `builder/controller-kit/turns.ts`), the same for every agent, which
+the turn processor (`turnProcessor`, `harness/spec/turns.ts`), the same for every agent, which
 builds the person's `AccountTurn` for the account queue and puts it on the request context, then `accountPick` (`harness/model-accounts/processors.ts`), which picks the account, the
 model and the thinking effort for each step. What differs is the ficha's `turn`: a `SESSION` turn is
 held until the session's `agent_end`; a `RUN` turn is taken by the run alone. The Builder's is the
@@ -115,19 +115,19 @@ memory, and one that aborts a run whose conversation was deleted. Conexus uses n
 PII or prompt-injection processor.
 
 Mastra resolves instructions, tools, skills and workspace separately for each run, and a resumed
-run gets a new request context. `oncePerRun` (`builder/controller-kit/once.ts`) memoizes per
+run gets a new request context. `oncePerRun` (`harness/spec/once.ts`) memoizes per
 context, so one run reads the Hub once.
 
 ## Storage and memory
 
-One `PostgresStore` (`builder/conversation/storage.ts`) writes Mastra's tables in schema
+One `PostgresStore` (`harness/memory/storage.ts`) writes Mastra's tables in schema
 `mastra` of a database of its own, under the login `mastra_runtime`, on a pool `main.ts` owns
 ([0010](../decisions/0010-mastra-tables-own-database.md)). Mastra creates the tables at start;
 Conexus code never writes them directly. It reads the thread state (the task list) and the
 schedules through `storage.getStore`. Which thread belongs to whom is indexed in the Hub's own
 database, outside Mastra's schema (`builder/conversation/store.ts`).
 
-Memory is one factory, `conversationMemory` (`builder/controller-kit/memory.ts`), which each ficha's
+Memory is one factory, `conversationMemory` (`harness/spec/memory.ts`), which each ficha's
 `memory` and `threads` take: Mastra's
 observational memory scoped to the thread, observing at 30,000 message tokens and reflecting at
 40,000 observation tokens, with async buffering off. The title writer uses the turn's account. The
@@ -192,7 +192,7 @@ The browser talks to the controllers through `@mastra/client-js`
 (`apps/web/src/harness/room/session.ts`). On the server, `@mastra/fastify`'s
 `MastraServer` registers exactly seven of `@mastra/server`'s `SERVER_ROUTES` under
 `/api/builder`: a session's state, its stream, a new message, abort, a card's answer, a write's
-approval and the transcript (`builder/conversation/guard.ts`). The Hub refuses to start if one of
+approval and the transcript (`harness/routes/guard.ts`). The Hub refuses to start if one of
 them is missing from the installed server; every other Mastra route is a 404.
 
 Each route is marked `access: 'session'`, so the Hub's own access hook reads the session first and
@@ -200,10 +200,10 @@ Mastra's auth stays off. A guard then checks the thread belongs to the signed-in
 controller in the path, admits the person again, refuses a `requestContext` or `include` sent by
 the browser, and refuses a new message while the Hub is updating. `BuilderServer` overrides the
 stream to slim the state events, pace writes to the socket and drop a client more than 8 MiB
-behind (`builder/conversation/stream.ts`). Creating, listing and deleting conversations are the
+behind (`harness/routes/stream.ts`). Creating, listing and deleting conversations are the
 Hub's own Fastify routes, not Mastra's. So is changing a conversation's model: each agent's route
 admits the person and finds the conversation, and `answerModelChange`
-(`builder/controller-kit/routes.ts`) does the rest the same way for the Builder, the Assistant and
+(`harness/spec/routes.ts`) does the rest the same way for the Builder, the Assistant and
 the Construtor. Mastra could serve this one route natively; that waits for the harness's second
 step, which also renames the folders and the room.
 

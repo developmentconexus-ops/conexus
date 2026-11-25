@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { holding, PARTIAL, sent, streamOf, title } from '../../harness/routes/test-conversation.ts'
 import { CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import {
   automating,
@@ -8,7 +9,6 @@ import {
   ranNow,
   salesSummary,
 } from '../automations/test-automations.ts'
-import { holding, PARTIAL, sent, streamOf, title } from '../conversation/test-conversation.ts'
 import { assisting, created, publishedApp } from './test-assistant.ts'
 
 function idOf(url: string) {

@@ -1,9 +1,6 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
-import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { queued, withOwnerLock } from '../../platform/test-database.ts'
 import {
   answeredOf,
   asked,
@@ -16,8 +13,11 @@ import {
   sessionUrl,
   streamOf,
   title,
-} from '../conversation/test-conversation.ts'
-import { failuresOf } from '../conversation/test-parts.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf } from '../../harness/routes/test-parts.ts'
+import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { queued, withOwnerLock } from '../../platform/test-database.ts'
 import { created, talking } from './test-assistant.ts'
 import { alive, googleOnly, within } from './test-google-assistant.ts'
 

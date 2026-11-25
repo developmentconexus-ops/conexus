@@ -1,6 +1,6 @@
 import type { ConversationId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
-import { controllerIn } from '../controller-context/public.ts'
+import { controllerIn } from '../../harness/memory/public.ts'
 
 /**
  * The conversation a Mastra run is: the controller names the run's session, whose id is the

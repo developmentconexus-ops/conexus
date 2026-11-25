@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { hubBeside, title } from '../../harness/routes/test-conversation.ts'
+import type { tool } from '../../harness/routes/test-questions.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import { MailApiUrl } from '../../platform/config.ts'
@@ -10,8 +12,6 @@ import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { silent } from '../../platform/test-database.ts'
 import { mailServer } from '../../platform/test-mail.ts'
 import { assisting } from '../assistant/test-assistant.ts'
-import { hubBeside, title } from '../conversation/test-conversation.ts'
-import type { tool } from '../conversation/test-questions.ts'
 
 type Block = ReturnType<typeof tool>
 

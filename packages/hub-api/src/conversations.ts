@@ -8,7 +8,7 @@ import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
  * Where the Hub serves Mastra's own session routes of the Builder, behind its guard (decision
  * 0050), as the screen's `MastraClient` asks them, and the controller they name.
  */
-export const BUILDER_ROUTES = '/api/builder'
+export const CONVERSATION_ROUTES = '/api/builder'
 export const BUILDER_CONTROLLER = 'builder'
 
 export const ConversationId = z.uuid().brand('ConversationId')

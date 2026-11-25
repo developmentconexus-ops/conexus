@@ -11,9 +11,10 @@ import {
   automationsOf,
 } from './builder/automations/public.ts'
 import { createConstrutor, tablesWithColumnNamesOf } from './builder/construtor/public.ts'
-import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
+import { createBuilderConversations } from './builder/conversation/public.ts'
 import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
 import { createHubMastra } from './harness/mastra/public.ts'
+import { createMastraStorage } from './harness/memory/public.ts'
 import type { openGoogleCalls } from './harness/model-accounts/public.ts'
 import { isChoosable } from './harness/model-accounts/public.ts'
 import type { Access, Principal } from './hub/access/public.ts'

@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { SHOWN_TEXT_MAX } from '@conexus/hub-api'
 import { INSTALLATION } from '../../harness/machine/test-machine.ts'
+import { endOf, messagesOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { call } from '../../hub/identity/test-hub.ts'
-import { endOf, messagesOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const MEDIA: Record<string, [type: string, disposition: 'inline' | 'attachment']> = {

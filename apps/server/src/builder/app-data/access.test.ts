@@ -2,6 +2,14 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { APP_DATA_TOOL, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import {
+  conversing,
+  endOf,
+  sent,
+  started,
+  streamOf,
+} from '../../harness/routes/test-conversation.ts'
+import { stepped } from '../../harness/routes/test-questions.ts'
 import { builderDataOn } from '../../hub/apps/test-builder-data.ts'
 import {
   call,
@@ -12,8 +20,6 @@ import {
   post,
 } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import { conversing, endOf, sent, started, streamOf } from '../conversation/test-conversation.ts'
-import { stepped } from '../conversation/test-questions.ts'
 import { builderAppDataTools } from './public.ts'
 
 const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }

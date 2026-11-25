@@ -1,9 +1,9 @@
 import { foreignKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { builder, OWN } from '../../harness/schema/public.ts'
 import { policy } from '../../hub/identity/public.ts'
 import { company, member } from '../../hub/identity/public-tables.ts'
 import { project } from '../../hub/projects/public-tables.ts'
 import { SCOPE_ROLES } from '../../platform/database.ts'
-import { builder, OWN } from '../schema/public.ts'
 
 /**
  * One Mastra thread, whose id is this row's: the company, the Projeto and the person it belongs to.

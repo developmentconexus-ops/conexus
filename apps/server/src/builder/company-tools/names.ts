@@ -1,5 +1,5 @@
 import { APP_DATA_TOOL, ASSISTANT_TOOL, BUILDER_TOOL, DATA_TOOL } from '@conexus/hub-api'
-import type { ControllerKind } from '../controller-kit/public.ts'
+import type { ControllerKind } from '../../harness/spec/public.ts'
 
 /** The typed reads (`TYPED_READ_NAMES`) as one entry: the model gets them only through `search_tools`. */
 const TYPED_READS = 'typed_reads'

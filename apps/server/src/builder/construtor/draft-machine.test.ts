@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import { agentOf, drafted } from '../agents/test-agents.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { building, keeping } from './test-construtor.ts'
 
 test('o rascunho pelo Construtor: agent_set sem `machine` mantém o Computador que a pessoa ligou (18)', async (t) => {

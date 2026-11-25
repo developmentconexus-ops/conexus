@@ -12,6 +12,32 @@ import type {
 } from '../../harness/machine/public.ts'
 import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import { CONEXUS_PROMPT, TITLE } from '../../harness/prompt/public.ts'
+import type {
+  ConversationSpec,
+  Owner,
+  ReleaseScope,
+  RunMark,
+  RunScope,
+  Speakers,
+} from '../../harness/spec/public.ts'
+import {
+  ASK_USER_TOOL,
+  agentManagerAdmission,
+  blockOf,
+  CONVERSATION_MODE,
+  conversationMemory,
+  createAskUserTool,
+  mountAgent,
+  oncePerRun,
+  principalOf,
+  releaseByMarks,
+  runResolver,
+  sessionModel,
+  takeOfScope,
+  toolsOf,
+  turnKeyOn,
+} from '../../harness/spec/public.ts'
 import type { Access, Place } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
@@ -28,33 +54,6 @@ import {
   companyTools,
 } from '../company-tools/public.ts'
 import type { ConnectorAccess } from '../connectors/public.ts'
-import type {
-  ConversationSpec,
-  Owner,
-  ReleaseScope,
-  RunMark,
-  RunScope,
-  Speakers,
-} from '../controller-kit/public.ts'
-import {
-  ASK_USER_TOOL,
-  agentManagerAdmission,
-  blockOf,
-  CONEXUS_PROMPT,
-  CONVERSATION_MODE,
-  conversationMemory,
-  createAskUserTool,
-  mountAgent,
-  oncePerRun,
-  principalOf,
-  releaseByMarks,
-  runResolver,
-  sessionModel,
-  TITLE,
-  takeOfScope,
-  toolsOf,
-  turnKeyOn,
-} from '../controller-kit/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { databaseScopeOf } from '../tools/public.ts'
 import { testDraft } from './draft-trial.ts'

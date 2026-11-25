@@ -500,5 +500,199 @@
       "from": "apps/server/src/builder/machine/test-machine.ts",
       "to": "apps/server/src/harness/machine/test-machine.ts"
     }
+  ],
+  "g5d": [
+    {
+      "from": "apps/server/src/builder/controller-context/controller-in.test.ts",
+      "to": "apps/server/src/harness/memory/controller-in.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-context/controller-in.ts",
+      "to": "apps/server/src/harness/memory/controller-in.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/admission.ts",
+      "to": "apps/server/src/harness/spec/admission.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/ask-user.ts",
+      "to": "apps/server/src/harness/spec/ask-user.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/concurrency.test.ts",
+      "to": "apps/server/src/harness/spec/concurrency.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/factories.ts",
+      "to": "apps/server/src/harness/spec/factories.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/instructions.ts",
+      "to": "apps/server/src/harness/prompt/instructions.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/kinds.ts",
+      "to": "apps/server/src/harness/spec/kinds.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/lines.test.ts",
+      "to": "apps/server/src/harness/spec/lines.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/memory.ts",
+      "to": "apps/server/src/harness/spec/memory.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/model.test.ts",
+      "to": "apps/server/src/harness/spec/model.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/model.ts",
+      "to": "apps/server/src/harness/spec/model.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/mount.ts",
+      "to": "apps/server/src/harness/spec/mount.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/once.ts",
+      "to": "apps/server/src/harness/spec/once.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/open.test.ts",
+      "to": "apps/server/src/harness/spec/open.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/open.ts",
+      "to": "apps/server/src/harness/spec/open.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/release.ts",
+      "to": "apps/server/src/harness/spec/release.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/request.test.ts",
+      "to": "apps/server/src/harness/spec/request.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/routes.ts",
+      "to": "apps/server/src/harness/spec/routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/run.test.ts",
+      "to": "apps/server/src/harness/spec/run.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/run.ts",
+      "to": "apps/server/src/harness/spec/run.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/skills.ts",
+      "to": "apps/server/src/harness/spec/skills.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/speakers.ts",
+      "to": "apps/server/src/harness/spec/speakers.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/spec.test.ts",
+      "to": "apps/server/src/harness/spec/spec.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/spec.ts",
+      "to": "apps/server/src/harness/spec/spec.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/test-request.ts",
+      "to": "apps/server/src/harness/spec/test-request.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/test-run.ts",
+      "to": "apps/server/src/harness/spec/test-run.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/thread.ts",
+      "to": "apps/server/src/harness/spec/thread.ts"
+    },
+    {
+      "from": "apps/server/src/builder/controller-kit/turns.ts",
+      "to": "apps/server/src/harness/spec/turns.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-pool.test.ts",
+      "to": "apps/server/src/harness/memory/conversation-pool.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-routes.test.ts",
+      "to": "apps/server/src/harness/routes/conversation-routes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-stream-paced.test.ts",
+      "to": "apps/server/src/harness/routes/conversation-stream-paced.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-stream.test.ts",
+      "to": "apps/server/src/harness/routes/conversation-stream.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/drain.test.ts",
+      "to": "apps/server/src/harness/turn/drain.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/end.ts",
+      "to": "apps/server/src/harness/turn/end.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/guard.test.ts",
+      "to": "apps/server/src/harness/routes/guard.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/guard.ts",
+      "to": "apps/server/src/harness/routes/guard.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/prompt/conexus.md",
+      "to": "apps/server/src/harness/prompt/conexus.md"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/storage.ts",
+      "to": "apps/server/src/harness/memory/storage.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/stream.ts",
+      "to": "apps/server/src/harness/routes/stream.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-conversation.ts",
+      "to": "apps/server/src/harness/routes/test-conversation.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-parts.ts",
+      "to": "apps/server/src/harness/routes/test-parts.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-questions.ts",
+      "to": "apps/server/src/harness/routes/test-questions.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-research.ts",
+      "to": "apps/server/src/harness/routes/test-research.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/turn-line.test.ts",
+      "to": "apps/server/src/harness/turn/turn-line.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/turn-line.ts",
+      "to": "apps/server/src/harness/turn/turn-line.ts"
+    },
+    {
+      "from": "apps/server/src/builder/schema/public.ts",
+      "to": "apps/server/src/harness/schema/public.ts"
+    },
+    {
+      "from": "apps/server/src/builder/schema/tables.ts",
+      "to": "apps/server/src/harness/schema/tables.ts"
+    }
   ]
 }

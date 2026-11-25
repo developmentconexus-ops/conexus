@@ -13,12 +13,24 @@ import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import type { ConversationMachines } from '../../harness/machine/public.ts'
 import { showFileTool } from '../../harness/machine/public.ts'
+import { conversationRun } from '../../harness/memory/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import {
   AccountTurn,
   conversationStart,
   memoryModelsFor,
 } from '../../harness/model-accounts/public.ts'
+import { CONEXUS_PROMPT } from '../../harness/prompt/public.ts'
+import type { DataBinding, Owner, RunScope, Speakers, Stored } from '../../harness/spec/public.ts'
+import {
+  agentOfSpec,
+  blockOf,
+  oncePerRun,
+  principalOf,
+  routedModel,
+  toolsOf,
+  turnKeyOn,
+} from '../../harness/spec/public.ts'
 import type { Access, Place, Principal } from '../../hub/access/public.ts'
 import { principalFor } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
@@ -29,18 +41,6 @@ import { Failure } from '../../platform/failure.ts'
 import type { AppDataPort } from '../app-data/public.ts'
 import type { CompanyToolScope } from '../company-tools/public.ts'
 import { companyConnections } from '../company-tools/public.ts'
-import { conversationRun } from '../controller-context/public.ts'
-import type { DataBinding, Owner, RunScope, Speakers, Stored } from '../controller-kit/public.ts'
-import {
-  agentOfSpec,
-  blockOf,
-  CONEXUS_PROMPT,
-  oncePerRun,
-  principalOf,
-  routedModel,
-  toolsOf,
-  turnKeyOn,
-} from '../controller-kit/public.ts'
 import { dataOrder } from '../data-tools/public.ts'
 import { codeModeOf } from './code-mode.ts'
 import type { CodeToolsDeps } from './code-tools.ts'

@@ -4,11 +4,11 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import { ToolCall, toolWorkerOf } from '@conexus/hub-api'
+import { endOf, stopped } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { toolsAt } from '../../platform/test-cloudflare.ts'
 import { talking } from '../assistant/test-assistant.ts'
-import { endOf, stopped } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import {
   agentsOn,
   madeTool,

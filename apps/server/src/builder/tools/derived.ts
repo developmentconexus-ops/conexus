@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 
 /**
- * Not `attemptIdOf` (`builder/controller-kit/open.ts`): both families of ids are stored (agents,
+ * Not `attemptIdOf` (`harness/spec/open.ts`): both families of ids are stored (agents,
  * tools, versions and ready reads here), so neither input nor shape may change to match the other.
  *
  * A UUID (version 8, RFC 9562) derived from its parts, so a repeated attempt, or the same ready read

@@ -3,9 +3,9 @@ import { join } from 'node:path'
 import type { CheckReport } from '@conexus/app/check'
 import { STEP_NAMES } from '@conexus/app/check'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
+import { title } from '../../harness/routes/test-conversation.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import type { BuilderCheck } from '../runs/public.ts'
-import { title } from './test-conversation.ts'
 
 export const WRITE = {
   type: 'tool_use',

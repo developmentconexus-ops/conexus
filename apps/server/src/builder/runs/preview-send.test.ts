@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CHECK_LIMITS } from '@conexus/app/check'
+import { title } from '../../harness/routes/test-conversation.ts'
+import { partsOf } from '../../harness/routes/test-parts.ts'
 import type { Checked } from '../../hub/apps/test-versions.ts'
 import {
   checking,
@@ -12,8 +14,6 @@ import {
 } from '../../hub/apps/test-versions.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { title } from '../conversation/test-conversation.ts'
-import { partsOf } from '../conversation/test-parts.ts'
 import { previewing, turn, versionsOf } from '../conversation/test-preview.ts'
 
 // The end of a turn sends the version whose app built to the Projeto's one app (step 14.1, U1).

@@ -1,14 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import {
-  asked,
-  conversing,
-  endOf,
-  KEY,
-  turnNotices,
-} from '../../builder/conversation/test-conversation.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
+import { asked, conversing, endOf, KEY, turnNotices } from '../routes/test-conversation.ts'
 import { GROQ_MODEL } from './test-defaults.ts'
 
 /** A reply that is `first` for the first `times` streamed calls, then text. */

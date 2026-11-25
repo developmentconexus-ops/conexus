@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { hubBeside } from '../../harness/routes/test-conversation.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
 import { mastraDoor, mastraPoolAt } from '../../platform/test-mastra-database.ts'
-import { hubBeside } from '../conversation/test-conversation.ts'
 import { automating, created, salesSummary } from './test-automations.ts'
 
 test('a agenda com o banco do Mastra recusando a ligação: listar e pausar respondem 503 DATABASE_UNAVAILABLE', async (t) => {

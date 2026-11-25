@@ -1,8 +1,8 @@
+import type { RunScope } from '../../harness/spec/public.ts'
+import { principalOf } from '../../harness/spec/public.ts'
 import type { Access, AccessView } from '../../hub/access/public.ts'
 import type { appDataTools, builderAppDataTools } from '../app-data/public.ts'
 import type { ConnectorAccess, GrantedConnection } from '../connectors/public.ts'
-import type { RunScope } from '../controller-kit/public.ts'
-import { principalOf } from '../controller-kit/public.ts'
 import type { Listed } from './listed.ts'
 import { inView } from './listed.ts'
 

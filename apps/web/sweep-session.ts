@@ -1,4 +1,4 @@
-import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, CONVERSATION_ROUTES } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import type { Message } from './src/harness/room/messages.ts'
 
@@ -83,7 +83,7 @@ export function sessionReplies(
   },
 ): Replies {
   const controller = options.controller ?? BUILDER_CONTROLLER
-  const session = `${BUILDER_ROUTES}/agent-controller/${controller}/sessions/${conversationId}`
+  const session = `${CONVERSATION_ROUTES}/agent-controller/${controller}/sessions/${conversationId}`
   return {
     [`GET ${session}`]: {
       status: 200,

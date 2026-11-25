@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
-import { conversing } from '../../builder/conversation/test-conversation.ts'
-import { sessionStateOf } from '../../builder/conversation/test-questions.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
 import { until } from '../../platform/test-until.ts'
+import { conversing } from '../routes/test-conversation.ts'
+import { sessionStateOf } from '../routes/test-questions.ts'
 import { listKeyProviders } from './providers.ts'
 
 /** A Groq chat model the installed registry lists and has not retired, read from it. */

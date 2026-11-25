@@ -1,6 +1,6 @@
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
+import type { EndParts, TurnEnds } from '../../harness/turn/public.ts'
 import type { Runs, Settled } from '../runs/public.ts'
-import type { EndParts, TurnEnds } from './end.ts'
 import { busyIn } from './turn-of.ts'
 
 /** The Builder's settled turn as the parts of our message and what the end keeps of it. */

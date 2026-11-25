@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { endOf } from '../conversation/test-conversation.ts'
+import { endOf } from '../../harness/routes/test-conversation.ts'
 import { assisting, created, talking } from './test-assistant.ts'
 
 const fixed = readFileSync(new URL('./prompt/assistant.md', import.meta.url), 'utf8')

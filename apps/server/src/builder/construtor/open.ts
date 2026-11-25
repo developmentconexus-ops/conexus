@@ -2,8 +2,8 @@ import type { ConversationId, Effort, ModelId } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { Memory } from '@mastra/memory'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
-import type { Kept } from '../controller-kit/public.ts'
-import { marksOf, openSession, RUN_MARKS, resourceOf } from '../controller-kit/public.ts'
+import type { Kept } from '../../harness/spec/public.ts'
+import { marksOf, openSession, RUN_MARKS, resourceOf } from '../../harness/spec/public.ts'
 import type { InProject } from '../tools/public.ts'
 
 /**

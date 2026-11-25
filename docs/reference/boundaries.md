@@ -1015,7 +1015,7 @@ changes, reread the line it names.
 
 ## Mastra 1.83.0 and @mastra/fastify 1.5.27: session routes behind the Hub's guard (step 14.2)
 
-- **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
+- **A fixed list, one guard.** `harness/routes/guard.ts` registers seven of Mastra's own
   agent-controller routes (a session's state, stream, message, Parar, a card's answer, a write's approval, transcript;
   `FIXED_LIST`)
   through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
@@ -1038,7 +1038,7 @@ changes, reread the line it names.
   with the square of a turn's length. The stream route's `displayState: false` (`@mastra/server`
   1.80.0, PR #28527) cuts all of it, and the screen reads a part (`isRunning`, `pendingSuspensions`,
   `omProgress`), so there is still no option to send a subset.
-- **Hand-made piece.** `slim` and `paced` in `apps/server/src/builder/conversation/stream.ts`. `slim`
+- **Hand-made piece.** `slim` and `paced` in `apps/server/src/harness/routes/stream.ts`. `slim`
   keeps of a `display_state_changed` event only what the screen reads (`DISPLAY_READ`); every other
   event goes as Mastra sent it. `paced` writes each event once the response can take more and ends
   the stream of a page 8 MiB behind, which reads the transcript and the session again when it opens
@@ -1061,7 +1061,7 @@ changes, reread the line it names.
   line (`mastracode/sdk/src/index.ts:1413-1416`, `resolveTenantSessionModel`); neither it nor the
   Factory has the piece (searched in both).
 - **Hand-made piece.** `turnProcessor` and `sessionTurns` in
-  `apps/server/src/builder/controller-kit/turns.ts`: the one input processor that takes a run's
+  `apps/server/src/harness/spec/turns.ts`: the one input processor that takes a run's
   `AccountTurn` for the account queue and puts it on the request context, and the way a session holds that
   turn until `agent_end`. Each agent's ficha chooses by its `turn` field: `SESSION` (the Assistant,
   the Construtor, a Project agent's conversation) or `RUN` (the Builder, and the version the
@@ -1095,7 +1095,7 @@ changes, reread the line it names.
   (`packages/core/src/agent-controller/session.ts:4808-4829`, `:5019-5030` and `:6638-6642`). With `@mastra/pg`
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
   at `packages/core/src/agent/agent.ts:8757`).
-- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/builder/controller-kit/mount.ts`)
+- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/harness/spec/mount.ts`)
   in `agents/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
   regime `THE_WRITE_ASKS` runs over its tools: every tool whose rule is not a function (the shared
   ones, the web's, the code's) goes on a copy with `NEVER_ASKS`, and the given objects stay as they
@@ -1470,7 +1470,7 @@ reference tool checks a read against its documentation.
   model never writes, it proposes with `propose_company_memory` and a person who may saves from the
   card, decision 0064). The company's instructions are a page declared and pinned by the
   configuration, written by the host through `PUT .../instructions`. The Mastra navigation routes
-  stay off by default and the Hub exposes only its own (`conversation/guard.ts`, S39). The
+  stay off by default and the Hub exposes only its own (`harness/routes/guard.ts`, S39). The
   permission "Memória da empresa" is the Hub's, in `hub/identity/admission.ts`.
 - **Why.** A model that may write to the company's memory by the library's own tools would bypass
   the roles; one file and one test keep an experimental storage from spreading.
@@ -1494,7 +1494,7 @@ reference tool checks a read against its documentation.
   forked; `researchReads`, the helper's `connector_read` built for each run with the conversation of
   whoever asks, through the same door as the main agent (the 50 calls count by the turn);
   `subagentModel` (`model-accounts/side-calls.ts`, handed to `resolveSubagentModel` by
-  `controller-kit/factories.ts`) returns the model of the account the turn is calling, as the
+  `harness/spec/factories.ts`) returns the model of the account the turn is calling, as the
   conversation's title does; and
   `readsFiles` (`assistant/connector-access.ts`) counts the files by the turn's key, because the
   helper's context is another object and its first file would overwrite the turn's first.

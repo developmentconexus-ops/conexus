@@ -2,13 +2,13 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { DATA_TOOL } from '@conexus/hub-api'
+import { started } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { memberOn } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { agentsOn, madeTool, ordersOf, publishedAgent, talkedTo } from '../agents/test-agents.ts'
 import { created, said, talking } from '../assistant/test-assistant.ts'
 import { opened } from '../construtor/test-construtor.ts'
-import { started } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 
 const MEMBER = { name: 'Bruno Lima', email: 'bruno@example.test' }
 const DESCRIBE = tool(DATA_TOOL.describe, {})

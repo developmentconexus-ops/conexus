@@ -5,9 +5,9 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { z } from 'zod'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { nativeRecording } from '../../platform/test-recordings.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import type { Upload } from './test-assistant.ts'
 import {
   COMMAND,

@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { HandedOff } from '@conexus/hub-api'
+import { endOf, messagesOf, sent } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { BRUNO, CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { until } from '../../platform/test-until.ts'
-import { endOf, messagesOf, sent } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 type Listed = { conversations: { id: string }[] }
