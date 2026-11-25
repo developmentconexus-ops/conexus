@@ -64,8 +64,6 @@ export function createHubMastra(deps: {
   closeLast: readonly (() => Promise<void>)[]
 }) {
   const { parts, log } = deps
-  const [first] = parts
-  if (first === undefined) throw new Error('createHubMastra needs at least one controller')
   const mastra = createMastra({
     ...{ storage: deps.storage, log },
     workflows: { ...deps.workflows, [RETENTION_WORKFLOW]: retentionOf({ log }) },
@@ -95,12 +93,8 @@ export function createHubMastra(deps: {
     part,
     /** True from `settle` on: nothing new starts (the guard's `HUB_UPDATING`, an automation's run). */
     updating: runs.updating,
-    /**
-     * Mastra's session routes of every controller, behind the guard. The thread table is one, so any
-     * controller's memory finds the thread a path names; the guard then asks the controller it names.
-     */
-    routes: (app: FastifyInstance) =>
-      registerSessionRoutes(app, { hub: guarded, conversations: first, streams, log }),
+    /** Mastra's session routes of every controller, behind the guard, which asks the controller a path names. */
+    routes: (app: FastifyInstance) => registerSessionRoutes(app, { hub: guarded, streams, log }),
     /** The removal of a Projeto's, a person's or a company's conversations, after what leaves first. */
     async release(scope: ReleaseScope): Promise<void> {
       for (const first of deps.releaseFirst) await first(scope)

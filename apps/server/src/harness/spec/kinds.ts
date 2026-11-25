@@ -52,6 +52,11 @@ const RESOURCE = new RegExp(
 )
 const OwnerSchema = z.object({ companyId: CompanyId, personId: PersonId })
 
+/** The controller a route's path names by its id, or none. */
+export function controllerKindOf(id: string): ControllerKind | undefined {
+  return KINDS.find((kind) => CONTROLLER_KINDS[kind].id === id)
+}
+
 /** The resource Mastra keeps a conversation of this controller under: the company with the person. */
 export function resourceOf(kind: ControllerKind, owner: Owner): string {
   return `${CONTROLLER_KINDS[kind].prefix}company:${owner.companyId}:person:${owner.personId}`

@@ -20,11 +20,8 @@ import { sessionOf } from '../../platform/access.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { ControllerKind, RunMark } from '../spec/public.ts'
-import { CONTROLLER_KINDS, markIn, ownerOfResource } from '../spec/public.ts'
+import { CONTROLLER_KINDS, controllerKindOf, markIn, ownerOfResource } from '../spec/public.ts'
 import { ConversationServer } from './stream.ts'
-
-/** What the guard reads of a conversation's agent: the thread that says whose it is. */
-export type Guarded = { memory: Pick<Memory, 'getThreadById'> }
 
 const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
 
@@ -155,9 +152,14 @@ export type MayApprove = (
 /** The controllers on the one `Mastra`, as the guard consults them (`harness/mastra/`). */
 export type GuardedMastra = {
   mastra: Mastra
-  part(
-    kind: ControllerKind,
-  ): { admit: Admission; writeOf?: WriteOf; mayApprove?: MayApprove } | undefined
+  part(kind: ControllerKind):
+    | {
+        admit: Admission
+        memory: Pick<Memory, 'getThreadById'>
+        writeOf?: WriteOf
+        mayApprove?: MayApprove
+      }
+    | undefined
   updating(): boolean
 }
 
@@ -174,10 +176,7 @@ export type GuardedMastra = {
  * of the person's other conversations. So is a file that is not a `data:` URL. While the Hub
  * settles before it stops, a new message is refused before Mastra starts a turn (founder E1).
  */
-async function guard(
-  deps: { conversations: Guarded; hub: GuardedMastra },
-  request: FastifyRequest,
-) {
+async function guard(deps: { hub: GuardedMastra }, request: FastifyRequest) {
   if (overreaches(request.body) || overreaches(request.query) || sendsFileUrl(request.body)) {
     throw new Failure('REQUEST_MALFORMED')
   }
@@ -268,7 +267,7 @@ async function refuseApprover(
 
 /** The person's thread of the controller the path names, marked for them and admitted now; else the 404. */
 async function held(
-  deps: { conversations: Guarded; hub: GuardedMastra },
+  deps: { hub: GuardedMastra },
   asked: {
     person: Person
     controllerId: z.infer<typeof Params>['controllerId']
@@ -276,15 +275,12 @@ async function held(
   },
 ) {
   const { person, controllerId, conversationId } = asked
-  const thread = await deps.conversations.memory.getThreadById({ threadId: conversationId })
+  const kind = controllerKindOf(controllerId)
+  const part = kind === undefined ? undefined : deps.hub.part(kind)
+  if (kind === undefined || part === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
+  const thread = await part.memory.getThreadById({ threadId: conversationId })
   const owner = ownerOfResource(thread?.resourceId)
-  const part = owner === undefined ? undefined : deps.hub.part(owner.kind)
-  if (
-    owner === undefined ||
-    part === undefined ||
-    owner.personId !== person.id ||
-    CONTROLLER_KINDS[owner.kind].id !== controllerId
-  ) {
+  if (owner === undefined || owner.personId !== person.id || owner.kind !== kind) {
     throw new Failure('CONVERSATION_NOT_FOUND')
   }
   const mark = markIn(owner.kind, thread?.metadata, owner)
@@ -318,7 +314,6 @@ export function registerSessionRoutes(
   app: FastifyInstance,
   deps: {
     hub: GuardedMastra
-    conversations: Guarded
     streams: Set<ServerResponse>
     log: FailureLog
   },
