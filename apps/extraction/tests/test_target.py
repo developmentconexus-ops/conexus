@@ -101,6 +101,14 @@ def test_o_valor_com_dez_casas_e_arredondado_e_contado(task: Task) -> None:
     }
 
 
+def test_a_contagem_soma_os_lotes_da_tabela(task: Task) -> None:
+    report = task.feed("arredonda.jsonl", {"teste_decimal": "TESTE"}, batch_size_rows=3)
+    assert report["failed"] is None
+    assert report["tables"]["teste_decimal"] == {"read": 7, "written": 7, "rounded": 5}
+    lake = task.lake.load_table(("raw", "teste_decimal"))
+    assert len(lake.inspect.snapshots()) == 3
+
+
 def test_a_escala_do_dicionario(task: Task) -> None:
     report = task.feed("escala-declarada.jsonl", {"teste_decimal": "TESTE"})
     assert report["failed"] is None

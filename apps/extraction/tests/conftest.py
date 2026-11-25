@@ -276,7 +276,9 @@ class Task:
                 rows.setdefault(message["stream"], []).append(message["record"])
         return rows
 
-    def feed(self, name: str, origins: dict[str, str]) -> dict[str, t.Any]:
+    def feed(
+        self, name: str, origins: dict[str, str], *, batch_size_rows: int | None = None
+    ) -> dict[str, t.Any]:
         parameter = f"/conexus/copia/{COMPANY}/{uuid.uuid4()}"
         self.aws.parameters[parameter] = "{}"
         report = self.dumps / "report.json"
@@ -291,6 +293,7 @@ class Task:
                     "region": REGION,
                     "report_path": str(report),
                     "add_record_metadata": True,
+                    **({} if batch_size_rows is None else {"batch_size_rows": batch_size_rows}),
                 }
             )
         )
