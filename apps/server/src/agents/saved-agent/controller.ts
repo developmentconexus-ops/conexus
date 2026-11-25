@@ -240,13 +240,11 @@ export function createAgentConversations(deps: Deps) {
     },
     deps.machineTuning,
   )
-  const { controller } = mountAgent(
-    agentsSpec(
-      { queue, own: { database, log } },
-      { ...{ runOf, resolvedOf, activationOfRun }, threads: memory, machines },
-    ),
-    { queue, storage },
+  const spec = agentsSpec(
+    { queue, own: { database, log } },
+    { ...{ runOf, resolvedOf, activationOfRun }, threads: memory, machines },
   )
+  const { controller } = mountAgent(spec, { queue, storage })
 
   async function sweep(marks: Record<string, string>): Promise<number> {
     return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), (id) =>
@@ -266,6 +264,7 @@ export function createAgentConversations(deps: Deps) {
       kind: 'agents',
       controller,
       memory,
+      model: spec.model,
       /** Whether the person may talk to the Projeto's agents now (`manageAgents`). */
       admit: agentManagerAdmission({ database, identity: deps.identity }),
       writeOf: writeOfAgents((owner, id) => keptRun(database, owner, id), deps.agents),

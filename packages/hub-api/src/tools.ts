@@ -21,7 +21,7 @@ export const SKILL_TOOLS = ['skill', 'skill_read', 'skill_search'] as const
 
 /**
  * The workspace's tools as Mastra names them (`WORKSPACE_TOOLS`), the ones the Builder's closure
- * offers; the server proves each equal to Mastra's constant (`permissions.ts`, code C27).
+ * offers; the server proves each equal to Mastra's constant (`closure.test.ts`, code C27).
  */
 export const WORKSPACE_TOOL = {
   readFile: 'mastra_workspace_read_file',
@@ -61,7 +61,7 @@ export const CONVERSATION_TOOL = {
   dataQuery: DATA_TOOL.query,
 } as const
 
-/** Every tool the Builder's closure offers (`TOOL_CLOSURE.availableTools`), each named once. */
+/** Every tool the Builder's closure offers (the Builder's mode, `availableTools: [...CLOSED_TOOLS]` in `builder.ts`), each named once. */
 export const CLOSED_TOOLS = [
   ...Object.values(WORKSPACE_TOOL),
   ...Object.values(CONVERSATION_TOOL),

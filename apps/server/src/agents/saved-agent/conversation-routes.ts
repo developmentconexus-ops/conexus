@@ -10,7 +10,8 @@ import type { StorageThreadType } from '@mastra/core/memory'
 import type { FastifyInstance } from 'fastify'
 import { registerFile } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
-import { attemptIdOf, listOwned, ownThread, RUN_MARKS } from '../../harness/spec/public.ts'
+import type { Owner } from '../../harness/spec/public.ts'
+import { attemptIdOf, listOwned, markIn, ownThread, RUN_MARKS } from '../../harness/spec/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -47,11 +48,15 @@ async function mayManage(deps: Deps, scope: InProject) {
   )
 }
 
-function summaryOf(thread: StorageThreadType, agentId: AgentId): AgentConversationSummary {
+function summaryOf(
+  thread: StorageThreadType,
+  agentId: AgentId,
+  owner: Owner,
+): AgentConversationSummary {
   return {
     id: ConversationId.parse(thread.id),
     agentId,
-    draft: thread.metadata?.[RUN_MARKS.agents.draft] === 'true',
+    draft: markIn('agents', thread.metadata, owner)?.agent?.draft === true,
     title: thread.title || null,
     createdAt: thread.createdAt.toISOString(),
     updatedAt: thread.updatedAt.toISOString(),
@@ -117,7 +122,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
       }
       deps.log.info({ ...about, agentId }, 'AGENT_CONVERSATION_CREATED')
     }
-    return answer({ conversation: summaryOf(thread, agentId) })
+    return answer({ conversation: summaryOf(thread, agentId, owner) })
   })
 
   serve(app, listAgentConversations, async (input) => {
@@ -126,7 +131,7 @@ export function registerAgentConversationRoutes(app: FastifyInstance, deps: Deps
     await admittedTo(deps, scope, agentId)
     const owner = { companyId: scope.companyId, personId: scope.personId }
     const threads = await listOwned(memory, 'agents', owner, { [RUN_MARKS.agents.agent]: agentId })
-    return answer({ conversations: threads.map((thread) => summaryOf(thread, agentId)) })
+    return answer({ conversations: threads.map((thread) => summaryOf(thread, agentId, owner)) })
   })
   serveWrites(app, deps)
 

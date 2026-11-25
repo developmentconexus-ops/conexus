@@ -148,17 +148,26 @@ test('o seletor mostra o controle deslizante dos níveis do modelo, o nome do n�
   expect(screen.queryByRole('radiogroup')).toBeNull()
   fireEvent.keyDown(slider, { key: 'End' })
   await waitFor(() =>
-    expect(sent.at(-1)?.body).toEqual({ model: 'anthropic/claude-sonnet-4', effort: 'high' }),
+    expect(sent.at(-1)?.body).toEqual({
+      modelId: 'anthropic/claude-sonnet-4',
+      thinkingLevel: 'high',
+    }),
   )
   expect(screen.getByRole('combobox', PICKER).textContent).toContain('Alto')
   expect(slider.getAttribute('aria-valuetext')).toBe('Alto')
   fireEvent.keyDown(slider, { key: 'ArrowLeft' })
   await waitFor(() =>
-    expect(sent.at(-1)?.body).toEqual({ model: 'anthropic/claude-sonnet-4', effort: 'low' }),
+    expect(sent.at(-1)?.body).toEqual({
+      modelId: 'anthropic/claude-sonnet-4',
+      thinkingLevel: 'low',
+    }),
   )
   fireEvent.keyDown(slider, { key: 'Home' })
   await waitFor(() =>
-    expect(sent.at(-1)?.body).toEqual({ model: 'anthropic/claude-sonnet-4', effort: 'off' }),
+    expect(sent.at(-1)?.body).toEqual({
+      modelId: 'anthropic/claude-sonnet-4',
+      thinkingLevel: 'off',
+    }),
   )
 })
 
@@ -174,7 +183,7 @@ test('um modelo sem níveis não mostra o controle, e a troca para ele volta o n
   const { sent } = await openConversation(conversationOf({ id: FIRST, effort: 'high' }))
   await choose(screen.getByRole('combobox', PICKER), 'Claude Opus 4')
   await waitFor(() =>
-    expect(sent.at(-1)?.body).toEqual({ model: 'anthropic/claude-opus-4', effort: 'off' }),
+    expect(sent.at(-1)?.body).toEqual({ modelId: 'anthropic/claude-opus-4', thinkingLevel: 'off' }),
   )
   fireEvent.click(screen.getByRole('combobox', PICKER))
   await screen.findByRole('listbox')
@@ -188,7 +197,9 @@ test('a troca para um modelo que sempre raciocina leva o nível mais baixo dele,
     view({ providers: ['anthropic', 'openai'] }),
   )
   await choose(screen.getByRole('combobox', PICKER), 'GPT 5')
-  await waitFor(() => expect(sent.at(-1)?.body).toEqual({ model: 'openai/gpt-5', effort: 'low' }))
+  await waitFor(() =>
+    expect(sent.at(-1)?.body).toEqual({ modelId: 'openai/gpt-5', thinkingLevel: 'low' }),
+  )
 })
 
 test('uma conversa guardada em Desligado num modelo que sempre raciocina mostra o nível em que ele roda', async () => {

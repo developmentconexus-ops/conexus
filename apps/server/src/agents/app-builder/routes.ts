@@ -4,12 +4,11 @@ import {
   createConversation,
   listConversations,
   readConversation,
-  setConversationModel,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import type { Owner } from '../../harness/spec/public.ts'
-import { answerModelChange, attemptIdOf, openSession } from '../../harness/spec/public.ts'
+import { attemptIdOf, openSession } from '../../harness/spec/public.ts'
 import { bodyHashOf } from '../../platform/attempt.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
@@ -100,31 +99,12 @@ export async function created(
  * answer are Mastra's own routes (`guard.ts`).
  */
 function registerWrites(app: FastifyInstance, deps: Deps) {
-  const { store } = deps
-
   serve(app, createConversation, async ({ person, params, body, attemptKey, log }) => {
     const made = await created(deps, { person, ...params, attemptKey, body })
     if (made.made)
       log.info({ companyId: params.companyId, conversationId: made.id }, 'CONVERSATION_CREATED')
     const createdAt = made.createdAt.toISOString()
     return answer({ conversation: { id: made.id, title: null, createdAt, model: made.model } })
-  })
-
-  serve(app, setConversationModel, (input) => {
-    const { person, params, body } = input
-    return answerModelChange(
-      {
-        kind: 'builder',
-        controller: deps.builder.controller,
-        queue: deps.queue,
-        owned: async () => {
-          await store.owned({ person, ...params })
-          return { owner: ownerOf(input), id: params.conversationId }
-        },
-        logged: (about) => input.log.info(about, 'CONVERSATION_MODEL_SET'),
-      },
-      body,
-    )
   })
 }
 

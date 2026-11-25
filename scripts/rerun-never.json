@@ -8,7 +8,7 @@
     "apps/server/src/agents/agent-builder/run-scope.test.ts",
     "apps/server/src/agents/app-builder/connector-access.test.ts",
     "apps/server/src/agents/app-builder/conversation-refusal.test.ts",
-    "apps/server/src/agents/app-builder/permissions.test.ts",
+    "apps/server/src/agents/app-builder/closure.test.ts",
     "apps/server/src/harness/tools/data/tools-refusals.test.ts",
     "apps/server/src/harness/tools/data/tools.test.ts",
     "apps/server/src/harness/model-accounts/openai/sign-in-refusals.test.ts",
@@ -373,7 +373,7 @@
     },
     {
       "file": "apps/server/src/agents/agent-builder/routes.test.ts",
-      "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND"
+      "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa"
     },
     {
       "file": "apps/server/src/agents/app-builder/builder.eval.test.ts",
@@ -1346,6 +1346,22 @@
     {
       "file": "tests/e2e/remove-person.test.ts",
       "name": "o roteiro de tirar uma pessoa: o último dono não sai, tirar, a Central convida e rebaixa, sair, esqueci a senha e a senha vazada"
+    },
+    {
+      "file": "apps/server/src/harness/spec/run.test.ts",
+      "name": "uma marca que falta ou tem outro tipo é recusada, e a chave de outro tipo de conversa não vale"
+    },
+    {
+      "file": "apps/server/src/harness/spec/run.test.ts",
+      "name": "uma marca de outra empresa ou de outra pessoa é lida pelo esquema e recusada pela comparação com o dono"
+    },
+    {
+      "file": "apps/server/src/harness/routes/guard.test.ts",
+      "name": "a troca de modelo: um corpo sem thinkingLevel"
+    },
+    {
+      "file": "apps/server/src/harness/routes/rename.test.ts",
+      "name": "renomear: um título vazio"
     }
   ]
 }

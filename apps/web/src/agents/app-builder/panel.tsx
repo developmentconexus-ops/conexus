@@ -15,7 +15,6 @@ import {
   ModelChoice,
   REQUEST_NOT_SENT,
   RoomContext,
-  sendModel,
   titleOf,
   useConnectorCatalog,
   WRITE_AGAIN,
@@ -85,7 +84,6 @@ function BuilderChat(params: Params) {
           <ModelChoice
             controller={BUILDER_CONTROLLER}
             conversationId={conversationId}
-            write={{ ...sendModel, mutationFn: (body) => sendModel.mutationFn({ params, body }) }}
             session={session}
             providers={providers}
             onError={onError}

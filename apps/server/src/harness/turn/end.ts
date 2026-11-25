@@ -19,9 +19,8 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import { logMemory } from '../../platform/memory.ts'
 import type { Phase } from '../machine/public.ts'
 import { ownerOfResource } from '../spec/public.ts'
-import { FINISHES, TurnTally, turnLine } from './turn-line.ts'
-
-export type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
+import type { AgentEnd } from './turn-line.ts'
+import { modelFailure, TurnTally, turnLine } from './turn-line.ts'
 
 /**
  * What this process knows of a Mastra run of a conversation, from its `agent_start` to its
@@ -92,13 +91,6 @@ function decided(run: Run, reason: AgentEnd, outcome: Outcome): FailureData | un
   return code === undefined ? undefined : { code }
 }
 
-/** How the model's turn ended when nothing of ours said a failure: its finish's code on an error, else none. */
-export function modelFailure(reason: AgentEnd, tally: TurnTally): TurnFailureCode | undefined {
-  if (reason !== 'error') return undefined
-  const finish = tally.finishReason
-  return (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED'
-}
-
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
 function settleThinking(run: Run): void {
   for (const [id, since] of run.thinking) {
@@ -113,14 +105,18 @@ function startThinking(run: Run, message: string, index: number): void {
   if (!run.thinking.has(key)) run.thinking.set(key, Date.now())
 }
 
-function failedOn(run: Run, event: AgentControllerEvent, refusal: TurnEnds['refusal']): void {
-  if (event.type === 'error') run.failure ??= refusal?.(event.error) ?? failureOf(event.error)
+type RefusalOf = () => FailureData | undefined
+
+function failedOn(run: Run, event: AgentControllerEvent, refused: RefusalOf): void {
+  if (event.type !== 'error') return
+  const aborted = event.finishReason === 'tripwire' ? refused() : undefined
+  run.failure ??= aborted ?? failureOf(event.error)
 }
 
 /** What a run keeps of each event: its line's counts, its error's failure and the thinking clock. */
-function heard(run: Run, event: AgentControllerEvent, refusal: TurnEnds['refusal']): void {
+function heard(run: Run, event: AgentControllerEvent, refused: RefusalOf): void {
   run.tally.heard(event)
-  failedOn(run, event, refusal)
+  failedOn(run, event, refused)
   if (event.type === 'message_start' && event.message.role === 'assistant') {
     for (const [index, part] of event.message.content.parts.entries()) {
       if (part.type === 'reasoning') startThinking(run, event.message.id, index)
@@ -144,7 +140,7 @@ function heard(run: Run, event: AgentControllerEvent, refusal: TurnEnds['refusal
 
 /**
  * The end of a turn a controller fills in for itself: the Builder settles each run's Projeto
- * (`finish`), reads the Projeto busy on the run's error (`refusal`) and tells its machine's steps
+ * (`finish`), says the Projeto busy when a processor aborted the run (`refusal`) and tells its machine's steps
  * (`onPhase`); the other three hold no Projeto, so they fill in at most `onPhase` (step 24.1, U2).
  */
 export type TurnEnds = {
@@ -153,7 +149,8 @@ export type TurnEnds = {
     reason: AgentEnd
     told(end: EndParts): void
   }): Promise<EndParts | 'gone'>
-  refusal?(error: Error): FailureData | undefined
+  /** The failure of a run a processor aborted (its `finishReason` is `tripwire`), as the processor recorded it; asked of no other run. */
+  refusal?(conversationId: ConversationId): FailureData | undefined
   onPhase?(conversationId: ConversationId, listener: (phase: Phase) => void): () => void
 }
 
@@ -331,7 +328,7 @@ export function watchRuns(deps: { watched: readonly Watched[]; log: FailureLog }
           each.log.info({ ...fields, runId: run.runId }, 'CONVERSATION_TURN_STARTED')
         }
         if (run === undefined) return
-        heard(run, event, each.refusal)
+        heard(run, event, () => each.refusal?.(conversationId))
         if (event.type !== 'agent_end') return
         const line = turnLine({
           ...{ runId: run.runId, startedAt: run.startedAt, tally: run.tally },

@@ -144,7 +144,6 @@ export {
   providerOfModel,
   readConversation,
   runningEffort,
-  setConversationModel,
   TurnFailureCode,
 } from './conversations.ts'
 export * from './data-reads.ts'

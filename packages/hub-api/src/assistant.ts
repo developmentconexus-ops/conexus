@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import { CONNECTIONS_MAX, ConnectionId, OfferedRead } from './connectors.ts'
-import { ConversationId, Effort, ModelChoice, ModelId } from './conversations.ts'
+import { ConversationId, Effort, ModelId } from './conversations.ts'
 import type { FailureCode } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
 import { MACHINE_FILE_FAILURES, MACHINE_TOOL, MachineFileQuery, SHOWN_TEXT_MAX } from './machine.ts'
@@ -230,42 +230,11 @@ export const setAssistantConnections = defineOperation({
   failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
 })
 
-export const setAssistantModel = defineOperation({
-  id: 'setAssistantModel',
-  summary: 'Changes the model of an Assistant conversation and its effort, for its next answers.',
-  access: 'session',
-  method: 'PUT',
-  path: `${BASE}/{conversationId}/model`,
-  bodyLimit: 1024,
-  input: { params: OfConversation, body: ModelChoice },
-  success: { status: 200, body: ModelChoice },
-  failures: [
-    ...READ_FAILURES,
-    'CONVERSATION_NOT_FOUND',
-    'MODEL_UNKNOWN',
-    'MODEL_NO_ACCOUNT',
-    'EFFORT_UNSUPPORTED',
-  ],
-})
-
 /** The longest title a person gives a conversation. */
 export const CONVERSATION_TITLE_MAX = 120
 
-export const renameAssistantConversation = defineOperation({
-  id: 'renameAssistantConversation',
-  summary:
-    'Gives an Assistant conversation the title its person chose; the title stays, and the memory no longer replaces it.',
-  access: 'session',
-  method: 'PATCH',
-  path: `${BASE}/{conversationId}`,
-  bodyLimit: 1024,
-  input: {
-    params: OfConversation,
-    body: z.object({ title: z.string().trim().min(1).max(CONVERSATION_TITLE_MAX) }),
-  },
-  success: { status: 200, body: z.object({ title: z.string() }) },
-  failures: [...READ_FAILURES, 'CONVERSATION_NOT_FOUND'],
-})
+/** The title a person gives a conversation, as the screen's field and the Hub's guard both read it. */
+export const ConversationTitle = z.string().trim().min(1).max(CONVERSATION_TITLE_MAX)
 
 export const deleteAssistantConversation = defineOperation({
   id: 'deleteAssistantConversation',

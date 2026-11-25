@@ -6,9 +6,10 @@ import type { AnyWorkflow } from '@mastra/core/workflows'
 import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
 import type { FailureLog } from '../../platform/failure.ts'
+import type { QueueDeps } from '../model-accounts/public.ts'
 import type { GuardedMastra, MayApprove, WriteOf } from '../routes/public.ts'
 import { registerSessionRoutes } from '../routes/public.ts'
-import type { ControllerKind, ReleaseScope, RunMark } from '../spec/public.ts'
+import type { ControllerKind, ModelSource, ReleaseScope, RunMark } from '../spec/public.ts'
 import { CONTROLLER_KINDS } from '../spec/public.ts'
 import type { TurnEnds, Watched } from '../turn/public.ts'
 import { watchRuns } from '../turn/public.ts'
@@ -20,6 +21,8 @@ type Part = {
   kind: ControllerKind
   controller: AgentController
   memory: Watched['memory'] & Pick<Memory, 'getThreadById' | 'settled'>
+  /** Whose model the conversation runs, from its ficha: the guard switches only the session's. */
+  model: ModelSource
   /**
    * The door of the six routes, at each request: the owner is already checked by the thread, and
    * its marks against it (`markIn`); `NOT_FOUND` becomes `CONVERSATION_NOT_FOUND`.
@@ -54,6 +57,8 @@ type Part = {
  */
 export function createHubMastra(deps: {
   storage: MastraCompositeStore
+  /** The account queue, which the guard asks whether the person has an account for a model they switch to. */
+  queue: QueueDeps
   log: FailureLog
   parts: readonly Part[]
   workflows: Readonly<Record<string, AnyWorkflow>>
@@ -96,7 +101,8 @@ export function createHubMastra(deps: {
     /** True from `settle` on: nothing new starts (the guard's `HUB_UPDATING`, an automation's run). */
     updating: runs.updating,
     /** Mastra's session routes of every controller, behind the guard, which asks the controller a path names. */
-    routes: (app: FastifyInstance) => registerSessionRoutes(app, { hub: guarded, streams, log }),
+    routes: (app: FastifyInstance) =>
+      registerSessionRoutes(app, { hub: guarded, streams, queue: deps.queue, log }),
     /** The removal of a Projeto's, a person's or a company's conversations, after what leaves first. */
     async release(scope: ReleaseScope): Promise<void> {
       for (const first of deps.releaseFirst) await first(scope)

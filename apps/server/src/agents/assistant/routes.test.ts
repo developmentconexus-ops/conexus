@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { MODEL, started } from '../../harness/routes/test-conversation.ts'
-import { sessionStateOf } from '../../harness/routes/test-questions.ts'
+import { sessionStateOf, switched } from '../../harness/routes/test-questions.ts'
 import { CARLA, call, codeOf, memberOn, plantCompany, post } from '../../hub/identity/test-hub.ts'
 import { assisting, created } from './test-assistant.ts'
 
@@ -223,15 +223,12 @@ const OTHER_MODEL = 'anthropic/claude-haiku-4-5'
 test('o modelo: a dona troca o modelo e o esforço e a resposta diz o que ficou; duas trocas, a segunda vale; ASSISTANT_MODEL_SET uma vez por troca', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
-  const first = await call(on.hub, on.ana, 'PUT', `${url}/model`, { model: MODEL, effort: 'high' })
+  const first = await switched(on.hub, on.ana, url, { model: MODEL, effort: 'high' })
   assert.equal(first.statusCode, 200, first.body)
-  assert.deepEqual(first.json(), { model: MODEL, effort: 'high' })
-  const second = await call(on.hub, on.ana, 'PUT', `${url}/model`, {
-    model: OTHER_MODEL,
-    effort: 'off',
-  })
+  assert.deepEqual(first.json(), { ok: true })
+  const second = await switched(on.hub, on.ana, url, { model: OTHER_MODEL, effort: 'off' })
   assert.equal(second.statusCode, 200, second.body)
-  assert.deepEqual(second.json(), { model: OTHER_MODEL, effort: 'off' })
+  assert.deepEqual(second.json(), { ok: true })
   assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), {
     model: OTHER_MODEL,
     effort: 'off',
@@ -250,7 +247,7 @@ test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, r
     [{ model: MODEL, effort: 'xhigh' }, 422, 'EFFORT_UNSUPPORTED'],
   ] as const
   for (const [body, status, code] of refusals) {
-    const refused = await call(on.hub, on.ana, 'PUT', `${url}/model`, body)
+    const refused = await switched(on.hub, on.ana, url, body)
     assert.deepEqual([refused.statusCode, codeOf(refused)], [status, code], refused.body)
   }
   assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), before, 'a refusal changes nothing')
@@ -263,7 +260,7 @@ test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, r
     [carla, url],
     [on.ana, missing],
   ] as const) {
-    const refused = await call(on.hub, person, 'PUT', `${at}/model`, body)
+    const refused = await switched(on.hub, person, at, body)
     assert.equal(refused.statusCode, 404, refused.body)
     assert.equal(codeOf(refused), 'CONVERSATION_NOT_FOUND')
   }

@@ -1,5 +1,5 @@
 import type { CompanyData, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
-import { CONVERSATION_TOOL } from '@conexus/hub-api'
+import { CLOSED_TOOLS, CONVERSATION_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
@@ -28,12 +28,13 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { builderAccess } from './connector-access.ts'
 import { APP_SKILLS, builderInstructions } from './instructions.ts'
-import { TOOL_CLOSURE } from './permissions.ts'
 import { createSubmitPlanTool, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { checkTool, conexusCheck } from './processors.ts'
 import type { Runs } from './runs/runs.ts'
-import type { ConversationIndex } from './turn-of.ts'
+import type { ConversationIndex, Refusals } from './turn-of.ts'
 import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
+
+const MODEL = { kind: 'SESSION', switched: 'CONVERSATION_MODEL_SET' } as const
 
 type Ids = { companyId: CompanyId; personId: PersonId; projectId: ProjectId }
 
@@ -113,6 +114,8 @@ export function createBuilder(deps: {
   companyData: (principal: Principal, context: DataBinding) => CompanyData
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
+  /** What the turn's processor records of a refused run, for the end of the turn (`builderEnds`). */
+  refusals: Refusals
 }) {
   const { storage } = deps
   const check = checkTool(deps.runs)
@@ -147,7 +150,7 @@ export function createBuilder(deps: {
           skillOf({ directory: each.skill.name, ...each.skill }),
         ),
       ],
-      model: { kind: 'SESSION' },
+      model: MODEL,
       tools: async (requestContext) => {
         const scope = await scopeOf(requestContext)
         // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
@@ -163,9 +166,9 @@ export function createBuilder(deps: {
         scorers: [conexusCheck({ runs: deps.runs, storage, log: deps.log })],
         strategy: 'all',
       },
-      turn: turnOf(deps),
+      turn: turnOf({ queue, runs: deps.runs, projectOf, refusals: deps.refusals }),
       threads: memory,
-      mode: { id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools },
+      mode: { id: CONVERSATION_MODE, availableTools: [...CLOSED_TOOLS] },
       // `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`).
       own: {
         fixed: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
@@ -178,7 +181,7 @@ export function createBuilder(deps: {
     },
     { queue, storage },
   )
-  return { controller, memory, agent, queue: deps.queue }
+  return { controller, memory, agent, queue: deps.queue, model: MODEL }
 }
 
 export type Builder = ReturnType<typeof createBuilder>

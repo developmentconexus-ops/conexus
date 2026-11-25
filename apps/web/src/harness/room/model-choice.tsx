@@ -11,6 +11,7 @@ import { ModelPicker } from '../model-accounts/public.ts'
 import type { SessionRead } from './queries.ts'
 import { sessionReadQuery } from './queries.ts'
 import type { Controller } from './session.ts'
+import { sessionOf } from './session.ts'
 import { NO_SECRETS, UNCONFIRMED_MODEL } from './text.ts'
 
 /**
@@ -45,9 +46,9 @@ export type Choice = Pick<SessionRead, 'model' | 'effort'>
 
 /**
  * The model and the reasoning of the conversation, among the providers the person has an account
- * for, in one button of the composer. The caller owns the write (the Builder's or the Assistant's
- * route) and the session it changes; a change holds for the next answers, not the one in progress
- * (design V54); a refusal is said below the button.
+ * for, in one button of the composer. The change goes to the conversation's session on Mastra's own
+ * route, the same for every agent, and holds for the next answers, not the one in progress (design
+ * V54); a refusal is said below the button.
  */
 export function ModelChoice(props: {
   controller: Controller
@@ -55,14 +56,12 @@ export function ModelChoice(props: {
   session: SessionRead
   /** What the Hub offers this person: their connected providers, with the models served. */
   providers: readonly Provider[]
-  /** The caller's write, with the key the Hub's operation gives it: the choice goes to its route and what the Hub kept comes back. */
-  write: { mutationKey: readonly string[]; mutationFn: (choice: Choice) => Promise<Choice> }
   onError: (text: string | undefined) => void
 }) {
   const queryClient = useQueryClient()
-  const send = useMutation<Choice, Error, Choice>({
-    ...props.write,
-    onSuccess: (kept) =>
+  const send = useMutation<void, Error, Choice>({
+    mutationFn: (choice) => sessionOf(props.conversationId, props.controller).switchModel(choice),
+    onSuccess: (_, kept) =>
       queryClient.setQueryData<SessionRead>(
         sessionReadQuery(props.conversationId, props.controller).queryKey,
         (read) => read && { ...read, ...kept },

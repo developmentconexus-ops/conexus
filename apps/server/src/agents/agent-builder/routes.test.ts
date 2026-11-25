@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { z } from 'zod'
 import {
   endOf,
   holding,
@@ -12,7 +13,8 @@ import {
   streamOf,
   title,
 } from '../../harness/routes/test-conversation.ts'
-import { sessionStateOf } from '../../harness/routes/test-questions.ts'
+import { sessionStateOf, switched } from '../../harness/routes/test-questions.ts'
+import type { Hub } from '../../hub/identity/test-hub.ts'
 import {
   BRUNO,
   CARLA,
@@ -183,11 +185,8 @@ test('o modelo: a conversa nasce no modelo e no esforço escolhidos, e a troca v
     effort: 'high',
     tasks: [],
   })
-  const switched = await call(on.hub, on.ana, 'PUT', `${url}/model`, {
-    model: MODEL,
-    effort: 'off',
-  })
-  assert.deepEqual([switched.statusCode, switched.json()], [200, { model: MODEL, effort: 'off' }])
+  const changed = await switched(on.hub, on.ana, url, { model: MODEL, effort: 'off' })
+  assert.deepEqual([changed.statusCode, changed.json()], [200, { ok: true }])
   assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), {
     model: MODEL,
     effort: 'off',
@@ -195,38 +194,52 @@ test('o modelo: a conversa nasce no modelo e no esforço escolhidos, e a troca v
   })
 })
 
-test('o modelo: depois de um reinício a troca recupera a sessão com as marcas da abertura, e a conversa segue do Projeto', async (t) => {
+const KEPT_ON_THREAD = ['currentModelId', 'modelPersistenceVersion', 'thinkingLevel']
+
+test('o modelo: depois de um reinício a troca grava na thread as chaves de sempre e a marca do Projeto segue; a conversa segue do Projeto', async (t) => {
   const on = await agentsOn(t)
   const base = `${on.company}/projects/${on.projectId}/construtor/conversations`
   const made = await post(on.hub, on.ana, base, {}, randomUUID())
   const url = `${base}/${String(Object(made.json()).conversation.id)}`
-  const restarted = await hubBeside(t, on.hub)
-  const switched = await call(restarted, on.ana, 'PUT', `${url}/model`, {
-    model: MODEL,
-    effort: 'off',
-  })
-  assert.equal(switched.statusCode, 200, switched.body)
   const id = url.slice(url.lastIndexOf('/') + 1)
-  const session = await restarted.mastra.getAgentController('construtor')?.getSession(id)
-  assert.ok(session)
-  assert.equal(session.getTags().conexusConstrutorProject, on.projectId)
+  async function metadataOf(hub: Hub) {
+    const [row] = (
+      await hub.test.mastraPool.query('select metadata from mastra.mastra_threads where id = $1', [
+        id,
+      ])
+    ).rows
+    return z.record(z.string(), z.unknown()).parse(row.metadata)
+  }
+  const opening = await metadataOf(on.hub)
+  const restarted = await hubBeside(t, on.hub)
+  const changed = await switched(restarted, on.ana, url, { model: MODEL, effort: 'high' })
+  assert.deepEqual([changed.statusCode, changed.json()], [200, { ok: true }])
+  const after = await metadataOf(restarted)
+  assert.equal(after.conexusConstrutorProject, on.projectId)
+  assert.deepEqual(
+    Object.keys(after).filter((key) => !Object.hasOwn(opening, key)),
+    [],
+    'the switch wrote no key the opening had not',
+  )
+  assert.deepEqual(
+    KEPT_ON_THREAD.map((key) => after[key]),
+    [MODEL, after.modelPersistenceVersion, 'high'],
+  )
+  assert.equal((await sessionStateOf(restarted, on.ana, url)).effort, 'high')
 })
 
-test('o modelo: a conversa de um Projeto não troca de modelo pela URL de outro Projeto da mesma pessoa', async (t) => {
+test('o modelo: a conversa de um Projeto apagado não troca de modelo', async (t) => {
   const on = await agentsOn(t)
   const url = await opened(on)
-  const other = await otherProject(on.hub, on.ana, on.company, [on.matriz], 'Outro')
-  const elsewhere = `${on.company}/projects/${other.projectId}/construtor/conversations/${url.slice(url.lastIndexOf('/') + 1)}`
-  const before = await sessionStateOf(on.hub, on.ana, url)
-  const refused = await call(on.hub, on.ana, 'PUT', `${elsewhere}/model`, {
-    model: MODEL,
-    effort: 'off',
+  const gone = await call(on.hub, on.ana, 'DELETE', `${on.company}/projects/${on.projectId}`, {
+    name: 'Encomendas',
   })
+  assert.equal(gone.statusCode, 204, gone.body)
+  const refused = await switched(on.hub, on.ana, url, { model: MODEL, effort: 'high' })
   assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'CONVERSATION_NOT_FOUND'])
-  assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), before, 'a refusal changes nothing')
 })
 
-test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND', async (t) => {
+test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa, inexistente ou de um membro sem o papel, CONVERSATION_NOT_FOUND', async (t) => {
   const on = await agentsOn(t)
   const base = `${on.company}/projects/${on.projectId}/construtor/conversations`
   const url = await opened(on)
@@ -237,7 +250,7 @@ test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, r
     [{ model: MODEL, effort: 'xhigh' }, 422, 'EFFORT_UNSUPPORTED'],
   ] as const
   for (const [body, status, code] of refusals) {
-    const refused = await call(on.hub, on.ana, 'PUT', `${url}/model`, body)
+    const refused = await switched(on.hub, on.ana, url, body)
     assert.deepEqual([refused.statusCode, codeOf(refused)], [status, code], refused.body)
   }
   assert.deepEqual(await sessionStateOf(on.hub, on.ana, url), before, 'a refusal changes nothing')
@@ -251,10 +264,10 @@ test('o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, r
     [carla, url],
     [on.ana, missing],
   ] as const) {
-    const refused = await call(on.hub, person, 'PUT', `${at}/model`, body)
+    const refused = await switched(on.hub, person, at, body)
     assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'CONVERSATION_NOT_FOUND'])
   }
   const bruno = await memberOn(on.hub, on.companyId, BRUNO, 'member')
-  const member = await call(on.hub, bruno, 'PUT', `${url}/model`, body)
-  assert.deepEqual([member.statusCode, codeOf(member)], [404, 'NOT_FOUND'])
+  const member = await switched(on.hub, bruno, url, body)
+  assert.deepEqual([member.statusCode, codeOf(member)], [404, 'CONVERSATION_NOT_FOUND'])
 })

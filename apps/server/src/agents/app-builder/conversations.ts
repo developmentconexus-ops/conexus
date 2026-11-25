@@ -16,6 +16,7 @@ import { registerSourceRoutes } from './git/source.ts'
 import { created, registerConversationRoutes } from './routes.ts'
 import type { Runs } from './runs/runs.ts'
 import { createConversationStore } from './store.ts'
+import { createRefusals } from './turn-of.ts'
 
 /**
  * The removal of the Builder's conversations of a Projeto, a person or a company, after their
@@ -61,10 +62,11 @@ export function createBuilderConversations(deps: {
 }) {
   const { database, identity, queue } = deps
   const store = createConversationStore(deps)
+  const refusals = createRefusals()
   const builder = createBuilder({
     ...{ storage: deps.storage, queue, runs: deps.runs, log: deps.log },
     ...{ index: store, connectors: deps.connectors, data: deps.data },
-    ...{ companyData: deps.companyData, access: deps.access },
+    ...{ companyData: deps.companyData, access: deps.access, refusals },
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
         return (await deps.projects.liveProjectOf(tx, ids))?.name
@@ -76,9 +78,10 @@ export function createBuilderConversations(deps: {
       kind: 'builder',
       controller: builder.controller,
       memory: builder.memory,
+      model: builder.model,
       admit: (input: Parameters<typeof store.mine>[0]) => store.mine(input),
       release: releaseOf({ ...deps, store, builder }),
-      ends: builderEnds(deps.runs),
+      ends: builderEnds(deps.runs, refusals),
       /** The runs' own work, after the open streams the Hub closed (code C62). */
       async close(): Promise<void> {
         deps.runs.stop()

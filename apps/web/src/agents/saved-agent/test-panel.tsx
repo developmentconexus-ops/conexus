@@ -1,8 +1,9 @@
 import type { AgentDetail, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import { AGENTS_CONTROLLER } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import { titleOf } from '../../harness/room/public.ts'
+import { ConversationMenu, titleOf, useRenameConversation } from '../../harness/room/public.ts'
 import { ageOf } from '../../platform/dates.ts'
 import { BlockSentence } from '../../ui/block.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -20,7 +21,7 @@ import { ReadStates } from './read-states.tsx'
 import { NO_AGENT_CONVERSATIONS } from './text.ts'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
-type Item = { value: ConversationId; label: string; age: string }
+type Item = { value: ConversationId; label: string; title: string; age: string }
 
 /**
  * The test panel of the agent's page (step 24.3, U5, criterion 27), beside the configuration: a
@@ -37,9 +38,11 @@ export function TestPanel(props: {
   const { scope, agent, opener } = props
   const read = useQuery(agentConversationsQuery(scope, agent.id))
   const navigate = useNavigate()
+  const renameOf = useRenameConversation(AGENTS_CONTROLLER)
   const now = new Date()
   const items: Item[] = (read.data?.conversations ?? []).map((one) => ({
     value: one.id,
+    title: titleOf(one),
     label: `${titleOf(one)}${one.draft ? ' · Teste' : ''}`,
     age: ageOf(one.updatedAt, now),
   }))
@@ -47,31 +50,42 @@ export function TestPanel(props: {
   return (
     <section aria-label="Testar" className="flex h-full min-h-0 flex-col bg-surface">
       <div className="flex flex-col gap-xs border-b border-line p-sm">
-        <Combobox
-          items={items}
-          value={current ?? null}
-          isItemEqualToValue={(a, b) => a.value === b.value}
-          onValueChange={(item) =>
-            item !== null &&
-            void navigate({
-              to: '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId',
-              params: { ...scope, agentId: agent.id, conversationId: item.value },
-            })
-          }
-        >
-          <ComboboxInput aria-label="Conversas" placeholder="Conversas" />
-          <ComboboxContent>
-            <ComboboxEmpty>Nenhuma conversa</ComboboxEmpty>
-            <ComboboxList>
-              {(item: Item) => (
-                <ComboboxItem key={item.value} value={item}>
-                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                  <span className="shrink-0 text-text-2 tabular-nums">{item.age}</span>
-                </ComboboxItem>
-              )}
-            </ComboboxList>
-          </ComboboxContent>
-        </Combobox>
+        <div className="flex items-center gap-sm">
+          <div className="min-w-0 flex-1">
+            <Combobox
+              items={items}
+              value={current ?? null}
+              isItemEqualToValue={(a, b) => a.value === b.value}
+              onValueChange={(item) =>
+                item !== null &&
+                void navigate({
+                  to: '/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId',
+                  params: { ...scope, agentId: agent.id, conversationId: item.value },
+                })
+              }
+            >
+              <ComboboxInput aria-label="Conversas" placeholder="Conversas" />
+              <ComboboxContent>
+                <ComboboxEmpty>Nenhuma conversa</ComboboxEmpty>
+                <ComboboxList>
+                  {(item: Item) => (
+                    <ComboboxItem key={item.value} value={item}>
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      <span className="shrink-0 text-text-2 tabular-nums">{item.age}</span>
+                    </ComboboxItem>
+                  )}
+                </ComboboxList>
+              </ComboboxContent>
+            </Combobox>
+          </div>
+          {current !== undefined && (
+            <ConversationMenu
+              title={current.title}
+              actions={{ rename: renameOf(current.value) }}
+              placement="BESIDE"
+            />
+          )}
+        </div>
         <ReadStates read={read} />
         <div className="flex flex-wrap gap-sm">
           {agent.state.kind === 'PUBLISHED' && (

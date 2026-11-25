@@ -1,7 +1,7 @@
+import { ASSISTANT_CONTROLLER, CONVERSATION_ROUTES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { http } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { describe, expect, test } from 'vitest'
-import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { ASKED, assistantConversation, assistantScreens, COMPANY_ROOT } from './test-hub.tsx'
 
@@ -9,6 +9,7 @@ import { ASKED, assistantConversation, assistantScreens, COMPANY_ROOT } from './
 const server = hubServer()
 const { at } = assistantScreens(server)
 const OPEN = `${COMPANY_ROOT}/conversations/${ASKED}`
+const SESSION = `${CONVERSATION_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/${ASKED}`
 
 async function toolsOf() {
   return screen.findByRole('button', { name: '2 ferramentas' })
@@ -20,7 +21,7 @@ async function pickOpus() {
 }
 
 describe('o modelo', () => {
-  test('escolher outro modelo manda o PUT da conversa e o botão mostra o que o Hub guardou', async () => {
+  test('escolher outro modelo manda a troca da sessão pela rota nativa e o botão mostra a escolha que o Hub aceitou', async () => {
     const { writes } = at(OPEN, { conversations: [assistantConversation()] })
     await toolsOf()
     await pickOpus()
@@ -30,9 +31,9 @@ describe('o modelo', () => {
       ),
     )
     const [put] = writes()
-    expect(put?.method).toBe('PUT')
-    expect(put?.path).toBe(`/api/companies/${COMPANY.id}/assistant/conversations/${ASKED}/model`)
-    expect(put?.body).toMatchObject({ model: 'anthropic/claude-opus-4' })
+    expect(put?.method).toBe('POST')
+    expect(put?.path).toBe(`${SESSION}/model`)
+    expect(put?.body).toEqual({ modelId: 'anthropic/claude-opus-4', thinkingLevel: 'off' })
   })
 
   test('enquanto o Hub não responde, o botão fica marcado como ocupado e solta quando responde', async () => {
@@ -42,8 +43,9 @@ describe('o modelo', () => {
     })
     at(OPEN, { conversations: [assistantConversation()] })
     server.use(
-      http.put('*/api/companies/:companyId/assistant/conversations/:id/model', async () => {
+      http.post(`*${SESSION}/model`, async () => {
         await held
+        return HttpResponse.json({ ok: true })
       }),
     )
     await toolsOf()
@@ -90,7 +92,7 @@ describe('o modelo', () => {
 })
 
 describe('o modelo guardado', () => {
-  test('se a releitura da sessão falha depois do PUT, o botão fica no modelo que o Hub guardou', async () => {
+  test('se a releitura da sessão falha depois da troca, o botão fica no modelo que o Hub aceitou', async () => {
     at(OPEN, { conversations: [assistantConversation()] })
     await toolsOf()
     // From here the session read fails, so only what the write put in the cache can keep Opus.

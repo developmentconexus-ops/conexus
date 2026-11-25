@@ -6,7 +6,6 @@ import { MASTRA_THREAD_ID_KEY } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
 import { approvedCallOf } from '../../harness/routes/public.ts'
-import { NEVER_ASKS } from '../../harness/spec/public.ts'
 import type { Principal } from '../../hub/access/public.ts'
 import type {
   ApprovalDeps,
@@ -93,7 +92,6 @@ function readTool(deps: Deps, tool: PresetFrozenTool, input: z.ZodObject | undef
     id: `tool_${tool.slug}`,
     description: tool.description,
     inputSchema: input === undefined ? z.object({}) : openOf(input, tool),
-    requireApproval: NEVER_ASKS,
     execute: async (given, { requestContext, abortSignal }) => {
       if (input === undefined || requestContext === undefined)
         return refuse({ kind: 'NOT_GRANTED' })

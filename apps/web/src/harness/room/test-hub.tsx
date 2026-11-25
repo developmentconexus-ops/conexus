@@ -1,16 +1,16 @@
-import type { ConversationStart, ConversationSummary, Effort, Task } from '@conexus/hub-api'
+import type { ConversationStart, ConversationSummary, Task } from '@conexus/hub-api'
 import {
   ATTEMPT_KEY_HEADER,
   BUILDER_CONTROLLER,
   CONVERSATION_ROUTES,
   ConversationId,
+  Effort,
   listConversations,
   listModelAccounts,
   listModelProviders,
   ModelAccount,
   ModelId,
   readConversation,
-  setConversationModel,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -18,11 +18,13 @@ import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { afterEach, expect, vi } from 'vitest'
+import { z } from 'zod'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from './messages.ts'
 import { PROVIDERS } from './test-providers.ts'
+import { renameRoute } from './test-rename.tsx'
 import type { Line } from './test-stream.tsx'
 import { displayOf, newest, openLine, personSent } from './test-stream.tsx'
 
@@ -33,6 +35,7 @@ const BASE = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations
 const SESSION = `*${CONVERSATION_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/:id`
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 const COMPANY_DEFAULT = { model: MODEL, effort: 'off' }
+const ModelChoiceBody = z.object({ modelId: ModelId, thinkingLevel: Effort })
 
 /** A conversation as the fake Hub keeps it: the Hub's read, Mastra's session state and its transcript. */
 export type Opened = ConversationSummary & {
@@ -145,20 +148,17 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       await note(request)
       return HttpResponse.json({ ok: true })
     }),
-    http.put(`${BASE}/:id/model`, async ({ request, params }) => {
+    http.post(`${SESSION}/model`, async ({ request, params }) => {
       const body = await note(request)
       const replaced = await answers.model?.()
       if (replaced) return replaced
-      const model =
-        typeof body === 'object' && body !== null && 'model' in body
-          ? ModelId.parse(body.model)
-          : MODEL
-      const { effort } = setConversationModel.input.body.parse(body)
+      const { modelId, thinkingLevel } = ModelChoiceBody.parse(body)
       view.conversations = view.conversations.map((one) =>
-        one.id === params.id ? { ...one, model, effort } : one,
+        one.id === params.id ? { ...one, model: modelId, effort: thinkingLevel } : one,
       )
-      return HttpResponse.json({ model, effort })
+      return HttpResponse.json({ ok: true })
     }),
+    renameRoute(SESSION, () => view.conversations, note),
   ]
 }
 

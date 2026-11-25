@@ -166,7 +166,7 @@ test('o ⋮ oferece Renomear e Apagar; renomear manda o título novo e a linha o
   fireEvent.click(screen.getByRole('button', { name: 'Salvar' }))
   expect(await (await list()).findByRole('link', { name: /Vendas de outubro/ })).toBeTruthy()
   expect(writes().map((one) => [one.method, one.body])).toEqual([
-    ['PATCH', { title: 'Vendas de outubro' }],
+    ['PUT', { title: 'Vendas de outubro' }],
   ])
 })
 

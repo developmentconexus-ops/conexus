@@ -10,7 +10,7 @@ import type { Owner, ResourceOwner } from './kinds.ts'
 import { ownerOfResource } from './kinds.ts'
 
 /** Whose conversation a Mastra run is: the owner Mastra keeps its thread under, of either controller. */
-export function ownerIn(requestContext: RequestContext): ResourceOwner | undefined {
+function ownerIn(requestContext: RequestContext): ResourceOwner | undefined {
   return ownerOfResource(controllerIn(requestContext).resourceId)
 }
 

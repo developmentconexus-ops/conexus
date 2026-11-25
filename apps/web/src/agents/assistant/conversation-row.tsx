@@ -1,12 +1,13 @@
 import type { AssistantConversationSummary, CompanyId } from '@conexus/hub-api'
+import { ASSISTANT_CONTROLLER } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import type { ConversationActions } from '../../harness/room/public.ts'
-import { ConversationMenu, titleOf } from '../../harness/room/public.ts'
+import { ConversationMenu, titleOf, useRenameConversation } from '../../harness/room/public.ts'
 import { ageOf } from '../../platform/dates.ts'
 import { HubFailure } from '../../platform/hub.ts'
 import { SidebarMenuButton, SidebarMenuItem } from '../../ui/sidebar.tsx'
-import { sendAssistantDeletion, sendAssistantRename } from './queries.ts'
+import { sendAssistantDeletion } from './queries.ts'
 
 type Answer = { resolve: () => void; reject: (error: unknown) => void }
 
@@ -17,7 +18,7 @@ function useAssistantActions(
   const navigate = useNavigate()
   const openId = useParams({ strict: false, select: (params) => params.conversationId })
   const params = { companyId, conversationId: conversation.id }
-  const rename = useMutation(sendAssistantRename)
+  const renameOf = useRenameConversation(ASSISTANT_CONTROLLER)
   // The menu closes and the open conversation goes to a new one on the Hub's answer, in the
   // mutation's own callbacks: they run ahead of the cache's `onSettled`, which waits for the list
   // to reload, and whose reload would show the deleted one "not found".
@@ -40,9 +41,7 @@ function useAssistantActions(
     },
   })
   return {
-    rename: async (title) => {
-      await rename.mutateAsync({ params, body: { title } })
-    },
+    rename: renameOf(conversation.id),
     remove: () => new Promise<void>((resolve, reject) => removal.mutate({ resolve, reject })),
   }
 }

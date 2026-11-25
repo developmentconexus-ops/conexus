@@ -201,11 +201,9 @@ controller in the path, admits the person again, refuses a `requestContext` or `
 the browser, and refuses a new message while the Hub is updating. `ConversationServer` overrides the
 stream to slim the state events, pace writes to the socket and drop a client more than 8 MiB
 behind (`harness/routes/stream.ts`). Creating, listing and deleting conversations are the
-Hub's own Fastify routes, not Mastra's. So is changing a conversation's model: each agent's route
-admits the person and finds the conversation, and `answerModelChange`
-(`harness/spec/routes.ts`) does the rest the same way for the Builder, the Assistant and
-the Construtor. Mastra could serve this one route natively; that waits for the harness's second
-step, which also renames the folders and the room.
+Hub's own Fastify routes, not Mastra's. Changing a conversation's model and renaming it are
+Mastra's own routes behind the same guard (`harness/routes/changes.ts`): the guard checks the
+body, the account and the title, and writes the log line once Mastra has answered.
 
 ## Installed and not used
 
