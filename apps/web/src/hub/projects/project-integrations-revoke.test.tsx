@@ -25,6 +25,7 @@ const sankhya = ConnectorEntry.parse({
   name: 'Sankhya',
   category: 'ERP',
   auth: 'client_credentials',
+  lakeUnavailable: null,
   version: '1.0.0',
   summary: 'Resumo.',
   logo: LOGO,

@@ -64,16 +64,39 @@ function Places() {
 }
 
 export const NAVIGATION: readonly ShowcaseEntry[] = [
-  entry('tabs.tsx', 'Navegação', 'Alternar entre duas ou três visões da mesma coisa.', () => (
-    <Tabs defaultValue="preview">
-      <TabsList>
-        <TabsTrigger value="preview">Prévia</TabsTrigger>
-        <TabsTrigger value="project">Projeto</TabsTrigger>
-      </TabsList>
-      <TabsContent value="preview">A Prévia do app.</TabsContent>
-      <TabsContent value="project">Os arquivos do Projeto.</TabsContent>
-    </Tabs>
-  )),
+  entry(
+    'tabs.tsx',
+    'Navegação',
+    'Alternar entre duas ou três visões da mesma coisa.',
+    () => (
+      <Tabs defaultValue="preview">
+        <TabsList>
+          <TabsTrigger value="preview">Prévia</TabsTrigger>
+          <TabsTrigger value="project">Projeto</TabsTrigger>
+        </TabsList>
+        <TabsContent value="preview">A Prévia do app.</TabsContent>
+        <TabsContent value="project">Os arquivos do Projeto.</TabsContent>
+      </Tabs>
+    ),
+    [
+      [
+        'Tabs.COMPACT',
+        () => (
+          <Tabs compact defaultValue="overview">
+            <TabsList className="w-full border-b border-line">
+              <TabsTrigger value="overview">Visão geral</TabsTrigger>
+              <TabsTrigger value="columns">Colunas</TabsTrigger>
+              <TabsTrigger value="runs">Rodadas</TabsTrigger>
+              <TabsTrigger value="details">Detalhes</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview">
+              Quatro visões que cabem num celular sem rolar.
+            </TabsContent>
+          </Tabs>
+        ),
+      ],
+    ],
+  ),
   entry(
     'step-bar.tsx',
     'Navegação',

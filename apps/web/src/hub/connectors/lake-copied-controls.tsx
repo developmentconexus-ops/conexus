@@ -71,8 +71,11 @@ export function RunBar(props: {
       <Button disabled={!props.editable || props.running} onClick={props.onRun}>
         {RUN_NOW}
       </Button>
-      {props.editable && props.again > 0 && (
-        <Button disabled={props.stale || props.running} onClick={props.onReadAgain}>
+      {props.again > 0 && (
+        <Button
+          disabled={!props.editable || props.stale || props.running}
+          onClick={props.onReadAgain}
+        >
           {READ_AGAIN}
         </Button>
       )}

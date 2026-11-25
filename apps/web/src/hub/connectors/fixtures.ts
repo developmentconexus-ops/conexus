@@ -14,6 +14,7 @@ export const SANKHYA = ConnectorEntry.parse({
   summary: 'O sistema de gestão da empresa: pedidos, estoque, financeiro e cadastros.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#66CB66"/></svg>',
   auth: 'client_credentials',
+  lakeUnavailable: null,
   subjects: SANKHYA_SUBJECTS,
   fields: [
     {
@@ -49,6 +50,7 @@ export const MERCADO_LIVRE = ConnectorEntry.parse({
   summary: 'O marketplace da loja: anúncios, vendas, envios e perguntas.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#FFE600"/></svg>',
   auth: 'oauth2_code',
+  lakeUnavailable: 'EXCLUSIVE_CREDENTIAL',
   subjects: [],
   fields: [],
 })

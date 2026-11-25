@@ -7,6 +7,7 @@ import {
   RUNNING,
   sinceOfTableText,
   UP_TO_DATE,
+  WHOLE_HISTORY_ROW,
   WITH_ERROR,
 } from './lake-text.ts'
 import { modeText, runFailureText } from './lake-words.ts'
@@ -63,8 +64,10 @@ export function CopiedRow(props: {
         </div>
         <p className="flex flex-col text-text-2 sm:flex-row sm:gap-x-md">
           <span>{modeText(table.mode)}</span>
-          {table.limited && props.since !== null && (
-            <span className="tabular-nums">{sinceOfTableText(props.since)}</span>
+          {props.since !== null && (
+            <span className="tabular-nums">
+              {table.limited ? sinceOfTableText(props.since) : WHOLE_HISTORY_ROW}
+            </span>
           )}
         </p>
         <p className="text-text-2">

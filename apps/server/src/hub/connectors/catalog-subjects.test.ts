@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CONNECTORS } from '@conexus/connectors'
-import { subjectsOf } from './public.ts'
+import { connectorEntryOf, subjectsOf } from './public.ts'
 
 test('o catálogo traz os assuntos do kit com as operações, e marca as da porta de leitura', () => {
   const sankhya = CONNECTORS.find(({ id }) => id === 'sankhya')
@@ -22,4 +22,21 @@ test('o catálogo traz os assuntos do kit com as operações, e marca as da port
   const every = subjects.flatMap(({ operations }) => operations.map(({ id }) => id))
   const kit = [...Object.values(sankhya.readDoor ?? {}), ...sankhya.operations].map(({ id }) => id)
   assert.deepEqual([...every].sort(), [...kit].sort())
+})
+
+test('o catálogo diz por que um conector não copia para o lago: a regra única de copy-source', () => {
+  const reasons = Object.fromEntries(
+    CONNECTORS.map((connector) => [connector.id, connectorEntryOf(connector).lakeUnavailable]),
+  )
+  assert.deepEqual(reasons, {
+    sankhya: null,
+    'mercado-livre': 'EXCLUSIVE_CREDENTIAL',
+    hubspot: 'EXCLUSIVE_CREDENTIAL',
+  })
+})
+
+test('um conector de credencial compartilhável sem tabela declarada não copia para o lago', () => {
+  const sankhya = CONNECTORS.find(({ id }) => id === 'sankhya')
+  assert.ok(sankhya)
+  assert.equal(connectorEntryOf({ ...sankhya, tables: undefined }).lakeUnavailable, 'NO_TABLES')
 })

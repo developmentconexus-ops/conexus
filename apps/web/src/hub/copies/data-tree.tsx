@@ -93,7 +93,9 @@ function RawNote({ companyId }: { companyId: CompanyId }) {
       </div>
     )
   }
-  const linked = connectionsOfData(connections.data.connections, lake.data).length > 0
+  const linked =
+    connectionsOfData(connections.data.connections, connections.data.connectors, lake.data).length >
+    0
   if (lake.data.length > 0) return <p className={NOTE}>{lakeTablesNoteText(lake.data.length)}</p>
   return <p className={NOTE}>{linked ? NO_TABLE_COPIED : NO_SYSTEM}</p>
 }

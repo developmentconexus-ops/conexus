@@ -23,9 +23,9 @@ import { LeaveDialog, ReadAgainDialog, readAgainTables } from './lake-read-again
 import {
   dateEffectText,
   LAKE_TABLES,
-  LINES_STAY,
   ONLY_COPY_MANAGER,
   otherTablesText,
+  SECTION_LEAD,
 } from './lake-text.ts'
 
 type Lake = LakeTablesOfConnection
@@ -211,7 +211,7 @@ export function CopiedTables(props: Props & { editable: boolean }) {
     <section aria-label={LAKE_TABLES} className="flex flex-col gap-lg">
       <div className="flex flex-col gap-xs">
         <SectionTitle>{LAKE_TABLES}</SectionTitle>
-        <p className="max-w-message text-text-2">{LINES_STAY}</p>
+        <p className="max-w-message text-text-2">{SECTION_LEAD}</p>
         {!props.editable && <p className="max-w-message text-text-2">{ONLY_COPY_MANAGER}</p>}
       </div>
       <CopiedList

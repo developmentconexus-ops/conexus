@@ -27,8 +27,12 @@ export const MAKE_LINK = 'Gerar o link'
 export const MAKING_LINK = 'Gerando…'
 export const COPY_LINK = 'Copiar'
 export const BACK_TO_ACCESS = 'Voltar ao acesso'
-export const LINK_NEXT =
-  'Quando a outra pessoa enviar, a ligação nova aparece em Integrações. Abra-a e clique em Escolher o que copiar.'
+
+/** What happens after the link is sent; who cannot choose what to copy is told whom to ask instead of where to click. */
+export function linkNextText(mayManageCopies: boolean): string {
+  const arrives = 'Quando a outra pessoa enviar, a ligação nova aparece em Integrações.'
+  return `${arrives} ${mayManageCopies ? `Abra-a e clique em ${CHOOSE_WHAT}.` : ASK_COPY_MANAGER}`
+}
 
 export function linkValidText(expiresAt: string, clock: (instant: string) => string): string {
   return `Vale até ${clock(expiresAt)}.`
@@ -110,6 +114,8 @@ export const CHOOSE_WHAT = 'Escolher o que copiar'
 export const NAME_FIXED = 'o nome não muda mais'
 export const ONLY_COPY_MANAGER = 'Só quem gerencia as cópias muda o que se copia.'
 export const LINES_STAY = 'As linhas ficam no lago da empresa.'
+export const SECTION_LEAD = `${LINES_STAY} Marque outra tabela e salve: ela começa inteira, numa rodada só dela. O nome das que já existem não muda mais.`
+export const WHOLE_HISTORY_ROW = 'todo o histórico'
 export const SAVE = 'Salvar'
 export const RUN_NOW = 'Rodar agora'
 export const READ_AGAIN = 'Ler de novo desde a data'

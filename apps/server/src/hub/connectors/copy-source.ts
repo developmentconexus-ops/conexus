@@ -8,7 +8,7 @@ import {
   TableName,
   tablePrefixOf,
 } from '@conexus/connectors'
-import type { CompanyId, ConnectionId, ConnectorId } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, ConnectorId, LakeUnavailable } from '@conexus/hub-api'
 import { LAKE_TABLE_NAME_PATTERN } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
@@ -60,16 +60,13 @@ export type CopyTable = Readonly<{
   limited: boolean
 }>
 
-/** Why the lake is not offered for a connector (T.5, U16): a login only one place may hold, or no table declared. */
-type CopyUnavailable = 'EXCLUSIVE_CREDENTIAL' | 'NO_TABLES'
-
 /** The connection a copy is marked on: its connector, name and declared tables, or gone (or of a connector the catalog lacks). */
 export type CopyConnection =
   | Readonly<{
       kind: 'FOUND'
       connector: ConnectorId
       name: string
-      unavailable: CopyUnavailable | null
+      unavailable: LakeUnavailable | null
       tables: readonly CopyTable[]
     }>
   | Readonly<{ kind: 'GONE' }>
@@ -122,7 +119,8 @@ function readsFor(tables: NonNullable<Connector['tables']>): number {
   return login + batches
 }
 
-function unavailableFor(connector: Connector): CopyUnavailable | null {
+/** Why the lake is not offered for a connector, or null: the one rule, read by the catalog and by the copy. */
+export function unavailableFor(connector: Connector): LakeUnavailable | null {
   if (connector.auth.credentialClass === 'EXCLUSIVE') return 'EXCLUSIVE_CREDENTIAL'
   if ((connector.tables?.declared ?? []).length === 0) return 'NO_TABLES'
   return null

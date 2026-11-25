@@ -48,6 +48,10 @@ export const OfferedRead = z.object({
   allowed: z.boolean().optional(),
 })
 
+/** Why the lake is not offered for a connector (T.5, U16): a login only one place may hold, or no table declared. */
+export const LakeUnavailable = z.enum(['NO_TABLES', 'EXCLUSIVE_CREDENTIAL'])
+export type LakeUnavailable = z.infer<typeof LakeUnavailable>
+
 /** A connector of the kit's catalog, as the screen offers it: its fields by their labels, help and visibility. */
 export const ConnectorEntry = z.object({
   id: z.string(),
@@ -61,6 +65,8 @@ export const ConnectorEntry = z.object({
   subjects: z.array(ConnectorSubject),
   // How the company links it: pasted fields, or a trip to the provider (`fields` empty).
   auth: z.enum(['client_credentials', 'oauth2_code']),
+  /** Why none of its tables can be copied to the lake, or null when they can: the Hub's one rule for the lake, read by Dados. */
+  lakeUnavailable: LakeUnavailable.nullable(),
   fields: z.array(
     z.object({
       name: z.string(),

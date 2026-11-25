@@ -25,7 +25,11 @@ test('Dados sem cópias: cada sistema com a frase da matriz, sem lista nem pági
   server.events.on('request:start', ({ request }) => {
     if (request.url.includes('/copies')) asked.push(request.url)
   })
-  openData(server, { connections: [connection(), LOJA] }, LIST)
+  openData(
+    server,
+    { connections: [connection(), connection({ ...LOJA, connector: 'sankhya' })] },
+    LIST,
+  )
   expect(await screen.findByText('Matriz · Lago')).toBeTruthy()
   const main = within(screen.getByRole('main'))
   expect(main.getByText('Loja A · Lago')).toBeTruthy()

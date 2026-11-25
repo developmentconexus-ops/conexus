@@ -60,6 +60,15 @@ test('acesso: a barra de passos, os campos do kit com a ajuda, Desde depois do X
   expect(within(dialog).queryByRole('button', { name: 'Ligar e testar' })).toBeNull()
 })
 
+test('acesso: só Continuar e o X, sem Cancelar; o X fecha a janela', async () => {
+  open()
+  const dialog = await openForm()
+  expect(within(dialog).getByRole('button', { name: 'Continuar' })).toBeTruthy()
+  expect(within(dialog).queryByRole('button', { name: 'Cancelar' })).toBeNull()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Fechar' }))
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+})
+
 test('acesso: um conector de acesso por autorização não abre a janela de passos', async () => {
   open(viewOf({ connectors: [MERCADO_LIVRE] }))
   fireEvent.click(await screen.findByRole('button', { name: 'Ligar Mercado Livre' }))

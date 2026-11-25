@@ -46,6 +46,7 @@ export function ProjectArea(props: {
   const isMobile = useIsMobile()
   return (
     <Tabs
+      compact
       value={lens}
       onValueChange={(next) => {
         const chosen = Lens.safeParse(next)
@@ -55,9 +56,9 @@ export function ProjectArea(props: {
       className="h-full gap-0"
     >
       <div className="flex h-12 items-center gap-md border-b border-line px-md max-md:h-auto max-md:px-sm">
-        <TabsList aria-label="Projeto" className="max-md:gap-0">
+        <TabsList aria-label="Projeto">
           {LENSES.map(([value, label]) => (
-            <TabsTrigger key={value} value={value} className="max-md:px-sm max-md:after:inset-x-sm">
+            <TabsTrigger key={value} value={value}>
               {label}
             </TabsTrigger>
           ))}

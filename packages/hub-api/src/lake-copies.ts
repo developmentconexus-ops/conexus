@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CompanyId } from './companies.ts'
-import { ConnectionId } from './connectors.ts'
+import { ConnectionId, LakeUnavailable } from './connectors.ts'
 import { defineOperation } from './operation.ts'
 
 export const LAKE_TABLE_NAME_PATTERN = /^[a-z][a-z0-9_]{0,59}$/
@@ -94,7 +94,7 @@ export const LakeTablesOfConnection = z.object({
     z.object({ kind: z.literal('NOT_READY') }),
     z.object({
       kind: z.literal('UNAVAILABLE'),
-      reason: z.enum(['NO_TABLES', 'EXCLUSIVE_CREDENTIAL']),
+      reason: LakeUnavailable,
     }),
   ]),
   interval: LakeInterval.nullable(),

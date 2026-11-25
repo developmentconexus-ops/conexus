@@ -14,7 +14,7 @@ import {
   BACK,
   BACK_TO_ACCESS,
   COPY_LINK,
-  LINK_NEXT,
+  linkNextText,
   linkValidText,
   MAKE_LINK,
   MAKING_LINK,
@@ -22,10 +22,12 @@ import {
   NAME_NEEDED,
   SEND_PICK,
 } from './lake-text.ts'
+import { useMay } from './may.ts'
 import { sendConnectionLink } from './queries.ts'
 
 /** The address the other person opens, given once, with the time it stops working. */
 function Made(props: { link: ConnectionLink }) {
+  const may = useMay()
   const copy = useMutation({
     mutationFn: (text: string) => navigator.clipboard.writeText(text),
   })
@@ -41,7 +43,7 @@ function Made(props: { link: ConnectionLink }) {
           {linkValidText(props.link.expiresAt, clockOf)}
         </span>
       </p>
-      <p className="max-w-message text-text-2">{LINK_NEXT}</p>
+      <p className="max-w-message text-text-2">{linkNextText(may.manageCopies)}</p>
       {copy.error !== null && <Alert tone="danger">{sentenceOf(copy.error)}</Alert>}
     </div>
   )
