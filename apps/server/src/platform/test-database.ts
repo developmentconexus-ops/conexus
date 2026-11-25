@@ -10,7 +10,6 @@ import { after } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
 import { Email, PROBLEM_MEDIA_TYPE, Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import pg from 'pg'
 import { z } from 'zod'
 import type { Config } from './config.ts'
 import {
@@ -36,6 +35,7 @@ import {
   testAppsConfig,
   toolsEnvironment,
 } from './test-cloudflare.ts'
+import type { Lifetime } from './test-database-admin.ts'
 import { afterTheRest, asAdmin, connected } from './test-database-admin.ts'
 import { grantCloned, hubTemplate, withDatabase } from './test-database-template.ts'
 import { mastraUrlOf, TEST_IDLE_MS, TEST_POOL_TIMINGS } from './test-mastra-database.ts'
@@ -129,8 +129,6 @@ export function testConfig(
 export function testSealKeyLine(id = 'k1'): string {
   return `${id}:${randomBytes(32).toString('base64')}`
 }
-
-export type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
 export type TestDatabase = {
   passwords: PasswordService

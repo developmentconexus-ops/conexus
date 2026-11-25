@@ -1,6 +1,7 @@
 import pg from 'pg'
 import type { DatabaseUrl } from './database.ts'
-import type { Lifetime } from './test-database.ts'
+
+export type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
 export async function connected(url: DatabaseUrl): Promise<pg.Client> {
   const client = new pg.Client({ connectionString: url.reveal() })
