@@ -146,9 +146,12 @@ test('a troca de modelo: um corpo sem thinkingLevel, com campo a mais ou com req
   assert.deepEqual(await sessionStateOf(on.hub, on.ana, mine), before, 'a refusal changes nothing')
 })
 
-test('a troca de modelo do Assistente depois de um reinício: grava igual e as marcas da conversa seguem na thread (issue 1287)', async (t) => {
+test('a troca de modelo do Assistente depois de um reinício, numa conversa de Projeto: grava igual e as marcas de empresa, pessoa e Projeto seguem na thread (issue 1287)', async (t) => {
   const on = await assisting(t)
-  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const url = await created(on.hub, on.ana, on.assistant, {
+    projectId: on.projectId,
+    connections: [],
+  })
   const id = url.slice(url.lastIndexOf('/') + 1)
   async function marksOf(hub: Hub) {
     const read = await hub.test.mastraPool.query(
@@ -156,10 +159,11 @@ test('a troca de modelo do Assistente depois de um reinício: grava igual e as m
       [id],
     )
     const metadata = read.rows[0].metadata
-    return [RUN_MARKS.assistant.company, RUN_MARKS.assistant.person].map((key) => metadata[key])
+    const { company, person, project } = RUN_MARKS.assistant
+    return [company, person, project].map((key) => metadata[key])
   }
   const opening = await marksOf(on.hub)
-  assert.deepEqual(opening, [on.companyId, on.ana.id])
+  assert.deepEqual(opening, [on.companyId, on.ana.id, on.projectId])
   const restarted = await hubBeside(t, on.hub)
   const changed = await switched(restarted, on.ana, url, { model: MODEL, effort: 'high' })
   assert.deepEqual([changed.statusCode, changed.json()], [200, { ok: true }])
