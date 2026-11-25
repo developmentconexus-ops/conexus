@@ -3,7 +3,7 @@ import type { AgentControllerEvent } from '@mastra/core/agent-controller'
 import type { Scalar } from '../../platform/failure.ts'
 
 /** The code of a model's finish that is not a call failure: a refusal, or an answer cut at its limit. */
-export const FINISHES: Readonly<Record<string, TurnFailureCode>> = {
+const FINISHES: Readonly<Record<string, TurnFailureCode>> = {
   'content-filter': 'MODEL_REFUSED',
   tripwire: 'MODEL_REFUSED',
   length: 'MODEL_ANSWER_CUT',
@@ -45,6 +45,15 @@ export class TurnTally {
   failed(kind: string): void {
     this.failedTool ??= kind
   }
+}
+
+export type AgentEnd = NonNullable<Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']>
+
+/** How the model's turn ended when nothing of ours said a failure: its finish's code on an error, else none. */
+export function modelFailure(reason: AgentEnd, tally: TurnTally): TurnFailureCode | undefined {
+  if (reason !== 'error') return undefined
+  const finish = tally.finishReason
+  return (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED'
 }
 
 /**

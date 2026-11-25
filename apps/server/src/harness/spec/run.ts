@@ -30,7 +30,7 @@ export type RunScope = Readonly<{
   attended: boolean
 }>
 
-/** What the owner of a conversation keeps of it: never read from the thread's marks (C26). */
+/** What the owner of a conversation keeps of it, or the thread's marks where the owner keeps no row (the Construtor's Projeto, the Assistant's `attended`). */
 export type Stored = Readonly<{ place: Place; choice: Choice; ceiling: Ceiling; attended: boolean }>
 
 /** The kinds whose threads are born with marks (`createSession({ tags })`); the Builder's carry none. */
@@ -77,65 +77,46 @@ export type RunMark = Readonly<{
   agent?: { agentId: AgentId; draft: boolean }
 }>
 
-const ASSISTANT_MARK = z
-  .object({
-    [RUN_MARKS.assistant.company]: CompanyId,
-    [RUN_MARKS.assistant.person]: PersonId,
-    [RUN_MARKS.assistant.project]: ProjectId.optional(),
-    [RUN_MARKS.assistant.automation]: AutomationId.optional(),
-    [RUN_MARKS.assistant.automationName]: z.string().optional(),
-  })
-  .transform((marks): RunMark => {
-    const automationId = marks[RUN_MARKS.assistant.automation]
-    const name = marks[RUN_MARKS.assistant.automationName]
-    return {
-      companyId: marks[RUN_MARKS.assistant.company],
-      personId: marks[RUN_MARKS.assistant.person],
-      projectId: marks[RUN_MARKS.assistant.project],
-      automation: automationId === undefined ? undefined : { automationId, name: name ?? '' },
-    }
-  })
+/** The fields of a mark by name, so one schema reads any kind: each kind's keys come from `RUN_MARKS`. */
+const MARK_FIELDS = z.object({
+  company: CompanyId,
+  person: PersonId,
+  project: ProjectId.optional(),
+  automation: AutomationId.optional(),
+  automationName: z.string().optional(),
+  agent: AgentId.optional(),
+  draft: z.enum(['true', 'false']).optional(),
+})
 
-const CONSTRUTOR_MARK = z
-  .object({
-    [RUN_MARKS.construtor.company]: CompanyId,
-    [RUN_MARKS.construtor.person]: PersonId,
-    [RUN_MARKS.construtor.project]: ProjectId.optional(),
-  })
-  .transform(
-    (marks): RunMark => ({
-      companyId: marks[RUN_MARKS.construtor.company],
-      personId: marks[RUN_MARKS.construtor.person],
-      projectId: marks[RUN_MARKS.construtor.project],
-    }),
+/**
+ * The schema of a kind's marks: who and where the thread was opened for, compared later with its
+ * resource. The kind's keys are those `marksOf` writes (`RUN_MARKS`); a key the kind lacks reads as
+ * absent, and a mark missing or of another type is refused.
+ */
+export function markSchema(kind: MarkedKind): z.ZodType<RunMark> {
+  const keys: MarkKeys = RUN_MARKS[kind]
+  const named = z.preprocess((metadata) => {
+    if (typeof metadata !== 'object' || metadata === null) return metadata
+    const entries = Object.entries(keys).map(([field, key]) => [field, Reflect.get(metadata, key)])
+    return Object.fromEntries(entries)
+  }, MARK_FIELDS)
+  return named.pipe(
+    z.transform(
+      (fields): RunMark => ({
+        companyId: fields.company,
+        personId: fields.person,
+        projectId: fields.project,
+        automation:
+          fields.automation === undefined
+            ? undefined
+            : { automationId: fields.automation, name: fields.automationName ?? '' },
+        agent:
+          fields.agent === undefined
+            ? undefined
+            : { agentId: fields.agent, draft: fields.draft === 'true' },
+      }),
+    ),
   )
-
-const AGENT_MARK = z
-  .object({
-    [RUN_MARKS.agents.company]: CompanyId,
-    [RUN_MARKS.agents.person]: PersonId,
-    [RUN_MARKS.agents.project]: ProjectId.optional(),
-    [RUN_MARKS.agents.agent]: AgentId.optional(),
-    [RUN_MARKS.agents.draft]: z.enum(['true', 'false']).optional(),
-  })
-  .transform((marks): RunMark => {
-    const agentId = marks[RUN_MARKS.agents.agent]
-    return {
-      companyId: marks[RUN_MARKS.agents.company],
-      personId: marks[RUN_MARKS.agents.person],
-      projectId: marks[RUN_MARKS.agents.project],
-      agent:
-        agentId === undefined
-          ? undefined
-          : { agentId, draft: marks[RUN_MARKS.agents.draft] === 'true' },
-    }
-  })
-
-const MARKS = { assistant: ASSISTANT_MARK, construtor: CONSTRUTOR_MARK, agents: AGENT_MARK }
-
-/** The schema of a kind's marks: who and where the thread was opened for, compared later with its resource. */
-function runMark(kind: MarkedKind): z.ZodType<RunMark> {
-  return MARKS[kind]
 }
 
 /** The marks a thread of the kind is born with (`createSession({ tags })`), the same keys as `RUN_MARKS`. */
@@ -200,7 +181,7 @@ export function runResolver(
  */
 export function markIn(kind: ControllerKind, metadata: unknown, owner: Owner): RunMark | undefined {
   if (kind === 'builder') return owner
-  const mark = runMark(kind).safeParse(metadata).data
+  const mark = markSchema(kind).safeParse(metadata).data
   if (mark?.companyId !== owner.companyId || mark.personId !== owner.personId) return undefined
   return mark
 }

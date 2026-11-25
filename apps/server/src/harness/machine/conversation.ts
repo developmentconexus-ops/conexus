@@ -7,6 +7,7 @@ import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { controllerIn } from '../memory/public.ts'
+import { NEVER_ASKS } from '../spec/public.ts'
 import { locate } from './conversation-file.ts'
 import { MAX_BYTES } from './git-facts.ts'
 import type { ConversationMachine, Kit } from './kit.ts'
@@ -292,7 +293,7 @@ class Machines implements ConversationMachines {
         tools: {
           // The agents' controller asks for every tool without a rule of its own (step 24.5): the
           // Computador's never ask.
-          requireApproval: () => false,
+          requireApproval: NEVER_ASKS,
           hooks: {
             beforeToolCall: async () => {
               await this.ensure(session)

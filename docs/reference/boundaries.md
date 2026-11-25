@@ -1095,12 +1095,12 @@ changes, reread the line it names.
   (`packages/core/src/agent-controller/session.ts:4808-4829`, `:5019-5030` and `:6638-6642`). With `@mastra/pg`
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
   at `packages/core/src/agent/agent.ts:8757`).
-- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/harness/spec/mount.ts`)
-  in `agents/saved-agent/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
-  regime `THE_WRITE_ASKS` runs over its tools: every tool whose rule is not a function (the shared
-  ones, the web's, the code's) goes on a copy with `NEVER_ASKS`, and the given objects stay as they
-  are; and `requireApproval: () => false` in `apps/server/src/harness/machine/conversation.ts` (the
-  Computador). A tool's own rule runs before the session's policy, so the call is never suspended.
+- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/harness/spec/mount.ts`) in
+  `askingOnlyByOwnRule` (same file), which a ficha with the regime `THE_WRITE_ASKS` runs over its
+  tools: every tool whose rule is not a function (the reads, the shared ones, the web's, the code's)
+  goes on a copy with `NEVER_ASKS`, and the given objects stay as they are; and the same
+  `NEVER_ASKS` on the Computador's workspace in `apps/server/src/harness/machine/conversation.ts`.
+  A tool's own rule runs before the session's policy, so the call is never suspended.
 - **Why.** With `allow`, 12 of 200 reads were lost on Postgres; with the rule on each tool, 0 of 200
   (the study of step 24.5; Papéis P1).
 - **Proof.** Covered, not fails without: `approval.test.ts`, "a escrita espera, o resto não", reads

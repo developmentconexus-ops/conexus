@@ -3,7 +3,7 @@ export { ASK_USER_TOOL, createAskUserTool } from './ask-user.ts'
 export { CONVERSATION_MODE, MODEL_TIMEOUT } from './factories.ts'
 export type { ControllerKind, Owner } from './kinds.ts'
 export { CONTROLLER_KINDS, controllerKindOf, ownerOfResource, resourceOf } from './kinds.ts'
-export { conversationMemory, ownerIn, turnOfOwner } from './memory.ts'
+export { conversationMemory, turnOfOwner } from './memory.ts'
 export { BR_LOCATION, routedModel, sessionModel, toolsOf } from './model.ts'
 export { agentOfSpec, initialStateOf, mountAgent, NEVER_ASKS } from './mount.ts'
 export { oncePerRun } from './once.ts'
@@ -13,7 +13,15 @@ export type { ReleaseScope } from './release.ts'
 export { releaseByMarks, releaseThreads, threadsByMarks } from './release.ts'
 export { answerModelChange } from './routes.ts'
 export type { DataBinding, RunMark, RunScope, Stored } from './run.ts'
-export { dataContextOf, markIn, marksOf, principalOf, RUN_MARKS, runResolver } from './run.ts'
+export {
+  dataContextOf,
+  markIn,
+  markSchema,
+  marksOf,
+  principalOf,
+  RUN_MARKS,
+  runResolver,
+} from './run.ts'
 export { skillOf } from './skills.ts'
 export type { Mays, Speakers } from './speakers.ts'
 export { blockOf, turnDate } from './speakers.ts'

@@ -44,6 +44,7 @@ import {
   companyConnections,
   companyToolScope,
   companyTools,
+  TOOLS_OF,
 } from '../../harness/tools/public.ts'
 import type { Access, Place } from '../../hub/access/public.ts'
 import type { Connectors } from '../../hub/connectors/public.ts'
@@ -68,8 +69,7 @@ const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 
  * system.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
-  CONVERSATION_TOOL.connectorRead,
-  CONVERSATION_TOOL.connectorNotes,
+  ...TOOLS_OF.construtor,
   CONVERSATION_TOOL.webFetch,
   CONVERSATION_TOOL.webSearch,
   ASK_USER_TOOL,

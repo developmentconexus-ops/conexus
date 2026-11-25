@@ -151,7 +151,7 @@
   "src/agents/app-builder/conversations.test.ts": 10.8,
   "src/harness/turn/drain.test.ts": 8.6,
   "src/harness/routes/guard.test.ts": 4.4,
-  "src/agents/app-builder/permissions.test.ts": 3.3,
+  "src/agents/app-builder/closure.test.ts": 3.3,
   "src/agents/app-builder/prompt.test.ts": 4.1,
   "src/agents/app-builder/request.test.ts": 3.9,
   "src/agents/app-builder/steps.test.ts": 27.9,
