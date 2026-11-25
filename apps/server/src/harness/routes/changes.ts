@@ -1,5 +1,5 @@
 import type { CompanyId, ConversationId, Person } from '@conexus/hub-api'
-import { CONVERSATION_TITLE_MAX, Effort, ModelId } from '@conexus/hub-api'
+import { ConversationTitle, Effort, ModelId } from '@conexus/hub-api'
 import type { FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
@@ -54,8 +54,8 @@ async function modelChoice(
   }
 }
 
-/** The title Mastra's body leaves loose: trimmed and between one and `CONVERSATION_TITLE_MAX` characters. */
-const RenameBody = z.strictObject({ title: z.string().trim().min(1).max(CONVERSATION_TITLE_MAX) })
+/** The title Mastra's body leaves loose: trimmed, and one to `CONVERSATION_TITLE_MAX` characters. */
+const RenameBody = z.strictObject({ title: ConversationTitle })
 
 /**
  * A rename reaches Mastra's route (`PUT …/threads/:threadId`, which pins the title against the

@@ -233,6 +233,9 @@ export const setAssistantConnections = defineOperation({
 /** The longest title a person gives a conversation. */
 export const CONVERSATION_TITLE_MAX = 120
 
+/** The title a person gives a conversation, as the screen's field and the Hub's guard both read it. */
+export const ConversationTitle = z.string().trim().min(1).max(CONVERSATION_TITLE_MAX)
+
 export const deleteAssistantConversation = defineOperation({
   id: 'deleteAssistantConversation',
   summary:

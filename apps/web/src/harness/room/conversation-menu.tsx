@@ -1,4 +1,4 @@
-import { CONVERSATION_TITLE_MAX } from '@conexus/hub-api'
+import { CONVERSATION_TITLE_MAX, ConversationTitle } from '@conexus/hub-api'
 import { MoreVerticalIcon } from 'lucide-react'
 import type { RefObject } from 'react'
 import { useRef, useState } from 'react'
@@ -42,7 +42,7 @@ export type ConversationActions = {
   remove?: () => Promise<void>
 }
 
-const RenameBody = z.object({ title: z.string().trim().min(1).max(CONVERSATION_TITLE_MAX) })
+const RenameBody = z.object({ title: ConversationTitle })
 
 /** "Já foi": the Hub no longer holds the conversation, which is what the person wanted. */
 function isGone(error: unknown) {
