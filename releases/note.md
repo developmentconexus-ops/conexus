@@ -1,30 +1,32 @@
-# v0.24.128
+# v0.24.129
 
-Esta versão publica o que entrou no `main` em 25/11 depois da v0.24.127: as quatro decisões do fundador
-sobre as telas da etapa "A primeira cópia chega ao lago". Cada uma fecha uma dúvida que a versão
-anterior deixava para depois.
+Esta versão publica o que entrou no `main` em 25/11 depois da v0.24.128: o conserto que faltava para a
+cópia de uma tabela com números de muitas casas decimais, da etapa "A primeira cópia chega ao lago".
 
-**Depois de Enviar link.** O painel do link gerado agora diz onde achar o resultado: quando a outra
-pessoa enviar, a ligação nova aparece em **Integrações**, e basta abri-la e clicar em **Escolher o que
-copiar**. A janela de quem pediu o link continua sem acompanhar o envio.
+**A cópia não para mais num número de muitas casas decimais.** A primeira cópia real do Sankhya parou
+na primeira tabela, com as linhas lidas e nenhuma gravada no lago, porque um valor tinha mais casas
+decimais do que a coluna comportava
+(https://github.com/developmentconexus-ops/conexus/issues/1380). Agora a cópia lê do dicionário do
+Sankhya quantas casas cada coluna declara e grava o número com essa escala. Um número cuja coluna não
+declara escala é arredondado na nona casa decimal, para cima a partir de 5, e a cópia segue. O resultado
+da rodada diz quantas células foram arredondadas, por tabela.
 
-**Desmarcar uma tabela pede confirmação.** Na aba **Tabelas** da ligação, **Salvar** que desmarca uma
-tabela abre uma pergunta, "Tirar 1 tabela do lago?" ou "Tirar n tabelas do lago?", que lista as tabelas
-que saem do lago e avisa que o lago apaga as linhas delas. Diz também que as outras tabelas seguem como
-sempre. **Tirar do lago** confirma e fica desligado até a gravação terminar; **Cancelar** não muda nada.
-Um **Salvar** que não desmarca nenhuma tabela grava direto, sem pergunta.
+**O que continua parando a cópia.** Um número cuja parte inteira tem mais de 29 dígitos ainda derruba a
+rodada, e nada dessa leva de linhas é gravado. Uma coluna que declara escala e recebe um valor com mais
+casas do que ela declarou também derruba a leva: a cópia mostra o erro em vez de arredondar em silêncio.
 
-**Quem não gerencia as cópias.** Essa pessoa vê as caixas de escolha, **Salvar** e **Rodar agora**
-à vista e desligados, com a frase "Só quem gerencia as cópias muda o que se
-copia." Clicar neles não faz nada. **Ler de novo desde a data**, **Escolher o que copiar** e as outras
-tabelas continuam escondidos para ela.
+**O que muda na tela.** Nada. Nenhuma tela mudou nesta versão. A contagem de células arredondadas fica
+no resultado da rodada e no registro do servidor, e não aparece em **Dados**; mostrá-la ali é a issue
+https://github.com/developmentconexus-ops/conexus/issues/1388.
 
-**Dados sem tabelas.** Quando o sistema já está ligado e nenhuma tabela é copiada, **Dados** diz "Nenhuma
-tabela copiada. Escolha o que copiar na página da ligação." Sem sistema ligado, a tela não muda.
+**O que ainda não funciona.** Numa tabela do lago que já tem dados, trocar a escala de uma coluna ainda
+não é tratado: o lago mantém o tipo antigo da coluna sem avisar
+(https://github.com/developmentconexus-ops/conexus/issues/1387). As duas tabelas vazias que o laboratório
+já tinha criado para as notas foram apagadas antes da primeira rodada com dados, para nascerem com a
+escala certa.
 
-**O que ainda não funciona.** A cópia de uma tabela com números de muitas casas decimais ainda para antes
-de gravar no lago. A correção fica para uma versão seguinte, acompanhada na issue
-https://github.com/developmentconexus-ops/conexus/issues/1380. Acompanhar na janela de quem pediu o link
-a chegada da ligação nova também fica para depois.
+**O que ainda não foi provado.** Uma cópia real com os dados da empresa ainda não rodou nesta versão. Os
+testes cobrem os números de dez casas, a escala declarada e a parte inteira grande, mas só uma nova
+rodada real confirma que a tabela das notas chega ao lago.
 
 Segue a etapa A primeira cópia chega ao lago.
