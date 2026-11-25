@@ -1,0 +1,4 @@
+{"library":"@conexus/tap (apps/extraction/tap/src/messages.ts: schemaOf, recordLine, lineOf)","version":"feat/conexus-lago2-decimal-escala on main cb8a9c97","source":"U5, the adapter's own emitters on invented rows: a NUMBER(18,4) the dictionary declares, values that fit (criterion 22, 0083)","recordedAt":"2026-11-25"}
+{"type":"SCHEMA","stream":"teste_decimal","schema":{"type":"object","properties":{"codigo":{"type":["integer","null"]},"valor":{"type":["string","null"],"format":"x-singer.decimal","precision":18,"scale":4}}},"key_properties":["codigo"]}
+{"type":"RECORD","stream":"teste_decimal","record":{"codigo":1,"valor":"1234567890123.1234"},"version":1}
+{"type":"RECORD","stream":"teste_decimal","record":{"codigo":2,"valor":"0.5"},"version":1}

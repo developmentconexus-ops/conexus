@@ -22,4 +22,10 @@ Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primei
 
 Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-25 (commit 8aef1abc36fa9a26559ba83b5bf5ba08139fa165), as métricas de máquina de cada rodada (o alocado, os picos de CPU e de memória e as amostras gravados já no G4; os gráficos na etapa seguinte do lago, opção A): "1. Aprovo emenda do cartao lago" / "2 A".
 
+Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-25 (commit d9df16eb8af981ad7141870707d58c16df415ee3), o número sem escala declarada em decimal(38,9) arredondado na nona casa e contado no relatório da rodada, e a escala do dicionário quando declarada (critério 22, T.4 e a decisão 0083, opção a2 do estudo do decimal): "1. A2".
+
+Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-25 (commit 97a9da8aa72583ec3bdf65039ff71adadc307581), as correções da revisão do decimal: a coluna que muda de tipo numa tabela existente fica com o tipo antigo e as duas tabelas vazias foram apagadas antes da primeira rodada com dados ("1. A"), o corpo real de DATA_PRECISION e DATA_SCALE como não provado até a primeira cópia real, e os testes da soma entre lotes e da escala declarada acima de nove: "Sim".
+
 Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-25 (commit 0e386cfdf44c331c86c5fef3b854f416839094dc), as quatro decisões da revisão do PR 1378 (a janela de quem pediu o link, o diálogo ao desmarcar, as ações à vista e desligadas de quem não gerencia as cópias, e o texto de Dados vazio): "1. Tudo certo" / "2. Okay".
+
+Emenda do cartão curto de A primeira cópia chega ao lago (`docs/steps/a-primeira-copia-chega-ao-lago.md`) aprovada em 2026-11-25 (commit 00a25b16296628c7ab6dda3c14b39296e7fab78d), o cartão que junta as duas emendas já aprovadas, as quatro decisões da revisão do PR 1378 e o decimal na nona casa com as correções da sua revisão, depois de trazer o main: "Pode".

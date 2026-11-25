@@ -5,6 +5,7 @@ import os
 import signal
 import threading
 import time
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -37,8 +38,15 @@ def test_um_resultado_por_rodada(task: Task, metadata: Metadata) -> None:
     assert result["outcome"] == {"kind": "COMPLETE"}
     rows = {name: len(r) for name, r in task.source(spec).items()}
     assert result["tables"] == [
-        {"name": name, "read": rows[name], "written": rows[name], "rows": None, "whole": True}
-        for name in ("sankhya_notas", "sankhya_notas_nfe")
+        {
+            "name": name,
+            "read": rows[name],
+            "written": rows[name],
+            "rounded": rounded,
+            "rows": None,
+            "whole": True,
+        }
+        for name, rounded in (("sankhya_notas", 1), ("sankhya_notas_nfe", 0))
     ]
     assert "1234567890123" not in json.dumps(result)
     machine = result["machine"]
@@ -46,6 +54,18 @@ def test_um_resultado_por_rodada(task: Task, metadata: Metadata) -> None:
     assert set(machine) == {"allocated", "peak", "everySeconds", "samples"}
     assert machine["peak"]["memoryMib"] > 0
     assert set(result) == {"type", "version", "runId", "attempt", "outcome", "tables", "machine"}
+
+
+def test_o_resultado_leva_as_celulas_arredondadas_de_cada_tabela(task: Task) -> None:
+    spec = task.spec(NOTAS, ("TGFNFE", "sankhya_notas_nfe"))
+    assert task.run(spec) == 0
+    [result] = task.aws.sent
+    assert [(table["name"], table["rounded"]) for table in result["tables"]] == [
+        ("sankhya_notas", 1),
+        ("sankhya_notas_nfe", 0),
+    ]
+    lake = task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow()
+    assert Decimal("2.123456790") in lake.column("campo003").to_pylist()
 
 
 def test_o_resultado_sai_igual_sem_a_medida(

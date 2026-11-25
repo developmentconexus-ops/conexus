@@ -198,6 +198,7 @@ export async function finished(
       name: LakeTableName.parse(name),
       read: 3,
       written: 3,
+      rounded: 0,
       rows: 3,
       whole: true,
     })),

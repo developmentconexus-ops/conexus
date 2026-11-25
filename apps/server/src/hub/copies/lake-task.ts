@@ -53,6 +53,8 @@ export const CopyTaskResult = z.object({
       name: LakeTableName,
       read: z.int().min(0),
       written: z.int().min(0),
+      /** The cells written rounded half up at the ninth place, in a column without a declared scale (0083). */
+      rounded: z.int().min(0),
       rows: z.int().min(0).nullable(),
       whole: z.boolean(),
     }),

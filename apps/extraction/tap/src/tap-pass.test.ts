@@ -248,3 +248,24 @@ test('o binário: base64 com contentEncoding no esquema, os bytes como vieram; o
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 255]),
   )
 })
+
+test('o decimal declarado: a precisão e a escala vão ao esquema ao lado do x-singer.decimal, e o sem escala vai sem elas', () => {
+  const columns = [
+    {
+      name: 'VLRDESCPARCERIA',
+      type: 'numeric',
+      description: null,
+      decimal: { precision: 18, scale: 4 },
+    },
+    { name: 'VLRNOTA', type: 'numeric', description: null },
+  ] as const
+  assert.deepEqual(schemaOf(columns).properties, {
+    vlrdescparceria: {
+      type: ['string', 'null'],
+      format: 'x-singer.decimal',
+      precision: 18,
+      scale: 4,
+    },
+    vlrnota: { type: ['string', 'null'], format: 'x-singer.decimal' },
+  })
+})

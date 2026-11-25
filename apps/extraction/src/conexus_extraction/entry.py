@@ -172,6 +172,7 @@ def _result(spec: Spec, outcome: Complete | Failed, report: Mapping[str, t.Any])
                     "name": asked["name"],
                     "read": counts.get(asked["name"], {}).get("read", 0),
                     "written": counts.get(asked["name"], {}).get("written", 0),
+                    "rounded": counts.get(asked["name"], {}).get("rounded", 0),
                     "rows": None,
                     "whole": asked["whole"],
                 }

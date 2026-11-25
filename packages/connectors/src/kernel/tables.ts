@@ -32,10 +32,17 @@ export type TableColumnType = z.infer<typeof TableColumnType>
 /** A column of the source as the source names it; a name starting with `_` is the engine's (T.41). */
 export const SourceColumn = z.string().regex(/^[A-Za-z][A-Za-z0-9_]{0,59}$/)
 
+/** What a numeric column's source declares of its decimal: Oracle `NUMBER(p, s)`; absent when it declares no scale (`FLOAT`, bare `NUMBER`). */
+export const DeclaredDecimal = z
+  .object({ precision: z.int().min(1).max(38), scale: z.int().min(0).max(38) })
+  .refine(({ precision, scale }) => scale <= precision)
+export type DeclaredDecimal = z.infer<typeof DeclaredDecimal>
+
 export const TableColumn = z.object({
   name: SourceColumn,
   type: TableColumnType,
   description: z.string().max(200).nullable(),
+  decimal: DeclaredDecimal.optional(),
 })
 export type TableColumn = z.infer<typeof TableColumn>
 
