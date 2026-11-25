@@ -34,15 +34,31 @@ function waitMs(failed: TableReadFailed, tried: number, random: () => number): n
   return failed.waitMs ?? Math.round((2 * 2 ** (tried - 1) + random()) * 1000)
 }
 
+/** A call the pass repeats without cutting rows: the sign-in, the discovery, the ceiling and the months, each up to `TRIES`, and each try leaves its line. `table` is empty when no table asks. */
 export async function tried<T extends Readonly<{ kind: string }>>(
   read: () => Promise<T | TableReadFailed>,
   deps: PassDeps,
+  table: string,
 ): Promise<T | TableReadFailed> {
   for (let count = 1; ; count++) {
+    const started = deps.now()
     const done = await read()
     if (done.kind !== 'FAILED' || !('code' in done)) return done
-    if (done.code !== 'COPY_SOURCE_UNREACHABLE' || count === TRIES) return done
-    await deps.sleep(waitMs(done, count, deps.random))
+    if (done.code !== 'COPY_SOURCE_UNREACHABLE') return done
+    const last = count === TRIES
+    const wait = last ? null : waitMs(done, count, deps.random)
+    logTry(deps, {
+      event: last ? 'QUERY_FAILED' : 'QUERY_RETRIED',
+      table,
+      filter: null,
+      attempt: count,
+      failed: done,
+      nextRows: null,
+      waitMs: wait,
+      elapsedMs: deps.now() - started,
+    })
+    if (wait === null) return done
+    await deps.sleep(wait)
   }
 }
 
@@ -53,8 +69,9 @@ export async function tried<T extends Readonly<{ kind: string }>>(
 function logTry(
   deps: PassDeps,
   a: Readonly<{
-    event: 'PAGE_REDUCED' | 'PAGE_RETRIED' | 'PAGE_FAILED'
+    event: 'PAGE_REDUCED' | 'PAGE_RETRIED' | 'PAGE_FAILED' | 'QUERY_RETRIED' | 'QUERY_FAILED'
     table: string
+    filter: TableFilter['kind'] | null
     attempt: number
     failed: TableReadFailed
     nextRows: number | null
@@ -67,6 +84,7 @@ function logTry(
     JSON.stringify({
       event: a.event,
       table: a.table,
+      filter: a.filter,
       rows: failed.rows,
       nextRows: a.nextRows,
       attempt: a.attempt,
@@ -104,6 +122,7 @@ async function pageOf(
     logTry(deps, {
       event,
       table,
+      filter: ask.filter.kind,
       attempt: tries,
       failed: page,
       nextRows: last ? null : (cut ?? page.rows),
@@ -175,12 +194,13 @@ async function planOf(
     const ceiling = await tried(
       () => tableCeiling({ ...reach, table: run.table, columns: run.columns }),
       a.deps,
+      run.stream,
     )
     return ceiling.kind === 'CEILING' ? { filters, point: ceiling.value } : ceiling
   }
   const counted =
     point === undefined
-      ? await tried(() => tableMonths({ ...reach, table: run.table }), a.deps)
+      ? await tried(() => tableMonths({ ...reach, table: run.table }), a.deps, run.stream)
       : { kind: 'MONTHS' as const, months: monthsToReread(a.deps.now(), point, mode.reread) }
   if (counted.kind !== 'MONTHS') return counted
   const first = date?.slice(0, 7) ?? ''

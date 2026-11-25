@@ -78,16 +78,24 @@ async function withReach(
 }
 
 async function columnsOf(reach: TableReach, connector: Connector, deps: TapDeps) {
-  const signed = await tried(async () => {
-    const token = await reach.session.token(reach.signal)
-    return typeof token === 'string' ? { kind: 'SIGNED' as const } : tableFailureOf(token)
-  }, deps)
+  const signed = await tried(
+    async () => {
+      const token = await reach.session.token(reach.signal)
+      return typeof token === 'string' ? { kind: 'SIGNED' as const } : tableFailureOf(token)
+    },
+    deps,
+    '',
+  )
   if (signed.kind === 'FAILED') return { kind: 'FAILED' as const, failure: signed }
-  const listed = await tried(async () => {
-    const found = await discoverTables({ ...reach, connector })
-    const away = found.find(({ failed }) => failed?.code === 'COPY_SOURCE_UNREACHABLE')?.failed
-    return away ?? { kind: 'FOUND' as const, found }
-  }, deps)
+  const listed = await tried(
+    async () => {
+      const found = await discoverTables({ ...reach, connector })
+      const away = found.find(({ failed }) => failed?.code === 'COPY_SOURCE_UNREACHABLE')?.failed
+      return away ?? { kind: 'FOUND' as const, found }
+    },
+    deps,
+    '',
+  )
   return listed.kind === 'FAILED' ? { kind: 'FAILED' as const, failure: listed } : listed
 }
 

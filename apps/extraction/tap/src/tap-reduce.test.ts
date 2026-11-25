@@ -194,6 +194,10 @@ test('o log da tentativa só leva escalares: nem o corpo do erro nem texto do pr
   const through = gateway(double, ({ rows }) => (rows > 3 ? internalError() : null))
   const run = await tap(double, { streams: [selected('TGFCAB', 'notas')], fetch: through.fetch })
   assert.ok(run.logs.length > 0)
+  assert.ok(
+    run.logs.every(({ filter }) => filter === 'ALL'),
+    'o tipo do filtro vai na linha',
+  )
   assert.equal(allLogs(run).includes(SECRET), false, 'o corpo fica fora')
   assert.equal(allLogs(run).includes('Internal Server Error'), false, 'e a mensagem dele também')
   for (const line of run.logs)
@@ -226,4 +230,60 @@ test('a tabela de operação reduz como a de tabela: o 5xx corta o limite pedido
   const ids = recordsOf(run, 'deals').map((row) => row.id)
   assert.equal(new Set(ids).size, ids.length, 'cada negócio uma vez')
   assert.ok(ids.length > 100)
+})
+
+test('a consulta do teto que cai também deixa a linha: a tabela, o filtro, a tentativa e a espera, e a quinta falha diz que acabou', async () => {
+  const double = sankhyaDouble()
+  let calls = 0
+  const run = await tap(double, {
+    streams: [selected('TGFVEN', 'vendedores')],
+    fetch: async (request) => {
+      if (new URL(request.url).pathname === '/authenticate') return double.fake.handle(request)
+      calls += 1
+      return calls > 1 && calls <= 3 ? internalError() : double.fake.handle(request)
+    },
+  })
+  assert.equal(run.code, 0)
+  assert.deepEqual(
+    run.logs.map(({ event, table, filter, attempt, waitMs, status }) => ({
+      event,
+      table,
+      filter,
+      attempt,
+      waitMs,
+      status,
+    })),
+    [
+      {
+        event: 'QUERY_RETRIED',
+        table: 'vendedores',
+        filter: null,
+        attempt: 1,
+        waitMs: 2500,
+        status: 500,
+      },
+      {
+        event: 'QUERY_RETRIED',
+        table: 'vendedores',
+        filter: null,
+        attempt: 2,
+        waitMs: 4500,
+        status: 500,
+      },
+    ],
+  )
+  assert.equal(allLogs(run).includes(SECRET), false)
+  const down = await tap(double, {
+    streams: [selected('TGFVEN', 'vendedores')],
+    fetch: async (request) =>
+      new URL(request.url).pathname === '/authenticate'
+        ? double.fake.handle(request)
+        : internalError(),
+  })
+  assert.equal(down.code, 1)
+  assert.partialDeepStrictEqual(down.logs.at(-1), {
+    event: 'QUERY_FAILED',
+    attempt: 5,
+    waitMs: null,
+  })
 })
