@@ -110,3 +110,8 @@ test('máquina: as marcas são relidas uma vez por turno, na primeira ferramenta
   assert.match(told, /first\.ts/)
   assert.doesNotMatch(told, /second\.ts/)
 })
+
+test('máquina: o Computador do Construtor de apps não traz regra de aprovação própria: quem decide é a ficha', async (t) => {
+  const { open } = await world(t)
+  assert.equal((await open()).getToolsConfig()?.requireApproval, undefined)
+})

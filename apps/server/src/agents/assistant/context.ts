@@ -1,7 +1,7 @@
 import type { ConversationId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Memory } from '@mastra/memory'
-import { MARK } from '../../harness/machine/public.ts'
+import { machineMarksOf } from '../../harness/machine/public.ts'
 import { conversationRun } from '../../harness/memory/public.ts'
 import type { Owner, RunScope, Speakers } from '../../harness/spec/public.ts'
 import { admitAsker, oncePerRun, ownerOfResource, runResolver } from '../../harness/spec/public.ts'
@@ -52,10 +52,10 @@ export function machineMarks(chosenOf: ChosenOf) {
     if (run === undefined || resource?.kind !== 'assistant') return undefined
     const owner = { companyId: resource.companyId, personId: resource.personId }
     const { projectId } = await chosenOf(owner, run.sessionId)
-    return {
-      [MARK.company]: owner.companyId,
-      ...(projectId === null ? {} : { [MARK.project]: projectId }),
-    }
+    return machineMarksOf({
+      companyId: owner.companyId,
+      ...(projectId === null ? {} : { projectId }),
+    })
   })
 }
 

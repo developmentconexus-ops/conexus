@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { ConversationId } from '@conexus/hub-api'
+import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { createConversationMachines, PACKAGE_HOSTS } from '../../harness/machine/public.ts'
 import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../../harness/machine/test-machine.ts'
 import {
@@ -16,9 +17,11 @@ import {
   streamOf,
 } from '../../harness/routes/test-conversation.ts'
 import { tool } from '../../harness/routes/test-questions.ts'
+import { CONTROLLER_KINDS } from '../../harness/spec/public.ts'
 import { servedSankhya } from '../../hub/connectors/test-connections.ts'
 import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
 import { assisting, COUNT, created, reading, said, searching, talking } from './test-assistant.ts'
+import { READ_MEDIA } from './test-files.ts'
 
 const WRITE = 'mastra_workspace_write_file'
 const READ_FILE = 'mastra_workspace_read_file'
@@ -224,13 +227,8 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   const { control, deps } = on.hub.conversationMachines
   control.discoverable.push(nameOf(url))
   const machines = createConversationMachines(
-    {
-      ...deps,
-      log: { info: () => undefined, error: () => undefined },
-      hosts: PACKAGE_HOSTS,
-      otherTemplate: 'resume',
-      marksOf: async () => undefined,
-    },
+    { hosts: PACKAGE_HOSTS, otherTemplate: 'resume', marks: async () => undefined },
+    { ...deps, log: { info: () => undefined, error: () => undefined } },
     on.hub.conversationMachines.tuning,
   )
   const id = ConversationId.parse(url.slice(url.lastIndexOf('/') + 1))
@@ -257,6 +255,13 @@ test('as ferramentas da máquina: as mastra_workspace_* que o modelo do Assisten
   }
   assert.equal(workspaceTools(false).length, 11)
   assert.deepEqual(workspaceTools(true), workspaceTools(false))
+  const controller = on.hub.mastra.getAgentController(CONTROLLER_KINDS.assistant.id)
+  const session = await controller?.getSession(url.slice(url.lastIndexOf('/') + 1))
+  assert.ok(session, 'the conversation has its session')
+  const workspace = await controller?.resolveWorkspace({ session })
+  assert.deepEqual(workspace?.getToolsConfig()?.[WORKSPACE_TOOLS.FILESYSTEM.READ_FILE], {
+    mediaTypes: [...READ_MEDIA],
+  })
 })
 
 test('o fim do Hub: a máquina do turno em andamento para quando o Hub é parado (21)', {
