@@ -92,3 +92,8 @@ test('o mesmo teste no mesmo ponto de dois grupos não leva o nome de um deles, 
   ]
   assert.deepEqual(flakyTests(JSON.stringify(state)), [{ file: 'a.test.ts', name: 'sem rolagem' }])
 })
+
+test('uma chave do estado fora de arquivo:linha:coluna lança, em vez de esconder o teste instável', () => {
+  const state = [{ 'a.test.ts:4': entry('instável', 1) }]
+  assert.throws(() => flakyTests(JSON.stringify(state)), /fora do formato: a\.test\.ts:4$/)
+})

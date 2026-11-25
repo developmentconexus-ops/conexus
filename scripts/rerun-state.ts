@@ -29,7 +29,8 @@ export function flakyTests(stateText: string): { file: string; name: string }[] 
   const last = Object.entries(State.parse(JSON.parse(stateText)).at(-1) ?? {}).flatMap(
     ([key, entry]) => {
       const found = KEY.exec(key)
-      if (found === null) return []
+      if (found === null)
+        throw new Error(`chave do estado de --test-rerun-failures fora do formato: ${key}`)
       const [, file = '', line = '', column = ''] = found
       return [{ file, id: identity(file, line, column, entry.name), entry }]
     },
