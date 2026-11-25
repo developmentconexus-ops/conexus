@@ -6,12 +6,16 @@ import type {
   ModelId,
   ProjectId,
 } from '@conexus/hub-api'
-import { AutomationId as AutomationIdSchema } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
-import { z } from 'zod'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import type { Owner } from '../../harness/spec/public.ts'
-import { marksOf, openSession, RUN_MARKS, resourceOf } from '../../harness/spec/public.ts'
+import {
+  markSchema,
+  marksOf,
+  openSession,
+  RUN_MARKS,
+  resourceOf,
+} from '../../harness/spec/public.ts'
 import type { CompanyProjects } from '../../harness/tools/public.ts'
 import type { Access, Place } from '../../hub/access/public.ts'
 import { principalFor } from '../../hub/access/public.ts'
@@ -62,20 +66,10 @@ export async function admitted(
 /** The automation whose run opened a conversation, as its marks keep it. */
 export type ConversationAutomation = { automationId: AutomationId; name: string }
 
-const AutomationMarks = z
-  .object({
-    [RUN_MARKS.assistant.automation]: AutomationIdSchema,
-    [RUN_MARKS.assistant.automationName]: z.string(),
-  })
-  .transform((marks) => ({
-    automationId: marks[RUN_MARKS.assistant.automation],
-    name: marks[RUN_MARKS.assistant.automationName],
-  }))
-
 /** The automation a thread's marks name, or `null` for a conversation a person opened. */
 export function automationOf(metadata: Record<string, unknown> | undefined) {
   if (metadata?.[RUN_MARKS.assistant.automation] === undefined) return null
-  return AutomationMarks.parse(metadata)
+  return markSchema('assistant').parse(metadata).automation ?? null
 }
 
 /**
