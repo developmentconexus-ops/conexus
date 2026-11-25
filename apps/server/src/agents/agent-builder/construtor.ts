@@ -325,7 +325,7 @@ export function createConstrutor(deps: Deps) {
       memory,
       model: MODEL,
       // Its tool that writes code starts the conversation's machine, as the Assistant's: the screen
-      // hears it; the machines close after the runs `drain` stopped, before Mastra stops.
+      // hears it.
       ...wired,
       /** Whether the person may build agents in the company now (`manageAgents`). */
       admit: construtorAdmission(deps),

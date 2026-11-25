@@ -331,8 +331,7 @@ export function createAssistant(deps: Deps) {
         )
       },
       // Its turn writes in no Projeto: its end saves only the failure it said, and tells where its
-      // machine starts (QA F1), as the Builder's tells its steps; the machines close after the
-      // runs `drain` stopped, before Mastra stops.
+      // machine starts (QA F1), as the Builder's tells its steps.
       ...wired,
     } satisfies HubPart,
     /** Admits the person who may ask now, in the place; else `NOT_FOUND` (S10). */

@@ -7,7 +7,7 @@ import type { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
 type WorkspaceParts = {
   /** The provider's key to the machine. */
   name: string
-  /** Wakes or creates the machine, once per session. */
+  /** Wakes or creates the session's machine; called before every tool. */
   ensure(): Promise<Kit>
   /** What the model is told of the machine, read at every step. */
   instructions: () => string

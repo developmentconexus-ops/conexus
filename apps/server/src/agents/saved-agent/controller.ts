@@ -291,7 +291,7 @@ export function createAgentConversations(deps: Deps) {
       async beforeWorkers(): Promise<void> {
         await registry.hydrate()
       },
-      // Where its machine starts, which the turn's end tells (QA F1); the machines stop after the runs `drain` stopped.
+      // Where its machine starts, which the turn's end tells (QA F1).
       ...wired,
     } satisfies HubPart,
   } as const)
