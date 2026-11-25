@@ -591,6 +591,10 @@ which shadcn file it was copied from; the front matter holds their values. Their
 - **Dialog.** Four sizes, as `ui/dialog.tsx` names them: `form` (`containers.column`), `page`
   (`containers.page`), `fields` (`containers.wide`) and `ask` (a card under `sm`, `fields` above);
   `object` radius; `title` heading; a footer with a hairline.
+- **Step bar.** The wizard's steps in a row above the body of a window, numbered, `label` size in
+  `text-2`: a step done has a check in its 20px pill, the current one a ring in `accent`, the name in
+  `text` at 500 and `aria-current="step"`, the later ones their number. It is a list to read, never a
+  control. Below `sm` the row gives way to one line, "Passo n de N · name" (V62).
 - **Tabs.** 32px triggers; the active one is ink with a 2px ipê underline, a current-place mark (V5).
 - **Table.** Header 40 in `label`, `text-2`, cells with the `table-row` padding, row hairline,
   hover raised; its rows keep the table display at every width. A markdown table in a message has

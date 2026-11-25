@@ -1362,6 +1362,18 @@
     {
       "file": "apps/server/src/harness/routes/rename.test.ts",
       "name": "renomear: um título vazio"
+    },
+    {
+      "file": "apps/web/src/hub/connectors/lake-tables.test.tsx",
+      "name": "uma ligação de outro sistema não tem abas nem a seção"
+    },
+    {
+      "file": "apps/web/src/hub/connectors/link-window-send.test.tsx",
+      "name": "enviar link: marca o que a outra pessoa preenche e o resto vai do que foi digitado; o endereço sai uma vez com Copiar e a hora"
+    },
+    {
+      "file": "apps/web/src/hub/connectors/link-window.test.tsx",
+      "name": "acesso: um nome já usado por outra pessoa lê a lista de novo atrás da janela"
     }
   ]
 }

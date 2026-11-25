@@ -6,7 +6,9 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { ConnectorLogo, connectionsQuery, connectorName } from '../connectors/public.ts'
 import { AppsLayer } from './apps-layer.tsx'
-import { systemsOf } from './data-systems.ts'
+import { activeConnections } from './data-systems.ts'
+import { LakeList } from './lake-list.tsx'
+import { lakeTablesListQuery } from './lake-queries.ts'
 import { useMay } from './member.ts'
 import { DataLayer } from './search.ts'
 import {
@@ -15,6 +17,7 @@ import {
   DATA_INTRO,
   DATA_TITLE,
   LINK_SYSTEM,
+  lakeGroupText,
   NO_CONCEPT,
   NO_SYSTEM,
   NO_SYSTEM_HINT,
@@ -49,27 +52,44 @@ function NoSystem({ companyId }: { companyId: CompanyId }) {
   )
 }
 
-/** The **Bruto** layer: each system the company's connections link. */
+/** The **Bruto** layer: each active connection of the company, with the lake tables it copies. */
 function SystemsLayer({ companyId }: { companyId: CompanyId }) {
   const connections = useQuery(connectionsQuery(companyId))
-  if (connections.isPending) return <Skeleton className="h-24 w-full" />
-  if (connections.isError) {
-    return <ReadFailure text={CATALOG_FAILED} onRetry={() => void connections.refetch()} />
+  const lake = useQuery(lakeTablesListQuery(companyId))
+  if (connections.isPending || lake.isPending) return <Skeleton className="h-24 w-full" />
+  if (connections.isError || lake.isError) {
+    const failed = connections.isError ? connections : lake
+    return <ReadFailure text={CATALOG_FAILED} onRetry={() => void failed.refetch()} />
   }
   const { connectors } = connections.data
-  const systems = systemsOf(connections.data.connections)
-  if (systems.length === 0) return <NoSystem companyId={companyId} />
+  const active = activeConnections(connections.data.connections)
+  if (active.length === 0) return <NoSystem companyId={companyId} />
   return (
     <div className="flex flex-col gap-lg">
-      {systems.map((system) => {
-        const entry = connectors.find((one) => one.id === system.connector)
+      {active.map((connection) => {
+        const entry = connectors.find((one) => one.id === connection.connector)
+        const system = connectorName(connectors, connection.connector)
+        const tables = lake.data.filter((table) => table.connection.id === connection.id)
+        const title =
+          tables.length === 0
+            ? systemText(system, [connection.name], 0)
+            : lakeGroupText(connection.name, tables.length)
         return (
-          <section key={system.connector} className="flex flex-col gap-sm">
+          <section key={connection.id} className="flex flex-col gap-sm">
             <span className="flex items-center gap-sm font-medium">
               {entry !== undefined && <ConnectorLogo entry={entry} small />}
-              {systemText(connectorName(connectors, system.connector), [...system.accounts], 0)}
+              {title}
             </span>
-            <Empty>{NO_TABLE_COPIED}</Empty>
+            {tables.length === 0 ? (
+              <Empty>{NO_TABLE_COPIED}</Empty>
+            ) : (
+              <LakeList
+                companyId={companyId}
+                tables={tables}
+                system={system}
+                name={connection.name}
+              />
+            )}
           </section>
         )
       })}

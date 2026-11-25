@@ -3,9 +3,10 @@ import type {
   CompanyId,
   Connection,
   ConnectionId,
+  ConnectionNote,
   ConnectorEntry,
 } from '@conexus/hub-api'
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon, MoreHorizontalIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -13,6 +14,7 @@ import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Alert } from '../../ui/alert.tsx'
 import { Badge } from '../../ui/badge.tsx'
 import { Button } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,26 +23,24 @@ import {
 } from '../../ui/dropdown-menu.tsx'
 import { PageTitle, SectionTitle } from '../../ui/list.tsx'
 import { RouteReadFailure } from '../../ui/states.tsx'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
+import { lakeTablesQuery } from './lake-queries.ts'
+import { LakeTables } from './lake-tables.tsx'
+import { OVERVIEW, TABLES_TAB } from './lake-text.ts'
 import { ReconnectButton } from './link-dialog.tsx'
 import { ConnectorLogo } from './logo.tsx'
 import { Notebook } from './notes.tsx'
 import { connectionKeys, connectionQuery, connectionsQuery, sendTest } from './queries.ts'
-import { Said } from './said.tsx'
+import { TestRefusal } from './said.tsx'
 import {
   accountText,
-  appRefusedText,
-  busyText,
   connectorName,
   linkedText,
   MEMBER_SENTENCE,
-  readRefusedText,
   reauthText,
-  serverErrorText,
   stateBadge,
   TESTING_TEXT,
   testedText,
-  UNREADABLE_TEXT,
-  unreachableText,
   WORKING_TEXT,
 } from './text.ts'
 import { UnlinkDialog } from './unlink-dialog.tsx'
@@ -76,40 +76,6 @@ export function ConnectionReadFailure(props: { error: unknown; reset: () => void
     )
   }
   return <RouteReadFailure error={props.error} reset={props.reset} />
-}
-
-type Refusal = Exclude<Answer, { result: 'WORKING' }>
-
-/** The sentence of a Testar that did not work; the refused keys are the connection's state, said once above. */
-function refusalText(answer: Refusal, name: string): string | null {
-  switch (answer.result) {
-    case 'AUTH_REFUSED':
-      return null
-    case 'READ_REFUSED':
-      return readRefusedText(name, answer.read)
-    case 'BUSY':
-      return busyText(name, answer.waitMs)
-    case 'UNREACHABLE':
-      return answer.native === null ? unreachableText(name) : serverErrorText(name)
-    case 'UNREADABLE':
-      return UNREADABLE_TEXT
-    case 'APP_REFUSED':
-      return appRefusedText(name)
-    default:
-      return answer satisfies never
-  }
-}
-
-/** What a Testar that did not work says, with what the provider answered. */
-function TestRefusal(props: { answer: Refusal; name: string }) {
-  const { answer, name } = props
-  const sentence = refusalText(answer, name)
-  return (
-    <div role="alert" className="flex flex-col gap-xs">
-      {sentence !== null && <p className="text-danger">{sentence}</p>}
-      {answer.native !== null && <Said native={answer.native} name={name} />}
-    </div>
-  )
 }
 
 function Actions(props: { busy: boolean; onTest: () => void; onUnlink: () => void }) {
@@ -268,6 +234,54 @@ function Reauth(props: {
 }
 
 /**
+ * What the page holds under the header: the facts and the notebook; and, for a connection whose
+ * kit declares tables to copy, the same under "Visão geral" beside the tab "Tabelas", which
+ * appears when the Hub has said so. Other systems keep the page as it is, with no tabs.
+ */
+function Details(props: {
+  companyId: CompanyId
+  connection: Connection
+  entry: ConnectorEntry | undefined
+  name: string
+  notes: ConnectionNote[]
+  mayManage: boolean
+}) {
+  const { companyId, connection, entry } = props
+  const lake = useQuery(lakeTablesQuery(companyId, connection.id))
+  const overview = (
+    <>
+      <Facts name={props.name} connection={connection} />
+      <Notebook
+        companyId={companyId}
+        connectionId={connection.id}
+        notes={props.notes}
+        mayManage={props.mayManage}
+      />
+    </>
+  )
+  const tabbed =
+    entry !== undefined && (lake.isError || (lake.data && lake.data.lake.kind !== 'UNAVAILABLE'))
+  return (
+    <Tabs defaultValue="overview" className="gap-0">
+      {tabbed && (
+        <TabsList>
+          <TabsTrigger value="overview">{OVERVIEW}</TabsTrigger>
+          <TabsTrigger value="tables">{TABLES_TAB}</TabsTrigger>
+        </TabsList>
+      )}
+      <TabsContent value="overview" className={cn('flex flex-col gap-xl', tabbed && 'pt-lg')}>
+        {overview}
+      </TabsContent>
+      {tabbed && (
+        <TabsContent value="tables" className="pt-lg">
+          <LakeTables companyId={companyId} connection={connection} entry={entry} read={lake} />
+        </TabsContent>
+      )}
+    </Tabs>
+  )
+}
+
+/**
  * One connection: who linked it, its state, who tested it last and, for an owner or an
  * administrator, Testar and Desligar. What a Testar answered stays on this page only; another
  * connection of the same connector has its own.
@@ -329,10 +343,11 @@ export function ConnectionPage() {
         error={test.error}
         answer={test.data}
       />
-      <Facts name={name} connection={connection} />
-      <Notebook
+      <Details
         companyId={companyId}
-        connectionId={connectionId}
+        connection={connection}
+        entry={entry}
+        name={name}
         notes={detail.notes}
         mayManage={mayManage}
       />

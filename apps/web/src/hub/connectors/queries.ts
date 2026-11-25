@@ -1,12 +1,15 @@
 import type { CompanyId, ConnectionId, ProjectId } from '@conexus/hub-api'
 import {
+  answerConnectionLink,
   completeConnectionSignIn,
+  createConnectionLink,
   deleteConnectionNote,
   getConnection,
   grantProjectConnection,
   linkConnection,
   listConnections,
   listProjectConnections,
+  readConnectionLink,
   reconnectConnection,
   revokeProjectConnection,
   startConnectionSignIn,
@@ -59,3 +62,11 @@ export function projectConnectionsKey(companyId: CompanyId, projectId: ProjectId
 export const sendGrant = hubMutation(grantProjectConnection)
 export const sendRevoke = hubMutation(revokeProjectConnection)
 export const sendNoteDeletion = hubMutation(deleteConnectionNote)
+export const sendConnectionLink = hubMutation(createConnectionLink)
+
+/** The page of a link by its secret, read with no session. */
+export function connectionLinkQuery(secret: string) {
+  return hubQuery(readConnectionLink, { params: { secret } })
+}
+
+export const sendLinkAnswer = hubMutation(answerConnectionLink)
