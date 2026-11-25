@@ -184,7 +184,12 @@ async function handle(held: Held, message: { handle: string; entry: CopyQueueMes
     await deps.queue.acknowledge(message.handle)
     return
   }
-  await closeLakeRun(held.closing, companyScope(companyId), { run, ...endOf(entry) })
+  const closed = await closeLakeRun(held.closing, companyScope(companyId), { run, ...endOf(entry) })
+  if (closed.parameter === 'LEFT') {
+    open.set(run, companyId)
+    resultDeadlines.set(run, (deps.clock ?? Date).now() + RESULT_GRACE_MS)
+    return
+  }
   open.delete(run)
   resultDeadlines.delete(run)
   await deps.queue.acknowledge(message.handle)
@@ -227,9 +232,12 @@ async function handleBatch(held: Held, bodies: readonly { handle: string; body: 
 
 /**
  * The end of the rounds that run outside the Hub: the queue is read only while a round the Hub
- * knows is open (data D27). A message leaves the queue only after `closeLakeRun` wrote the close;
- * a stop of a task that exited 0 does not close, and the round waits `RESULT_GRACE_MS` in memory
- * for its result, since three deliveries at the queue's visibility end before the grace.
+ * knows is open (data D27). A message leaves the queue only after `closeLakeRun` wrote the close
+ * and deleted the round's parameter; a stop of a task that exited 0 does not close, and the round
+ * waits `RESULT_GRACE_MS` in memory for its result, since three deliveries at the queue's
+ * visibility end before the grace. A parameter AWS did not delete keeps the message for the queue's
+ * redelivery and the round read for one grace more, whose end deletes it once again; past that the
+ * next start's sweep deletes it.
  */
 export function createLakeQueue(deps: LakeQueueDeps) {
   const open = new Map<LakeRunId, CompanyId>()

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { RESULT_GRACE_MS } from './test-lake-queue.ts'
-import { completed, lakeRunOn, queued, roundsOf, testClock } from './test-lake-run.ts'
+import { RESULT_GRACE_MS, silenceDelete } from './test-lake-queue.ts'
+import { completed, heldStart, lakeRunOn, queued, roundsOf, testClock } from './test-lake-run.ts'
 
 const NOTAS = { source: 'TGFCAB', name: 'sankhya_notas' }
 
@@ -73,4 +73,46 @@ test('a varredura espera a graça: a tarefa parada há menos da graça segue abe
   const rounds = new Map((await roundsOf(on, connection)).map((row) => [row.id, row]))
   assert.deepEqual([rounds.get(run)?.outcome, rounds.get(run)?.code], ['ERROR', 'COPY_TASK_LOST'])
   assert.equal(rounds.get(next)?.outcome, null, 'the new round opened')
+})
+
+test('o parâmetro que o fecho da partida deixou: a varredura do disparo seguinte o apaga', async (t) => {
+  const on = await lakeRunOn(t)
+  const connection = await on.copied([NOTAS])
+  function parameterOf(run: string) {
+    return `/conexus/copia/${on.companyId}/${run}`
+  }
+  on.aws.start.script('RunTask', 'REFUSED')
+  silenceDelete(on)
+  const refused = queued(await on.runs.iniciarRodada(on.at, connection, 'NOW'))
+  await on.runs.idle()
+  assert.deepEqual(await roundsOf(on, connection), [
+    { id: refused, task_arn: null, outcome: 'ERROR', code: 'COPY_LAKE_UNAVAILABLE' },
+  ])
+  assert.deepEqual(on.aws.parameters(), [parameterOf(refused)], 'the close left it')
+
+  const next = queued(await on.runs.iniciarRodada(on.at, connection, 'CLOCK'))
+  await on.runs.idle()
+  assert.deepEqual(on.aws.parameters(), [parameterOf(next)])
+})
+
+test('a varredura não fecha a rodada que acabou de abrir: a partida que entra na fila enquanto a AWS responde segue, e o segundo disparo não abre outra', async (t) => {
+  const on = await lakeRunOn(t)
+  const connection = await on.copied([{ ...NOTAS, done: true }])
+  const { runs, ...held } = heldStart(t, on)
+
+  held.arm()
+  const first = runs.iniciarRodada(on.at, connection, 'NOW')
+  await held.reaching
+  const second = await runs.iniciarRodada(on.at, connection, 'CLOCK')
+  const run = queued(await first)
+  await runs.idle()
+
+  assert.deepEqual(second, { kind: 'ALREADY_RUNNING' })
+  const rounds = await roundsOf(on, connection)
+  assert.deepEqual(
+    rounds.filter((row) => row.outcome === null).map((row) => row.id),
+    [run],
+    'the first round stays open',
+  )
+  assert.equal(on.aws.tasks().length, 1, 'one task copies the connection')
 })

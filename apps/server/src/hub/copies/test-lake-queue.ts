@@ -99,6 +99,15 @@ export function deleteParameterOf(on: LakeRunOn, run: string) {
   )
 }
 
+/**
+ * The next `DeleteParameter` call goes unanswered and deletes nothing: the SDK repeats the request
+ * once inside the call's deadline, so both requests are silent.
+ */
+export function silenceDelete(on: Pick<LakeRunOn, 'aws'>) {
+  on.aws.start.script('DeleteParameter', 'SILENT')
+  on.aws.start.script('DeleteParameter', 'SILENT')
+}
+
 /** A consumer of its own, on another database or queue than the Hub's. */
 export function consumerOn(on: LakeRunOn, ports: { database?: Database; queue?: CopyQueue } = {}) {
   return createLakeQueue({

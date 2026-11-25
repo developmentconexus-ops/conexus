@@ -15,6 +15,7 @@ import {
   result,
   roundOf,
   running,
+  silenceDelete,
   stopTaskOf,
 } from './test-lake-queue.ts'
 import { completed, lakeRunOn } from './test-lake-run.ts'
@@ -61,7 +62,7 @@ test('o resultado e a parada: o resultado fecha com as contagens, rows e o códi
   })
 
   const fell = await running(on, [{ source: 'TGFPRO', name: 'sankhya_produtos' }], 'Outra')
-  assert.equal(await completed(on, fell.run), 'CLOSED')
+  assert.equal((await completed(on, fell.run)).kind, 'CLOSED')
   const awake = await running(on, [{ source: 'TGFVEN', name: 'sankhya_vendedores' }], 'Quarta')
   on.aws.enqueue(
     result(fell.run, { kind: 'ERROR', code: 'COPY_SOURCE_UNREACHABLE', table: null, system: null }),
@@ -161,6 +162,23 @@ test('o parâmetro sai no fim: a rodada fechada apaga o parâmetro dela; um par�
     on.lines.some(({ message }) => message === 'COPY_PARAMETER_LEFT'),
     false,
   )
+})
+
+test('o parâmetro que a AWS não apagou: a mensagem fica na fila, é relida, e o parâmetro sai', async (t) => {
+  const on = await lakeRunOn(t)
+  const { run } = await running(on)
+  silenceDelete(on)
+  on.aws.enqueue(result(run))
+  await on.queue.start()
+  await drained(on)
+  assert.equal((await roundOf(on, run))?.outcome, 'COMPLETE')
+  assert.equal(endedLines(on, run).length, 1, 'the second reading closed nothing')
+  assert.equal(
+    on.lines.filter(({ message }) => message === 'COPY_PARAMETER_LEFT').length,
+    1,
+    'the first delete went unanswered',
+  )
+  assert.deepEqual(on.aws.parameters(), [])
 })
 
 test('o que o registro leva: COPY_RUN_ENDED com as contagens e a ligação; nem ele nem a fila levam o segredo; a mensagem ilegível sai da fila com COPY_QUEUE_UNREADABLE', async (t) => {

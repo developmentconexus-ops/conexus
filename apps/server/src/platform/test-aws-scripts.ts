@@ -3,10 +3,14 @@ import { z } from 'zod'
 import type { WireAnswer } from './test-aws.ts'
 import { awsRecording } from './test-aws.ts'
 
-/** A scripted answer: the recorded refusal, or the answer held past the caller's deadline after it took effect. */
-export type Scripted = 'REFUSED' | 'HELD'
-/** The next answers of the copy's start calls, scripted, in order. */
-export type Scripts = Record<'PutParameter' | 'RunTask', Scripted[]>
+/**
+ * A scripted answer: the recorded refusal, the answer held past the caller's deadline after it took
+ * effect, or silence past the deadline with nothing done.
+ */
+export type Scripted = 'REFUSED' | 'HELD' | 'SILENT'
+const SCRIPTED = ['PutParameter', 'RunTask', 'DeleteParameter'] as const
+/** The next answers of the copy's start and end calls, scripted, in order. */
+export type Scripts = Record<(typeof SCRIPTED)[number], Scripted[]>
 
 /** A task the double started, kept by its token. */
 export type ServedTask = {
@@ -26,27 +30,32 @@ const HELD_MS = 5_000
 /** The copy's start as the double sees it: when each parameter arrived, by the test's clock, and the next answers scripted. */
 export class CopyStart {
   readonly writes: number[] = []
-  readonly scripts: Scripts = { PutParameter: [], RunTask: [] }
+  readonly scripts: Scripts = { PutParameter: [], RunTask: [], DeleteParameter: [] }
   now: () => number = () => Date.now()
 
   wrote(): void {
     this.writes.push(this.now())
   }
 
-  /** The next `PutParameter` or `RunTask` is refused as recorded, or held past the deadline after it took effect. */
+  /** The next call of this kind is refused as recorded, held past the deadline after it took effect, or silent. */
   script(call: keyof Scripts, answer: Scripted): void {
     this.scripts[call].push(answer)
   }
 }
 
-/** A call's answer as its script says: refused as recorded, or held after it took effect. */
+/** A call's answer as its script says: refused as recorded, held after it took effect, or silent. */
 export async function scripted(
   scripts: Scripts,
   operation: string,
   answer: () => WireAnswer,
 ): Promise<WireAnswer> {
-  if (operation !== 'PutParameter' && operation !== 'RunTask') return answer()
-  const next = scripts[operation].shift()
+  const call = SCRIPTED.find((each) => each === operation)
+  if (call === undefined) return answer()
+  const next = scripts[call].shift()
+  if (next === 'SILENT') {
+    await new Promise((resolve) => setTimeout(resolve, HELD_MS))
+    return { status: 500, body: '' }
+  }
   if (next === 'REFUSED') {
     if (operation !== 'RunTask') throw new Error(`no recorded refusal of ${operation}`)
     return awsRecording('run-task-familia-inexistente')

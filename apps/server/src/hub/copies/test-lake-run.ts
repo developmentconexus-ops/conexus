@@ -5,9 +5,11 @@ import { CompanyId as CompanyIdSchema, ConnectionId as ConnectionIdSchema } from
 import { z } from 'zod'
 import { createAws } from '../../platform/aws.ts'
 import type { Config } from '../../platform/config.ts'
+import type { Database } from '../../platform/database.ts'
 import type { Scalar } from '../../platform/failure.ts'
 import { testAws } from '../../platform/test-aws.ts'
 import { awsServer } from '../../platform/test-aws-server.ts'
+import { silent } from '../../platform/test-database.ts'
 import { linkSankhya, servedSankhya } from '../connectors/test-connections.ts'
 import type { Hub } from '../identity/test-hub.ts'
 import { ANA_OWNER, hubWithLog, personOn, plantCompany } from '../identity/test-hub.ts'
@@ -186,4 +188,56 @@ export function completed(on: LakeRunOn, run: LakeRunId) {
     tables: [],
     cause: 'RESULT',
   })
+}
+
+/**
+ * The Hub's database whose first command after `arm` resolves only when `release` is called: a
+ * start that committed its round and has not yet entered the line.
+ */
+function heldDatabase(on: LakeRunOn) {
+  const database = on.hub.test.database
+  let armed = false
+  const released = Promise.withResolvers<void>()
+  const reaching = Promise.withResolvers<void>()
+  const held: Database = {
+    ...database,
+    async command(scope, work) {
+      const done = await database.command(scope, work)
+      if (armed) {
+        armed = false
+        reaching.resolve()
+        await released.promise
+      }
+      return done
+    },
+  }
+  return {
+    database: held,
+    arm: () => {
+      armed = true
+    },
+    reaching: reaching.promise,
+    release: () => released.resolve(),
+  }
+}
+
+/**
+ * A start line of its own over that database, whose `ListTasks` lets the held command go: a second
+ * start's sweep reads the round the first committed and asks AWS while the first enters the line.
+ */
+export function heldStart(t: TestContext, on: LakeRunOn) {
+  const held = heldDatabase(on)
+  const runs = createLakeRuns({
+    ...{ database: held.database, source: on.hub.connectors.copies, copy: on.config.aws.copy },
+    ...{ queue: on.ports.queue, log: silent, clock: testClock(), companies: on.companies },
+    tasks: {
+      ...on.ports.tasks,
+      find: (...asked) => {
+        held.release()
+        return on.ports.tasks.find(...asked)
+      },
+    },
+  })
+  t.after(() => runs.queue.stop())
+  return { runs, arm: held.arm, reaching: held.reaching }
 }
