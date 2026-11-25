@@ -5,12 +5,15 @@ import os
 import signal
 import threading
 import time
+import typing as t
 from decimal import Decimal
 from pathlib import Path
 
+import pyarrow as pa
 import pytest
 
 from conexus_extraction.contract import Machine
+from conexus_extraction.entry import _settled
 from conexus_extraction.machine import Meter
 from tests.conftest import Metadata, Task, fargate
 
@@ -208,3 +211,34 @@ def _configs(task: Task) -> list[str]:
 def test_o_catalogo_chega_inteiro_ao_gravador(task: Task) -> None:
     assert task.run(task.spec(("TGFCAB", "sankhya_notas"))) == 0
     assert json.loads(json.loads(task.seen("target.config"))["catalog"]) == task.catalog
+
+
+ITENS = ("TGFITE", "sankhya_itens")
+
+
+def test_a_tabela_que_falha_nao_trava_a_atual_das_que_terminaram(task: Task) -> None:
+    task.lake.create_table(("raw", "sankhya_itens"), schema=pa.schema([("nunota", pa.string())]))
+    spec = task.spec(NOTAS, ITENS, whole=False)
+    assert task.run(spec) == 0
+    [result] = task.aws.sent
+    assert result["outcome"] == {
+        "kind": "ERROR",
+        "code": "COPY_LAKE_WRITE_FAILED",
+        "table": "sankhya_itens",
+        "system": None,
+    }
+    notas = task.lake.load_table(("current", "sankhya_notas")).scan().to_arrow()
+    assert notas.num_rows == len(task.source(spec)["sankhya_notas"])
+    by_name = {table["name"]: table for table in result["tables"]}
+    assert by_name["sankhya_notas"]["rows"] == notas.num_rows
+    assert by_name["sankhya_itens"]["rows"] is None
+    assert not task.lake.load_table(("current", "sankhya_itens")).scan().to_arrow().num_rows
+
+
+def test_so_a_tabela_de_passada_terminada_entra_na_atual() -> None:
+    spec = {"tables": [{"name": "a"}, {"name": "b"}, {"name": "c"}]}
+    failed: dict[str, t.Any] = {"kind": "ERROR", "table": "c"}
+    report = {"unfinished": ["b"]}
+    assert _settled(spec, report, failed) == ["a"]  # type: ignore[arg-type]
+    assert _settled(spec, report, None) == ["a", "b", "c"]  # type: ignore[arg-type]
+    assert _settled(spec, {"unfinished": None}, failed) == []  # type: ignore[arg-type]

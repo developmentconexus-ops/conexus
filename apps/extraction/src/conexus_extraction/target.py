@@ -173,7 +173,17 @@ class TargetConexus(Target):
         super().__init__(*args, **kwargs)
         self._ssm = boto3.client("ssm", region_name=self.config["region"])
         self._lock = threading.Lock()
-        self._report: dict[str, t.Any] = {"tables": {}, "closed": False, "failed": None}
+        self._report: dict[str, t.Any] = {
+            "tables": {},
+            "closed": False,
+            "failed": None,
+            "unfinished": None,
+        }
+
+    def _process_state_message(self, message_dict: dict[str, t.Any]) -> None:
+        super()._process_state_message(message_dict)
+        bookmarks = message_dict["value"].get("bookmarks", {})
+        self.report(unfinished=sorted(name for name, mark in bookmarks.items() if "pass" in mark))
 
     @functools.cached_property
     def catalog(self) -> Catalog:

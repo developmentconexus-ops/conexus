@@ -7,7 +7,7 @@ import subprocess
 import sys
 import tempfile
 import typing as t
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 import boto3
@@ -218,16 +218,37 @@ def _measured(result: Result, machine: Machine | None) -> Result:
         return t.cast("Result", {**result, "machine": None})
 
 
+def _settled(spec: Spec, report: Mapping[str, t.Any], failed: Failed | None) -> list[str]:
+    """The tables whose last pass ended: only those can enter `current` when another one failed.
+
+    A pass that stopped midway leaves part of a month or of a table in `raw`, and replacing a
+    window by the months it brought would delete the rows not read yet.
+    """
+    if failed is None:
+        return [asked["name"] for asked in spec["tables"]]
+    unfinished = report["unfinished"]
+    if unfinished is None:
+        return []
+    return [
+        asked["name"]
+        for asked in spec["tables"]
+        if asked["name"] not in unfinished and asked["name"] != failed["table"]
+    ]
+
+
 def _updated(
     spec: Spec,
     updater: Updater,
     plans: Mapping[str, Plan],
     guard: tuple[Stopping, StillOpen],
+    settled: Sequence[str],
 ) -> tuple[dict[str, UpdateCounts], Failed | None] | None:
-    """`current` brought up to `raw`, table by table; null when the round was closed or stopped."""
+    """`current` brought up to `raw` in the settled tables; null when closed or stopped."""
     stopping, still_open = guard
     counts: dict[str, UpdateCounts] = {}
     for asked in spec["tables"]:
+        if asked["name"] not in settled:
+            continue
         if stopping.asked or not still_open():
             return None
         plan = plans[asked["name"]]
@@ -305,18 +326,17 @@ def copied(
             "table": report["failed"]["table"],
             "system": None,
         }
-    if failure is not None:
-        return _result(spec, failure, report)
-    if code != 0:
+    if failure is None and code != 0:
         log("RUN_UNEXPLAINED", runId=spec["runId"], meltano=code)
         return None
-    updated = _updated(spec, Updater(load_catalog("lake", **catalog), athena), plans, guard)
+    settled = _settled(spec, report, failure)
+    updater = Updater(load_catalog("lake", **catalog), athena)
+    updated = _updated(spec, updater, plans, guard, settled)
     if updated is None:
         return None
     counts, failed = updated
-    if failed is not None:
-        return _result(spec, failed, report)
-    return _result(spec, {"kind": "COMPLETE"}, report, counts)
+    outcome: Complete | Failed = failure or failed or {"kind": "COMPLETE"}
+    return _result(spec, outcome, report, counts)
 
 
 def run(environ: Mapping[str, str], catalog_of: CatalogOf) -> int:
