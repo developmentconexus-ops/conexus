@@ -124,8 +124,8 @@ export function createHubMastra(deps: {
       await runs.settle(bound)
     },
     /**
-     * Stops the runs in progress of every controller, as Parar does, then each part's own end (the
-     * Builder's open streams once each said its end); then waits for the memory's work after them,
+     * Stops the runs in progress of every controller, as Parar does, closes the open streams, then
+     * each part's own end (the Builder's runs); then waits for the memory's work after them,
      * such as a buffered observation, which still reads the pool `main.ts` ends next; then stops
      * Mastra and what closes last (code C62).
      */
