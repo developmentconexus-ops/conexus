@@ -256,6 +256,7 @@
         "apps/web/src/hub/copies/test-hub.tsx",
         "apps/web/src/hub/copies/test-reads.tsx",
         "apps/web/src/hub/data/test-hub.tsx",
+        "apps/web/src/hub/projects/test-hub.tsx",
         "apps/web/src/hub/apps/test-data.tsx",
         "apps/web/vitest.*",
         "apps/web/vite.config.ts"
