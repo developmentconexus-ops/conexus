@@ -15,8 +15,8 @@ import {
 import { resourceOf } from '../../harness/spec/public.ts'
 import { hubOn } from '../../hub/identity/test-hub.ts'
 import { silent } from '../../platform/test-database.ts'
-import type { ConversationIndex } from './turn-of.ts'
-import { builderRuns, createRefusals, projectOfRun, turnOf } from './turn-of.ts'
+import type { ConversationIndex } from './public.ts'
+import { builderRuns, createRefusals, projectOfRun, turnOf } from './public.ts'
 
 const OWNER = {
   companyId: CompanyId.parse('Q2xpZW50ZUV4ZW1wbG9QYXJhVGVzdGUx'),

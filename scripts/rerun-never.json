@@ -1342,6 +1342,14 @@
     {
       "file": "tests/e2e/remove-person.test.ts",
       "name": "o roteiro de tirar uma pessoa: o último dono não sai, tirar, a Central convida e rebaixa, sair, esqueci a senha e a senha vazada"
+    },
+    {
+      "file": "apps/server/src/harness/spec/run.test.ts",
+      "name": "uma marca que falta ou tem outro tipo é recusada, e a chave de outro tipo de conversa não vale"
+    },
+    {
+      "file": "apps/server/src/harness/spec/run.test.ts",
+      "name": "uma marca de outra empresa ou de outra pessoa é lida pelo esquema e recusada pela comparação com o dono"
     }
   ]
 }
