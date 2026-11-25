@@ -12,7 +12,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { templateNameOf } from './test-database-template.ts'
+import pg from 'pg'
+import { createTestDatabase } from './test-database.ts'
+import { templateNameOf, withDatabase } from './test-database-template.ts'
 import { startHub } from './test-hub-process.ts'
 
 function lifetime() {
@@ -87,4 +89,33 @@ test('modelo: uma migração mudada, acrescentada ou apagada leva a outro modelo
   rmSync(join(folder, first), { recursive: true })
   const removed = templateNameOf(folder)
   assert.equal(new Set([shipped, changed, added, removed]).size, 4)
+})
+
+test('banco: o que o teste registra depois dele fecha antes de ele ser apagado, e uma conexão aberta não deixa o apagar recusar', async (t) => {
+  let name = ''
+  let server: pg.Client | undefined
+  let held: pg.Client | undefined
+  try {
+    await t.test('um teste cujo gancho fecha uma conexão ao banco', async (inner) => {
+      const test = await createTestDatabase(inner)
+      name = new URL(test.ownerUrl.reveal()).pathname.slice(1)
+      server = new pg.Client({ connectionString: withDatabase(test.ownerUrl, 'postgres').reveal() })
+      await server.connect()
+      const open = new pg.Client({ connectionString: test.ownerUrl.reveal() })
+      held = open
+      await open.connect()
+      inner.after(async () => {
+        const present = await server?.query('select 1 from pg_database where datname = $1', [name])
+        assert.equal(present?.rowCount, 1)
+        await open.end()
+      })
+    })
+    const left = await server?.query('select 1 from pg_database where datname like $1', [
+      `${name}%`,
+    ])
+    assert.equal(left?.rowCount, 0)
+  } finally {
+    await held?.end().catch(() => undefined)
+    await server?.end()
+  }
 })

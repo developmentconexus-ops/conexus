@@ -16,6 +16,7 @@ import { DatabaseUrl } from './database.ts'
 import { loadMigrationRule } from './migration-rule.ts'
 import type { Lifetime } from './test-database.ts'
 import { withRoleLock } from './test-database.ts'
+import { afterTheRest } from './test-database-admin.ts'
 import { PREVIOUS_VERSION } from './test-migration-cases.ts'
 
 // The test Hub's migrations read the fixed list as the Hub's start leaves it (`main.ts`).
@@ -117,13 +118,15 @@ export function unreachableAnswer(): Promise<SqlAnswer> {
 export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
   const serverUrl = readTestDatabase().ownerUrl
   const name = `conexus_company_${randomUUID().replaceAll('-', '')}`
-  const admin = new pg.Client({ connectionString: serverUrl.reveal() })
-  await admin.connect()
-  await admin.query(`create database ${name}`)
+  const creator = new pg.Client({ connectionString: serverUrl.reveal() })
+  await creator.connect()
+  await creator.query(`create database ${name}`).finally(() => creator.end())
   const url = new URL(serverUrl.reveal())
   url.pathname = `/${name}`
   const owner = DatabaseUrl.parse(url.toString())
-  t.after(async () => {
+  afterTheRest(t, async () => {
+    const admin = new pg.Client({ connectionString: serverUrl.reveal() })
+    await admin.connect()
     try {
       const company = new pg.Client({ connectionString: owner.reveal() })
       await company.connect()

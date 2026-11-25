@@ -36,6 +36,7 @@ import {
   testAppsConfig,
   toolsEnvironment,
 } from './test-cloudflare.ts'
+import { afterTheRest, asAdmin, connected } from './test-database-admin.ts'
 import { grantCloned, hubTemplate, withDatabase } from './test-database-template.ts'
 import { mastraUrlOf, TEST_IDLE_MS, TEST_POOL_TIMINGS } from './test-mastra-database.ts'
 import type { ModelLists } from './test-model-lists.ts'
@@ -143,12 +144,6 @@ export type TestDatabase = {
   asOwner(text: string, values?: unknown[]): Promise<Record<string, unknown>[]>
 }
 
-async function connected(url: DatabaseUrl): Promise<pg.Client> {
-  const client = new pg.Client({ connectionString: url.reveal() })
-  await client.connect()
-  return client
-}
-
 export async function withRoleLock<T>(work: () => Promise<T>): Promise<T> {
   const client = await connected(readTestDatabase().ownerUrl)
   try {
@@ -156,8 +151,11 @@ export async function withRoleLock<T>(work: () => Promise<T>): Promise<T> {
     await client.query('select pg_advisory_xact_lock($1)', [SERVER_ROLES_LOCK_KEY])
     return await work()
   } finally {
-    await client.query('commit')
-    await client.end()
+    try {
+      await client.query('commit')
+    } finally {
+      await client.end()
+    }
   }
 }
 
@@ -184,27 +182,31 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
     password: runtimePassword,
   })
   const mastraUrl = mastraUrlOf(runtimeUrl)
-  const admin = await connected(serverUrl)
-  const source = locale
-    ? `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
-    : `template ${await withRoleLock(() => hubTemplate(admin, serverUrl, runtimePassword))}`
-  await admin.query(`create database ${name} ${source}`)
-  const database = openDatabase({ url: runtimeUrl, log: silent, timings: TEST_POOL_TIMINGS })
-  const mastraPool = openMastraPool({ url: mastraUrl, log: silent, timings: TEST_POOL_TIMINGS })
-  t.after(async () => {
+  const pools: { end(): Promise<void> }[] = []
+  afterTheRest(t, async () => {
     try {
-      await Promise.all([database.close(), mastraPool.end()])
-      // Without FORCE: DROP DATABASE ends an autovacuum worker in the database by itself, while
-      // FORCE refuses with 42501 because the owner holds no privileges of that worker (#32-15).
-      await admin.query(`drop database ${name}`)
-      await admin.query(`drop database if exists ${name}_mastra`)
+      await Promise.all(pools.map((pool) => pool.end()))
+      await asAdmin(serverUrl, async (admin) => {
+        // Without FORCE: DROP DATABASE ends an autovacuum worker in the database by itself, while
+        // FORCE refuses with 42501 because the owner holds no privileges of that worker (#32-15).
+        await admin.query(`drop database if exists ${name}`)
+        await admin.query(`drop database if exists ${name}_mastra`)
+      })
     } finally {
       rmSync(testGitRoot(runtimeUrl), { recursive: true, force: true })
-      await admin.end()
     }
   })
+  await asAdmin(serverUrl, async (admin) => {
+    const source = locale
+      ? `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
+      : `template ${await withRoleLock(() => hubTemplate(admin, serverUrl, runtimePassword))}`
+    await admin.query(`create database ${name} ${source}`)
+    if (!locale) await grantCloned(admin, name)
+  })
+  const database = openDatabase({ url: runtimeUrl, log: silent, timings: TEST_POOL_TIMINGS })
+  const mastraPool = openMastraPool({ url: mastraUrl, log: silent, timings: TEST_POOL_TIMINGS })
+  pools.push({ end: () => database.close() }, mastraPool)
   if (locale) await withRoleLock(() => migrate({ ownerUrl, runtimeUrl, mastraUrl }))
-  else await grantCloned(admin, name)
   return {
     passwords: plantPasswordService(t),
     lists: plantModelLists(t),
