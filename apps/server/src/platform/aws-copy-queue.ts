@@ -34,7 +34,6 @@ const ListedTables = z.object({
     .optional(),
   continuationToken: z.string().optional(),
 })
-const TABLE_PAGES = 5
 
 function tableBucketArn(at: Where, lake: LakeId): string {
   return `arn:aws:s3tables:${at.region}:${at.account}:bucket/${bucketName(lake)}`
@@ -43,7 +42,7 @@ function tableBucketArn(at: Where, lake: LakeId): string {
 async function listTables({ clients, abortSignal }: Session, at: Where, lake: LakeId) {
   const tables: LakeTable[] = []
   let continuationToken: string | undefined
-  for (let page = 0; page < TABLE_PAGES; page += 1) {
+  do {
     const read = ListedTables.parse(
       await clients.tables.send(
         new ListTablesCommand({ tableBucketARN: tableBucketArn(at, lake), continuationToken }),
@@ -53,9 +52,8 @@ async function listTables({ clients, abortSignal }: Session, at: Where, lake: La
     for (const { namespace, name } of read.tables ?? [])
       tables.push({ namespace: namespace[0], name })
     continuationToken = read.continuationToken
-    if (continuationToken === undefined) return tables
-  }
-  throw new RangeError('the lake has more tables than a page budget')
+  } while (continuationToken !== undefined)
+  return tables
 }
 
 async function dropTable(

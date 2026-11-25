@@ -49,6 +49,8 @@ function truncatedTimestamps(text: string): string {
 const PATTERNS = {
   uuid: /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,
   taskId: /(?<=\/)[0-9a-f]{32}\b/g,
+  compute: /(?<=\b(?:taskComputeId|computeId|runtimeId)\W{1,8})[0-9a-f]{32}\b/g,
+  digest: /\bsha256:[0-9a-f]{64}\b/g,
   eni: /\beni-[0-9a-f]{8,17}\b/g,
   subnet: /\bsubnet-[0-9a-f]{8,17}\b/g,
   group: /\bsg-[0-9a-f]{8,17}\b/g,
@@ -95,6 +97,12 @@ export class Inventor {
     )
     out = out.replace(PATTERNS.taskId, (real) =>
       this.#next('task', real, (n) => n.toString(16).padStart(32, '0')),
+    )
+    out = out.replace(PATTERNS.compute, (real) =>
+      this.#next('compute', real, (n) => n.toString(16).padStart(32, 'c')),
+    )
+    out = out.replace(PATTERNS.digest, (real) =>
+      this.#next('digest', real, (n) => `sha256:${n.toString(16).padStart(64, '0')}`),
     )
     for (const [kind, prefix] of [
       ['eni', 'eni'],
