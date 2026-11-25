@@ -121,6 +121,15 @@ def test_a_escala_do_dicionario(task: Task) -> None:
     ]
 
 
+def test_a_escala_declarada_acima_de_nove_chega_exata(task: Task) -> None:
+    report = task.feed("escala-doze.jsonl", {"teste_decimal": "TESTE"})
+    assert report["failed"] is None
+    assert report["tables"]["teste_decimal"]["rounded"] == 0
+    lake = task.lake.load_table(("raw", "teste_decimal")).scan().to_arrow()
+    assert str(lake.schema.field("valor").type) == "decimal128(38, 12)"
+    assert lake.column("valor").to_pylist() == [Decimal("0.123456789012")]
+
+
 def test_a_escala_declarada_que_o_valor_quebra_derruba_o_lote(task: Task) -> None:
     report = task.feed("escala-quebrada.jsonl", {"teste_decimal": "TESTE"})
     assert report["failed"] == {"table": "teste_decimal"}

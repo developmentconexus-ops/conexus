@@ -41,7 +41,7 @@ dropped before the next real run: the founder's word.
 
 ## Reopens when
 
-A rounded ninth place matters, or a connector declares a scale above 9.
+A rounded ninth place matters, or a declared scale differs from the one the lake's existing column has.
 
 ## State
 
