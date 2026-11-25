@@ -99,6 +99,9 @@ export function copyPlatform(stack: Stack, place: Place): CopyPlatform {
   return { cluster, taskFamily: COPY_TASK_FAMILY, queue, executionRole }
 }
 
+/** Meltano writes the state at every `STATE` line: an older version is kept this long, then goes. */
+const STATE_VERSION_DAYS = 30
+
 /**
  * Where Meltano keeps each connection's stopping point (card T.1): `<company>/<connection>/`, which
  * only the company's writer role reads and writes (`writer.ts`). Kept when the stack goes.
@@ -110,6 +113,7 @@ function stoppingPoints(stack: Stack): s3.Bucket {
     encryption: s3.BucketEncryption.S3_MANAGED,
     enforceSSL: true,
     versioned: true,
+    lifecycleRules: [{ noncurrentVersionExpiration: Duration.days(STATE_VERSION_DAYS) }],
     removalPolicy: RemovalPolicy.RETAIN,
   })
 }

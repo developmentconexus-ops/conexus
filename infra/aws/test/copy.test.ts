@@ -111,6 +111,9 @@ test('o depósito do ponto de parada', () => {
     RestrictPublicBuckets: true,
   })
   assert.deepEqual(bucket.Properties.VersioningConfiguration, { Status: 'Enabled' })
+  assert.deepEqual(bucket.Properties.LifecycleConfiguration, {
+    Rules: [{ NoncurrentVersionExpiration: { NoncurrentDays: 30 }, Status: 'Enabled' }],
+  })
 })
 
 test('o teto deixa o que escreve e nada de IAM', () => {
