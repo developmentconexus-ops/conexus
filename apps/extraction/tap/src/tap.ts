@@ -40,7 +40,7 @@ const Secret = z.record(z.string(), z.string())
 
 export type TapDeps = PassDeps & Readonly<{ fetch: typeof fetch; timeoutMs: number }>
 
-/** The deadline of one request to the source. singer-sdk's `RESTStream` takes 300 s and dlt 60 s; 120 s is the probes' own, and a guess for the real service until a measure says better. */
+/** The deadline of one request to the source. singer-sdk's `RESTStream` takes 300 s and dlt 60 s; 120 s is a guess between those two, until a real copy measures the slowest page. */
 export const REQUEST_TIMEOUT_MS = 120_000
 
 const ABOUT = {
