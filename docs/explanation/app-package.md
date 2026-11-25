@@ -44,7 +44,7 @@ The skills never land on the machine's disk. `readSkills()` reads each folder fr
 own copy of the package (`packages/app/src/skills.ts`). The server validates each with Mastra's
 `validateSkillContent`, builds it with `createSkill` and passes the list as the Builder agent's
 `skills` option, together with the skills of the connectors the Project was granted
-(`apps/server/src/builder/conversation/instructions.ts`, `builder.ts`). The model reads them
+(`apps/server/src/agents/app-builder/instructions.ts`, `builder.ts`). The model reads them
 through Mastra's skill tools when it needs them. A test type-checks every example file in
 `references/` against the starter, by the path its first line names
 (`packages/app/src/skills.test.ts`), so an example that drifts from the kit fails CI.
@@ -60,8 +60,8 @@ content security policy: `main.tsx` tells Base UI not to write style elements, a
 
 The Project's Git repository is made when first needed: the first machine seed or the first save
 calls `repository.ensure()`, which commits the starter's files as "Start the app" on `main` of a
-new bare repository on the server's disk (`apps/server/src/builder/git/repository.ts`,
-`apps/server/src/builder/runs/ports.ts`). Version numbers count commits after that one, so the
+new bare repository on the server's disk (`apps/server/src/agents/app-builder/git/repository.ts`,
+`apps/server/src/agents/app-builder/runs/ports.ts`). Version numbers count commits after that one, so the
 starter is version 0. A new machine checks out a bundle of `main` into `/home/user/app`; a machine
 that kept unsaved work merges it onto `main` instead
 (`apps/server/src/harness/machine/scripts.ts`). The E2B template runs `npm ci`
@@ -104,9 +104,9 @@ operation, touches data or looks at a real screen.
 ## How the check gates a version
 
 Two callers reach the check, both through `Runs.check`
-(`apps/server/src/builder/runs/runs.ts`). The `conexus_check` tool lets the model check whenever
+(`apps/server/src/agents/app-builder/runs/runs.ts`). The `conexus_check` tool lets the model check whenever
 it wants. The end-of-turn judge is a Mastra `isTaskComplete` scorer, `conexusCheck`
-(`apps/server/src/builder/conversation/processors.ts`). When the model stops, the judge runs the
+(`apps/server/src/agents/app-builder/processors.ts`). When the model stops, the judge runs the
 check if the app folder changed. A failing report goes back to the model as the scorer's reason
 and the model continues, up to four rounds. On the last round a failure is recorded as
 `APP_CHECK_FAILED`. A platform failure ends the turn as `unchecked` without spending a round.

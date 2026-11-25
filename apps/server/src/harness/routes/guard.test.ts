@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { agentsOn, publishedAgent, talkedTo } from '../../builder/agents/test-agents.ts'
-import { approving, askedOf, launched, untilAsked } from '../../builder/agents/test-approval.ts'
-import { assisting, created } from '../../builder/assistant/test-assistant.ts'
+import { assisting, created } from '../../agents/assistant/test-assistant.ts'
+import { agentsOn, publishedAgent, talkedTo } from '../../agents/saved-agent/test-agents.ts'
+import { approving, askedOf, launched, untilAsked } from '../../agents/saved-agent/test-approval.ts'
 import { CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { sessionUrl, started } from './test-conversation.ts'
 

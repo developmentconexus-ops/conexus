@@ -83,7 +83,7 @@ cartão do marco da trilha que a pedir, com a aprovação dele.
 - As telas de conversa.
 
 A trilha consome o contrato de acesso e não é dona dele. Toda pasta que nenhuma página de trilha
-nomeia é da Plataforma, como `builder/mastra/` e `builder/model-accounts/`. A Plataforma não é trilha: um defeito nela
+nomeia é da Plataforma, como `harness/mastra/`, `harness/model-accounts/` e `harness/machine/`. A Plataforma não é trilha: um defeito nela
 entra na frente da fila de quem o achou (delivery L4).
 
 ## A interface: o contrato de acesso

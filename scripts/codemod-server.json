@@ -824,5 +824,1199 @@
       "from": "apps/server/src/builder/data-tools/tools.ts",
       "to": "apps/server/src/harness/tools/data/tools.ts"
     }
+  ],
+  "g5f": [
+    {
+      "from": "apps/server/src/builder/agents/activation.ts",
+      "to": "apps/server/src/agents/saved-agent/activation.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/agent-read.test.ts",
+      "to": "apps/server/src/agents/saved-agent/agent-read.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/agent-search.test.ts",
+      "to": "apps/server/src/agents/saved-agent/agent-search.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/agent-unknown-field.test.ts",
+      "to": "apps/server/src/agents/saved-agent/agent-unknown-field.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/agent.test.ts",
+      "to": "apps/server/src/agents/saved-agent/agent.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/agent.ts",
+      "to": "apps/server/src/agents/saved-agent/agent.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/agents-of.ts",
+      "to": "apps/server/src/agents/saved-agent/agents-of.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/agents.eval.test.ts",
+      "to": "apps/server/src/agents/saved-agent/agents.eval.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/agents.ts",
+      "to": "apps/server/src/agents/saved-agent/agents.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/answer.test.ts",
+      "to": "apps/server/src/agents/saved-agent/answer.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/app-data.test.ts",
+      "to": "apps/server/src/agents/saved-agent/app-data.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/approval-load.test.ts",
+      "to": "apps/server/src/agents/saved-agent/approval-load.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/approval-refused.test.ts",
+      "to": "apps/server/src/agents/saved-agent/approval-refused.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/approval-returned.test.ts",
+      "to": "apps/server/src/agents/saved-agent/approval-returned.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/approval.test.ts",
+      "to": "apps/server/src/agents/saved-agent/approval.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/autonomy.test.ts",
+      "to": "apps/server/src/agents/saved-agent/autonomy.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/choose.ts",
+      "to": "apps/server/src/agents/saved-agent/choose.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/code-mode.test.ts",
+      "to": "apps/server/src/agents/saved-agent/code-mode.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/code-mode.ts",
+      "to": "apps/server/src/agents/saved-agent/code-mode.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/code-tool.test.ts",
+      "to": "apps/server/src/agents/saved-agent/code-tool.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/code-tools.ts",
+      "to": "apps/server/src/agents/saved-agent/code-tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/company.ts",
+      "to": "apps/server/src/agents/saved-agent/company.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/controller.ts",
+      "to": "apps/server/src/agents/saved-agent/controller.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/conversation-routes.test.ts",
+      "to": "apps/server/src/agents/saved-agent/conversation-routes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/conversation-routes.ts",
+      "to": "apps/server/src/agents/saved-agent/conversation-routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/conversation.test.ts",
+      "to": "apps/server/src/agents/saved-agent/conversation.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/developer.test.ts",
+      "to": "apps/server/src/agents/saved-agent/developer.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/events.ts",
+      "to": "apps/server/src/agents/saved-agent/events.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/fixed-field.test.ts",
+      "to": "apps/server/src/agents/saved-agent/fixed-field.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/frozen.test.ts",
+      "to": "apps/server/src/agents/saved-agent/frozen.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/frozen.ts",
+      "to": "apps/server/src/agents/saved-agent/frozen.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/legacy.ts",
+      "to": "apps/server/src/agents/saved-agent/legacy.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/machine.test.ts",
+      "to": "apps/server/src/agents/saved-agent/machine.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/open-race.test.ts",
+      "to": "apps/server/src/agents/saved-agent/open-race.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/open.ts",
+      "to": "apps/server/src/agents/saved-agent/open.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/openai-failure.eval.test.ts",
+      "to": "apps/server/src/agents/saved-agent/openai-failure.eval.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/openai-tool-call-ids.eval.test.ts",
+      "to": "apps/server/src/agents/saved-agent/openai-tool-call-ids.eval.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/publish-unattended.test.ts",
+      "to": "apps/server/src/agents/saved-agent/publish-unattended.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/publish.test.ts",
+      "to": "apps/server/src/agents/saved-agent/publish.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/publish.ts",
+      "to": "apps/server/src/agents/saved-agent/publish.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/registry-line.test.ts",
+      "to": "apps/server/src/agents/saved-agent/registry-line.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/registry.test.ts",
+      "to": "apps/server/src/agents/saved-agent/registry.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/registry.ts",
+      "to": "apps/server/src/agents/saved-agent/registry.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/release.test.ts",
+      "to": "apps/server/src/agents/saved-agent/release.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/release.ts",
+      "to": "apps/server/src/agents/saved-agent/release.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/request.test.ts",
+      "to": "apps/server/src/agents/saved-agent/request.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/requests/computador.snapshot",
+      "to": "apps/server/src/agents/saved-agent/requests/computador.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/agents/requests/publicada-leitura.snapshot",
+      "to": "apps/server/src/agents/saved-agent/requests/publicada-leitura.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/agents/requests/rascunho-escrita.snapshot",
+      "to": "apps/server/src/agents/saved-agent/requests/rascunho-escrita.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/agents/resolver.ts",
+      "to": "apps/server/src/agents/saved-agent/resolver.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/role-publish.test.ts",
+      "to": "apps/server/src/agents/saved-agent/role-publish.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/routes.test.ts",
+      "to": "apps/server/src/agents/saved-agent/routes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/routes.ts",
+      "to": "apps/server/src/agents/saved-agent/routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/store.ts",
+      "to": "apps/server/src/agents/saved-agent/store.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/tables.ts",
+      "to": "apps/server/src/agents/saved-agent/tables.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/test-agents.ts",
+      "to": "apps/server/src/agents/saved-agent/test-agents.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/test-approval.ts",
+      "to": "apps/server/src/agents/saved-agent/test-approval.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/test-openai-agent.ts",
+      "to": "apps/server/src/agents/saved-agent/test-openai-agent.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/tools.ts",
+      "to": "apps/server/src/agents/saved-agent/tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/agents/write-of.ts",
+      "to": "apps/server/src/agents/saved-agent/write-of.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant-end.test.ts",
+      "to": "apps/server/src/agents/assistant/assistant-end.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant-memory-cliproxy.test.ts",
+      "to": "apps/server/src/agents/assistant/assistant-memory-cliproxy.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant-overview.test.ts",
+      "to": "apps/server/src/agents/assistant/assistant-overview.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant-question.test.ts",
+      "to": "apps/server/src/agents/assistant/assistant-question.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant-turn.test.ts",
+      "to": "apps/server/src/agents/assistant/assistant-turn.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant.eval.test.ts",
+      "to": "apps/server/src/agents/assistant/assistant.eval.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant.scorecard.test.ts",
+      "to": "apps/server/src/agents/assistant/assistant.scorecard.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant.test.ts",
+      "to": "apps/server/src/agents/assistant/assistant.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/assistant.ts",
+      "to": "apps/server/src/agents/assistant/assistant.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/automation-memory.ts",
+      "to": "apps/server/src/agents/assistant/automation-memory.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/available-tools.ts",
+      "to": "apps/server/src/agents/assistant/available-tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/chosen.ts",
+      "to": "apps/server/src/agents/assistant/chosen.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/company-memory-propose.test.ts",
+      "to": "apps/server/src/agents/assistant/company-memory-propose.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/company-memory-routes.test.ts",
+      "to": "apps/server/src/agents/assistant/company-memory-routes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/company-memory-routes.ts",
+      "to": "apps/server/src/agents/assistant/company-memory-routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/company-memory.test.ts",
+      "to": "apps/server/src/agents/assistant/company-memory.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/company-memory.ts",
+      "to": "apps/server/src/agents/assistant/company-memory.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/connector-access.ts",
+      "to": "apps/server/src/agents/assistant/connector-access.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/context.test.ts",
+      "to": "apps/server/src/agents/assistant/context.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/context.ts",
+      "to": "apps/server/src/agents/assistant/context.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/create.test.ts",
+      "to": "apps/server/src/agents/assistant/create.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/database-down.test.ts",
+      "to": "apps/server/src/agents/assistant/database-down.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/delete.test.ts",
+      "to": "apps/server/src/agents/assistant/delete.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/describe-reads.test.ts",
+      "to": "apps/server/src/agents/assistant/describe-reads.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/eval-judge.test.ts",
+      "to": "apps/server/src/agents/assistant/eval-judge.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/file-media.test.ts",
+      "to": "apps/server/src/agents/assistant/file-media.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/file.test.ts",
+      "to": "apps/server/src/agents/assistant/file.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/files-journey.test.ts",
+      "to": "apps/server/src/agents/assistant/files-journey.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/files-machine.test.ts",
+      "to": "apps/server/src/agents/assistant/files-machine.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/files.test.ts",
+      "to": "apps/server/src/agents/assistant/files.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/files.ts",
+      "to": "apps/server/src/agents/assistant/files.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/handoff.test.ts",
+      "to": "apps/server/src/agents/assistant/handoff.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/handoff.ts",
+      "to": "apps/server/src/agents/assistant/handoff.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/instructions-person.test.ts",
+      "to": "apps/server/src/agents/assistant/instructions-person.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/instructions.test.ts",
+      "to": "apps/server/src/agents/assistant/instructions.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/instructions.ts",
+      "to": "apps/server/src/agents/assistant/instructions.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/list-search.test.ts",
+      "to": "apps/server/src/agents/assistant/list-search.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/machine-phase.test.ts",
+      "to": "apps/server/src/agents/assistant/machine-phase.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/machine.test.ts",
+      "to": "apps/server/src/agents/assistant/machine.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/mays.ts",
+      "to": "apps/server/src/agents/assistant/mays.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/member.test.ts",
+      "to": "apps/server/src/agents/assistant/member.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/memory.ts",
+      "to": "apps/server/src/agents/assistant/memory.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/model-block.test.ts",
+      "to": "apps/server/src/agents/assistant/model-block.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/note-save.test.ts",
+      "to": "apps/server/src/agents/assistant/note-save.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/numbers.test.ts",
+      "to": "apps/server/src/agents/assistant/numbers.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/open.ts",
+      "to": "apps/server/src/agents/assistant/open.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/overview-reach.test.ts",
+      "to": "apps/server/src/agents/assistant/overview-reach.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/profile-memory.test.ts",
+      "to": "apps/server/src/agents/assistant/profile-memory.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/profile-memory.ts",
+      "to": "apps/server/src/agents/assistant/profile-memory.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/prompt-tools.test.ts",
+      "to": "apps/server/src/agents/assistant/prompt-tools.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/prompt/assistant.md",
+      "to": "apps/server/src/agents/assistant/prompt/assistant.md"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/prompt/openai-luna.md",
+      "to": "apps/server/src/agents/assistant/prompt/openai-luna.md"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/propose-automation.ts",
+      "to": "apps/server/src/agents/assistant/propose-automation.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/propose-company-memory.ts",
+      "to": "apps/server/src/agents/assistant/propose-company-memory.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/propose.test.ts",
+      "to": "apps/server/src/agents/assistant/propose.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/propose.ts",
+      "to": "apps/server/src/agents/assistant/propose.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/reach-choice.test.ts",
+      "to": "apps/server/src/agents/assistant/reach-choice.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/read.test.ts",
+      "to": "apps/server/src/agents/assistant/read.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/reader-zone.test.ts",
+      "to": "apps/server/src/agents/assistant/reader-zone.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/recall.test.ts",
+      "to": "apps/server/src/agents/assistant/recall.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/release.test.ts",
+      "to": "apps/server/src/agents/assistant/release.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/release.ts",
+      "to": "apps/server/src/agents/assistant/release.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/rename.test.ts",
+      "to": "apps/server/src/agents/assistant/rename.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/request.test.ts",
+      "to": "apps/server/src/agents/assistant/request.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/requests/ajudante-pesquisar.snapshot",
+      "to": "apps/server/src/agents/assistant/requests/ajudante-pesquisar.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/requests/automacao.snapshot",
+      "to": "apps/server/src/agents/assistant/requests/automacao.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/requests/inicio-com-ligacao.snapshot",
+      "to": "apps/server/src/agents/assistant/requests/inicio-com-ligacao.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/requests/luna.snapshot",
+      "to": "apps/server/src/agents/assistant/requests/luna.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/requests/projeto.snapshot",
+      "to": "apps/server/src/agents/assistant/requests/projeto.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/research.test.ts",
+      "to": "apps/server/src/agents/assistant/research.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/research.ts",
+      "to": "apps/server/src/agents/assistant/research.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/routes.test.ts",
+      "to": "apps/server/src/agents/assistant/routes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/routes.ts",
+      "to": "apps/server/src/agents/assistant/routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/run-reads.ts",
+      "to": "apps/server/src/agents/assistant/run-reads.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/run-scope.test.ts",
+      "to": "apps/server/src/agents/assistant/run-scope.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/scorecard-judge.test.ts",
+      "to": "apps/server/src/agents/assistant/scorecard-judge.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/search.ts",
+      "to": "apps/server/src/agents/assistant/search.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/show-file.test.ts",
+      "to": "apps/server/src/agents/assistant/show-file.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/skills/conexus/SKILL.md",
+      "to": "apps/server/src/agents/assistant/skills/conexus/SKILL.md"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/tables.ts",
+      "to": "apps/server/src/agents/assistant/tables.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-assistant.ts",
+      "to": "apps/server/src/agents/assistant/test-assistant.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-company-memory.ts",
+      "to": "apps/server/src/agents/assistant/test-company-memory.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-door-down.ts",
+      "to": "apps/server/src/agents/assistant/test-door-down.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-files.ts",
+      "to": "apps/server/src/agents/assistant/test-files.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-google-assistant.ts",
+      "to": "apps/server/src/agents/assistant/test-google-assistant.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-handoff.ts",
+      "to": "apps/server/src/agents/assistant/test-handoff.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-numbers.ts",
+      "to": "apps/server/src/agents/assistant/test-numbers.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-real-model.ts",
+      "to": "apps/server/src/agents/assistant/test-real-model.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-scorecard.ts",
+      "to": "apps/server/src/agents/assistant/test-scorecard.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/test-truths.ts",
+      "to": "apps/server/src/agents/assistant/test-truths.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/thinking-binding.eval.test.ts",
+      "to": "apps/server/src/agents/assistant/thinking-binding.eval.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/turn.ts",
+      "to": "apps/server/src/agents/assistant/turn.ts"
+    },
+    {
+      "from": "apps/server/src/builder/assistant/typed-reads.test.ts",
+      "to": "apps/server/src/agents/assistant/typed-reads.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/automations-of.ts",
+      "to": "apps/server/src/agents/assistant/automations/automations-of.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/automations.ts",
+      "to": "apps/server/src/agents/assistant/automations/automations.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/cadence.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/cadence.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/cadence.ts",
+      "to": "apps/server/src/agents/assistant/automations/cadence.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/database-down.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/database-down.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/developer.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/developer.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/notify.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/notify.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/origin.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/origin.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/race.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/race.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/reach-choice.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/reach-choice.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/release.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/release.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/release.ts",
+      "to": "apps/server/src/agents/assistant/automations/release.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/role-run.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/role-run.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/routes.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/routes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/routes.ts",
+      "to": "apps/server/src/agents/assistant/automations/routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/run-database.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/run-database.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/run.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/run.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/run.ts",
+      "to": "apps/server/src/agents/assistant/automations/run.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/runs.ts",
+      "to": "apps/server/src/agents/assistant/automations/runs.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/scheduler.test.ts",
+      "to": "apps/server/src/agents/assistant/automations/scheduler.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/automations/test-automations.ts",
+      "to": "apps/server/src/agents/assistant/automations/test-automations.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/app-tables.test.ts",
+      "to": "apps/server/src/agents/agent-builder/app-tables.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/app-tables.ts",
+      "to": "apps/server/src/agents/agent-builder/app-tables.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/code-refusal.ts",
+      "to": "apps/server/src/agents/agent-builder/code-refusal.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/code-tool-causa.test.ts",
+      "to": "apps/server/src/agents/agent-builder/code-tool-causa.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/code-tool.test.ts",
+      "to": "apps/server/src/agents/agent-builder/code-tool.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/code-tool.ts",
+      "to": "apps/server/src/agents/agent-builder/code-tool.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/construtor-key.test.ts",
+      "to": "apps/server/src/agents/agent-builder/construtor-key.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/construtor-question.test.ts",
+      "to": "apps/server/src/agents/agent-builder/construtor-question.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/construtor-turn.test.ts",
+      "to": "apps/server/src/agents/agent-builder/construtor-turn.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/construtor.test.ts",
+      "to": "apps/server/src/agents/agent-builder/construtor.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/construtor.ts",
+      "to": "apps/server/src/agents/agent-builder/construtor.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/draft-machine.test.ts",
+      "to": "apps/server/src/agents/agent-builder/draft-machine.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/draft-trial.test.ts",
+      "to": "apps/server/src/agents/agent-builder/draft-trial.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/draft-trial.ts",
+      "to": "apps/server/src/agents/agent-builder/draft-trial.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/module-state.grit",
+      "to": "apps/server/src/agents/agent-builder/module-state.grit"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/open.ts",
+      "to": "apps/server/src/agents/agent-builder/open.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/prompt/construtor.md",
+      "to": "apps/server/src/agents/agent-builder/prompt/construtor.md"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/public.ts",
+      "to": "apps/server/src/agents/agent-builder/public.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/request.test.ts",
+      "to": "apps/server/src/agents/agent-builder/request.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/requests/rascunho-e-testar.snapshot",
+      "to": "apps/server/src/agents/agent-builder/requests/rascunho-e-testar.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/routes.test.ts",
+      "to": "apps/server/src/agents/agent-builder/routes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/routes.ts",
+      "to": "apps/server/src/agents/agent-builder/routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/run-scope.test.ts",
+      "to": "apps/server/src/agents/agent-builder/run-scope.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/test-code-tool.ts",
+      "to": "apps/server/src/agents/agent-builder/test-code-tool.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/test-construtor.ts",
+      "to": "apps/server/src/agents/agent-builder/test-construtor.ts"
+    },
+    {
+      "from": "apps/server/src/builder/construtor/tools.ts",
+      "to": "apps/server/src/agents/agent-builder/tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/builder-end.ts",
+      "to": "apps/server/src/agents/app-builder/end.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/builder.eval.test.ts",
+      "to": "apps/server/src/agents/app-builder/builder.eval.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/builder.ts",
+      "to": "apps/server/src/agents/app-builder/builder.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-check.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-check.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-confer.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-confer.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-connector-notes.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-connector-notes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-connectors.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-connectors.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-files.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-files.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-judge.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-judge.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-machine.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-machine.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-plan.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-plan.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-preview.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-preview.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-questions-luna.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-questions-luna.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-questions.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-questions.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-recorded.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-recorded.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-refusal.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-refusal.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-resume.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-resume.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-run-ends.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-run-ends.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-steer.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-steer.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-tasks.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-tasks.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-tool-input.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-tool-input.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-tools.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-tools.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-turns.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-turns.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-update.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-update.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-waiting.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-waiting.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation-writing.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation-writing.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversation.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversation.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversations-removal.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversations-removal.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversations.test.ts",
+      "to": "apps/server/src/agents/app-builder/conversations.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/conversations.ts",
+      "to": "apps/server/src/agents/app-builder/conversations.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/history.ts",
+      "to": "apps/server/src/agents/app-builder/history.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/instructions.ts",
+      "to": "apps/server/src/agents/app-builder/instructions.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/permissions.test.ts",
+      "to": "apps/server/src/agents/app-builder/permissions.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/permissions.ts",
+      "to": "apps/server/src/agents/app-builder/permissions.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/plan-tools.ts",
+      "to": "apps/server/src/agents/app-builder/plan-tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/processors.ts",
+      "to": "apps/server/src/agents/app-builder/processors.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/prompt.test.ts",
+      "to": "apps/server/src/agents/app-builder/prompt.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/prompt/builder.md",
+      "to": "apps/server/src/agents/app-builder/prompt/builder.md"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/prompt/prompt.ts",
+      "to": "apps/server/src/agents/app-builder/prompt/prompt.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/request.test.ts",
+      "to": "apps/server/src/agents/app-builder/request.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/requests/juiz-reprova.snapshot",
+      "to": "apps/server/src/agents/app-builder/requests/juiz-reprova.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/requests/primeiro-turno.snapshot",
+      "to": "apps/server/src/agents/app-builder/requests/primeiro-turno.snapshot"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/routes.ts",
+      "to": "apps/server/src/agents/app-builder/routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/steps.test.ts",
+      "to": "apps/server/src/agents/app-builder/steps.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/store.ts",
+      "to": "apps/server/src/agents/app-builder/store.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/tables.ts",
+      "to": "apps/server/src/agents/app-builder/tables.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-check.ts",
+      "to": "apps/server/src/agents/app-builder/test-check.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-cloud-hub.ts",
+      "to": "apps/server/src/agents/app-builder/test-cloud-hub.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-connecting.ts",
+      "to": "apps/server/src/agents/app-builder/test-connecting.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-gemini.ts",
+      "to": "apps/server/src/agents/app-builder/test-gemini.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-preview.ts",
+      "to": "apps/server/src/agents/app-builder/test-preview.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-prompt.ts",
+      "to": "apps/server/src/agents/app-builder/test-prompt.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/test-transcript.ts",
+      "to": "apps/server/src/agents/app-builder/test-transcript.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/tool-names.test.ts",
+      "to": "apps/server/src/agents/app-builder/tool-names.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/turn-of.ts",
+      "to": "apps/server/src/agents/app-builder/turn-of.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/web-fetch.test.ts",
+      "to": "apps/server/src/agents/app-builder/web-fetch.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/conversation/workspace.test.ts",
+      "to": "apps/server/src/agents/app-builder/workspace.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/context.ts",
+      "to": "apps/server/src/agents/app-builder/git/context.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/copied.test.ts",
+      "to": "apps/server/src/agents/app-builder/git/copied.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/copy/copy.test.ts",
+      "to": "apps/server/src/agents/app-builder/git/copy/copy.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/copy/copy.ts",
+      "to": "apps/server/src/agents/app-builder/git/copy/copy.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/exec.ts",
+      "to": "apps/server/src/agents/app-builder/git/exec.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/git.test.ts",
+      "to": "apps/server/src/agents/app-builder/git/git.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/guard.ts",
+      "to": "apps/server/src/agents/app-builder/git/guard.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/repository.ts",
+      "to": "apps/server/src/agents/app-builder/git/repository.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/source.test.ts",
+      "to": "apps/server/src/agents/app-builder/git/source.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/source.ts",
+      "to": "apps/server/src/agents/app-builder/git/source.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/starter.test.ts",
+      "to": "apps/server/src/agents/app-builder/git/starter.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/git/tree.ts",
+      "to": "apps/server/src/agents/app-builder/git/tree.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/confer.ts",
+      "to": "apps/server/src/agents/app-builder/runs/confer.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/context.ts",
+      "to": "apps/server/src/agents/app-builder/runs/context.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/copy-retry.ts",
+      "to": "apps/server/src/agents/app-builder/runs/copy-retry.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/copy.ts",
+      "to": "apps/server/src/agents/app-builder/runs/copy.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/keys.ts",
+      "to": "apps/server/src/agents/app-builder/runs/keys.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/ports.ts",
+      "to": "apps/server/src/agents/app-builder/runs/ports.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/preview-send.test.ts",
+      "to": "apps/server/src/agents/app-builder/runs/preview-send.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/removal.ts",
+      "to": "apps/server/src/agents/app-builder/runs/removal.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/runs-copy-retry.test.ts",
+      "to": "apps/server/src/agents/app-builder/runs/runs-copy-retry.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/runs-cut.test.ts",
+      "to": "apps/server/src/agents/app-builder/runs/runs-cut.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/runs-removal.test.ts",
+      "to": "apps/server/src/agents/app-builder/runs/runs-removal.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/runs.test.ts",
+      "to": "apps/server/src/agents/app-builder/runs/runs.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/runs.ts",
+      "to": "apps/server/src/agents/app-builder/runs/runs.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/save.ts",
+      "to": "apps/server/src/agents/app-builder/runs/save.ts"
+    },
+    {
+      "from": "apps/server/src/builder/runs/test-runs.ts",
+      "to": "apps/server/src/agents/app-builder/runs/test-runs.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/access.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/access.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/check.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/check.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/choice.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/choice.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/code-removal.test.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/code-removal.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/derived.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/derived.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/public-tables.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/public-tables.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/routes-code.test.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/routes-code.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/routes.test.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/routes.test.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/routes.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/routes.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/store.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/store.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/tables.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/tables.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/tools.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/tools.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/versions.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/versions.ts"
+    },
+    {
+      "from": "apps/server/src/builder/tools/workers.ts",
+      "to": "apps/server/src/agents/saved-agent/tools/workers.ts"
+    }
   ]
 }

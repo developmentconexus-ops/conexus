@@ -11,6 +11,11 @@ import { MAX_BYTES } from './git-facts.ts'
 /** The machine's app folder, which the template makes, the file tools root in and the Builder is told of. */
 export const APP_FOLDER = '/home/user/app'
 
+/** The marks every machine of this installation carries, from its id (security S36). */
+export function markOf(config: { installationId: InstallationId }): Record<string, string> {
+  return { [MARK.origin]: config.installationId }
+}
+
 /** The metadata keys every machine of this installation carries, written at its start and read by its kill (security S36). */
 export const MARK = {
   origin: 'conexus_origin',

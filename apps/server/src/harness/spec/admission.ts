@@ -5,7 +5,7 @@ import type { Owner } from './kinds.ts'
 
 /**
  * The person may ask the Assistant, and the agents, now; else `NOT_FOUND` (security S10). The one
- * `askAssistant` admission of `builder/`.
+ * `askAssistant` admission of `agents/`.
  */
 export function admitAsker(identity: IdentityPorts, tx: ReadTx, owner: Owner) {
   const { companyId, personId } = owner

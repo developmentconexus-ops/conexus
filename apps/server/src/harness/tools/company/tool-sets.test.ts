@@ -1,21 +1,21 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { building } from '../../../agents/agent-builder/test-construtor.ts'
+import {
+  automating,
+  created as automationCreated,
+  ended,
+  ranNow,
+} from '../../../agents/assistant/automations/test-automations.ts'
+import { assisting, created, talking } from '../../../agents/assistant/test-assistant.ts'
 import {
   agentsOn,
   madeTool,
   ordersOf,
   publishedAgent,
   talkedTo,
-} from '../../../builder/agents/test-agents.ts'
-import { assisting, created, talking } from '../../../builder/assistant/test-assistant.ts'
-import {
-  automating,
-  created as automationCreated,
-  ended,
-  ranNow,
-} from '../../../builder/automations/test-automations.ts'
-import { building } from '../../../builder/construtor/test-construtor.ts'
+} from '../../../agents/saved-agent/test-agents.ts'
 import { ASK, folder, MIGRATION, send, versionWriting } from '../../../hub/apps/test-versions.ts'
 import type { Sent } from '../../../platform/test-anthropic.ts'
 import { createCompanyDatabase } from '../../../platform/test-company-postgres.ts'

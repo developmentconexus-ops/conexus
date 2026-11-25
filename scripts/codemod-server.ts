@@ -1,5 +1,5 @@
 // Defect: apps/server/src/builder/ is split by hand into harness/ and agents/, so the new tree and the import paths drift
-// (card "Uma sala e os nomes certos", U7). `node scripts/codemod-server.ts <area>` (g5a to g5f, the six pull requests) moves
+// (card "Uma sala e os nomes certos", U7). `node scripts/codemod-server.ts <area>` (g5a to g5f: six areas, delivered in two pull requests, G5-harness and G5-agents) moves
 // the files of that area's rows to their owner's folder with git mv, rewrites every import and every path a document cites,
 // and lists the move in scripts/codemod-server.json; run again it finds nothing to move. `--plan` writes the list only.
 // Revalidate by 2027-05-24, or when a step moves server files.
@@ -82,7 +82,7 @@ function citedPaths(
   })
   if (!SHORT_DOCS.test(file)) return whole
   return whole.replace(SHORT, (cited) => {
-    const moved = movedOf(`${OLD}/${cited}`, moves, folders)
+    const moved = moves.get(`${OLD}/${cited}`)
     return moved === undefined ? cited : moved.slice(SRC.length + 1)
   })
 }
@@ -111,7 +111,7 @@ function rewriteReads(file: string, text: string, newOf: (file: string) => strin
       if (!beside) throw new Error(`${file} reads ${path}, whose folder no longer sits beside it`)
       return read
     }
-    if (at === file && there === target) return read
+    if (!existsSync(target) || (at === file && there === target)) return read
     return read.replace(`${quote}${path}${quote}`, `${quote}${relativeTo(at, there)}${quote}`)
   })
 }
@@ -127,12 +127,24 @@ function checkApplied(area: Area): void {
   console.log(`${area}: the ${moves.length} files of ${LIST} are in place`)
 }
 
+/** Where a path ends up: a file as the area moves it, a folder as the files it holds move. */
+function placeOf(plan: Plan): (path: string) => string {
+  return (path) => {
+    const own = plan.newOf(path)
+    if (own !== path || !path.endsWith('/')) return own
+    const inside = plan.moves.find((move) => move.from.startsWith(path))
+    return inside === undefined
+      ? path
+      : inside.to.slice(0, inside.to.length - (inside.from.length - path.length))
+  }
+}
+
 /** The text each file takes, its imports pointing at where the area leaves what they read. */
 function rewrittenFiles(graph: Graph, plan: Plan, surface: Surface): Map<string, string> {
   const changes = new Map<string, string>()
   for (const file of graph.refs.keys()) {
     if (plan.removed.includes(file)) continue
-    const text = rewriteReads(file, rewritten({ graph, plan, surface }, file), plan.newOf)
+    const text = rewriteReads(file, rewritten({ graph, plan, surface }, file), placeOf(plan))
     if (text !== graph.texts.get(file) || plan.newOf(file) !== file) changes.set(file, text)
   }
   return changes

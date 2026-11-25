@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ConnectionId, PersonId, RunId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
-import type { BuilderConnectors, ConnectorAccess, GrantedConnection } from '../public.ts'
-import { builderAccess, connectorTools } from '../public.ts'
+import type { ConnectorAccess, GrantedConnection, NoteSave } from '../public.ts'
+import { connectorTools } from '../public.ts'
 import { YES } from './test-access.ts'
 
 const SANKHYA = ConnectionId.parse('11111111-1111-4111-8111-111111111111')
@@ -29,32 +29,20 @@ function granted(
 
 function tools() {
   const seen: { notes: string[]; saved: string[] } = { notes: [], saved: [] }
-  const port: BuilderConnectors = {
-    granted: async () => [],
+  const access: ConnectorAccess = {
+    connections: [granted('mercado-livre', LOJA), granted('sankhya', SANKHYA)],
+    log: { info: () => undefined, error: () => undefined },
     read: async () => ({ kind: 'NOT_GRANTED' }),
-    notes: async (_ids, connectionId) => {
+    notes: async (connectionId) => {
       seen.notes.push(connectionId)
       return {}
     },
-    saveNote: async (_ids, a) => {
-      seen.saved.push(a.connectionId)
-      return { kind: 'SAVED', provedRows: 1 }
-    },
+    wording: { whose: "this Project's owner released" },
   }
-  const ids = {
-    companyId: '44444444444444444444444444444444',
-    projectId: '55555555555555555555555555555555',
+  const save: NoteSave = async (a) => {
+    seen.saved.push(a.connectionId)
+    return { kind: 'SAVED', provedRows: 1 }
   }
-  const { access, save } = builderAccess(
-    port,
-    [granted('mercado-livre', LOJA), granted('sankhya', SANKHYA)],
-    {
-      ...Object(ids),
-      personId: PersonId.parse('66666666-6666-4666-8666-666666666666'),
-      runIdOf: () => RUN,
-    },
-    { info: () => undefined, error: () => undefined },
-  )
   const set = connectorTools(access, { noteSave: true, save })
   function run(name: string, input: object, answered: object = YES) {
     return Object(set)[name].execute(input, { requestContext: new RequestContext(), ...answered })

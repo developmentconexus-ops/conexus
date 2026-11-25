@@ -7,7 +7,7 @@ import {
   researching,
   said,
   talking,
-} from '../../builder/assistant/test-assistant.ts'
+} from '../../agents/assistant/test-assistant.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, endOf, messagesOf, title } from '../routes/test-conversation.ts'
 import { failuresIn, failuresOf } from '../routes/test-parts.ts'

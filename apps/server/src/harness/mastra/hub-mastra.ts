@@ -1,10 +1,13 @@
+import type { ServerResponse } from 'node:http'
 import type { CompanyId, ConversationId, Person } from '@conexus/hub-api'
 import type { AgentController } from '@mastra/core/agent-controller'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { AnyWorkflow } from '@mastra/core/workflows'
 import type { Memory } from '@mastra/memory'
+import type { FastifyInstance } from 'fastify'
 import type { FailureLog } from '../../platform/failure.ts'
-import type { MayApprove, WriteOf } from '../routes/public.ts'
+import type { GuardedMastra, MayApprove, WriteOf } from '../routes/public.ts'
+import { registerSessionRoutes } from '../routes/public.ts'
 import type { ControllerKind, ReleaseScope, RunMark } from '../spec/public.ts'
 import { CONTROLLER_KINDS } from '../spec/public.ts'
 import type { TurnEnds, Watched } from '../turn/public.ts'
@@ -16,7 +19,7 @@ import { RETENTION_WORKFLOW, retentionOf, storageOf } from './retention.ts'
 type Part = {
   kind: ControllerKind
   controller: AgentController
-  memory: Watched['memory'] & Pick<Memory, 'settled'>
+  memory: Watched['memory'] & Pick<Memory, 'getThreadById' | 'settled'>
   /**
    * The door of the six routes, at each request: the owner is already checked by the thread, and
    * its marks against it (`markIn`); `NOT_FOUND` becomes `CONVERSATION_NOT_FOUND`.
@@ -77,17 +80,25 @@ export function createHubMastra(deps: {
     log,
   })
 
+  const streams = new Set<ServerResponse>()
+  function part(kind: ControllerKind): Part | undefined {
+    return parts.find((each) => each.kind === kind)
+  }
+  const guarded: GuardedMastra = { mastra, part, updating: runs.updating }
+
   return Object.freeze({
     /** The one `Mastra`, which the automations schedule on (step 24.2). */
     mastra,
     /** The controller a route's path names, as the guard consults it. */
-    part: (kind: ControllerKind): Part | undefined => parts.find((each) => each.kind === kind),
+    part,
     /** True from `settle` on: nothing new starts (the guard's `HUB_UPDATING`, an automation's run). */
     updating: runs.updating,
+    /** Mastra's session routes of every controller, behind the guard, which asks the controller a path names. */
+    routes: (app: FastifyInstance) => registerSessionRoutes(app, { hub: guarded, streams, log }),
     /** The removal of a Projeto's, a person's or a company's conversations, after what leaves first. */
     async release(scope: ReleaseScope): Promise<void> {
       for (const first of deps.releaseFirst) await first(scope)
-      for (const part of parts) await part.release(scope)
+      for (const each of parts) await each.release(scope)
     },
     /** Mastra's tables, made once at start by its own login (decision 0010). */
     async prepare(): Promise<void> {
@@ -100,7 +111,7 @@ export function createHubMastra(deps: {
      * (`NM:mastra-D4MXu5BN.js:4424-4439,5135-5150`).
      */
     async start(): Promise<void> {
-      for (const part of parts) await part.beforeWorkers?.()
+      for (const each of parts) await each.beforeWorkers?.()
       await mastra.startWorkers()
       log.info({}, 'MASTRA_WORKERS_STARTED')
     },
@@ -113,15 +124,17 @@ export function createHubMastra(deps: {
       await runs.settle(bound)
     },
     /**
-     * Stops the runs in progress of every controller, as Parar does, then each part's own end (the
-     * Builder's open streams once each said its end); then waits for the memory's work after them,
+     * Stops the runs in progress of every controller, as Parar does, closes the open streams, then
+     * each part's own end (the Builder's runs); then waits for the memory's work after them,
      * such as a buffered observation, which still reads the pool `main.ts` ends next; then stops
      * Mastra and what closes last (code C62).
      */
     async close(): Promise<void> {
       await runs.drain()
-      for (const part of parts) await part.close?.()
-      for (const part of parts) await part.memory.settled()
+      // Mastra's adapter stops writing on the response's close (`@mastra/fastify` `stream`).
+      for (const stream of streams) stream.destroy()
+      for (const each of parts) await each.close?.()
+      for (const each of parts) await each.memory.settled()
       await mastra.shutdown()
       for (const last of deps.closeLast) await last()
     },

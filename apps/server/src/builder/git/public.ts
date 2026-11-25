@@ -1,6 +1,0 @@
-export type { GitCopy } from './copy/copy.ts'
-export { copyKey, createGitCopy } from './copy/copy.ts'
-export { restoreGuarded } from './guard.ts'
-export type { Repository } from './repository.ts'
-export { openRepository, repositoriesIn } from './repository.ts'
-export { registerSourceRoutes } from './source.ts'

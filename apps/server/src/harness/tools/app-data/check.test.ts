@@ -4,7 +4,7 @@ import { APP_DATA_TOOL } from '@conexus/hub-api'
 import { builderDataOn } from '../../../hub/apps/test-builder-data.ts'
 import { forgetReadLogin } from '../../../platform/test-company-postgres.ts'
 import { unreachableDatabaseUrl } from '../../../platform/test-database.ts'
-import { builderAppDataTools } from '../public.ts'
+import { appDataReadAndCheckTools } from '../public.ts'
 
 const CELL = 'valor-que-nunca-sai'
 const SEED = {
@@ -31,7 +31,7 @@ const TYPES = [
 /** What `app_data_check` returns to the model, as the tool of a turn admitted to the Projeto. */
 async function checking(t: Parameters<typeof builderDataOn>[0]) {
   const on = await builderDataOn(t, SEED)
-  const tool = builderAppDataTools({ data: on.data, ids: on.ids(on.ana), thread: null })[
+  const tool = appDataReadAndCheckTools({ data: on.data, ids: on.ids(on.ana), thread: null })[
     APP_DATA_TOOL.check
   ]
   assert.ok(tool.execute)

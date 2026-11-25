@@ -78,7 +78,7 @@ async function answerApproval(
 
 const Sent = z.object({ retorno: z.object({ codigoPedido: z.number() }) })
 
-/** What the system said in `approval-refused`, invented: the text of a `ConnectorRefused` of the agents' tools (`apps/server/src/builder/agents/tools.ts`). */
+/** What the system said in `approval-refused`, invented: the text of a `ConnectorRefused` of the agents' tools (`apps/server/src/agents/saved-agent/tools.ts`). */
 const REFUSED_TEXT = JSON.stringify({
   kind: 'REFUSED',
   status: 400,

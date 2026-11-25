@@ -109,13 +109,13 @@ type AppDataCheckOutput =
     }
 
 /**
- * The Builder's two tools on the Projeto's app data, both offered whenever the person is admitted
+ * The two tools of a seat granted rows and counts on the Projeto's app, both offered whenever the person is admitted
  * (the Hub admits again on each call): `app_data_read` shows a few rows as the agents' does, and
  * `app_data_check` proves a read on the real data and answers a count, never a row. "Only counts"
  * keeps rows out of the conversation and out of what Mastra stores; a count of `where` clauses still
  * tells the model about the data, which the rule does not claim to hide.
  */
-export function builderAppDataTools(deps: {
+export function appDataReadAndCheckTools(deps: {
   data: BuilderData
   ids: Ids
   thread: ConversationId | null

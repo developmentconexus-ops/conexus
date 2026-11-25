@@ -12,7 +12,7 @@ type Row = { area: Area; to: string }
  * The owner of each file of builder/, by its subject and never by who imports it (card "Uma sala e os nomes
  * certos", U7): a folder's row takes its files, a file's row takes a file whose owner is not its folder's, and the
  * longest row wins. A row's target is a folder of src/, or the file's whole new path when it ends in an extension.
- * The six areas are the six pull requests; a row names the pull request that moves it.
+ * Six areas, delivered in two pull requests (G5-harness, G5-agents); a row names the area that moves it.
  */
 const ROWS = new Map<string, Row>([
   ['mastra', { area: 'g5a', to: 'harness/mastra' }],

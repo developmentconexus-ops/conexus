@@ -10,7 +10,7 @@ import type { ControllerKind, Owner } from './kinds.ts'
 import { resourceOf } from './kinds.ts'
 
 /**
- * Not `derivedUuid` (`builder/tools/derived.ts`): the ids this makes are stored, so its input and
+ * Not `derivedUuid` (`agents/saved-agent/tools/derived.ts`): the ids this makes are stored, so its input and
  * shape never change.
  *
  * A conversation's id by its attempt (code C37): one per controller, company, person and key, so a

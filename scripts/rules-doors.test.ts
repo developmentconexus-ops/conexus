@@ -24,7 +24,7 @@ const BAD: Record<string, [string, string]> = {
   // A folder inside a subject has no door of its own.
   'subject-only-through-public': [`${SRC}/hub/a/nested.ts`, '../b/mail/public.ts'],
   'conversations-do-not-import-the-assistant': [
-    `${SRC}/builder/agents/a.ts`,
+    `${SRC}/agents/saved-agent/a.ts`,
     '../assistant/public.ts',
   ],
   'agents-and-apps-reach-data-only-through-the-contract': [
@@ -38,9 +38,9 @@ const GOOD: Record<string, string> = {
   [`${SRC}/hub/a/mail.tsx`]: '../b/public-mail.tsx',
   [`${SRC}/hub/a/tables.ts`]: '../b/public-tables.ts',
   [`${SRC}/hub/a/ok.test.ts`]: '../b/test-thing.ts',
-  [`${SRC}/builder/agents/ok.test.ts`]: '../assistant/test-thing.ts',
-  [`${SRC}/builder/assistant/routes.ts`]: '../../../hub/connectors/public.ts',
-  [`${SRC}/builder/assistant/data.test.ts`]: '../../hub/connectors/test-connections.ts',
+  [`${SRC}/agents/saved-agent/ok.test.ts`]: '../assistant/test-thing.ts',
+  [`${SRC}/agents/assistant/routes.ts`]: '../../../hub/connectors/public.ts',
+  [`${SRC}/agents/assistant/data.test.ts`]: '../../hub/connectors/test-connections.ts',
   [`${SRC}/hub/data/record.ts`]: './tables.ts',
 }
 
@@ -53,8 +53,8 @@ before(() => {
     [`${SRC}/hub/b/mail/public.ts`]: PUBLIC,
     [`${SRC}/hub/b/test-thing.ts`]: PUBLIC,
     [`${SRC}/hub/c/inner.ts`]: PUBLIC,
-    [`${SRC}/builder/assistant/public.ts`]: PUBLIC,
-    [`${SRC}/builder/assistant/test-thing.ts`]: PUBLIC,
+    [`${SRC}/agents/assistant/public.ts`]: PUBLIC,
+    [`${SRC}/agents/assistant/test-thing.ts`]: PUBLIC,
     [`${SRC}/hub/connectors/public.ts`]: PUBLIC,
     [`${SRC}/hub/connectors/test-connections.ts`]: PUBLIC,
     [`${SRC}/hub/data/tables.ts`]: PUBLIC,
@@ -90,19 +90,31 @@ test('dependency-cruiser aceita a raiz, o tables.ts, a porta .tsx, o ajudante te
 
 /** The files that still reach the data directly today: the list only shrinks, and a name that leaves leaves here in the same commit. */
 const MIGRATION_TODAY = [
-  ...['builder/agents/agent', 'builder/agents/choose', 'builder/agents/code-tools'],
-  ...['builder/agents/controller', 'builder/agents/conversation-routes', 'builder/agents/legacy'],
-  ...['builder/agents/publish', 'builder/agents/tools', 'builder/agents/write-of'],
+  ...[
+    'agents/agent-builder/code-tool',
+    'agents/agent-builder/construtor',
+    'agents/app-builder/builder',
+  ],
+  ...[
+    'agents/assistant/assistant',
+    'agents/assistant/automations/automations',
+    'agents/assistant/connector-access',
+  ],
+  ...['agents/assistant/context', 'agents/assistant/open', 'agents/assistant/propose'],
+  ...['agents/assistant/routes', 'agents/saved-agent/agent', 'agents/saved-agent/choose'],
+  ...[
+    'agents/saved-agent/code-tools',
+    'agents/saved-agent/controller',
+    'agents/saved-agent/conversation-routes',
+  ],
+  ...['agents/saved-agent/legacy', 'agents/saved-agent/publish', 'agents/saved-agent/tools'],
+  ...['agents/saved-agent/tools/check', 'agents/saved-agent/write-of', 'harness/spec/turns'],
   ...[
     'harness/tools/app-data/context',
     'harness/tools/app-data/tools',
-    'builder/assistant/assistant',
+    'harness/tools/connectors/connector-tools',
   ],
-  ...['builder/assistant/connector-access', 'builder/assistant/context', 'builder/assistant/open'],
-  ...['builder/assistant/propose', 'builder/assistant/routes', 'builder/automations/automations'],
-  ...['harness/tools/connectors/connector-tools', 'harness/tools/connectors/typed-reads'],
-  ...['builder/construtor/code-tool', 'builder/construtor/construtor'],
-  ...['harness/spec/turns', 'builder/conversation/builder', 'builder/tools/check'],
+  ...['harness/tools/connectors/typed-reads'],
 ]
   .map((file) => `^apps/server/src/${file}\\.ts$`)
   .concat('^packages/app/src/connectors\\.ts$')

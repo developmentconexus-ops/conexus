@@ -2,15 +2,15 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { DATA_TOOL } from '@conexus/hub-api'
+import { opened } from '../../../agents/agent-builder/test-construtor.ts'
+import { created, said, talking } from '../../../agents/assistant/test-assistant.ts'
 import {
   agentsOn,
   madeTool,
   ordersOf,
   publishedAgent,
   talkedTo,
-} from '../../../builder/agents/test-agents.ts'
-import { created, said, talking } from '../../../builder/assistant/test-assistant.ts'
-import { opened } from '../../../builder/construtor/test-construtor.ts'
+} from '../../../agents/saved-agent/test-agents.ts'
 import { memberOn } from '../../../hub/identity/test-hub.ts'
 import type { Sent } from '../../../platform/test-anthropic.ts'
 import { started } from '../../routes/test-conversation.ts'

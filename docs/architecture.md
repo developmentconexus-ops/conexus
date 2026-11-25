@@ -140,8 +140,8 @@ and tests, and a `public.ts` with what others may use. The import law is
 the tables left with G0c ([the Sync](explanation/sync.md)); the lake takes the copies [0070].
 `hub/ontology` has only tables and a contract. `hub/notifications` sends bell and e-mails,
 `hub/operations` keeps the Central's clients, `hub/status` each start's version. `harness/tools/app-data`
-reads an app's data for the Builder and for the agents of `builder/agents`;
-`builder/construtor` edits an agent's draft ([agents](explanation/agents-and-automations.md)).
+reads an app's data for the Builder and for the agents of `agents/saved-agent`;
+`agents/agent-builder` edits an agent's draft ([agents](explanation/agents-and-automations.md)).
 `harness/mastra` builds the `Mastra` and prunes its traces daily. The Hub image carries CLIProxyAPI,
 the Google sign-in binary [0049]. Packages: [app](explanation/app-package.md),
 [connectors](how-to/add-a-connector.md).

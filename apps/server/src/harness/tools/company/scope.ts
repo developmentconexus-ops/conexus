@@ -1,7 +1,7 @@
 import type { Access, AccessView } from '../../../hub/access/public.ts'
 import type { RunScope } from '../../spec/public.ts'
 import { principalOf } from '../../spec/public.ts'
-import type { appDataTools, builderAppDataTools } from '../app-data/tools.ts'
+import type { appDataReadAndCheckTools, appDataTools } from '../app-data/tools.ts'
 import type { ConnectorAccess, GrantedConnection } from '../connectors/connector-tools.ts'
 import type { Listed } from './listed.ts'
 import { inView } from './listed.ts'
@@ -14,7 +14,7 @@ export type CompanyConnection = ConnectorAccess['connections'][number] &
 export type AppDataGrant = Readonly<
   | { kind: 'NONE' }
   | ({ kind: 'READ' } & Omit<Parameters<typeof appDataTools>[0], 'thread'>)
-  | ({ kind: 'READ_AND_CHECK' } & Omit<Parameters<typeof builderAppDataTools>[0], 'thread'>)
+  | ({ kind: 'READ_AND_CHECK' } & Omit<Parameters<typeof appDataReadAndCheckTools>[0], 'thread'>)
 >
 
 /** What the company's tools of one run answer by: the run, its view and what the consumer grants. */

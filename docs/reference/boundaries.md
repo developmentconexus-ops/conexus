@@ -959,12 +959,12 @@ changes, reread the line it names.
 
 ## The Builder's clocks and its eval gate (step 13)
 
-- **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
-  owner `runs/copy-retry.ts`, and so are `node:timers` and
+- **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/harness/` and `apps/server/src/agents/` except in the
+  owner `agents/app-builder/runs/copy-retry.ts`, and so are `node:timers` and
   `node:timers/promises` (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `subscription-store.ts`. A change
   that touches their timers moves each to a named owner.
-- **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
+- **Eval gate.** `agents/app-builder/builder.eval.test.ts` drives the real Builder through the Hub with
   a scripted model and the test machine, then scores what Mastra saved with `checks.calledTool` and
   `checks.noToolErrors` from `@mastra/evals/checks`, and requires the only tool called to be the
   write tool. It does not use `runEvals`: the Builder's `Agent` is private to its controller, and
@@ -977,8 +977,8 @@ changes, reread the line it names.
 
 ## Mastra 1.83.0: the Builder's end of the turn, open tasks (step 14.2)
 
-- **The end of the turn is Mastra's `isTaskComplete`.** `conversation/builder.ts` gives the Builder's
-  `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`conversation/processors.ts`
+- **The end of the turn is Mastra's `isTaskComplete`.** `agents/app-builder/builder.ts` gives the Builder's
+  `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`agents/app-builder/processors.ts`
   `conexusCheck`), which finds the machine by the conversation in `customContext.controller`. It first
   reads the thread's task list from Mastra's `threadState` store, as `task_check` reads it
   (`tools/builtin/task-tools.ts:385-391` at `6a465f9d`); a turn that ends with tasks open, or with a
@@ -1001,7 +1001,7 @@ changes, reread the line it names.
   message is not touched, so a conversation already broken recovers on its next message. Mastra's
   in-process engine also scores an errored iteration through `isTaskComplete` (the durable engine
   skips it, Mastra issue #21897).
-- **Hand-made piece.** `judge` in `conversation/processors.ts` returns finished once the queue has
+- **Hand-made piece.** `judge` in `agents/app-builder/processors.ts` returns finished once the queue has
   ended the turn (`turnIn(requestContext)?.outcome`), so a failed turn is not called again and no
   false `MODEL_NO_ACCOUNT` is stored. Visible change: the version of a failed turn with open tasks
   has no check verdict, like a turn that stopped on a question; before, it read "unfinished" only
@@ -1077,7 +1077,7 @@ changes, reread the line it names.
 - **Library line.** `@mastra/core` 1.83.0 locks by conversation only (`threadLock`,
   `@mastra/core/dist/agent-controller/types.d.ts:316-325`): two conversations
   of one Project run at the same time.
-- **Hand-made piece.** `projectTurn` in `apps/server/src/builder/conversation/turn-of.ts`, the
+- **Hand-made piece.** `projectTurn` in `apps/server/src/agents/app-builder/turn-of.ts`, the
   Builder ficha's `take` (`turnOf`): the run takes the Project's lock (`Runs.take`) before any model
   call, or ends `RUN_BUSY` with the name of whose run holds it, and frees it at the run's end
   (`onEnd`).
@@ -1096,7 +1096,7 @@ changes, reread the line it names.
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
   at `packages/core/src/agent/agent.ts:8757`).
 - **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/harness/spec/mount.ts`)
-  in `agents/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
+  in `agents/saved-agent/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
   regime `THE_WRITE_ASKS` runs over its tools: every tool whose rule is not a function (the shared
   ones, the web's, the code's) goes on a copy with `NEVER_ASKS`, and the given objects stay as they
   are; and `requireApproval: () => false` in `apps/server/src/harness/machine/conversation.ts` (the
@@ -1375,7 +1375,7 @@ reference tool checks a read against its documentation.
   (`@mastra/memory` `dist/src-MUc-jGgr.js:33712-33728`). That write can put back a value that
   another request changed in between. Reported to Mastra (feedback, 2026-11-01).
 - **Hand-made piece.** The Assistant's chosen connections and its place live in
-  `builder.assistant_conversation`, which only the Hub writes (`apps/server/src/builder/assistant/chosen.ts`,
+  `builder.assistant_conversation`, which only the Hub writes (`apps/server/src/agents/assistant/chosen.ts`,
   `context.ts`; founder's D11 word, 2026-11-01: "Aprovo as permissoes do b1"). The thread's metadata
   keeps only marks set once at `createSession({ tags })`.
 - **Why.** The step's B1: a change of connections made while Mastra saved the title came back on
@@ -1390,7 +1390,7 @@ reference tool checks a read against its documentation.
   `listThreads` filters by `resourceId` and by metadata equality only (`@mastra/core` `dist/storage/types.d.ts:183-209`;
   `@mastra/pg` `dist/index.js:12169-12260`, a `@>` containment). It has no title search, no "the key is
   missing" and no "any value of the key".
-- **Hand-made piece.** `listedPage` in `apps/server/src/builder/assistant/search.ts`. With a text or a
+- **Hand-made piece.** `listedPage` in `apps/server/src/agents/assistant/search.ts`. With a text or a
   place it reads all the person's threads (`perPage: false`) and filters here: the title composed, without
   accent and without case; `HOME` as the missing project mark and `AUTOMATIONS` as the present automation
   mark; then it pages 30 at a time under the same token. Without text or place it is Mastra's own page.
@@ -1430,7 +1430,7 @@ reference tool checks a read against its documentation.
   não respondeu". The local reproduction showed the Observer asking a model the proxy does not list. The
   fix covers that reproduced cause; the real error of production was not read, and a provider 429 is not
   resolved by it. The trace of a failed call is the `MASTRA_ERROR` line, with the error's name and status.
-- **Proof.** `assistant/assistant-memory-cliproxy.test.ts`: the observer's request asks
+- **Proof.** `agents/assistant/assistant-memory-cliproxy.test.ts`: the observer's request asks
   `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it.
 - **Revisit when** the proxy lists `gemini-2.5-flash`, or the `google_cliproxy` path leaves the product.
   Then delete the constant, the `kind` argument, the test and this entry.
@@ -1464,7 +1464,7 @@ reference tool checks a read against its documentation.
   tenant. The library's pinned text still names the write tool
   (`PinnedStateProcessor`, `dist/evented-execution-4C5qBV8d.js:32477`); its `instructions` option changes
   only the usage block.
-- **Hand-made piece.** `apps/server/src/builder/assistant/company-memory.ts` is the only file that
+- **Hand-made piece.** `apps/server/src/agents/assistant/company-memory.ts` is the only file that
   talks to `Knowledge`. Its scopes make a run a viewer of its thread, its resource and its company
   (`org:$orgId`), and the tool set is the closed `COMPANY_MEMORY_TOOLS` (search, read, list: the
   model never writes, it proposes with `propose_company_memory` and a person who may saves from the
@@ -1488,7 +1488,7 @@ reference tool checks a read against its documentation.
   (`@mastra/core@1.83.0` `dist/agent-controller-BhkzVgCi.js:9120`, `resolveSubagentModel`). Mastra's own
   `subagent` tool takes `forked` and `modelId` from the model; `forked: true` runs the main agent
   itself. No tool file is numbered by the library: the name `reads/<turn>-<n>.json` is ours.
-- **Hand-made piece.** `apps/server/src/builder/assistant/research.ts`: the one type `pesquisar`
+- **Hand-made piece.** `apps/server/src/agents/assistant/research.ts`: the one type `pesquisar`
   with the four read tools of the machine and `connector_read`; `researchOnly`, a processor that
   closes the `subagent` tool to `agentType` and `task` and always calls Mastra's `execute` not
   forked; `researchReads`, the helper's `connector_read` built for each run with the conversation of
@@ -1496,7 +1496,7 @@ reference tool checks a read against its documentation.
   `subagentModel` (`model-accounts/side-calls.ts`, handed to `resolveSubagentModel` by
   `harness/spec/factories.ts`) returns the model of the account the turn is calling, as the
   conversation's title does; and
-  `readsFiles` (`assistant/connector-access.ts`) counts the files by the turn's key, because the
+  `readsFiles` (`agents/assistant/connector-access.ts`) counts the files by the turn's key, because the
   helper's context is another object and its first file would overwrite the turn's first.
 - **Why.** The helper must read with the asker's scope and the turn's account, write nothing and never
   open another helper; a count per context object loses the file of one of them.
@@ -1515,4 +1515,4 @@ reference tool checks a read against its documentation.
   the research helper's reads together, with the tools in parallel.
 - **Why.** It protects the company's system; the door is where every read passes.
 - **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `assistant-port-note.test.ts`; the
-  helper's share in `assistant/research.test.ts` "a porta, as 50 e o arquivo".
+  helper's share in `agents/assistant/research.test.ts` "a porta, as 50 e o arquivo".
