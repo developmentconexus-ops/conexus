@@ -33,7 +33,7 @@ memória e de processamento. A rodada que acabou em erro diz em que tabela parou
 que respondeu, a resposta dele.
 
 **O que ainda não funciona.** A cópia de uma tabela com números de muitas casas decimais ainda para antes
-de gravar no lago, e a correção chega na próxima versão. Também ficam para a próxima versão a
+de gravar no lago, e a correção chega numa versão seguinte. Também ficam para uma versão seguinte a
 confirmação antes de desmarcar uma tabela e os botões desligados para quem não gerencia cópias.
 
 Segue a etapa A primeira cópia chega ao lago.
