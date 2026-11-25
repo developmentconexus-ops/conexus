@@ -149,6 +149,12 @@ export function readAgainTitle(since: string): string {
 }
 
 export const READ_AGAIN_LEAD = 'O lago troca o que tem destas tabelas:'
+export function leaveTitle(count: number): string {
+  return count === 1 ? 'Tirar 1 tabela do lago?' : `Tirar ${count} tabelas do lago?`
+}
+
+export const LEAVE_LEAD = 'O lago apaga estas tabelas e as linhas delas:'
+export const LEAVE_CONFIRM = 'Tirar do lago'
 export const READ_AGAIN_OTHERS = 'As outras tabelas seguem como sempre.'
 
 export function readAgainEffectText(kind: 'CHANGED' | 'WINDOW', system: string): string {
