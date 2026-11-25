@@ -25,12 +25,11 @@ function oldMachine(t: TestContext, otherTemplate: 'resume' | 'replace') {
   doubles.control.templates[name] = OLD_TEMPLATE
   const machines = createConversationMachines(
     {
-      ...doubles.deps,
-      log: { info: () => undefined, error: () => undefined },
       hosts: PACKAGE_HOSTS,
       otherTemplate,
-      marksOf: async () => ({ [MARK.company]: COMPANY }),
+      marks: async () => ({ [MARK.company]: COMPANY }),
     },
+    { ...doubles.deps, log: { info: () => undefined, error: () => undefined } },
     doubles.tuning,
   )
   return { ...doubles, machines, id, name }

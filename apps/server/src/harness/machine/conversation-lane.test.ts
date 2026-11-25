@@ -41,13 +41,15 @@ function machinesOf(
   doubles.control.discoverable.push(`conexus-${INSTALLATION}-${id}`)
   const machines = createConversationMachines(
     {
+      hosts: PACKAGE_HOSTS,
+      otherTemplate: 'replace',
+      marks: async () => ({ [MARK.company]: COMPANY }),
+    },
+    {
       ...doubles.deps,
       api: { ...doubles.deps.api, ...replace.api },
       kit: replace.kit?.(doubles.deps.kit) ?? doubles.deps.kit,
       log,
-      hosts: PACKAGE_HOSTS,
-      otherTemplate: 'replace',
-      marksOf: async () => ({ [MARK.company]: COMPANY }),
     },
     { ...doubles.tuning, ...tuning },
   )

@@ -12,6 +12,7 @@ import type {
 } from '../../harness/machine/public.ts'
 import {
   createConversationMachines,
+  machinePart,
   PACKAGE_HOSTS,
   showFileTool,
 } from '../../harness/machine/public.ts'
@@ -34,6 +35,7 @@ import {
   MODEL_TIMEOUT,
   mountAgent,
   principalOf,
+  releaseByMarks,
   sessionModel,
   skillOf,
   toolsOf,
@@ -75,7 +77,6 @@ import { admitted, asked, openConversation } from './open.ts'
 import { handOffOf, proposeTools } from './propose.ts'
 import { proposeAutomationTool } from './propose-automation.ts'
 import { proposeCompanyMemoryTool } from './propose-company-memory.ts'
-import { releaseConversations } from './release.ts'
 import { RESEARCH, researchOnly } from './research.ts'
 import { registerAssistantRoutes } from './routes.ts'
 import type { ScopeOf } from './run-reads.ts'
@@ -288,15 +289,15 @@ export function createAssistant(deps: Deps) {
   const scopeOf = assistantRuns({ memory, chosenOf: chosen.of })
   const machines = createConversationMachines(
     {
-      ...deps.machine,
-      log: deps.log,
       hosts: PACKAGE_HOSTS,
       otherTemplate: 'resume',
-      marksOf: machineMarks(chosen.of),
       readMedia: READ_MEDIA,
+      marks: machineMarks(chosen.of),
     },
+    { ...deps.machine, log: deps.log },
     deps.machineTuning,
   )
+  const wired = machinePart(machines)
   const tools = companyDeps(deps)
   const { speakersFor, maysFor, toolScopeOf } = runReads(deps, scopeOf)
   const { controller } = mountAgent(
@@ -322,13 +323,16 @@ export function createAssistant(deps: Deps) {
           await admitAsker(deps.identity, tx, owner)
         })
       },
-      release: (scope: ReleaseScope) =>
-        releaseConversations({ controller, memory, machines, log: deps.log }, scope),
+      async release(scope: ReleaseScope): Promise<void> {
+        await releaseByMarks(
+          { controller, memory, log: deps.log },
+          { kind: 'assistant', scope, code: 'ASSISTANT_CONVERSATIONS_RELEASED', each: wired.each },
+        )
+      },
       // Its turn writes in no Projeto: its end saves only the failure it said, and tells where its
-      // machine starts (QA F1), as the Builder's tells its steps.
-      ends: { onPhase: machines.onPhase.bind(machines) },
-      /** The machines, after the runs `drain` stopped, before Mastra stops. */
-      close: () => machines.stopAll(),
+      // machine starts (QA F1), as the Builder's tells its steps; the machines close after the
+      // runs `drain` stopped, before Mastra stops.
+      ...wired,
     },
     /** Admits the person who may ask now, in the place; else `NOT_FOUND` (S10). */
     admit: (owner: Owner, place: Place) => admitted(deps, owner, place, 'askAssistant'),

@@ -1,13 +1,11 @@
 import type { ConversationId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { CodeModeTransport } from '@mastra/core/tools'
-import type { WorkspaceFilesystem } from '@mastra/core/workspace'
-import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
+import type { Workspace, WorkspaceFilesystem } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { controllerIn } from '../memory/public.ts'
-import { NEVER_ASKS } from '../spec/public.ts'
 import { locate } from './conversation-file.ts'
 import { MAX_BYTES } from './git-facts.ts'
 import type { ConversationMachine, Kit } from './kit.ts'
@@ -15,6 +13,8 @@ import { MARK, readCapped } from './kit.ts'
 import type { Phase } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
 import { execIn, within } from './session.ts'
+import type { MachineSpec } from './spec.ts'
+import { workspaceOf } from './workspace.ts'
 
 /** Where the conversation's files live on its machine, made at the machine's start. */
 const WORK_FOLDER = '/home/user/work'
@@ -75,23 +75,7 @@ export type MachineTuning = { workFolder: string; toolchain: string; startMs: nu
 
 const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, toolchain: TOOLCHAIN, startMs: START_MS }
 
-type Deps = ConversationMachine & {
-  /**
-   * What a machine made from another template meets: `'replace'` kills it and makes a new one (the
-   * Builder's, whose tools the template carries); `'resume'` wakes it by its id with its files.
-   */
-  otherTemplate: 'resume' | 'replace'
-  log: FailureLog
-  /** The hosts the machine may reach, the user's decision (the Assistant's: 0059). */
-  hosts: readonly string[]
-  /**
-   * The marks of the conversation's company and place, which its machine carries (security S36);
-   * undefined outside a conversation the user serves, which gets no machine.
-   */
-  marksOf(requestContext: RequestContext): Promise<Record<string, string> | undefined>
-  /** The media types `read_file` hands the model as media; absent, Mastra's default (a PDF included). */
-  readMedia?: readonly string[]
-}
+type Deps = ConversationMachine & { log: FailureLog }
 
 type Session = {
   conversationId: ConversationId
@@ -119,6 +103,7 @@ type Session = {
 
 class Machines implements ConversationMachines {
   private readonly deps: Deps
+  private readonly spec: MachineSpec
   readonly folder: string
   readonly toolchain: string
   readonly codeMode: CodeModeTransport
@@ -139,7 +124,8 @@ class Machines implements ConversationMachines {
    */
   private readonly told: string
 
-  constructor(deps: Deps, tuning: MachineTuning) {
+  constructor(spec: MachineSpec, deps: Deps, tuning: MachineTuning) {
+    this.spec = spec
     this.deps = deps
     this.codeMode = deps.codeMode
     this.folder = tuning.workFolder
@@ -170,7 +156,8 @@ class Machines implements ConversationMachines {
 
   private async boot(session: Session): Promise<Kit> {
     const { conversationId } = session
-    const { api, template, log, otherTemplate } = this.deps
+    const { api, template, log } = this.deps
+    const { otherTemplate } = this.spec
     this.phases.get(conversationId)?.('starting')
     // A machine found by its id is of the Hub's template: only a turn's start clears an older one.
     // Either way the list comes first and a failed one stops the start: E2B's own lookup swallows
@@ -251,7 +238,7 @@ class Machines implements ConversationMachines {
     const kit: Kit = this.deps.kit({
       id: name,
       ...(found === undefined ? {} : { foundAs: found }),
-      allowOut: this.deps.hosts,
+      allowOut: this.spec.hosts,
       metadata: {
         ...mark,
         ...marks,
@@ -275,7 +262,7 @@ class Machines implements ConversationMachines {
   }
 
   async workspace(requestContext: RequestContext): Promise<Workspace | undefined> {
-    const marks = await this.deps.marksOf(requestContext)
+    const marks = await this.spec.marks(requestContext)
     const conversationId = controllerIn(requestContext).sessionId
     if (marks === undefined || conversationId === undefined) return undefined
     const held = this.sessions.get(conversationId)?.workspace
@@ -285,26 +272,13 @@ class Machines implements ConversationMachines {
       if (opened !== undefined) return opened
       const session = this.open(conversationId, marks)
       this.sessions.set(conversationId, session)
-      session.workspace = new Workspace({
-        sandbox: async () => (await this.ensure(session)).sandbox,
-        sandboxCacheKey: () => session.name,
-        instructions: { dynamicSandbox: () => this.told },
+      session.workspace = workspaceOf({
+        name: session.name,
+        ensure: () => this.ensure(session),
+        instructions: () => this.told,
         filesystem: session.files,
-        tools: {
-          // The agents' controller asks for every tool without a rule of its own (step 24.5): the
-          // Computador's never ask.
-          requireApproval: NEVER_ASKS,
-          hooks: {
-            beforeToolCall: async () => {
-              await this.ensure(session)
-            },
-          },
-          [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
-          [WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]: { requireDescription: true },
-          ...(this.deps.readMedia === undefined
-            ? {}
-            : { [WORKSPACE_TOOLS.FILESYSTEM.READ_FILE]: { mediaTypes: [...this.deps.readMedia] } }),
-        },
+        neverAsks: true,
+        ...(this.spec.readMedia === undefined ? {} : { readMedia: this.spec.readMedia }),
       })
       return session.workspace
     })
@@ -375,7 +349,8 @@ class Machines implements ConversationMachines {
   /** The machine the provider has for the conversation, by its mark; a failed list is no answer. */
   private async found(conversationId: ConversationId): Promise<string | 'UNAVAILABLE' | undefined> {
     try {
-      const { api, template, otherTemplate } = this.deps
+      const { api, template } = this.deps
+      const { otherTemplate } = this.spec
       return await api.find(conversationId, otherTemplate === 'replace' ? template : undefined)
     } catch (cause) {
       const failure = new Failure('MACHINE_UNAVAILABLE', { cause, details: { reason: 'FIND' } })
@@ -415,8 +390,9 @@ class Machines implements ConversationMachines {
  * The conversations' machines; `tuning` is a test's, which runs them as folders of this computer.
  */
 export function createConversationMachines(
+  spec: MachineSpec,
   deps: Deps,
   tuning: MachineTuning = ON_E2B,
 ): ConversationMachines {
-  return new Machines(deps, tuning)
+  return new Machines(spec, deps, tuning)
 }

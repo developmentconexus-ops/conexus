@@ -185,18 +185,22 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   const api = createE2bApi(config, mark)
   const conversation = ConversationId.parse(randomUUID())
   t.after(() => api.kill(conversation))
-  const machines = createConversationMachines({
-    kit: createE2bKit(config),
-    api,
-    template: config.machineTemplate,
-    installation: INSTALLATION,
-    mark,
-    codeMode: createE2bCodeMode(),
-    log: { info: () => undefined, error: () => undefined },
-    hosts: PACKAGE_HOSTS,
-    otherTemplate: 'replace',
-    marksOf: async () => ({ [MARK.company]: COMPANY }),
-  })
+  const machines = createConversationMachines(
+    {
+      hosts: PACKAGE_HOSTS,
+      otherTemplate: 'replace',
+      marks: async () => ({ [MARK.company]: COMPANY }),
+    },
+    {
+      kit: createE2bKit(config),
+      api,
+      template: config.machineTemplate,
+      installation: INSTALLATION,
+      mark,
+      codeMode: createE2bCodeMode(),
+      log: { info: () => undefined, error: () => undefined },
+    },
+  )
   const context = new RequestContext<unknown>([['controller', { sessionId: conversation }]])
   const files = (await machines.workspace(context))?.filesystem
   assert.ok(files !== undefined)

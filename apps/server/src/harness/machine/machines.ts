@@ -1,5 +1,4 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { Failure } from '../../platform/failure.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
@@ -32,6 +31,7 @@ import {
 } from './scripts.ts'
 import type { Session } from './session.ts'
 import { execIn, restoreFailure, within } from './session.ts'
+import { workspaceOf } from './workspace.ts'
 
 class BuilderMachines implements Machines {
   private readonly deps: MachinesDeps
@@ -264,25 +264,17 @@ class BuilderMachines implements Machines {
       ...{ starts: 0, used: false, refreshing: undefined, lost: false },
     })
     this.sessions.set(conversationId, session)
-    return new Workspace({
-      sandbox: async () => (await this.ensure(session)).sandbox,
-      sandboxCacheKey: () => name,
+    return workspaceOf({
+      name,
+      ensure: () => this.ensure(session),
       // Read at every step: the conflicts are known once a tool has started the machine.
-      instructions: { dynamicSandbox: () => machineInstructions(this.workdir, session.conflicts) },
+      instructions: () => machineInstructions(this.workdir, session.conflicts),
       filesystem: new SandboxFilesystem({
         id: `conexus-fs-${conversationId}`,
         sandbox: execIn(session.kit, () => this.ensure(session)),
         workdir: this.workdir,
       }),
-      tools: {
-        hooks: {
-          beforeToolCall: async () => {
-            await this.ensure(session)
-          },
-        },
-        [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
-        [WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]: { requireDescription: true },
-      },
+      neverAsks: false,
     })
   }
 

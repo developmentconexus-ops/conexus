@@ -10,7 +10,12 @@ import type {
   ConversationMachines,
   MachineTuning,
 } from '../../harness/machine/public.ts'
-import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../../harness/machine/public.ts'
+import {
+  ALLOWED_HOSTS,
+  createConversationMachines,
+  machineMarksOf,
+  machinePart,
+} from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { CONEXUS_PROMPT, TITLE } from '../../harness/prompt/public.ts'
 import type {
@@ -161,7 +166,7 @@ function machineMarks(runOf: RunOf) {
     const run = await runOf(requestContext)
     const scope = run === undefined ? undefined : inProjectOf(run)
     if (scope === undefined) return undefined
-    return { [MARK.company]: scope.companyId, [MARK.project]: scope.projectId }
+    return machineMarksOf({ companyId: scope.companyId, projectId: scope.projectId })
   }
 }
 
@@ -299,15 +304,11 @@ export function createConstrutor(deps: Deps) {
   })
   const scopeOf = construtorRuns(deps, memory)
   const machines = createConversationMachines(
-    {
-      ...deps.machine,
-      log,
-      hosts: ALLOWED_HOSTS,
-      otherTemplate: 'replace',
-      marksOf: machineMarks(scopeOf),
-    },
+    { hosts: ALLOWED_HOSTS, otherTemplate: 'replace', marks: machineMarks(scopeOf) },
+    { ...deps.machine, log },
     deps.machineTuning,
   )
+  const wired = machinePart(machines)
   const { controller } = mountAgent(construtorSpec(deps, { memory, scopeOf, machines }), {
     queue,
     storage,
@@ -322,10 +323,9 @@ export function createConstrutor(deps: Deps) {
       controller,
       memory,
       model: MODEL,
-      // Its tool that writes code starts the conversation's machine, as the Assistant's: the screen hears it.
-      ends: { onPhase: machines.onPhase.bind(machines) },
-      /** The machines, after the runs `drain` stopped, before Mastra stops. */
-      close: () => machines.stopAll(),
+      // Its tool that writes code starts the conversation's machine, as the Assistant's: the screen
+      // hears it; the machines close after the runs `drain` stopped, before Mastra stops.
+      ...wired,
       /** Whether the person may build agents in the company now (`manageAgents`). */
       admit: construtorAdmission(deps),
       async release(scope: ReleaseScope): Promise<void> {
@@ -335,7 +335,7 @@ export function createConstrutor(deps: Deps) {
             kind: 'construtor',
             scope,
             code: 'CONSTRUTOR_CONVERSATIONS_RELEASED',
-            each: (id) => machines.kill(id),
+            each: wired.each,
           },
         )
       },

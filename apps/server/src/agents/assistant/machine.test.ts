@@ -224,13 +224,8 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   const { control, deps } = on.hub.conversationMachines
   control.discoverable.push(nameOf(url))
   const machines = createConversationMachines(
-    {
-      ...deps,
-      log: { info: () => undefined, error: () => undefined },
-      hosts: PACKAGE_HOSTS,
-      otherTemplate: 'resume',
-      marksOf: async () => undefined,
-    },
+    { hosts: PACKAGE_HOSTS, otherTemplate: 'resume', marks: async () => undefined },
+    { ...deps, log: { info: () => undefined, error: () => undefined } },
     on.hub.conversationMachines.tuning,
   )
   const id = ConversationId.parse(url.slice(url.lastIndexOf('/') + 1))
