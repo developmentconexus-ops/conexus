@@ -92,7 +92,7 @@ async function planOf(
   const { mode } = run.table
   const point = run.whole ? undefined : a.bookmark?.replication_key_value
   const date = startDateLimits(mode) ? a.startDate : null
-  const whole = point === undefined || mode.kind === 'FULL'
+  const whole = point === undefined
   if (mode.kind === 'FULL') return { filters: [{ kind: 'ALL' }], point: null, whole }
   if (mode.kind === 'CHANGED') {
     const since = latest([point, date])
