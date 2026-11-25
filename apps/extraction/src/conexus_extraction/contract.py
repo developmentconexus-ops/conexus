@@ -59,6 +59,7 @@ class TableCounts(t.TypedDict):
     name: str
     read: int
     written: int
+    rounded: int
     rows: int | None
     whole: bool
 
