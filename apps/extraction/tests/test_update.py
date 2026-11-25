@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import typing as t
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import boto3
@@ -306,3 +307,35 @@ def test_a_data_mais_nova_nao_apaga_a_janela(task: Task) -> None:
         if row["dtref"].isoformat()[:7] == "2026-10"
     ]
     assert len(now) == len(october)
+
+
+def _raw_row(task: Task, nunota: int, **values: t.Any) -> None:
+    """A raw row of a note `current` already has, with `values` set and the newest sequence."""
+    rows = task.lake.load_table(("current", "sankhya_notas")).scan().to_arrow()
+    row = rows.filter(pc.equal(rows["nunota"], nunota))
+    values.setdefault("_sdc_sequence", 10**15 + len(task.athena.statements))
+    for column, value in values.items():
+        at = row.schema.get_field_index(column)
+        row = row.set_column(at, column, pa.array([value], type=row.schema.field(column).type))
+    task.lake.load_table(("raw", "sankhya_notas")).append(row)
+
+
+def _update_notas(task: Task) -> None:
+    _updater(task).update(
+        "sankhya_notas",
+        key=["nunota"],
+        mode={"kind": "CHANGED", "column": "DTALTER"},
+        history=False,
+        since=None,
+    )
+
+
+def test_o_marcado_apagado_sai_da_atual(task: Task) -> None:
+    first = task.spec(NOTAS, whole=False)
+    assert task.run(first) == 0
+    [gone, kept, *_] = _keys(task)
+    _raw_row(task, gone, _sdc_deleted_at=datetime(2026, 11, 25, 12, 0, tzinfo=UTC))
+    _update_notas(task)
+    assert gone not in _keys(task)
+    assert kept in _keys(task)
+    assert any(sql.startswith("MERGE") and "THEN DELETE" in sql for sql in task.athena.statements)
