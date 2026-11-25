@@ -8,6 +8,7 @@ import { test } from 'node:test'
 import { CompanyId, ConversationId } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
+import { NEVER_ASKS } from '../spec/public.ts'
 import type { ConversationMachineApi, KitFactory } from './public.ts'
 import { createConversationMachines, MARK, MAX_BYTES, PACKAGE_HOSTS } from './public.ts'
 import { testConversationMachines } from './test-conversation-machines.ts'
@@ -24,7 +25,11 @@ type Line = { message: string; fields: Record<string, unknown> }
  */
 function machinesOf(
   t: TestContext,
-  replace: { api?: Partial<ConversationMachineApi>; kit?: (kit: KitFactory) => KitFactory } = {},
+  replace: {
+    api?: Partial<ConversationMachineApi>
+    kit?: (kit: KitFactory) => KitFactory
+    readMedia?: readonly string[]
+  } = {},
   tuning: { startMs?: number } = {},
 ) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-lane-'))
@@ -44,6 +49,7 @@ function machinesOf(
       hosts: PACKAGE_HOSTS,
       otherTemplate: 'replace',
       marks: async () => ({ [MARK.company]: COMPANY }),
+      ...(replace.readMedia === undefined ? {} : { readMedia: replace.readMedia }),
     },
     {
       ...doubles.deps,
@@ -211,13 +217,26 @@ test('a rede só fecha na máquina achada; a pasta que o mkdir não fez derruba 
   assert.equal((await on.machines.read(on.id, 'link.txt', kept())).kind, 'FILE_NOT_FOUND')
 })
 
-test('o workspace do modelo tem a edição por AST desligada (S)', async (t) => {
-  const on = machinesOf(t)
+async function toolsOf(on: ReturnType<typeof machinesOf>) {
   const context = new RequestContext<unknown>([['controller', { sessionId: on.id }]])
-  const workspace = await on.machines.workspace(context)
+  const config = (await on.machines.workspace(context))?.getToolsConfig()
+  assert.ok(config)
+  return config
+}
+
+test('o workspace do modelo: nunca pergunta, pede descrição do comando e tem a edição por AST desligada (S)', async (t) => {
+  const config = await toolsOf(machinesOf(t))
+  assert.equal(config.requireApproval, NEVER_ASKS)
+  assert.deepEqual(config[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND], { requireDescription: true })
   // The tool exists only where @ast-grep/napi is installed, which no package of Conexus carries
   // today: the switch is what keeps it off the day one does.
-  assert.equal(workspace?.getToolsConfig()?.[WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]?.enabled, false)
+  assert.deepEqual(config[WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT], { enabled: false })
+})
+
+test('o workspace do modelo: os tipos de mídia de read_file só entram quando o agente os diz', async (t) => {
+  assert.equal((await toolsOf(machinesOf(t)))[WORKSPACE_TOOLS.FILESYSTEM.READ_FILE], undefined)
+  const media = await toolsOf(machinesOf(t, { readMedia: ['image/png'] }))
+  assert.deepEqual(media[WORKSPACE_TOOLS.FILESYSTEM.READ_FILE], { mediaTypes: ['image/png'] })
 })
 
 test('a máquina do turno: serving só existe com sessão, o download lê a máquina do turno, kill apaga a sessão, e o ouvinte da fase recebe starting até ser cancelado (S)', async (t) => {
