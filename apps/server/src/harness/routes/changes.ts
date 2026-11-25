@@ -32,7 +32,7 @@ const ModelChoiceBody = z.strictObject({ modelId: ModelId, thinkingLevel: Effort
  * model offers the effort. A refusal changes nothing. The agent's log line, from its ficha, waits
  * for Mastra's `{ ok: true }`.
  */
-export async function modelChoice(
+async function modelChoice(
   deps: { queue: QueueDeps },
   request: FastifyRequest,
   at: Asked,
@@ -63,7 +63,7 @@ const RenameBody = z.strictObject({ title: z.string().trim().min(1).max(CONVERSA
  * one (`@mastra/fastify` reads `request.body`). The line names the conversation and the agent,
  * never the title, which may carry the company's data.
  */
-export function renaming(request: FastifyRequest, at: Asked): Told {
+function renaming(request: FastifyRequest, at: Asked): Told {
   const body = RenameBody.safeParse(request.body)
   if (!body.success) throw new Failure('REQUEST_MALFORMED')
   request.body = body.data
@@ -76,4 +76,15 @@ export function renaming(request: FastifyRequest, at: Asked): Told {
     },
     message: 'CONVERSATION_RENAMED',
   }
+}
+
+/** The change a request to a session's route makes, if it makes one: the model or the title. */
+export async function change(
+  deps: { queue: QueueDeps },
+  request: FastifyRequest,
+  at: Asked,
+): Promise<Told | undefined> {
+  if (request.routeOptions.url?.endsWith('/model')) return modelChoice(deps, request, at)
+  if (request.method === 'PUT') return renaming(request, at)
+  return undefined
 }

@@ -22,7 +22,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ControllerKind, ModelSource, RunMark } from '../spec/public.ts'
 import { CONTROLLER_KINDS, controllerKindOf, markIn, ownerOfResource } from '../spec/public.ts'
-import { modelChoice, renaming } from './changes.ts'
+import { change } from './changes.ts'
 import { ConversationServer } from './stream.ts'
 
 const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
@@ -355,12 +355,9 @@ export function registerSessionRoutes(
         if (refused !== undefined) return reply.send(refused)
         return
       }
-      if (request.routeOptions.url?.endsWith('/model')) {
-        request.requestContext.set(TOLD, await modelChoice(deps, request, at))
-        return
-      }
-      if (request.method === 'PUT') {
-        request.requestContext.set(TOLD, renaming(request, at))
+      const changed = await change(deps, request, at)
+      if (changed !== undefined) {
+        request.requestContext.set(TOLD, changed)
         return
       }
       if (!request.routeOptions.url?.endsWith('/stream')) return
