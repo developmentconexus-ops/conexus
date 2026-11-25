@@ -1033,7 +1033,7 @@ changes, reread the line it names.
 - **Renomear is Mastra's own route too.** `PUT …/sessions/:sessionId/threads/:threadId`
   (`@mastra/server` 1.83.0 `agent-controller.js:1244-1269`, `session.renameThread`), whose body is
   any `{ title }`: the guard trims and checks it (`RenameBody`, one to `CONVERSATION_TITLE_MAX`
-  characters) and puts the trimmed body in `request.body`, which `@mastra/fastify` reads
+  characters) and puts the trimmed body in `request.body`, which `@mastra/fastify` 1.5.27 reads
   (`dist/index.js:198`). A `threadId` that is not the session's is a 404 (Mastra would switch the
   session's active thread). Mastra's `rename` pins the title (`titlePinned`) against the memory's own
   and keeps the thread's other metadata, so the marks that say whose a conversation is stay. The

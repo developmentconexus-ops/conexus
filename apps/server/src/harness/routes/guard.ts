@@ -22,7 +22,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import type { ControllerKind, ModelSource, RunMark } from '../spec/public.ts'
 import { CONTROLLER_KINDS, controllerKindOf, markIn, ownerOfResource } from '../spec/public.ts'
-import { change } from './changes.ts'
+import { change, Told } from './changes.ts'
 import { ConversationServer } from './stream.ts'
 
 const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
@@ -59,7 +59,6 @@ export function approvedCallOf(requestContext: RequestContext) {
 
 /** What the guard writes to the log once Mastra's handler has taken the answer, and not before. */
 const TOLD = 'conexus-write-answer'
-const Told = z.object({ fields: z.record(z.string(), z.string()), message: z.string() })
 const Taken = z.object({ ok: z.literal(true) })
 
 const ToolAnswer = z.object({ toolCallId: ToolCallId, approved: z.boolean() })

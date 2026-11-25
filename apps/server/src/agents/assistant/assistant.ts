@@ -208,7 +208,6 @@ function blockOfRun(parts: Parts) {
   }
 }
 
-/** The conversation's model is the session's; the guard writes this line once Mastra has switched it. */
 const MODEL = { kind: 'SESSION', switched: 'ASSISTANT_MODEL_SET' } as const
 
 /**

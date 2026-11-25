@@ -60,7 +60,6 @@ import { registerConstrutorRoutes } from './routes.ts'
 import { construtorTools } from './tools.ts'
 
 const turnKey = turnKeyOn('conexus-construtor-turn-key')
-/** The conversation's model is the session's; the guard writes this line once Mastra has switched it. */
 const MODEL = { kind: 'SESSION', switched: 'CONSTRUTOR_MODEL_SET' } as const
 const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 'utf8').trim()
 

@@ -17,7 +17,8 @@ type Asked = {
 }
 
 /** The line the guard writes once Mastra has taken the change, and not before. */
-export type Told = { fields: Record<string, string>; message: string }
+export const Told = z.object({ fields: z.record(z.string(), z.string()), message: z.string() })
+export type Told = z.infer<typeof Told>
 
 /**
  * Stricter than Mastra's body (`@mastra/server@1.83.0` `agent-controller.js:224-233`, whose
@@ -85,6 +86,6 @@ export async function change(
   at: Asked,
 ): Promise<Told | undefined> {
   if (request.routeOptions.url?.endsWith('/model')) return modelChoice(deps, request, at)
-  if (request.method === 'PUT') return renaming(request, at)
+  if (request.routeOptions.url?.endsWith('/threads/:threadId')) return renaming(request, at)
   return undefined
 }

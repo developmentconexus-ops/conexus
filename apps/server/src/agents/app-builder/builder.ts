@@ -34,7 +34,6 @@ import type { Runs } from './runs/runs.ts'
 import type { ConversationIndex, Refusals } from './turn-of.ts'
 import { builderRuns, projectOfRun, turnOf } from './turn-of.ts'
 
-/** The conversation's model is the session's; the guard writes this line once Mastra has switched it. */
 const MODEL = { kind: 'SESSION', switched: 'CONVERSATION_MODEL_SET' } as const
 
 type Ids = { companyId: CompanyId; personId: PersonId; projectId: ProjectId }
