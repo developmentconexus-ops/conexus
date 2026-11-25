@@ -14,6 +14,7 @@ plugins:
     - name: account
     - name: secret_path
     - name: result_path
+    - name: months_path
     - name: start_date
     - name: tables
       kind: array

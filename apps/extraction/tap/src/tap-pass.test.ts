@@ -133,6 +133,24 @@ test('a janela desde a data: só os meses a partir do mês da data, e a releitur
   assert.deepEqual(monthsOf(next), ['2026-11'])
 })
 
+test('a janela diz os meses que leu, e só os que leu: com a data mais nova, não os de antes dela', async () => {
+  const first = await tap(sankhyaDouble(), { streams: WINDOW, startDate: '2026-09-15' })
+  assert.deepEqual(first.months, { efd: ['2026-09', '2026-10', '2026-11', '2109-07'] })
+  const parked = await tap(sankhyaDouble(), {
+    streams: WINDOW,
+    state: { bookmarks: { efd: { replication_key_value: '2026-05' } } },
+  })
+  assert.deepEqual(parked.months, { efd: ['2026-08', '2026-09', '2026-10', '2026-11'] })
+  const later = await tap(sankhyaDouble(), {
+    streams: WINDOW,
+    state: lastState(first),
+    startDate: '2026-11-10',
+  })
+  assert.deepEqual(later.months, { efd: ['2026-11'] })
+  const notes = await tap(sankhyaDouble(), { streams: ITENS })
+  assert.equal(notes.months, null, 'a tabela que não é de janela não diz meses')
+})
+
 test('a inteira: a NF-e lê tudo a cada rodada, com o mesmo estado', async () => {
   const first = await tap(sankhyaDouble(), { streams: [selected('TGFNFE', 'nfe')] })
   const again = await tap(sankhyaDouble(), {

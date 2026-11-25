@@ -62,10 +62,14 @@ test('o ponto é o teto lido antes da passada: a alteração de chave baixa e de
   }
   const bookmarks: Record<string, Bookmark> = {}
   const run = { table: notas, columns, stream: 'notas', whole: false }
-  assert.equal(await readTable(reach, run, { bookmarks, startDate: null, deps }), null)
+  assert.deepEqual(await readTable(reach, run, { bookmarks, startDate: null, deps }), {
+    months: [],
+  })
   assert.equal(pages, 2, 'duas páginas de 100')
   lines.length = 0
-  assert.equal(await readTable(reach, run, { bookmarks, startDate: null, deps }), null)
+  assert.deepEqual(await readTable(reach, run, { bookmarks, startDate: null, deps }), {
+    months: [],
+  })
   const read = lines.flatMap((line) => {
     const message = JSON.parse(line)
     return message.type === 'RECORD' ? [message.record.nunota] : []
