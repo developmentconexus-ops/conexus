@@ -6,6 +6,9 @@ import { openTables } from './test-lake.tsx'
 
 const server = hubServer()
 
+const LEAD =
+  'Escolha as tabelas do Sankhya, quando copiar e desde que data. As linhas ficam no lago da empresa.'
+const STAY = 'As linhas ficam no lago da empresa.'
 const ONLY = 'Só quem gerencia as cópias muda o que se copia.'
 const ROLES = [
   { role: 'owner', mayManage: true, may: true },
@@ -14,12 +17,14 @@ const ROLES = [
 ] as const
 
 test.each(ROLES)(
-  'sem cópia: $role vê Escolher o que copiar, ligado só se gerencia cópias, e a frase de quem muda',
+  'sem cópia: $role vê Escolher o que copiar, ligado só se gerencia cópias, e a frase de quem muda e a do que escolher',
   async ({ role, mayManage, may }) => {
     const { section, sent } = await openTables(server, { role, mayManage, lake: readyLake() })
     const choose = within(section).getByRole('button', { name: 'Escolher o que copiar' })
     expect(choose.hasAttribute('disabled')).toBe(!may)
     expect(within(section).queryByText(ONLY) !== null).toBe(!may)
+    expect(within(section).queryByText(LEAD) !== null).toBe(may)
+    expect(within(section).queryByText(STAY) !== null).toBe(!may)
     fireEvent.click(choose)
     expect(screen.queryByRole('dialog') !== null).toBe(may)
     expect(sent.filter((one) => one.method !== 'GET')).toHaveLength(0)

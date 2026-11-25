@@ -27,16 +27,16 @@ test('a seção: com data, a tabela que ela limita diz desde a data e a que não
   })
   const limited = within(rowOf(dated.section, 'Notas e pedidos'))
   const whole = within(rowOf(dated.section, 'Parceiros'))
-  expect(limited.getByText('Desde 24/11/2021')).toBeTruthy()
-  expect(limited.queryByText('todo o histórico')).toBeNull()
-  expect(whole.getByText('todo o histórico')).toBeTruthy()
-  expect(whole.queryByText(/^Desde /)).toBeNull()
+  expect(limited.getByText('· desde 24/11/2021')).toBeTruthy()
+  expect(limited.queryByText('· todo o histórico')).toBeNull()
+  expect(whole.getByText('· todo o histórico')).toBeTruthy()
+  expect(whole.queryByText(/^· desde /)).toBeNull()
 })
 
 test('a seção: sem data a linha das tabelas não diz desde nem todo o histórico', async () => {
   const { section } = await openTables(server, {
     lake: copiedLake(['TGFCAB', 'TGFITE'], { startDate: null }),
   })
-  expect(within(section).queryByText(/^Desde /)).toBeNull()
-  expect(within(section).queryByText('todo o histórico')).toBeNull()
+  expect(within(section).queryByText(/^· desde /)).toBeNull()
+  expect(within(section).queryByText('· todo o histórico')).toBeNull()
 })
