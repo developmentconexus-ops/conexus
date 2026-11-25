@@ -65,7 +65,7 @@ export const ConnectorEntry = z.object({
   subjects: z.array(ConnectorSubject),
   // How the company links it: pasted fields, or a trip to the provider (`fields` empty).
   auth: z.enum(['client_credentials', 'oauth2_code']),
-  /** Why none of its tables can be copied to the lake, or null when they can: the Hub's one rule for the lake, read by every screen that lists connections. */
+  /** Why none of its tables can be copied to the lake, or null when they can: the Hub's one rule for the lake, read by Dados. */
   lakeUnavailable: LakeUnavailable.nullable(),
   fields: z.array(
     z.object({
