@@ -16,6 +16,7 @@ import {
   LAKE_TABLES,
   LINES_STAY,
   NOTHING_COPIED,
+  ONLY_COPY_MANAGER,
   readingDictionaryText,
 } from './lake-text.ts'
 import { LinkWindow } from './link-window.tsx'
@@ -42,11 +43,12 @@ function NoCopy(props: {
       ) : (
         <p className="max-w-message text-text-2">{LINES_STAY}</p>
       )}
-      {may.manageCopies && !notReady && (
-        <div>
-          <Button variant="primary" onClick={() => setChoosing(true)}>
+      {!notReady && (
+        <div className="flex flex-col items-start gap-sm">
+          <Button variant="primary" disabled={!may.manageCopies} onClick={() => setChoosing(true)}>
             {CHOOSE_WHAT}
           </Button>
+          {!may.manageCopies && <p className="max-w-message text-text-2">{ONLY_COPY_MANAGER}</p>}
         </div>
       )}
       {choosing && (

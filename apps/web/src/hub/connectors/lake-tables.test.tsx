@@ -112,7 +112,7 @@ test('a seção: sem lago pronto diz a frase da matriz e não oferece escolher',
   expect(within(section).queryByRole('button', { name: 'Escolher o que copiar' })).toBeNull()
 })
 
-test('a seção: quem não gerencia cópias vê as caixas, Salvar e Rodar agora à vista e desligados, com a frase de quem muda; clicar neles não chama rota', async () => {
+test('a seção: quem não gerencia cópias vê as caixas, Salvar, Rodar agora e Ler de novo à vista e desligados, com a frase de quem muda; clicar neles não chama rota', async () => {
   const { section, sent } = await openTables(server, {
     role: 'member',
     mayManage: false,
@@ -125,11 +125,10 @@ test('a seção: quem não gerencia cópias vê as caixas, Salvar e Rodar agora 
   const boxes = view.getAllByRole('checkbox')
   expect(boxes).toHaveLength(2)
   for (const box of boxes) expect(box.getAttribute('aria-disabled')).toBe('true')
-  for (const name of ['Salvar', 'Rodar agora']) {
+  for (const name of ['Salvar', 'Rodar agora', 'Ler de novo desde a data']) {
     expect(view.getByRole('button', { name }).hasAttribute('disabled')).toBe(true)
   }
-  expect(view.queryByRole('button', { name: 'Ler de novo desde a data' })).toBeNull()
-  expect(view.queryByRole('button', { name: 'Escolher o que copiar' })).toBeNull()
+  expect(view.queryByRole('button', { name: /^Outras tabelas/ })).toBeNull()
   fireEvent.click(view.getByRole('checkbox', { name: 'Itens das notas' }))
   fireEvent.click(view.getByRole('button', { name: 'Salvar' }))
   fireEvent.click(view.getByRole('button', { name: 'Rodar agora' }))

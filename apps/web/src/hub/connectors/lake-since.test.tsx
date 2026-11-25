@@ -62,9 +62,13 @@ test('a data inicial: depois de hoje recusa e desliga Salvar; sem data o campo d
   expect(sent.filter((one) => one.method === 'PUT')).toHaveLength(0)
 })
 
-test('a data inicial: quem não gerencia cópias vê a data sem o campo e sem o botão', async () => {
+test('a data inicial: quem não gerencia cópias vê a data sem o campo e o botão de ler de novo desligado', async () => {
   const { section } = await openTables(server, { role: 'member', mayManage: false, lake: lake() })
   expect(within(section).getAllByText(/Desde 24\/11\/2021/).length).toBeGreaterThan(0)
   expect(within(section).queryByLabelText('Desde')).toBeNull()
-  expect(within(section).queryByRole('button', { name: 'Ler de novo desde a data' })).toBeNull()
+  expect(
+    within(section)
+      .getByRole('button', { name: 'Ler de novo desde a data' })
+      .hasAttribute('disabled'),
+  ).toBe(true)
 })
