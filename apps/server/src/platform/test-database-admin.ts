@@ -1,7 +1,6 @@
 import pg from 'pg'
 import type { DatabaseUrl } from './database.ts'
-
-type Lifetime = { after(cleanup: () => Promise<void> | void): void }
+import type { Lifetime } from './test-database.ts'
 
 export async function connected(url: DatabaseUrl): Promise<pg.Client> {
   const client = new pg.Client({ connectionString: url.reveal() })
@@ -23,11 +22,8 @@ export async function asAdmin<T>(
 }
 
 /**
- * A test's hooks run in the order they were registered, and the first to throw ends the rest. A
- * database dropped in its own place ran before the hooks of the Hub, its pools and a spawned Hub
- * registered after it, so a connection of theirs still held the database, the drop threw, and none
- * of them closed: the process stayed alive to the job's timeout. Called where the database is
- * made, this runs `cleanup` behind every hook the test registers afterwards.
+ * Node runs a test's hooks in the order they were registered and skips the rest once one throws.
+ * This puts `cleanup` behind every hook registered after the call.
  */
 export function afterTheRest(t: Lifetime, cleanup: () => Promise<void> | void): void {
   t.after(() => t.after(cleanup))
