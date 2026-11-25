@@ -1,7 +1,8 @@
 # v0.24.129
 
 Esta versão publica o que entrou no `main` em 25/11 depois da v0.24.128: o conserto que faltava para a
-cópia de uma tabela com números de muitas casas decimais, da etapa "A primeira cópia chega ao lago".
+cópia de uma tabela com números de muitas casas decimais, da etapa "A primeira cópia chega ao lago", e a
+máquina das conversas montada num lugar só.
 
 **A cópia não para mais num número de muitas casas decimais.** A primeira cópia real do Sankhya parou
 na primeira tabela, com as linhas lidas e nenhuma gravada no lago, porque um valor tinha mais casas
@@ -28,5 +29,10 @@ escala certa.
 **O que ainda não foi provado.** Uma cópia real com os dados da empresa ainda não rodou nesta versão. Os
 testes cobrem os números de dez casas, a escala declarada e a parte inteira grande, mas só uma nova
 rodada real confirma que a tabela das notas chega ao lago.
+
+**A máquina das conversas, num lugar só.** Nada muda na tela. A máquina do **Assistente**, do **Construtor
+de agentes** e de um agente salvo passa a ser montada num lugar só, a partir da ficha de cada agente, em
+vez de em três. Ter um Workspace por sessão no **Construtor de apps** fica para depois, guardado na issue
+https://github.com/developmentconexus-ops/conexus/issues/1395.
 
 Segue a etapa A primeira cópia chega ao lago.
