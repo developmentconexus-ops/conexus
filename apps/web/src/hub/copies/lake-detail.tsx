@@ -59,10 +59,10 @@ function Page(props: {
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
       <Back companyId={companyId} />
       <Head table={table} system={system} />
-      <Tabs defaultValue="overview" className="gap-lg">
-        <TabsList className="w-full border-b border-line max-md:gap-0">
+      <Tabs compact defaultValue="overview" className="gap-lg">
+        <TabsList className="w-full border-b border-line">
           {TAB_NAMES.map((name) => (
-            <TabsTrigger key={name} value={name} className="max-md:px-sm max-md:after:inset-x-sm">
+            <TabsTrigger key={name} value={name}>
               {TABLE_TABS[name]}
             </TabsTrigger>
           ))}
