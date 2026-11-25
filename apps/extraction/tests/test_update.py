@@ -9,7 +9,7 @@ import boto3
 import pyarrow as pa
 import pyarrow.compute as pc
 
-from conexus_extraction.update import Athena, Mode, Updater
+from conexus_extraction.update import UP_TO, Athena, Mode, Updater
 from tests.conftest import REGION, Task
 
 NOTAS = ("TGFCAB", "sankhya_notas")
@@ -352,3 +352,21 @@ def test_a_mesma_chave_duas_vezes_fica_com_a_mudanca_mais_nova(task: Task) -> No
     _update_notas(task)
     [row] = [r for r in _rows(task, "current", "sankhya_notas") if r["nunota"] == nunota]
     assert row["vlrnota"] == Decimal("5")
+
+
+def test_o_historico_nao_devolve_a_nota_apagada(task: Task) -> None:
+    task.athena.keep_raw = True
+    first = task.spec(NOTAS, whole=False)
+    assert task.run(first) == 0
+    assert 100001 in _keys(task)
+    task.change("notas/100001", {"acao": "APAGAR"})
+    forced = task.spec(NOTAS, whole=True, connection=first["connectionId"])
+    assert task.run(forced) == 0
+    assert 100001 not in _keys(task)
+    task.change("notas/100000", {"acao": "ALTERAR"})
+    assert task.run(task.spec(NOTAS, whole=False, connection=first["connectionId"])) == 0
+    assert 100001 not in _keys(task)
+    raw = task.lake.load_table(("raw", "sankhya_notas"))
+    assert raw.scan().to_arrow().num_rows > len(_keys(task))
+    after = int(task.lake.load_table(("current", "sankhya_notas")).properties[UP_TO])
+    assert after == max(raw.scan().to_arrow().column("_sdc_sequence").to_pylist())
