@@ -9,6 +9,7 @@ import type {
 } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { createContext, useContext } from 'react'
+import type { Signer } from '../../ui/ai/agent-sign.tsx'
 import type { WritesRead } from './approval-item.ts'
 import { ASSISTANT_OVERRIDES } from './assistant-specs.ts'
 import type { FilesGo } from './attachments.ts'
@@ -107,6 +108,10 @@ export type RoomOf<K extends RoomKind> = Extract<Room, { kind: K }>
 
 export function isRoom<K extends RoomKind>(room: Room, kinds: readonly K[]): room is RoomOf<K> {
   return kinds.some((kind) => kind === room.kind)
+}
+
+export function signerOf(room: Room): Signer {
+  return room.kind === 'SAVED_AGENT' ? 'COMPANY_AGENT' : 'CONEXUS'
 }
 
 export const APP_BUILDER_WORDS: BoxWords = { agent: CONEXUS, files: 'MODEL' }

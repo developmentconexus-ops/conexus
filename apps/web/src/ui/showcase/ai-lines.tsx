@@ -1,4 +1,5 @@
 import { GlobeIcon, PencilIcon, SearchIcon, TerminalIcon } from 'lucide-react'
+import { AgentSign } from '../ai/agent-sign.tsx'
 import { ReasoningLine } from '../ai/reasoning-line.tsx'
 import type { SourceView } from '../ai/sources.tsx'
 import { Sources } from '../ai/sources.tsx'
@@ -201,11 +202,22 @@ export const AI_LINES: readonly ShowcaseEntry[] = [
     ],
   ),
   entry(
+    'ai/agent-sign.tsx',
+    'IA',
+    'O sinal de quem responde: a marca do Conexus, ou o ícone de agente de um agente salvo.',
+    () => <AgentSign signer="CONEXUS" working={false} />,
+    [
+      ['Signer.CONEXUS trabalhando', () => <AgentSign signer="CONEXUS" working />],
+      ['Signer.COMPANY_AGENT', () => <AgentSign signer="COMPANY_AGENT" working={false} />],
+    ],
+  ),
+  entry(
     'ai/working-line.tsx',
     'IA',
     'A linha de atividade do agente: trabalhando, ou esperando a pessoa; no celular, no alto do cartão aberto.',
     () => (
       <WorkingLine
+        signer="CONEXUS"
         state={{ kind: 'WORKING', sentence: 'Conexus trabalhando', since: ' · há 12 s' }}
       />
     ),
@@ -214,6 +226,7 @@ export const AI_LINES: readonly ShowcaseEntry[] = [
         'WorkingState.WORKING',
         () => (
           <WorkingLine
+            signer="CONEXUS"
             state={{ kind: 'WORKING', sentence: 'Ainda trabalhando…', since: ' há 1 min 20 s' }}
           />
         ),
@@ -222,6 +235,7 @@ export const AI_LINES: readonly ShowcaseEntry[] = [
         'WorkingState.WORKING sem contagem',
         () => (
           <WorkingLine
+            signer="CONEXUS"
             state={{ kind: 'WORKING', sentence: 'Conexus trabalhando', since: undefined }}
           />
         ),
@@ -229,7 +243,23 @@ export const AI_LINES: readonly ShowcaseEntry[] = [
       [
         'WorkingState.WAITING',
         () => (
-          <WorkingLine state={{ kind: 'WAITING', sentence: 'Conexus esperando sua resposta.' }} />
+          <WorkingLine
+            signer="CONEXUS"
+            state={{ kind: 'WAITING', sentence: 'Conexus esperando sua resposta.' }}
+          />
+        ),
+      ],
+      [
+        'Signer.COMPANY_AGENT',
+        () => (
+          <WorkingLine
+            signer="COMPANY_AGENT"
+            state={{
+              kind: 'WORKING',
+              sentence: 'Conferente de metas trabalhando',
+              since: ' · há 12 s',
+            }}
+          />
         ),
       ],
     ],

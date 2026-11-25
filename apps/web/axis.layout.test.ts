@@ -151,6 +151,11 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
     const working = page.getByRole('status').filter({ hasText: 'trabalhando' })
     const form = page.locator('form').filter({ has: page.getByLabel('Mensagem') })
     await working.waitFor()
+    const mark = working.locator('[data-slot=conexus-mark] path').first()
+    assert.ok(
+      await mark.evaluate((path) => path.getAnimations().length > 0),
+      'the Conexus mark does not move while at work',
+    )
     const [scroll, line, box, log, last] = await Promise.all([
       scroller.boundingBox(),
       working.locator('svg').first().boundingBox(),
