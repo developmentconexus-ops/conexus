@@ -6,7 +6,7 @@ import type {
   ConnectionNote,
   ConnectorEntry,
 } from '@conexus/hub-api'
-import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { ArrowLeftIcon, MoreHorizontalIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -24,7 +24,7 @@ import {
 import { PageTitle, SectionTitle } from '../../ui/list.tsx'
 import { RouteReadFailure } from '../../ui/states.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
-import { lakeTablesQuery } from './lake-queries.ts'
+import { useLakeTables } from './lake-queries.ts'
 import { LakeTables } from './lake-tables.tsx'
 import { OVERVIEW, TABLES_TAB } from './lake-text.ts'
 import { ReconnectButton } from './link-dialog.tsx'
@@ -247,7 +247,7 @@ function Details(props: {
   mayManage: boolean
 }) {
   const { companyId, connection, entry } = props
-  const lake = useQuery(lakeTablesQuery(companyId, connection.id))
+  const lake = useLakeTables(companyId, connection.id)
   const overview = (
     <>
       <Facts name={props.name} connection={connection} />
