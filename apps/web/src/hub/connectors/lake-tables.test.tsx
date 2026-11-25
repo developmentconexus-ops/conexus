@@ -128,19 +128,38 @@ test('a seção: sem lago pronto diz a frase da matriz e não oferece escolher',
   expect(within(section).queryByRole('button', { name: 'Escolher o que copiar' })).toBeNull()
 })
 
-test('a seção: quem não gerencia cópias vê as tabelas sem caixas, sem Salvar, sem Rodar agora e sem Ler de novo', async () => {
-  const { section } = await openTables({ role: 'member', mayManage: false, lake: lake() })
+test('a seção: quem não gerencia cópias vê as caixas, Salvar e Rodar agora à vista e desligados, com a frase de quem muda; clicar neles não chama rota', async () => {
+  const { section, sent } = await openTables({ role: 'member', mayManage: false, lake: lake() })
   const view = within(section)
   expect(view.getByText('Notas e pedidos')).toBeTruthy()
   expect(view.getByText('sankhya_tgfcab')).toBeTruthy()
-  expect(view.queryByRole('checkbox')).toBeNull()
-  for (const name of [
-    'Salvar',
-    'Rodar agora',
-    'Ler de novo desde a data',
-    'Escolher o que copiar',
-  ]) {
-    expect(view.queryByRole('button', { name })).toBeNull()
+  expect(view.getAllByText('Só quem gerencia as cópias muda o que se copia.')).toHaveLength(1)
+  const boxes = view.getAllByRole('checkbox')
+  expect(boxes).toHaveLength(2)
+  for (const box of boxes) expect(box.getAttribute('aria-disabled')).toBe('true')
+  for (const name of ['Salvar', 'Rodar agora']) {
+    expect(view.getByRole('button', { name }).hasAttribute('disabled')).toBe(true)
+  }
+  expect(view.queryByRole('button', { name: 'Ler de novo desde a data' })).toBeNull()
+  expect(view.queryByRole('button', { name: 'Escolher o que copiar' })).toBeNull()
+  fireEvent.click(view.getByRole('checkbox', { name: 'Itens das notas' }))
+  fireEvent.click(view.getByRole('button', { name: 'Salvar' }))
+  fireEvent.click(view.getByRole('button', { name: 'Rodar agora' }))
+  expect(view.getByRole('checkbox', { name: 'Itens das notas' }).getAttribute('aria-checked')).toBe(
+    'true',
+  )
+  expect(screen.queryByRole('alertdialog')).toBeNull()
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  expect(sent.filter((one) => one.method !== 'GET')).toHaveLength(0)
+})
+
+test('a seção: quem gerencia cópias não vê a frase de quem muda e tem tudo ligado', async () => {
+  const { section } = await openTables({ lake: lake() })
+  const view = within(section)
+  expect(view.queryByText('Só quem gerencia as cópias muda o que se copia.')).toBeNull()
+  expect(view.getByRole('button', { name: 'Rodar agora' }).hasAttribute('disabled')).toBe(false)
+  for (const box of view.getAllByRole('checkbox')) {
+    expect(box.getAttribute('aria-disabled')).not.toBe('true')
   }
 })
 

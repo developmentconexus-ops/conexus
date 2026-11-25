@@ -27,10 +27,15 @@ export function Controls(props: {
 }) {
   if (!props.editable) {
     return (
-      <p className="text-text-2">
-        {intervalText(props.interval)} ·{' '}
-        {props.savedSince === '' ? WHOLE_HISTORY : sinceOfTableText(props.savedSince)}
-      </p>
+      <div className="flex flex-wrap items-center gap-md">
+        <p className="text-text-2">
+          {intervalText(props.interval)} ·{' '}
+          {props.savedSince === '' ? WHOLE_HISTORY : sinceOfTableText(props.savedSince)}
+        </p>
+        <Button variant="primary" disabled>
+          {SAVE}
+        </Button>
+      </div>
     )
   }
   return (
@@ -63,11 +68,9 @@ export function RunBar(props: {
   const { lake } = props
   return (
     <div className="flex flex-wrap items-center gap-md border-t border-line pt-md">
-      {props.editable && (
-        <Button disabled={props.running} onClick={props.onRun}>
-          {RUN_NOW}
-        </Button>
-      )}
+      <Button disabled={!props.editable || props.running} onClick={props.onRun}>
+        {RUN_NOW}
+      </Button>
       {props.editable && props.again > 0 && (
         <Button disabled={props.stale || props.running} onClick={props.onReadAgain}>
           {READ_AGAIN}

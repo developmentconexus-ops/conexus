@@ -20,7 +20,13 @@ import { copyBody, groupsOf, picksOfCopied, prefixOf } from './lake-pick.ts'
 import { Group, LakePicker } from './lake-picker.tsx'
 import { lakeTablesPrefix, sendLakeCopy, sendLakeRun } from './lake-queries.ts'
 import { LeaveDialog, ReadAgainDialog, readAgainTables } from './lake-read-again.tsx'
-import { dateEffectText, LAKE_TABLES, LINES_STAY, otherTablesText } from './lake-text.ts'
+import {
+  dateEffectText,
+  LAKE_TABLES,
+  LINES_STAY,
+  ONLY_COPY_MANAGER,
+  otherTablesText,
+} from './lake-text.ts'
 
 type Lake = LakeTablesOfConnection
 type Props = { companyId: CompanyId; connectionId: ConnectionId; entry: ConnectorEntry; lake: Lake }
@@ -191,7 +197,7 @@ function OtherTables(props: {
 /**
  * The copied tables of a connection and everything that changes them: the boxes, the other tables
  * of the system, the interval and "Desde", "Salvar", "Rodar agora" and "Ler de novo desde a data".
- * Who does not manage copies reads the list and nothing else.
+ * Who does not manage copies sees the same controls turned off, with the sentence that says who can.
  */
 export function CopiedTables(props: Props & { editable: boolean }) {
   const { entry, lake } = props
@@ -206,6 +212,7 @@ export function CopiedTables(props: Props & { editable: boolean }) {
       <div className="flex flex-col gap-xs">
         <SectionTitle>{LAKE_TABLES}</SectionTitle>
         <p className="max-w-message text-text-2">{LINES_STAY}</p>
+        {!props.editable && <p className="max-w-message text-text-2">{ONLY_COPY_MANAGER}</p>}
       </div>
       <CopiedList
         tables={copied}
