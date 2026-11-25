@@ -13,6 +13,7 @@ from pathlib import Path
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
 from jsonschema import ValidationError
+from pyiceberg.catalog import load_catalog
 
 from conexus_extraction.contract import (
     PROJECT,
@@ -27,10 +28,18 @@ from conexus_extraction.contract import (
     parse_spec,
 )
 from conexus_extraction.machine import Meter
+from conexus_extraction.update import Athena, Mode, UpdateCounts, UpdateFailed, Updater
 
 MELTANO = str(Path(sys.executable).with_name("meltano"))
 
 CatalogOf = Callable[[Lake], dict[str, str]]
+StillOpen = Callable[[], bool]
+
+
+class Plan(t.TypedDict):
+    key: list[str]
+    mode: Mode
+    history: bool
 
 
 def log(event: str, **fields: str | int | None) -> None:
@@ -103,6 +112,9 @@ class Round:
         self.env = {
             **base,
             "MELTANO_SYS_DIR_ROOT": str(work / "meltano"),
+            "MELTANO_STATE_BACKEND_URI": (
+                f"{base['CONEXUS_STATE_URI']}/{spec['companyId']}/{spec['connectionId']}"
+            ),
             **_settings("TAP_CONEXUS", tap),
         }
 
@@ -138,7 +150,9 @@ class Round:
         return t.cast("dict[str, t.Any]", json.loads(self.report.read_text()))
 
 
-def _chosen(catalog: dict[str, t.Any], spec: Spec) -> tuple[dict[str, object], str | None]:
+def _chosen(
+    catalog: dict[str, t.Any], spec: Spec
+) -> tuple[dict[str, object], dict[str, Plan], str | None]:
     asked = {table["source"]: table for table in spec["tables"]}
     found = {stream["table_name"]: stream for stream in catalog["streams"]}
     missing = next(
@@ -146,6 +160,7 @@ def _chosen(catalog: dict[str, t.Any], spec: Spec) -> tuple[dict[str, object], s
         None,
     )
     tables: dict[str, object] = {}
+    plans: dict[str, Plan] = {}
     for source, stream in found.items():
         top = next(entry["metadata"] for entry in stream["metadata"] if entry["breadcrumb"] == [])
         top["selected"] = source in asked
@@ -155,11 +170,22 @@ def _chosen(catalog: dict[str, t.Any], spec: Spec) -> tuple[dict[str, object], s
                 "label": top["conexus-label"],
                 "meanings": top.get("conexus-meanings") or {},
             }
-    return tables, missing
+            plans[asked[source]["name"]] = {
+                "key": stream["key_properties"],
+                "mode": top["conexus-mode"],
+                "history": top["conexus-history"],
+            }
+    return tables, plans, missing
 
 
-def _result(spec: Spec, outcome: Complete | Failed, report: Mapping[str, t.Any]) -> Result:
+def _result(
+    spec: Spec,
+    outcome: Complete | Failed,
+    report: Mapping[str, t.Any],
+    updated: Mapping[str, UpdateCounts] | None = None,
+) -> Result:
     counts = report["tables"]
+    applied = updated or {}
     return checked(
         {
             "type": "RESULT",
@@ -173,8 +199,10 @@ def _result(spec: Spec, outcome: Complete | Failed, report: Mapping[str, t.Any])
                     "read": counts.get(asked["name"], {}).get("read", 0),
                     "written": counts.get(asked["name"], {}).get("written", 0),
                     "rounded": counts.get(asked["name"], {}).get("rounded", 0),
-                    "rows": None,
-                    "whole": asked["whole"],
+                    "rows": applied[asked["name"]].rows if asked["name"] in applied else None,
+                    "whole": applied[asked["name"]].whole
+                    if asked["name"] in applied
+                    else asked["whole"],
                 }
                 for asked in spec["tables"]
             ],
@@ -190,9 +218,53 @@ def _measured(result: Result, machine: Machine | None) -> Result:
         return t.cast("Result", {**result, "machine": None})
 
 
+def _updated(
+    spec: Spec,
+    updater: Updater,
+    plans: Mapping[str, Plan],
+    guard: tuple[Stopping, StillOpen],
+) -> tuple[dict[str, UpdateCounts], Failed | None] | None:
+    """`current` brought up to `raw`, table by table; null when the round was closed or stopped."""
+    stopping, still_open = guard
+    counts: dict[str, UpdateCounts] = {}
+    for asked in spec["tables"]:
+        if stopping.asked or not still_open():
+            return None
+        plan = plans[asked["name"]]
+        try:
+            counts[asked["name"]] = updater.update(
+                asked["name"],
+                key=plan["key"],
+                mode=plan["mode"],
+                history=plan["history"],
+                since=spec["startDate"],
+            )
+        except UpdateFailed as failed:
+            log(
+                "UPDATE_FAILED",
+                runId=spec["runId"],
+                table=asked["name"],
+                athena=failed.code,
+                cause=failed.cause,
+            )
+            return counts, {
+                "kind": "ERROR",
+                "code": "COPY_LAKE_WRITE_FAILED",
+                "table": asked["name"],
+                "system": None,
+            }
+    return counts, None
+
+
 def copied(
-    spec: Spec, work: Path, base: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
+    spec: Spec,
+    work: Path,
+    base: Mapping[str, str],
+    lake: tuple[CatalogOf, Athena],
+    guard: tuple[Stopping, StillOpen],
 ) -> Result | None:
+    catalog_of, athena = lake
+    stopping = guard[0]
     try:
         round_ = Round(spec, work, base, stopping)
     except OSError:
@@ -202,7 +274,7 @@ def copied(
     if discovered is None:
         failure = round_.tap_failure()
         return None if failure is None else _result(spec, failure, round_.target_report())
-    tables, missing = _chosen(discovered, spec)
+    tables, plans, missing = _chosen(discovered, spec)
     if missing is not None:
         unreadable: Failed = {
             "kind": "ERROR",
@@ -211,8 +283,9 @@ def copied(
             "system": None,
         }
         return _result(spec, unreadable, round_.target_report())
+    catalog = catalog_of(spec["lake"])
     target = {
-        "catalog": catalog_of(spec["lake"]),
+        "catalog": catalog,
         "tables": tables,
         "run_parameter": base["CONEXUS_RUN_PARAMETER"],
         "region": base["AWS_REGION"],
@@ -237,7 +310,13 @@ def copied(
     if code != 0:
         log("RUN_UNEXPLAINED", runId=spec["runId"], meltano=code)
         return None
-    return _result(spec, {"kind": "COMPLETE"}, report)
+    updated = _updated(spec, Updater(load_catalog("lake", **catalog), athena), plans, guard)
+    if updated is None:
+        return None
+    counts, failed = updated
+    if failed is not None:
+        return _result(spec, failed, report)
+    return _result(spec, {"kind": "COMPLETE"}, report, counts)
 
 
 def run(environ: Mapping[str, str], catalog_of: CatalogOf) -> int:
@@ -247,6 +326,14 @@ def run(environ: Mapping[str, str], catalog_of: CatalogOf) -> int:
         return _round(environ, catalog_of, stopping)
     finally:
         signal.signal(signal.SIGTERM, previous)
+
+
+def _open(ssm: t.Any, parameter: str) -> bool:
+    try:
+        ssm.get_parameter(Name=parameter)
+    except ssm.exceptions.ParameterNotFound:
+        return False
+    return True
 
 
 def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping) -> int:
@@ -266,7 +353,15 @@ def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
     meter = Meter.start(environ, log)
     try:
         with tempfile.TemporaryDirectory(prefix="copia-") as work:
-            result = copied(spec, Path(work), environ, catalog_of, stopping)
+            lake = spec["lake"]["bucketArn"].rsplit("/", 1)[-1]
+            athena = Athena(aws.client("athena"), lake, f"s3tablescatalog/{lake}")
+            result = copied(
+                spec,
+                Path(work),
+                environ,
+                (catalog_of, athena),
+                (stopping, lambda: _open(ssm, parameter)),
+            )
     finally:
         machine = meter.stop()
     if stopping.asked:

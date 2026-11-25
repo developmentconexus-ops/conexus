@@ -5,6 +5,7 @@ import {
   COPY_CLUSTER,
   HUB_KEY_USER,
   HUB_ROLE,
+  stateBucket,
   TAG_COMPANY,
   TEMPLATE_PREFIX,
   templateBucket,
@@ -41,7 +42,7 @@ export function hubRole(
     }),
     inlinePolicies: {
       conexus: new iam.PolicyDocument({
-        statements: [...hubStatements(stack, place, of), ...copyStatements(place, of.copy)],
+        statements: [...hubStatements(stack, place, of), ...copyStatements(stack, place, of.copy)],
       }),
     },
   })
@@ -130,7 +131,7 @@ function hubStatements(
   ]
 }
 
-function copyStatements(place: Place, copy: CopyPlatform): iam.PolicyStatement[] {
+function copyStatements(stack: Stack, place: Place, copy: CopyPlatform): iam.PolicyStatement[] {
   const inTheCluster = { ArnEquals: { 'ecs:cluster': copy.cluster.clusterArn } }
   return [
     new iam.PolicyStatement({
@@ -168,6 +169,13 @@ function copyStatements(place: Place, copy: CopyPlatform): iam.PolicyStatement[]
       sid: 'ListAndDeleteLakeTables',
       actions: ['s3tables:ListTables', 's3tables:DeleteTable'],
       resources: [place.lakeTableBuckets, `${place.lakeTableBuckets}/table/*`],
+    }),
+    new iam.PolicyStatement({
+      sid: 'ReadAndWriteTheCompanyStoppingPoints',
+      actions: ['s3:GetObject', 's3:PutObject'],
+      resources: [
+        `arn:${stack.partition}:s3:::${stateBucket(stack.account, stack.region)}/\${aws:PrincipalTag/${TAG_COMPANY}}/*`,
+      ],
     }),
   ]
 }

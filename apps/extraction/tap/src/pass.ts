@@ -80,7 +80,9 @@ function latest(values: readonly (string | null | undefined)[]): string | undefi
     .at(-1)
 }
 
-type Plan = Readonly<{ filters: readonly TableFilter[]; point: string | null } | TableReadFailed>
+type Plan = Readonly<
+  { filters: readonly TableFilter[]; point: string | null; whole: boolean } | TableReadFailed
+>
 
 async function planOf(
   reach: TableReach,
@@ -90,18 +92,19 @@ async function planOf(
   const { mode } = run.table
   const point = run.whole ? undefined : a.bookmark?.replication_key_value
   const date = startDateLimits(mode) ? a.startDate : null
-  if (mode.kind === 'FULL') return { filters: [{ kind: 'ALL' }], point: null }
+  const whole = point === undefined || mode.kind === 'FULL'
+  if (mode.kind === 'FULL') return { filters: [{ kind: 'ALL' }], point: null, whole }
   if (mode.kind === 'CHANGED') {
     const since = latest([point, date])
     const filters: TableFilter[] = [
       since === undefined ? { kind: 'ALL' } : { kind: 'SINCE', column: mode.column, after: since },
     ]
-    if (run.table.source.kind === 'OPERATION') return { filters, point: null }
+    if (run.table.source.kind === 'OPERATION') return { filters, point: null, whole }
     const ceiling = await tried(
       () => tableCeiling({ ...reach, table: run.table, columns: run.columns }),
       a.deps,
     )
-    return ceiling.kind === 'CEILING' ? { filters, point: ceiling.value } : ceiling
+    return ceiling.kind === 'CEILING' ? { filters, point: ceiling.value, whole } : ceiling
   }
   const counted =
     point === undefined
@@ -113,6 +116,7 @@ async function planOf(
   return {
     filters: months.map((month) => ({ kind: 'MONTH', column: mode.column, month })),
     point: null,
+    whole,
   }
 }
 
@@ -174,6 +178,7 @@ export async function readTable(
       at: 0,
       after: null,
       point: plan.point,
+      whole: plan.whole,
     }
   }
   let done = pass.filters.length === 0
@@ -202,7 +207,8 @@ export async function readTable(
       await emit({ type: 'STATE', value: { bookmarks } })
     }
   }
-  await emit({ type: 'ACTIVATE_VERSION', stream: run.stream, version: pass.version })
+  if (pass.whole)
+    await emit({ type: 'ACTIVATE_VERSION', stream: run.stream, version: pass.version })
   bookmarks[run.stream] = doneOf(run, pass, before, deps.now())
   await emit({ type: 'STATE', value: { bookmarks } })
   return null

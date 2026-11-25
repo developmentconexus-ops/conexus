@@ -201,6 +201,7 @@ class MemoryAws implements LakeStacks {
 const EMPTY_LAKE: LakeTables = {
   list: async () => ({ kind: 'DONE', value: [] }),
   drop: async () => ({ kind: 'DONE', value: undefined }),
+  forget: async () => ({ kind: 'DONE', value: undefined }),
 }
 
 /**

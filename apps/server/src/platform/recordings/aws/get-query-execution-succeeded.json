@@ -1,0 +1,10 @@
+{
+  "service": "athena",
+  "api": "GetQueryExecution",
+  "sdk": "boto3 1.44.6",
+  "recordedAt": "2026-11-25",
+  "source": "U10 step 6, tests/record_athena.py from this machine on a read-only query of the laboratory lake's workgroup, nothing created; ids and names changed (S40)",
+  "status": 200,
+  "contentType": "application/x-amz-json-1.1",
+  "body": "{\"QueryExecution\":{\"EngineVersion\":{\"EffectiveEngineVersion\":\"Athena engine version 3\",\"SelectedEngineVersion\":\"AUTO\"},\"ManagedQueryResultsConfiguration\":{\"Enabled\":true,\"TimeToLive\":{\"Unit\":\"DAYS\",\"Value\":1}},\"Query\":\"SELECT count(*) FROM information_schema.tables\",\"QueryExecutionContext\":{\"Catalog\":\"s3tablescatalog/conexus-k3x9a0b1c2d3\",\"Database\":\"raw\"},\"QueryExecutionId\":\"00000000-0000-4000-8000-000000000001\",\"ResultReuseConfiguration\":{\"ResultReuseByAgeConfiguration\":{\"Enabled\":false}},\"StatementType\":\"DML\",\"Statistics\":{\"DataScannedInBytes\":0,\"EngineExecutionTimeInMillis\":641,\"QueryPlanningTimeInMillis\":12,\"QueryQueueTimeInMillis\":58,\"ResultReuseInformation\":{\"ReusedPreviousResult\":false},\"ServicePreProcessingTimeInMillis\":733,\"ServiceProcessingTimeInMillis\":24,\"TotalExecutionTimeInMillis\":1456},\"Status\":{\"CompletionDateTime\":1.795624722462E9,\"State\":\"SUCCEEDED\",\"SubmissionDateTime\":1.795624721006E9},\"SubstatementType\":\"SELECT\",\"WorkGroup\":\"conexus-k3x9a0b1c2d3\"},\"QueryExecutionDetail\":{\"Query\":\"SELECT count(*) FROM information_schema.tables\",\"QueryExecutionContext\":{\"Catalog\":\"s3tablescatalog/conexus-k3x9a0b1c2d3\",\"Database\":\"raw\"},\"QueryExecutionId\":\"00000000-0000-4000-8000-000000000001\",\"Stats\":{\"EngineExecutionTimeInMillis\":641,\"ProcessedBytes\":0,\"ProcessedInputBytes\":0,\"ProcessedInputRows\":7,\"ProcessedRows\":7,\"ResultReuseInformation\":{\"ReusedPreviousResult\":false}},\"Status\":{\"CompletionDateTime\":1.795624722462E9,\"State\":\"SUCCEEDED\",\"SubmissionDateTime\":1.795624721006E9},\"WorkGroup\":\"conexus-k3x9a0b1c2d3\"}}"
+}

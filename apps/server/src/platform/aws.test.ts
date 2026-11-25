@@ -10,6 +10,7 @@ import {
   RUN_PARAMETER_PREFIX as PLATFORM_PARAMETER_PREFIX,
   templateUrl as platformTemplateUrl,
   STACK_PREFIX,
+  stateBucket,
   TAG_COMPANY,
   TAG_TEMPLATE,
   templateBucket,
@@ -23,6 +24,7 @@ import {
   RUN_PARAMETER_PREFIX,
   StackId,
   stackName,
+  stateBucketName,
   templateUrl,
 } from './aws.ts'
 import { awsRecording, TEST_AWS_ACCOUNT, TEST_AWS_REGION, testAws } from './test-aws.ts'
@@ -80,6 +82,10 @@ test('aws: os nomes batem com a receita e com o padrão da política do Hub', ()
   }
   assert.equal(bucketName(LAKE), `${BUCKET_PREFIX}${LAKE}`)
   assert.equal(stackName(LAKE), `${STACK_PREFIX}${LAKE}`)
+  assert.equal(
+    stateBucketName(TEST_AWS_ACCOUNT, TEST_AWS_REGION),
+    stateBucket(TEST_AWS_ACCOUNT, TEST_AWS_REGION),
+  )
   assert.deepEqual([TAG_COMPANY, TAG_TEMPLATE], ['conexus-empresa', 'conexus-modelo'])
   const bucketOfRecipes = templateBucket(TEST_AWS_ACCOUNT, TEST_AWS_REGION)
   const sent = templateUrl(bucketOfRecipes, TEST_AWS_REGION, version)

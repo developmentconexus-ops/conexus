@@ -178,9 +178,9 @@ async function ensureReady(deps: LakeCopyDeps, at: Marker, lake: State['lake']) 
 }
 
 /**
- * An unmarked table's two areas, the AWS first and the row after: a table AWS
- * does not have counts as dropped, so a repeat ends what an interrupted one began. Nothing is
- * dropped under an open round.
+ * An unmarked table's two areas and its stopping point, the AWS first and the row after: a table
+ * or a point AWS does not have counts as gone, so a repeat ends what an interrupted one began.
+ * Nothing is dropped under an open round.
  */
 export async function dropTables(
   deps: Pick<LakeCopyDeps, 'tables' | 'log'>,
@@ -193,6 +193,8 @@ export async function dropTables(
       const answer = await deps.tables.drop(lake.where, lake.lakeId, { namespace, name })
       if (answer.kind !== 'DONE') awsDown(deps.log, at, 'DeleteTable', answer)
     }
+    const point = await deps.tables.forget(lake.where, at.connectionId, name)
+    if (point.kind !== 'DONE') awsDown(deps.log, at, 'ForgetStoppingPoint', point)
   }
 }
 

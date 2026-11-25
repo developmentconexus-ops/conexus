@@ -1,0 +1,10 @@
+{
+  "service": "s3",
+  "api": "PutObject",
+  "sdk": "@aws-sdk/client-s3 3.1146.0",
+  "recordedAt": "2026-11-25",
+  "source": "U10 step 5, scripts/record-aws.ts state from this machine on the laboratory account, one scratch bucket made and deleted at the end; account and names changed (S40)",
+  "status": 200,
+  "contentType": "",
+  "body": ""
+}

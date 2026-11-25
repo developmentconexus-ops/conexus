@@ -43,7 +43,7 @@ def test_um_resultado_por_rodada(task: Task, metadata: Metadata) -> None:
             "read": rows[name],
             "written": rows[name],
             "rounded": rounded,
-            "rows": None,
+            "rows": rows[name],
             "whole": True,
         }
         for name, rounded in (("sankhya_notas", 1), ("sankhya_notas_nfe", 0))
@@ -64,7 +64,7 @@ def test_o_resultado_leva_as_celulas_arredondadas_de_cada_tabela(task: Task) -> 
         ("sankhya_notas", 1),
         ("sankhya_notas_nfe", 0),
     ]
-    lake = task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow()
+    lake = task.lake.load_table(("current", "sankhya_notas")).scan().to_arrow()
     assert Decimal("2.123456790") in lake.column("campo003").to_pylist()
 
 

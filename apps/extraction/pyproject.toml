@@ -17,7 +17,12 @@ target-conexus = "conexus_extraction.target:TargetConexus.cli"
 conexus-copy = "conexus_extraction.entry:main"
 
 [dependency-groups]
-dev = ["mypy", "pytest", "ruff"]
+dev = [
+    "duckdb>=2.0.1",
+    "mypy",
+    "pytest",
+    "ruff",
+]
 
 [build-system]
 requires = ["uv_build>=0.13.9,<0.14"]

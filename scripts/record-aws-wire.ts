@@ -3,6 +3,7 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 import type { ECSClient } from '@aws-sdk/client-ecs'
+import type { S3Client } from '@aws-sdk/client-s3'
 import type { S3TablesClient } from '@aws-sdk/client-s3tables'
 import type { SQSClient } from '@aws-sdk/client-sqs'
 import type { SSMClient } from '@aws-sdk/client-ssm'
@@ -141,7 +142,7 @@ function save(
   inventor: Inventor,
   entry: {
     name: string
-    service: 'ecs' | 'ssm' | 'sqs' | 's3tables'
+    service: 'ecs' | 'ssm' | 'sqs' | 's3tables' | 's3'
     api: string
     sdk: string
     source: string
@@ -167,6 +168,7 @@ function save(
 }
 
 const SDK = '3.1175.0'
+const S3_SDK = '3.1146.0'
 export const Outputs = z.object({
   CopyClusterArn: z.string(),
   CopyTaskFamily: z.string(),
@@ -182,6 +184,7 @@ export type World = Readonly<{
   ssm: SSMClient
   sqs: SQSClient
   tables: S3TablesClient
+  s3: S3Client
   outputs: z.infer<typeof Outputs>
   account: string
   /** The twelve letters and digits of the table bucket this run makes. */
@@ -194,7 +197,7 @@ const ServiceAnswer = z.looseObject({ $metadata: z.looseObject({ httpStatusCode:
 export async function recorded<T>(
   world: World,
   name: string | null | ((value: T) => string | null),
-  call: { service: 'ecs' | 'ssm' | 'sqs' | 's3tables'; api: string },
+  call: { service: 'ecs' | 'ssm' | 'sqs' | 's3tables' | 's3'; api: string },
   send: () => Promise<T>,
 ): Promise<{ ok: true; value: T } | { ok: false; error: unknown }> {
   let result: { ok: true; value: T } | { ok: false; error: unknown }
@@ -210,10 +213,12 @@ export async function recorded<T>(
     save(world.inventor, {
       name: named,
       ...call,
-      sdk: `@aws-sdk/client-${call.service} ${SDK}`,
+      sdk: `@aws-sdk/client-${call.service} ${call.service === 's3' ? S3_SDK : SDK}`,
       recordedAt: world.recordedAt,
       source:
-        'U8 step 1, scripts/record-aws.ts from this machine on the laboratory account, temporary resources deleted at the end; account and ids changed (S40)',
+        call.service === 's3'
+          ? 'U10 step 5, scripts/record-aws.ts state from this machine on the laboratory account, one scratch bucket made and deleted at the end; account and names changed (S40)'
+          : 'U8 step 1, scripts/record-aws.ts from this machine on the laboratory account, temporary resources deleted at the end; account and ids changed (S40)',
       captured: last,
     })
   }

@@ -27,6 +27,9 @@ export const COPY_CONTAINER = 'copia'
 export const RUN_PARAMETER_VARIABLE = 'CONEXUS_RUN_PARAMETER'
 
 const WRITER_SUFFIX = '-escritor'
+const STATE_BUCKET_PREFIX = 'conexus-estado-'
+/** The id Meltano gives the copy's one pipeline: the environment, the tap and the target (`meltano run`). */
+const STATE_ID = 'copia:tap-conexus-to-target-conexus'
 
 /** The parameter of one round of a company, which the round's task reads and the end deletes. */
 export function runParameterName(company: string, run: string): string {
@@ -50,4 +53,14 @@ export function bucketName(lake: LakeId): string {
 /** The one form of a template's address, the bucket first, as the Hub role's policy matches it. */
 export function templateUrl(bucket: string, region: string, version: string): string {
   return `https://${bucket}.s3.${region}.amazonaws.com/${TEMPLATE_PREFIX}${version}.json`
+}
+
+/** The bucket of the copies' stopping points, as `infra/aws/lib/names.ts` `stateBucket` names it. */
+export function stateBucketName(account: string, region: string): string {
+  return `${STATE_BUCKET_PREFIX}${account}-${region}`
+}
+
+/** The connection's state file, where the task's Meltano keeps it: `<company>/<connection>/<state id>/state.json`. */
+export function stateKey(company: string, connection: string): string {
+  return `${company}/${connection}/${STATE_ID}/state.json`
 }

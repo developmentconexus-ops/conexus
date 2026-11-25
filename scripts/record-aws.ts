@@ -9,13 +9,18 @@
 // by themselves, the messages of the queue it reads, and a table bucket with two tables that it
 // deletes with them. The task runs as the platform's execution role (no lake in the laboratory has a
 // writer role), which may not read the parameter, so it fails there and stops by itself.
+//
+// `npm run record-aws state` makes one scratch bucket, keeps the answers of GetObject and PutObject
+// on a connection's state file (U10), then deletes the object and the bucket.
 import { randomBytes } from 'node:crypto'
 import { CloudFormationClient, DescribeStacksCommand } from '@aws-sdk/client-cloudformation'
 import { ECSClient } from '@aws-sdk/client-ecs'
+import { S3Client } from '@aws-sdk/client-s3'
 import { S3TablesClient } from '@aws-sdk/client-s3tables'
 import { SQSClient } from '@aws-sdk/client-sqs'
 import { SSMClient } from '@aws-sdk/client-ssm'
 import { z } from 'zod'
+import { recordState } from './record-aws-state.ts'
 import { recordQueue, recordTables, recordTasks } from './record-aws-steps.ts'
 import type { World } from './record-aws-wire.ts'
 import { CapturingHandler, Inventor, Outputs } from './record-aws-wire.ts'
@@ -48,6 +53,7 @@ async function worldOf(): Promise<World> {
     ssm: new SSMClient(shared),
     sqs: new SQSClient(shared),
     tables: new S3TablesClient(shared),
+    s3: new S3Client({ ...shared, followRegionRedirects: false }),
     outputs,
     account,
     tableLake,
@@ -57,6 +63,7 @@ async function worldOf(): Promise<World> {
 async function main(): Promise<void> {
   const world = await worldOf()
   if (process.argv[2] === 'tables') return recordTables(world)
+  if (process.argv[2] === 'state') return recordState(world)
   const started = await recordTasks(world)
   try {
     await recordQueue(world, started)
