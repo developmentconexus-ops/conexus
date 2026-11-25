@@ -92,6 +92,7 @@ test('abrir o link: sem sessão, quem pediu, o sistema e só os campos pedidos; 
     page.fields.map((field: { name: string }) => field.name),
     ASKED,
   )
+  assert.ok(on.fake.credential.clientId)
   assert.equal(JSON.stringify(page).includes(on.fake.credential.clientId), false)
   assert.equal(JSON.stringify(page).includes('clientId'), false)
 
@@ -136,6 +137,7 @@ test('o segredo fica fora: o banco guarda o resumo, e nem o banco nem o registro
   }
   const values = [on.fake.credential.clientId, on.fake.credential.clientSecret]
   for (const value of values) {
+    assert.ok(value)
     assert.deepEqual(await allRowsWith(on, value), [])
     assert.equal(JSON.stringify(on.hub.lines).includes(value), false)
   }
@@ -185,6 +187,7 @@ test('enviar pelo link: junta os campos, liga em nome de quem pediu e testa uma 
   assert.deepEqual(failed(await open(on, link.secret)), [404, 'NOT_FOUND'])
   const answered = logged(on, 'CONNECTION_LINK_ANSWERED').map((line) => line.fields.result)
   assert.deepEqual(answered, ['AUTH_REFUSED', 'WORKING'])
+  assert.ok(on.fake.credential.clientSecret)
   assert.equal(JSON.stringify(on.hub.lines).includes(on.fake.credential.clientSecret), false)
   assert.equal(logged(on, 'CONNECTION_LINK_REFUSED').length, 2)
 
