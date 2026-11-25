@@ -4,7 +4,6 @@ import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { connection, LIST, lakeTable, openData } from './test-hub.tsx'
 
-// Dados lists a connection only when the Hub says its connector can copy to the lake (issue 1394).
 const server = hubServer()
 
 const SANKHYA = connection()
