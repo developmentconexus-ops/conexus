@@ -33,7 +33,7 @@ write those.
 8. **The wiring.** `apps/server/src/main.ts` makes the subject and hands its door to the others. A job
    or a workflow is registered in `apps/server/src/conversations-of.ts` (`workflows`, `releaseFirst`).
    dependency-cruiser refuses a wiring that goes around the doors.
-9. **The Builder's part.** `apps/server/src/builder/<subject>/`, the only place `@mastra/*` may be
+9. **The Builder's part.** `apps/server/src/agents/<agent>/` or `apps/server/src/harness/<subject>/`, the only places `@mastra/*` may be
    imported (`mastra-only-in-harness-and-agents`). The tools are bound in `agents/app-builder/builder.ts`,
    `agents/assistant/assistant.ts` and `agents/app-builder/permissions.ts`, with their text in the
    prompt. The prompt tests and the recorded-model tests prove them.

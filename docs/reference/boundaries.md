@@ -959,7 +959,7 @@ changes, reread the line it names.
 
 ## The Builder's clocks and its eval gate (step 13)
 
-- **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
+- **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/harness/` and `apps/server/src/agents/` except in the
   owner `agents/app-builder/runs/copy-retry.ts`, and so are `node:timers` and
   `node:timers/promises` (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `subscription-store.ts`. A change

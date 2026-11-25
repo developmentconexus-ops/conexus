@@ -4,8 +4,8 @@ A person writes to the Builder in a Project's conversation. A few minutes later 
 new version of the app, or the conversation says why not. This page follows one turn through the
 code, from the message to the version. The Mastra pieces it uses are explained in
 [the harness](harness.md), the check in [the app package](app-package.md), and what the Hub does
-with the version in [the Hub side of an app](hub-apps.md). `builder/` below means
-`apps/server/src/builder/`.
+with the version in [the Hub side of an app](hub-apps.md). Paths below are under
+`apps/server/src/`.
 
 ## The pieces a turn touches
 

@@ -5,7 +5,7 @@ company configures, the Assistant every person can ask, and the automations that
 Assistant a prompt on a clock. Project agents and the Assistant are Mastra agents on the Hub's one
 Mastra instance, each kind in its own agent controller; an automation is a Mastra workflow that
 opens an Assistant conversation ([the harness](harness.md)). Server code is under
-`apps/server/src/builder/`, written `builder/` below; request and answer shapes are in
+`apps/server/src/harness/` and `apps/server/src/agents/`; request and answer shapes are in
 `packages/hub-api/src/`.
 
 ## Project agents
