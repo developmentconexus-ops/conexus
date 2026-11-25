@@ -50,6 +50,7 @@ export type RunTableCounts = Readonly<{
   name: LakeTableName
   read: number
   written: number
+  rounded: number
   rows: number | null
   whole: boolean
 }>
@@ -225,6 +226,7 @@ export async function closeLakeRun(
       tables: close.tables.length,
       read: close.tables.reduce((sum, table) => sum + table.read, 0),
       written: close.tables.reduce((sum, table) => sum + table.written, 0),
+      rounded: close.tables.reduce((sum, table) => sum + table.rounded, 0),
     },
     'COPY_RUN_ENDED',
   )

@@ -24,8 +24,8 @@ test('o resultado e a parada: o resultado fecha com as contagens, rows e o códi
   const on = await lakeRunOn(t)
   const first = await running(on, [NOTAS, PARCEIROS])
   const counts = [
-    { name: NOTAS.name, read: 12, written: 12, rows: 40, whole: false },
-    { name: PARCEIROS.name, read: 3, written: 3, rows: null, whole: true },
+    { name: NOTAS.name, read: 12, written: 12, rounded: 0, rows: 40, whole: false },
+    { name: PARCEIROS.name, read: 3, written: 3, rounded: 0, rows: null, whole: true },
   ]
   on.aws.enqueue(result(first.run, { kind: 'COMPLETE' }, counts))
   on.aws.endTask(first.arn)
@@ -185,8 +185,8 @@ test('o que o registro leva: COPY_RUN_ENDED com as contagens e a ligação; nem 
   const on = await lakeRunOn(t)
   const { connection, run, arn } = await running(on, [NOTAS, PARCEIROS])
   const counts = [
-    { name: NOTAS.name, read: 12, written: 10, rows: 40, whole: false },
-    { name: PARCEIROS.name, read: 3, written: 3, rows: 7, whole: true },
+    { name: NOTAS.name, read: 12, written: 10, rounded: 4, rows: 40, whole: false },
+    { name: PARCEIROS.name, read: 3, written: 3, rounded: 1, rows: 7, whole: true },
   ]
   on.aws.enqueue('não é JSON')
   on.aws.enqueue(JSON.stringify({ type: 'RESULT', runId: run }))
@@ -206,7 +206,7 @@ test('o que o registro leva: COPY_RUN_ENDED com as contagens e a ligação; nem 
   assert.deepEqual(more, [])
   assert.deepEqual(ended?.fields, {
     ...{ companyId: on.companyId, connectionId: connection, runId: run, cause: 'RESULT' },
-    ...{ outcome: 'COMPLETE', tables: 2, read: 15, written: 13 },
+    ...{ outcome: 'COMPLETE', tables: 2, read: 15, written: 13, rounded: 5 },
   })
   assert.equal(on.lines.filter(({ message }) => message === 'COPY_QUEUE_UNREADABLE').length, 2)
   const said = JSON.stringify(on.lines)

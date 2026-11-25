@@ -53,6 +53,8 @@ export const CopyTaskResult = z.object({
       name: LakeTableName,
       read: z.int().min(0),
       written: z.int().min(0),
+      /** The cells written rounded to the column's scale: a value with more places than it declares or than 9 (0083). */
+      rounded: z.int().min(0),
       rows: z.int().min(0).nullable(),
       whole: z.boolean(),
     }),

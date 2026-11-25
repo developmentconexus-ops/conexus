@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from conexus_extraction import entry
 from conexus_extraction.contract import Machine
 from conexus_extraction.machine import Meter
 from tests.conftest import Metadata, Task, fargate
@@ -37,7 +38,14 @@ def test_um_resultado_por_rodada(task: Task, metadata: Metadata) -> None:
     assert result["outcome"] == {"kind": "COMPLETE"}
     rows = {name: len(r) for name, r in task.source(spec).items()}
     assert result["tables"] == [
-        {"name": name, "read": rows[name], "written": rows[name], "rows": None, "whole": True}
+        {
+            "name": name,
+            "read": rows[name],
+            "written": rows[name],
+            "rounded": 0,
+            "rows": None,
+            "whole": True,
+        }
         for name in ("sankhya_notas", "sankhya_notas_nfe")
     ]
     assert "1234567890123" not in json.dumps(result)
@@ -46,6 +54,16 @@ def test_um_resultado_por_rodada(task: Task, metadata: Metadata) -> None:
     assert set(machine) == {"allocated", "peak", "everySeconds", "samples"}
     assert machine["peak"]["memoryMib"] > 0
     assert set(result) == {"type", "version", "runId", "attempt", "outcome", "tables", "machine"}
+
+
+def test_o_resultado_leva_as_celulas_arredondadas_de_cada_tabela(task: Task) -> None:
+    spec = task.spec(NOTAS, ("TGFNFE", "sankhya_notas_nfe"))
+    report = {"tables": {"sankhya_notas": {"read": 9, "written": 9, "rounded": 3}}}
+    result = entry._result(spec, {"kind": "COMPLETE"}, report)
+    assert [(table["name"], table["rounded"]) for table in result["tables"]] == [
+        ("sankhya_notas", 3),
+        ("sankhya_notas_nfe", 0),
+    ]
 
 
 def test_o_resultado_sai_igual_sem_a_medida(

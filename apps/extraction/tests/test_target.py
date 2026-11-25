@@ -82,6 +82,43 @@ def test_o_xml_inteiro(task: Task) -> None:
     assert max(len(xml.encode()) for xml in copied.values()) > 1_048_576
 
 
+def test_o_valor_com_dez_casas_e_arredondado_e_contado(task: Task) -> None:
+    report = task.feed("arredonda.jsonl", {"teste_decimal": "TESTE"})
+    assert report["failed"] is None
+    assert report["tables"]["teste_decimal"] == {"read": 7, "written": 7, "rounded": 5}
+    lake = task.lake.load_table(("raw", "teste_decimal")).scan().to_arrow()
+    assert str(lake.schema.field("valor").type) == "decimal128(38, 9)"
+    assert dict(
+        zip(lake.column("codigo").to_pylist(), lake.column("valor").to_pylist(), strict=True)
+    ) == {
+        1: Decimal("0.123456789"),
+        2: Decimal("0.123456790"),
+        3: Decimal("1.5"),
+        4: Decimal("-0.123456790"),
+        5: Decimal("0.333333333"),
+        6: None,
+        7: Decimal("0.123456789"),
+    }
+
+
+def test_a_escala_do_dicionario(task: Task) -> None:
+    report = task.feed("escala-declarada.jsonl", {"teste_decimal": "TESTE"})
+    assert report["failed"] is None
+    assert report["tables"]["teste_decimal"]["rounded"] == 0
+    lake = task.lake.load_table(("raw", "teste_decimal")).scan().to_arrow()
+    assert str(lake.schema.field("valor").type) == "decimal128(18, 4)"
+    assert sorted(lake.column("valor").to_pylist()) == [
+        Decimal("0.5000"),
+        Decimal("1234567890123.1234"),
+    ]
+
+
+def test_a_escala_declarada_que_o_valor_quebra_derruba_o_lote(task: Task) -> None:
+    report = task.feed("escala-quebrada.jsonl", {"teste_decimal": "TESTE"})
+    assert report["failed"] == {"table": "teste_decimal"}
+    assert task.lake.load_table(("raw", "teste_decimal")).scan().to_arrow().num_rows == 0
+
+
 def test_o_valor_que_nao_cabe(task: Task) -> None:
     report = task.feed("nao-cabe.jsonl", {"teste_numero": "TESTE"})
     assert report["failed"] == {"table": "teste_numero"}
