@@ -1,5 +1,6 @@
 import type { Server, Socket } from 'node:net'
 import { connect, createServer } from 'node:net'
+import { pipeline } from 'node:stream'
 import pg from 'pg'
 import type { Config } from './config.ts'
 import type { MastraPool } from './database.ts'
@@ -80,16 +81,7 @@ export async function mastraDoor(url: { reveal(): string }, outage: Outage) {
       socket.on('close', () => sockets.delete(socket))
       if (!reaching) return
       const upstream = connect(Number(target.port), target.hostname)
-      socket.pipe(upstream).pipe(socket)
-      // `pipe` ends the far leg only when the near one ends cleanly: a destroyed client left its
-      // connection to Postgres open, holding the database against its drop.
-      for (const [near, far] of [
-        [socket, upstream],
-        [upstream, socket],
-      ] as const) {
-        near.on('error', () => far.destroy())
-        near.on('close', () => far.destroy())
-      }
+      pipeline(socket, upstream, socket, () => undefined)
     })
     return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve(server)))
   }
