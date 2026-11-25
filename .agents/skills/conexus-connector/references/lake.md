@@ -31,12 +31,7 @@ A new file in the kit, `tables.ts`, gives `Connector` an optional `tables`:
     path into the row.
 - **One discovery**, `discoverTables`, read by both the connection window and `tap --discover`.
 - **One page reader**, `readTablePage`, for both sources and every filter (`ALL`, `SINCE`, `MONTH`),
-  with a page in rows and bytes (default 500 rows and 1 MiB; the Sankhya declares 5,000 rows). A TABLE
-  source's first page of each filter asks 10 rows, and every next page asks as many as fit the bytes
-  at the width just read, up to ten times the rows asked and the page's rows (`rowsAfter`). A 5xx or an
-  ended deadline makes the tap ask half the rows at the same point, down to one, and the cut binds the
-  rest of the pass; a 429 and a dead network repeat the same page. Each failed try writes one scalar
-  line to the tap's stderr, never the body (security S41).
+  with a page in rows and bytes (default 500 rows and 1 MiB; the Sankhya declares 5,000 rows).
 - **One name rule**, `lakeNameOf` and `suggestedLakeName`: the prefix plus the name, at most 60.
 - **Source failures** as kit codes (`COPY_SOURCE_NEEDS_REAUTH`, `COPY_SOURCE_REFUSED`,
   `COPY_SOURCE_UNREACHABLE`, `COPY_SOURCE_UNREADABLE`), never a body.
@@ -73,7 +68,9 @@ reads a `CopyTaskResult`.
 
 The kit audit of 2026-11-24 found three the card does not settle yet:
 
-- The tap tries a page 5 times and, on a 5xx or an ended deadline, asks fewer rows each time (issue 1400).
+- The task does not retry a passing 5xx. The singer-sdk retries 429 and 5xx (from the studies, not
+  reread at the source); with `STATE` per page the next run resumes, so the cost is one lost run. The audit asks
+  for a line in U4 on who retries and how many times.
 - The `OPERATION` source declares its columns by hand, and HubSpot, a spreadsheet, a SharePoint list
   and TOTVS need them discovered (K4 in [gaps](gaps.md)).
 - No exclusive credential copies before stage 5.
