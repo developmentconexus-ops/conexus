@@ -1,27 +1,36 @@
-# v0.24.122
+# v0.24.123
 
-Esta versão publica o que entrou no `main` em 24/11 depois da v0.24.121: o Caderno de uma ligação
-passa a só gravar com o sim de uma pessoa, e a conferência do Builder espera a tela terminar de
-carregar antes de olhar o app.
+Esta versão publica o que entrou no `main` em 24 e 25/11 depois da v0.24.122: o Conexus passa a
+assinar as respostas e o menu do Projeto ganha grupos, a segunda etapa do harness ("Uma sala e os
+nomes certos") avança por dentro, e o Lago ganha a base da primeira cópia, ainda sem tela.
 
-**O Caderno pede o sim.** Quando o Assistente ou o Builder quer guardar uma anotação no Caderno de uma
-ligação, a conversa mostra o cartão "Gravar no Caderno?" com o conceito, o mapeamento e a consulta, e
-nada é provado nem gravado antes da resposta.
+**O Conexus assina.** Em Construir, em Agentes e em Conversas, quem responde passa a ser o **Conexus**,
+com a marca dele. Um agente salvo continua assinando com o nome e o ícone dele. Os textos da tela e as
+frases de falha que citavam o Builder, o Construtor ou o Assistente agora dizem "Conexus". O botão que
+leva um pedido do Assistente para o app passa a se chamar "Mandar para Construir", e o outro, "Abrir
+em Construir".
 
-- Com o sim, a anotação é provada e gravada, e a página da ligação mostra "Aprovada por" e o nome de
-  quem aprovou. As anotações de antes mostram "Gravada sem aprovação".
-- Com o não, nada é gravado e a conversa segue.
-- Só quem gerencia as ligações pode aprovar. Para quem não gerencia, o cartão mostra "Peça a quem
-  gerencia a ligação." e não tem botões. Um membro de um Projeto sem esse direito deixa de gravar no
-  Caderno pelo Builder.
-- Se a ligação saiu, ou se a anotação foi recusada, o cartão diz isso em vez de gravar.
+**O menu do Projeto em grupos.** O menu lateral do Projeto tem quatro grupos com título: "O app",
+"Agentes", "Dados" e "O Projeto". Um membro do Projeto vê "Agentes" só com Conversas e "Dados" só com
+Integrações.
 
-**Builder.** Ao conferir o app no fim do turno, o Builder agora espera a tela sair do carregando antes
-de capturá-la. Antes, um app que montava devagar podia ser fotografado ainda no esqueleto, e um erro
-que chegava depois não entrava no relatório. Uma tela que nunca sai do carregando não reprova a
-conferência: a captura sai como está, dentro do mesmo limite de tempo de antes. No meio do turno, a
-linha da conferência que não pôde rodar passa a dizer "Não consegui conferir o app agora. Isso não diz
-nada sobre o app.", em vez de dizer que o código ficou guardado sem conferência, o que só vale no fim
-do turno.
+**Conversas.** Começar uma conversa, em qualquer um dos lugares, segue o mesmo caminho e a mesma
+recusa de antes. O menu de uma conversa só mostra as ações que a lista oferece: na lista do Assistente
+continuam **Renomear** e **Apagar**, e uma lista sem ação não mostra menu. Uma conversa do Construtor
+de agentes aberta pelo endereço antigo abre a mesma conversa no endereço novo, e quem não é dono dela
+vê a mesma tela de "não achada" nos dois.
 
-Segue a etapa O conector no padrão novo.
+**Automações.** O agendador deixa de apagar uma automação por uma falha passageira: só apaga depois de
+cinco conferências seguidas sem encontrá-la. Renomear o fluxo de uma automação continua apagando-a, em
+cerca de 50 segundos, e isso agora está dito na documentação.
+
+**O Lago.** A primeira cópia de uma ligação para o lago ganhou a base: o kit de conectores declara as
+tabelas que uma ligação copia, a tarefa que faz a cópia e a plataforma dela na AWS estão prontas, e o
+Hub guarda as cópias e deixa a empresa ler a sua linha do lago. Ainda não há tela nem rodada no Hub.
+Uma cópia de prova já rodou de dentro da AWS.
+
+**Por dentro.** O código do servidor e da web foi reorganizado por dono, a etapa O Builder vê o que
+construiu foi fechada e o método passou a juntar as unidades de uma etapa em poucos pull requests:
+organização interna, sem mudança no que a pessoa vê.
+
+Segue a etapa Uma sala e os nomes certos, e a parte 1 do Lago 2.
