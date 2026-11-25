@@ -218,28 +218,24 @@ def _measured(result: Result, machine: Machine | None) -> Result:
         return t.cast("Result", {**result, "machine": None})
 
 
-def _settled(spec: Spec, report: Mapping[str, t.Any], failed: Failed | None) -> list[str]:
-    """When a table fails, only the tables whose pass ended in this round enter `current`.
-
-    A pass that stopped midway leaves part of a month or of a table in `raw`, and replacing a
-    window by the months it brought would delete the rows not read yet.
-    """
+def _tables_safe_to_apply(
+    spec: Spec, report: Mapping[str, t.Any], failed: Failed | None
+) -> list[str]:
     names = [asked["name"] for asked in spec["tables"]]
     return names if failed is None else [name for name in names if name in report["ended"]]
 
 
-def _updated(
+def _update_unless_interrupted(
     spec: Spec,
     updater: Updater,
     plans: Mapping[str, Plan],
     guard: tuple[Stopping, StillOpen],
-    settled: Sequence[str],
+    safe: Sequence[str],
 ) -> tuple[dict[str, UpdateCounts], Failed | None] | None:
-    """`current` brought up to `raw` in the settled tables; null when closed or stopped."""
     stopping, still_open = guard
     counts: dict[str, UpdateCounts] = {}
     for asked in spec["tables"]:
-        if asked["name"] not in settled:
+        if asked["name"] not in safe:
             continue
         if stopping.asked:
             return None
@@ -324,9 +320,9 @@ def copied(
     if failure is None and code != 0:
         log("RUN_UNEXPLAINED", runId=spec["runId"], meltano=code)
         return None
-    settled = _settled(spec, report, failure)
+    safe = _tables_safe_to_apply(spec, report, failure)
     updater = Updater(load_catalog("lake", **catalog), athena)
-    updated = _updated(spec, updater, plans, guard, settled)
+    updated = _update_unless_interrupted(spec, updater, plans, guard, safe)
     if updated is None:
         return None
     counts, failed = updated

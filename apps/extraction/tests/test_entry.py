@@ -256,7 +256,7 @@ def test_a_tabela_que_falha_nao_trava_a_atual_das_que_terminaram(task: Task) -> 
 
 
 def test_a_falha_dita_e_a_da_tabela_mesmo_se_a_atualizacao_tambem_falha(task: Task) -> None:
-    _unwritable(task, "sankhya_itens")
+    _create_raw_with_mistyped_key(task, "sankhya_itens")
     task.athena.refuse = lambda sql: sql.startswith("MERGE")
     assert task.run(task.spec(NOTAS, ITENS, whole=False)) == 0
     assert task.aws.sent[-1]["outcome"]["table"] == "sankhya_itens"
@@ -264,7 +264,7 @@ def test_a_falha_dita_e_a_da_tabela_mesmo_se_a_atualizacao_tambem_falha(task: Ta
 
 
 def test_a_tabela_nunca_comecada_nao_trava_a_atual_das_que_terminaram(task: Task) -> None:
-    _unwritable(task, "sankhya_itens")
+    _create_raw_with_mistyped_key(task, "sankhya_itens")
     spec = task.spec(JANELA, ITENS, NOTAS, whole=False)
     assert task.run(spec) == 0
     [result] = task.aws.sent
@@ -284,7 +284,7 @@ def test_a_tabela_que_terminou_com_linhas_no_lote_entra_inteira(
     assert task.run(first) == 0
     before = _window_keys(task)
     monkeypatch.setenv("TARGET_CONEXUS_BATCH_SIZE_ROWS", "3")
-    _unwritable(task, "sankhya_notas_nfe")
+    _create_raw_with_mistyped_key(task, "sankhya_notas_nfe")
     second = task.spec(JANELA, NFE, whole=False, connection=first["connectionId"])
     assert task.run(second) == 0
     assert task.aws.sent[-1]["outcome"]["table"] == "sankhya_notas_nfe"
@@ -314,8 +314,7 @@ def test_a_falha_antes_do_primeiro_ponto_chega_no_resultado(task: Task) -> None:
     assert result["tables"][0]["rows"] is None
 
 
-def _unwritable(task: Task, name: str) -> None:
-    """A raw table whose key has another type, so the writer fails on that table."""
+def _create_raw_with_mistyped_key(task: Task, name: str) -> None:
     task.lake.create_table(("raw", name), schema=pa.schema([("nunota", pa.string())]))
 
 
@@ -326,7 +325,6 @@ def _window_keys(task: Task) -> list[str]:
 
 
 def _tap_stops_after(task: Task, kind: str) -> None:
-    """The tap's own lines up to the first of `kind`, then the reader's failure."""
     program = task.plugins / "tap-conexus"
     failure = {"code": "COPY_SOURCE_UNREACHABLE", "table": "", "system": None}
     tap = f'node "{TAP_DOUBLE}" --origin "{task.double.origin}" "$@"'

@@ -92,8 +92,7 @@ def _month_of(column: str) -> str:
     return f"substr(CAST({_name(column)} AS varchar), 1, 7)"
 
 
-def _slice(table: str, key: Sequence[str], mode: Mode, bounds: tuple[int, int]) -> str:
-    """The latest raw row of each key that has not entered `current`, by change, then arrival."""
+def _latest_unapplied(table: str, key: Sequence[str], mode: Mode, bounds: tuple[int, int]) -> str:
     keys = ", ".join(_name(column) for column in key)
     after, up_to = bounds
     changed = (
@@ -111,10 +110,8 @@ def _merges(
 ) -> list[str]:
     """One case per statement: Athena fails a `MERGE` of two cases on a wide table."""
     on = " AND ".join(f"a.{_name(column)} = s.{_name(column)}" for column in key)
-    head = (
-        f"MERGE INTO {_name(CURRENT)}.{_name(table)} a USING {_slice(table, key, mode, bounds)} s "
-        f"ON ({on}) "
-    )
+    source = _latest_unapplied(table, key, mode, bounds)
+    head = f"MERGE INTO {_name(CURRENT)}.{_name(table)} a USING {source} s ON ({on}) "
     sets = ", ".join(f"{_name(c)} = s.{_name(c)}" for c in columns if c not in key)
     names = ", ".join(_name(column) for column in columns)
     values = ", ".join(f"s.{_name(column)}" for column in columns)
@@ -170,12 +167,10 @@ class Updater:
             for statement in _merges(table, key, columns, mode, bounds):
                 self._athena.run(statement)
         if whole:
-            scope = ""
-            if mode["kind"] == "WINDOW" and since is not None:
-                scope = f" AND {_month_of(mode['column'].lower())} >= '{since[:7]}'"
-            self._athena.run(self._absent(table, int(t.cast("str", complete))) + scope)
+            version = int(t.cast("str", complete))
+            self._athena.run(self._delete_older_than_pass(table, mode, version, since))
         elif mode["kind"] == "WINDOW" and top > after:
-            self._athena.run(self._absent_in_months(table, mode, bounds))
+            self._athena.run(self._delete_unwritten_in_brought_months(table, mode, bounds))
         saved = {UP_TO: str(bounds[1])}
         if whole:
             saved[APPLIED] = t.cast("str", complete)
@@ -188,12 +183,17 @@ class Updater:
         rows = self._athena.number(f"SELECT count(*) FROM {_name(CURRENT)}.{_name(table)}")
         return UpdateCounts(rows=rows, whole=whole)
 
-    def _absent(self, table: str, version: int) -> str:
-        """A row the whole pass did not rewrite keeps an older version: the source lost it."""
-        return f"DELETE FROM {_name(CURRENT)}.{_name(table)} WHERE {VERSION} < {version}"
+    def _delete_older_than_pass(
+        self, table: str, mode: Mode, version: int, since: str | None
+    ) -> str:
+        older = f"DELETE FROM {_name(CURRENT)}.{_name(table)} WHERE {VERSION} < {version}"
+        if mode["kind"] != "WINDOW" or since is None:
+            return older
+        return f"{older} AND {_month_of(mode['column'].lower())} >= '{since[:7]}'"
 
-    def _absent_in_months(self, table: str, mode: Mode, bounds: tuple[int, int]) -> str:
-        """A window pass deletes, in the months it brought, the rows it did not rewrite."""
+    def _delete_unwritten_in_brought_months(
+        self, table: str, mode: Mode, bounds: tuple[int, int]
+    ) -> str:
         month = _month_of(mode["column"].lower())
         after, up_to = bounds
         return (

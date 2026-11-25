@@ -1340,13 +1340,15 @@ reference tool checks a read against its documentation.
   that is earlier, up to the current one, so a copy stopped for months misses none: Airbyte's
   `DatetimeBasedCursor` starts its `lookback_window` from the saved point
   (the `source-shipstation` connector's `manifest.yaml:116`, at `82db089b`), as dlt's `lag` does
-  (`dlt/extract/incremental/__init__.py:142`, at `8fa90a97`). The current layer follows the same
-  months: `_replace_months` (`apps/extraction/src/conexus_extraction/update.py`) deletes from the
-  current table every month from the first one the pass reached, up to the current month, before
-  the pass's rows go in, so a row the source dropped from a re-read month leaves the lake. A whole
-  pass deletes every month, or every month since the start date. Neither reference does it: the
-  AWS skill says to replace the partition (`EST/a0-alteracao-fiscais:166`, `:169`), and ours is
-  that replacement by month.
+  (`dlt/extract/incremental/__init__.py:142`, at `8fa90a97`). The current layer takes the months
+  from the rows themselves: after the `MERGE` statements,
+  `Updater._delete_unwritten_in_brought_months`
+  (`apps/extraction/src/conexus_extraction/update.py`) deletes, in the months the new raw rows
+  brought, the current rows they did not rewrite, so a row the source dropped from a re-read month
+  leaves the lake. A whole pass deletes the current rows of an older version, in a window table
+  only in the months since the start date. The form is dlt's `merge_key`, which limits the deletes
+  to the partitions of the loaded rows (`docs/website/docs/general-usage/merge-loading.md:968-984`,
+  at `8fa90a97`).
 - **Why.** The fiscal tables have no change column, and the A0D measurement read 3,140 rows per
   second by month against 442 without the window (`EST/a0d-sankhya-kit-mes:93-106`). The month
   window is our extension of decision 0080.
@@ -1358,8 +1360,9 @@ reference tool checks a read against its documentation.
   `kernel/conformance.test.ts`, "a declaração por tabela", refuses a window on a column that is not
   a date.
 - **Not proved.** The count on the real Oracle: the double runs the same SQL in SQLite. The
-  replacement of months on Athena (the double runs it in DuckDB): L.7. A month emptied in the
-  source that is older than the re-read months stays in the lake until a whole pass.
+  delete by month on Athena (the double runs it in DuckDB): L.7. A month the source emptied whole
+  brings no row, so it stays in the lake until a whole pass, the limit dlt documents for an empty
+  snapshot (`merge-loading.md:999-1003`).
 - **Revisit when** `singer-sdk` or `meltano` gains a partition or window mode.
 
 ## Connectors (A primeira cópia chega ao lago): the current layer, one case a statement
@@ -1378,7 +1381,12 @@ reference tool checks a read against its documentation.
   update rewrites every matched row of the slice. The slice is the newest row of each key between the point of the
   last update (`conexus.atualizado_ate`) and the highest `_sdc_sequence`, so a repeated update
   finds nothing new. A new column in the raw table reaches the current one before the first
-  statement (`union_by_name`).
+  statement (`union_by_name`). After a whole pass, one `DELETE` drops the current rows of a
+  version older than the pass (`_sdc_table_version`), the form of singer-sdk 0.54.9
+  `delete_old_versions` (`singer_sdk/sql/connector.py:1883`). In a round where a table fails, only
+  the tables whose pass ended, with their batch written, are updated: Airbyte runs the upsert of
+  every stream and skips only what destroys (`DestinationLifecycle.kt:82-88`,
+  `DirectLoadTableStreamLoader.kt:122-140`, `:263-275`, at `82db089b`).
 - **Why.** Decision 0080: the raw table appends, the current one follows the mode. One case a
   statement is the form that passed on 450 columns.
 - **Proof.** `apps/extraction/tests/test_update.py`, "a atual segue a fonte" (the source's note,

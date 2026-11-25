@@ -310,11 +310,9 @@ def test_a_data_mais_nova_nao_apaga_a_janela(task: Task) -> None:
     assert len(now) == len(october)
 
 
-def _raw_row(task: Task, nunota: int, **values: t.Any) -> None:
-    """A raw row of a note `current` already has, with `values` set and the newest sequence."""
+def _append_changed_note_to_raw(task: Task, nunota: int, **values: t.Any) -> None:
     rows = task.lake.load_table(("current", "sankhya_notas")).scan().to_arrow()
     row = rows.filter(pc.equal(rows["nunota"], nunota))
-    values.setdefault("_sdc_sequence", 10**15 + len(task.athena.statements))
     for column, value in values.items():
         at = row.schema.get_field_index(column)
         row = row.set_column(at, column, pa.array([value], type=row.schema.field(column).type))
@@ -337,8 +335,12 @@ def test_a_mesma_chave_duas_vezes_fica_com_a_mudanca_mais_nova(task: Task) -> No
     [nunota, *_] = _keys(task)
     newer = datetime(2026, 11, 20, tzinfo=UTC)
     older = datetime(2026, 11, 1, tzinfo=UTC)
-    _raw_row(task, nunota, dtalter=newer, vlrnota=Decimal("5"), _sdc_sequence=10**15 + 1)
-    _raw_row(task, nunota, dtalter=older, vlrnota=Decimal("7"), _sdc_sequence=10**15 + 2)
+    _append_changed_note_to_raw(
+        task, nunota, dtalter=newer, vlrnota=Decimal("5"), _sdc_sequence=10**15 + 1
+    )
+    _append_changed_note_to_raw(
+        task, nunota, dtalter=older, vlrnota=Decimal("7"), _sdc_sequence=10**15 + 2
+    )
     _update_notas(task)
     [row] = [r for r in _rows(task, "current", "sankhya_notas") if r["nunota"] == nunota]
     assert row["vlrnota"] == Decimal("5")
