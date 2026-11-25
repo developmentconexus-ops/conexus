@@ -24,7 +24,7 @@ test('a data inicial: mostra a data da cópia e, salva uma mais nova, diz que va
     ),
   ).toBeTruthy()
   expect(sent.find((one) => one.method === 'PUT')?.body).toMatchObject({ startDate: '2022-01-01' })
-  expect(within(section).getAllByText('Desde 01/01/2022')).toHaveLength(2)
+  expect(within(section).getAllByText('· desde 01/01/2022')).toHaveLength(2)
 })
 
 test('a data inicial: uma mais antiga, ou vazia, diz que as próximas rodadas seguem de onde pararam e como trazer as linhas', async () => {

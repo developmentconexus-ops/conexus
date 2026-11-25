@@ -13,6 +13,7 @@ import { ReadFailure } from '../../ui/states.tsx'
 import { CopiedTables } from './lake-copied.tsx'
 import {
   CHOOSE_WHAT,
+  chooseLeadText,
   LAKE_TABLES,
   LINES_STAY,
   NOTHING_COPIED,
@@ -41,7 +42,9 @@ function NoCopy(props: {
       {notReady ? (
         <p className="max-w-message text-text-2">{sentenceOfCode('COPY_LAKE_NOT_READY')}</p>
       ) : (
-        <p className="max-w-message text-text-2">{LINES_STAY}</p>
+        <p className="max-w-message text-text-2">
+          {may.manageCopies ? chooseLeadText(props.entry.name) : LINES_STAY}
+        </p>
       )}
       {!notReady && (
         <div className="flex flex-col items-start gap-sm">
