@@ -25,9 +25,15 @@ const SHARED = { version: '1.0.0', summary: 'Resumo.', logo: LOGO, subjects: [],
 const ASK = 'Peça ao dono ou a um administrador.'
 
 const catalog = [
-  { id: 'sankhya', name: 'Sankhya', category: 'ERP', auth: 'client_credentials' },
-  { id: 'mercado-livre', name: 'Mercado Livre', category: 'Marketplace', auth: 'oauth2_code' },
-].map((one) => ConnectorEntry.parse({ ...one, ...SHARED }))
+  { id: 'sankhya', name: 'Sankhya', category: 'ERP', auth: 'client_credentials', lake: null },
+  {
+    id: 'mercado-livre',
+    name: 'Mercado Livre',
+    category: 'Marketplace',
+    auth: 'oauth2_code',
+    lake: 'EXCLUSIVE_CREDENTIAL',
+  },
+].map((one) => ConnectorEntry.parse({ ...one, lakeUnavailable: one.lake, ...SHARED }))
 
 const LineShape = ListShape.shape.connectors.element.shape.connections.element
 type Line = ProjectConnections['connectors'][number]['connections'][number]

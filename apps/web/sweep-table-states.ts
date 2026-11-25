@@ -6,6 +6,7 @@ import {
   listProjects,
 } from '@conexus/hub-api'
 import { failure, ok } from './layout-harness.ts'
+import { SANKHYA } from './src/hub/connectors/fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
@@ -33,7 +34,7 @@ function dataPage(connections: (typeof MATRIZ)[]) {
     ...OWNER,
     ...projectsPage(COMPANY.id),
     [`GET ${COMPANY_API}/connections`]: ok(listConnections, {
-      connectors: [],
+      connectors: [SANKHYA],
       connections,
       mayManage: true,
     }),
