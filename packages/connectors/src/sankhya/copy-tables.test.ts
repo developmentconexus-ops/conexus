@@ -10,7 +10,7 @@ import {
   tableCeiling,
   tableMonths,
 } from '../index.ts'
-import { sendTo, tableReachOf } from '../kernel/conformance-tables.ts'
+import { sendTo, tableReachOf, walkTable } from '../kernel/conformance-tables.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import { sankhya } from './definition.ts'
 import {
@@ -159,8 +159,8 @@ test('a página em bytes: no máximo as linhas da página, menos linhas depois d
   } while (after !== null)
   assert.deepEqual(
     asked,
-    [2, 1, 1],
-    'a primeira passou de 1 MiB com o XML grande; as seguintes pedem uma',
+    [2, 1, 2],
+    'a primeira passou de 1 MiB com o XML grande; a seguinte pede uma; a linha estreita volta às duas',
   )
   assert.equal(rows.length, 3)
   assert.equal(rows[1]?.XML?.length, LARGE_XML_BYTES, 'o XML inteiro')
@@ -184,15 +184,9 @@ test('o teto da coluna de alteração: o maior valor da tabela no texto da pági
   const table = tableOf('notas')
   const columns = await columnsOf('notas')
   const before = await tableCeiling({ ...reach, table, columns })
-  const page = await readTablePage({
-    ...reach,
-    table,
-    columns,
-    filter: { kind: 'ALL' },
-    after: null,
-  })
-  if (page.kind !== 'PAGE' || before.kind !== 'CEILING') return assert.fail()
-  const read = page.rows.map((row) => row.DTALTER ?? '').sort()
+  const rows = await walkTable(reach, table, { kind: 'ALL' }, columns)
+  if (before.kind !== 'CEILING') return assert.fail()
+  const read = rows.map((row) => row.DTALTER ?? '').sort()
   assert.equal(before.value, read.at(-1), 'o maior DTALTER, como a página o escreve')
   await fake.handle(
     new Request(new URL('/__teste/notas/100000', sankhya.origin), {
@@ -281,5 +275,8 @@ test('a coluna que o dicionário não lista: a descoberta a traz pelo tipo do Or
     code: 'COPY_SOURCE_UNREADABLE',
     system: null,
     waitMs: null,
+    smaller: false,
+    rows: null,
+    bodyBytes: null,
   })
 })

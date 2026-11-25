@@ -669,7 +669,7 @@ velha, que passa ao índice do kit.
 | --- | --- | --- | --- | --- |
 | 9 | U3 | O Sankhya declara as tabelas que as sondas fecharam (as 42 de `SK` seção 1 e as candidatas que a P1 achou), cada uma com o nome sugerido, o rótulo, a descrição, o grupo, a origem, a chave e o modo. `notas`: `sankhya_notas`, "Notas e pedidos", o grupo `vendas`, a origem `TGFCAB`, a chave `NUNOTA`, só o que mudou por `DTALTER`. `parceiros`: só o que mudou por `DTALTER`, cadastro (a data inicial não a limita); o mesmo para `produtos`, `vendedores` e `precos_tabelas`. A data inicial compara com a coluna pela qual cada tabela segue: `DTALTER` em `notas`, `notas_itens` e `financeiro`, `DHALTER` em `notas_impostos`, a coluna da janela nas de janela. `efd_st_media_diaria`: janela por mês de `DTREF`. `notas_nfe`: inteira, sem histórico, a coluna do XML descoberta como texto e o significado dela declarado como metadado (`NFE_XML`). O gancho `descobrirTabelas` devolve, do dicionário do dublê, a descrição da tabela e cada coluna com nome, tipo e descrição; uma tabela que o dicionário não tem volta ausente, nunca inventada | `packages/connectors/src/sankhya/copy-tables.test.ts`, com o dublê | must |
 | 10 | U3 | A conformidade recusa: dois nomes sugeridos iguais num conector; um nome fora do padrão (português, minúsculas, até 40); a mesma origem duas vezes com uma coluna em comum que não seja da chave; uma chave, coluna de alteração ou coluna de janela fora das colunas; uma janela sem coluna de data; uma tabela de colunas descobertas num conector sem gancho; uma tabela de operação sem colunas; um grupo que não é assunto do conector; uma coluna declarada que começa por `_`, que é do motor (T.41) | `packages/connectors/src/kernel/conformance.test.ts` (novo), "a declaração por tabela" | must |
-| 11 | U3 | A leitura de uma tabela pede no máximo as linhas da página do conector; quando a resposta passa dos bytes da página, a próxima página pede menos linhas; uma tabela de 450 colunas do dublê lê inteira, sem teto de colunas | `packages/connectors/src/sankhya/copy-tables.test.ts`, "a página em bytes" | must |
+| 11 | U3 | A leitura de uma tabela pede no máximo as linhas da página do conector; a primeira página pede 10 linhas e as seguintes pedem as linhas que cabem nos bytes da página, nos dois sentidos; uma tabela de 450 colunas do dublê lê inteira, sem teto de colunas | `packages/connectors/src/sankhya/copy-tables.test.ts`, "a página em bytes"; `copy-tables-page.test.ts` | must |
 | 16 | U3 | Entre duas leituras, o dublê do Sankhya altera, cria e apaga uma nota e muda o XML de uma NF-e, e o do HubSpot altera e remove um negócio, por rotas que só o dublê tem; o modo real não as tem | `packages/connectors/src/sankhya/fake.test.ts` e `hubspot/fake.test.ts` (novo), "o registro muda entre duas leituras" | must |
 | 86 | U3 | `readTablePage` lê uma página de qualquer tabela declarada, pelas duas origens: a da tabela, pela leitura do conector (o Sankhya), e a da operação, pela paginação `list` da operação (o negócio do HubSpot); a última página diz que acabou, e uma recusa da fonte volta como um dos quatro códigos de `TABLE_SOURCE_FAILURES`, nunca o corpo | `packages/connectors/src/kernel/tables.test.ts` (novo), contra os dublês do Sankhya e do HubSpot | must |
 | 85 | U3, U8 | A parte gerada da skill de uma ligação lista as tabelas que ela copia com o nome que a empresa deu (`sankhya_vendas`, se a pessoa trocou), o rótulo, a descrição e a origem; numa tabela que a data limita, "desde <data>"; uma tabela não marcada não aparece; a frase diz que a tabela traz só aquela ligação | `packages/connectors/src/kernel/skill.test.ts` (novo), "as tabelas com o nome da empresa"; `apps/server/src/hub/copies/lake-routes.test.ts`, "a skill com os nomes reais" | must |
@@ -738,7 +738,7 @@ velha, que passa ao índice do kit.
 | 103 | U10 | Numa tabela de janela, depois da passada da janela, a atual tem nos meses da janela exatamente as linhas da fonte, e a linha que saiu da janela na fonte sai da atual; os meses fora da janela ficam. Numa tabela inteira, a atual é a última passada | `test_update.py`, "a janela troca o que leu" e "a inteira troca tudo" | must |
 | 59 | U10 | Depois de cada atualização, a bruta não tem mais as linhas que já entraram na atual, nem as passadas inteiras anteriores; a atual não muda com a limpeza (decisão A) | `test_update.py`, "a limpeza"; Lab (L.7) | must |
 | 106 | U3, U4, U5 | Uma regra só, para todo conector, pelo tipo que a descoberta lê: `CLOB`, `NCLOB` e `LONG` viram texto; `BLOB`, `RAW` e `LONG RAW` viram o tipo binário do Iceberg, com os bytes iguais aos da fonte; nenhuma coluna se marca como arquivo à mão. O significado declarado de uma coluna (`NFE_XML`) vai às propriedades da tabela (`conexus.significado.<coluna>`) e não muda a cópia | `sankhya/copy-tables.test.ts`, "o tipo da coluna"; `tap.test.ts`, "o binário"; `test_target.py`, "o binário chega igual" | must |
-| 115 | U4 | Uma página que responde 5xx, 429 (`BUSY`, esperando o `waitMs` que o provedor pediu) ou cai por erro de rede e depois responde é lida e emitida uma vez, sem `TapFailure`; a que falha cinco vezes escreve `COPY_SOURCE_UNREACHABLE` e a tabela em que parou e sai com código diferente de zero, com a espera crescendo entre as tentativas (relógio de teste); um 4xx que não é 429 não é repetido | `apps/extraction/tap/src/tap.test.ts`, "a página que cai e volta" | must |
+| 115 | U4 | Uma consulta (o teto, a contagem por mês) que responde 5xx, 429 (`BUSY`, esperando o `waitMs` que o provedor pediu) ou cai por erro de rede e depois responde é lida e emitida uma vez, sem `TapFailure`; a que falha cinco vezes escreve `COPY_SOURCE_UNREACHABLE` e a tabela em que parou e sai com código diferente de zero, com a espera crescendo entre as tentativas (relógio de teste); um 4xx que não é 429 não é repetido. Uma página que responde 5xx ou estoura o prazo pede metade das linhas no mesmo ponto, o corte vale até o fim da tabela e fica no `STATE`, sem pular linha; no piso de 1 linha são as 5 tentativas; o 429 não corta; cada tentativa deixa uma linha de log sem o corpo | `apps/extraction/tap/src/tap-pass.test.ts`, "a consulta que cai e volta"; `tap-reduce.test.ts` | must |
 | 104 | U10 | Nenhuma tabela guarda histórico nesta etapa (o fundador, 2026-11-24, 16:19Z: "Outra coisa sobre o histórico de NFE, vamos deixar sem o histórico, porque eu acho que o jeito que você está querendo montar o histórico não é como as referências fazem."): a limpeza lê o `history` da declaração e roda também na tabela dos dados da NF-e, com o XML. Depois de duas passadas que leem a mesma nota com XML diferente (a segunda forçada inteira no teste), a atual tem a versão nova e a bruta não guarda mais as linhas que já entraram nela; uma nota apagada no dublê sai da atual na passada inteira. Numa tabela de teste com `history: true`, a limpeza não roda | `test_update.py`, "o XML sem histórico" e "a limpeza pula o histórico", pela entrada da tarefa com o modo da declaração | must |
 | 105 | U5, U10 | Todas as colunas, atuais e futuras: uma coluna que aparece na fonte depois da primeira carga (o dublê acrescenta uma `AD_` entre duas rodadas) entra na rodada seguinte na bruta e na atual, com as linhas antigas nulas nela, e na aba **Colunas**; uma coluna que some da fonte fica no lago, nula nas linhas novas | `apps/extraction/tests/test_target.py`, "a coluna nova"; `test_update.py`, "a coluna nova na atual"; `lake-run.test.ts`, "as colunas de novo" | must |
 | 60 | U10 | O Hub pede `whole` para uma tabela recém-marcada; a tarefa lê inteira também a tabela sem ponto de parada no estado e a sem coluna de alteração, e o resultado diz `whole` por tabela; as outras leem só o que mudou ou a janela; **Rodar agora** segue o mesmo | `apps/extraction/tests/test_state.py`, "o modo por tabela"; `lake-run.test.ts`, "a tabela nova é inteira" | must |
@@ -2013,8 +2013,13 @@ export function readTablePage(
 - **O esquema de cada entrada externa** (C27): a resposta do dicionário e a da contagem por mês, com
   Zod, antes de virar `DiscoveredTable`; uma coluna de tipo que o mapa não conhece vem como `text`,
   com o tipo do dicionário na descrição.
-- **A página em bytes**: o leitor pede `limit` linhas; se a resposta passou dos `bytes`, a próxima
-  pede `floor(limit * bytes / tamanho)`, nunca menos que 1; sem teto de colunas.
+- **A página em bytes** (o fundador, 2026-11-25: "vamos fazer o basico que e copiar as referencias"):
+  a primeira página de uma tabela pede 10 linhas, pois a largura de uma linha só se sabe depois de
+  lida; da segunda em diante o leitor mede os bytes nos dois sentidos, e a próxima pede as linhas
+  que cabem em `bytes` na largura média da página lida, no máximo 10 vezes as linhas pedidas e as
+  da página do conector, nunca menos que 1; sem teto de colunas. Um 5xx ou um prazo estourado
+  (`smaller` no `TableReadFailed`) pede à repetição metade das linhas no mesmo ponto, e o corte vale
+  até o fim da tabela (o `ceiling` da passada, no `STATE`); o 429 e a rede não cortam.
 - **As rotas de teste dos dublês**: `POST /__teste/notas/<id>`, `POST /__teste/nfe/<id>` e
   `POST /__teste/colunas` (acrescenta uma coluna `AD_`) no Sankhya e `POST /__teste/negocios/<id>` no
   HubSpot, só no modo dublê (T29). O dicionário, a contagem por mês e a página da `TGFNFE` com o XML
@@ -2165,14 +2170,21 @@ especificação do Singer que ela cita.
    em ordem, uma página por vez pela leitura de página do kit (`readTablePage`, U3), com a página do
    conector, `STATE` depois de cada página, a versão da passada, `ACTIVATE_VERSION` no fim de cada tabela.
    O filtro de cada tabela segue o modo, como acima. A recusa da fonte escreve `TapFailure` e sai com
-   código 1. Antes dela, uma página que dá `UNREACHABLE` (um 5xx ou um erro de rede) é repetida pelo
-   adaptador, e a repetição é dele, e não da sessão nem do executor do Hub: até 5 tentativas no total,
+   código 1. Antes dela, uma página que dá `UNREACHABLE` (um 5xx, um prazo estourado ou um erro de rede) é repetida pelo
+   adaptador, e a repetição é dele, e não da sessão nem do executor do Hub: o 5xx e o prazo pedem a
+   metade das linhas no mesmo ponto (`smaller`), com a primeira espera, e o corte vale até o fim da
+   tabela (Airbyte `source-github`, `manifest.yaml:18282-18297`); no piso de 1 linha, e no 429 e na
+   rede, até 5 tentativas no total,
    com espera crescente de `backoff.expo(factor=2)` e jitter, como o `RESTStream` do singer-sdk
    (`singer-sdk@0.54.9 singer_sdk/streams/rest.py:334-340`, o 5xx e o 429, pois `extra_retry_statuses` é
    `[429]` em `:158`; `:397-409`, os erros de rede e `max_tries`; `:867-875`, a espera e as 5 tentativas;
    `:894`, o jitter). No kit o 429 é `BUSY` (`kernel/operation.ts:76-79`): entra nas mesmas 5 tentativas,
    esperando o que o provedor pediu (`waitMs`) quando pediu. Um 4xx que não é 429 não é repetido
-   (`:341-347`). Só a quinta falha escreve o `TapFailure`. Com `STATE` por página, a rodada seguinte
+   (`:341-347`). Só a quinta falha, no piso de 1 linha, escreve o `TapFailure`; cada tentativa deixa uma
+   linha no stderr, com tabela, linhas pedidas e próximas, tentativa, espera, status, código e bytes
+   do corpo, nunca o corpo (S41). Cada pedido ao Sankhya tem um prazo de 120 s, um palpite até uma
+   cópia real medir a página mais lenta. As consultas do teto e da contagem por mês seguem as 5
+   tentativas, sem corte. Com `STATE` por página, a rodada seguinte
    retoma do ponto, e uma página repetida não duplica dado.
    - **Testes:** `tap.test.ts` contra os dublês; `test_tap_battery.py` roda a bateria do singer-sdk.
    - **Mutações à mão:** emitir o `STATE` antes do `RECORD` da página: a bateria fica vermelha; comparar o

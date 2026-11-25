@@ -101,6 +101,7 @@ export {
   tablePrefixOf,
 } from './kernel/tables.ts'
 export {
+  type PageAsk,
   type TablePageRead,
   type TableReach,
   type TableStop,

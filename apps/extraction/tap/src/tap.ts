@@ -38,7 +38,10 @@ type Config = z.infer<typeof Config>
 
 const Secret = z.record(z.string(), z.string())
 
-export type TapDeps = PassDeps & Readonly<{ fetch: typeof fetch }>
+export type TapDeps = PassDeps & Readonly<{ fetch: typeof fetch; timeoutMs: number }>
+
+/** The deadline of one request to the source. singer-sdk's `RESTStream` takes 300 s and dlt 60 s; 120 s is a guess between those two, until a real copy measures the slowest page. */
+export const REQUEST_TIMEOUT_MS = 120_000
 
 const ABOUT = {
   name: 'tap-conexus',
@@ -59,7 +62,12 @@ async function withReach(
   const connector = connectorOf(config.connector)
   if (connector?.tables === undefined) throw new Error(`No tables of ${config.connector}`)
   const credential = await jsonFile(config.secret_path, Secret)
-  const send = senderOf(connector, { fetch: deps.fetch, credential, now: deps.now })
+  const send = senderOf(connector, {
+    fetch: deps.fetch,
+    credential,
+    now: deps.now,
+    timeoutMs: deps.timeoutMs,
+  })
   const session = sessionFor(connector, { credential, send, now: deps.now })
   const signal = new AbortController().signal
   try {
@@ -70,16 +78,24 @@ async function withReach(
 }
 
 async function columnsOf(reach: TableReach, connector: Connector, deps: TapDeps) {
-  const signed = await tried(async () => {
-    const token = await reach.session.token(reach.signal)
-    return typeof token === 'string' ? { kind: 'SIGNED' as const } : tableFailureOf(token)
-  }, deps)
+  const signed = await tried(
+    async () => {
+      const token = await reach.session.token(reach.signal)
+      return typeof token === 'string' ? { kind: 'SIGNED' as const } : tableFailureOf(token)
+    },
+    deps,
+    '',
+  )
   if (signed.kind === 'FAILED') return { kind: 'FAILED' as const, failure: signed }
-  const listed = await tried(async () => {
-    const found = await discoverTables({ ...reach, connector })
-    const away = found.find(({ failed }) => failed?.code === 'COPY_SOURCE_UNREACHABLE')?.failed
-    return away ?? { kind: 'FOUND' as const, found }
-  }, deps)
+  const listed = await tried(
+    async () => {
+      const found = await discoverTables({ ...reach, connector })
+      const away = found.find(({ failed }) => failed?.code === 'COPY_SOURCE_UNREACHABLE')?.failed
+      return away ?? { kind: 'FOUND' as const, found }
+    },
+    deps,
+    '',
+  )
   return listed.kind === 'FAILED' ? { kind: 'FAILED' as const, failure: listed } : listed
 }
 
@@ -198,4 +214,8 @@ if (import.meta.main)
     sleep: (ms) => sleep(ms),
     random: Math.random,
     write: writeLine,
+    log: (line) => {
+      process.stderr.write(`${line}\n`)
+    },
+    timeoutMs: REQUEST_TIMEOUT_MS,
   })

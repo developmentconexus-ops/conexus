@@ -121,9 +121,13 @@ test('duas tabelas numa rodada: só as escolhidas, uma depois da outra, com o no
     ],
   })
   assert.equal(run.code, 0)
-  const order = run.messages.flatMap(({ type, stream }) =>
-    type === 'RECORD' ? [] : [`${type}${stream === undefined ? '' : ` ${stream}`}`],
-  )
+  const order = run.messages
+    .flatMap(({ type, stream }) =>
+      type === 'RECORD' ? [] : [`${type}${stream === undefined ? '' : ` ${stream}`}`],
+    )
+    .filter(
+      (message, at, all) => message !== 'STATE' || all[at - 1]?.startsWith('ACTIVATE_VERSION'),
+    )
   assert.deepEqual(order, [
     'SCHEMA vendas_notas',
     'ACTIVATE_VERSION vendas_notas',

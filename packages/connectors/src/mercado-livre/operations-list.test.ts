@@ -225,7 +225,15 @@ test('a varredura passa de mil', async () => {
     const table = tableOf(anuncios, [...id])
     return readTablePage({ ...answering, table, columns: [], filter: { kind: 'ALL' }, after: null })
   }
-  const unreadable = { kind: 'FAILED', code: 'COPY_SOURCE_UNREADABLE', system: null, waitMs: null }
+  const unreadable = {
+    kind: 'FAILED',
+    code: 'COPY_SOURCE_UNREADABLE',
+    system: null,
+    waitMs: null,
+    smaller: false,
+    rows: null,
+    bodyBytes: null,
+  }
   assert.deepEqual(
     await pageOf({ paging: { total: 9, offset: 0, limit: 1 } }),
     unreadable,

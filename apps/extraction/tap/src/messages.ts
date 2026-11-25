@@ -34,6 +34,7 @@ const Pass = z.object({
   at: z.int().min(0),
   after: TablePosition.nullable(),
   point: z.string().nullable(),
+  ceiling: z.int().min(1).optional(),
 })
 export type Pass = z.infer<typeof Pass>
 
