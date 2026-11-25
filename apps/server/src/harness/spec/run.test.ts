@@ -101,6 +101,7 @@ test('uma marca que falta ou tem outro tipo é recusada, e a chave de outro tipo
     ['construtor', { ...construtor.metadata, conexusConstrutorCompany: undefined }],
     ['construtor', { ...construtor.metadata, conexusConstrutorProject: 7 }],
     ['construtor', { ...construtor.metadata, conexusConstrutorPerson: '' }],
+    ['construtor', { ...construtor.metadata, conexusConstrutorPerson: undefined }],
     ['assistant', { ...assistant.metadata, conexusAutomation: 'nao-e-um-id' }],
     ['assistant', { ...assistant.metadata, conexusProjectId: 'nao-e-um-id' }],
     ['assistant', construtor.metadata],
