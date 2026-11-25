@@ -1,5 +1,5 @@
 export type { AppDataPort } from './app-data/port.ts'
-export { appDataTools, builderAppDataTools } from './app-data/tools.ts'
+export { appDataReadAndCheckTools, appDataTools } from './app-data/tools.ts'
 export type { CompanyToolDeps, PrincipalDoor } from './company/factory.ts'
 export { byPrincipal, companyConnections, companyTools } from './company/factory.ts'
 export type { CompanyToolSeat } from './company/names.ts'

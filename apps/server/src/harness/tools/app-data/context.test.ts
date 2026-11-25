@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { assisting, talking } from '../../../agents/assistant/test-assistant.ts'
 import { endOf, started } from '../../routes/test-conversation.ts'
 import type { AppDataPort } from '../public.ts'
-import { appDataTools, builderAppDataTools } from '../public.ts'
+import { appDataReadAndCheckTools, appDataTools } from '../public.ts'
 
 const ID = {
   company: CompanyId.parse('c'.repeat(32)),
@@ -29,7 +29,7 @@ test('o mesmo app_data_read: o Builder e o agente oferecem a mesma descrição e
     }),
   )[AGENT_TOOL.appDataRead]
   const builder = Object(
-    builderAppDataTools({
+    appDataReadAndCheckTools({
       data: {
         access: () => Promise.reject(new Error('nothing is called')),
         read: () => Promise.reject(new Error('nothing is called')),

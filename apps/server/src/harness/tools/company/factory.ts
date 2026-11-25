@@ -8,7 +8,7 @@ import type { FailureLog } from '../../../platform/failure.ts'
 import { Failure } from '../../../platform/failure.ts'
 import type { DataBinding, RunScope } from '../../spec/public.ts'
 import { dataContextOf, principalOf } from '../../spec/public.ts'
-import { appDataTools, builderAppDataTools } from '../app-data/tools.ts'
+import { appDataReadAndCheckTools, appDataTools } from '../app-data/tools.ts'
 import type { ConnectorAccess, NoteSave } from '../connectors/connector-tools.ts'
 import { connectorTools } from '../connectors/connector-tools.ts'
 import { dataTools } from '../data/tools.ts'
@@ -154,7 +154,7 @@ function appDataOf(grant: AppDataGrant, thread: DataBinding['thread']): ToolsInp
     case 'READ':
       return appDataTools({ ...grant, thread })
     case 'READ_AND_CHECK':
-      return builderAppDataTools({ ...grant, thread })
+      return appDataReadAndCheckTools({ ...grant, thread })
     default:
       return grant satisfies never
   }

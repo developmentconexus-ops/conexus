@@ -14,7 +14,7 @@ import {
 import type { Sent } from '../../../platform/test-anthropic.ts'
 import { conversing, endOf, sent, started, streamOf } from '../../routes/test-conversation.ts'
 import { stepped } from '../../routes/test-questions.ts'
-import { builderAppDataTools } from '../public.ts'
+import { appDataReadAndCheckTools } from '../public.ts'
 
 const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 const DORA = { name: 'Dora Reis', email: 'dora@example.test' }
@@ -95,7 +95,7 @@ test('quem usa o Builder lê e conta: a página Dados segue de dono, administrad
 
 test('o Builder lê com o corte das leituras de conector', async (t) => {
   const on = await builderDataOn(t, SEED)
-  const tools = builderAppDataTools({ data: on.data, ids: on.ids(on.bruno), thread: null })
+  const tools = appDataReadAndCheckTools({ data: on.data, ids: on.ids(on.bruno), thread: null })
   const read = tools[APP_DATA_TOOL.read]
   assert.ok(read?.execute)
   const many = Object(await read.execute({ sql: 'select id, texto from recado order by id' }, {}))
@@ -116,7 +116,7 @@ test('Projeto sem banco: as duas ferramentas devolvem APP_DATA_NO_APP', async (t
   const bare = await post(on.hub, on.ana, on.projects, { name: 'Sem app' })
   assert.equal(bare.statusCode, 201, bare.body)
   const projectId = ProjectId.parse(String(Object(bare.json()).project.id))
-  const tools = builderAppDataTools({
+  const tools = appDataReadAndCheckTools({
     ...{ data: on.data, ids: { ...on.ids(on.ana), projectId } },
     thread: null,
   })
