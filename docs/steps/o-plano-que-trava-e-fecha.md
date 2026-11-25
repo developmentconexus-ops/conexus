@@ -93,7 +93,10 @@ features e como fazem e factory também que a utiliza e acrescenta". E a 4, que 
   leitura, confere os pedidos, até 20 rodadas, como a Factory. Custa uma chamada de modelo por fim candidato, na
   conta da empresa. Veredito: nativo.
 - **3. Onde entra o Code Mode da plataforma: (b), também no Construir.** As três conversas da plataforma e o
-  agente salvo usam a mesma peça.
+  agente salvo usam a mesma peça. Cada conversa roda o programa na sua própria máquina, porque as três têm uma ("o
+  assistente, ele tem sandbox, ué ... Pra mim eles teriam que ter a mesma harness", 2026-11-25). O resto dessa fala (o
+  Assistente como um computador para Python, PDF, Word, Excel, HTML, arquivos e imagens; o Construtor de agentes
+  rodando código e simulações) não entra nesta etapa: vai como pergunta ao estudo do `A6` e da harness comum.
 
   **O padrão do Mastra, rastreado.** O padrão nativo é o `createCodeMode` do `@mastra/core`, na página "Code mode"
   (`node_modules/@mastra/core/dist/docs/references/docs-agents-code-mode.md`, a mesma de mastra.ai em 2026-11-25) e na
@@ -135,7 +138,7 @@ features e como fazem e factory também que a utiliza e acrescenta". E a 4, que 
 | P1 | U2 | As guardas da escrita: o gancho da máquina recusa, em `plano`, escrever fora de `.conexus/plans/*.md`, e, em qualquer modo, reescrever um plano aprovado; o plano aprovado vai ao estado do fio (TURN-2); cada recusa diz o que fazer em vez dela; saem as frases do prompt e das skills que o código passa a garantir | `H/machine/`, `A/app-builder/`, `packages/app/skills/` | testing | U1 |
 | P1 | U3 | A pesquisa e o plano numerado: a skill do plano ganha a etapa Pesquisar e o modelo do plano os pedidos `P1…Pn`, as fases e as Referências; o ajudante `pesquisar` sobe ao comum e o Construir ganha o seu, só de leitura, com os sistemas e a `web_fetch` do Hub; o `submit_plan` recusa um plano sem pedidos numerados; a aprovação escreve uma tarefa por fase, com os pedidos dela, e liga o goal com o plano | `A/app-builder/`, `H/spec/`, `H/tools/research.ts`, `A/assistant/`, `packages/app/skills/` | testing | U2 |
 | P2 | U4 | O juiz das tarefas abertas nos quatro: a parte comum do `conexusCheck` sobe a `H/turn/`; o Assistente, o Construtor de agentes e o agente salvo a registram (o agente salvo ganha o `TaskSignalProvider`); a conferência do app fica do Construtor de apps; saem as frases de "rode `task_check` antes de terminar" | `H/turn/`, `A/*/` | testing | o fechamento da etapa 2 |
-| P2 | U5 | O Code Mode da plataforma pelo `createCodeMode` do core: uma ferramenta `execute_typescript` só de leituras por conversa, com a lista das leituras de cada uma; no Construir, o programa roda na máquina dele (`E2BCodeModeTransport`); nas Conversas e no Construtor de agentes, isolado no processo do Hub (`QuickJsCodeModeTransport`); o agente salvo passa à mesma peça | `H/tools/code-mode.ts`, `A/*/`, `apps/server/package.json` | testing | U4, P1 |
+| P2 | U5 | O Code Mode da plataforma pelo `createCodeMode` do core: uma ferramenta `execute_typescript` só de leituras por conversa, com a lista das leituras de cada uma, rodando na máquina da própria conversa (`E2BCodeModeTransport`) no Construir, nas Conversas e no Construtor de agentes; o agente salvo passa à mesma peça | `H/tools/code-mode.ts`, `A/*/` | testing | U4, P1 |
 | P2 | U6 | As recusas como erro da ferramenta (FERR-2 e AGT-7 da auditoria, issue 1016): a recusa do fornecedor chega ao modelo pelo caminho nativo do erro (C79), com uma dona | `H/tools/`, `A/*/` | testing | U4 |
 | P3 | U7 | O fim do plano na tela: o cartão do plano mostra cada pedido conferido ou aberto; a caixa diz que o Conexus espera a aprovação; o painel de tarefas mostra a fase e os pedidos | `apps/web/src/harness/room/`, `apps/web/src/agents/app-builder/`, `packages/hub-api/src/` | design | U3, o protótipo |
 
@@ -166,7 +169,7 @@ U6: 250 (menos 80: as três cópias de AGT-7). U7: 200. Total: 1.580 linhas, den
 | 13 | U3 | **Recusa.** O ajudante de pesquisa do Construir lê sistemas e a web e não escreve: uma escrita dele é recusada | `A/app-builder/research.test.ts` | must |
 | 14 | U5 | No Construir e nas Conversas, um `execute_typescript` lê duas tabelas do lago numa chamada; no Construtor de agentes, lê duas conexões; o resultado volta como `{success, result, logs}` | `H/tools/code-mode.test.ts` e o caso de cada agente | must |
 | 14a | U5 | **Recusa.** Nenhuma escrita está no programa: chamar de dentro dele `connector_note_save`, `agent_draft`, a escrita num sistema da empresa, `ask_user` ou `submit_plan` dá "função desconhecida"; as ferramentas da máquina, a web e as tarefas não estão | `H/tools/code-mode.test.ts` | must |
-| 14b | U5 | **Recusa.** Nas Conversas e no Construtor de agentes, o programa roda sem máquina: um programa que lê `process`, `require` ou `fetch` falha com `success: false`, e nenhuma máquina é ligada | `H/tools/code-mode.test.ts` | must |
+| 14b | U5 | O programa roda na máquina da conversa: um programa nas Conversas ou no Construtor de agentes com a máquina desligada liga a máquina (a fase "ligando" aparece na tela, como numa ferramenta da máquina) e só então roda | `H/tools/code-mode.test.ts` | must |
 | 15 | U6 | **Recusa.** A recusa de um fornecedor chega ao modelo como erro da ferramenta nos quatro agentes, com o corpo cortado | os testes de conector de cada agente, o caso de recusa | must |
 | 16 | U7 | Na tela, cada pedido do plano aprovado aparece conferido ou aberto no fim; enquanto o plano espera, a caixa diz que o Conexus espera a sua aprovação | `W/plan-card.test.tsx`; captura a 1366 e 390 px, os dois temas | must |
 | 17 | todas | O pedido ao modelo muda só onde as frases saem e as ferramentas entram | os quatro retratos `request.test.ts` | must |
@@ -217,7 +220,7 @@ Uma tela muda: o cartão do plano e a caixa. Protótipo antes, a 1366 e 390 px e
 | As frases que saem dos prompts | U2, U3, U4 | roteiro `A3`: "as frases saem dos prompts" | `builder.md:15`, `:29`; `construtor.md:12`; `assistant.md:43`; `conexus-plan-new/SKILL.md:69,75,77`; `conexus-plan-change/SKILL.md:80,86,88` | Mastra Code (outra) | o prompt do build não repete a trava que o código faz (`MC/agents/prompts/build.ts`), **lido** | nativo: a frase sai, o código garante | critérios 12, 17 | não precisa | — |
 | As recusas como erro da ferramenta | U6 | guia de código C79 | sucesso com texto (`B/connectors/connector-tools.ts:219-222`, `B/app-data/tools.ts:56-68`); três cópias no Construtor (AGT-7) | `@mastra/core@1.83.0` | só o lançamento marca erro (`tool-result-commit-core.ts:173`, pela auditoria), **lido** pela auditoria | nativo | critério 15 | não precisa | `H/tools/refusal.ts` |
 | O Code Mode da plataforma | U5 | 2026-11-24: "Sim colocar Code Mode COnexus da plataforma"; 2026-11-25: "3 B", "quero seguir o padrão da harness deles" e, na decisão 4, "B" | só o agente salvo com Computador, só leituras (`B/agents/code-mode.ts:14-19`, `B/agents/agent.ts:243-285`) | `@mastra/core@1.83.0`, página "Code mode" e referência `createCodeMode` (mesma: ferramentas no servidor, programa do modelo); Mastra Code e Factory, procurados, **nenhum usa** (prateleira 1.83 e `mastra@187a7a86`) | uma lista por `createCodeMode`, várias com ids diferentes para escopos separados (`docs-agents-code-mode.md:105-133`); o despacho sem aprovação (`C/tools/code-mode/code-mode.ts:104-119`); a ferramenta com aprovação direta (`docs-agents-code-mode.md:137`); **lido** | nativo | critérios 14, 14a | decisões 3 e 4 | `H/tools/code-mode.ts` |
-| A fronteira do programa | U5 | 2026-11-25, firstmate pelo fundador: "E2BCodeModeTransport na máquina do Construir; isolamento em processo nas conversas sem máquina" | o E2B do agente salvo (`B/machine/e2b.ts:64-67`) | `@mastra/e2b` (instalado), `@mastra/quickjs` 0.1.5 e `@mastra/isolated-vm` 0.1.4 na prateleira 1.83 (mesma) | E2B escreve o programa na máquina remota (`docs-agents-code-mode.md:139-153`); QuickJS e IsolatedVm isolam no processo, sem sistema de arquivos, rede nem processo (`:155-183`); "Choosing a transport": IsolatedVm pede addon nativo e `--no-node-snapshot`, QuickJS nenhum dos dois e roda igual quando o programa espera as ferramentas (`docs/src/content/en/reference/tools/quickjs-transport.mdx:79-95`); memória padrão 128 MB (`code-mode/quickjs/src/transport.ts:51`); **lido** | nativo | critério 14b | escolha do firstmate abaixo | `H/tools/code-mode.ts` |
+| A fronteira do programa | U5 | 2026-11-25, o fundador: "o assistente, ele tem sandbox, ué ... Pra mim eles teriam que ter a mesma harness"; firstmate: "As três conversas usam o mesmo createCodeMode com o E2BCodeModeTransport na máquina de cada uma" | o E2B do agente salvo (`B/machine/e2b.ts:64-67`); as três conversas já têm máquina por conversa (`B/assistant/assistant.ts:275-285`, `B/construtor/construtor.ts:299-307`, o Construir) | `@mastra/e2b` instalado (mesma) | E2B escreve o programa na máquina remota (`docs-agents-code-mode.md:139-153`), **lido**; QuickJS e IsolatedVm (`:155-183`) ficam de fora: as três conversas têm máquina | nativo | critério 14b | decisões 3 e 4 | `H/tools/code-mode.ts` |
 | A busca de funções e a montagem por pedido do Mastra Connect | fica de fora: as listas de cada conversa são curtas e fixas por pedido, e o fundador apontou o padrão do core | — | — | `@mastra/connect` 1.4.0 (outra: o catálogo de provedores do Mastra Platform) | `search_functions` acima de 40 mil caracteres, montagem única por pedido (`packages/connect/src/code-mode.ts:46-55`, `:94-117`), **lido** | nativo, e fica de fora | — | não precisa | — |
 | As ferramentas que a Factory tira das sessões | fica de fora: no Conexus a escrita num sistema da empresa já pede cartão (e245), e o Construir não tem ferramentas de Git | nada registrado | — | Factory `mastra@187a7a86` (outra) | `connectToolExclusion` tira `delete`/`archive` e GitHub/GitLab (`session-tools.ts:21-25`, `:59-73`), **lido** | nativo, e fica de fora | — | não precisa | — |
 | Os detectores prontos | fica de fora: chamada de modelo na conta da empresa e `abort` sem tela | cartão 4: "as guardas uma a uma" | nenhum | `@mastra/core@1.83.0` | cada um é um `new Agent` (`C/processors/processors/`), **lido** | nativo, e fica de fora | — | página do fundador, "Fica de fora" | — |
@@ -462,8 +465,7 @@ O caso novo em cada agente, pelo dublê, com uma tarefa aberta.
   `B/agents/code-mode.ts:14-19`, `B/agents/agent.ts:243-285`), o transporte E2B (hoje `B/machine/e2b.ts:64-67`), as
   listas da empresa de cada conversa (hoje `B/company-tools/names.ts:18-39`), a linha da tela (`W/machine-specs.ts:8`,
   `:47-58`, que já desenha `execute_typescript`). Na referência: `docs-agents-code-mode.md` inteira,
-  `reference-tools-create-code-mode.md`, `C/tools/code-mode/code-mode.ts:84-119`, e na prateleira
-  `docs/src/content/en/reference/tools/quickjs-transport.mdx` e `code-mode/quickjs/src/transport.ts`.
+  `reference-tools-create-code-mode.md`, `C/tools/code-mode/code-mode.ts:84-119`.
 
 ### O desenho
 
@@ -472,20 +474,14 @@ por execução com o `oncePerRun` que as fichas já usam, para as instruções e
 
 | Conversa | A lista do programa (decisão 4: só leituras) | Fica direta | A fronteira |
 | --- | --- | --- | --- |
-| Construir | `connector_read`, `connector_notes`, `app_data_read`, `app_data_check`, `data_describe`, `data_query` | `connector_note_save`, as da máquina, a web, as tarefas, `ask_user`, `submit_plan` | `E2BCodeModeTransport`, na máquina da conversa, que já está ligada para construir |
-| Conversas (Assistente) | `conexus_overview`, as leituras tipadas do pedido, `connector_notes`, `data_describe`, `data_query` | `connector_note_save`, a escrita num sistema da empresa, `show_file`, a web, o ajudante | `QuickJsCodeModeTransport`, no processo do Hub |
-| Construtor de agentes | `connector_read`, `connector_notes` | `project_read` e as de rascunho (`agent_*`, `tool_*`), `ask_user`, a web | `QuickJsCodeModeTransport`, no processo do Hub |
+| Construir | `connector_read`, `connector_notes`, `app_data_read`, `app_data_check`, `data_describe`, `data_query` | `connector_note_save`, as da máquina, a web, as tarefas, `ask_user`, `submit_plan` | `E2BCodeModeTransport`, na máquina da conversa |
+| Conversas (Assistente) | `conexus_overview`, as leituras tipadas do pedido, `connector_notes`, `data_describe`, `data_query` | `connector_note_save`, a escrita num sistema da empresa, as da máquina, `show_file`, a web, o ajudante | `E2BCodeModeTransport`, na máquina da conversa (`B/assistant/assistant.ts:275-285`) |
+| Construtor de agentes | `connector_read`, `connector_notes` | `project_read` e as de rascunho (`agent_*`, `tool_*`), `ask_user`, a web | `E2BCodeModeTransport`, na máquina da conversa (`B/construtor/construtor.ts:299-307`) |
 | Agente salvo | como hoje: as leituras da empresa, as do código e as prontas (`B/agents/agent.ts:268-272`) | as escritas, a web, `show_file` | como hoje: E2B, só com Computador |
 
-**A escolha do firstmate, pela página e pelo servidor.** As Conversas e o Construtor de agentes têm máquina, mas ela só
-liga quando uma ferramenta precisa (`B/machine/machines.ts:81`, `:131-136`, até 120 s), e um programa de leituras não
-precisa de arquivo: por isso eles rodam no processo, como a página diz para quem não quer ligar uma máquina
-(`docs-agents-code-mode.md:155-157`). QuickJS e não IsolatedVm: o Hub sobe com `node --max-old-space-size=4096
-apps/server/src/main.ts` (`infra/hub.Dockerfile:70`), sem `--no-node-snapshot`, numa imagem que só instala
-`ca-certificates` e `git` (`:41`), e os testes rodam por `node --test`; o IsolatedVm pediria a bandeira em cada entrada
-e um addon nativo, e o QuickJS nenhum dos dois, com a mesma velocidade quando o programa espera as ferramentas, que é o
-caso das leituras (`quickjs-transport.mdx:79-95`). `@mastra/quickjs` entra na versão que acompanha o core instalado, com
-a sua linha em `docs/reference/stack.md`.
+As três conversas da plataforma têm a mesma peça e a mesma fronteira, como o fundador pediu ("a mesma harness"). A
+máquina só liga quando uma ferramenta precisa (`B/machine/machines.ts:81`, `:131-136`); o programa é uma dessas
+ferramentas, e a tela já mostra a fase da máquina (`B/construtor/construtor.ts:322-323`).
 
 ### O raio da mudança
 
@@ -494,16 +490,14 @@ a sua linha em `docs/reference/stack.md`.
 | `H/tools/code-mode.ts` | Cria: a ferramenta de código de uma conversa, pela sua lista e o seu transporte | as quatro fichas |
 | `A/saved-agent/code-mode.ts` | Apaga: o agente salvo passa à peça comum | — |
 | `A/app-builder/`, `A/assistant/`, `A/agent-builder/`, `A/saved-agent/` | Muda: a lista do programa e o transporte | — |
-| `apps/server/package.json`, `docs/reference/stack.md` | Muda: `@mastra/quickjs` | — |
 
 ### Os contratos que a unidade cria
 
 ```ts
 // H/tools/code-mode.ts
-type ProgramBoundary = Readonly<{ kind: 'MACHINE'; transport: CodeModeTransport }> | Readonly<{ kind: 'IN_PROCESS' }>
 export function conversationCodeMode(input: {
-  reads: ToolsInput                 // só leituras (decisão 4): uma escrita aqui é erro de tipo e de teste
-  boundary: ProgramBoundary         // MACHINE: E2BCodeModeTransport; IN_PROCESS: QuickJsCodeModeTransport({ memoryLimitMb: 128 })
+  reads: ToolsInput                 // só leituras (decisão 4): uma escrita aqui é erro de teste
+  transport: CodeModeTransport      // o E2BCodeModeTransport da máquina da conversa
 }): ReturnType<typeof createCodeMode> | undefined   // undefined quando a lista é vazia: nenhum programa
 ```
 
@@ -512,8 +506,7 @@ Cada ficha diz a sua lista no mesmo lugar em que diz `TOOLS_OF` (C26). Uma ferra
 
 ### As skills e a leitura
 
-`mastra` (`docs-agents-code-mode.md`, `reference-tools-create-code-mode.md`, e a referência do QuickJS no pacote
-instalado); `pstack:typescript-best-practices`.
+`mastra` (`docs-agents-code-mode.md`, `reference-tools-create-code-mode.md`); `pstack:typescript-best-practices`.
 
 ### A ordem do trabalho
 
@@ -521,21 +514,21 @@ instalado); `pstack:typescript-best-practices`.
    (o retrato dele igual).
    - **O que sai:** `B/agents/code-mode.ts` e a escolha das leituras em `agent.ts:248-285`.
    - **Mutações à mão:** pôr `connector_note_save` na lista deixa vermelho o 14a.
-2. **No Construir, na máquina.** Critério: 14. O retrato `request.test.ts` dele muda só na ferramenta e nas instruções.
-3. **Nas Conversas e no Construtor de agentes, no processo.** Critérios: 14, 14b. Os retratos mudam só na ferramenta e
-   nas instruções; a máquina continua desligada num turno que só lê.
+2. **Nas três conversas.** Critérios: 14, 14b. Os retratos `request.test.ts` mudam só na ferramenta e nas instruções
+   do programa.
 
 ### Como se prova
 
 O dublê de modelo escreve um programa que chama duas leituras e o resultado volta numa linha; o mesmo programa
-chamando uma escrita recebe "função desconhecida"; no processo, um programa que toca `process` falha sem ligar
-máquina (o registro de partidas do dublê da máquina fica vazio).
+chamando uma escrita recebe "função desconhecida"; com a máquina desligada, o registro de partidas do dublê da
+máquina mostra uma partida antes do programa.
 
 ### Parar se
 
 - As leituras tipadas do Assistente chegam pelo `ToolSearchProcessor` (`search_tools`) durante o turno: se a lista do
   programa, feita no começo da execução, não as alcançar, parar e provar com um teste qual das duas fica.
-- O `QuickJsCodeModeTransport` não carregar no Hub sob `node` puro: parar e trazer, antes de cair para o E2B.
+- O transporte rodar antes da partida da máquina terminar: o programa espera o `start()` como as ferramentas da máquina
+  (`B/machine/conversation.ts:296-300`); se não esperar, parar.
 
 ## U6 As recusas como erro da ferramenta
 
@@ -591,4 +584,4 @@ Depois da U7: o QA da etapa (testing T25) a 1366 e 390 px, os dois temas.
 Os critérios 1 a 17 se provam com dublê de modelo, sem custo. Duas medições pedem modelo real e esperam a sua
 palavra: (1) com a decisão 2 (a), quantas chamadas o juiz de modelo acrescenta por construção (três pedidos da
 régua, três tentativas, Claude e GPT: 18 construções); (2) o Code Mode nas Conversas e no Construir (cinco perguntas de conta
-sobre o lago em cada, três tentativas, com e sem: 60 turnos, mais o tempo do QuickJS contra o E2B nas Conversas). Rodam nas assinaturas de modelo que você já deu.
+sobre o lago em cada, três tentativas, com e sem: 60 turnos). Rodam nas assinaturas de modelo que você já deu.
