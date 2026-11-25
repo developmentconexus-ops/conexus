@@ -34,3 +34,9 @@ test('o catálogo diz por que um conector não copia para o lago: a regra única
     hubspot: 'EXCLUSIVE_CREDENTIAL',
   })
 })
+
+test('um conector de credencial compartilhável sem tabela declarada não copia para o lago', () => {
+  const sankhya = CONNECTORS.find(({ id }) => id === 'sankhya')
+  assert.ok(sankhya)
+  assert.equal(connectorEntryOf({ ...sankhya, tables: undefined }).lakeUnavailable, 'NO_TABLES')
+})
