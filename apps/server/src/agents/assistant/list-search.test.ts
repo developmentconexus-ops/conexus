@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { renamed } from '../../harness/routes/test-questions.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf } from '../../hub/identity/test-hub.ts'
 import {
@@ -20,8 +21,8 @@ function idOf(url: string) {
 
 async function titled(hub: Hub, person: Person, assistant: string, title: string, body: object) {
   const url = await created(hub, person, assistant, { connections: [], ...body })
-  const renamed = await call(hub, person, 'PATCH', url, { title })
-  assert.equal(renamed.statusCode, 200, renamed.body)
+  const done = await renamed(hub, person, url, title)
+  assert.equal(done.statusCode, 200, done.body)
   return idOf(url)
 }
 

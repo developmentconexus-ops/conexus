@@ -40,7 +40,7 @@ async function mounting(t: TestContext) {
     kind: 'construtor',
     name: 'Ficha de teste',
     prompt: { kind: 'MESSAGES', parts: [{ kind: 'TEXT', text: 'Responda.' }] },
-    model: { kind: 'SESSION' },
+    model: { kind: 'SESSION', switched: 'CONSTRUTOR_MODEL_SET' },
     tools: async () => ({}),
     approval: { kind: 'NOTHING_ASKS' },
     turn: { kind: 'SESSION', id: 'conexus-spec-turn', take: async () => undefined },

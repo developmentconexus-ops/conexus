@@ -211,7 +211,7 @@ export function conversationsOf(deps: ConversationsDeps) {
   // The order of removal: the automations, the agents, then the Builder's conversations, the
   // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the runs.
   const hub = createHubMastra({
-    ...{ storage, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
+    ...{ storage, queue, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
     workflows: {
       [AUTOMATION_WORKFLOW]: run,
     },

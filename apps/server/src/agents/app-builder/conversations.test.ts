@@ -15,7 +15,7 @@ import {
   streamOf,
 } from '../../harness/routes/test-conversation.ts'
 import { textsOf } from '../../harness/routes/test-parts.ts'
-import { sessionStateOf } from '../../harness/routes/test-questions.ts'
+import { renamed, sessionStateOf, switched } from '../../harness/routes/test-questions.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   BRUNO,
@@ -38,7 +38,8 @@ function routesOf(hub: Hub, person: Person, url: string) {
   const id = url.slice(url.lastIndexOf('/') + 1)
   return [
     call(hub, person, 'GET', url),
-    call(hub, person, 'PUT', `${url}/model`, { model: MODEL, effort: 'off' }),
+    switched(hub, person, url, { model: MODEL, effort: 'off' }),
+    renamed(hub, person, url, 'De outra pessoa'),
     sent(hub, person, url, 'Olá'),
     hub.app.inject({ method: 'GET', url: `${session}/stream`, headers }),
     stopped(hub, person, url),
@@ -189,9 +190,9 @@ test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao cria
   assert.equal(codeOf(created), 'MODEL_NO_ACCOUNT')
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const gpt = { model: 'openai/gpt-5', effort: 'off' }
-  const switched = await call(hub, ana, 'PUT', `${url}/model`, gpt)
-  assert.equal(switched.statusCode, 422)
-  assert.equal(codeOf(switched), 'MODEL_NO_ACCOUNT')
+  const refused = await switched(hub, ana, url, gpt)
+  assert.equal(refused.statusCode, 422)
+  assert.equal(codeOf(refused), 'MODEL_NO_ACCOUNT')
   assert.equal((await sessionStateOf(hub, ana, url)).model, MODEL)
   const rows = await hub.test.asOwner('select count(*)::int as count from builder.conversation')
   assert.deepEqual(rows, [{ count: 1 }])
@@ -226,7 +227,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
     return anthropic.sent.filter((each) => each.stream).map((each) => each.thinking)
   }
   function model(effort: string) {
-    return call(hub, ana, 'PUT', `${url}/model`, { model: MODEL, effort })
+    return switched(hub, ana, url, { model: MODEL, effort })
   }
   const HIGH = { type: 'enabled', budget_tokens: 16384 }
   const OFF = { type: 'disabled' }
@@ -235,7 +236,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
   t.after(() => stream.close())
 
   const high = await model('high')
-  assert.deepEqual([high.statusCode, high.json()], [200, { model: MODEL, effort: 'high' }])
+  assert.deepEqual([high.statusCode, high.json()], [200, { ok: true }])
   assert.equal((await sent(hub, ana, url, 'Pergunta')).statusCode, 200)
   await stream.turn()
   assert.deepEqual(thinkings(), [HIGH])

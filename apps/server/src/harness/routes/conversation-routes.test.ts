@@ -26,8 +26,10 @@ test('só a lista fixa do Mastra: o resto é 404, sem sessão 401, um requestCon
   ]) {
     assert.equal((await call(hub, ana, 'GET', path)).statusCode, 404, path)
   }
+  const mode = await post(hub, ana, `${session}/mode`, { modeId: 'plan' })
+  assert.equal(mode.statusCode, 404)
   const model = await post(hub, ana, `${session}/model`, { modelId: 'openai/gpt-5' })
-  assert.equal(model.statusCode, 404)
+  assert.deepEqual([model.statusCode, codeOf(model)], [400, 'REQUEST_MALFORMED'])
   const elsewhere = session.replace('/agent-controller/builder/', '/agent-controller/other/')
   assert.equal(
     codeOf(await post(hub, ana, `${elsewhere}/messages`, { message: 'Oi' })),

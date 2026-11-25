@@ -25,7 +25,7 @@ import { ProposalCard } from './automations/proposal.tsx'
 import { useComposerTools } from './composer-tools.tsx'
 import { CompanyMemoryProposal } from './memory-proposal.tsx'
 import { AppProposalCard } from './propose.tsx'
-import { assistantConversationQuery, sendAssistantModel } from './queries.ts'
+import { assistantConversationQuery } from './queries.ts'
 import { EMPTY_ASSISTANT } from './text.ts'
 
 type Props = { companyId: CompanyId; conversationId: ConversationId; projectId?: ProjectId }
@@ -119,14 +119,6 @@ function Conversation(props: Props) {
                     conversationId={conversationId}
                     session={session}
                     providers={providers}
-                    write={{
-                      ...sendAssistantModel,
-                      mutationFn: (body) =>
-                        sendAssistantModel.mutationFn({
-                          params: { companyId, conversationId },
-                          body,
-                        }),
-                    }}
                     onError={onError}
                   />
                 )}

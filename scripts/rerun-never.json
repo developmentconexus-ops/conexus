@@ -373,7 +373,7 @@
     },
     {
       "file": "apps/server/src/agents/agent-builder/routes.test.ts",
-      "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND; o membro, NOT_FOUND"
+      "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa"
     },
     {
       "file": "apps/server/src/agents/app-builder/builder.eval.test.ts",
@@ -1350,6 +1350,14 @@
     {
       "file": "apps/server/src/harness/spec/run.test.ts",
       "name": "uma marca de outra empresa ou de outra pessoa é lida pelo esquema e recusada pela comparação com o dono"
+    },
+    {
+      "file": "apps/server/src/harness/routes/guard.test.ts",
+      "name": "a troca de modelo: um corpo sem thinkingLevel"
+    },
+    {
+      "file": "apps/server/src/harness/routes/rename.test.ts",
+      "name": "renomear: um título vazio"
     }
   ]
 }

@@ -218,3 +218,20 @@ export async function sessionStateOf(hub: Hub, person: Person, url: string) {
   const state = Object(read.json())
   return { model: state.modelId, effort: state.settings.thinkingLevel ?? 'off', tasks: state.tasks }
 }
+
+/** The person's change of the conversation's model and effort, through Mastra's own route, as the screen sends it. */
+export function switched(
+  hub: Hub,
+  person: Person,
+  url: string,
+  choice: { model: string; effort: string },
+) {
+  const body = { modelId: choice.model, thinkingLevel: choice.effort }
+  return post(hub, person, `${sessionUrl(url)}/model`, body)
+}
+
+/** The person's new title for a conversation, through Mastra's own route, as the screen sends it. */
+export function renamed(hub: Hub, person: Person, url: string, title: unknown) {
+  const id = sessionUrl(url).slice(sessionUrl(url).lastIndexOf('/') + 1)
+  return call(hub, person, 'PUT', `${sessionUrl(url)}/threads/${id}`, { title })
+}

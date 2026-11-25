@@ -181,8 +181,8 @@ function writesOf(held: Held, note: (request: Request) => Promise<unknown>) {
         { status: 201 },
       )
     }),
-    ...changesOf(BASE, held, note),
-    modelWrite(BASE, held, note),
+    ...changesOf(BASE, ASSISTANT_SESSION, held, note),
+    modelWrite(ASSISTANT_SESSION, held, note),
     http.put(`${BASE}/conversations/:id/connections`, async ({ request, params }) => {
       const body = await note(request)
       await held.answers.hold

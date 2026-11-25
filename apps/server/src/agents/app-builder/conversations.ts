@@ -78,6 +78,7 @@ export function createBuilderConversations(deps: {
       kind: 'builder',
       controller: builder.controller,
       memory: builder.memory,
+      model: builder.model,
       admit: (input: Parameters<typeof store.mine>[0]) => store.mine(input),
       release: releaseOf({ ...deps, store, builder }),
       ends: builderEnds(deps.runs, refusals),
