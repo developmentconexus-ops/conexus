@@ -25,6 +25,7 @@ import boto3
 FOLDER = Path(__file__).parents[3] / "apps/server/src/platform/recordings/aws"
 INVENTED_LAKE = "k3x9a0b1c2d3"
 INVENTED_COUNT = "7"
+TIMESTAMP = re.compile(r"(\d\.\d{3})\d+E9")
 UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 COUNT = "SELECT count(*) FROM information_schema.tables"
 FAILS = "SELECT coluna_que_nao_existe FROM information_schema.tables"
@@ -47,7 +48,7 @@ class Wire:
 
 
 def invented(text: str, lake: str, ids: dict[str, str], count: str) -> str:
-    out = text.replace(lake, INVENTED_LAKE)
+    out = TIMESTAMP.sub(r"\1E9", text).replace(lake, INVENTED_LAKE)
     out = out.replace(f'"{count}"', f'"{INVENTED_COUNT}"')
     out = re.sub(rf'(?<=Rows":){count}\b', INVENTED_COUNT, out)
     return UUID.sub(
