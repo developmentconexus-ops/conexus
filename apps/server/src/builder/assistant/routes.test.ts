@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { MODEL, started } from '../../harness/routes/test-conversation.ts'
+import { sessionStateOf } from '../../harness/routes/test-questions.ts'
 import { CARLA, call, codeOf, memberOn, plantCompany, post } from '../../hub/identity/test-hub.ts'
-import { MODEL, started } from '../conversation/test-conversation.ts'
-import { sessionStateOf } from '../conversation/test-questions.ts'
 import { assisting, created } from './test-assistant.ts'
 
 type Listed = {

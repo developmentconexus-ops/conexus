@@ -1,8 +1,8 @@
 import type { FailureCode } from '@conexus/hub-api'
 import type { AgentController, Session as ControllerSession } from '@mastra/core/agent-controller'
-import { takeOfScope, turnKeyOn } from '../controller-kit/public.ts'
-import { failureOf, modelFailure, TurnTally } from '../conversation/public.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import { takeOfScope, turnKeyOn } from '../../harness/spec/public.ts'
+import { failureOf, modelFailure, TurnTally } from '../../harness/turn/public.ts'
 import type { RunOf } from './context.ts'
 
 const TURN_PROCESSOR = 'conexus-assistant-turn'

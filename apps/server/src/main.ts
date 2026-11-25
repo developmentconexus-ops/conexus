@@ -3,11 +3,6 @@ import { getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { GitCopy } from './builder/git/public.ts'
 import { repositoriesIn } from './builder/git/public.ts'
-import {
-  createModelAccounts,
-  openGoogleCalls,
-  signInFlows,
-} from './builder/model-accounts/public.ts'
 import type {
   BuilderConfer,
   ConversationMachine,
@@ -18,6 +13,11 @@ import type {
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
+import {
+  createModelAccounts,
+  openGoogleCalls,
+  signInFlows,
+} from './harness/model-accounts/public.ts'
 import { createAccess } from './hub/access/public.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'

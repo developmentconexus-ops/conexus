@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { endOf } from '../../harness/routes/test-conversation.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
-import { endOf } from '../conversation/test-conversation.ts'
 import { assisting, created, talking } from './test-assistant.ts'
 
 test('o cargo e a área', async (t) => {

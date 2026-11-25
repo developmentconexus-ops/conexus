@@ -11,17 +11,17 @@ import type {
 } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { Workspace } from '@mastra/core/workspace'
-import type { Conference } from '../../hub/apps/public.ts'
-import type { Database } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import type { Result } from '../../platform/result.ts'
-import type { GitCopy, Repository } from '../git/public.ts'
 import type {
   BrowserReport,
   ConferPlatformFailed,
   Machines,
   VersionFolder,
-} from '../machine/public.ts'
+} from '../../harness/machine/public.ts'
+import type { Conference } from '../../hub/apps/public.ts'
+import type { Database } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import type { Result } from '../../platform/result.ts'
+import type { GitCopy, Repository } from '../git/public.ts'
 
 /**
  * Sends a turn's version to the Projeto's app as the person of the turn (step 14.1): whether it

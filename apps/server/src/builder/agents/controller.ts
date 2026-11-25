@@ -6,14 +6,15 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { Memory } from '@mastra/memory'
 import { and, eq, sql } from 'drizzle-orm'
-import type { Connectors } from '../../hub/connectors/public.ts'
-import type { IdentityPorts } from '../../hub/identity/public.ts'
-import type { Database } from '../../platform/database.ts'
-import { databaseFailure } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import { Failure, logFailure } from '../../platform/failure.ts'
-import type { AppDataPort } from '../app-data/public.ts'
-import type { ConversationSpec, Owner, ReleaseScope } from '../controller-kit/public.ts'
+import type {
+  ConversationMachine,
+  ConversationMachines,
+  MachineTuning,
+} from '../../harness/machine/public.ts'
+import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../../harness/machine/public.ts'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import { TITLE } from '../../harness/prompt/public.ts'
+import type { ConversationSpec, Owner, ReleaseScope } from '../../harness/spec/public.ts'
 import {
   agentManagerAdmission,
   CONVERSATION_MODE,
@@ -23,12 +24,15 @@ import {
   releaseByMarks,
   releaseThreads,
   routedModel,
-  TITLE,
   threadsByMarks,
-} from '../controller-kit/public.ts'
-import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
-import { createConversationMachines, MARK, PACKAGE_HOSTS } from '../machine/public.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
+} from '../../harness/spec/public.ts'
+import type { AppDataPort } from '../../harness/tools/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
+import type { Database } from '../../platform/database.ts'
+import { databaseFailure } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AgentDeps, AgentRun } from './agent.ts'
 import { agentOf, agentTurnOf, planOf } from './agent.ts'
 import type { CodeToolsDeps } from './code-tools.ts'
@@ -257,7 +261,7 @@ export function createAgentConversations(deps: Deps) {
     memory,
     machines,
     draftAgent: (run: AgentRun) => draftAgentOf({ ...deps, memories }, run),
-    /** Its controller on the one `Mastra` (`builder/mastra/`), after the Assistant's. */
+    /** Its controller on the one `Mastra` (`harness/mastra/`), after the Assistant's. */
     part: {
       kind: 'agents',
       controller,

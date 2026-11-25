@@ -1,7 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import {
+  asked,
+  conversing,
+  endOf,
+  KEY,
+  title,
+  turnNotices,
+} from '../../harness/routes/test-conversation.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, endOf, KEY, title, turnNotices } from './test-conversation.ts'
 
 const OTHER = 'sk-ant-conversation-key-0002'
 const REFUSED: Reply = { kind: 'refuse', status: 400, cyber: true }

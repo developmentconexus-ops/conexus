@@ -184,10 +184,11 @@
     {
       "includes": [
         "apps/server/src/builder/**",
+        "apps/server/src/harness/**",
         "!apps/server/src/builder/runs/copy-retry.ts",
-        "!apps/server/src/builder/model-accounts/google/calls.ts",
-        "!apps/server/src/builder/model-accounts/google/google.ts",
-        "!apps/server/src/builder/model-accounts/subscription-store.ts",
+        "!apps/server/src/harness/model-accounts/google/calls.ts",
+        "!apps/server/src/harness/model-accounts/google/google.ts",
+        "!apps/server/src/harness/model-accounts/subscription-store.ts",
         "!**/*.test.ts",
         "!**/test-*.ts"
       ],
@@ -314,7 +315,7 @@
       "includes": [
         "**/*.test.ts",
         "**/*.test.tsx",
-        "!apps/server/src/builder/conversation/conversation-stream.test.ts",
+        "!apps/server/src/harness/routes/conversation-stream.test.ts",
         "!apps/server/src/hub/connectors/limits.test.ts",
         "!scripts/test-reporter.test.ts"
       ],

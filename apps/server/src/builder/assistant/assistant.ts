@@ -5,27 +5,25 @@ import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { FastifyInstance } from 'fastify'
-import type { Access, Place, Principal } from '../../hub/access/public.ts'
-import type { Connectors } from '../../hub/connectors/public.ts'
-import type { IdentityPorts } from '../../hub/identity/public.ts'
-import type { Database } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
-import type { CompanyProjects, CompanyToolDeps, CompanyToolScope } from '../company-tools/public.ts'
+import type {
+  ConversationMachine,
+  ConversationMachines,
+  MachineTuning,
+} from '../../harness/machine/public.ts'
 import {
-  byPrincipal,
-  companyConnections,
-  companyReadSearch,
-  companyTools,
-  projectsOf,
-} from '../company-tools/public.ts'
+  createConversationMachines,
+  PACKAGE_HOSTS,
+  showFileTool,
+} from '../../harness/machine/public.ts'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import { subagentModel } from '../../harness/model-accounts/public.ts'
 import type {
   ConversationSpec,
   DataBinding,
   Owner,
   ReleaseScope,
   Speakers,
-} from '../controller-kit/public.ts'
+} from '../../harness/spec/public.ts'
 import {
   ASK_USER_TOOL,
   admitAsker,
@@ -39,12 +37,26 @@ import {
   sessionModel,
   skillOf,
   toolsOf,
-} from '../controller-kit/public.ts'
-import { dataOrder } from '../data-tools/public.ts'
-import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
-import { createConversationMachines, PACKAGE_HOSTS, showFileTool } from '../machine/public.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
-import { subagentModel } from '../model-accounts/public.ts'
+} from '../../harness/spec/public.ts'
+import type {
+  CompanyProjects,
+  CompanyToolDeps,
+  CompanyToolScope,
+} from '../../harness/tools/public.ts'
+import {
+  byPrincipal,
+  companyConnections,
+  companyReadSearch,
+  companyTools,
+  dataOrder,
+  projectsOf,
+} from '../../harness/tools/public.ts'
+import type { Access, Place, Principal } from '../../hub/access/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
+import type { Database } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import { profileReadOnlyInRuns } from './automation-memory.ts'
 import { AVAILABLE_TOOLS } from './available-tools.ts'
 import { chosenConnections } from './chosen.ts'
@@ -295,7 +307,7 @@ export function createAssistant(deps: Deps) {
   const opening: OpenDeps = { ...deps, controller, memory, chosen }
 
   return Object.freeze({
-    /** Its controller on the one `Mastra` (`builder/mastra/`), beside the Builder's. */
+    /** Its controller on the one `Mastra` (`harness/mastra/`), beside the Builder's. */
     part: {
       kind: 'assistant',
       controller,

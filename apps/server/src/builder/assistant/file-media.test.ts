@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { SHOWN_TEXT_MAX } from '@conexus/hub-api'
+import { INSTALLATION } from '../../harness/machine/test-machine.ts'
+import { endOf, messagesOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { call } from '../../hub/identity/test-hub.ts'
-import { endOf, messagesOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
-import { INSTALLATION } from '../machine/test-machine.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const MEDIA: Record<string, [type: string, disposition: 'inline' | 'attachment']> = {
@@ -38,7 +38,7 @@ test('o arquivo: cada extensão baixa com o seu tipo, e só png, jpeg e svg abre
   const on = await assisting(t, [names.map(write), [said('Escrevi.')]])
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
   assert.equal(endOf(await (await talking(t, on.hub, on.ana, url)).say('Escreva')), 'complete')
-  on.hub.assistantMachines.control.discoverable.push(
+  on.hub.conversationMachines.control.discoverable.push(
     `conexus-${INSTALLATION}-${url.slice(url.lastIndexOf('/') + 1)}`,
   )
   for (const [name, [type, disposition]] of Object.entries(MEDIA)) {

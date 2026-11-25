@@ -2,10 +2,8 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
-import { post } from '../../hub/identity/test-hub.ts'
-import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { GROQ_MODEL } from '../model-accounts/test-defaults.ts'
-import type { StreamEvent } from './test-conversation.ts'
+import { GROQ_MODEL } from '../../harness/model-accounts/test-defaults.ts'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
 import {
   answeredOf,
   asked,
@@ -14,10 +12,12 @@ import {
   sent,
   started,
   streamOf,
-} from './test-conversation.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { partsOf } from '../../harness/routes/test-parts.ts'
+import { onGroq, routedTo, served } from '../../harness/routes/test-research.ts'
+import { post } from '../../hub/identity/test-hub.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { plantGemini } from './test-gemini.ts'
-import { partsOf } from './test-parts.ts'
-import { onGroq, routedTo, served } from './test-research.ts'
 
 const OFFERED = [
   ...['app_data_check', 'app_data_read', 'conexus_check', 'data_describe', 'data_query'],

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { holding } from '../../harness/routes/test-conversation.ts'
 import {
   BRUNO,
   CARLA,
@@ -10,7 +11,6 @@ import {
   plantCompany,
   post,
 } from '../../hub/identity/test-hub.ts'
-import { holding } from '../conversation/test-conversation.ts'
 import type { Summary } from './test-automations.ts'
 import {
   automating,

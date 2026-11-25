@@ -5,10 +5,10 @@ import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import type { CheckReport } from '@conexus/app/check'
 import { STEP_NAMES } from '@conexus/app/check'
+import { asked, conversing, endOf } from '../../harness/routes/test-conversation.ts'
+import { stepped, tool } from '../../harness/routes/test-questions.ts'
+import { sameRequests } from '../../harness/spec/test-request.ts'
 import type { Block } from '../../platform/test-anthropic-stream.ts'
-import { sameRequests } from '../controller-kit/test-request.ts'
-import { asked, conversing, endOf } from './test-conversation.ts'
-import { stepped, tool } from './test-questions.ts'
 
 const WRITE = tool('mastra_workspace_write_file', { path: 'a.ts', content: 'x\n' })
 // A write and not a command: a command's result says how long it ran, which changes from run to run.

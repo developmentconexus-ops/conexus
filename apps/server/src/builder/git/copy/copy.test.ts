@@ -2,9 +2,10 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { Sha } from '../../../harness/machine/public.ts'
 import { bucketServer } from '../../../platform/test-bucket.ts'
 import { testConfig, unreachableDatabaseUrl } from '../../../platform/test-database.ts'
-import { copyKey, createGitCopy, Sha } from '../public.ts'
+import { copyKey, createGitCopy } from '../public.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const OTHER = ProjectId.parse('projectBBBBBBBBBBBBBBBBBBBBBBBBB')

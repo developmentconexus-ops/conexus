@@ -1,4 +1,4 @@
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL } from '@conexus/hub-api'
 import { z } from 'zod'
 
 /** A number as the answer wrote it: its value at the places shown, its scale (mil, milhão) and whether it is a percentage. */
@@ -151,7 +151,7 @@ export function figuresFromReads(text: string, parts: readonly unknown[]): strin
     const invocation = Invocation.safeParse(part)
     if (
       !invocation.success ||
-      invocation.data.toolInvocation.toolName !== BUILDER_TOOL.connectorRead
+      invocation.data.toolInvocation.toolName !== CONVERSATION_TOOL.connectorRead
     )
       return []
     return valuesOf(invocation.data.toolInvocation.result)

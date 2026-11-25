@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
+import { stepped } from '../../harness/routes/test-questions.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import type { Block } from '../../platform/test-anthropic-stream.ts'
 import { agentsOn } from '../agents/test-agents.ts'
 import { talking } from '../assistant/test-assistant.ts'
-import { stepped } from '../conversation/test-questions.ts'
 
 /** One streamed call of the Construtor's model: the blocks it answers, from what it was given. */
 export type Step = (asked: Sent) => Block[]

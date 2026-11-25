@@ -2,10 +2,6 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import type { Hub } from '../../hub/identity/test-hub.ts'
-import { CARLA, call, codeOf, memberOn, personOn, post } from '../../hub/identity/test-hub.ts'
-import { talking } from '../assistant/test-assistant.ts'
-import { building } from '../construtor/test-construtor.ts'
 import {
   endOf,
   holding,
@@ -16,8 +12,12 @@ import {
   sessionUrl,
   streamOf,
   title,
-} from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
+import type { Hub } from '../../hub/identity/test-hub.ts'
+import { CARLA, call, codeOf, memberOn, personOn, post } from '../../hub/identity/test-hub.ts'
+import { talking } from '../assistant/test-assistant.ts'
+import { building } from '../construtor/test-construtor.ts'
 import {
   agentsOn,
   drafted,
@@ -28,7 +28,7 @@ import {
   talkedTo,
 } from './test-agents.ts'
 
-const CONEXUS = readFileSync(new URL('../conversation/prompt/conexus.md', import.meta.url), 'utf8')
+const CONEXUS = readFileSync(new URL('../../harness/prompt/conexus.md', import.meta.url), 'utf8')
 const [ORDERS, ...DATA] = ['tool_pedidos_matriz', 'data_describe', 'data_query'] as const
 
 /** The model and effort the conversation's session holds, by Mastra's own route. */

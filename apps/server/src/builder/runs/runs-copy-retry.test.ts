@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { mock, test } from 'node:test'
+import { asked, conversing, title } from '../../harness/routes/test-conversation.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, title } from '../conversation/test-conversation.ts'
 
 const WRITE = {
   type: 'tool_use',

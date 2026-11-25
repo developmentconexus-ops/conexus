@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { endOf, sent } from '../conversation/test-conversation.ts'
-import { answerTo, ask, cards, untilCard } from '../conversation/test-questions.ts'
+import { endOf, sent } from '../../harness/routes/test-conversation.ts'
+import { answerTo, ask, cards, untilCard } from '../../harness/routes/test-questions.ts'
 import { assisting, created, talking } from './test-assistant.ts'
 
 const question = {

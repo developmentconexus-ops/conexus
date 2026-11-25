@@ -13,13 +13,13 @@ import { ASSISTANT_TOOL, handAssistantProposal, ProposedApp } from '@conexus/hub
 import type { Session } from '@mastra/core/agent-controller'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import type { Owner } from '../../harness/spec/public.ts'
+import { ownThread, resourceOf } from '../../harness/spec/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import type { Owner } from '../controller-kit/public.ts'
-import { ownThread, resourceOf } from '../controller-kit/public.ts'
 import type { ChosenConnections } from './chosen.ts'
 import type { SentFile } from './files.ts'
 import { kindOf, sentFilesOf } from './files.ts'
@@ -27,7 +27,7 @@ import type { assistantMemory } from './memory.ts'
 import { admitted, placeOf } from './open.ts'
 
 /** The Builder's session a hand-off sends on: Mastra's, as `openSession` gives it. */
-type BuilderSession = Pick<Session, 'sendSignal'>
+type AppBuilderSession = Pick<Session, 'sendSignal'>
 
 /**
  * What a hand-off reaches the other subjects through (code C4): the Projects' creation, the
@@ -57,7 +57,7 @@ export type HandOffDoors = {
       projectId: ProjectId
       attemptKey: string
       body: Record<string, never>
-    }): Promise<{ id: ConversationId; made: boolean; session: BuilderSession }>
+    }): Promise<{ id: ConversationId; made: boolean; session: AppBuilderSession }>
     asked(owner: Owner, conversationId: ConversationId): Promise<boolean>
   }
   updating(): boolean
@@ -206,7 +206,7 @@ function filesText(files: readonly SentFile[]): string {
  * `HANDOFF_NOT_DELIVERED`, with the key kept.
  */
 async function delivered(
-  session: BuilderSession,
+  session: AppBuilderSession,
   proposal: ProposedApp,
   files: readonly SentFile[],
   from: { person: Person; conversationId: ConversationId },

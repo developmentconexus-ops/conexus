@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import type { TestContext } from 'node:test'
 import { parseEnv } from 'node:util'
 import { AppVersionId, appCheckWorkerOf, appWorkerOf, CompanyId, ProjectId } from '@conexus/hub-api'
+import { createE2bApi, createE2bKit, createMachines, MARK } from '../../harness/machine/public.ts'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { ANA_OWNER, hubWithLog, personOn, plantCompany } from '../../hub/identity/test-hub.ts'
 import { createCloudflareApps } from '../../platform/cloudflare.ts'
@@ -13,7 +14,6 @@ import { listenQuietly } from '../../platform/lifecycle.ts'
 import { createNeonProjects } from '../../platform/neon.ts'
 import { CLOUD_ENV_FILE, claudeSubscribed } from '../assistant/test-real-model.ts'
 import { openRepository } from '../git/public.ts'
-import { createE2bApi, createE2bKit, createMachines, MARK } from '../machine/public.ts'
 
 /** The installation's settings the conference reaches the providers with; the rest stays the test Hub's. */
 type Cloud = Pick<

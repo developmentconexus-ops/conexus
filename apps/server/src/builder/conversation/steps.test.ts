@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { conversing, endOf, sent, started, streamOf, title } from './test-conversation.ts'
+import {
+  conversing,
+  endOf,
+  sent,
+  started,
+  streamOf,
+  title,
+} from '../../harness/routes/test-conversation.ts'
 
 const LIST = 'mastra_workspace_list_files'
 

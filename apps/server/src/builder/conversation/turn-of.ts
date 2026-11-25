@@ -1,9 +1,9 @@
 import type { ConversationId, ProjectId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Memory } from '@mastra/memory'
-import type { Owner, RunScope, Taken, TurnSource } from '../controller-kit/public.ts'
-import { ownerIn, runResolver, turnOfOwner } from '../controller-kit/public.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import type { Owner, RunScope, Taken, TurnSource } from '../../harness/spec/public.ts'
+import { ownerIn, runResolver, turnOfOwner } from '../../harness/spec/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { conversationIn } from '../runs/public.ts'
 

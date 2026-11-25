@@ -1,16 +1,16 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import type { Config } from '../../platform/config.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import type { GitCopy, Repository } from '../git/public.ts'
-import { createGitCopy, openRepository, restoreGuarded } from '../git/public.ts'
-import type { ConversationMachine, Machines, MachineTuning } from '../machine/public.ts'
+import type { ConversationMachine, Machines, MachineTuning } from '../../harness/machine/public.ts'
 import {
   createE2bApi,
   createE2bCodeMode,
   createE2bKit,
   createMachines,
   MARK,
-} from '../machine/public.ts'
+} from '../../harness/machine/public.ts'
+import type { Config } from '../../platform/config.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import type { GitCopy, Repository } from '../git/public.ts'
+import { createGitCopy, openRepository, restoreGuarded } from '../git/public.ts'
 
 export type { ConversationMachine, MachineTuning }
 export type RepositoryOf = (ids: { companyId: CompanyId; projectId: ProjectId }) => Repository

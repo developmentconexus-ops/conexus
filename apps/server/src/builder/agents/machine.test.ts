@@ -2,8 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
-import { said, talking } from '../assistant/test-assistant.ts'
+import { INSTALLATION } from '../../harness/machine/test-machine.ts'
 import {
   endOf,
   holding,
@@ -13,9 +12,10 @@ import {
   sent,
   streamOf,
   title,
-} from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
-import { INSTALLATION } from '../machine/test-machine.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
+import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
+import { said, talking } from '../assistant/test-assistant.ts'
 import { agentsOn, drafted, madeAgent, publishedAgent, talkedTo } from './test-agents.ts'
 
 const COMMAND = 'mastra_workspace_execute_command'
@@ -53,7 +53,7 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
     instructions: 'Responda.',
     machine: true,
   })
-  const { control, folder } = on.hub.assistantMachines
+  const { control, folder } = on.hub.conversationMachines
   const url = await talkedTo(on.hub, on.ana, on.agents, agent.id)
   assert.deepEqual(control.names, [], 'opening a conversation starts no machine')
 
@@ -91,7 +91,7 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
 test('o Computador: um agente sem a chave não recebe ferramenta de máquina nem show_file, e nenhuma máquina liga; listar os agentes não liga nada (15)', async (t) => {
   const on = await agentsOn(t, [[said('Oi.')]])
   const agent = await publishedAgent(on.hub, on.ana, on.agents, { instructions: 'Responda.' })
-  const { control } = on.hub.assistantMachines
+  const { control } = on.hub.conversationMachines
   const listed = await call(on.hub, on.ana, 'GET', on.listed)
   assert.equal(listed.statusCode, 200, listed.body)
   const url = await talkedTo(on.hub, on.ana, on.agents, agent.id)
@@ -122,7 +122,7 @@ test('o arquivo: um caminho fora da pasta (por um link) é recusado com SHOW_REF
   assert.equal(endOf(await say('Escreva')), 'complete')
   assert.deepEqual(await shown(on, url), [{ kind: 'SHOW_REFUSED', reason: 'OUTSIDE' }])
 
-  const { control } = on.hub.assistantMachines
+  const { control } = on.hub.conversationMachines
   control.discoverable.push(`conexus-${INSTALLATION}-${idOf(url)}`)
   const got = await call(on.hub, on.ana, 'GET', fileOf(on.company, url, 'relatorio.csv'))
   assert.equal(got.statusCode, 200, got.body)
@@ -169,7 +169,7 @@ test('o fim do Hub: a máquina do turno do agente em andamento para quando o Hub
   t.after(() => stream.close())
   assert.equal((await sent(stopping, on.ana, url, 'Escreva')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
-  const { control } = stopping.assistantMachines
+  const { control } = stopping.conversationMachines
   control.stopMs = 150
   assert.equal(control.names.length, 1, 'the turn started the machine')
   assert.equal(control.stops, 0, 'and it runs')

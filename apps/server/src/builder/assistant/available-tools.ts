@@ -1,14 +1,14 @@
 import {
   ASSISTANT_TOOL,
-  BUILDER_TOOL,
+  CONVERSATION_TOOL,
   DATA_TOOL,
   SKILL_TOOLS,
   SUBAGENT_TOOL,
   TASK_TOOLS,
   WORKSPACE_TOOL,
 } from '@conexus/hub-api'
-import { TYPED_READ_NAMES } from '../connectors/public.ts'
-import { ASK_USER_TOOL } from '../controller-kit/public.ts'
+import { ASK_USER_TOOL } from '../../harness/spec/public.ts'
+import { TYPED_READ_NAMES } from '../../harness/tools/public.ts'
 import { COMPANY_MEMORY_TOOLS } from './company-memory.ts'
 
 /** The `ToolSearchProcessor`'s own tool, by the id Mastra gives it. */
@@ -26,12 +26,12 @@ export const AVAILABLE_TOOLS: readonly string[] = [
   ...COMPANY_MEMORY_TOOLS,
   SEARCH_TOOLS,
   ...TYPED_READ_NAMES,
-  BUILDER_TOOL.connectorNotes,
-  BUILDER_TOOL.connectorNoteSave,
+  CONVERSATION_TOOL.connectorNotes,
+  CONVERSATION_TOOL.connectorNoteSave,
   ...Object.values(DATA_TOOL),
   ...Object.values(ASSISTANT_TOOL),
-  BUILDER_TOOL.webFetch,
-  BUILDER_TOOL.webSearch,
+  CONVERSATION_TOOL.webFetch,
+  CONVERSATION_TOOL.webSearch,
   ...SKILL_TOOLS,
   ASK_USER_TOOL,
   SUBAGENT_TOOL,

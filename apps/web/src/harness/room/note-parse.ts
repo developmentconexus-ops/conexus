@@ -1,8 +1,8 @@
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { Suspended } from './messages.ts'
 
-const NOTE_SAVE_TOOL = BUILDER_TOOL.connectorNoteSave
+const NOTE_SAVE_TOOL = CONVERSATION_TOOL.connectorNoteSave
 
 /** What the notebook's save asks, as the call says it and as it suspends: what the card lists. */
 const NoteAsked = z.looseObject({

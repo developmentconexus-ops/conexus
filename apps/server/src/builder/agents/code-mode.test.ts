@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { MACHINE_TOOL } from '@conexus/hub-api'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { talking } from '../assistant/test-assistant.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { agentsOn, madeTool, ordersOf, publishedAgent, talkedTo } from './test-agents.ts'
 import { ASKED, approving, WRITE } from './test-approval.ts'
 

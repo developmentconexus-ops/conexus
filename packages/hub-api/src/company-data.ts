@@ -36,7 +36,7 @@ export type Catalog = z.infer<typeof Catalog>
 export const Described = z.discriminatedUnion('kind', [Catalog, CatalogUnavailable])
 export type Described = z.infer<typeof Described>
 
-/** The same ceiling as app_data_read (apps/server/src/builder/app-data/tools.ts:12). */
+/** The same ceiling as app_data_read (apps/server/src/harness/tools/app-data/tools.ts:12). */
 export const QUERY_SQL_MAX = 4000
 
 /** Read: one table by name, one read of a system, or a read-only query over the catalog's tables; the catalog lists no table, so a table and a query are outside it. */

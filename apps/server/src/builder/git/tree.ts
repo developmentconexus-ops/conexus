@@ -1,5 +1,7 @@
-import type { Context, Sha } from './context.ts'
-import { git, inMain, MAX_BYTES, MAX_FILES } from './context.ts'
+import type { Sha } from '../../harness/machine/public.ts'
+import { MAX_BYTES, MAX_FILES } from '../../harness/machine/public.ts'
+import type { Context } from './context.ts'
+import { git, inMain } from './context.ts'
 
 /** Why a bundle from a machine is not taken: it is the agent's output, treated as hostile (S2). */
 export type SaveRefusal =

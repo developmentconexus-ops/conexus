@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { call } from '../../hub/identity/test-hub.ts'
 import {
   conversing,
   endOf,
@@ -12,8 +11,9 @@ import {
   sent,
   streamOf,
   title,
-} from '../conversation/test-conversation.ts'
-import { failuresOf } from '../conversation/test-parts.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf } from '../../harness/routes/test-parts.ts'
+import { call } from '../../hub/identity/test-hub.ts'
 import { assisting, created, reading, said, searching, talking } from './test-assistant.ts'
 
 /** Whether `promise` settles within `ms`. */

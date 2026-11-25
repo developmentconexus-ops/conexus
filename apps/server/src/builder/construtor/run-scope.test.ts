@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { sessionUrl } from '../../harness/routes/test-conversation.ts'
+import { RUN_MARKS } from '../../harness/spec/public.ts'
+import { plantMark } from '../../harness/spec/test-run.ts'
 import { codeOf, plantCompany, post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import { otherProject } from '../agents/test-agents.ts'
-import { RUN_MARKS } from '../controller-kit/public.ts'
-import { plantMark } from '../controller-kit/test-run.ts'
-import { sessionUrl } from '../conversation/test-conversation.ts'
 import { building } from './test-construtor.ts'
 
 test('Projeto de outra empresa: a conversa do Construtor marcada com ele dá CONVERSATION_NOT_FOUND, sem chamada ao modelo', async (t) => {

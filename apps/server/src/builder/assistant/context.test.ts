@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { endOf, messagesOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
+import { endOf, messagesOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 import { conversation, LONG } from './test-files.ts'
 

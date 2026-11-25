@@ -2,12 +2,8 @@ import assert from 'node:assert/strict'
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { BUILDER_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
-import { BRUNO, memberOn, post } from '../../hub/identity/test-hub.ts'
-import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { agentsOn, publishedAgent, talkedTo } from '../agents/test-agents.ts'
-import { CONTROLLER_KINDS, createAskUserTool } from '../controller-kit/public.ts'
 import {
   asked,
   conversing,
@@ -15,8 +11,12 @@ import {
   KEY,
   MODEL,
   messagesOf,
-} from '../conversation/test-conversation.ts'
-import { stepped, tool } from '../conversation/test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { stepped, tool } from '../../harness/routes/test-questions.ts'
+import { CONTROLLER_KINDS, createAskUserTool } from '../../harness/spec/public.ts'
+import { BRUNO, memberOn, post } from '../../hub/identity/test-hub.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { agentsOn, publishedAgent, talkedTo } from '../agents/test-agents.ts'
 import {
   assisting,
   created,
@@ -28,7 +28,7 @@ import {
   talking,
 } from './test-assistant.ts'
 
-const READ = BUILDER_TOOL.connectorRead
+const READ = CONVERSATION_TOOL.connectorRead
 const WORKSPACE_READS = [
   WORKSPACE_TOOL.readFile,
   WORKSPACE_TOOL.listFiles,
@@ -146,7 +146,7 @@ test('a porta, as 50 e o arquivo', async (t) => {
     on.reads.every((each) => each.turn === turn),
     'one key for the main agent and the helper',
   )
-  const files = readdirSync(join(on.hub.assistantMachines.folder, 'work', 'reads')).sort()
+  const files = readdirSync(join(on.hub.conversationMachines.folder, 'work', 'reads')).sort()
   const prefix = turn.slice(0, 8)
   assert.deepEqual(
     files,

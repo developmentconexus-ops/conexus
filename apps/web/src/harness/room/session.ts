@@ -7,7 +7,7 @@ import type {
   ConversationId,
   ProjectId,
 } from '@conexus/hub-api'
-import { BUILDER_ROUTES } from '@conexus/hub-api'
+import { CONVERSATION_ROUTES } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
 import { MastraClient, MastraClientError } from '@mastra/client-js'
 import { failureOfProblem, HubFailure, hubClientFetch } from '../../platform/hub.ts'
@@ -41,7 +41,7 @@ export type Place =
 
 export function sessionOf(conversationId: ConversationId, controller: Controller) {
   const client = new MastraClient({
-    baseUrl: BUILDER_ROUTES,
+    baseUrl: CONVERSATION_ROUTES,
     apiPrefix: '',
     credentials: 'same-origin',
     retries: 0,

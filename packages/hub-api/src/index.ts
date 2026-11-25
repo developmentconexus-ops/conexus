@@ -132,7 +132,7 @@ export {
 export * from './construtor.ts'
 export {
   BUILDER_CONTROLLER,
-  BUILDER_ROUTES,
+  CONVERSATION_ROUTES,
   ConversationId,
   ConversationSummary,
   createConversation,

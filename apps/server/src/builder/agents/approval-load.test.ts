@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
+import { endOf, sent } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import type { StreamEvent } from '../conversation/test-conversation.ts'
-import { endOf, sent } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { madeTool, ordersOf } from './test-agents.ts'
 import {
   ASKED,

@@ -6,6 +6,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { REDIRECT_PATH } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
+import { endOf, messagesOf } from '../../harness/routes/test-conversation.ts'
 import {
   appsOf,
   linkMercadoLivre,
@@ -13,7 +14,6 @@ import {
 } from '../../hub/connectors/test-connections.ts'
 import { PADARIA_SOL_MATRIZ, soldBy } from '../../hub/connectors/test-sales.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { endOf, messagesOf } from '../conversation/test-conversation.ts'
 import { assisting, created, READ, reading, said, searching, talking } from './test-assistant.ts'
 import { file, pdf } from './test-files.ts'
 import { EVAL_PROVIDER, EVAL_QUESTIONS, REAL_MODEL, subscribed } from './test-real-model.ts'

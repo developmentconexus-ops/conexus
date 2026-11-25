@@ -1,4 +1,4 @@
-import { BUILDER_TOOL, SKILL_TOOLS } from '@conexus/hub-api'
+import { CONVERSATION_TOOL, SKILL_TOOLS } from '@conexus/hub-api'
 import {
   BookOpenIcon,
   CircleAlertIcon,
@@ -26,7 +26,7 @@ import { WORKSPACE_SPECS } from './workspace-specs.ts'
 
 export type { ToolBody, ToolSpec, ToolStatus } from './tool-spec.ts'
 
-const { webSearch, webFetch, recall, check } = BUILDER_TOOL
+const { webSearch, webFetch, recall, check } = CONVERSATION_TOOL
 const [skill, skillRead, skillSearch] = SKILL_TOOLS
 
 export const TOOLS: Record<RowTool, ToolSpec> = {

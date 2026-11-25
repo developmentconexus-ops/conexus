@@ -30,7 +30,7 @@ connector's `check`; `write.ts` runs a write with `session.once`, after the appr
 | Caller | Door | What it reads of the kit |
 | --- | --- | --- |
 | The Assistant | `assistant-port.ts` | the reads as tools, the generated skill |
-| The Builder | `builder-port.ts`; the typed tools in `builder/connectors/typed-reads.ts` | the skill through `connectorSkill`, the `list` declarations, the reads as typed tools |
+| The Builder | `builder-port.ts`; the typed tools in `harness/tools/connectors/typed-reads.ts` | the skill through `connectorSkill`, the `list` declarations, the reads as typed tools |
 | A saved tool | `tool-door.ts` | the operation it was saved with |
 | A published app | `app-calls.ts`, `apps.ts` | the reads its manifest declares; the types come from `packages/connectors/src/calls.ts` |
 | Roles | `role-kit.ts`, `grants.ts` | one resource per connector and one action per operation |

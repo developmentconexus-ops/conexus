@@ -2,8 +2,14 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
-import type { StreamEvent } from './test-conversation.ts'
-import { asked, messagesOf, sent, started, streamOf } from './test-conversation.ts'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
+import {
+  asked,
+  messagesOf,
+  sent,
+  started,
+  streamOf,
+} from '../../harness/routes/test-conversation.ts'
 import { previewing, previewsIn } from './test-preview.ts'
 
 // The end of the turn keeps and tells its version at once, the Prévia `sending`, then the same

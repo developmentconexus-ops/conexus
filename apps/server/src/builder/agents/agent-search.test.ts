@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { assisting, created, said, searching, talking } from '../assistant/test-assistant.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { madeTool, publishedAgent, talkedTo } from './test-agents.ts'
 import { approving } from './test-approval.ts'
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL } from '@conexus/hub-api'
 import { askedOnce } from './test-handoff.ts'
 import { figuresFromReads } from './test-numbers.ts'
 
@@ -44,7 +44,7 @@ const READ = [
     type: 'tool-invocation',
     toolInvocation: {
       state: 'result',
-      toolName: BUILDER_TOOL.connectorRead,
+      toolName: CONVERSATION_TOOL.connectorRead,
       result: { rows: [{ CODPROD: 48213, VLRTOT: 8072.7, NUNOTA: 99123 }] },
     },
   },

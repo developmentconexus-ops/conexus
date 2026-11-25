@@ -1,5 +1,5 @@
 import type { WORKSPACE_TOOL } from '@conexus/hub-api'
-import { BUILDER_TOOL, CARD_TOOLS, SKILL_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
+import { CARD_TOOLS, CONVERSATION_TOOL, SKILL_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 
 const { FILESYSTEM, SANDBOX } = WORKSPACE_TOOLS
@@ -24,16 +24,16 @@ const READ = new Set<string>([
   SAME_NAMES.listFiles,
   SAME_NAMES.grep,
   SAME_NAMES.fileStat,
-  BUILDER_TOOL.webSearch,
-  BUILDER_TOOL.webFetch,
-  BUILDER_TOOL.recall,
-  BUILDER_TOOL.connectorRead,
-  BUILDER_TOOL.connectorNotes,
-  BUILDER_TOOL.connectorNoteSave,
-  BUILDER_TOOL.appDataRead,
-  BUILDER_TOOL.appDataCheck,
-  BUILDER_TOOL.dataDescribe,
-  BUILDER_TOOL.dataQuery,
+  CONVERSATION_TOOL.webSearch,
+  CONVERSATION_TOOL.webFetch,
+  CONVERSATION_TOOL.recall,
+  CONVERSATION_TOOL.connectorRead,
+  CONVERSATION_TOOL.connectorNotes,
+  CONVERSATION_TOOL.connectorNoteSave,
+  CONVERSATION_TOOL.appDataRead,
+  CONVERSATION_TOOL.appDataCheck,
+  CONVERSATION_TOOL.dataDescribe,
+  CONVERSATION_TOOL.dataQuery,
   ...SKILL_TOOLS,
 ])
 // The controller's tools that talk to the person: the questions, the plan and the task list.
@@ -48,7 +48,7 @@ const EXECUTE = new Set<string>([
   SAME_NAMES.executeCommand,
   SAME_NAMES.getProcessOutput,
   SAME_NAMES.killProcess,
-  BUILDER_TOOL.check,
+  CONVERSATION_TOOL.check,
 ])
 
 /**

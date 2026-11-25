@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { holding } from '../../harness/routes/test-conversation.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   CARLA,
@@ -11,7 +12,6 @@ import {
   plantCompany,
 } from '../../hub/identity/test-hub.ts'
 import { until } from '../../platform/test-until.ts'
-import { holding } from '../conversation/test-conversation.ts'
 import { AUTOMATION_WORKFLOW } from './public.ts'
 import {
   answering,

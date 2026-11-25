@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId, PersonId } from '@conexus/hub-api'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { chooserAt } from '../../hub/access/test-principal.ts'
 import { TurnKey } from '../../hub/connectors/public.ts'
 import { linkSankhya, servedSankhya, testOf } from '../../hub/connectors/test-connections.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { assisting, COUNT, created, READ, said, searching, talking } from './test-assistant.ts'
 
 function ownerOf(on: { companyId: string; ana: { id: string } }) {

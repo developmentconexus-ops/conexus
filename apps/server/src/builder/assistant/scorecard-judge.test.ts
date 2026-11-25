@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { endOf, messagesOf } from '../../harness/routes/test-conversation.ts'
 import { PADARIA_SOL_FILIAL, PADARIA_SOL_MATRIZ, soldBy } from '../../hub/connectors/test-sales.ts'
-import { endOf, messagesOf } from '../conversation/test-conversation.ts'
 import {
   assisting,
   created,

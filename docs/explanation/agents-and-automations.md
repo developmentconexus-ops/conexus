@@ -43,7 +43,7 @@ conversation names (`builder/agents/controller.ts`). The tools are built once pe
 - each preset read is a tool named `tool_<slug>`; the model fills only the open fields, and the
   version's bound values win;
 - `app_data_read` runs one `SELECT` on the Project's app database through its read login, when
-  the version allows it and the Project has an app (`builder/app-data/tools.ts`);
+  the version allows it and the Project has an app (`harness/tools/app-data/tools.ts`);
 - code tools call their saved Worker, uploading it again when the Worker is missing;
 - `web_fetch`, and `web_search` where the provider offers it;
 - with a machine, `show_file` and a program tool that runs code over the agent's reads.
@@ -65,7 +65,7 @@ A turn of a published agent carries its version and its answering person as a Ma
 written once when the turn starts (`builder/agents/activation.ts`). A run resumed from a card
 therefore keeps the version it started with, even if someone published a new one meanwhile.
 
-The Hub's guard answers the card (`builder/conversation/guard.ts`). Only a card parked in the
+The Hub's guard answers the card (`harness/routes/guard.ts`). Only a card parked in the
 live session can be answered, and an approver must hold the write in their own role. The write
 then goes through the Hub's write path (`apps/server/src/hub/connectors/write.ts`). It checks
 admission again, writes a mark derived from the thread and the tool call into the input, records
@@ -89,9 +89,9 @@ with `yolo: true`, so no tool call waits for approval. It does not build apps ei
 
 Its machine is an E2B sandbox per conversation with Python and Node and the usual analysis
 libraries. Outbound traffic is denied except `registry.npmjs.org`, `pypi.org` and
-`files.pythonhosted.org` (`builder/machine/kit.ts`). A connector read is saved whole under
+`files.pythonhosted.org` (`harness/machine/kit.ts`). A connector read is saved whole under
 `reads/` on the machine, and the model gets the first rows and the path. E2B pauses the machine on its own
-timeout, five minutes after it starts, and the next tool resumes it (`builder/machine/e2b.ts`).
+timeout, five minutes after it starts, and the next tool resumes it (`harness/machine/e2b.ts`).
 
 ## Automations
 
@@ -104,12 +104,12 @@ company keeps at most 30 active automations, because each may send one e-mail a 
 
 Mastra's scheduler polls the table every 10 seconds, its default. The Hub starts Mastra's workers
 after every agent is registered, and Mastra starts the scheduler only when a schedule row exists
-(`builder/mastra/hub-mastra.ts`). On shutdown the scheduler stops first, so nothing fires after
+(`harness/mastra/hub-mastra.ts`). On shutdown the scheduler stops first, so nothing fires after
 the signal.
 
 Every schedule row names the workflow `conexus-automation-run`, and that name is a stored
 contract. The scheduler skips a row whose workflow it cannot find and deletes it on the fifth
-consecutive tick, about 50 seconds (`missesBeforeDelete` in `builder/mastra/mastra.ts`), so
+consecutive tick, about 50 seconds (`missesBeforeDelete` in `harness/mastra/mastra.ts`), so
 renaming the workflow deletes every automation within that time.
 
 A fire runs the workflow `conexus-automation-run` in three steps:

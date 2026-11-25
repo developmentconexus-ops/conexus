@@ -1,8 +1,8 @@
 import type { AgentController } from '@mastra/core/agent-controller'
+import type { ConversationMachines } from '../../harness/machine/public.ts'
+import type { ReleaseScope } from '../../harness/spec/public.ts'
+import { releaseByMarks } from '../../harness/spec/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import type { ReleaseScope } from '../controller-kit/public.ts'
-import { releaseByMarks } from '../controller-kit/public.ts'
-import type { ConversationMachines } from '../machine/public.ts'
 import type { assistantMemory } from './memory.ts'
 
 /**

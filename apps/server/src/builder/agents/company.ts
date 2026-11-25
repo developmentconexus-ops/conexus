@@ -1,12 +1,16 @@
 import type { AgentId, CompanyData, ProjectId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
+import type { DataBinding, RunScope } from '../../harness/spec/public.ts'
+import { dataContextOf, principalOf } from '../../harness/spec/public.ts'
+import type {
+  AppDataPort,
+  CompanyConnection,
+  CompanyToolScope,
+  PrincipalDoor,
+} from '../../harness/tools/public.ts'
+import { byPrincipal, companyToolScope, companyTools } from '../../harness/tools/public.ts'
 import type { Access, Principal } from '../../hub/access/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import type { AppDataPort } from '../app-data/public.ts'
-import type { CompanyConnection, CompanyToolScope, PrincipalDoor } from '../company-tools/public.ts'
-import { byPrincipal, companyToolScope, companyTools } from '../company-tools/public.ts'
-import type { DataBinding, RunScope } from '../controller-kit/public.ts'
-import { dataContextOf, principalOf } from '../controller-kit/public.ts'
 
 /**
  * The run's company tools' scope: what the Projeto still offers, in the run's view, and the app's

@@ -1,18 +1,12 @@
 import type { CompanyData, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
-import type { Access, Principal } from '../../hub/access/public.ts'
-import type { BuilderData } from '../../hub/apps/public.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
-import type { CompanyToolDeps } from '../company-tools/public.ts'
-import { companyConnections, companyToolScope, companyTools } from '../company-tools/public.ts'
-import type { BuilderConnectors } from '../connectors/public.ts'
-import { builderAccess } from '../connectors/public.ts'
-import type { DataBinding, RunScope } from '../controller-kit/public.ts'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import { TITLE } from '../../harness/prompt/public.ts'
+import type { DataBinding, RunScope } from '../../harness/spec/public.ts'
 import {
   ASK_USER_TOOL,
   CONVERSATION_MODE,
@@ -24,10 +18,19 @@ import {
   principalOf,
   sessionModel,
   skillOf,
-  TITLE,
   toolsOf,
-} from '../controller-kit/public.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
+} from '../../harness/spec/public.ts'
+import type { BuilderConnectors, CompanyToolDeps } from '../../harness/tools/public.ts'
+import {
+  builderAccess,
+  companyConnections,
+  companyToolScope,
+  companyTools,
+} from '../../harness/tools/public.ts'
+import type { Access, Principal } from '../../hub/access/public.ts'
+import type { BuilderData } from '../../hub/apps/public.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
@@ -154,7 +157,7 @@ export function createBuilder(deps: {
         // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
         return {
           web_fetch: webFetchTool,
-          [BUILDER_TOOL.check]: check,
+          [CONVERSATION_TOOL.check]: check,
           ...toolsOf(sessionModel(requestContext)),
           ...(scope === undefined ? {} : await companyTools(scope, 'builder', tools)),
         }

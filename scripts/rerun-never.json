@@ -1,16 +1,16 @@
 {
   "files": [
     "apps/server/src/builder/agents/approval-refused.test.ts",
-    "apps/server/src/builder/app-data/access.test.ts",
+    "apps/server/src/harness/tools/app-data/access.test.ts",
     "apps/server/src/builder/assistant/run-scope.test.ts",
-    "apps/server/src/builder/company-tools/conformance.test.ts",
-    "apps/server/src/builder/connectors/connector-tools-scope.test.ts",
+    "apps/server/src/harness/tools/company/conformance.test.ts",
+    "apps/server/src/harness/tools/connectors/connector-tools-scope.test.ts",
     "apps/server/src/builder/construtor/run-scope.test.ts",
     "apps/server/src/builder/conversation/conversation-refusal.test.ts",
     "apps/server/src/builder/conversation/permissions.test.ts",
-    "apps/server/src/builder/data-tools/tools-refusals.test.ts",
-    "apps/server/src/builder/data-tools/tools.test.ts",
-    "apps/server/src/builder/model-accounts/openai/sign-in-refusals.test.ts",
+    "apps/server/src/harness/tools/data/tools-refusals.test.ts",
+    "apps/server/src/harness/tools/data/tools.test.ts",
+    "apps/server/src/harness/model-accounts/openai/sign-in-refusals.test.ts",
     "apps/server/src/hub/access/conformance.test.ts",
     "apps/server/src/hub/access/principal.test.ts",
     "apps/server/src/hub/apps/app-access-journey.test.ts",
@@ -351,7 +351,7 @@
       "name": "o dono virou membro"
     },
     {
-      "file": "apps/server/src/builder/connectors/connector-tools.test.ts",
+      "file": "apps/server/src/harness/tools/connectors/connector-tools.test.ts",
       "name": "a ligação de um sistema com a leitura de outro: a ferramenta recusa dizendo de quem é cada uma, fica no registro, e nenhuma porta é chamada \\(F-A\\)"
     },
     {
@@ -383,15 +383,15 @@
       "name": "a conversa de outra pessoa ou de outra empresa: o mesmo 404 em toda rota; Diego não recebe evento de Ana; nenhuma rota do Mastra"
     },
     {
-      "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "file": "apps/server/src/harness/routes/guard.test.ts",
       "name": "a resposta de aprovação: outra pessoa, ou a mesma por outro controlador, recebe CONVERSATION_NOT_FOUND; alwaysAllowCategory ou um requestContext dão REQUEST_MALFORMED; um toolCallId que não é um portão vivo da sessão responde not_pending; nada roda \\(7\\)"
     },
     {
-      "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "file": "apps/server/src/harness/routes/guard.test.ts",
       "name": "o Assistente: as rotas do Mastra"
     },
     {
-      "file": "apps/server/src/builder/conversation/guard.test.ts",
+      "file": "apps/server/src/harness/routes/guard.test.ts",
       "name": "os controladores novos: as seis rotas servem o controlador agents ao dono da conversa enquanto ele gerencia agentes; a de outra pessoa, a de outro controlador e a de quem virou membro dão CONVERSATION_NOT_FOUND"
     },
     {
@@ -399,63 +399,63 @@
       "name": "a aba Código lê o main"
     },
     {
-      "file": "apps/server/src/builder/machine/conversation-lane.test.ts",
+      "file": "apps/server/src/harness/machine/conversation-lane.test.ts",
       "name": "o download achado pelo id religa pelo id e não mata a de outro modelo; o limite é MAX_BYTES \\(S\\)"
     },
     {
-      "file": "apps/server/src/builder/machine/conversation-machines.test.ts",
+      "file": "apps/server/src/harness/machine/conversation-machines.test.ts",
       "name": "com `replace`, a de outro molde é morta"
     },
     {
-      "file": "apps/server/src/builder/machine/conversation-machines.test.ts",
+      "file": "apps/server/src/harness/machine/conversation-machines.test.ts",
       "name": "com `resume`, a de outro molde é retomada e nada é morto"
     },
     {
-      "file": "apps/server/src/builder/machine/e2b-api.test.ts",
+      "file": "apps/server/src/harness/machine/e2b-api.test.ts",
       "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
     },
     {
-      "file": "apps/server/src/builder/machine/locate.test.ts",
+      "file": "apps/server/src/harness/machine/locate.test.ts",
       "name": "o caminho cai na pasta"
     },
     {
-      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
       "name": "achada pelo id"
     },
     {
-      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
       "name": "lista de domínios"
     },
     {
-      "file": "apps/server/src/builder/machine/machine-e2b.test.ts",
+      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
       "name": "lista de endereços"
     },
     {
-      "file": "apps/server/src/builder/machine/machine.test.ts",
+      "file": "apps/server/src/harness/machine/machine.test.ts",
       "name": "máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main"
     },
     {
-      "file": "apps/server/src/builder/machine/machine.test.ts",
+      "file": "apps/server/src/harness/machine/machine.test.ts",
       "name": "máquina: só a máquina de nome igual ao desta conversa é achada; a do Projeto, a de outra instalação e a de outra conversa não"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/claude/claude.test.ts",
+      "file": "apps/server/src/harness/model-accounts/claude/claude.test.ts",
       "name": "troca recusada: 422 e nada gravado, e a entrada acaba; fornecedor fora: 502; tarde ou de outro: 410"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/google/flat-unions.test.ts",
+      "file": "apps/server/src/harness/model-accounts/google/flat-unions.test.ts",
       "name": "sem união"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/model-accounts-order.test.ts",
+      "file": "apps/server/src/harness/model-accounts/model-accounts-order.test.ts",
       "name": "ordenar uma fila com todos os seus ids grava; velha, incompleta ou de outro fornecedor dá 409"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/model-defaults.test.ts",
+      "file": "apps/server/src/harness/model-accounts/model-defaults.test.ts",
       "name": "o padrão sem conta usável é pulado: pausada, no limite, de outra pessoa; nenhum degrau usável é 422 e nada nasce"
     },
     {
-      "file": "apps/server/src/builder/model-accounts/openai/sign-in.test.ts",
+      "file": "apps/server/src/harness/model-accounts/openai/sign-in.test.ts",
       "name": "a entrada de outra empresa: a espera diz que venceu, sem chamar a OpenAI"
     },
     {

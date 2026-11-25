@@ -4,17 +4,17 @@ import { dirname, join } from 'node:path'
 import { VERSION_FOLDER } from '@conexus/app/check'
 import type { AppSessionToken, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { AppSessionToken as AppSessionTokenSchema } from '@conexus/hub-api'
+import type { BrowserReport, ConferPlatformFailed, Sha } from '../../harness/machine/public.ts'
+import { createMachines } from '../../harness/machine/public.ts'
+import { testConversationMachines } from '../../harness/machine/test-conversation-machines.ts'
+import { INSTALLATION, localKit, newControl, TEMPLATE } from '../../harness/machine/test-machine.ts'
 import type { Conference } from '../../hub/apps/public.ts'
 import { folder as version } from '../../hub/apps/test-version-folder.ts'
 import type { Config } from '../../platform/config.ts'
 import type { Result } from '../../platform/result.ts'
 import { silent } from '../../platform/test-database.ts'
-import type { GitCopy, Repository, Sha } from '../git/public.ts'
+import type { GitCopy, Repository } from '../git/public.ts'
 import { openRepository, restoreGuarded } from '../git/public.ts'
-import type { BrowserReport, ConferPlatformFailed } from '../machine/public.ts'
-import { createMachines } from '../machine/public.ts'
-import { testConversationMachines } from '../machine/test-conversation-machines.ts'
-import { INSTALLATION, localKit, newControl, TEMPLATE } from '../machine/test-machine.ts'
 import type { BuilderConfer } from './context.ts'
 
 /** A bucket of memory: puts that fail on demand, and what it holds, by key. */
@@ -215,13 +215,13 @@ export function testBuilderPorts(
     doubled(machines, knobs, folder)
     return machines
   }
-  const assistantMachines = testConversationMachines(folder)
+  const conversationMachines = testConversationMachines(folder)
   return {
     machinesOf,
     confer: conferOf(knobs),
-    conversationMachine: assistantMachines.deps,
-    machineTuning: assistantMachines.tuning,
-    assistantMachines,
+    conversationMachine: conversationMachines.deps,
+    machineTuning: conversationMachines.tuning,
+    conversationMachines,
     repository,
     copy: bucket.copy,
     bucket,

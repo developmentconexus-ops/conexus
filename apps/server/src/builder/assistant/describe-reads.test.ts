@@ -2,10 +2,10 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { DATA_TOOL } from '@conexus/hub-api'
+import { endOf, messagesOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { CONNECTORS } from '../../hub/connectors/public.ts'
 import type { Anthropic, Sent } from '../../platform/test-anthropic.ts'
-import { endOf, messagesOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { assisting, COUNT, created, SEARCH, talking } from './test-assistant.ts'
 
 type Described = { systems: { name: string; connector: string; reads: { operation: string }[] }[] }

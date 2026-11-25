@@ -1015,7 +1015,7 @@ changes, reread the line it names.
 
 ## Mastra 1.83.0 and @mastra/fastify 1.5.27: session routes behind the Hub's guard (step 14.2)
 
-- **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
+- **A fixed list, one guard.** `harness/routes/guard.ts` registers seven of Mastra's own
   agent-controller routes (a session's state, stream, message, Parar, a card's answer, a write's approval, transcript;
   `FIXED_LIST`)
   through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
@@ -1038,7 +1038,7 @@ changes, reread the line it names.
   with the square of a turn's length. The stream route's `displayState: false` (`@mastra/server`
   1.80.0, PR #28527) cuts all of it, and the screen reads a part (`isRunning`, `pendingSuspensions`,
   `omProgress`), so there is still no option to send a subset.
-- **Hand-made piece.** `slim` and `paced` in `apps/server/src/builder/conversation/stream.ts`. `slim`
+- **Hand-made piece.** `slim` and `paced` in `apps/server/src/harness/routes/stream.ts`. `slim`
   keeps of a `display_state_changed` event only what the screen reads (`DISPLAY_READ`); every other
   event goes as Mastra sent it. `paced` writes each event once the response can take more and ends
   the stream of a page 8 MiB behind, which reads the transcript and the session again when it opens
@@ -1061,8 +1061,8 @@ changes, reread the line it names.
   line (`mastracode/sdk/src/index.ts:1413-1416`, `resolveTenantSessionModel`); neither it nor the
   Factory has the piece (searched in both).
 - **Hand-made piece.** `turnProcessor` and `sessionTurns` in
-  `apps/server/src/builder/controller-kit/turns.ts`: the one input processor that takes a run's
-  `Turn` for the account queue and puts it on the request context, and the way a session holds that
+  `apps/server/src/harness/spec/turns.ts`: the one input processor that takes a run's
+  `AccountTurn` for the account queue and puts it on the request context, and the way a session holds that
   turn until `agent_end`. Each agent's ficha chooses by its `turn` field: `SESSION` (the Assistant,
   the Construtor, a Project agent's conversation) or `RUN` (the Builder, and the version the
   Construtor tests, which have no session to hold it). Before the step it was three copies.
@@ -1095,11 +1095,11 @@ changes, reread the line it names.
   (`packages/core/src/agent-controller/session.ts:4808-4829`, `:5019-5030` and `:6638-6642`). With `@mastra/pg`
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
   at `packages/core/src/agent/agent.ts:8757`).
-- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/builder/controller-kit/mount.ts`)
+- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/harness/spec/mount.ts`)
   in `agents/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
   regime `THE_WRITE_ASKS` runs over its tools: every tool whose rule is not a function (the shared
   ones, the web's, the code's) goes on a copy with `NEVER_ASKS`, and the given objects stay as they
-  are; and `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
+  are; and `requireApproval: () => false` in `apps/server/src/harness/machine/conversation.ts` (the
   Computador). A tool's own rule runs before the session's policy, so the call is never suspended.
 - **Why.** With `allow`, 12 of 200 reads were lost on Postgres; with the rule on each tool, 0 of 200
   (the study of step 24.5; Papéis P1).
@@ -1118,7 +1118,7 @@ changes, reread the line it names.
   not reachable here: Mastra's loop reads the provider's `stream.request` itself and takes no
   such option.
 - **Hand-made piece.** `bodylessMiddleware` in
-  `apps/server/src/builder/model-accounts/claude/models.ts`, a `wrapStream` that drops `request`
+  `apps/server/src/harness/model-accounts/claude/models.ts`, a `wrapStream` that drops `request`
   from `doStream()`'s answer.
 - **Why.** The Hub's heap grew with the prompts of the last turn of every open conversation.
 - **Proof.** `prompt-cache.test.ts` "cada passo do modelo da conta volta sem o corpo do pedido…".
@@ -1131,8 +1131,8 @@ changes, reread the line it names.
   `__setLogger` of its own), and each domain logs its own failures. The provider registry says of a model only
   `attachment`, `temperature`, `structuredOutput` and `reasoning` (`dist/capabilities/*.json`),
   nothing of what the model outputs.
-- **Hand-made piece.** `apps/server/src/builder/mastra/mastra.ts` gives each domain the Hub's logger
-  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/builder/model-accounts/providers.ts`
+- **Hand-made piece.** `apps/server/src/harness/mastra/mastra.ts` gives each domain the Hub's logger
+  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/harness/model-accounts/providers.ts`
   leaves out a model whose name says it draws, films, speaks, hears, embeds, ranks, guards, reads
   scans or talks live.
 - **Why.** A domain's failure would log nowhere the Hub reads; the model picker would list models
@@ -1148,7 +1148,7 @@ changes, reread the line it names.
   follows a link: `FilesystemReadOpts` has no `nofollow` (`dist/index.d.ts:5794-5807`). `files.list` (`:5972`)
   shows a link's `symlinkTarget`, but a link swapped in between the list and the read still passes.
   Mastra 1.83.0 `WorkspaceFilesystem.readFile` has the same shape.
-- **Hand-made piece.** `packIn` in `apps/server/src/builder/machine/pack.ts` runs one Node program
+- **Hand-made piece.** `packIn` in `apps/server/src/harness/machine/pack.ts` runs one Node program
   on the machine, while the run still holds it. The program opens every folder and file of
   `node_modules/.conexus/version` with `O_NOFOLLOW` through `/proc/self/fd`, refuses a link or a
   file that is not regular with `NOT_REGULAR`, counts every file against `APP_LIMITS` before reading
@@ -1407,7 +1407,7 @@ reference tool checks a read against its documentation.
   `internal/util/gemini_schema.go:73-83`, `:941` and `:957-971` drop every `enum` from a tool's
   schema for the Antigravity path and keep a multi-branch `anyOf`; `antigravity_executor_request.go:70-77`
   sends the same cleaned schema to Gemini (commits `7d55d0da` and `5efe9758`).
-- **Hand-made piece.** `forCliProxy` in `apps/server/src/builder/model-accounts/google/flat-unions.ts`,
+- **Hand-made piece.** `forCliProxy` in `apps/server/src/harness/model-accounts/google/flat-unions.ts`,
   called by `accountPick` only when the account is `google_cliproxy`. For that step it declares flat
   any tool whose input has a union of objects told apart by a fixed-value field (`cadence` of
   `propose_automation`); `execute` and the validation stay the tool's own, so the card, the route and
@@ -1441,7 +1441,7 @@ reference tool checks a read against its documentation.
   `dist/provider-registry.json`, and Mastra Code's `auth/storage.ts` (`@mastra/code-sdk` 1.18.0)
   keeps one person's credentials. Neither has a switch per company for a kind of sign-in, and the
   Codex CLI has no company at all.
-- **Hand-made piece.** `builder.company_account_kind` (`apps/server/src/builder/model-accounts/tables.ts`)
+- **Hand-made piece.** `builder.company_account_kind` (`apps/server/src/harness/model-accounts/tables.ts`)
   and `openKindsOf` in `kinds.ts`, read by `admitOpen` in `sign-ins.ts` when a sign-in starts, when a
   pasted code completes it and on every device-code poll (`sign-in-poll.ts`). The API key is open to
   every company; `claude_subscription`, `google_cliproxy` and `openai_codex` start off.
@@ -1470,7 +1470,7 @@ reference tool checks a read against its documentation.
   model never writes, it proposes with `propose_company_memory` and a person who may saves from the
   card, decision 0064). The company's instructions are a page declared and pinned by the
   configuration, written by the host through `PUT .../instructions`. The Mastra navigation routes
-  stay off by default and the Hub exposes only its own (`conversation/guard.ts`, S39). The
+  stay off by default and the Hub exposes only its own (`harness/routes/guard.ts`, S39). The
   permission "Memória da empresa" is the Hub's, in `hub/identity/admission.ts`.
 - **Why.** A model that may write to the company's memory by the library's own tools would bypass
   the roles; one file and one test keep an experimental storage from spreading.
@@ -1494,7 +1494,7 @@ reference tool checks a read against its documentation.
   forked; `researchReads`, the helper's `connector_read` built for each run with the conversation of
   whoever asks, through the same door as the main agent (the 50 calls count by the turn);
   `subagentModel` (`model-accounts/side-calls.ts`, handed to `resolveSubagentModel` by
-  `controller-kit/factories.ts`) returns the model of the account the turn is calling, as the
+  `harness/spec/factories.ts`) returns the model of the account the turn is calling, as the
   conversation's title does; and
   `readsFiles` (`assistant/connector-access.ts`) counts the files by the turn's key, because the
   helper's context is another object and its first file would overwrite the turn's first.

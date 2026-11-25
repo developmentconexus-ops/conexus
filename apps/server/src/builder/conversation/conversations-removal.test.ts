@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { conversing, sent, started, streamOf } from '../../harness/routes/test-conversation.ts'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { BRUNO, call, codeOf, memberOn, personOn, post } from '../../hub/identity/test-hub.ts'
-import { conversing, sent, started, streamOf } from './test-conversation.ts'
 
 /** A conversation with one turn, so Mastra holds its thread, its messages and its title. */
 async function conversed(hub: Hub, person: Parameters<typeof started>[1], conversations: string) {

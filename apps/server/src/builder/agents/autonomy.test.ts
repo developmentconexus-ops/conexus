@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { endOf, sent, sessionUrl, streamOf } from '../../harness/routes/test-conversation.ts'
 import { operationLabel } from '../../hub/connectors/public.ts'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { said } from '../assistant/test-assistant.ts'
-import { endOf, sent, sessionUrl, streamOf } from '../conversation/test-conversation.ts'
 import {
   agentOf,
   drafted,

@@ -4,12 +4,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
-import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { call, post } from '../../hub/identity/test-hub.ts'
-import type { Reply } from '../../platform/test-anthropic.ts'
-import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
-import { until } from '../../platform/test-until.ts'
-import type { Read, StreamEvent } from './test-conversation.ts'
+import type { Read, StreamEvent } from '../../harness/routes/test-conversation.ts'
 import {
   answeredOf,
   asked,
@@ -23,9 +18,14 @@ import {
   stopped,
   streamOf,
   title,
-} from './test-conversation.ts'
-import { dataOf, failuresOf, messagesIn, partsOf } from './test-parts.ts'
-import { onGroq, routedTo } from './test-research.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { dataOf, failuresOf, messagesIn, partsOf } from '../../harness/routes/test-parts.ts'
+import { onGroq, routedTo } from '../../harness/routes/test-research.ts'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
+import type { Reply } from '../../platform/test-anthropic.ts'
+import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
+import { until } from '../../platform/test-until.ts'
 
 /** The page the recorded `tool-error` call asks to read, on a site that never answers. */
 const MISSING_SITE = 'padaria-inventada.example.test'

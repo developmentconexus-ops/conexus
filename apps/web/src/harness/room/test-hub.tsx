@@ -2,7 +2,7 @@ import type { ConversationStart, ConversationSummary, Effort, Task } from '@cone
 import {
   ATTEMPT_KEY_HEADER,
   BUILDER_CONTROLLER,
-  BUILDER_ROUTES,
+  CONVERSATION_ROUTES,
   ConversationId,
   listConversations,
   listModelAccounts,
@@ -30,7 +30,7 @@ export const FIRST = ConversationId.parse('11111111-1111-4111-8111-111111111111'
 export const SECOND = ConversationId.parse('22222222-2222-4222-8222-222222222222')
 export const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 const BASE = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations`
-const SESSION = `*${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/:id`
+const SESSION = `*${CONVERSATION_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/:id`
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 const COMPANY_DEFAULT = { model: MODEL, effort: 'off' }
 

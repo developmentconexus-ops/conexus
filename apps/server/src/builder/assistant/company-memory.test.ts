@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { KNOWLEDGE_STORAGE_SCHEMA_VERSION } from '@mastra/core/knowledge'
+import { endOf, KEY, MODEL } from '../../harness/routes/test-conversation.ts'
+import { stepped, tool } from '../../harness/routes/test-questions.ts'
 import {
   BRUNO,
   CARLA,
@@ -11,8 +13,6 @@ import {
   post,
 } from '../../hub/identity/test-hub.ts'
 import { ATENDENTE } from '../../hub/identity/test-roles.ts'
-import { endOf, KEY, MODEL } from '../conversation/test-conversation.ts'
-import { stepped, tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 import {
   instructed,

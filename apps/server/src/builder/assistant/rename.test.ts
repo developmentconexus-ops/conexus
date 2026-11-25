@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { endOf, sent, streamOf, title } from '../../harness/routes/test-conversation.ts'
 import { CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
-import { endOf, sent, streamOf, title } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 
 test('renomear: o título fica na lista, e um título vazio ou longo demais é REQUEST_MALFORMED (5)', async (t) => {

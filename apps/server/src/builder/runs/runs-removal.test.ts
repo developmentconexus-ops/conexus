@@ -3,8 +3,6 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
-import { BRUNO, call, codeOf, memberOn, personOn } from '../../hub/identity/test-hub.ts'
-import { until } from '../../platform/test-until.ts'
 import {
   asked,
   conversing,
@@ -13,8 +11,10 @@ import {
   started,
   streamOf,
   title,
-} from '../conversation/test-conversation.ts'
-import { failuresOf } from '../conversation/test-parts.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf } from '../../harness/routes/test-parts.ts'
+import { BRUNO, call, codeOf, memberOn, personOn } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 
 const WRITE = 'mastra_workspace_write_file'
 const OLGA = { name: 'Olga Souza', email: 'olga@example.test', role: 'admin' }

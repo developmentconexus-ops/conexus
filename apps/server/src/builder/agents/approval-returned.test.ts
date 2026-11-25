@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { endOf, sent } from '../../harness/routes/test-conversation.ts'
 import { said } from '../assistant/test-assistant.ts'
-import { endOf, sent } from '../conversation/test-conversation.ts'
 import { approving, launched } from './test-approval.ts'
 
 const SUCESSO = 'Pedido Incluído/Atualizado/Cancelado com sucesso.'

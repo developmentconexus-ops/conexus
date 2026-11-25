@@ -4,9 +4,8 @@ import { existsSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
-import { post } from '../../hub/identity/test-hub.ts'
-import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { until } from '../../platform/test-until.ts'
+import { Sha } from '../../harness/machine/public.ts'
+import { INSTALLATION } from '../../harness/machine/test-machine.ts'
 import {
   asked,
   conversing,
@@ -17,10 +16,11 @@ import {
   started,
   streamOf,
   title,
-} from '../conversation/test-conversation.ts'
-import { failuresOf } from '../conversation/test-parts.ts'
-import { Sha } from '../git/public.ts'
-import { INSTALLATION } from '../machine/test-machine.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf } from '../../harness/routes/test-parts.ts'
+import { post } from '../../hub/identity/test-hub.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 
 const WRITE = 'mastra_workspace_write_file'
 const COMMAND = 'mastra_workspace_execute_command'

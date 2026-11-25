@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { holding, hubBeside } from '../../harness/routes/test-conversation.ts'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
 import { until } from '../../platform/test-until.ts'
-import { holding, hubBeside } from '../conversation/test-conversation.ts'
 import type { Summary } from './test-automations.ts'
 import {
   answering,

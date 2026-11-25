@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { endOf, messagesOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import {
   automating,
   created as automationCreated,
   ended,
   ranNow,
 } from '../automations/test-automations.ts'
-import { endOf, messagesOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const APP = 'propose_app'

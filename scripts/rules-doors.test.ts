@@ -28,8 +28,8 @@ const BAD: Record<string, [string, string]> = {
     '../assistant/public.ts',
   ],
   'agents-and-apps-reach-data-only-through-the-contract': [
-    `${SRC}/builder/data-tools/x.ts`,
-    '../../hub/connectors/public.ts',
+    `${SRC}/harness/tools/data/x.ts`,
+    '../../../hub/connectors/public.ts',
   ],
   'data-read-only-through-the-recorder': [`${SRC}/hub/data/other.ts`, './tables.ts'],
 }
@@ -39,7 +39,7 @@ const GOOD: Record<string, string> = {
   [`${SRC}/hub/a/tables.ts`]: '../b/public-tables.ts',
   [`${SRC}/hub/a/ok.test.ts`]: '../b/test-thing.ts',
   [`${SRC}/builder/agents/ok.test.ts`]: '../assistant/test-thing.ts',
-  [`${SRC}/builder/assistant/routes.ts`]: '../../hub/connectors/public.ts',
+  [`${SRC}/builder/assistant/routes.ts`]: '../../../hub/connectors/public.ts',
   [`${SRC}/builder/assistant/data.test.ts`]: '../../hub/connectors/test-connections.ts',
   [`${SRC}/hub/data/record.ts`]: './tables.ts',
 }
@@ -90,16 +90,21 @@ test('dependency-cruiser aceita a raiz, o tables.ts, a porta .tsx, o ajudante te
 
 /** The files that still reach the data directly today: the list only shrinks, and a name that leaves leaves here in the same commit. */
 const MIGRATION_TODAY = [
-  ...['agents/agent', 'agents/choose', 'agents/code-tools', 'agents/controller'],
-  ...['agents/conversation-routes', 'agents/legacy', 'agents/publish', 'agents/tools'],
-  ...['agents/write-of', 'app-data/context', 'app-data/tools', 'assistant/assistant'],
-  ...['assistant/connector-access', 'assistant/context', 'assistant/open', 'assistant/propose'],
-  ...['assistant/routes', 'automations/automations', 'connectors/connector-tools'],
-  ...['connectors/typed-reads', 'construtor/code-tool'],
-  ...['construtor/construtor', 'controller-kit/turns', 'conversation/builder'],
-  ...['conversation/public', 'tools/check'],
+  ...['builder/agents/agent', 'builder/agents/choose', 'builder/agents/code-tools'],
+  ...['builder/agents/controller', 'builder/agents/conversation-routes', 'builder/agents/legacy'],
+  ...['builder/agents/publish', 'builder/agents/tools', 'builder/agents/write-of'],
+  ...[
+    'harness/tools/app-data/context',
+    'harness/tools/app-data/tools',
+    'builder/assistant/assistant',
+  ],
+  ...['builder/assistant/connector-access', 'builder/assistant/context', 'builder/assistant/open'],
+  ...['builder/assistant/propose', 'builder/assistant/routes', 'builder/automations/automations'],
+  ...['harness/tools/connectors/connector-tools', 'harness/tools/connectors/typed-reads'],
+  ...['builder/construtor/code-tool', 'builder/construtor/construtor'],
+  ...['harness/spec/turns', 'builder/conversation/builder', 'builder/tools/check'],
 ]
-  .map((file) => `^apps/server/src/builder/${file}\\.ts$`)
+  .map((file) => `^apps/server/src/${file}\\.ts$`)
   .concat('^packages/app/src/connectors\\.ts$')
 
 function grown(listed: readonly string[]): string[] {
@@ -121,6 +126,6 @@ test('a lista de migração do contrato não cresce', () => {
 })
 
 test('um nome novo na lista falha', () => {
-  const added = '^apps/server/src/builder/app-data/check\\.ts$'
+  const added = '^apps/server/src/harness/tools/app-data/check\\.ts$'
   assert.deepEqual(grown([...MIGRATION_TODAY, added]), [added])
 })

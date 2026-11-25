@@ -12,7 +12,7 @@ import {
   GooglePage,
   listRequest,
   OpenAiList,
-} from '../apps/server/src/builder/model-accounts/public.ts'
+} from '../apps/server/src/harness/model-accounts/public.ts'
 import type { Recording } from '../apps/server/src/platform/test-recordings.ts'
 import { LEAK, RECORDINGS } from '../apps/server/src/platform/test-recordings.ts'
 

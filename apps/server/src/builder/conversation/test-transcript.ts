@@ -1,5 +1,5 @@
+import { messagesOf } from '../../harness/routes/test-conversation.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { messagesOf } from './test-conversation.ts'
 
 /**
  * A conversation's messages read again, as role and parts, without what Mastra keeps beside each

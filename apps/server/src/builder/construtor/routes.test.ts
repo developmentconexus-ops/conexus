@@ -2,16 +2,6 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import {
-  BRUNO,
-  CARLA,
-  call,
-  codeOf,
-  memberOn,
-  personOn,
-  post,
-} from '../../hub/identity/test-hub.ts'
-import { agentsOn, otherProject } from '../agents/test-agents.ts'
-import {
   endOf,
   holding,
   hubBeside,
@@ -21,8 +11,18 @@ import {
   sessionUrl,
   streamOf,
   title,
-} from '../conversation/test-conversation.ts'
-import { sessionStateOf } from '../conversation/test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { sessionStateOf } from '../../harness/routes/test-questions.ts'
+import {
+  BRUNO,
+  CARLA,
+  call,
+  codeOf,
+  memberOn,
+  personOn,
+  post,
+} from '../../hub/identity/test-hub.ts'
+import { agentsOn, otherProject } from '../agents/test-agents.ts'
 import { kept, opened } from './test-construtor.ts'
 
 type Listed = {

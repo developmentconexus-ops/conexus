@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { AgentConversationSummary, ConversationId, ToolCallId } from '@conexus/hub-api'
+import { endOf, sent } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
 import { markOf } from '../../hub/connectors/public.ts'
 import { CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import { said } from '../assistant/test-assistant.ts'
-import { endOf, sent } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { ASKED, answer, approving, askedOf, launched, untilAsked, WRITE } from './test-approval.ts'
 
 const UNKNOWN_PRODUCT = {

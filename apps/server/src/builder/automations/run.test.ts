@@ -1,12 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
-import { bellOf } from '../../hub/notifications/test-notifications.ts'
-import type { Reply } from '../../platform/test-anthropic.ts'
-import { until } from '../../platform/test-until.ts'
-import { reading, talking } from '../assistant/test-assistant.ts'
 import {
   answeredOf,
   endOf,
@@ -14,9 +8,15 @@ import {
   messagesOf,
   PARTIAL,
   title,
-} from '../conversation/test-conversation.ts'
-import { failuresIn } from '../conversation/test-parts.ts'
-import { tool } from '../conversation/test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { failuresIn } from '../../harness/routes/test-parts.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { bellOf } from '../../hub/notifications/test-notifications.ts'
+import type { Reply } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
+import { reading, talking } from '../assistant/test-assistant.ts'
 import { AUTOMATION_WORKFLOW } from './public.ts'
 import {
   answering,

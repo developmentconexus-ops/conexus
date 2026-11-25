@@ -1,6 +1,6 @@
 import type { RequestContext } from '@mastra/core/request-context'
-import type { Mays, Speakers } from '../controller-kit/public.ts'
-import { oncePerRun } from '../controller-kit/public.ts'
+import type { Mays, Speakers } from '../../harness/spec/public.ts'
+import { oncePerRun } from '../../harness/spec/public.ts'
 
 /** What the speaker's role and the run allow, once per run: the tools and the block's sentences read it (one owner). */
 export function maysOf(

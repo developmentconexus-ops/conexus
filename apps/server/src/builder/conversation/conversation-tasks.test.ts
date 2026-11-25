@@ -2,11 +2,8 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
-import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { call } from '../../hub/identity/test-hub.ts'
-import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { connect, GROQ_MODEL } from '../model-accounts/test-defaults.ts'
-import type { StreamEvent } from './test-conversation.ts'
+import { connect, GROQ_MODEL } from '../../harness/model-accounts/test-defaults.ts'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
 import {
   answeredOf,
   conversing,
@@ -19,9 +16,12 @@ import {
   streamOf,
   title,
   turnNotices,
-} from './test-conversation.ts'
-import { messagesIn, noticesIn } from './test-parts.ts'
-import { sessionStateOf } from './test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { messagesIn, noticesIn } from '../../harness/routes/test-parts.ts'
+import { sessionStateOf } from '../../harness/routes/test-questions.ts'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import { call } from '../../hub/identity/test-hub.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 
 const OBSERVER = /^You are the memory consciousness/
 const SNAPSHOT = '<current-task-list'

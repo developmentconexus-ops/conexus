@@ -2,12 +2,28 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { connect, GROQ_MODEL } from '../../harness/model-accounts/test-defaults.ts'
+import {
+  conversing,
+  endOf,
+  hubBeside,
+  sent,
+  started,
+  streamOf,
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf } from '../../harness/routes/test-parts.ts'
+import {
+  ask,
+  SUBMIT,
+  stepped,
+  tool,
+  untilCard,
+  WHO,
+  WRITE_PLAN,
+  within,
+} from '../../harness/routes/test-questions.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import { connect, GROQ_MODEL } from '../model-accounts/test-defaults.ts'
-import { conversing, endOf, hubBeside, sent, started, streamOf } from './test-conversation.ts'
-import { failuresOf } from './test-parts.ts'
-import { ask, SUBMIT, stepped, tool, untilCard, WHO, WRITE_PLAN, within } from './test-questions.ts'
 
 const WRITE_A = tool('mastra_workspace_write_file', { path: 'a.ts', content: 'x\n' })
 

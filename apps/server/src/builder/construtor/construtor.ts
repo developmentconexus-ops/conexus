@@ -1,26 +1,18 @@
 import { readFileSync } from 'node:fs'
 import type { AutomationId, ProjectId } from '@conexus/hub-api'
-import { BUILDER_TOOL, CONSTRUTOR_TOOL, TASK_TOOLS } from '@conexus/hub-api'
+import { CONSTRUTOR_TOOL, CONVERSATION_TOOL, TASK_TOOLS } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
 import type { FastifyInstance } from 'fastify'
-import type { Access, Place } from '../../hub/access/public.ts'
-import type { Connectors } from '../../hub/connectors/public.ts'
-import type { IdentityPorts } from '../../hub/identity/public.ts'
-import type { liveProjectOf } from '../../hub/projects/public.ts'
-import type { Database } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
-import { Failure } from '../../platform/failure.ts'
-import type { AgentsAlive } from '../agents/public.ts'
-import type { CompanyToolDeps } from '../company-tools/public.ts'
-import {
-  byPrincipal,
-  companyConnections,
-  companyToolScope,
-  companyTools,
-} from '../company-tools/public.ts'
-import type { ConnectorAccess } from '../connectors/public.ts'
+import type {
+  ConversationMachine,
+  ConversationMachines,
+  MachineTuning,
+} from '../../harness/machine/public.ts'
+import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../../harness/machine/public.ts'
+import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import { CONEXUS_PROMPT, TITLE } from '../../harness/prompt/public.ts'
 import type {
   ConversationSpec,
   Owner,
@@ -28,12 +20,11 @@ import type {
   RunMark,
   RunScope,
   Speakers,
-} from '../controller-kit/public.ts'
+} from '../../harness/spec/public.ts'
 import {
   ASK_USER_TOOL,
   agentManagerAdmission,
   blockOf,
-  CONEXUS_PROMPT,
   CONVERSATION_MODE,
   conversationMemory,
   createAskUserTool,
@@ -43,14 +34,25 @@ import {
   releaseByMarks,
   runResolver,
   sessionModel,
-  TITLE,
   takeOfScope,
   toolsOf,
   turnKeyOn,
-} from '../controller-kit/public.ts'
-import type { ConversationMachine, ConversationMachines, MachineTuning } from '../machine/public.ts'
-import { ALLOWED_HOSTS, createConversationMachines, MARK } from '../machine/public.ts'
-import type { QueueDeps } from '../model-accounts/public.ts'
+} from '../../harness/spec/public.ts'
+import type { CompanyToolDeps, ConnectorAccess } from '../../harness/tools/public.ts'
+import {
+  byPrincipal,
+  companyConnections,
+  companyToolScope,
+  companyTools,
+} from '../../harness/tools/public.ts'
+import type { Access, Place } from '../../hub/access/public.ts'
+import type { Connectors } from '../../hub/connectors/public.ts'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
+import type { liveProjectOf } from '../../hub/projects/public.ts'
+import type { Database } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
+import type { AgentsAlive } from '../agents/public.ts'
 import type { InProject } from '../tools/public.ts'
 import { databaseScopeOf } from '../tools/public.ts'
 import { testDraft } from './draft-trial.ts'
@@ -67,10 +69,10 @@ const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 
  * system.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
-  BUILDER_TOOL.connectorRead,
-  BUILDER_TOOL.connectorNotes,
-  BUILDER_TOOL.webFetch,
-  BUILDER_TOOL.webSearch,
+  CONVERSATION_TOOL.connectorRead,
+  CONVERSATION_TOOL.connectorNotes,
+  CONVERSATION_TOOL.webFetch,
+  CONVERSATION_TOOL.webSearch,
   ASK_USER_TOOL,
   ...Object.values(CONSTRUTOR_TOOL),
   ...TASK_TOOLS,
@@ -314,7 +316,7 @@ export function createConstrutor(deps: Deps) {
   return Object.freeze({
     controller,
     memory,
-    /** Its controller on the one `Mastra` (`builder/mastra/`), after the agents'. */
+    /** Its controller on the one `Mastra` (`harness/mastra/`), after the agents'. */
     part: {
       kind: 'construtor',
       controller,

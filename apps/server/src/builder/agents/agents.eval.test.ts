@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ConversationId, ToolCallId } from '@conexus/hub-api'
+import { sent, streamOf } from '../../harness/routes/test-conversation.ts'
 import { markOf } from '../../hub/connectors/public.ts'
 import { REAL_MODEL, subscribed } from '../assistant/test-real-model.ts'
-import { sent, streamOf } from '../conversation/test-conversation.ts'
 import { madeTool, publishedAgent, talkedTo } from './test-agents.ts'
 import { answer, approvalsIn, askedOf, untilAsked, WRITE } from './test-approval.ts'
 

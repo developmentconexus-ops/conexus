@@ -1,9 +1,9 @@
 import { foreignKey, text, uuid } from 'drizzle-orm/pg-core'
+import { builder, OWN } from '../../harness/schema/public.ts'
 import { policy } from '../../hub/identity/public.ts'
 import { company, member } from '../../hub/identity/public-tables.ts'
 import { project } from '../../hub/projects/public-tables.ts'
 import { SCOPE_ROLES } from '../../platform/database.ts'
-import { builder, OWN } from '../schema/public.ts'
 
 /**
  * The connections an Assistant conversation chose, one row per Mastra thread, whose id is this

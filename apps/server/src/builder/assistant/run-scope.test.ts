@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { endOf, sessionUrl } from '../../harness/routes/test-conversation.ts'
+import { RUN_MARKS } from '../../harness/spec/public.ts'
+import { plantMark } from '../../harness/spec/test-run.ts'
 import { codeOf, post } from '../../hub/identity/test-hub.ts'
-import { RUN_MARKS } from '../controller-kit/public.ts'
-import { plantMark } from '../controller-kit/test-run.ts'
-import { endOf, sessionUrl } from '../conversation/test-conversation.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 test('marca de outra empresa: a thread do Assistente marcada com outra empresa dá CONVERSATION_NOT_FOUND, sem chamada ao modelo', async (t) => {

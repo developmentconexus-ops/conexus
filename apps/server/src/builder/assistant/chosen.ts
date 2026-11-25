@@ -2,9 +2,9 @@ import type { ConversationId } from '@conexus/hub-api'
 import { ConnectionId, ProjectId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import type { Kept as Opened, Owner } from '../../harness/spec/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Kept as Opened, Owner } from '../controller-kit/public.ts'
 import { assistantConversation } from './tables.ts'
 
 /** A conversation's place and choice, as the Hub keeps them. */

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { endOf, KEY, MODEL, started } from '../../harness/routes/test-conversation.ts'
+import { stepped, tool } from '../../harness/routes/test-questions.ts'
 import { BRUNO, call, memberOn, plantCompany, post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import { endOf, KEY, MODEL, started } from '../conversation/test-conversation.ts'
-import { stepped, tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 const FOLLOWED = 'Acompanho a linha de bebidas.'

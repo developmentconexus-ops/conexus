@@ -277,7 +277,7 @@ test('as máquinas: apagar o agente mata a máquina de cada conversa que vai emb
   const on = await spread(t)
   const { agent, id } = await withComputer(on)
   const draft = await talkedTo(on.hub, on.ana, on.agents, AgentId.parse(agent.id), { draft: true })
-  const { killed } = on.hub.assistantMachines
+  const { killed } = on.hub.conversationMachines
   const gone = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${agent.id}`)
   assert.equal(gone.statusCode, 204, gone.body)
   assert.ok(killed.includes(id))
@@ -293,7 +293,7 @@ test('as máquinas: apagar o Projeto mata as das conversas dos agentes dele (17)
     name: 'Encomendas',
   })
   assert.equal(gone.statusCode, 204, gone.body)
-  assert.ok(on.hub.assistantMachines.killed.includes(id))
+  assert.ok(on.hub.conversationMachines.killed.includes(id))
 })
 
 test('as máquinas: remover a empresa mata as das conversas dos agentes dela (17)', async (t) => {
@@ -312,5 +312,5 @@ test('as máquinas: remover a empresa mata as das conversas dos agentes dela (17
   const body = { name: 'Empresa Teste', revision: 0 }
   const deleted = await call(on.hub, operator, 'DELETE', `/api/clients/${on.companyId}`, body)
   assert.equal(deleted.statusCode, 204, deleted.body)
-  assert.ok(on.hub.assistantMachines.killed.includes(id))
+  assert.ok(on.hub.conversationMachines.killed.includes(id))
 })

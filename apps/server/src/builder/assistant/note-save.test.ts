@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { endOf, sent } from '../../harness/routes/test-conversation.ts'
+import { answerTo, tool, untilCard } from '../../harness/routes/test-questions.ts'
 import { BRUNO, CARLA, call, memberOn } from '../../hub/identity/test-hub.ts'
 import {
   automating,
@@ -7,8 +9,6 @@ import {
   ended,
   ranNow,
 } from '../automations/test-automations.ts'
-import { endOf, sent } from '../conversation/test-conversation.ts'
-import { answerTo, tool, untilCard } from '../conversation/test-questions.ts'
 import { assisting, COUNT, created, said, talking } from './test-assistant.ts'
 
 const SAVE = 'connector_note_save'

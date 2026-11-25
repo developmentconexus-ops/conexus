@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { holding, PARTIAL, sent, streamOf, title } from '../../harness/routes/test-conversation.ts'
 import { CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
 import {
   automating,
@@ -8,7 +9,6 @@ import {
   ranNow,
   salesSummary,
 } from '../automations/test-automations.ts'
-import { holding, PARTIAL, sent, streamOf, title } from '../conversation/test-conversation.ts'
 import { assisting, created, publishedApp } from './test-assistant.ts'
 
 function idOf(url: string) {
@@ -22,7 +22,7 @@ test('apagar: a própria conversa dá 204, some da lista e da leitura, e a de ou
   const carla = await memberOn(on.hub, on.companyId, CARLA, 'admin')
   const mine = await created(on.hub, on.ana, on.assistant, { connections: [] })
   const hers = await created(on.hub, carla, on.assistant, { connections: [] })
-  const { killed } = on.hub.assistantMachines
+  const { killed } = on.hub.conversationMachines
 
   const refused = await call(on.hub, on.ana, 'DELETE', hers)
   assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'CONVERSATION_NOT_FOUND'])
@@ -66,7 +66,7 @@ test('apagar com a resposta aberta: a resposta para, a máquina morre, o fio sai
 
   const deleted = await call(on.hub, on.ana, 'DELETE', url)
   assert.equal(deleted.statusCode, 204, deleted.body)
-  assert.deepEqual(on.hub.assistantMachines.killed, [idOf(url)])
+  assert.deepEqual(on.hub.conversationMachines.killed, [idOf(url)])
   const read = await call(on.hub, on.ana, 'GET', url)
   assert.deepEqual([read.statusCode, codeOf(read)], [404, 'CONVERSATION_NOT_FOUND'])
   const [versions] = await on.hub.test.asOwner(
@@ -79,7 +79,7 @@ test('apagar com a resposta aberta: a resposta para, a máquina morre, o fio sai
 test('apagar com a máquina que não morre: o fio fica e o próximo apagar o acha (3)', async (t) => {
   const on = await assisting(t)
   const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
-  const { api } = on.hub.assistantMachines.deps
+  const { api } = on.hub.conversationMachines.deps
   const kill = api.kill
   api.kill = async () => {
     throw new Error('the provider did not answer')

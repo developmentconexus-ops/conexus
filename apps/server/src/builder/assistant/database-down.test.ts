@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { hubBeside, MODEL, sent } from '../../harness/routes/test-conversation.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
 import type { Outage } from '../../platform/test-mastra-database.ts'
 import { mastraDoor, mastraPoolAt } from '../../platform/test-mastra-database.ts'
-import { hubBeside, MODEL, sent } from '../conversation/test-conversation.ts'
 import { assisting, created } from './test-assistant.ts'
 import { doorDropped } from './test-door-down.ts'
 

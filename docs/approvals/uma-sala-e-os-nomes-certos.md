@@ -11,3 +11,7 @@ Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os
 Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit 6a8ce1b16ee88863374787fd8bbde7d4f54408da), a U4 com o protótipo aprovado: no quadro da rodada Conexus "a: aprovo a emenda", e os ajustes de coerência que o fundador leu: "Aprovo"
 
 Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit 11deba25308f0f60b683a96b957b6006f15c6712), o critério 15 sem o lugar de Renomear e a linha Renomear numa lista suspensa só na U13, a opção (a) da revisão do PR 1352: "A"
+
+Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit 7605397ab544a8c33d9fcbc7eab53446af3ff056), o end.ts dividido por dono, a porta TurnEnds em harness/turn/end.ts e o builderEnds no Construtor de apps, e a U11 só no Construtor de apps, a opção (a) do estudo do fim do turno nativo: "Aprovo"
+
+Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-24 (commit abe8a18efdf82cf56d2ae76774c7ba48c6946f03), o G5 em dois pull requests, o G5-harness com um commit por área de G5a a G5e e o G5-agents com o G5f, sobre a emenda do end.ts já aprovada (texto igual em b3d9264b e 7605397a): "Aprovo"

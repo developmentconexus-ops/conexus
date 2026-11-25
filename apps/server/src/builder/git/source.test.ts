@@ -3,8 +3,8 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { asked, conversing, title } from '../../harness/routes/test-conversation.ts'
 import { call, codeOf, personOn } from '../../hub/identity/test-hub.ts'
-import { asked, conversing, title } from '../conversation/test-conversation.ts'
 import { openRepository } from './public.ts'
 
 // The test machine is a folder, whose app is the `app` inside it.

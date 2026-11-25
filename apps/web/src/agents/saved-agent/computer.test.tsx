@@ -1,4 +1,4 @@
-import { AGENTS_CONTROLLER, BUILDER_ROUTES, MACHINE_TOOL } from '@conexus/hub-api'
+import { AGENTS_CONTROLLER, CONVERSATION_ROUTES, MACHINE_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -50,7 +50,7 @@ test('o arquivo que o Computador mostrou abre ao lado da conversa do agente, lid
   })
   server.use(
     http.get(
-      `*${BUILDER_ROUTES}/agent-controller/${AGENTS_CONTROLLER}/sessions/:id/threads/:t/messages`,
+      `*${CONVERSATION_ROUTES}/agent-controller/${AGENTS_CONTROLLER}/sessions/:id/threads/:t/messages`,
       () =>
         HttpResponse.json({
           messages: [

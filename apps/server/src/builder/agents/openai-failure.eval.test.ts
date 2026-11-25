@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { endOf, sent, streamOf } from '../../harness/routes/test-conversation.ts'
 import { OPENAI_LOGIN, REAL_MODEL, subscribed } from '../assistant/test-real-model.ts'
-import { endOf, sent, streamOf } from '../conversation/test-conversation.ts'
 import { madeTool, ordersOf, publishedAgent, talkedTo } from './test-agents.ts'
 
 const OPT_IN =

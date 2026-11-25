@@ -6,10 +6,17 @@ import { test } from 'node:test'
 import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
 import { readSkills } from '@conexus/app/skills'
 import { STARTER_DIR } from '@conexus/app/starter'
+import { APP_FOLDER } from '../../harness/machine/public.ts'
+import {
+  asked,
+  conversing,
+  endOf,
+  sent,
+  streamOf,
+  title,
+} from '../../harness/routes/test-conversation.ts'
+import { dataOf } from '../../harness/routes/test-parts.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { APP_FOLDER } from '../machine/public.ts'
-import { asked, conversing, endOf, sent, streamOf, title } from './test-conversation.ts'
-import { dataOf } from './test-parts.ts'
 import type { Filled } from './test-prompt.ts'
 import { expectedText, PROMPT_TABLE } from './test-prompt.ts'
 

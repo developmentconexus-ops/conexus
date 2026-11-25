@@ -1,12 +1,12 @@
 import type { CompanyId, Person, ProjectId } from '@conexus/hub-api'
 import { readProjectFile, readProjectSource, SOURCE_FILE_MAX_BYTES } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import { Sha } from '../../harness/machine/public.ts'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
-import { Sha } from './context.ts'
 import type { Repository } from './repository.ts'
 
 type Ids = { companyId: CompanyId; projectId: ProjectId }

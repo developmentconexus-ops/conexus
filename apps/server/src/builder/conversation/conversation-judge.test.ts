@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { asked, conversing, title } from '../../harness/routes/test-conversation.ts'
+import { shownPartsOf, versionsOf } from '../../harness/routes/test-parts.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, title } from './test-conversation.ts'
-import { shownPartsOf, versionsOf } from './test-parts.ts'
 
 const WRITE = {
   type: 'tool_use',

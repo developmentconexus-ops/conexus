@@ -9,8 +9,8 @@ import {
   runAutomation,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import type { Owner } from '../../harness/spec/public.ts'
 import { answer, serve } from '../../platform/http.ts'
-import type { Owner } from '../controller-kit/public.ts'
 import type { Automations } from './automations.ts'
 
 function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): Owner {

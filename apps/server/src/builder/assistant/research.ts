@@ -1,9 +1,9 @@
-import { BUILDER_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
+import { CONVERSATION_TOOL, SUBAGENT_TOOL, WORKSPACE_TOOL } from '@conexus/hub-api'
 import type { AgentControllerSubagent } from '@mastra/core/agent-controller'
 import type { InputProcessor } from '@mastra/core/processors'
 import { createTool } from '@mastra/core/tools'
 import { z } from 'zod'
-import { TURN_ACCOUNT } from '../model-accounts/public.ts'
+import { TURN_ACCOUNT } from '../../harness/model-accounts/public.ts'
 
 /** The helper's type: it reads the systems the conversation chose and the machine's files, and writes nothing. */
 const RESEARCH_TYPE = 'pesquisar'
@@ -18,8 +18,8 @@ export const RESEARCH: AgentControllerSubagent = {
   name: 'Pesquisa',
   description:
     'Reads the company systems chosen in this conversation and the files on its machine to answer one focused question, and returns the findings with where each number came from. Writes nothing.',
-  instructions: `You answer one research task for Conexus's Assistant and only read. Use \`${BUILDER_TOOL.connectorRead}\` with the connection, the reads, the fields, the period and the codes the task gives; filter and count at the system (WHERE, COUNT, SUM) rather than reading every row; open the saved file of a long read with the file tools. Return, in Brazilian Portuguese, the findings first, then each number with the read or file it came from; say what you could not read and why; mark what is your inference. You cannot see the conversation: work only from the task.`,
-  allowedControllerTools: [BUILDER_TOOL.connectorRead],
+  instructions: `You answer one research task for Conexus's Assistant and only read. Use \`${CONVERSATION_TOOL.connectorRead}\` with the connection, the reads, the fields, the period and the codes the task gives; filter and count at the system (WHERE, COUNT, SUM) rather than reading every row; open the saved file of a long read with the file tools. Return, in Brazilian Portuguese, the findings first, then each number with the read or file it came from; say what you could not read and why; mark what is your inference. You cannot see the conversation: work only from the task.`,
+  allowedControllerTools: [CONVERSATION_TOOL.connectorRead],
   allowedWorkspaceTools: [
     WORKSPACE_TOOL.readFile,
     WORKSPACE_TOOL.listFiles,

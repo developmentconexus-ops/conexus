@@ -3,10 +3,10 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { asked, conversing, endOf, title } from '../../harness/routes/test-conversation.ts'
+import { partsOf } from '../../harness/routes/test-parts.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, endOf, title } from './test-conversation.ts'
-import { partsOf } from './test-parts.ts'
 
 type Tool = { name: string; input: object }
 

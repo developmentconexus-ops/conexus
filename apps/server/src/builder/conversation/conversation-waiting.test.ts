@@ -5,12 +5,16 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import pg from 'pg'
 import { z } from 'zod'
-import { post } from '../../hub/identity/test-hub.ts'
-import { until } from '../../platform/test-until.ts'
-
-import type { StreamEvent } from './test-conversation.ts'
-import { answeredOf, endOf, messagesOf, sent, stopped, streamOf } from './test-conversation.ts'
-import { failuresOf } from './test-parts.ts'
+import type { StreamEvent } from '../../harness/routes/test-conversation.ts'
+import {
+  answeredOf,
+  endOf,
+  messagesOf,
+  sent,
+  stopped,
+  streamOf,
+} from '../../harness/routes/test-conversation.ts'
+import { failuresOf } from '../../harness/routes/test-parts.ts'
 import {
   answered,
   answerTo,
@@ -24,7 +28,9 @@ import {
   WHO,
   WRITE_PLAN,
   within,
-} from './test-questions.ts'
+} from '../../harness/routes/test-questions.ts'
+import { post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 
 const Planned = z.object({ plan: z.string() })
 

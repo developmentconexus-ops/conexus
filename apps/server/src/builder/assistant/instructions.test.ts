@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { Role } from '@conexus/hub-api'
 import { MemoryPG } from '@mastra/pg'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { tool } from '../../harness/routes/test-questions.ts'
+import { blockOf, turnDate } from '../../harness/spec/public.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
-import { blockOf, turnDate } from '../controller-kit/public.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { tool } from '../conversation/test-questions.ts'
 import { assisting, created, said, talking } from './test-assistant.ts'
 
 function read(path: string) {
@@ -20,7 +20,7 @@ function weekdayOf(date: string) {
   })
 }
 
-const FIXED = `${read('../conversation/prompt/conexus.md')}\n\n${read('./prompt/assistant.md')}`
+const FIXED = `${read('../../harness/prompt/conexus.md')}\n\n${read('./prompt/assistant.md')}`
 
 test('a mensagem fixa: a mesma em toda conversa, com a sua marca de cache, antes do bloco da conversa; nenhuma frase do trabalho do Builder', async (t) => {
   const on = await assisting(t)

@@ -1,18 +1,6 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import {
-  BRUNO,
-  call,
-  codeOf,
-  memberOn,
-  personOn,
-  plantCompany,
-  post,
-  problem,
-} from '../../hub/identity/test-hub.ts'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import {
   conversing,
   endOf,
@@ -25,9 +13,21 @@ import {
   started,
   stopped,
   streamOf,
-} from './test-conversation.ts'
-import { textsOf } from './test-parts.ts'
-import { sessionStateOf } from './test-questions.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { textsOf } from '../../harness/routes/test-parts.ts'
+import { sessionStateOf } from '../../harness/routes/test-questions.ts'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import {
+  BRUNO,
+  call,
+  codeOf,
+  memberOn,
+  personOn,
+  plantCompany,
+  post,
+  problem,
+} from '../../hub/identity/test-hub.ts'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
 
 const DIEGO = { name: 'Diego Melo', email: 'diego@example.test' }
 

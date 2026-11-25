@@ -8,12 +8,17 @@ import { InMemoryStore } from '@mastra/core/storage'
 import { createTool } from '@mastra/core/tools'
 import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
+import {
+  AccountTurn,
+  accountPick,
+  callModel,
+  turnContext,
+} from '../../harness/model-accounts/public.ts'
+import { asked, conversing, endOf, MODEL, title } from '../../harness/routes/test-conversation.ts'
+import { partsOf } from '../../harness/routes/test-parts.ts'
+import { initialStateOf } from '../../harness/spec/public.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { initialStateOf } from '../controller-kit/public.ts'
-import { accountPick, callModel, Turn, turnContext } from '../model-accounts/public.ts'
 import { TOOL_CLOSURE } from './public.ts'
-import { asked, conversing, endOf, MODEL, title } from './test-conversation.ts'
-import { partsOf } from './test-parts.ts'
 
 const CARD_TOOLS = [
   'ask_user',
@@ -200,7 +205,7 @@ function secondModel() {
 }
 
 /** The turn after the company's automatic switch: its account is given, so no database is asked. */
-class SwitchedTurn extends Turn {
+class SwitchedTurn extends AccountTurn {
   override get switched() {
     return true
   }

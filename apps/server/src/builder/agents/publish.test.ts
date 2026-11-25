@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { AgentId, CompanyId, ProjectId } from '@conexus/hub-api'
+import { sent } from '../../harness/routes/test-conversation.ts'
 import { operationLabel } from '../../hub/connectors/public.ts'
 import { call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { said } from '../assistant/test-assistant.ts'
-import { sent } from '../conversation/test-conversation.ts'
 import type { AgentReads } from './public.ts'
 import {
   agentOf,

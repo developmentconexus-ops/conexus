@@ -1,6 +1,6 @@
 import type { ConversationId } from '@conexus/hub-api'
+import type { Sha } from '../../harness/machine/public.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Sha } from '../git/public.ts'
 import type { Driven, Outcome, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
 

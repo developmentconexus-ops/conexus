@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { endOf } from '../../harness/routes/test-conversation.ts'
+import { stepped, tool } from '../../harness/routes/test-questions.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { BRUNO, CARLA, call, codeOf, memberOn, personOn } from '../../hub/identity/test-hub.ts'
 import {
@@ -9,8 +11,6 @@ import {
   ranNow,
   salesSummary,
 } from '../automations/test-automations.ts'
-import { endOf } from '../conversation/test-conversation.ts'
-import { stepped, tool } from '../conversation/test-questions.ts'
 import {
   assisting,
   created,

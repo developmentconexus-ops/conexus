@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { DATA_TOOL } from '@conexus/hub-api'
-import { call } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
-import { until } from '../../platform/test-until.ts'
-import { approving } from '../agents/test-approval.ts'
-import { TITLE } from '../controller-kit/public.ts'
+import { TITLE } from '../../harness/prompt/public.ts'
 import {
   endOf,
   holding,
@@ -13,9 +9,13 @@ import {
   messagesOf,
   sent,
   title,
-} from '../conversation/test-conversation.ts'
-import { sessionStateOf, tool } from '../conversation/test-questions.ts'
-import { TOTAL_OUTUBRO } from '../data-tools/test-data.ts'
+} from '../../harness/routes/test-conversation.ts'
+import { sessionStateOf, tool } from '../../harness/routes/test-questions.ts'
+import { TOTAL_OUTUBRO } from '../../harness/tools/data/test-data.ts'
+import { call } from '../../hub/identity/test-hub.ts'
+import type { Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
+import { approving } from '../agents/test-approval.ts'
 import {
   anasChoice,
   assisting,

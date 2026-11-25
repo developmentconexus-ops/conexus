@@ -1,15 +1,8 @@
 import { stat } from 'node:fs/promises'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import { z } from 'zod'
+import { MAX_BYTES, Sha } from '../../harness/machine/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { runGit } from './exec.ts'
-
-/** A commit id, made only by parsing what git printed (code C23). */
-export const Sha = z
-  .string()
-  .regex(/^[0-9a-f]{40}$/)
-  .brand('Sha')
-export type Sha = z.infer<typeof Sha>
 
 export const MAIN = 'refs/heads/main'
 /**
@@ -17,8 +10,6 @@ export const MAIN = 'refs/heads/main'
  * C75), since no reference backs up to a bucket. A version is pending while `main` is past it.
  */
 export const COPIED = 'refs/conexus/copied'
-export const MAX_FILES = 2_000
-export const MAX_BYTES = 64 * 1024 * 1024
 /**
  * A bundle holds the whole history, each version up to `MAX_BYTES`, so it has a bound of its own
  * (code C59). A bundle the copy cannot move within R2's 60 s per call would fail for ever: 228 MiB
