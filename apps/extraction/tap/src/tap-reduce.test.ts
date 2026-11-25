@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Double, TapRun } from './test-tap.ts'
-import { recordsOf, sankhyaDouble, selected, tap } from './test-tap.ts'
+import { lastState, recordsOf, sankhyaDouble, selected, tap } from './test-tap.ts'
 
 const SECRET = 'CORPO-DO-ERRO-QUE-NAO-SAI'
 const FIRST_WAIT = 2500
@@ -74,10 +74,32 @@ test('um 5xx com poucas linhas: a página pede metade no mesmo ponto, o corte va
       { event: 'PAGE_REDUCED', rows: 5, nextRows: 2, attempt: 1, waitMs: FIRST_WAIT, status: 500 },
     ],
   )
-  const states = run.messages.filter(({ type }) => type === 'STATE')
+})
+
+test('a rodada que retoma do STATE de depois do corte nunca pede mais que o corte', async () => {
+  const double = sankhyaDouble()
+  const through = gateway(double, ({ rows }) => (rows > 3 ? internalError() : null))
+  const first = await tap(double, {
+    streams: [selected('TGFCAB', 'notas')],
+    fetch: through.fetch,
+  })
+  const middle = first.messages.find(({ type }) => type === 'STATE')
+  const resumed = through.asked.length
+  const second = await tap(double, {
+    streams: [selected('TGFCAB', 'notas')],
+    state: lastState({ ...first, messages: [middle ?? assert.fail()] }),
+    fetch: through.fetch,
+  })
+  assert.equal(second.code, 0)
+  assert.deepEqual(second.logs, [], 'nenhum 5xx: a retomada já pede o corte')
   assert.ok(
-    states.some((state) => JSON.stringify(state).includes('"ceiling":2')),
-    'o STATE leva o corte, e uma retomada o mantém',
+    through.asked.slice(resumed).every((rows) => rows <= 2),
+    'o corte vem do STATE, não da primeira página de 10',
+  )
+  assert.equal(
+    recordsOf(first, 'notas').length - recordsOf(second, 'notas').length,
+    2,
+    'a primeira página, de 2 linhas, não se relê',
   )
 })
 
