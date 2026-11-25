@@ -8,7 +8,7 @@ const CARDS = 'docs/steps/'
 
 function trackOfFile(file: string): Track | undefined {
   if (file === 'DESIGN.md' || /^apps\/web\/src\/(brand|ui)\//.test(file)) return 'design'
-  if (file.startsWith('apps/server/src/builder/assistant/')) return 'assistant'
+  if (file.startsWith('apps/server/src/agents/assistant/')) return 'assistant'
   if (/^packages\/connectors\/src\/[^/]+\//.test(file)) return 'pattern'
   return /^(apps|packages|tests|infra)\//.test(file) ? 'frontier' : undefined
 }

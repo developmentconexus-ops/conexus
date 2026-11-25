@@ -1,4 +1,4 @@
-import { BUILDER_TOOL, CompanyId } from '@conexus/hub-api'
+import { CONVERSATION_TOOL, CompanyId } from '@conexus/hub-api'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -28,7 +28,7 @@ function card(over: Partial<NoteCardItem> = {}): NoteCardItem {
     cardKind: 'note',
     id: 'toolu_1',
     toolCallId: 'toolu_1',
-    toolName: BUILDER_TOOL.connectorNoteSave,
+    toolName: CONVERSATION_TOOL.connectorNoteSave,
     state: 'open',
     asked: ARGS,
     ...over,
@@ -128,7 +128,7 @@ test('a chamada do Caderno vira cartão enquanto espera o sim, e cada resultado 
   const call = {
     state: 'call',
     toolCallId: 'toolu_1',
-    toolName: BUILDER_TOOL.connectorNoteSave,
+    toolName: CONVERSATION_TOOL.connectorNoteSave,
     args: ARGS,
   } as const
   const parked = {

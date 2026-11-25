@@ -1,0 +1,155 @@
+import type {
+  CompanyId,
+  OfferedConnection as Offered,
+  PersonId,
+  ProjectId,
+  ToolTarget,
+  ToolVersionConfig,
+} from '@conexus/hub-api'
+import { ToolId, ToolSlug } from '@conexus/hub-api'
+import type { z } from 'zod'
+import type { Principal } from '../../../hub/access/public.ts'
+import { principalFor } from '../../../hub/access/public.ts'
+import type { KitRead } from '../../../hub/connectors/public.ts'
+import type { Named } from '../../../platform/failure.ts'
+import { Failure } from '../../../platform/failure.ts'
+import { derivedUuid } from './derived.ts'
+
+/** Who acts, in which Projeto: the session's person, the route's ids (security S8). */
+export type InProject = { companyId: CompanyId; projectId: ProjectId; personId: PersonId }
+
+/** Who wrote a change, for the record: the person at a screen, or the Construtor for them. */
+export type Writer = 'PERSON' | 'CONSTRUTOR'
+
+/** The database scope of the person acting in the company. */
+export function databaseScopeOf(scope: InProject) {
+  return { kind: 'COMPANY', companyId: scope.companyId, personId: scope.personId } as const
+}
+
+/** Who the access door answers for when the person acts in the Projeto from the Builder. */
+export function sessionScopeOf(scope: InProject): Principal {
+  return principalFor({ consumer: 'builder', ...scope })
+}
+
+/** A connection the Projeto received, with its reads and writes, as the connectors' door describes it. */
+export type OfferedConnection = Readonly<
+  Omit<Offered, 'reads' | 'writes'> & {
+    reads: readonly Readonly<Offered['reads'][number]>[]
+    writes: readonly Readonly<Offered['writes'][number]>[]
+  }
+>
+
+/** What the tools read of the connectors' door: what the Projeto offers, and one read's input. */
+export type ToolConnectors = {
+  connections(scope: Principal): Promise<readonly OfferedConnection[]>
+  /** The same connections with every read, each marked `allowed` by the role of whoever edits. */
+  listing(scope: Principal): Promise<readonly OfferedConnection[]>
+  operationOf(scope: Principal, target: ToolTarget): Promise<z.ZodObject | undefined>
+  writeOf(
+    scope: Principal,
+    target: ToolTarget,
+  ): Promise<Readonly<{ input: z.ZodObject; fixed: readonly string[] }> | undefined>
+  kitReads(scope: Principal): Promise<readonly KitRead[]>
+}
+
+/** A tool's read as the Projeto may use it now: its input, or why not (`TOOL_REFUSED`). */
+export type Target =
+  | { kind: 'OK'; input: z.ZodObject; fixed: readonly string[] }
+  | { kind: 'REFUSED'; named: Named }
+
+/**
+ * Whether the Projeto received the connection and the operation is one of its reads or writes, by the kit's
+ * definition behind the connectors' door, which alone reads the kit (security S36).
+ */
+export async function targetOf(
+  connectors: ToolConnectors,
+  scope: Principal,
+  target: ToolTarget,
+  known?: readonly OfferedConnection[],
+): Promise<Target> {
+  const offered = known ?? (await connectors.connections(scope))
+  if (!offered.some((each) => each.connectionId === target.connectionId)) {
+    return { kind: 'REFUSED', named: { field: 'connectionId', reason: 'NOT_OFFERED' } }
+  }
+  const read = await connectors.operationOf(scope, target)
+  if (read !== undefined) return { kind: 'OK', input: read, fixed: [] }
+  const write = await connectors.writeOf(scope, target)
+  if (write === undefined) {
+    return { kind: 'REFUSED', named: { field: 'operation', reason: 'NOT_A_READ' } }
+  }
+  return { kind: 'OK', ...write }
+}
+
+/** The first field the operation says only whoever configures fixes that the version leaves open or without a value. */
+export function unfixedOf(
+  fixed: readonly string[],
+  config: Pick<ToolVersionConfig, 'open' | 'bound'>,
+): string | undefined {
+  return fixed.find((field) => config.open.includes(field) || !(field in config.bound))
+}
+
+/**
+ * Why a version's fixed values and open fields do not fit the operation's input, or nothing: each
+ * field is one of the input's top-level ones, in one side only, each fixed value passes its field's
+ * schema, the fields the operation says only whoever configures fixes (`fixed`) carry a value and are
+ * not open, and the two sides cover every required field.
+ */
+function misfitOf(
+  input: z.ZodObject,
+  fixed: readonly string[],
+  config: ToolVersionConfig,
+): Named | undefined {
+  const { shape } = input
+  const fields = new Set(Object.keys(shape))
+  const bound = Object.keys(config.bound)
+  if (bound.some((field) => !fields.has(field))) return { field: 'bound', reason: 'UNKNOWN_FIELD' }
+  if (config.open.some((field) => !fields.has(field))) {
+    return { field: 'open', reason: 'UNKNOWN_FIELD' }
+  }
+  const open = new Set(config.open)
+  if (open.size !== config.open.length || bound.some((field) => open.has(field))) {
+    return { field: 'open', reason: 'FIELD_TWICE' }
+  }
+  if (
+    Object.entries(config.bound).some(([field, value]) => !shape[field]?.safeParse(value).success)
+  ) {
+    return { field: 'bound', reason: 'VALUE_REFUSED' }
+  }
+  if (unfixedOf(fixed, config) !== undefined) return { field: 'bound', reason: 'NOT_FIXED' }
+  const required = [...fields].filter((field) => !shape[field]?.safeParse(undefined).success)
+  if (required.some((field) => !(field in config.bound) && !open.has(field))) {
+    return { field: 'open', reason: 'REQUIRED_MISSING' }
+  }
+  return undefined
+}
+
+/** The version, refused with its field when it does not fit the operation (`TOOL_REFUSED`). */
+export function fitting(target: Target, config: ToolVersionConfig): void {
+  if (target.kind === 'REFUSED') throw new Failure('TOOL_REFUSED', { named: target.named })
+  const misfit = misfitOf(target.input, target.fixed, config)
+  if (misfit !== undefined) throw new Failure('TOOL_REFUSED', { named: misfit })
+}
+
+/** A ready tool as it is: every field left to the model but the ones only whoever configures fixes. */
+export function readyConfig(
+  input: z.ZodObject,
+  summary: string,
+  fixed: readonly string[],
+): ToolVersionConfig {
+  const open = Object.keys(input.shape).filter((field) => !fixed.includes(field))
+  return { description: summary, bound: {}, open }
+}
+
+/**
+ * The name of a ready read: its operation, then the start of its connection's id, so the same read
+ * of two connections (Matriz and Filial) gets two.
+ */
+export function readySlug(target: ToolTarget): ToolSlug {
+  const operation = target.operation.toLowerCase().replaceAll(/[.-]/g, '_').slice(0, 33)
+  return ToolSlug.parse(`${operation}_${target.connectionId.slice(0, 6)}`)
+}
+
+/** The id of a ready read in the library: the company's, the connection's and the operation's, never the person's. */
+export function readyIdOf(companyId: CompanyId, target: ToolTarget): ToolId {
+  return ToolId.parse(derivedUuid('ready', companyId, target.connectionId, target.operation))
+}

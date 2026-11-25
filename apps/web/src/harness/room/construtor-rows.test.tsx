@@ -1,4 +1,4 @@
-import { AGENT_TOOL, BUILDER_TOOL, CONSTRUTOR_TOOL, ConnectionId } from '@conexus/hub-api'
+import { AGENT_TOOL, CONSTRUTOR_TOOL, CONVERSATION_TOOL, ConnectionId } from '@conexus/hub-api'
 import { fireEvent, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { wordsOf } from './connector-words.ts'
@@ -146,7 +146,7 @@ test('a conversa do Construtor e a do agente nomeiam o conector pelo catálogo (
     },
   ])
   const read = {
-    ...draftRow(BUILDER_TOOL.connectorRead),
+    ...draftRow(CONVERSATION_TOOL.connectorRead),
     args: { operation: 'sankhya.consultar', connection: 'Matriz' },
     result: { kind: 'OK', value: {}, complete: true },
   }

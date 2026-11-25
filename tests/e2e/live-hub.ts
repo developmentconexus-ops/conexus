@@ -13,7 +13,7 @@ import {
 } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
-import { testBuilderPorts } from '../../apps/server/src/builder/runs/test-runs.ts'
+import { testBuilderPorts } from '../../apps/server/src/agents/app-builder/runs/test-runs.ts'
 import { roleKit } from '../../apps/server/src/hub/connectors/public.ts'
 import { createIdentity } from '../../apps/server/src/hub/identity/public.ts'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'

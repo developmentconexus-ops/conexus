@@ -5,7 +5,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, lstatSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { posix } from 'node:path'
 import { z } from 'zod'
-import type { Named } from './codemod-web-imports.ts'
+import type { Named } from './codemod-imports.ts'
 import type { Move } from './codemod-web-plan.ts'
 import {
   againstDirection,

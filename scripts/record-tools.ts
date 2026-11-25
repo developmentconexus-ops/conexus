@@ -6,8 +6,8 @@ import {
   webSearchTool,
 } from '@mastra/core/tools'
 import { z } from 'zod'
-import { dataTools } from '../apps/server/src/builder/data-tools/public.ts'
-import { recordedData } from '../apps/server/src/builder/data-tools/test-data.ts'
+import { recordedData } from '../apps/server/src/harness/tools/data/test-data.ts'
+import { dataTools } from '../apps/server/src/harness/tools/public.ts'
 import { PADARIA_SOL_MATRIZ, salesDatabase } from '../apps/server/src/hub/connectors/test-sales.ts'
 import { orderBook } from '../packages/connectors/src/sankhya/fake-orders.ts'
 import * as approval from './record-approval.ts'

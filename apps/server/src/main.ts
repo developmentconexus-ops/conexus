@@ -1,23 +1,22 @@
 import { join } from 'node:path'
 import { getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type { GitCopy } from './builder/git/public.ts'
-import { repositoriesIn } from './builder/git/public.ts'
+import type {
+  BuilderConfer,
+  GitCopy,
+  MachinesOf,
+  RepositoryOf,
+} from './agents/app-builder/public.ts'
+import { builderPortsOf, createRuns, repositoriesIn } from './agents/app-builder/public.ts'
+import { runFirstPerson, runMigrate } from './commands.ts'
+import { conversationsOf } from './conversations-of.ts'
+import type { ConversationMachine, MachineTuning } from './harness/machine/public.ts'
+import { conversationMachineOf } from './harness/machine/public.ts'
 import {
   createModelAccounts,
   openGoogleCalls,
   signInFlows,
-} from './builder/model-accounts/public.ts'
-import type {
-  BuilderConfer,
-  ConversationMachine,
-  MachinesOf,
-  MachineTuning,
-  RepositoryOf,
-} from './builder/runs/public.ts'
-import { builderPortsOf, createRuns } from './builder/runs/public.ts'
-import { runFirstPerson, runMigrate } from './commands.ts'
-import { conversationsOf } from './conversations-of.ts'
+} from './harness/model-accounts/public.ts'
 import { createAccess } from './hub/access/public.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
@@ -273,6 +272,7 @@ async function runServer(): Promise<void> {
       ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
       ...subjectPortsOf(aws),
       ...builderPortsOf({ config, log }),
+      conversationMachine: conversationMachineOf(config),
     })
     const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
     await conversations.prepare()

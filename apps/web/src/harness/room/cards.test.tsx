@@ -1,5 +1,5 @@
 import type { Question } from '@conexus/hub-api'
-import { BUILDER_CONTROLLER, BUILDER_ROUTES, CARD_TOOLS, ToolCallId } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, CARD_TOOLS, CONVERSATION_ROUTES, ToolCallId } from '@conexus/hub-api'
 import type { MastraMessagePart as MastraPart } from '@mastra/client-js'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -12,7 +12,7 @@ import { displayOf, parkedOf } from './test-stream.tsx'
 const server = hubServer()
 const { openConversation } = screens(server)
 const CALL = ToolCallId.parse('call-1')
-const ANSWER = `*${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}/tool-suspension`
+const ANSWER = `*${CONVERSATION_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}/tool-suspension`
 const STEP_MSG_ID = 'builder-step-1'
 
 function answering(reply: () => Promise<Response | undefined> = async () => undefined) {

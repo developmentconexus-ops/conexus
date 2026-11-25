@@ -7,10 +7,10 @@ after(removePlanted)
 test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos e nos testes', () => {
   const clock =
     'export function wait() {\n  setTimeout(() => {}, 1)\n  setInterval(() => {}, 1)\n}\n'
-  const runs = 'apps/server/src/builder/runs'
+  const runs = 'apps/server/src/agents/app-builder/runs'
   const run = biomeLint({
     [`${runs}/other.ts`]: clock,
-    'apps/server/src/builder/machine/wait.ts': clock,
+    'apps/server/src/harness/machine/wait.ts': clock,
     [`${runs}/copy-retry.ts`]: clock,
     [`${runs}/runs.test.ts`]: clock,
     'apps/server/src/hub/a/timer.ts': clock,
@@ -22,7 +22,7 @@ test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos 
   )
   assert.deepEqual(
     [...flagged].sort(),
-    ['apps/server/src/builder/machine/wait.ts', `${runs}/other.ts`],
+    [`${runs}/other.ts`, 'apps/server/src/harness/machine/wait.ts'],
     run.output,
   )
 })
@@ -30,9 +30,9 @@ test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos 
 test('P0: o Biome recusa o relógio importado de node:timers em builder/, aceita nos donos e nos testes', () => {
   const clock =
     "import { setTimeout } from 'node:timers/promises'\nimport { setInterval } from 'node:timers'\nexport async function wait() {\n  await setTimeout(1)\n  return setInterval\n}\n"
-  const runs = 'apps/server/src/builder/runs'
+  const runs = 'apps/server/src/agents/app-builder/runs'
   const run = biomeLint({
-    'apps/server/src/builder/conversation/wait.ts': clock,
+    'apps/server/src/agents/app-builder/wait.ts': clock,
     [`${runs}/runs.test.ts`]: clock,
     'apps/server/src/hub/a/timer.ts': clock,
   })
@@ -42,8 +42,8 @@ test('P0: o Biome recusa o relógio importado de node:timers em builder/, aceita
   assert.deepEqual(
     flagged.sort(),
     [
-      'apps/server/src/builder/conversation/wait.ts:1',
-      'apps/server/src/builder/conversation/wait.ts:2',
+      'apps/server/src/agents/app-builder/wait.ts:1',
+      'apps/server/src/agents/app-builder/wait.ts:2',
     ],
     run.output,
   )

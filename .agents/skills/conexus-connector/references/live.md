@@ -30,7 +30,7 @@ connector's `check`; `write.ts` runs a write with `session.once`, after the appr
 | Caller | Door | What it reads of the kit |
 | --- | --- | --- |
 | The Assistant | `assistant-port.ts` | the reads as tools, the generated skill |
-| The Builder | `builder-port.ts`; the typed tools in `builder/connectors/typed-reads.ts` | the skill through `connectorSkill`, the `list` declarations, the reads as typed tools |
+| The Builder | `builder-port.ts`; the typed tools in `harness/tools/connectors/typed-reads.ts` | the skill through `connectorSkill`, the `list` declarations, the reads as typed tools |
 | A saved tool | `tool-door.ts` | the operation it was saved with |
 | A published app | `app-calls.ts`, `apps.ts` | the reads its manifest declares; the types come from `packages/connectors/src/calls.ts` |
 | Roles | `role-kit.ts`, `grants.ts` | one resource per connector and one action per operation |
@@ -53,7 +53,7 @@ the system's users say them, before the first app can read them.
 
 The Hub's write funnel reads only `writes`; `operations` and the read door refuse a write. A person
 approves each write on the approval card: `approval.ts` decides whether and whom to ask, Mastra's
-`requireApproval` asks (wired in `builder/agents/tools.ts`), and `write-record.ts` records it. The Hub asks the operation what only the provider knows
+`requireApproval` asks (wired in `agents/saved-agent/tools.ts`), and `write-record.ts` records it. The Hub asks the operation what only the provider knows
 ([0062](../../../../docs/decisions/0062-a-write-declares-its-provider-facts.md)):
 
 - `uncertain(native)`: the answer leaves the write's end unknown, so the Hub never resends it
@@ -80,6 +80,6 @@ confirm instead of a person (the card's reference table, row 48).
 
 Hub tests run the real executor against the connector's double served on loopback
 (`HUB_CONNECTOR_ORIGINS`, loopback only). A change to a connector skill's frontmatter changes the
-model request snapshots in `apps/server/src/builder/assistant/request.test.ts`; update them in the
+model request snapshots in `apps/server/src/agents/assistant/request.test.ts`; update them in the
 same commit and say why. A change to a read's types can pass `npm run check` and still break the
 app SDK's declaration build; run `packages/app/src/check/connectors.test.ts`.

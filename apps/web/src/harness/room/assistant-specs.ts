@@ -1,5 +1,5 @@
 import type { MACHINE_TOOL } from '@conexus/hub-api'
-import { ASSISTANT_TOOL, BUILDER_TOOL, ProposeRefused } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, CONVERSATION_TOOL, ProposeRefused } from '@conexus/hub-api'
 import { BookmarkIcon, BuildingIcon, RocketIcon, TimerIcon } from 'lucide-react'
 import { CONNECTOR_SPECS, presentRead, readRefusal } from './connector-specs.ts'
 import type { RowTool, ToolSpec } from './tool-spec.ts'
@@ -75,8 +75,8 @@ export const ASSISTANT_SPECS: Record<
  * place a row asks how it reads.
  */
 export const ASSISTANT_OVERRIDES: Partial<Record<RowTool, ToolSpec>> = {
-  [BUILDER_TOOL.connectorRead]: {
-    ...CONNECTOR_SPECS[BUILDER_TOOL.connectorRead],
+  [CONVERSATION_TOOL.connectorRead]: {
+    ...CONNECTOR_SPECS[CONVERSATION_TOOL.connectorRead],
     present: presentRead,
     refusal: readRefusal,
   },

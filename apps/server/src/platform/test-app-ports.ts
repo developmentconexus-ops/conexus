@@ -1,5 +1,5 @@
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
-import { testBuilderPorts } from '../builder/runs/test-runs.ts'
+import { testBuilderPorts } from '../agents/app-builder/runs/test-runs.ts'
 import { createAws } from './aws.ts'
 import type { CompanyPostgres } from './company-postgres.ts'
 import { createCompanyPostgres } from './company-postgres.ts'

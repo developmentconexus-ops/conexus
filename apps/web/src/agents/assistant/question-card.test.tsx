@@ -1,4 +1,4 @@
-import { ASSISTANT_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
+import { ASSISTANT_CONTROLLER, CONVERSATION_ROUTES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -31,7 +31,7 @@ test.each([
     const sent: string[] = []
     server.use(
       http.post(
-        `*${BUILDER_ROUTES}/agent-controller/:controller/sessions/:id/tool-suspension`,
+        `*${CONVERSATION_ROUTES}/agent-controller/:controller/sessions/:id/tool-suspension`,
         ({ params }) => {
           sent.push(String(params.controller))
           return HttpResponse.json({ ok: true })

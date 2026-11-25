@@ -1,23 +1,26 @@
 import type { CompanyData } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import { agentsAlive } from './builder/agents/public.ts'
-import type { AppDataPort } from './builder/app-data/public.ts'
-import type { HandOffDoors } from './builder/assistant/public.ts'
-import { createAssistant, speakersOf } from './builder/assistant/public.ts'
+import { createConstrutor, tablesWithColumnNamesOf } from './agents/agent-builder/public.ts'
+import type { Runs } from './agents/app-builder/public.ts'
+import { createBuilderConversations } from './agents/app-builder/public.ts'
+import type { HandOffDoors } from './agents/assistant/public.ts'
 import {
   AUTOMATION_TURN_MS,
   AUTOMATION_WORKFLOW,
   automationRun,
   automationsOf,
-} from './builder/automations/public.ts'
-import { createConstrutor, tablesWithColumnNamesOf } from './builder/construtor/public.ts'
-import { createBuilderConversations, createMastraStorage } from './builder/conversation/public.ts'
-import type { LakeClock } from './builder/copy-clock/public.ts'
-import { copyClockWorkflow, createLakeClock } from './builder/copy-clock/public.ts'
-import { COPY_WORKFLOW, createHubMastra } from './builder/mastra/public.ts'
-import type { openGoogleCalls } from './builder/model-accounts/public.ts'
-import { isChoosable } from './builder/model-accounts/public.ts'
-import type { ConversationMachine, MachineTuning, Runs } from './builder/runs/public.ts'
+  createAssistant,
+  speakersOf,
+} from './agents/assistant/public.ts'
+import { agentsAlive } from './agents/saved-agent/public.ts'
+import type { LakeClock } from './harness/copy-clock/public.ts'
+import { copyClockWorkflow, createLakeClock } from './harness/copy-clock/public.ts'
+import type { ConversationMachine, MachineTuning } from './harness/machine/public.ts'
+import { COPY_WORKFLOW, createHubMastra } from './harness/mastra/public.ts'
+import { createMastraStorage } from './harness/memory/public.ts'
+import type { openGoogleCalls } from './harness/model-accounts/public.ts'
+import { isChoosable } from './harness/model-accounts/public.ts'
+import type { AppDataPort } from './harness/tools/public.ts'
 import type { Access, Principal } from './hub/access/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
 import { publishedVersionsOf } from './hub/apps/public.ts'
@@ -222,8 +225,7 @@ export function conversationsOf(deps: ConversationsDeps) {
     ...builderDoorsOf(deps),
   })
   // The order of removal: the automations, the agents, then the Builder's conversations, the
-  // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the open streams and
-  // the runs.
+  // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the runs.
   const hub = createHubMastra({
     ...{ storage, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
     workflows: { [AUTOMATION_WORKFLOW]: run, [COPY_WORKFLOW]: lakeClockRun(deps) },
@@ -241,7 +243,8 @@ export function conversationsOf(deps: ConversationsDeps) {
   const conversations = Object.freeze({
     ...hub,
     routes: (app: FastifyInstance) => {
-      builder.routes(app, hub)
+      hub.routes(app)
+      builder.routes(app)
       construtor.routes(app)
     },
   })

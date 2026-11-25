@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test'
 import {
   ASSISTANT_CONTROLLER,
   BUILDER_CONTROLLER,
-  BUILDER_ROUTES,
+  CONVERSATION_ROUTES,
   listAssistantConnections,
   readAssistantConversation,
 } from '@conexus/hub-api'
@@ -22,9 +22,9 @@ after(() => harness.stop())
 
 const PROJECT = `/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const FIRST = '11111111-1111-4111-8111-111111111111'
-const THREAD = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}/threads/${FIRST}/messages`
+const THREAD = `${CONVERSATION_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}/threads/${FIRST}/messages`
 
-const ASSISTANT_THREAD = `${BUILDER_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/${FIRST}/threads/${FIRST}/messages`
+const ASSISTANT_THREAD = `${CONVERSATION_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/${FIRST}/threads/${FIRST}/messages`
 
 const LONG_CONVERSATION = Array.from({ length: 250 }, (_, index) =>
   storedOf({

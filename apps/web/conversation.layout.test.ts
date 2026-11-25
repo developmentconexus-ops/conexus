@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, CONVERSATION_ROUTES } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
 import { atRest } from './at-rest.ts'
 import { holdsColumn } from './chat-column.ts'
@@ -28,7 +28,7 @@ function open(path: string, viewport: typeof DESKTOP) {
 
 const PROJECT = `/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const FIRST = '11111111-1111-4111-8111-111111111111'
-const SESSION = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}`
+const SESSION = `${CONVERSATION_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}`
 
 /** Waits until the conversation shows its end. */
 function atEnd(page: Page) {

@@ -13,6 +13,7 @@ import {
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
+import type { Scalar } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { Credential, open, seal } from '../../platform/seal.ts'
 import { personNameColumn } from '../identity/public.ts'
@@ -126,7 +127,8 @@ const FoundRow = z.object({ id: ConnectionLinkId, company_id: CompanyId, created
 
 /** A 404 that says nothing of why; the reason and the link's id, never the secret, go to the registro (S10, S41). */
 function refused(deps: Deps, reason: string, link?: Found): Failure {
-  const fields = link === undefined ? { reason } : { reason, linkId: link.id }
+  const fields: Record<string, Scalar> =
+    link === undefined ? { reason } : { reason, linkId: link.id }
   deps.log.info(fields, 'CONNECTION_LINK_REFUSED')
   return new Failure('NOT_FOUND', { details: { reason } })
 }

@@ -1,4 +1,4 @@
-import { BUILDER_ROUTES, CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
+import { CONSTRUTOR_CONTROLLER, CONVERSATION_ROUTES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
@@ -18,7 +18,7 @@ const QUESTION = {
   options: [{ label: 'Um agente de vendas' }, { label: 'Conferir as metas' }],
   multiSelect: false,
 }
-const SESSIONS = `*${BUILDER_ROUTES}/agent-controller`
+const SESSIONS = `*${CONVERSATION_ROUTES}/agent-controller`
 
 function asked(result?: unknown) {
   const message = toolSaid('ask_user', { questions: [QUESTION] }, result)

@@ -2,7 +2,7 @@ import type { AssistantConversation, SessionConnection } from '@conexus/hub-api'
 import {
   ASSISTANT_CONTROLLER,
   ATTEMPT_KEY_HEADER,
-  BUILDER_ROUTES,
+  CONVERSATION_ROUTES,
   ConnectionId,
   ConversationId,
   ProjectId,
@@ -39,7 +39,7 @@ export const ELSEWHERE = ConversationId.parse('44444444-4444-4444-8444-444444444
 export const THIRD = ConversationId.parse('55555555-5555-4555-8555-555555555555')
 export const PEDIDOS_ID = PEDIDOS.id
 export const COMPANY_ROOT = `/companies/${COMPANY.id}`
-const ASSISTANT_SESSION = `*${BUILDER_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/:id`
+const ASSISTANT_SESSION = `*${CONVERSATION_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/:id`
 
 export const OFFERED: SessionConnection[] = [
   { connectionId: SALES, connector: 'sankhya', name: 'Vendas', chosen: true },
