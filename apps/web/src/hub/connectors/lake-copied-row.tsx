@@ -5,7 +5,7 @@ import {
   columnsText,
   NAME_FIXED,
   RUNNING,
-  sinceOfTableText,
+  sinceOfRowText,
   UP_TO_DATE,
   WHOLE_HISTORY_ROW,
   WITH_ERROR,
@@ -66,7 +66,7 @@ export function CopiedRow(props: {
           <span>{modeText(table.mode)}</span>
           {props.since !== null && (
             <span className="tabular-nums">
-              {table.limited ? sinceOfTableText(props.since) : WHOLE_HISTORY_ROW}
+              {table.limited ? sinceOfRowText(props.since) : WHOLE_HISTORY_ROW}
             </span>
           )}
         </p>
