@@ -1,10 +1,7 @@
-import type { ServerResponse } from 'node:http'
 import type { ConversationId } from '@conexus/hub-api'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { FastifyInstance } from 'fastify'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
-import type { GuardedMastra } from '../../harness/routes/public.ts'
-import { registerSessionRoutes } from '../../harness/routes/public.ts'
 import type { Owner, ReleaseScope } from '../../harness/spec/public.ts'
 import { resourceOf } from '../../harness/spec/public.ts'
 import type { ConnectorPort } from '../../harness/tools/public.ts'
@@ -73,7 +70,6 @@ export function createBuilderConversations(deps: {
         return (await deps.projects.liveProjectOf(tx, ids))?.name
       }),
   })
-  const streams = new Set<ServerResponse>()
 
   return Object.freeze({
     part: {
@@ -83,10 +79,8 @@ export function createBuilderConversations(deps: {
       admit: (input: Parameters<typeof store.mine>[0]) => store.mine(input),
       release: releaseOf({ ...deps, store, builder }),
       ends: builderEnds(deps.runs),
-      /** The open streams once each said its end, then the runs' own work (code C62). */
+      /** The runs' own work, after the open streams the Hub closed (code C62). */
       async close(): Promise<void> {
-        // Mastra's adapter stops writing on the response's close (`@mastra/fastify` `stream`).
-        for (const stream of streams) stream.destroy()
         deps.runs.stop()
       },
     },
@@ -105,9 +99,8 @@ export function createBuilderConversations(deps: {
         return messages.length > 0
       },
     },
-    routes: (app: FastifyInstance, hub: GuardedMastra) => {
+    routes: (app: FastifyInstance) => {
       registerConversationRoutes(app, { store, builder, queue })
-      registerSessionRoutes(app, { hub, conversations: builder, streams, log: deps.log })
       registerSourceRoutes(app, {
         ...{ database, identity, projects: deps.projects },
         repository: (ids) => deps.runs.repositoryOf(ids),

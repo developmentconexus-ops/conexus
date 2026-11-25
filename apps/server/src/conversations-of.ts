@@ -227,7 +227,8 @@ export function conversationsOf(deps: ConversationsDeps) {
   const conversations = Object.freeze({
     ...hub,
     routes: (app: FastifyInstance) => {
-      builder.routes(app, hub)
+      hub.routes(app)
+      builder.routes(app)
       construtor.routes(app)
     },
   })
