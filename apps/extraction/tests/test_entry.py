@@ -5,6 +5,7 @@ import os
 import signal
 import threading
 import time
+import typing as t
 from decimal import Decimal
 from pathlib import Path
 
@@ -12,6 +13,7 @@ import pyarrow as pa
 import pytest
 
 from conexus_extraction.contract import Machine
+from conexus_extraction.entry import Round
 from conexus_extraction.machine import Meter
 from tests.conftest import TAP_DOUBLE, Metadata, Task, fargate
 
@@ -148,18 +150,21 @@ def test_a_rodada_fechada_no_meio_da_copia(
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
 
 
-def test_a_rodada_fechada_durante_a_atualizacao_nao_toca_a_atual(
-    task: Task, capfd: pytest.CaptureFixture[str]
+def test_a_rodada_fechada_antes_da_atualizacao_nao_toca_a_atual(
+    task: Task, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
 ) -> None:
-    assert task.run(task.spec(NOTAS, whole=False)) == 0
-    assert any(sql.startswith("MERGE") for sql in task.athena.statements)
-    task.athena.executions.clear()
-    task.aws.sent.clear()
-    task.aws.refuse_after_gets = task.aws.gets - 1
-    task.aws.gets = 0
-    task.run(task.spec(NOTAS, whole=False))
+    copy = Round.run
+
+    def closed_after_the_copy(self: Round, *args: t.Any) -> int:
+        code = copy(self, *args)
+        task.aws.parameters.clear()
+        return code
+
+    monkeypatch.setattr(Round, "run", closed_after_the_copy)
+    task.run(task.spec(NOTAS))
+    assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows
     assert task.aws.sent == []
-    assert not [sql for sql in task.athena.statements if sql.startswith(("MERGE", "DELETE"))]
+    assert not task.athena.statements
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
 
 
@@ -248,6 +253,14 @@ def test_a_tabela_que_falha_nao_trava_a_atual_das_que_terminaram(task: Task) -> 
     assert by_name["sankhya_notas"]["rows"] == notas.num_rows
     assert by_name["sankhya_itens"]["rows"] is None
     assert not task.lake.load_table(("current", "sankhya_itens")).scan().to_arrow().num_rows
+
+
+def test_a_falha_dita_e_a_da_tabela_mesmo_se_a_atualizacao_tambem_falha(task: Task) -> None:
+    _unwritable(task, "sankhya_itens")
+    task.athena.refuse = lambda sql: sql.startswith("MERGE")
+    assert task.run(task.spec(NOTAS, ITENS, whole=False)) == 0
+    assert task.aws.sent[-1]["outcome"]["table"] == "sankhya_itens"
+    assert task.aws.sent[-1]["tables"][0]["rows"] is None
 
 
 def test_a_tabela_nunca_comecada_nao_trava_a_atual_das_que_terminaram(task: Task) -> None:
