@@ -6,6 +6,7 @@
     "apps/server/src/harness/tools/company/conformance.test.ts",
     "apps/server/src/harness/tools/connectors/connector-tools-scope.test.ts",
     "apps/server/src/agents/agent-builder/run-scope.test.ts",
+    "apps/server/src/agents/app-builder/connector-access.test.ts",
     "apps/server/src/agents/app-builder/conversation-refusal.test.ts",
     "apps/server/src/agents/app-builder/permissions.test.ts",
     "apps/server/src/harness/tools/data/tools-refusals.test.ts",
