@@ -131,11 +131,13 @@ test('o seletor de modelo, pelo teclado: abre, as setas andam, Tab vai aos níve
     'solid 2px',
     'the thumb draws the focus outline, as the input itself is clipped',
   )
-  const sent = page.waitForRequest((request) => request.method() === 'PUT')
+  const sent = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/model'),
+  )
   await page.keyboard.press('ArrowRight')
   assert.deepEqual((await sent).postDataJSON(), {
-    model: 'anthropic/claude-sonnet-4',
-    effort: 'low',
+    modelId: 'anthropic/claude-sonnet-4',
+    thinkingLevel: 'low',
   })
   assert.equal(await page.getByRole('radiogroup').count(), 0)
   await page.keyboard.press('Escape')
