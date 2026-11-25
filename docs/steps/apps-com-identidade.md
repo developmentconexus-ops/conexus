@@ -55,34 +55,34 @@ entra no código do app e passa pela conferência, nunca por fora dela.
 - O Hub com a cara de cada empresa: o Hub segue a Pauta (`DESIGN.md` da raiz).
 - Fontes de fora do app: a política do app só aceita a própria origem; a fonte vai empacotada no app.
 
-**As decisões suas nesta etapa.** Respondidas em 2026-11-24, no quadro do estudo: "Todas decisoes recomendadas", ou seja, A1, B2, C1 e D1. As palavras vão para o arquivo de aprovação quando você aprovar esta página. O fundador pediu, em 2026-11-24, que as respostas de 2026-11-09
+**As decisões suas nesta etapa.** Respondidas em 2026-11-24, no quadro do estudo: "Todas decisoes recomendadas", ou seja, A.1, B.2, C.1 e D.1. As palavras vão para o arquivo de aprovação quando você aprovar esta página. O fundador pediu, em 2026-11-24, que as respostas de 2026-11-09
 fossem ponto de partida, não trava. Onde a melhor forma diverge delas, a decisão diz o que mudou.
 
 - **A. Quando a identidade muda, o que acontece com os apps que já existem?**
-  - **A1 (recomendo).** O app guarda a identidade com que nasceu. Na próxima conversa sobre ele, o
+  - **A.1 (recomendo).** O app guarda a identidade com que nasceu. Na próxima conversa sobre ele, o
     Builder avisa que a identidade da empresa mudou e põe a atualização no plano; ela sai numa versão
     nova, conferida. Veredito: nativo (o app é código; a identidade entra como arquivo dele). É o que
     as referências fazem: o tema entra no app quando ele nasce (Appsmith; Base44 e v0 documentados).
-  - **A2.** Todo app muda na hora, sem versão nova, pela plataforma. Nenhuma referência lida faz, e
+  - **A.2.** Todo app muda na hora, sem versão nova, pela plataforma. Nenhuma referência lida faz, e
     passa por fora da conferência (recusa da visão).
   - O que mudou desde 2026-11-09 ("o app a segue"): o `A1` pôs a conferência entre o código e a
-    publicação; seguir sem versão nova pularia essa conferência. A1 é "o app segue" na próxima versão.
+    publicação; seguir sem versão nova pularia essa conferência. A.1 é "o app segue" na próxima versão.
 - **B. Até onde vai a direção de cada app?**
-  - **B1.** Só a cor de destaque muda por app, e só quando você pede (a resposta de 2026-11-09).
-  - **B2 (recomendo).** O plano de cada app escolhe a direção dentro da identidade: densidade, onde
+  - **B.1.** Só a cor de destaque muda por app, e só quando você pede (a resposta de 2026-11-09).
+  - **B.2 (recomendo).** O plano de cada app escolhe a direção dentro da identidade: densidade, onde
     o destaque aparece, a ênfase das telas e, se você pedir, outro destaque. Fonte, neutros e cantos
     vêm da empresa; um app só sai deles se você pedir, e o plano diz que aquele app sai da identidade, porque o estilo é ponto de partida editável (sua palavra no estudo de formatos). Veredito: nativo (uma seção do plano em texto). Dyad e vibesdk põem a
     direção e a cor no plano de cada app; a sua decisão "3B" de 2026-11-14 diz "identidade da empresa
     mais direção por app".
 - **C. O logotipo da empresa entra agora?**
-  - **C1 (recomendo).** Entra: o dono sobe um SVG ou PNG pequeno na identidade, e o app nasce com
+  - **C.1 (recomendo).** Entra: o dono sobe um SVG ou PNG pequeno na identidade, e o app nasce com
     ele no topo. É o sinal mais claro de "mesma casa". O Better Auth já tem o campo `logo` na empresa,
     e o Dify troca o logotipo de todos os apps de um workspace. Custa uns 300 linhas.
-  - **C2.** Fica para depois; a identidade desta etapa é cor, fonte e forma.
+  - **C.2.** Fica para depois; a identidade desta etapa é cor, fonte e forma.
 - **D. Uma empresa sem identidade: como nasce o app dela?**
-  - **D1 (recomendo).** Com a identidade neutra de hoje, e a tela de identidade avisa o dono e o
+  - **D.1 (recomendo).** Com a identidade neutra de hoje, e a tela de identidade avisa o dono e o
     administrador. O plano diz "a empresa ainda não tem identidade; usei a padrão".
-  - **D2.** O Builder pede a identidade antes do primeiro app e espera.
+  - **D.2.** O Builder pede a identidade antes do primeiro app e espera.
 
 ## As unidades
 
@@ -178,13 +178,13 @@ entrada no mostruário e sua linha no `DESIGN.md` da raiz, na unidade U2.
 | O formato da identidade | U1 | Trilha, 2026-11-09: "igual o design.md, que o Impeccable utiliza" | `DESIGN.md:1-375` (o frontmatter da Pauta do Hub, mesmo formato); `apps/web/src/brand/tokens.test.ts:6-27` (o DESIGN.md é a fonte dos tokens) | Impeccable `reference/document.md:3` ("Tokens are normative"), `:9-41` e `:416` (o esquema aceita só `colors`, `typography`, `rounded`, `spacing`, `components`), mesma situação; formato google-labs-code/design.md (guia de design `:3-4`) | O frontmatter YAML guarda os tokens; o corpo, a prosa; o modo escuro pelo prefixo `dark-` é convenção nossa, da Pauta (`DESIGN.md:35-39`), não do formato (**lido**) | nativo: o formato; embrulhado: o esquema Zod do subconjunto que a empresa edita | — | não precisa | `packages/hub-api/src/company-identity.ts` |
 | As cores dos gráficos saem da identidade | U1, U3 | Trilha, Capacidade 5: "as cores dos gráficos saem dela" | `packages/app/starter/src/styles.css:31-35`, `:73-77` (`--chart-1..5` fixos) | Appsmith `69f0b84` `widgets/ChartWidget/widget/index.tsx:210` e `EChartsConfigurationBuilder.ts:68-69`, mesma situação, parcial (só a primeira série); shadcn `--chart-1..5` (o starter); skill dataviz `scripts/validate_palette.js`, situação diferente: ferramenta de quem desenha | Appsmith liga a cor do gráfico à `primaryColor` do tema (**lido**); o validador do dataviz mede contraste com a superfície e distância entre vizinhas (**provado** pelo leitor) | embrulhado: `chart-1` é o destaque e `chart-2..5` são da identidade, conferidos no salvamento (contraste 3:1) | o teste do critério 3 | não precisa | — |
 | A fonte | U1, U3 | nada registrado | `packages/app/skills/conexus-app/SKILL.md:116` ("No external fonts"); `styles.css:90` (pilha do sistema) | v0 e Base44 levam as fontes do sistema da empresa aos apps novos (documentado, `conexus-builder-ideal-apps` `report.md:679`, `:683`), mesma situação, sem dizer como servem a fonte; Appsmith `system-themes.json:27` (`appFont`), situação diferente: lista da plataforma por app | Appsmith escolhe a fonte do app numa lista que a plataforma tem (**lido**); a política do nosso app só aceita a própria origem, então a lista fecha no que o app empacota | nativo: a fonte entra no app como pacote npm empacotado pelo Vite, numa lista fechada | — | firstmate: lista fechada; desfaz abrindo a lista | — |
-| O app nasce com a identidade | U3 | Decisão A, A1: "Todas decisoes recomendadas" (fundador, 2026-11-24, no quadro do estudo) | `apps/server/src/builder/git/repository.ts:66-71` (o primeiro commit é o starter, igual para todos) | Appsmith `69f0b84` `ApplicationPageServiceCEImpl.java:470-474`, mesma situação no momento (o tema entra no app quando ele nasce), situação diferente na origem (padrão da plataforma, não da empresa); Base44 "preselected for new apps" (documentado) | Appsmith grava `editModeThemeId` no app novo (**lido**) | embrulhado: o `git` de hoje, com `hash-object` e `update-index` dos dois arquivos antes do `write-tree` | — | não precisa | `packages/app/src/identity.ts` |
+| O app nasce com a identidade | U3 | Decisão A, A.1: "Todas decisoes recomendadas" (fundador, 2026-11-24, no quadro do estudo) | `apps/server/src/builder/git/repository.ts:66-71` (o primeiro commit é o starter, igual para todos) | Appsmith `69f0b84` `ApplicationPageServiceCEImpl.java:470-474`, mesma situação no momento (o tema entra no app quando ele nasce), situação diferente na origem (padrão da plataforma, não da empresa); Base44 "preselected for new apps" (documentado) | Appsmith grava `editModeThemeId` no app novo (**lido**) | embrulhado: o `git` de hoje, com `hash-object` e `update-index` dos dois arquivos antes do `write-tree` | — | não precisa | `packages/app/src/identity.ts` |
 | O `styles.css` segue o `DESIGN.md` | U3 | VISION.md, Conexus Agents: "Uma regra de comportamento que importa vira mecanismo do motor" | `apps/web/src/brand/tokens.test.ts:6-27` (o mesmo mecanismo no Hub, **herdado**) | Impeccable `document.md:415` ("The frontmatter is normative"), mesma situação; Lovable acusa cor crua e repete (documentado, `conexus-builder-ideal-apps` `report.md:680`) | O DESIGN.md é a fonte; o CSS só escreve os valores (**lido**) | embrulhado: um passo da conferência de hoje (`packages/app/src/check/`) | o teste do critério 11 | não precisa | `packages/app/src/check/tokens.ts` |
 | A direção de design no plano | U4 | Roteiro, `A2`: "O plano mostra a direção de design antes de construir"; trilha, Capacidade 5 | `packages/app/skills/conexus-plan-new/references/plan-template.md:5-24` (sem campo de direção); `apps/server/src/builder/conversation/plan-tools.ts:76-99` | dyad `902829f` `write_app_blueprint.ts:78-127` (`design_direction`, `primary_color`), mesma situação, **relay** pelo estudo `conexus-builder-output-study` `notes/refs-builders.md:202`; vibesdk `9da158d` `schemas.ts:89`, `:101`, **relay** `refs-builders.md:30`; Impeccable `reference/new-work.md:75-89` (a direção de cada superfície), situação diferente: ferramenta de quem desenha | O plano do app tem a direção em uma ou duas frases e a cor principal, e a pessoa aprova (relay) | nativo: uma seção do plano em texto; o `submit_plan` não muda | — | não precisa | — |
 | A troca do destaque num app | U3, U4 | Trilha, 2026-11-09: "troca a cor de destaque se pedem"; decisão B | `packages/app/skills/conexus-app/SKILL.md:47` | Appsmith tema por app (`CustomThemeRepositoryCEImpl.java:21-24`, **lido**), situação diferente: a pessoa escolhe sem IA; dyad `primary_color` por app (relay) | — | nativo: o Builder muda `DESIGN.md` e `styles.css` juntos | — | não precisa | — |
 | O Builder lê a identidade | U4 | Estudo de formatos, palavra do fundador: "O layout, as telas, o estilo e os componentes são um ponto de partida editável" (relay, `conexus-builder-output-study/report.md:75`); decisão B | `packages/app/skills/conexus-app/SKILL.md:8` ("you never invent a palette"); `instructions.ts:26-63` | Impeccable `SKILL.md:19` (lê PRODUCT.md e DESIGN.md antes de desenhar), mesma situação; Mitra `design.md` por app (não oficial) | O DESIGN.md do projeto é a autoridade lida primeiro (**lido**) | nativo: o `DESIGN.md` no repositório do app, lido pela skill | — | não precisa | — |
 | A tela de identidade | U2 | Trilha, 2026-11-09: dono e administrador editam | `apps/web/src/routes/_app/companies/$companyId_/settings/general.tsx:11` | Appsmith editor de tema por app com prévia (`system-themes.json`, **lido**), situação diferente: um app, não a empresa | — | nativo: peças `ui/` de hoje mais duas novas | protótipo `shape` | não precisa | `apps/web/src/routes/_app/companies/$companyId_/settings/identity.tsx`, `apps/web/src/hub/identity/company-identity.tsx` |
-| O logotipo | U1, U2, U3 | Decisão C, C1: "Todas decisoes recomendadas" (fundador, 2026-11-24) | `tables.ts:193` (`logo` sem uso) | `better-auth@1.7.8` `schema.d.mts:113` (`logo`), mesma situação; Dify `484404f` `api/services/workspace/service.py:130-132` (grava) e `web_app_runtime_query_service.py:107-114` (aplica aos web apps), mesma situação | Dify troca o logotipo dos web apps do workspace (**lido**) | nativo | — | C1, fundador, 2026-11-24 | — |
+| O logotipo | U1, U2, U3 | Decisão C, C.1: "Todas decisoes recomendadas" (fundador, 2026-11-24) | `tables.ts:193` (`logo` sem uso) | `better-auth@1.7.8` `schema.d.mts:113` (`logo`), mesma situação; Dify `484404f` `api/services/workspace/service.py:130-132` (grava) e `web_app_runtime_query_service.py:107-114` (aplica aos web apps), mesma situação | Dify troca o logotipo dos web apps do workspace (**lido**) | nativo | — | C.1, fundador, 2026-11-24 | — |
 
 Procurado: os estudos salvos (`conexus-builder-output-study`, `conexus-builder-ideal-apps`,
 `conexus-builder-ideal-builders`, `conexus-kiro-study`, `conexus-product-design-estudo`), as
