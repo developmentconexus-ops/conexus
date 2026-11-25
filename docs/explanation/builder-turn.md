@@ -80,7 +80,7 @@ change worth deciding goes through a plan the person approves with `submit_plan`
 
 ## The tools
 
-The mode's tool list is closed (`agents/app-builder/permissions.ts`):
+The mode's tool list is closed (`CLOSED_TOOLS` in `packages/hub-api/src/tools.ts`, the ficha's `availableTools`):
 
 | Kind | Tools |
 | --- | --- |

@@ -1,11 +1,19 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CLOSED_TOOLS, CompanyId, ModelAccountId, ModelId, PersonId } from '@conexus/hub-api'
+import {
+  CLOSED_TOOLS,
+  CompanyId,
+  ModelAccountId,
+  ModelId,
+  PersonId,
+  WORKSPACE_TOOL,
+} from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import { MessageList } from '@mastra/core/agent/message-list'
 import { AgentController } from '@mastra/core/agent-controller'
 import { InMemoryStore } from '@mastra/core/storage'
 import { createTool } from '@mastra/core/tools'
+import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
 import {
@@ -18,7 +26,6 @@ import { asked, conversing, endOf, MODEL, title } from '../../harness/routes/tes
 import { partsOf } from '../../harness/routes/test-parts.ts'
 import { initialStateOf } from '../../harness/spec/public.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { TOOL_CLOSURE } from './public.ts'
 
 const CARD_TOOLS = [
   'ask_user',
@@ -164,7 +171,7 @@ async function closedSession(ran: string[]) {
       model: callingOnce('github_create_issue'),
       tools: { github_create_issue: outside },
     }),
-    modes: [{ id: 'conversa', availableTools: TOOL_CLOSURE.availableTools }],
+    modes: [{ id: 'conversa', availableTools: [...CLOSED_TOOLS] }],
     initialState: initialStateOf({ kind: 'NOTHING_ASKS' }),
   })
   await controller.init()
@@ -235,7 +242,7 @@ function withSessionModel(context: ReturnType<typeof turnContext>) {
 }
 
 test('a troca automática de modelo estreita o conjunto fechado e não o refaz: a ferramenta que não é da lista não volta', async () => {
-  const closed = TOOL_CLOSURE.availableTools
+  const closed = [...CLOSED_TOOLS]
   const tools = Object.fromEntries(
     [...closed, 'web_search', 'github_create_issue'].map((name) => [name, {}]),
   )
@@ -262,6 +269,13 @@ test('a troca automática de modelo estreita o conjunto fechado e não o refaz: 
   )
 })
 
-test('a tela e o Builder nomeiam o mesmo conjunto fechado', () => {
-  assert.deepEqual(new Set(TOOL_CLOSURE.availableTools), new Set(CLOSED_TOOLS))
+test('os nomes que a tela dá às ferramentas da máquina são os do Mastra: uma troca de nome lá falha aqui (code C27)', () => {
+  const { FILESYSTEM, SANDBOX } = WORKSPACE_TOOLS
+  assert.deepEqual(WORKSPACE_TOOL, {
+    ...{ readFile: FILESYSTEM.READ_FILE, writeFile: FILESYSTEM.WRITE_FILE },
+    ...{ editFile: FILESYSTEM.EDIT_FILE, listFiles: FILESYSTEM.LIST_FILES },
+    ...{ delete: FILESYSTEM.DELETE, fileStat: FILESYSTEM.FILE_STAT, mkdir: FILESYSTEM.MKDIR },
+    ...{ grep: FILESYSTEM.GREP, executeCommand: SANDBOX.EXECUTE_COMMAND },
+    ...{ getProcessOutput: SANDBOX.GET_PROCESS_OUTPUT, killProcess: SANDBOX.KILL_PROCESS },
+  })
 })

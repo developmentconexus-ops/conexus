@@ -93,8 +93,9 @@ export function agentDefaults(
 
 /**
  * The controller of a conversation kind, under its key, on the Hub's store, with one mode. A tool
- * of the controller's own is off unless the mode offers it and the conversation brings none of the
- * same id: the conversation's own `tools.fixed` replace the native ones under their ids. The
+ * of the controller's own is off when the conversation brings one of the same id (its own `tools.fixed`
+ * replace the native ones under their ids) and, in a mode with no list, always: a mode's
+ * `availableTools` already hides, at the model call, every tool it does not list. The
  * `tools.perRun` ones are made for each run, with its context, and never carry a native id: the
  * ids are known before any run only from `fixed`.
  */
@@ -118,10 +119,10 @@ export function controllerOf(input: {
   initialState: Record<string, unknown>
 }): AgentController {
   const { availableTools } = input.mode
-  const offered = new Set(availableTools)
   const own = new Set(Object.keys(input.tools?.fixed ?? {}))
   const off = Object.keys(BUILTIN).filter(
-    (id): id is BuiltinToolId => Object.hasOwn(BUILTIN, id) && (!offered.has(id) || own.has(id)),
+    (id): id is BuiltinToolId =>
+      Object.hasOwn(BUILTIN, id) && (availableTools === undefined || own.has(id)),
   )
   return new AgentController({
     id: CONTROLLER_KINDS[input.kind].id,
