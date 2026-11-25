@@ -136,6 +136,23 @@ test('Parar: o turno termina `aborted` e o texto até ali fica na conversa', asy
 const MASTRA_SHUTDOWN_GAP =
   'Mastra 1.82 saves a stopped answer after agent_end, with no public wait for the save'
 
+test('desligar para o turno em curso como Parar e fecha o stream que a pessoa deixou aberto', {
+  timeout: 30_000,
+}, async (t) => {
+  const held = holding(t)
+  const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
+  const closing = await hubBeside(t, hub)
+  const url = `${conversations}/${await started(closing, ana, conversations)}`
+  const stream = await streamOf(closing, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 200)
+  assert.equal(await stream.text(), PARTIAL)
+  const closed = closing.close()
+  assert.equal(endOf(await stream.turn()), 'aborted')
+  await until(() => stream.seen.ended, 'the Hub closed the open stream', 5_000)
+  await closed
+})
+
 test('desligar para o turno em curso como Parar, guarda o texto e só então fecha o stream', {
   timeout: 60_000,
   todo: MASTRA_SHUTDOWN_GAP,
