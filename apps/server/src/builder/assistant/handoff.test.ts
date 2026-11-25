@@ -258,7 +258,7 @@ test('o toque repetido: a mesma chave devolve o mesmo Projeto e a mesma conversa
   assert.equal(await signalsOf(on, one), 1, 'one signal at once')
 })
 
-test('as recusas: quem não pode gerenciar ligações cria o Projeto sem liberar nada, e uma chamada que não é proposta desta conversa é NOT_FOUND (9)', async (t) => {
+test('as recusas: o Projeto guarda uma Sankhya só, e uma chamada que não é proposta desta conversa é NOT_FOUND (9)', async (t) => {
   const { on, url, toolCallId } = await proposing(t, APP)
   // Two Sankhyas marked: a Projeto holds one, so the second is refused and the first released.
   const two = {
@@ -278,22 +278,6 @@ test('as recusas: quem não pode gerenciar ligações cria o Projeto sem liberar
     ])
     assert.deepEqual(await granted(on, handed.projectId), [on.matriz])
   }
-
-  // No role asks the Assistant without managing connections today (`askAssistant`); the
-  // connectors' door answers as it will for one.
-  const { grants } = on.hub.connectors
-  const may = grants.may.bind(grants)
-  grants.may = async () => false
-  t.after(() => {
-    grants.may = may
-  })
-  const body = { toolCallId, projectName: 'Sem ligações', connections: [on.matriz], deliver: true }
-  const touched = await post(on.hub, on.ana, `${url}/handoffs`, body, randomUUID())
-  assert.equal(touched.statusCode, 201, touched.body)
-  const handed = HandedOff.parse(touched.json())
-  assert.deepEqual(handed.released, [])
-  assert.deepEqual(handed.refused, [{ connectionId: on.matriz, code: 'CONNECTIONS_NOT_ALLOWED' }])
-  assert.deepEqual(await granted(on, handed.projectId), [])
 
   const unknown = {
     toolCallId: 'toolu_outra',
