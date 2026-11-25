@@ -82,7 +82,7 @@ function citedPaths(
   })
   if (!SHORT_DOCS.test(file)) return whole
   return whole.replace(SHORT, (cited) => {
-    const moved = movedOf(`${OLD}/${cited}`, moves, folders)
+    const moved = moves.get(`${OLD}/${cited}`)
     return moved === undefined ? cited : moved.slice(SRC.length + 1)
   })
 }
@@ -111,7 +111,7 @@ function rewriteReads(file: string, text: string, newOf: (file: string) => strin
       if (!beside) throw new Error(`${file} reads ${path}, whose folder no longer sits beside it`)
       return read
     }
-    if (at === file && there === target) return read
+    if (!existsSync(target) || (at === file && there === target)) return read
     return read.replace(`${quote}${path}${quote}`, `${quote}${relativeTo(at, there)}${quote}`)
   })
 }

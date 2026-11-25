@@ -221,7 +221,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
   return events
 }
 
-/** The Assistant's helper type (`builder/assistant/research.ts`), with no tools of its own here. */
+/** The Assistant's helper type (`agents/assistant/research.ts`), with no tools of its own here. */
 const RESEARCH_HELPER = {
   id: RESEARCH_TYPE,
   name: 'Pesquisa',

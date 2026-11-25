@@ -30,9 +30,10 @@ module.exports = [
   },
   {
     name: 's3-only-in-the-git-copy',
-    comment: 'C56, decision 0051: only builder/git/copy/ imports the S3 client of the R2 bucket.',
+    comment:
+      'C56, decision 0051: only agents/app-builder/git/copy/ imports the S3 client of the R2 bucket.',
     severity: 'error',
-    from: { pathNot: `${SERVER}/builder/git/copy/` },
+    from: { pathNot: `${SERVER}/agents/app-builder/git/copy/` },
     to: { path: '(^|node_modules/)@aws-sdk/client-s3(/|$)' },
   },
   {

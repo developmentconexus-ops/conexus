@@ -1,16 +1,15 @@
 import { join } from 'node:path'
 import { getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type { GitCopy } from './builder/git/public.ts'
-import { repositoriesIn } from './builder/git/public.ts'
 import type {
   BuilderConfer,
   ConversationMachine,
+  GitCopy,
   MachinesOf,
   MachineTuning,
   RepositoryOf,
-} from './builder/runs/public.ts'
-import { builderPortsOf, createRuns } from './builder/runs/public.ts'
+} from './agents/app-builder/public.ts'
+import { builderPortsOf, createRuns, repositoriesIn } from './agents/app-builder/public.ts'
 import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
 import {

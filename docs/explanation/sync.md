@@ -13,5 +13,5 @@ What remains:
 - In each company's database, the schema `sync` and its logins, until the readjust takes them out.
   No Hub code opens a company's database with them.
 
-`builder/git/copy` has nothing to do with this: it is the Git bundle copied to R2
+`agents/app-builder/git/copy` has nothing to do with this: it is the Git bundle copied to R2
 ([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)).

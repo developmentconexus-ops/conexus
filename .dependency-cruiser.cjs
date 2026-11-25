@@ -1,6 +1,6 @@
 // The import law of code C3 to C8, data D19, testing T5 and web W1, W4 to W7, W13. Every rule below names
 // the guide rule it enforces; scripts/rules.test.ts plants one bad file per rule.
-// A subject is one folder of hub/, builder/, harness/ or agents/ on the server, and one folder of hub/, harness/ or agents/ on the web. Revalidate by 2027-04-13.
+// A subject is one folder of hub/, harness/ or agents/ on the server, and one folder of hub/, harness/ or agents/ on the web. Revalidate by 2027-04-13.
 const { readdirSync } = require('node:fs')
 const { join } = require('node:path')
 const SERVER = '^apps/server/src'
@@ -19,7 +19,7 @@ const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-
 // only through packages/hub-api/src/company-data.ts. Data is the data track's code; the agents and
 // the apps are the conversations, their tool adapters and the app packages.
 const DATA = `^(${SERVER}/hub/(connectors|copies|ontology|data)/|packages/connectors/)`
-const AGENTS_AND_APPS = `^(${SERVER}/(builder/(conversation|assistant|agents|construtor|automations|tools)|harness/(spec|turn|memory|prompt|routes|tools))/|packages/app(-contract)?/)`
+const AGENTS_AND_APPS = `^(${SERVER}/(agents/(assistant|agent-builder|saved-agent|app-builder/(?!runs/|git/))|harness/(spec|turn|memory|prompt|routes|tools)/)|packages/app(-contract)?/)`
 // C56: each SDK of a provider only in its adapter.
 const ADAPTERS = require('./.dependency-cruiser-adapters.cjs')
 // The connectors the kit holds: each folder of packages/connectors/src but the kernel.
@@ -67,10 +67,10 @@ module.exports = {
         'C4: what the conversations share lives in harness/spec/; the agents and the Construtor never import the Assistant. Their tests borrow its test doubles.',
       severity: 'error',
       from: {
-        path: `${SERVER}/builder/(agents|construtor)/`,
+        path: `${SERVER}/agents/(saved-agent|agent-builder)/`,
         pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER],
       },
-      to: { path: `${SERVER}/builder/assistant/` },
+      to: { path: `${SERVER}/agents/assistant/` },
     },
     {
       name: 'agents-and-apps-reach-data-only-through-the-contract',
@@ -142,7 +142,7 @@ module.exports = {
       // The test ports hand every test Hub the Builder's doubles (T14), as they hand it Neon's.
       to: {
         path: `${SERVER}/(hub|builder|harness|agents)/`,
-        pathNot: `${SERVER}/builder/runs/test-runs\\.ts$`,
+        pathNot: `${SERVER}/agents/app-builder/runs/test-runs\\.ts$`,
       },
     },
     {
@@ -188,11 +188,11 @@ module.exports = {
     {
       name: 'mastra-only-in-builder',
       comment:
-        'W7, decision 0033: @mastra/* is imported only inside builder/ and harness/ on the server and inside harness/ on the web.',
+        'W7, decision 0033: @mastra/* is imported only inside harness/ and agents/ on the server and inside harness/ on the web.',
       severity: 'error',
       from: {
         path: '^apps/(server|web)/src/',
-        pathNot: '^apps/(server/src/(builder|harness)|web/src/harness)/',
+        pathNot: '^apps/(server/src/(harness|agents)|web/src/harness)/',
       },
       to: { path: '(^|node_modules/)@mastra/' },
     },

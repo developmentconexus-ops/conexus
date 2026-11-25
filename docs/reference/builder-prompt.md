@@ -2,7 +2,7 @@
 
 The Builder's system prompt is Conexus OS's `builder.md` at `e0353c36`, adapted only where the
 architecture changed (step 14, U7; founder, 2026-10-21). This file owns the verdict on each line of
-the OS prompt, in the test's words, and the architecture's reason for it; `apps/server/src/builder/conversation/test-prompt.ts`
+the OS prompt, in the test's words, and the architecture's reason for it; `apps/server/src/agents/app-builder/test-prompt.ts`
 holds each line's expected text, so CI never reads the OS. A step that changes the prompt changes this
 table in the same pull request.
 

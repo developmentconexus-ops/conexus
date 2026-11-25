@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { assisting, created, said, talking } from '../../builder/assistant/test-assistant.ts'
+import { assisting, created, said, talking } from '../../agents/assistant/test-assistant.ts'
 import { endOf } from '../routes/test-conversation.ts'
 import { tool } from '../routes/test-questions.ts'
 

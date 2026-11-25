@@ -10,21 +10,21 @@ with the version in [the Hub side of an app](hub-apps.md). `builder/` below mean
 ## The pieces a turn touches
 
 - One Builder agent for every conversation, made with Mastra's `Agent` and its task signal, on one
-  `AgentController` (`builder/conversation/builder.ts`).
+  `AgentController` (`agents/app-builder/builder.ts`).
 - A conversation is a Mastra thread in Mastra's database. The Hub's database keeps only an index
-  row per conversation, naming its company, Project and person (`builder/conversation/store.ts`).
+  row per conversation, naming its company, Project and person (`agents/app-builder/store.ts`).
   The index decides who may open a thread; Mastra's routes name no Project.
 - Each Project has a bare Git repository on the server's disk. Its `main` is the app's code, and
-  each commit after the starter is a version (`builder/git/repository.ts`).
+  each commit after the starter is a version (`agents/app-builder/git/repository.ts`).
 - Each conversation has an E2B machine where the model edits and runs code
   (`harness/machine/machines.ts`).
-- `Runs` (`builder/runs/runs.ts`) remembers which run writes in which Project. It lives in memory
+- `Runs` (`agents/app-builder/runs/runs.ts`) remembers which run writes in which Project. It lives in memory
   only, so a restart holds no run.
 
 ## Opening a conversation
 
 The Project page's box calls `createConversation` with an attempt key
-(`builder/conversation/routes.ts`). The server admits the person (a member whose role allows
+(`agents/app-builder/routes.ts`). The server admits the person (a member whose role allows
 `useConversations`, on a live Project), derives the conversation id from the attempt key, writes
 the index row and creates the controller session with the conversation's model and effort
 (`harness/spec/open.ts`). A repeated attempt finds the same conversation.
@@ -50,7 +50,7 @@ Steps 2 and 3 refuse with the same `CONVERSATION_NOT_FOUND`, so a stranger learn
 Mastra resolves the agent's workspace, instructions, tools and skills for the run, then calls the
 input processors (`harness/spec/factories.ts`):
 
-1. `turnOf` (`builder/conversation/turn-of.ts`) finds the conversation's Project from the index
+1. `turnOf` (`agents/app-builder/turn-of.ts`) finds the conversation's Project from the index
    and calls `Runs.take`. One run writes in a Project at a time, whoever started it. If another
    conversation holds the Project, the run aborts with `RUN_BUSY` and the holder's name, before
    any model call.
@@ -64,7 +64,7 @@ that never touched a machine. The machine starts on the first tool call.
 ## What the model knows
 
 The instructions are rebuilt on every call, resumed runs included
-(`builder/conversation/instructions.ts`). The template is `builder/conversation/prompt/builder.md`.
+(`agents/app-builder/instructions.ts`). The template is `agents/app-builder/prompt/builder.md`.
 It is filled with the Project's name, the date in São Paulo, the app folder, the check's limit of
 four rounds, the Project's granted connections (names and concepts, never values), and two files
 read from `main` on the server: `AGENTS.md` and `.conexus/memory/MEMORY.md`. They come from `main`,
@@ -80,7 +80,7 @@ change worth deciding goes through a plan the person approves with `submit_plan`
 
 ## The tools
 
-The mode's tool list is closed (`builder/conversation/permissions.ts`):
+The mode's tool list is closed (`agents/app-builder/permissions.ts`):
 
 | Kind | Tools |
 | --- | --- |
@@ -93,7 +93,7 @@ The session starts with `yolo: true`, so no tool waits for approval
 ([0053](../decisions/0053-builder-tools-run-without-asking.md)). `ask_user` and `submit_plan`
 suspend the run on a card. `app_data_read` and `app_data_check` are offered to whoever the company lets converse with the Builder in the Projeto (`useConversations`, read in the Hub once per turn and again on each call); `app_data_check` answers a count, the columns and the time of a read on the real data, never a row (`harness/tools/app-data/`). The run ends there, and the answer resumes it. A message sent while a
 card is open is accepted, and Mastra holds it until the card is answered, then carries it into
-the run the answer opens (`builder/conversation/conversation-steer.test.ts`). `web_search` exists only for models whose
+the run the answer opens (`agents/app-builder/conversation-steer.test.ts`). `web_search` exists only for models whose
 provider search Mastra supports.
 
 ## The machine and Git
@@ -110,7 +110,7 @@ message part.
 ## The end-of-turn check
 
 When the model stops, Mastra calls the `isTaskComplete` scorer `conexusCheck`
-(`builder/conversation/processors.ts`). If tasks are still open, it sends the model back to them.
+(`agents/app-builder/processors.ts`). If tasks are still open, it sends the model back to them.
 If the app folder changed, it runs the check on the machine. A failing report goes back to the
 model, which continues; after four failed rounds the turn ends as `APP_CHECK_FAILED`. If the
 machine could not check at all, the turn ends `unchecked` without spending a round. The model can
@@ -120,14 +120,14 @@ also call `conexus_check` itself during the turn, through the same `Runs.check`.
 
 Every end of a run, whether complete, suspended on a card, stopped with Parar or failed, reaches
 `onBeforeAgentEnd` and then `Runs.finish` (`harness/turn/end.ts`). Parar therefore keeps
-what the model wrote. `saveRun` (`builder/runs/save.ts`):
+what the model wrote. `saveRun` (`agents/app-builder/runs/save.ts`):
 
 1. does nothing if the machine was never touched;
 2. asks the machine for one commit of the whole tree on the current `main`, without
    `node_modules`, and reads the bundle with a size cap. A tree that differs from `main` only in
    `.conexus/plans` counts as unchanged, so plans travel with the app but make no version alone;
 3. fetches the bundle into a run ref with object checks, requires exactly one new commit whose
-   parent is `main`, and inspects the tree (`builder/git/tree.ts`);
+   parent is `main`, and inspects the tree (`agents/app-builder/git/tree.ts`);
 4. moves `main` by compare-and-swap. No other run can move it, since the run holds the Project;
 5. tells the machine its new base, numbers the version and copies a bundle of `main` to R2
    ([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). A failed copy retries on a
@@ -138,7 +138,7 @@ Conexus's own parts, never sent to the model, with the saved version.
 
 ## From the version to the Prévia
 
-Only a version whose check state is `passed` continues (`passed()` in `builder/runs/runs.ts`). The
+Only a version whose check state is `passed` continues (`passed()` in `agents/app-builder/runs/runs.ts`). The
 message then says the Prévia is `sending`. The server reads the built version folder off the
 machine (`harness/machine/pack.ts`), lets the machine go, and calls the Hub's
 `sendFromBuilder`. The Hub stores the version, uploads its Worker, migrates the app database and
@@ -147,7 +147,7 @@ until the send is over, then the run lets it go and Mastra emits `agent_end`.
 
 On the screen, a `ready` Prévia part refreshes the Project, and the Prévia frame loads the new
 version (`apps/web/src/harness/room/use-session.ts`). The Código tab reads the files of
-`main` from the server's Git, not from the machine (`builder/git/source.ts`). Publishing is a
+`main` from the server's Git, not from the machine (`agents/app-builder/git/source.ts`). Publishing is a
 separate act by a person.
 
 ## Streaming
@@ -163,7 +163,7 @@ a client more than 8 MiB behind (`harness/routes/stream.ts`).
 - **Parar.** Parar calls Mastra's abort. The run's end still saves what was written.
 - **Deleting a conversation, a Project or a company.** The Hub first stops the run from writing,
   so its end saves nothing and sends nothing. It then deletes the controller session, kills the
-  machines and deletes the thread (`builder/conversation/conversations.ts`).
+  machines and deletes the thread (`agents/app-builder/conversations.ts`).
 - **Shutdown.** The Hub stops the scheduler, refuses new messages and waits up to 180 seconds for
   the turns in flight, never aborting one (`apps/server/src/platform/lifecycle.ts`,
   `harness/mastra/hub-mastra.ts`). What remains after that is aborted, and each aborted run still

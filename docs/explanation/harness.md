@@ -27,8 +27,8 @@ mode, `conversa`. For the Builder, the Assistant and the Construtor the mode's `
 is a closed list; the `agents` controller has none, and the tool set each version's code builds is
 the closed set. The controller's built-in tools stay off
 unless the mode offers them; Conexus supplies its own `ask_user` and, for the Builder,
-`submit_plan`, under the native ids (`harness/spec/ask-user.ts` and `builder/conversation/plan-tools.ts`). The `subagent` tool is
-on only for the Assistant, with one helper type that reads (`builder/assistant/research.ts`).
+`submit_plan`, under the native ids (`harness/spec/ask-user.ts` and `agents/app-builder/plan-tools.ts`). The `subagent` tool is
+on only for the Assistant, with one helper type that reads (`agents/assistant/research.ts`).
 
 A session's id is the thread's id and Conexus's conversation id. The thread's resource encodes the
 kind and the owner, `<prefix>company:<c>:person:<p>` (`harness/spec/kinds.ts`), and the
@@ -86,10 +86,10 @@ alters one byte of it turns that agent's tests red.
 
 | Agent | Built with | Model | Memory | Machine |
 | --- | --- | --- | --- | --- |
-| Builder | `new Agent` with its task signal, by its ficha (`builder/conversation/builder.ts`) | the session's | observational, with recall | the turn's E2B machine, lent by the controller |
-| Assistant | `new Agent`, by its ficha (`builder/assistant/assistant.ts`) | the session's | observational | an E2B machine per conversation |
-| Construtor | `new Agent`, by its ficha (`builder/construtor/construtor.ts`) | the session's | observational | only for its code-writing tool |
-| Project agent | `new Agent` per published version, key `agent-<id>`, by a ficha made from the version (`builder/agents/agent.ts`) | the version's, or the person's | observational or plain, per version | per conversation, when the version asks |
+| Builder | `new Agent` with its task signal, by its ficha (`agents/app-builder/builder.ts`) | the session's | observational, with recall | the turn's E2B machine, lent by the controller |
+| Assistant | `new Agent`, by its ficha (`agents/assistant/assistant.ts`) | the session's | observational | an E2B machine per conversation |
+| Construtor | `new Agent`, by its ficha (`agents/agent-builder/construtor.ts`) | the session's | observational | only for its code-writing tool |
+| Project agent | `new Agent` per published version, key `agent-<id>`, by a ficha made from the version (`agents/saved-agent/agent.ts`) | the version's, or the person's | observational or plain, per version | per conversation, when the version asks |
 
 No agent names a model in code. The model is read from the run's `RequestContext`, as Mastra's
 router string `provider/model` (`routedModel` in `harness/spec/model.ts`). Every agent
@@ -104,7 +104,7 @@ the turn processor (`turnProcessor`, `harness/spec/turns.ts`), the same for ever
 builds the person's `AccountTurn` for the account queue and puts it on the request context, then `accountPick` (`harness/model-accounts/processors.ts`), which picks the account, the
 model and the thinking effort for each step. What differs is the ficha's `turn`: a `SESSION` turn is
 held until the session's `agent_end`; a `RUN` turn is taken by the run alone. The Builder's is the
-Project's lock as a named step, its `take` (`builder/conversation/turn-of.ts`): the run takes the
+Project's lock as a named step, its `take` (`agents/app-builder/turn-of.ts`): the run takes the
 Project, or ends `RUN_BUSY` with the name of whose run holds it, before any model call. Mastra's
 `threadLock` locks by conversation only, so this is Conexus code (see
 [boundaries](../reference/boundaries.md)). The error processors are Mastra's
@@ -125,7 +125,7 @@ One `PostgresStore` (`harness/memory/storage.ts`) writes Mastra's tables in sche
 ([0010](../decisions/0010-mastra-tables-own-database.md)). Mastra creates the tables at start;
 Conexus code never writes them directly. It reads the thread state (the task list) and the
 schedules through `storage.getStore`. Which thread belongs to whom is indexed in the Hub's own
-database, outside Mastra's schema (`builder/conversation/store.ts`).
+database, outside Mastra's schema (`agents/app-builder/store.ts`).
 
 Memory is one factory, `conversationMemory` (`harness/spec/memory.ts`), which each ficha's
 `memory` and `threads` take: Mastra's
@@ -134,8 +134,8 @@ observational memory scoped to the thread, observing at 30,000 message tokens an
 observer and the reflector use the company's memory models, read when the turn opens and picked
 beside the queue, never through it (`harness/model-accounts/processors.ts`). Only the Builder turns on recall
 inside its thread. Only the Assistant uses working memory, per person
-(`builder/assistant/memory.ts`), and reads the company's Knowledge, tools that only read
-(`builder/assistant/company-memory.ts`). Nothing uses semantic recall, vectors or embedders.
+(`agents/assistant/memory.ts`), and reads the company's Knowledge, tools that only read
+(`agents/assistant/company-memory.ts`). Nothing uses semantic recall, vectors or embedders.
 
 ## Workspace, machine and filesystem
 
@@ -147,11 +147,11 @@ host list (`harness/machine/kit.ts`). The machine starts on the first tool call
 (`beforeToolCall`). Its filesystem is `SandboxFilesystem`, code transplanted from Mastra Code's SDK
 into `harness/machine/sandbox-filesystem/`, because that SDK is not installed. The AST edit tool is
 off. A Project agent with a machine also gets Mastra's code mode (`createCodeMode`) over an E2B
-transport (`builder/agents/code-mode.ts`).
+transport (`agents/saved-agent/code-mode.ts`).
 
 The files a person sends the Assistant do not travel in the model's prompt. Mastra's
 `FileUploadProcessor`, built for each model call with that step's machine
-(`builder/assistant/files.ts`), writes each non-image file to `uploads/<conversation>/` on the
+(`agents/assistant/files.ts`), writes each non-image file to `uploads/<conversation>/` on the
 conversation's machine and leaves the model a note with the path. The stored message keeps the file.
 The model converts and reads it by parts with the machine's tools (`poppler-utils` and `pandoc` are
 in the template), and `read_file` hands it only images as media. Images stay with the model.
@@ -170,7 +170,7 @@ skill tools ([the app package](app-package.md)). Workspace skills are not used.
 
 The Builder's end-of-turn judge is a code scorer made with `createScorer` and given as
 `isTaskComplete` with `strategy: 'all'`, in the `judge` field of its ficha
-(`builder/conversation/processors.ts`). It is the only scorer; `@mastra/evals` appears only in a test.
+(`agents/app-builder/processors.ts`). It is the only scorer; `@mastra/evals` appears only in a test.
 
 ## Workflow and scheduler
 
@@ -178,7 +178,7 @@ Two workflows, built with `createWorkflow` and `createStep`. `conexus-automation
 automations and is a row of `mastra.schedules`. `conexus-retention-prune` drops old traces at 03:30 in São Paulo
 (`harness/mastra/retention.ts`). The scheduler polls every 10 seconds and
 starts only when a schedule row exists. Renaming the workflow would make Mastra delete every
-automation (`builder/automations/run.ts`).
+automation (`agents/assistant/automations/run.ts`).
 
 ## Tracing
 

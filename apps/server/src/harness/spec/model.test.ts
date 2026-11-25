@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ModelId } from '@conexus/hub-api'
-import { assisting, created, said, talking } from '../../builder/assistant/test-assistant.ts'
+import { assisting, created, said, talking } from '../../agents/assistant/test-assistant.ts'
 import { endOf } from '../routes/test-conversation.ts'
 import { BR_LOCATION, toolsOf } from './public.ts'
 
