@@ -1347,8 +1347,7 @@ reference tool checks a read against its documentation.
   brought, the current rows they did not rewrite, so a row the source dropped from a re-read month
   leaves the lake. A whole pass deletes the current rows of an older version, in a window table
   only in the months since the start date. The form is dlt's `merge_key`, which limits the deletes
-  to the partitions of the loaded rows (`docs/website/docs/general-usage/merge-loading.md:968-984`,
-  at `8fa90a97`).
+  to the partitions of the loaded rows (dlt's `merge-loading.md:968-984`, at `8fa90a97`).
 - **Why.** The fiscal tables have no change column, and the A0D measurement read 3,140 rows per
   second by month against 442 without the window (`EST/a0d-sankhya-kit-mes:93-106`). The month
   window is our extension of decision 0080.
