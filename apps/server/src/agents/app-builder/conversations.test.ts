@@ -15,7 +15,7 @@ import {
   streamOf,
 } from '../../harness/routes/test-conversation.ts'
 import { textsOf } from '../../harness/routes/test-parts.ts'
-import { sessionStateOf, switched } from '../../harness/routes/test-questions.ts'
+import { renamed, sessionStateOf, switched } from '../../harness/routes/test-questions.ts'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   BRUNO,
@@ -38,7 +38,8 @@ function routesOf(hub: Hub, person: Person, url: string) {
   const id = url.slice(url.lastIndexOf('/') + 1)
   return [
     call(hub, person, 'GET', url),
-    call(hub, person, 'PUT', `${url}/model`, { model: MODEL, effort: 'off' }),
+    switched(hub, person, url, { model: MODEL, effort: 'off' }),
+    renamed(hub, person, url, 'De outra pessoa'),
     sent(hub, person, url, 'Olá'),
     hub.app.inject({ method: 'GET', url: `${session}/stream`, headers }),
     stopped(hub, person, url),
