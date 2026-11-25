@@ -73,7 +73,7 @@ function filledOf(auth: ClientCredentialsAuth, input: { asked: string[]; filled:
 type Fields = z.infer<typeof Fields>
 
 /**
- * Makes a link (criterion 97): the admission first, so a Membro learns nothing, then the fields the
+ * Makes a link: the admission first, so a Membro learns nothing, then the fields the
  * other person fills and the ones already filled, sealed to the row. The address leaves once; the row
  * keeps only the digest of its secret.
  */
@@ -144,9 +144,9 @@ async function findLink(deps: Deps, secret: string): Promise<Found> {
 }
 
 /** Who asked still may: one who lost `manageConnections` makes the link answer as one that is gone. */
-async function askerAdmitted(deps: Deps, tx: CommandTx, link: Found): Promise<void> {
+async function askerAdmitted(deps: Deps, tx: CommandTx, link: Found) {
   try {
-    await admitted(
+    return await admitted(
       deps,
       tx,
       { person: { id: link.createdBy }, companyId: link.companyId },
@@ -170,11 +170,11 @@ function loginOfLink(deps: Deps, link: Found, id: string) {
   return { connector, auth: connector.auth }
 }
 
-/** The page of a link (criterion 98): who asked, the system, and the asked fields alone. */
+/** The page of a link: who asked, the company, the system, and the asked fields alone. */
 export async function readLink(deps: Deps, secret: string): Promise<ConnectionLinkPage> {
   const link = await findLink(deps, secret)
   return deps.database.command(scopeOf(askerOf(link)), async (tx) => {
-    await askerAdmitted(deps, tx, link)
+    const proof = await askerAdmitted(deps, tx, link)
     const [row] = await tx
       .select({
         connector: connectionLink.connectorId,
@@ -184,10 +184,16 @@ export async function readLink(deps: Deps, secret: string): Promise<ConnectionLi
       .from(connectionLink)
       .where(and(eq(connectionLink.id, link.id), eq(connectionLink.companyId, link.companyId)))
     if (row === undefined || row.askedBy === null) throw refused(deps, 'GONE', link)
+    const company = await deps.identity.companyNameOf(tx, {
+      admitted: proof,
+      companyId: link.companyId,
+    })
+    if (company === undefined) throw refused(deps, 'GONE', link)
     const { connector, auth } = loginOfLink(deps, link, row.connector)
     const fields = row.asked.map((name) => ({ name, ...auth.fields[name] }))
     return {
       askedBy: row.askedBy,
+      company,
       system: { name: connector.name, logo: connector.logo },
       fields: z.array(ConnectionLinkPage.shape.fields.element).parse(fields),
     }
@@ -197,7 +203,7 @@ export async function readLink(deps: Deps, secret: string): Promise<ConnectionLi
 type Born = { connectionId: ConnectionId }
 
 /**
- * The connection of a send, born in the link's own lock (criterion 99): a second send finds the
+ * The connection of a send, born in the link's own lock: a second send finds the
  * connection already there, ending or ended, and answers as a spent link. The asked fields join the
  * ones sealed with the link, and the connection is linked in the name of who asked.
  */
@@ -261,18 +267,17 @@ async function undone(deps: Deps, link: Found, connectionId: ConnectionId): Prom
   await deps.limits.forget(connectionId)
 }
 
-/** The link is spent when the connection is kept: `DELETE … RETURNING`, so one send alone takes it. */
+/** The link is spent when the connection is kept; one send alone gets here, by the link's lock and the connection's attempt key. */
 async function spent(deps: Deps, link: Found): Promise<void> {
   await deps.database.command(scopeOf(askerOf(link)), (tx) =>
     tx
       .delete(connectionLink)
-      .where(and(eq(connectionLink.id, link.id), eq(connectionLink.companyId, link.companyId)))
-      .returning({ id: connectionLink.id }),
+      .where(and(eq(connectionLink.id, link.id), eq(connectionLink.companyId, link.companyId))),
   )
 }
 
 /**
- * The send of a link (criterion 99): the connection is made and tested once, in the name of who
+ * The send of a link: the connection is made and tested once, in the name of who
  * asked. A test that throws takes the connection out and says so; a system that refuses the keys
  * takes it out too and leaves the link valid to its deadline; only a working one spends the link.
  */
@@ -284,7 +289,13 @@ export async function answerLink(deps: Deps, input: { secret: string; fields: Fi
   try {
     tested = await test(deps, { ...askerOf(link), connectionId })
   } catch (error) {
-    await undone(deps, link, connectionId)
+    try {
+      await undone(deps, link, connectionId)
+    } catch (undoing) {
+      const thrown = error instanceof Error ? error.name : typeof error
+      deps.log.error({ ...where, thrown }, 'CONNECTION_LINK_TEST_THREW')
+      throw undoing
+    }
     deps.log.info(where, 'CONNECTION_LINK_UNDONE')
     throw error
   }

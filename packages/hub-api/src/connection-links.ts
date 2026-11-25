@@ -22,9 +22,10 @@ export type ConnectionLink = z.infer<typeof ConnectionLink>
 /** A field the other person fills, as the kit declares it. */
 const AskedField = ConnectorEntry.shape.fields.element
 
-/** What the public page shows: who asked, the system, and only the fields asked, never a value already given. */
+/** What the public page shows: who asked, the company, the system, and only the fields asked, never a value already given. */
 export const ConnectionLinkPage = z.object({
   askedBy: z.string(),
+  company: z.string(),
   system: z.object({ name: z.string(), logo: z.string() }),
   fields: z.array(AskedField),
 })

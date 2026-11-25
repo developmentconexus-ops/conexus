@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
 import type { Person } from '../identity/test-hub.ts'
 import { post } from '../identity/test-hub.ts'
 import type { On } from './test-connection-links.ts'
@@ -84,8 +84,9 @@ test('abrir o link: sem sessão, quem pediu, o sistema e só os campos pedidos; 
   const opened = await open(on, link.secret)
   assert.equal(opened.statusCode, 200)
   const page = Object(opened.json())
-  assert.deepEqual(Object.keys(page).sort(), ['askedBy', 'fields', 'system'])
+  assert.deepEqual(Object.keys(page).sort(), ['askedBy', 'company', 'fields', 'system'])
   assert.equal(page.askedBy, 'Ana Lima')
+  assert.equal(page.company, 'Empresa Teste')
   assert.deepEqual(Object.keys(page.system).sort(), ['logo', 'name'])
   assert.equal(page.system.name, 'Sankhya')
   assert.deepEqual(
@@ -96,17 +97,23 @@ test('abrir o link: sem sessão, quem pediu, o sistema e só os campos pedidos; 
   assert.equal(JSON.stringify(page).includes(on.fake.credential.clientId), false)
   assert.equal(JSON.stringify(page).includes('clientId'), false)
 
-  assert.deepEqual(failed(await open(on, 'x'.repeat(43))), [404, 'NOT_FOUND'])
-  assert.deepEqual(failed(await open(on, `${link.secret.slice(0, 42)}A`)), [404, 'NOT_FOUND'])
+  const refusedPages = [
+    await open(on, 'x'.repeat(43)),
+    await open(on, `${link.secret.slice(0, 42)}A`),
+  ]
+  for (const reply of refusedPages) assert.deepEqual(failed(reply), [404, 'NOT_FOUND'])
   assert.deepEqual(failed(await send(on, 'x'.repeat(43), rightFields(on))), [404, 'NOT_FOUND'])
   const expired = await made(on, on.ana, { name: 'Vencido' })
   await on.hub.test.asOwner(
     `update connectors.connection_link set expires_at = now() - interval '1 second' where id = $1`,
     [expired.id],
   )
-  assert.deepEqual(failed(await open(on, expired.secret)), [404, 'NOT_FOUND'])
   assert.deepEqual(failed(await send(on, expired.secret, rightFields(on))), [404, 'NOT_FOUND'])
   assert.equal(await count(on, 'connection'), 0)
+  const expiredPage = await open(on, expired.secret)
+  assert.deepEqual(failed(expiredPage), [404, 'NOT_FOUND'])
+  for (const reply of [...refusedPages, expiredPage])
+    assert.equal(reply.body.includes('Empresa Teste'), false)
 
   const refusals = logged(on, 'CONNECTION_LINK_REFUSED')
   assert.equal(refusals.length, 5)
@@ -114,8 +121,29 @@ test('abrir o link: sem sessão, quem pediu, o sistema e só os campos pedidos; 
     refusals.map((line) => line.fields.reason),
     Array(5).fill('NOT_LIVE'),
   )
+  assert.equal(JSON.stringify(on.hub.lines).includes('Empresa Teste'), false)
   assert.equal(JSON.stringify(on.hub.lines).includes(expired.secret), false)
   assert.equal(JSON.stringify(on.hub.lines).includes('x'.repeat(43)), false)
+})
+
+test('um link que vence entre a leitura e a trava não liga nada', async (t) => {
+  const on = await connectionsOn(t)
+  const link = await made(on, on.ana)
+  const lock = `select pg_advisory_xact_lock(hashtextextended($1, 0))`
+  const key = [`conexus.connection:${on.companyId}:${link.id}`]
+  await withOwnerLock(on.hub.test, lock, key, async (release) => {
+    const sending = send(on, link.secret, rightFields(on))
+    await queued(on.hub.test, 1, sending)
+    await on.hub.test.asOwner(
+      `update connectors.connection_link set expires_at = now() - interval '1 second' where id = $1`,
+      [link.id],
+    )
+    await release()
+    assert.deepEqual(failed(await sending), [404, 'NOT_FOUND'])
+  })
+  assert.equal(await count(on, 'connection'), 0)
+  const [refusal] = logged(on, 'CONNECTION_LINK_REFUSED')
+  assert.deepEqual(refusal?.fields, { reason: 'NOT_LIVE', linkId: link.id })
 })
 
 test('o segredo fica fora: o banco guarda o resumo, e nem o banco nem o registro têm o segredo', async (t) => {
@@ -269,7 +297,9 @@ test('quem pediu saiu: sem manageConnections ou fora da empresa, o link não abr
   )
   for (const { on, link } of [demoted, removed]) {
     assert.deepEqual(failed(await send(on, link.secret, rightFields(on))), [404, 'NOT_FOUND'])
-    assert.deepEqual(failed(await open(on, link.secret)), [404, 'NOT_FOUND'])
+    const page = await open(on, link.secret)
+    assert.deepEqual(failed(page), [404, 'NOT_FOUND'])
+    assert.equal(page.body.includes('Empresa Teste'), false)
     assert.equal(await count(on, 'connection'), 0)
     const reasons = logged(on, 'CONNECTION_LINK_REFUSED').map((line) => line.fields.reason)
     assert.deepEqual(reasons, ['ASKER_LOST', 'ASKER_LOST'])
