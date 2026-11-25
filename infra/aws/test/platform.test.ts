@@ -77,13 +77,62 @@ test('o Hub só cria da receita, pelo papel de serviço, na própria empresa', (
     'cloudformation:DescribeStackEvents',
     'cloudformation:DescribeStacks',
     'cloudformation:TagResource',
+    'ecs:DescribeTasks',
+    'ecs:ListTasks',
+    'ecs:RunTask',
+    'ecs:StopTask',
+    'iam:PassRole',
     'iam:PassRole',
     's3:GetObject',
     's3tables:DeleteNamespace',
+    's3tables:DeleteTable',
     's3tables:DeleteTableBucket',
     's3tables:GetTableBucket',
     's3tables:ListNamespaces',
+    's3tables:ListTables',
+    'sqs:DeleteMessage',
+    'sqs:ReceiveMessage',
+    'ssm:DeleteParameter',
+    'ssm:PutParameter',
   ])
+})
+
+const ECS = `arn:aws:ecs:${REGION}:${ACCOUNT}`
+const LAKE_BUCKETS = `arn:aws:s3tables:${REGION}:${ACCOUNT}:bucket/conexus-*`
+const WRITERS = `arn:aws:iam::${ACCOUNT}:role/conexus-*-escritor`
+
+test('os poderes do Hub', () => {
+  const inTheCluster = { ArnEquals: { 'ecs:cluster': '<CopyCluster.Arn>' } }
+  const powers: [string, string | string[], string | string[], object?][] = [
+    ['StartOnlyTheCopyTask', 'ecs:RunTask', `${ECS}:task-definition/conexus-copia:*`, inTheCluster],
+    [
+      'StopAndReadTheCopyTasks',
+      ['ecs:StopTask', 'ecs:DescribeTasks', 'ecs:ListTasks'],
+      [`${ECS}:task/conexus-copia/*`, `${ECS}:container-instance/conexus-copia/*`],
+      inTheCluster,
+    ],
+    [
+      'PassOnlyTheWritersToTheTask',
+      'iam:PassRole',
+      [WRITERS, '<CopyExecutionRole.Arn>'],
+      { StringEquals: { 'iam:PassedToService': 'ecs-tasks.amazonaws.com' } },
+    ],
+    [
+      'WriteAndDeleteTheRunParameters',
+      ['ssm:PutParameter', 'ssm:DeleteParameter'],
+      `arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/conexus/copia/*`,
+    ],
+    ['HearTheCopyQueue', ['sqs:ReceiveMessage', 'sqs:DeleteMessage'], '<CopyQueue.Arn>'],
+    [
+      'ListAndDeleteLakeTables',
+      ['s3tables:ListTables', 's3tables:DeleteTable'],
+      [LAKE_BUCKETS, `${LAKE_BUCKETS}/table/*`],
+    ],
+  ]
+  for (const [sid, action, resource, condition] of powers) {
+    const expected = { Sid: sid, Effect: 'Allow', Action: action, Resource: resource }
+    assert.deepEqual(bySid(hub, sid), condition ? { ...expected, Condition: condition } : expected)
+  }
 })
 
 test('as ações do CloudFormation são só as cinco', () => {
@@ -123,12 +172,12 @@ test('o Hub entra só pela chave base, do servidor, com uma etiqueta só', () =>
 })
 
 test('o papel de serviço só cuida dos papéis de empresa', () => {
-  const readers = `arn:aws:iam::${ACCOUNT}:role/conexus-*-leitor`
-  assert.deepEqual(bySid(service, 'CreateReadersOnlyWithTheBoundary'), {
-    Sid: 'CreateReadersOnlyWithTheBoundary',
+  const companyRoles = [`arn:aws:iam::${ACCOUNT}:role/conexus-*-leitor`, WRITERS]
+  assert.deepEqual(bySid(service, 'CreateCompanyRolesOnlyWithTheBoundary'), {
+    Sid: 'CreateCompanyRolesOnlyWithTheBoundary',
     Effect: 'Allow',
     Action: 'iam:CreateRole',
-    Resource: readers,
+    Resource: companyRoles,
     Condition: { StringEquals: { 'iam:PermissionsBoundary': '{Boundary}' } },
   })
   const iamAllowed = service.filter(
@@ -136,7 +185,7 @@ test('o papel de serviço só cuida dos papéis de empresa', () => {
       statement.Effect === 'Allow' &&
       actionsOf(statement).some((action) => action.startsWith('iam:')),
   )
-  for (const statement of iamAllowed) assert.deepEqual(resourcesOf(statement), [readers])
+  for (const statement of iamAllowed) assert.deepEqual(resourcesOf(statement), companyRoles)
   const platformPieces = bySid(service, 'NeverTouchThePlatform')
   assert.equal(platformPieces.Effect, 'Deny')
   assert.deepEqual(actionsOf(platformPieces), ['iam:*'])
@@ -146,6 +195,7 @@ test('o papel de serviço só cuida dos papéis de empresa', () => {
     'role/conexus-hub',
     'role/conexus-cfn',
     'role/conexus-release',
+    'role/conexus-copia-execucao',
     'role/cdk-*',
     'policy/conexus-*',
   ]) {
@@ -226,7 +276,11 @@ test('o orçamento lê o valor e o e-mail de parâmetros', () => {
   assert.deepEqual(find(platform, 'AnomalySubscription').Properties.Subscribers, [
     { Type: 'EMAIL', Address: '{AlarmEmail}' },
   ])
-  const raw = JSON.stringify(Template.fromStack(conexusApp().platform).toJSON())
+  // The copy network's own blocks and the open egress are the template's, not a machine's.
+  const raw = JSON.stringify(Template.fromStack(conexusApp().platform).toJSON()).replaceAll(
+    /"(10\.0\.0\.0\/16|10\.0\.0\.0\/17|10\.0\.128\.0\/17|0\.0\.0\.0\/0|from 0\.0\.0\.0\/0:443)"/g,
+    '""',
+  )
   assert.doesNotMatch(raw, /\d{12}|@[a-z]|\d+\.\d+\.\d+\.\d+/)
 })
 
@@ -244,10 +298,15 @@ test('o endereço que o Hub manda casa com o padrão, e a forma de caminho não'
   assert.doesNotMatch(`https://${bucket}.s3.${REGION}.amazonaws.com/outra/${version}.json`, pattern)
 })
 
-test('a plataforma diz à Release o depósito e a pasta das receitas, os de names.ts', () => {
+test('a plataforma diz à Release as receitas e ao Hub a cópia, os nomes de names.ts', () => {
   assert.deepEqual(readableOutputs('platform'), {
     TemplatesBucket: '{Templates}',
     TemplatesPrefix: TEMPLATE_PREFIX,
+    CopyClusterArn: '<CopyCluster.Arn>',
+    CopyTaskFamily: 'conexus-copia',
+    CopyQueueUrl: '{CopyQueue}',
+    CopySubnets: '{CopyNetworkpublicaSubnet1Subnet},{CopyNetworkpublicaSubnet2Subnet}',
+    CopySecurityGroup: '<CopyOutbound.GroupId>',
   })
   assert.equal(find(platform, 'Templates').Properties.BucketName, templateBucket(ACCOUNT, REGION))
 })

@@ -1,0 +1,277 @@
+{
+  "spec": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "version": {
+        "type": "number",
+        "const": 1
+      },
+      "runId": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      },
+      "attempt": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9007199254740991
+      },
+      "companyId": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9]{32}$"
+      },
+      "connector": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]{1,31}$"
+      },
+      "connectionId": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      },
+      "account": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "startDate": {
+        "anyOf": [
+          {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "credential": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string"
+        },
+        "additionalProperties": {
+          "type": "string"
+        }
+      },
+      "tables": {
+        "minItems": 1,
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_]{0,59}$"
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,59}$"
+            },
+            "whole": {
+              "type": "boolean"
+            }
+          },
+          "required": ["source", "name", "whole"],
+          "additionalProperties": false
+        }
+      },
+      "lake": {
+        "type": "object",
+        "properties": {
+          "bucketArn": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string",
+            "pattern": "^[a-z]{2}-[a-z]+-[0-9]$"
+          }
+        },
+        "required": ["bucketArn", "region"],
+        "additionalProperties": false
+      },
+      "queueUrl": {
+        "type": "string",
+        "format": "uri"
+      }
+    },
+    "required": [
+      "version",
+      "runId",
+      "attempt",
+      "companyId",
+      "connector",
+      "connectionId",
+      "account",
+      "startDate",
+      "credential",
+      "tables",
+      "lake",
+      "queueUrl"
+    ],
+    "additionalProperties": false
+  },
+  "result": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string",
+        "const": "RESULT"
+      },
+      "version": {
+        "type": "number",
+        "const": 1
+      },
+      "runId": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      },
+      "attempt": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9007199254740991
+      },
+      "outcome": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "COMPLETE"
+              }
+            },
+            "required": ["kind"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "ERROR"
+              },
+              "code": {
+                "type": "string",
+                "enum": [
+                  "COPY_SOURCE_NEEDS_REAUTH",
+                  "COPY_SOURCE_REFUSED",
+                  "COPY_SOURCE_UNREACHABLE",
+                  "COPY_SOURCE_UNREADABLE",
+                  "COPY_LAKE_UNAVAILABLE",
+                  "COPY_TASK_LOST",
+                  "COPY_LAKE_WRITE_FAILED"
+                ]
+              },
+              "table": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,59}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "system": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "code": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 64
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "message": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": ["status", "code", "message"],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": ["kind", "code", "table", "system"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "tables": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,59}$"
+            },
+            "read": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "written": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "whole": {
+              "type": "boolean"
+            }
+          },
+          "required": ["name", "read", "written", "rows", "whole"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["type", "version", "runId", "attempt", "outcome", "tables"],
+    "additionalProperties": false
+  }
+}

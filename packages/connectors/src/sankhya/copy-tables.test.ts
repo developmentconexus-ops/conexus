@@ -13,7 +13,13 @@ import {
 import { sendTo, tableReachOf } from '../kernel/conformance-tables.ts'
 import { defineConnector } from '../kernel/definition.ts'
 import { sankhya } from './definition.ts'
-import { LARGE_XML_BYTES, UNKNOWN_TYPE_COLUMN, WIDE_COLUMNS, WINDOW_MONTHS } from './fake-tables.ts'
+import {
+  LARGE_XML_BYTES,
+  OUTSIDE_DICTIONARY,
+  UNKNOWN_TYPE_COLUMN,
+  WIDE_COLUMNS,
+  WINDOW_MONTHS,
+} from './fake-tables.ts'
 
 function tableOf(name: string): TableDeclaration {
   return sankhya.tables?.declared.find((table) => table.name === name) ?? assert.fail(name)
@@ -257,4 +263,23 @@ test('a data inicial e o ponto salvo: a página só traz o que mudou desde eles,
   assert.ok(since.every((row) => (row.DTALTER ?? '') >= '2026-10-20'))
   const point = await read({ kind: 'SINCE', column: 'DTALTER', after: '2026-10-31T18:30:00' })
   assert.deepEqual(new Set(point.map((row) => row.DTALTER)), new Set(['2026-10-31T18:30:00']))
+})
+
+test('a coluna que o dicionário não lista: a descoberta a traz pelo tipo do Oracle, e um teto sem a coluna do modo é a fonte ilegível', async () => {
+  const empresas = await columnsOf('empresas')
+  assert.deepEqual(
+    empresas.find(({ name }) => name === OUTSIDE_DICTIONARY.column),
+    { name: 'DHALTER', type: 'timestamp', description: 'DHALTER' },
+  )
+  const reach = await tableReachOf(sankhya, sankhyaFake())
+  const table = tableOf('empresas')
+  const ceiling = await tableCeiling({ ...reach, table, columns: empresas })
+  assert.deepEqual(ceiling, { kind: 'CEILING', value: '2026-11-11T08:30:00' })
+  const without = empresas.filter(({ name }) => name !== 'DHALTER')
+  assert.deepEqual(await tableCeiling({ ...reach, table, columns: without }), {
+    kind: 'FAILED',
+    code: 'COPY_SOURCE_UNREADABLE',
+    system: null,
+    waitMs: null,
+  })
 })

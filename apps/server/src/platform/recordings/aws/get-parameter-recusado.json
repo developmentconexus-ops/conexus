@@ -1,0 +1,10 @@
+{
+  "service": "ssm",
+  "api": "GetParameter",
+  "sdk": "boto3 1.44.6 (botocore 1.44.10)",
+  "recordedAt": "2026-11-24",
+  "source": "U5 fix round (F1), boto3 from this machine asking the laboratory account for a parameter of another account; account, role and session changed (S40)",
+  "status": 400,
+  "contentType": "application/x-amz-json-1.1",
+  "body": "{\"__type\":\"AccessDeniedException\",\"Message\":\"User: arn:aws:sts::111122223333:assumed-role/conexus-lago-escritor/00000000-0000-4000-8000-000000000001 is not authorized to perform: ssm:GetParameter on resource: arn:aws:ssm:us-east-2:111122223333:parameter/conexus/copia/x/y because no resource-based policy allows the ssm:GetParameter action\"}"
+}

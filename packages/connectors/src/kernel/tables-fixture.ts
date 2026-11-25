@@ -54,7 +54,7 @@ export const SANKHYA_DISCOVERY: readonly ExpectedTable[] = [
   row('tipos_operacao', 'TGFTOP', ['CODTIPOPER', 'DHALTER'], 'FULL', false, null),
   row('tipos_negociacao', 'TGFTPV', ['CODTIPVENDA', 'DHALTER'], 'FULL', false, null),
   row('produtos_grupos', 'TGFGRU', ['CODGRUPOPROD'], 'CHANGED DHALTER registry', false, null),
-  row('empresas', 'TSIEMP', ['CODEMP'], 'CHANGED DHALTER registry', false, null),
+  row('empresas', 'TSIEMP', ['CODEMP'], 'CHANGED DHALTER registry', false, 4),
   row('centros_resultado', 'TSICUS', ['CODCENCUS'], 'FULL', false, null),
   row('naturezas', 'TGFNAT', ['CODNAT'], 'CHANGED DHALTER registry', false, null),
   row('locais_estoque', 'TGFLOC', ['CODLOCAL'], 'FULL', false, null),

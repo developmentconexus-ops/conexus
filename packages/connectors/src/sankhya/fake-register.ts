@@ -2,6 +2,11 @@ import type { DatabaseSync } from 'node:sqlite'
 
 // Invented values only (S40): the registers the searches read in the double, beside the sales of `fake-sales.ts`.
 
+export const EMPRESAS = [
+  { codigoEmpresa: 1, nomeFantasia: 'Empresa Alfa', razaoSocial: 'Alfa Comercial Ltda' },
+  { codigoEmpresa: 2, nomeFantasia: 'Empresa Beta', razaoSocial: 'Beta Distribuidora Ltda' },
+]
+
 type Partner = {
   codparc: number
   nomeparc: string

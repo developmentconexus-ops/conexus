@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { inserter } from './fake-register.ts'
+import { EMPRESAS, inserter } from './fake-register.ts'
 
 const OWNER = 'CONEXUS'
 
@@ -12,6 +12,9 @@ export const LARGE_XML_BYTES = 1_048_576 + 4_096
 
 /** A column whose dictionary type the kit's map does not know. */
 export const UNKNOWN_TYPE_COLUMN = 'CAMPO429'
+
+/** A physical column the installation's dictionary does not list, as a real TSIEMP has DHALTER (L.2). */
+export const OUTSIDE_DICTIONARY = { table: 'TSIEMP', column: 'DHALTER' } as const
 
 /** The months the window table has rows in, two of them out of the calendar (A0D). */
 export const WINDOW_MONTHS = ['0208-12', '2026-08', '2026-09', '2026-10', '2026-11', '2109-07']
@@ -33,6 +36,7 @@ const DESCRIPTIONS: Readonly<Record<string, string>> = {
   TGFVEN: 'Vendedores',
   TGFEFDVMRSTDIA: 'EFD Valor Médio ICMS ST Diário',
   TGFNFE: 'Arquivos XML de NFe',
+  TSIEMP: 'Empresas',
 }
 
 const DAY_COLUMNS = new Set(['DTNEG', 'DTREF', 'DTMOV'])
@@ -106,11 +110,22 @@ function create(database: DatabaseSync, decimal: string): void {
       TIPMEDIA TEXT, DTMOV DATE, VLRMEDIA ${decimal},
       PRIMARY KEY (CODEMP, DTREF, CODPROD, TIPIMPOSTO, TIPMEDIA, DTMOV));
     CREATE TABLE TGFNFE (NUNOTA INTEGER PRIMARY KEY, CHAVENFE TEXT, XML CLOB, XMLCANC CLOB);
+    CREATE TABLE TSIEMP (CODEMP INTEGER PRIMARY KEY, NOMEFANTASIA TEXT, RAZAOSOCIAL TEXT,
+      DHALTER DATE, LOGOMARCA BLOB);
   `)
   database
     .prepare('UPDATE TGFPRO SET IMAGEM = ? WHERE CODPROD = 10')
     .run(Uint8Array.of(0x89, 0x50, 0x4e, 0x47, 0, 255))
   const insert = inserter(database)
+  insert(
+    'INSERT INTO TSIEMP (CODEMP, NOMEFANTASIA, RAZAOSOCIAL, DHALTER) VALUES (?, ?, ?, ?)',
+    EMPRESAS.map((empresa, at) => [
+      empresa.codigoEmpresa,
+      empresa.nomeFantasia,
+      empresa.razaoSocial,
+      `2026-11-1${at} 08:30:00`,
+    ]),
+  )
   insert('INSERT INTO TGFEFDVMRSTDIA VALUES (?, ?, ?, ?, ?, ?, ?)', windowRows())
   const notes = database.prepare('SELECT NUNOTA FROM TGFCAB ORDER BY NUNOTA LIMIT 3').all()
   insert(
@@ -148,7 +163,8 @@ function dictionary(database: DatabaseSync): (table: string) => void {
       const known = database
         .prepare('SELECT 1 FROM TDDCAM WHERE NOMETAB = ? AND NOMECAMPO = ?')
         .get(table, name)
-      if (known !== undefined) continue
+      const outside = table === OUTSIDE_DICTIONARY.table && name === OUTSIDE_DICTIONARY.column
+      if (known !== undefined || outside) continue
       const custom = name.startsWith('AD_') ? 'S' : 'N'
       field.run(table, name, `Campo ${name.toLowerCase()}`, tipcampo(name, type), 'N', custom)
     }

@@ -1,0 +1,10 @@
+{
+  "service": "ssm",
+  "api": "GetParameter",
+  "sdk": "boto3 1.44.6 (botocore 1.44.10)",
+  "recordedAt": "2026-11-24",
+  "source": "U5 step 3, boto3 from this machine on a temporary parameter and queue of the laboratory account, both deleted; values changed (S40)",
+  "status": 400,
+  "contentType": "application/x-amz-json-1.1",
+  "body": "{\"__type\":\"ParameterNotFound\"}"
+}

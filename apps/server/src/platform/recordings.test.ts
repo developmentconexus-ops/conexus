@@ -58,12 +58,12 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
   }
 })
 
-// AWS's answers as the U4 proof and the study's P5 recorded them, the adapter's (testing T29):
+// AWS's answers as the U4 proof, the study's P5 and the copy task (U5) recorded them (testing T29):
 // each names its service, API, SDK and date; the account is the invented one and no key is real (S40).
 // Only a 204 has no body: S3 Tables answers DeleteNamespace and DeleteTableBucket so.
 const AwsRecording = z
   .object({
-    service: z.enum(['sts', 'cloudformation', 's3tables']),
+    service: z.enum(['sts', 'cloudformation', 's3tables', 'ssm', 'sqs']),
     api: z.string().min(1),
     sdk: z.string().min(1),
     recordedAt: z.iso.date(),

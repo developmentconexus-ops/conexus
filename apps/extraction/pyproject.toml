@@ -1,0 +1,45 @@
+[project]
+name = "extraction"
+version = "0.0.0"
+description = "The lake copy task of Conexus: Meltano, the lake target and the task's entry."
+requires-python = "==3.13.*"
+dependencies = [
+  "boto3==1.44.6",
+  "jsonschema==4.26.0",
+  "meltano==4.4.1",
+  "pyarrow==26.0.1",
+  "pyiceberg[pyarrow]==0.12.0",
+  "singer-sdk==0.54.9",
+]
+
+[project.scripts]
+target-conexus = "conexus_extraction.target:TargetConexus.cli"
+conexus-copy = "conexus_extraction.entry:main"
+
+[dependency-groups]
+dev = ["mypy", "pytest", "ruff"]
+
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "conexus_extraction"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["B", "BLE", "E", "F", "I", "RUF", "SIM", "UP", "W"]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["boto3.*", "botocore.*", "jsonschema.*", "pyarrow.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
