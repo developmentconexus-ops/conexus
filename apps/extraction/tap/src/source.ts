@@ -43,7 +43,7 @@ function redacted(text: string, secrets: readonly string[]): string {
  * The kit's request sent to the connector's origin, read as the connector declares its numbers. Every
  * answer loses the credential's values before it is read, as the Hub's reads do (`wire.ts`): the
  * Sankhya refuses at HTTP 200, and a refusal's message reaches the result file. A request that
- * outlasts `timeoutMs`, the body read included, ends as `TIMED_OUT`.
+ * outlasts `timeoutMs`, the body read included, ends as `DEADLINE`.
  */
 export function senderOf(
   connector: Connector,
@@ -63,7 +63,7 @@ export function senderOf(
       response = await a.fetch(toRequest(connector, request, token), { signal: deadline })
       text = await response.text()
     } catch (error) {
-      if (isTimedOut(error)) return { kind: 'TIMED_OUT' }
+      if (isTimedOut(error)) return { kind: 'DEADLINE' }
       if (isUnreachable(error)) return { kind: 'UNREACHABLE' }
       throw error
     }

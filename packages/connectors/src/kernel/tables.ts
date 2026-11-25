@@ -278,4 +278,4 @@ export type TableReadFailed = Readonly<{
   TableSourceFailure
 
 /** Why a sender gave no answer: the network failed, its deadline ended, or the answer was not one the kit can read. */
-export type TableSendFailure = Readonly<{ kind: 'UNREACHABLE' | 'TIMED_OUT' | 'UNREADABLE' }>
+export type TableSendFailure = Readonly<{ kind: 'UNREACHABLE' | 'DEADLINE' | 'UNREADABLE' }>

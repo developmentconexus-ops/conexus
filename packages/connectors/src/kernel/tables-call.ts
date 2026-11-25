@@ -51,7 +51,7 @@ export function tableFailureOf(stop: TableStop): TableReadFailed {
     return failed('COPY_SOURCE_NEEDS_REAUTH', native)
   if (kind === 'REFUSED') return failed('COPY_SOURCE_REFUSED', native)
   if (kind === 'BUSY') return failed('COPY_SOURCE_UNREACHABLE', native, { waitMs: stop.waitMs })
-  if (kind === 'TIMED_OUT') return failed('COPY_SOURCE_UNREACHABLE', native, { smaller: true })
+  if (kind === 'DEADLINE') return failed('COPY_SOURCE_UNREACHABLE', native, { smaller: true })
   if (native !== undefined && native.status >= SYSTEM_FAILED_AT)
     return failed('COPY_SOURCE_UNREACHABLE', native, { smaller: true })
   if (kind === 'UNREACHABLE') return failed('COPY_SOURCE_UNREACHABLE', native)
