@@ -1374,6 +1374,10 @@
     {
       "file": "apps/web/src/hub/connectors/link-window.test.tsx",
       "name": "acesso: um nome já usado por outra pessoa lê a lista de novo atrás da janela"
+    },
+    {
+      "file": "apps/server/src/hub/copies/lake-list-stopped.test.ts",
+      "name": "as rodadas de uma tabela: nenhuma rodada de outra ligação nem anterior à cópia aparece, qualquer que seja o resultado"
     }
   ]
 }
