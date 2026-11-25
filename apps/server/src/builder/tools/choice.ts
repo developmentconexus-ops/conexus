@@ -5,7 +5,7 @@ import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { InProject, ToolConnectors } from './check.ts'
 import { readyConfig, readyIdOf, readySlug, sessionScopeOf, targetOf } from './check.ts'
-import { inserted, toolOf, versionsOf, versionsWithTools } from './store.ts'
+import { inserted, toolOf, toolVersionsOf, versionsWithTools } from './store.ts'
 
 /**
  * The versions an agent of this Projeto may choose: the company's, of a connection the Projeto
@@ -71,7 +71,7 @@ export async function saveReady(
     await inserted(tx, { id, scope, target: row, config, bodyHash, createdBy: scope.personId })
     ids.push(id)
   }
-  const versions = await versionsOf(tx, ids)
+  const versions = await toolVersionsOf(tx, ids)
   const current: ToolVersionId[] = []
   for (const id of ids) {
     const row = await toolOf(tx, scope.companyId, id)

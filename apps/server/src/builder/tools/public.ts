@@ -5,6 +5,6 @@ export { databaseScopeOf, readySlug, sessionScopeOf, unfixedOf } from './check.t
 export { derivedUuid } from './derived.ts'
 export { inProjectOf, registerToolRoutes } from './routes.ts'
 export type { UsedBy } from './store.ts'
-export { chosenOf, effectOf, versionsOf as toolVersionsOf, versionsWithTools } from './store.ts'
+export { chosenOf, effectOf, toolVersionsOf, versionsWithTools } from './store.ts'
 export type { Tools } from './tools.ts'
 export { createTools } from './tools.ts'

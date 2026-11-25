@@ -64,7 +64,7 @@ export function toolsOn(tx: ReadTx, companyId: CompanyId, connections: readonly 
     .orderBy(asc(tool.slug))
 }
 
-export function versionsOf(tx: ReadTx, toolIds: readonly ToolId[]) {
+export function toolVersionsOf(tx: ReadTx, toolIds: readonly ToolId[]) {
   if (toolIds.length === 0) return Promise.resolve([])
   return tx
     .select(withoutModule)
@@ -150,7 +150,7 @@ export async function detailsOf(
   offered: readonly OfferedConnection[],
 ): Promise<ToolDetail[]> {
   const ids = rows.map((row) => ToolId.parse(row.id))
-  const versions = await versionsOf(tx, ids)
+  const versions = await toolVersionsOf(tx, ids)
   const users = await usedBy(tx, ids)
   return rows.map((row): ToolDetail => {
     const latest = latestOf(row, versions)
@@ -200,7 +200,7 @@ export async function chosenOf(
   offered: readonly OfferedConnection[],
 ): Promise<AgentTool[]> {
   const found = await versionsWithTools(tx, versionIds)
-  const latest = await versionsOf(
+  const latest = await toolVersionsOf(
     tx,
     found.map((each) => ToolId.parse(each.tool.id)),
   )
