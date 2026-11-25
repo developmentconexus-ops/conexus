@@ -11,11 +11,13 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { setTimeout } from 'node:timers/promises'
 import { pathToFileURL } from 'node:url'
 import pg from 'pg'
 import { createTestDatabase } from './test-database.ts'
 import { templateNameOf, withDatabase } from './test-database-template.ts'
 import { startHub } from './test-hub-process.ts'
+import { mastraDoor } from './test-mastra-database.ts'
 
 function lifetime() {
   const cleanups: (() => Promise<void> | void)[] = []
@@ -118,4 +120,28 @@ test('banco: o que o teste registra depois dele fecha antes de ele ser apagado, 
     await held?.end().catch(() => undefined)
     await server?.end()
   }
+})
+
+test('porta do Mastra: o cliente destruído leva junto a ligação ao Postgres, que não segura mais o banco', async (t) => {
+  const test = await createTestDatabase(t)
+  const server = new pg.Client({
+    connectionString: withDatabase(test.ownerUrl, 'postgres').reveal(),
+  })
+  await server.connect()
+  t.after(() => server.end())
+  const door = await mastraDoor(test.mastraUrl, 'SILENT')
+  await door.open()
+  const client = new pg.Client({ connectionString: door.address })
+  client.on('error', () => undefined)
+  await client.connect()
+  const database = new URL(test.mastraUrl.reveal()).pathname.slice(1)
+  async function sessions() {
+    const found = await server.query('select 1 from pg_stat_activity where datname = $1', [database])
+    return found.rowCount
+  }
+  assert.equal(await sessions(), 1)
+  await door.close()
+  const deadline = Date.now() + 3_000
+  while ((await sessions()) !== 0 && Date.now() < deadline) await setTimeout(50)
+  assert.equal(await sessions(), 0)
 })

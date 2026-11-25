@@ -81,8 +81,15 @@ export async function mastraDoor(url: { reveal(): string }, outage: Outage) {
       if (!reaching) return
       const upstream = connect(Number(target.port), target.hostname)
       socket.pipe(upstream).pipe(socket)
-      upstream.on('error', () => socket.destroy())
-      socket.on('error', () => upstream.destroy())
+      // `pipe` ends the far leg only when the near one ends cleanly: a destroyed client left its
+      // connection to Postgres open, holding the database against its drop.
+      for (const [near, far] of [
+        [socket, upstream],
+        [upstream, socket],
+      ] as const) {
+        near.on('error', () => far.destroy())
+        near.on('close', () => far.destroy())
+      }
     })
     return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve(server)))
   }
