@@ -1,7 +1,7 @@
 import { once } from 'node:events'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { sankhyaFake } from '@conexus/connectors'
-import { runTap, writeLine } from './tap.ts'
+import { REQUEST_TIMEOUT_MS, runTap, writeLine } from './tap.ts'
 
 async function served(): Promise<number> {
   const fake = sankhyaFake()
@@ -35,4 +35,8 @@ process.exitCode =
         sleep: (ms) => sleep(ms),
         random: Math.random,
         write: writeLine,
+        log: (line) => {
+          process.stderr.write(`${line}\n`)
+        },
+        timeoutMs: REQUEST_TIMEOUT_MS,
       })

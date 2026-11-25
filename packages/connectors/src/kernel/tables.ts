@@ -129,7 +129,7 @@ export type TablePageInput = z.infer<typeof TablePageInput>
 export const TablePage = z.object({ rows: z.array(z.array(z.string().nullable())) })
 export type TablePage = z.infer<typeof TablePage>
 
-/** Where the next page starts, and how many rows it asks: the page's rows, or fewer after a page past its bytes. */
+/** Where the next page starts, and how many rows it asks: as many as fit the page's bytes at the width of the rows just read (`rowsAfter`). */
 export const TablePosition = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('KEY'), after: z.array(z.string()).min(1), rows: z.int().min(1) }),
   z.object({ kind: z.literal('OFFSET'), offset: z.int().min(0), rows: z.int().min(1) }),
@@ -262,9 +262,20 @@ export type TableSourceFailure = Readonly<{
   system: Readonly<{ status: number; code: string | null; message: string | null }> | null
 }>
 
-/** A stopped read; `waitMs` is the wait a provider that answered 429 asked for, null otherwise. */
-export type TableReadFailed = Readonly<{ kind: 'FAILED'; waitMs: number | null }> &
+/**
+ * A stopped read. `waitMs`: the wait a provider that answered 429 asked for, null otherwise.
+ * `smaller`: a 5xx or an ended deadline, which a page of fewer rows can clear; a 429 or a dead
+ * network cannot. `rows`: what the stopped page asked, null when it asked none. `bodyBytes`: the
+ * size of the answer's body, null when there was none; never the body (security S41).
+ */
+export type TableReadFailed = Readonly<{
+  kind: 'FAILED'
+  waitMs: number | null
+  smaller: boolean
+  rows: number | null
+  bodyBytes: number | null
+}> &
   TableSourceFailure
 
-/** Why a sender gave no answer: the network failed, or the answer was not one the kit can read. */
-export type TableSendFailure = Readonly<{ kind: 'UNREACHABLE' | 'UNREADABLE' }>
+/** Why a sender gave no answer: the network failed, its deadline ended, or the answer was not one the kit can read. */
+export type TableSendFailure = Readonly<{ kind: 'UNREACHABLE' | 'TIMED_OUT' | 'UNREADABLE' }>

@@ -8,7 +8,7 @@ import type {
 } from './tables.ts'
 import { sourceOf } from './tables.ts'
 import type { PageAsk, TablePageRead, TableReach } from './tables-call.ts'
-import { called, rowsAfter, UNREADABLE } from './tables-call.ts'
+import { called, FIRST_PAGE_ROWS, rowsAfter, UNREADABLE } from './tables-call.ts'
 import { operationPage } from './tables-operation.ts'
 
 type Discovered = Readonly<{
@@ -117,7 +117,8 @@ async function tablePage(ask: PageAsk, table: SourceTable): Promise<TablePageRea
   const readTable = connector.tables?.readTable
   if (readTable === undefined) throw new Error(`${connector.id} reads no source table`)
   const { page } = readTable
-  const limit = after?.rows ?? page.rows
+  const max = Math.min(page.rows, ask.ceiling ?? page.rows)
+  const limit = Math.min(after?.rows ?? FIRST_PAGE_ROWS, max)
   const read = await called(ask, readTable.operation, {
     table,
     columns: columns.map(({ name, type }) => ({ name, type })),
@@ -126,7 +127,7 @@ async function tablePage(ask: PageAsk, table: SourceTable): Promise<TablePageRea
     after: after?.kind === 'KEY' ? after.after : null,
     limit,
   })
-  if (read.kind !== 'READ') return read
+  if (read.kind !== 'READ') return { ...read, rows: limit }
   if (read.value.rows.some((cells) => cells.length !== columns.length)) return UNREADABLE
   const rows = read.value.rows.map((cells) =>
     Object.fromEntries(columns.map(({ name }, at) => [name, cells[at] ?? null])),
@@ -138,7 +139,7 @@ async function tablePage(ask: PageAsk, table: SourceTable): Promise<TablePageRea
   return {
     kind: 'PAGE',
     rows,
-    next: { kind: 'KEY', after: key, rows: rowsAfter(limit, rows, page.bytes) },
+    next: { kind: 'KEY', after: key, rows: rowsAfter(limit, rows, page.bytes, max) },
   }
 }
 

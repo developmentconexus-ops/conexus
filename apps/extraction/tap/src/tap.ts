@@ -38,7 +38,10 @@ type Config = z.infer<typeof Config>
 
 const Secret = z.record(z.string(), z.string())
 
-export type TapDeps = PassDeps & Readonly<{ fetch: typeof fetch }>
+export type TapDeps = PassDeps & Readonly<{ fetch: typeof fetch; timeoutMs: number }>
+
+/** The deadline of one request to the source. singer-sdk's `RESTStream` takes 300 s and dlt 60 s; 120 s is the probes' own, and a guess for the real service until a measure says better. */
+export const REQUEST_TIMEOUT_MS = 120_000
 
 const ABOUT = {
   name: 'tap-conexus',
@@ -59,7 +62,12 @@ async function withReach(
   const connector = connectorOf(config.connector)
   if (connector?.tables === undefined) throw new Error(`No tables of ${config.connector}`)
   const credential = await jsonFile(config.secret_path, Secret)
-  const send = senderOf(connector, { fetch: deps.fetch, credential, now: deps.now })
+  const send = senderOf(connector, {
+    fetch: deps.fetch,
+    credential,
+    now: deps.now,
+    timeoutMs: deps.timeoutMs,
+  })
   const session = sessionFor(connector, { credential, send, now: deps.now })
   const signal = new AbortController().signal
   try {
@@ -198,4 +206,8 @@ if (import.meta.main)
     sleep: (ms) => sleep(ms),
     random: Math.random,
     write: writeLine,
+    log: (line) => {
+      process.stderr.write(`${line}\n`)
+    },
+    timeoutMs: REQUEST_TIMEOUT_MS,
   })

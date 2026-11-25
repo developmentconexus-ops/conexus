@@ -1,4 +1,5 @@
 import type {
+  PageAsk,
   TableColumn,
   TableDeclaration,
   TableFilter,
@@ -15,6 +16,7 @@ export type PassDeps = Readonly<{
   sleep: (ms: number) => Promise<void>
   random: () => number
   write: (line: string) => Promise<void>
+  log: (line: string) => void
 }>
 
 export type RunTable = Readonly<{
@@ -41,6 +43,79 @@ export async function tried<T extends Readonly<{ kind: string }>>(
     if (done.kind !== 'FAILED' || !('code' in done)) return done
     if (done.code !== 'COPY_SOURCE_UNREACHABLE' || count === TRIES) return done
     await deps.sleep(waitMs(done, count, deps.random))
+  }
+}
+
+/**
+ * One diagnostic line of a failed try: scalars only, never the body (security S41). `rows` is what
+ * the page asked and `nextRows` what the next try asks, so a cut reads off the line.
+ */
+function logTry(
+  deps: PassDeps,
+  a: Readonly<{
+    event: 'PAGE_REDUCED' | 'PAGE_RETRIED' | 'PAGE_FAILED'
+    table: string
+    attempt: number
+    failed: TableReadFailed
+    nextRows: number | null
+    waitMs: number | null
+    elapsedMs: number
+  }>,
+): void {
+  const { failed } = a
+  deps.log(
+    JSON.stringify({
+      event: a.event,
+      table: a.table,
+      rows: failed.rows,
+      nextRows: a.nextRows,
+      attempt: a.attempt,
+      waitMs: a.waitMs,
+      elapsedMs: a.elapsedMs,
+      status: failed.system?.status ?? null,
+      code: failed.code,
+      systemCode: failed.system?.code ?? null,
+      bodyBytes: failed.bodyBytes,
+    }),
+  )
+}
+
+/**
+ * One page, asked until it reads or its tries end. A 5xx or an ended deadline asks half the rows at
+ * the same point, since the identical ask only fails again (Airbyte `source-github`, `AGENTS.md`
+ * 618-622), and the cut is the pass's ceiling to its end. At one row, or when the failure is a 429
+ * or a dead network, the ask repeats after the wait `tried` takes, up to `TRIES`.
+ */
+async function pageOf(
+  ask: PageAsk,
+  table: string,
+  deps: PassDeps,
+): Promise<Readonly<{ page: TablePageRead; ceiling: number | undefined }>> {
+  let { ceiling } = ask
+  for (let tries = 1; ; tries++) {
+    const started = deps.now()
+    const page = await readTablePage({ ...ask, ...(ceiling === undefined ? {} : { ceiling }) })
+    if (page.kind !== 'FAILED' || page.code !== 'COPY_SOURCE_UNREACHABLE') return { page, ceiling }
+    const cut =
+      page.smaller && page.rows !== null && page.rows > 1 ? Math.floor(page.rows / 2) : null
+    const last = cut === null && tries === TRIES
+    const wait = last ? null : waitMs(page, cut === null ? tries : 1, deps.random)
+    const event = last ? 'PAGE_FAILED' : cut === null ? 'PAGE_RETRIED' : 'PAGE_REDUCED'
+    logTry(deps, {
+      event,
+      table,
+      attempt: tries,
+      failed: page,
+      nextRows: last ? null : (cut ?? page.rows),
+      waitMs: wait,
+      elapsedMs: deps.now() - started,
+    })
+    if (wait === null) return { page, ceiling }
+    await deps.sleep(wait)
+    if (cut !== null) {
+      ceiling = cut
+      tries = 0
+    }
   }
 }
 
@@ -180,15 +255,16 @@ export async function readTable(
   while (!done) {
     const current: Pass = pass
     const filter = current.filters[current.at] ?? { kind: 'ALL' }
-    const page = await tried(
-      () =>
-        readTablePage({
-          ...reach,
-          table: run.table,
-          columns: run.columns,
-          filter,
-          after: current.after,
-        }),
+    const { page, ceiling } = await pageOf(
+      {
+        ...reach,
+        table: run.table,
+        columns: run.columns,
+        filter,
+        after: current.after,
+        ...(current.ceiling === undefined ? {} : { ceiling: current.ceiling }),
+      },
+      run.stream,
       deps,
     )
     if (page.kind !== 'PAGE') return page
@@ -196,7 +272,8 @@ export async function readTable(
       await deps.write(
         recordLine({ stream: run.stream, columns: run.columns, row, version: current.version }),
       )
-    ;({ pass, done } = advanced(current, page, readOf(run, page.rows)))
+    const cut = ceiling === undefined ? current : { ...current, ceiling }
+    ;({ pass, done } = advanced(cut, page, readOf(run, page.rows)))
     if (!done) {
       bookmarks[run.stream] = { ...before, pass }
       await emit({ type: 'STATE', value: { bookmarks } })

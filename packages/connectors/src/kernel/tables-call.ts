@@ -20,25 +20,41 @@ function systemOf(native: Native | undefined): TableSourceFailure['system'] {
     : { status: native.status, code: native.code, message: native.message }
 }
 
+function bodyBytesOf(native: Native | undefined): number | null {
+  const body = native?.body
+  if (body === undefined || body === null) return null
+  return Buffer.byteLength(typeof body === 'string' ? body : JSON.stringify(body))
+}
+
 function failed(
   code: TableSourceFailure['code'],
   native?: Native,
-  waitMs: number | null = null,
+  a: Readonly<{ waitMs?: number | null; smaller?: boolean }> = {},
 ): TableReadFailed {
-  return { kind: 'FAILED', code, system: systemOf(native), waitMs }
+  return {
+    kind: 'FAILED',
+    code,
+    system: systemOf(native),
+    waitMs: a.waitMs ?? null,
+    smaller: a.smaller ?? false,
+    rows: null,
+    bodyBytes: bodyBytesOf(native),
+  }
 }
 
 export type TableStop = Readonly<{ kind: string; native?: Native; waitMs?: number | null }>
 
-/** A call that gave no value, as the kit's code: a 5xx, a 429 or the network is the source out of reach, which the adapter repeats. */
+/** A call that gave no value, as the kit's code: a 5xx, a 429, the network or a deadline is the source out of reach, which the adapter repeats; a 5xx and a deadline are also `smaller`, since fewer rows can clear them. */
 export function tableFailureOf(stop: TableStop): TableReadFailed {
   const { kind, native } = stop
   if (kind === 'AUTH_REFUSED' || kind === 'TOKEN_EXPIRED' || kind === 'NEEDS_REAUTH')
     return failed('COPY_SOURCE_NEEDS_REAUTH', native)
   if (kind === 'REFUSED') return failed('COPY_SOURCE_REFUSED', native)
-  if (kind === 'BUSY') return failed('COPY_SOURCE_UNREACHABLE', native, stop.waitMs ?? null)
-  if (kind === 'UNREACHABLE' || (native !== undefined && native.status >= SYSTEM_FAILED_AT))
-    return failed('COPY_SOURCE_UNREACHABLE', native)
+  if (kind === 'BUSY') return failed('COPY_SOURCE_UNREACHABLE', native, { waitMs: stop.waitMs })
+  if (kind === 'TIMED_OUT') return failed('COPY_SOURCE_UNREACHABLE', native, { smaller: true })
+  if (native !== undefined && native.status >= SYSTEM_FAILED_AT)
+    return failed('COPY_SOURCE_UNREACHABLE', native, { smaller: true })
+  if (kind === 'UNREACHABLE') return failed('COPY_SOURCE_UNREACHABLE', native)
   return failed('COPY_SOURCE_UNREADABLE', native)
 }
 
@@ -75,12 +91,30 @@ export type PageAsk = TableReach &
     columns: readonly TableColumn[]
     filter: TableFilter
     after: TablePosition | null
+    // the most rows any page of this pass asks, set when a 5xx or a deadline cut the page
+    ceiling?: number
   }>
 
-/** The rows the page after this one asks: the same, or fewer when this one passed the page's bytes; never fewer than 1. */
-export function rowsAfter(asked: number, rows: readonly unknown[], bytes: number): number {
-  const size = Buffer.byteLength(JSON.stringify(rows))
-  return size > bytes ? Math.max(1, Math.floor((asked * bytes) / size)) : asked
+/** The rows a TABLE source's first page of a filter asks: no row's width is known before one is read. */
+export const FIRST_PAGE_ROWS = 10
+
+/** How many times the rows asked the next page may grow: a few narrow rows do not stand for the table. */
+const GROWTH = 10
+
+/**
+ * The rows the page after this one asks: as many as fit `bytes` at the width just read, at most
+ * `GROWTH` times the rows asked and `max`, never fewer than 1. The page's bytes bind every request
+ * from the second on, so a table of wide rows never asks the source for more than its bytes.
+ */
+export function rowsAfter(
+  asked: number,
+  rows: readonly unknown[],
+  bytes: number,
+  max: number,
+): number {
+  if (rows.length === 0) return asked
+  const fit = Math.floor((rows.length * bytes) / Buffer.byteLength(JSON.stringify(rows)))
+  return Math.max(1, Math.min(fit, asked * GROWTH, max))
 }
 
 export const UNREADABLE: TableReadFailed = failed('COPY_SOURCE_UNREADABLE')

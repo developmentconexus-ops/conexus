@@ -87,6 +87,7 @@ export type TapRun = Readonly<{
   messages: readonly Message[]
   result: unknown
   waits: readonly number[]
+  logs: readonly Readonly<Record<string, unknown>>[]
 }>
 
 export async function tap(
@@ -100,6 +101,7 @@ export async function tap(
     configTables?: readonly Readonly<{ source: string; name: string; whole: boolean }>[]
     fetch?: (request: Request) => Promise<Response>
     now?: number
+    timeoutMs?: number
   }> = {},
 ): Promise<TapRun> {
   const dir = await mkdtemp(join(tmpdir(), 'tap-'))
@@ -126,9 +128,14 @@ export async function tap(
   ]
   const lines: string[] = []
   const waits: number[] = []
+  const logs: Record<string, unknown>[] = []
   const handle = a.fetch ?? ((request: Request) => double.fake.handle(request))
   const deps: TapDeps = {
     fetch: async (input, init) => handle(new Request(input, init)),
+    timeoutMs: a.timeoutMs ?? 60_000,
+    log: (line) => {
+      logs.push(z.record(z.string(), z.unknown()).parse(JSON.parse(line)))
+    },
     now: () => a.now ?? NOW,
     sleep: async (ms) => {
       waits.push(ms)
@@ -150,7 +157,7 @@ export async function tap(
     const message = z.looseObject({ type: z.string() }).safeParse(JSON.parse(line))
     return message.success ? [message.data] : []
   })
-  return { code, lines, messages, result, waits }
+  return { code, lines, messages, result, waits, logs }
 }
 
 export function recordsOf(run: TapRun, stream: string): readonly Record<string, unknown>[] {
