@@ -35,9 +35,12 @@ None yet.
 
 ## Consequences
 
-Amends [0071]. Iceberg does not change a column's scale, so a column whose type changes, such as
-`VLRDESCPARCERIA`, needs the lake's two empty tables `raw.sankhya_notas` and `current.sankhya_notas`
-dropped before the next real run: the founder's word.
+Amends [0071]. A column whose type changes in a table that already exists keeps its old type:
+pyiceberg 0.12.0 accepts the union of `decimal(18,4)` over `decimal(38,9)` without changing the column
+(`pyiceberg/schema.py:1700` compares a scale with itself), so the next real run passes and
+`VLRDESCPARCERIA` stays `decimal(38,9)`, exact. Dropping the lake's two empty tables
+`raw.sankhya_notas` and `current.sankhya_notas` before the next real run is what gives the lake the
+declared scale; that is the founder's word.
 
 ## Reopens when
 
