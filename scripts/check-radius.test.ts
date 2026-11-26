@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { after, test } from 'node:test'
+import { parse } from 'yaml'
+import { z } from 'zod'
 
 const RADIUS = resolve(import.meta.dirname, 'check-radius.ts')
+const Workflow = z.object({
+  jobs: z.object({
+    check: z.object({ steps: z.array(z.object({ run: z.string().optional() })) }),
+  }),
+})
 const CARD = [
   '# Etapa 9: Teste',
   '',
@@ -244,22 +251,58 @@ test('raio: um cartão curto, sem o prefixo e<número>-, é lido como cartão', 
   assert.doesNotMatch(result.stdout, /out-of-radius U1 apps\/server\/src\/c\.ts/)
 })
 
+function unitSection(unit: string, file: string): string[] {
+  return [
+    `## ${unit} Unidade`,
+    '',
+    '### O raio da mudança',
+    '',
+    '| Arquivo | Cria, muda ou apaga | Quem importa ou chama |',
+    '| --- | --- | --- |',
+    `| \`${file}\` | Muda | CI |`,
+    '',
+  ]
+}
+
 function unitsCard(title: string, units: number, folder: string): string {
   return [
     `# ${title}`,
     '',
-    ...Array.from({ length: units }, (_, index) => [
-      `## U${index + 1} Unidade`,
-      '',
-      '### O raio da mudança',
-      '',
-      '| Arquivo | Cria, muda ou apaga | Quem importa ou chama |',
-      '| --- | --- | --- |',
-      `| \`${folder}/u${index + 1}.ts\` | Muda | CI |`,
-      '',
-    ]).flat(),
+    ...Array.from({ length: units }, (_, index) =>
+      unitSection(`U${index + 1}`, `${folder}/u${index + 1}.ts`),
+    ).flat(),
   ].join('\n')
 }
+
+function ciRadiusStep(): string {
+  const workflow = readFileSync(resolve(import.meta.dirname, '../.github/workflows/ci.yml'), 'utf8')
+  const step = Workflow.parse(parse(workflow)).jobs.check.steps.find((candidate) =>
+    candidate.run?.includes('npm run radius'),
+  )
+  assert.ok(step?.run, 'the check job of ci.yml has no radius step')
+  return step.run
+}
+
+test('raio: o passo do CI mede cada unidade, com ou sem letra no nome, contra a própria tabela', () => {
+  const sections = ['U1', 'U5a', 'U5b'].flatMap((unit) => unitSection(unit, `apps/${unit}.ts`))
+  const repo = committed(['apps/U5b.ts'], ['# Etapa 9: Teste', '', ...sections].join('\n'))
+  writeFileSync(
+    join(repo, 'package.json'),
+    JSON.stringify({ scripts: { radius: `node "${RADIUS}"` } }),
+  )
+  const result = spawnSync('bash', ['-e', '-c', ciRadiusStep()], {
+    cwd: repo,
+    encoding: 'utf8',
+    env: { ...process.env, SHA: 'HEAD', GITHUB_STEP_SUMMARY: '' },
+    timeout: 120_000,
+  })
+  assert.equal(result.status, 0, result.stdout + result.stderr)
+  assert.deepEqual(result.stdout.match(/^radius: .*$/gm), [
+    'radius: U1 HEAD outside',
+    'radius: U5a HEAD outside',
+    'radius: U5b HEAD inside',
+  ])
+})
 
 function twoCards(file: string): string {
   const repo = committed([file], unitsCard('Fronteira', 5, 'frontier'), 'a-fronteira.md')
