@@ -175,6 +175,8 @@ test('o resultado que chega depois do pedido vale; a rodada parada não abre a p
   assert.equal((await on.treatRuns()).length, 2, 'the pending tables open no run')
 
   await on.copyEnded(['sankhya_vendedores'])
+  assert.equal((await on.treatRuns()).length, 2, 'a table with no model opens no run')
+  await on.copyEnded(['sankhya_notas'])
   const [, , next] = await on.treatRuns()
   assert.deepEqual(next?.select, BOTH)
 })

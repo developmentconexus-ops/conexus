@@ -10,7 +10,8 @@ export type LastStatus = ReadonlyMap<ModelName, 'BUILT' | 'FAILED' | 'SKIPPED'>
 
 /**
  * The models a run asks for: those that read a changed table, those not built last time (never
- * built, failed or skipped), and every model below one of them; none when nothing is to treat.
+ * built, failed or skipped) and every model below one of them. A copy joins the ones not built only
+ * when it touches some model's input (card criterion 26); none when nothing is to treat.
  */
 export function selection(
   graph: ModelGraph,
@@ -18,6 +19,10 @@ export function selection(
   last: LastStatus,
 ): readonly ModelName[] {
   const touched = new Set(changed.map(({ layer, table }) => modelNameOf(layer, table)))
+  const reads = graph.some(({ inputs }) =>
+    inputs.some(({ layer, table }) => touched.has(modelNameOf(layer, table))),
+  )
+  if (!reads) return []
   const chosen = new Set<string>()
   for (let grew = true; grew; ) {
     grew = false

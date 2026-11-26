@@ -182,6 +182,12 @@ test('lago novo: as rodadas do lago apagado não contam, cada modelo é tratado 
   assert.equal(tableOf(view, 'tratado', 'sankhya_notas').lastRun, null)
 
   await on.copyEnded(['sankhya_vendedores'])
+  assert.equal(
+    (await on.treatRuns()).length,
+    1,
+    'a table with no template and no reader opens no run',
+  )
+  await on.copyEnded(['sankhya_notas'])
   const [, current] = await on.treatRuns()
   assert.deepEqual([current?.lake_id, current?.select], [TEST_LAKE, BOTH])
 })
@@ -196,7 +202,7 @@ test('a partida recusada pela AWS fecha a rodada com TREAT_START_FAILED, e a pr�
     linesOf(on, 'TREAT_START_FAILED').map(({ call, answer }) => [call, answer]),
     [['RunTask', 'REFUSED']],
   )
-  await on.copyEnded(['sankhya_vendedores'])
+  await on.copyEnded(['sankhya_notas'])
   const [, again] = await on.treatRuns()
   assert.deepEqual([again?.state, again?.select], ['RUNNING', BOTH])
 })
