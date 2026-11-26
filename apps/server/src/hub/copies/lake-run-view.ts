@@ -1,7 +1,14 @@
 import { LakeRun, LakeRunMachine, LakeTableName, SystemMessage } from '@conexus/hub-api'
-import type { lakeRun } from './tables.ts'
+import { getTableColumns } from 'drizzle-orm'
+import { personNameColumn } from '../identity/public.ts'
+import { lakeRun } from './tables.ts'
 
-type RunRow = typeof lakeRun.$inferSelect
+export const RUN_COLUMNS = {
+  ...getTableColumns(lakeRun),
+  stoppedByName: personNameColumn(lakeRun.stoppedBy),
+}
+
+type RunRow = typeof lakeRun.$inferSelect & Readonly<{ stoppedByName: string | null }>
 
 /** What a round carried: the sums of its tables' counts, or one table's own, and whether the read was whole. */
 export type RunCarried = Readonly<{ read: number; written: number; whole: boolean }>
@@ -32,7 +39,7 @@ function machineOf(row: RunRow) {
 export function runViewOf(row: RunRow, carried: RunCarried): LakeRun {
   const base = { id: row.id, startedAt: row.startedAt.toISOString(), whole: carried.whole }
   if (row.endedAt === null || row.outcome === null)
-    return LakeRun.parse({ ...base, outcome: 'RUNNING' })
+    return LakeRun.parse({ ...base, outcome: 'RUNNING', stopping: row.stoppedBy !== null })
   const ended = {
     ...base,
     endedAt: row.endedAt.toISOString(),
@@ -42,8 +49,13 @@ export function runViewOf(row: RunRow, carried: RunCarried): LakeRun {
   }
   switch (row.outcome) {
     case 'COMPLETE':
+      return LakeRun.parse({ ...ended, outcome: 'COMPLETE' })
     case 'INTERRUPTED':
-      return LakeRun.parse({ ...ended, outcome: row.outcome })
+      return LakeRun.parse({
+        ...ended,
+        outcome: 'INTERRUPTED',
+        stoppedBy: row.stoppedByName === null ? null : { name: row.stoppedByName },
+      })
     case 'ERROR':
       return LakeRun.parse({
         ...ended,

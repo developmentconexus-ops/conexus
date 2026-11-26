@@ -1,8 +1,8 @@
 import type { LakeRun } from '@conexus/hub-api'
 import { clockOf, dayAndMonth } from '../../platform/dates.ts'
 import { Badge } from '../../ui/badge.tsx'
-import { RUNNING, UP_TO_DATE, WITH_ERROR } from '../connectors/public.ts'
-import { INTERRUPTED, NO_VALUE } from './text.ts'
+import { INTERRUPTED, RUNNING, UP_TO_DATE, WITH_ERROR } from '../connectors/public.ts'
+import { NO_VALUE } from './text.ts'
 
 /** How a round stands, in a word with its dot: running, up to date, with an error, interrupted. */
 export function RunBadge({ run }: { run: LakeRun | null }) {

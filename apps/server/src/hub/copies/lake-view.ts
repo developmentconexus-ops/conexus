@@ -5,7 +5,8 @@ import type { Database } from '../../platform/database.ts'
 import type { CopyConnection, CopySource } from '../connectors/public.ts'
 import type { CompanyScope } from './lake-close.ts'
 import { lakeOf } from './lake-close.ts'
-import { runViewOf } from './lake-run-view.ts'
+import { RUN_COLUMNS, runViewOf } from './lake-run-view.ts'
+import { isFirstLoad } from './lake-spec.ts'
 import { lakeCopy, lakeRun, lakeTable, lakeTableRun } from './tables.ts'
 
 export type ViewDeps = { database: Database; source: CopySource }
@@ -22,11 +23,16 @@ async function stored(database: Database, scope: CompanyScope, at: OfConnection)
       .where(eq(lakeCopy.connectionId, at.connectionId))
     const named = await tx.select({ name: lakeTable.name }).from(lakeTable)
     const tables = await tx
-      .select({ id: lakeTable.id, source: lakeTable.sourceTable, name: lakeTable.name })
+      .select({
+        id: lakeTable.id,
+        source: lakeTable.sourceTable,
+        name: lakeTable.name,
+        lastRunId: lakeTable.lastRunId,
+      })
       .from(lakeTable)
       .where(eq(lakeTable.connectionId, at.connectionId))
     const [run] = await tx
-      .select()
+      .select(RUN_COLUMNS)
       .from(lakeRun)
       .where(eq(lakeRun.connectionId, at.connectionId))
       .orderBy(desc(lakeRun.startedAt))
@@ -121,6 +127,7 @@ export async function lakeTablesOf(
               kind: 'MARKED' as const,
               name: LakeTableName.parse(own.name),
               lastRun: lastRunOf(own),
+              firstLoad: isFirstLoad(own),
             },
     }
   })

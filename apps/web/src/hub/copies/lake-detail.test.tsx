@@ -121,7 +121,7 @@ test('Rodadas: sem rodada, "Esta tabela ainda não rodou."; a rodada aberta diz 
 })
 
 test('Rodadas: a rodada aberta diz Rodando…, sem linhas nem Máquina', async () => {
-  const open = { ...lakeRun(), outcome: 'RUNNING', endedAt: undefined, read: undefined }
+  const open = lakeRun({ outcome: 'RUNNING', endedAt: undefined, read: undefined })
   const main = await tab({ runs: { [TABLE.id]: [lakeRun(open)] } }, 'Rodadas')
   const table = await main.findByRole('table', { name: 'Rodadas da tabela' })
   expect(within(table).getByText('Rodando…')).toBeTruthy()

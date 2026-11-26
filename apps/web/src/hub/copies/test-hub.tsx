@@ -63,6 +63,8 @@ export function lakeRun(fields: Record<string, unknown> = {}): LakeRun {
     read: 118402,
     written: 118402,
     machine: null,
+    stopping: false,
+    stoppedBy: null,
     ...fields,
   })
 }
