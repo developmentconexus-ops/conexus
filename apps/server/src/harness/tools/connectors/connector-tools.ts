@@ -11,7 +11,6 @@ import { CONNECTOR_CALLS_PER_TURN, deniesAccess } from '../../../hub/connectors/
 import type { FailureLog } from '../../../platform/failure.ts'
 import { Failure, logFailure } from '../../../platform/failure.ts'
 import { toldNative } from '../../../platform/model-text.ts'
-import { personsAnswer } from '../../spec/public.ts'
 import { INSTANTS_NOTE, inZone, zoneOf } from '../data/reader-zone.ts'
 
 /** What a conversation's tools ask of the Hub: the connections granted to its Projeto, its reads and its notebook. */
@@ -292,7 +291,7 @@ function noteSaveTool(connections: readonly Connection[], save: NoteSave) {
         const found = inNotebook(connections, asked.connection, asked.connector)
         if (found === undefined || requestContext === undefined) return NOT_GRANTED
         if ('kind' in found) return found
-        const answer = personsAnswer(agent)
+        const answer = agent?.resumeData
         if (answer === undefined) {
           await agent?.suspend?.(asked)
           return undefined

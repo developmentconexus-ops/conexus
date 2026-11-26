@@ -3,7 +3,6 @@ import { submitPlanTool } from '@mastra/core/agent-controller'
 import type { MastraDBMessage } from '@mastra/core/memory'
 import { z } from 'zod'
 import { APP_FOLDER, PLAN_DIR } from '../../harness/machine/public.ts'
-import { personsAnswer } from '../../harness/spec/public.ts'
 
 export const SUBMIT_PLAN_TOOL = submitPlanTool.id
 
@@ -80,7 +79,7 @@ export function createSubmitPlanTool(): typeof submitPlanTool {
     description: SUBMIT_PLAN_DESCRIPTION,
     execute: async (...[input, context]: Parameters<SubmitPlanExecute>) => {
       const agent = context?.agent
-      if (personsAnswer(agent) === undefined) {
+      if (agent?.resumeData === undefined) {
         const file = planFileOf(input.path)
         if (file === undefined) {
           return `Refused: a plan is a .md file directly in ${PLAN_DIR}. Write it there and submit that path.`

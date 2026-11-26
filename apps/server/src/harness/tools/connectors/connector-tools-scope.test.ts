@@ -173,7 +173,7 @@ test('o caderno pede o sim: a primeira chamada suspende com o pedido e nada cheg
   const asking = { agent: { suspend: async (payload: unknown) => void suspended.push(payload) } }
   assert.equal(await runOn(set, 'connector_note_save', note, asking), undefined)
   assert.deepEqual(suspended, [note])
-  const no = { agent: { resumeData: { approved: false }, suspendPayload: note } }
+  const no = { agent: { resumeData: { approved: false } } }
   assert.deepEqual(await runOn(set, 'connector_note_save', note, no), { kind: 'NOT_SAVED' })
   assert.deepEqual(saved, [])
 })
