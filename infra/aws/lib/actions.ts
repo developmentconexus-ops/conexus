@@ -38,7 +38,7 @@ export const WRITER_BUCKET_ACTIONS = ['s3tables:GetTableBucket', 's3tables:ListN
 
 /**
  * The lake's areas by role. The server's list is `apps/server/src/platform/lake-areas.ts`, and
- * `aws.test.ts` checks the two agree.
+ * `apps/server/src/platform/lake-areas.test.ts` checks the two agree.
  */
 export const COPY_AREAS = ['raw', 'current'] as const
 export const TREAT_AREAS = ['tratado', 'negocio'] as const
