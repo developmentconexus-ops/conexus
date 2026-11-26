@@ -497,7 +497,8 @@ menus, `composer` for the composer card only. Overlays (sheet, dialog, drawer ba
 chrome at 80%, not black.
 
 **Motion.** One sheet ([movimento](docs/reference/movimento.md)); `brand/motion.css` writes each
-name below once, and a piece takes the name, never a number of its own (V26).
+name below once, and a piece takes the name instead of a number of its own (V26). Two still write
+a number: the message scroller's button and the memory status in the room.
 
 | Name | Value | For |
 | --- | --- | --- |
@@ -515,6 +516,9 @@ name below once, and a piece takes the name, never a number of its own (V26).
 | `ease-spring-press` | `linear()` spring | the press |
 | `ease-spring-state` | `linear()` spring, calmer | the change of state |
 
+The same file names the two movements that pieces share: `button-motion` (the press and the mouse
+on a button) and `popup-motion` (a popup entering and leaving).
+
 What moves, and how:
 
 - **The mouse** changes colour and shadow only. **A press** gives to 96% and comes back. **A switch
@@ -524,8 +528,11 @@ What moves, and how:
   second with no transition.
 - **Dialog**: opacity only, of the window and its veil. **Drawer and side panel**: a short slide in
   and out; no transition while a finger drags.
-- **Changing area from the sidebar** fades only the sheet; the sidebar does not blink.
-- **Toast**, only for what went well: one line, inverted; it enters, leaves and goes away by itself.
+- **A change of screen**, when the address changes its path, fades only the sheet; the sidebar does
+  not blink. A page's load, a change of the address's search alone (the sidebar's search and tab)
+  and a change that arrives during a fade apply at once.
+- **Toast** (none exists yet), only for what went well: one line, inverted; it enters, leaves and
+  goes away by itself.
 - **AI pieces and tables** move only under the mouse. **Skeleton** keeps its pulse.
 - **At once**: the sidebar collapsing, a folding panel (tool line, reasoning, group), a new message
   and arriving text (only the scroll to the end is smooth), a row entering or leaving a list, a page

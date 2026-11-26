@@ -302,15 +302,18 @@
   }
 
   /* The ring's colour is on every element before the focus, so a piece that eases its colours
-     still draws the ring at once (design V26). */
-  * {
+     still draws the ring at once (design V26). The focus is named too, to win over the
+     preflight's `outline: auto` on `:-moz-focusring`. */
+  *,
+  :focus-visible,
+  [data-preview~="focus"] {
     outline-color: var(--color-accent);
   }
 
   /* One keyboard focus for every piece (design V28); a utility that removes the outline wins. */
   :focus-visible,
   [data-preview~="focus"] {
-    @apply outline-2 outline-offset-2 outline-solid outline-accent;
+    @apply outline-2 outline-offset-2 outline-solid;
   }
 
   /* A title the program focuses draws no ring (design V28; founder, 2026-10-27). */

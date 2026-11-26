@@ -200,9 +200,10 @@ test('a troca de tela esmaece a folha', async () => {
   await page.close()
 })
 
-test('uma segunda troca antes de a primeira aparecer troca de uma vez, sem erro', async () => {
+test('uma segunda navegação por código, antes de a primeira aparecer, vale de uma vez e sem erro', async () => {
   const { page, integrations } = await atHome()
-  // The first transition's update is held while the person picks a third screen.
+  // The first transition's update is held while the page goes to a third screen. The click is the
+  // program's: during a view transition the pointer does not reach the page.
   await page.evaluate(() => {
     const start = document.startViewTransition.bind(document)
     document.startViewTransition = (options) => {
