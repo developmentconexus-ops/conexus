@@ -2,15 +2,18 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { hubspotFake } from '@conexus/connectors'
 import { recordLine, schemaOf } from './messages.ts'
-import type { Double, Message, TapRun } from './test-tap.ts'
+import type { Double, TapRun } from './test-tap.ts'
 import {
+  activated,
   hubspotDouble,
   lastState,
+  monthsOf,
   NOW,
   recordsOf,
   sankhyaDouble,
   selected,
   tap,
+  WINDOW,
 } from './test-tap.ts'
 
 function changedOf(run: TapRun, stream: string): readonly (string | null)[] {
@@ -87,12 +90,6 @@ test('o cadastro inteiro: um cadastro e uma tabela inteira leem tudo, com ou sem
   }
 })
 
-const WINDOW = [selected('TGFEFDVMRSTDIA', 'efd')]
-
-function monthsOf(run: TapRun): readonly string[] {
-  return [...new Set(recordsOf(run, 'efd').map((row) => String(row.dtref).slice(0, 7)))]
-}
-
 test('a janela por mês: a primeira passada lê os meses da contagem, fora do calendário incluídos; a seguinte, o mês e o anterior', async () => {
   const first = await tap(sankhyaDouble(), { streams: WINDOW })
   assert.deepEqual(monthsOf(first), [
@@ -142,10 +139,6 @@ test('a inteira: a NF-e lê tudo a cada rodada, com o mesmo estado', async () =>
   assert.equal(recordsOf(again, 'nfe').length, recordsOf(first, 'nfe').length)
   assert.deepEqual(lastState(first).bookmarks.nfe, {})
 })
-
-function activated(run: TapRun, stream: string): readonly Message[] {
-  return run.messages.filter(({ type, stream: of }) => type === 'ACTIVATE_VERSION' && of === stream)
-}
 
 test('a passada inteira, e só ela, termina com ACTIVATE_VERSION: a primeira, a pedida, a sem ponto e a inteira; a que lê só o que mudou, não', async () => {
   const first = await tap(sankhyaDouble(), { streams: ITENS })
@@ -255,39 +248,6 @@ test('a rodada seguinte retoma do ponto: STATE depois de cada página, e a passa
     new Set(resumed.messages.filter(({ type }) => type === 'RECORD').map(({ version }) => version)),
     new Set([NOW]),
   )
-})
-
-test('a data que recua com uma passada inteira salva: a passada é planejada de novo, inteira, desde a data nova; a igual e a mais nova retomam', async () => {
-  const run = await tap(sankhyaDouble(), { streams: WINDOW, startDate: '2026-10-01' })
-  const middle = run.messages.filter(({ type }) => type === 'STATE')[0] ?? assert.fail()
-  const saved = lastState({ ...run, messages: [middle] })
-  const pass = saved.bookmarks.efd?.pass ?? assert.fail()
-  async function again(startDate: string | null, state = saved) {
-    const next = await tap(sankhyaDouble(), {
-      streams: WINDOW,
-      state,
-      startDate,
-      now: NOW + 60_000,
-    })
-    const versions = activated(next, 'efd').map((message) => message.version)
-    return { months: monthsOf(next), versions }
-  }
-  for (const startDate of ['2026-08-01', null]) {
-    const replanned = await again(startDate)
-    assert.ok(replanned.months.includes('2026-08'), `${startDate}`)
-    assert.deepEqual(replanned.versions, [NOW + 60_000], `${startDate}`)
-  }
-  const withPoint = await again('2026-08-01', {
-    bookmarks: { efd: { replication_key_value: '2026-11', pass } },
-  })
-  assert.ok(withPoint.months.includes('2026-08'), 'replanejada inteira, não do ponto')
-  for (const startDate of ['2026-10-01', '2026-11-01']) {
-    assert.deepEqual((await again(startDate)).versions, [NOW], startDate)
-  }
-  const changed = await again('2026-08-01', {
-    bookmarks: { efd: { pass: { ...pass, whole: false } } },
-  })
-  assert.equal(changed.months.includes('2026-08'), false, 'a passada que não é inteira retoma')
 })
 
 test('o binário: base64 com contentEncoding no esquema, os bytes como vieram; o CLOB é texto', () => {

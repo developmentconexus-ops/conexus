@@ -155,19 +155,16 @@ async function launch(deps: LakeRunDeps, line: Line, started: Started, a: Launch
   const { at, connection, copy } = started
   const run = LakeRunId.parse(started.run)
   const fields = { companyId: at.companyId, connectionId: connection, runId: run }
-  function failed(call: string, answer: AwsAnswer<unknown>) {
-    return startFailed(deps, started, call, answer)
-  }
   const parameter = RunParameter.parse(runParameterName(at.companyId, run))
   const spec = { name: parameter, spec: a.spec }
   const put = await tried(line.clock, () => deps.tasks.putRun(a.where, spec), line.writeTurn)
-  if (put.kind !== 'DONE') return failed('PutParameter', put)
+  if (put.kind !== 'DONE') return startFailed(deps, started, 'PutParameter', put)
   const first = copy.tables.some((table) => table.firstLoad)
   const machine = first ? MACHINES.FIRST_LOAD : MACHINES.NEXT
   const token = clientTokenOf(run, 1)
   const asked = { token, startedBy: run, writer: a.writer, parameter, machine }
   const task = await tried(line.clock, () => deps.tasks.start(a.where, asked))
-  if (task.kind !== 'DONE') return failed('RunTask', task)
+  if (task.kind !== 'DONE') return startFailed(deps, started, 'RunTask', task)
   if ((await kept(deps, started, task.value)) === 'CLOSED')
     await undone(deps, line, { where: a.where, fields, task: task.value })
 }
