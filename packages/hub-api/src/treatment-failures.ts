@@ -1,24 +1,10 @@
 import { z } from 'zod'
 import type { FailureRow } from './failure-row.ts'
+import { USER_409, USER_422 } from './failure-row.ts'
 
 /** Where a SQL stops parsing, both counted from 1 (`TREATMENT_SQL_INVALID`). */
 export const ProblemPosition = z.object({ line: z.int().min(1), column: z.int().min(1) })
 export type ProblemPosition = z.infer<typeof ProblemPosition>
-
-const USER_409 = {
-  category: 'USER',
-  settles: true,
-  status: 409,
-  action: '',
-  actionKind: 'NONE',
-} as const
-const USER_422 = {
-  category: 'USER',
-  settles: true,
-  status: 422,
-  action: '',
-  actionKind: 'NONE',
-} as const
 
 export const TREATMENT_FAILURES = {
   TREATMENT_SQL_INVALID: { ...USER_422, phrase: 'O SQL tem um erro de escrita.' },
