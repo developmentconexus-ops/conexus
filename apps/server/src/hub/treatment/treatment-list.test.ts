@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { PAGE_SIZE } from '@conexus/hub-api'
+import { TemplateVersion } from '../../platform/config-aws.ts'
 import type { Connector } from '../connectors/public.ts'
 import { CONNECTORS } from '../connectors/public.ts'
 import type { Hub } from '../identity/test-hub.ts'
@@ -130,6 +132,21 @@ test('lista: a receita anterior e o lago ausente se dizem', async (t) => {
   assert.equal((await on.listed()).lake, 'NONE')
 })
 
+const EARLIER = TemplateVersion.parse('a'.repeat(64))
+
+test('F15: o lago de uma receita anterior que ainda trata não está desatualizado, e Tratar agora abre; o de uma receita fora do conjunto está', async (t) => {
+  const on = await treatmentOn(t, { treatableBefore: [EARLIER] })
+  await on.rows(`update lake.company_lake set template = $1`, [EARLIER])
+  assert.equal((await on.listed()).lake, 'CURRENT')
+  const now = await on.treatNow()
+  assert.equal(now.statusCode, 202, now.body)
+  await on.hub.treatment.idle()
+  assert.equal((await on.treatRuns()).length, 1)
+
+  await on.rows(`update lake.company_lake set template = $1`, ['b'.repeat(64)])
+  assert.equal((await on.listed()).lake, 'OUTDATED')
+})
+
 async function plantRun(
   on: TreatmentOn,
   run: Readonly<{ lake: string; state: string; hours: number; rows: number | null }>,
@@ -222,4 +239,25 @@ test('apagar o cliente leva os tratamentos da empresa, e só os dela', async (t)
     left.map((row) => Object(row).company_id),
     Array(4).fill(a.companyId),
   )
+})
+
+test('rodadas: o modelo mostra uma página das rodadas do lago, a mais nova primeiro', async (t) => {
+  const on = await treatmentOn(t)
+  const { id } = await on.proposed(OF_NOTAS)
+  const [lake] = await on.rows('select lake_id from lake.company_lake')
+  const lakeId = String(Object(lake).lake_id)
+  const total = PAGE_SIZE + 5
+  await on.rows(
+    `insert into treatment.run (id, company_id, lake_id, cause, state, "select", attempt, started_at, ended_at)
+     select gen_random_uuid(), $1, $2, 'NOW', 'DONE', '[]', 1,
+            now() - make_interval(mins => n), now() - make_interval(mins => n)
+     from generate_series(1, $3::int) n`,
+    [on.companyId, lakeId, total],
+  )
+  await on.rows(
+    `insert into treatment.model_run (run_id, company_id, name, status, rows)
+     select id, company_id, 'negocio__venda', 'BUILT', 1 from treatment.run`,
+  )
+  const runs = (await on.read(id)).runs
+  assert.equal(runs.length, PAGE_SIZE)
 })

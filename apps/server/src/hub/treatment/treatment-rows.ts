@@ -199,7 +199,8 @@ async function nextOf(
 
 /**
  * The one close of a run: who locks the row while it is still open writes the end, each model's
- * status and the next run by `pending`, in one transaction; null when it was closed already.
+ * status and the next run by `pending`, in one transaction; null when it was closed already. The
+ * `UPDATE` repeats the open condition, so a lock that failed would still close the run once.
  */
 export async function closedIn(
   deps: TreatmentReads,
@@ -219,10 +220,12 @@ export async function closedIn(
   if (row === undefined) return null
   if (end.kind === 'RESULT' && end.result.attempt !== row.attempt) return null
   const state = closedOf(end, row.stoppedBy)
-  await tx
+  const ended = await tx
     .update(treatmentRun)
     .set({ ...state, endedAt: sql`now()` })
-    .where(eq(treatmentRun.id, run))
+    .where(and(eq(treatmentRun.id, run), isNull(treatmentRun.endedAt)))
+    .returning({ id: treatmentRun.id })
+  if (ended.length === 0) return null
   if (end.kind === 'RESULT') await modelRunsWritten(tx, { companyId, run, result: end.result })
   const next = state.state === 'STOPPED' ? null : await nextOf(deps, tx, companyId, row.pending)
   return { state, next }

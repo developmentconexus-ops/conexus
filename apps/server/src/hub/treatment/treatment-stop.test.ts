@@ -5,10 +5,11 @@ import { test } from 'node:test'
 import { LakeTableName } from '@conexus/hub-api'
 import { until } from '../../platform/test-until.ts'
 import { TEST_LAKE } from '../copies/test-lake-run.ts'
-import { ANA_OWNER, BRUNO, memberOn } from '../identity/test-hub.ts'
+import { ANA_OWNER, BRUNO, codeOf, memberOn } from '../identity/test-hub.ts'
 import type { TreatmentOn } from './test-treatment.ts'
 import { built, treatmentOn, treatResult } from './test-treatment.ts'
 
+const SILENT = { kind: 'NO_ANSWER' } as const
 const BOTH = ['tratado__sankhya_notas', 'tratado__sankhya_parceiros']
 
 async function answerOf(response: ReturnType<TreatmentOn['stopRun']>) {
@@ -179,4 +180,27 @@ test('o resultado que chega depois do pedido vale; a rodada parada não abre a p
   await on.copyEnded(['sankhya_notas'])
   const [, , next] = await on.treatRuns()
   assert.deepEqual(next?.select, BOTH)
+})
+
+test('parar com a AWS fora: o StopTask sem resposta dá 503 com a frase, quem pediu fica em stopped_by e a rodada segue aberta; com a AWS de volta, o pedido repetido vale', async (t) => {
+  let down = true
+  const on = await treatmentOn(t, {
+    tasks: (real) => ({ ...real, stop: async (...asked) => (down ? SILENT : real.stop(...asked)) }),
+  })
+  const { run } = await running(on)
+
+  const refused = await on.stopRun()
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [503, 'COPY_AWS_UNAVAILABLE'])
+  assert.equal(Object(refused.json()).title, 'Não deu para falar com a AWS agora.')
+  assert.deepEqual(await rowOf(on, run), {
+    state: 'RUNNING',
+    failure: null,
+    stopped_by: on.ana.id,
+    ended: false,
+  })
+  assert.equal(on.aws.calls().includes('StopTask'), false, 'the stop never reached AWS')
+
+  down = false
+  assert.deepEqual(await answerOf(on.stopRun()), [202, { stopping: true }])
+  assert.equal(on.aws.calls().filter((call) => call === 'StopTask').length, 1)
 })
