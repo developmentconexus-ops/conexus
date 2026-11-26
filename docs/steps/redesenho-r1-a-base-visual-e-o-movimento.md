@@ -28,7 +28,8 @@ medido no G4 OS, e nada se estica.
    cede e volta.
 3. Abra um menu, uma dica, uma gaveta (no celular) e uma janela: cada um entra com opacidade e uma
    escala curta, e sai mais rápido. Recolha a barra e abra um passo do rastro de uma conversa: os dois
-   trocam de tamanho de uma vez, sem esticar. Troque de área pela barra: a folha esmaece em 160 ms.
+   trocam de tamanho de uma vez, sem esticar. Troque de área pela barra: a folha esmaece em 160 ms
+   (no celular, pela gaveta aberta, a troca é de uma vez).
 4. Ligue "reduzir movimento" no sistema e repita 2 e 3: nada anima; tudo aparece no estado final.
 5. Em Configurações › Modelos, escolha outro modelo padrão e salve: um aviso escuro, de uma linha,
    diz "Padrão salvo" no canto e some sozinho.
@@ -100,9 +101,9 @@ Dois pull requests (delivery L9): G1 e G2.
 | 2 | U1 | O botão apertado encolhe para `scale` .96 e volta na mola de 420 ms (`--ease-spring-press`); a chave e a caixa mudam de estado em 560 ms na mola `--ease-spring-state`; nada muda de tamanho de leiaute | `motion.layout.test.ts`, "o toque cede e volta" | must |
 | 3 | U1 | A barra recolhida e o passo do rastro trocam de largura e de altura de uma vez: no `sidebar-container`, no `sidebar-gap` e no `trace-collapsible-content`, nenhum par de `transition-property` e `transition-duration` junta `width`, `height` ou `all` a uma duração acima de 0 s; recusa: devolver `transition-[width]` a `ui/sidebar.tsx:152` deixa o teste vermelho | `motion.layout.test.ts`, "nada estica" | must |
 | 4 | U1, U2, U4 | Sob `prefers-reduced-motion: reduce`, toda duração de transição computada na vitrine é 0 s e `document.getAnimations()` fica vazio depois de abrir menu, dica, gaveta, janela e aviso e de trocar de tela; os laços de trabalho param (a marca, o arco, o brilho). A U1 cria o caso com a gaveta e a janela de hoje; a U2 e a U4 acrescentam o menu, a dica, a troca de tela e o aviso ao mesmo caso | `motion.layout.test.ts`, "com reduzir, nada anima" | must |
-| 5 | U2 | Menu, popover, seletor, combobox e dica entram de opacidade 0 e escala .96 em 120 ms e saem mais rápido que entram; ao passar de uma dica para outra, a segunda abre sem transição | `motion.layout.test.ts`, "o menu e a dica entram curtos" | must |
+| 5 | U2 | Menu, popover, seletor, combobox e dica entram de opacidade 0 e escala .96 em 120 ms e saem mais rápido que entram; o seletor aberto sobre o gatilho pelo mouse (`data-side="none"`) aparece sem a entrada; ao passar de uma dica para outra, a segunda abre sem transição | `motion-entries.layout.test.ts`, "o menu e a dica entram curtos" e "o seletor sobre o gatilho aparece sem a entrada" | must |
 | 6 | U2 | A janela entra em 150 ms só por opacidade; a gaveta e o painel entram em 200 ms com deslocamento curto e saem em 150 ms; com `data-swiping` a duração da gaveta é 0 s | `motion.layout.test.ts`, "a janela e a gaveta" | must |
-| 7 | U2 | Trocar de área pela barra esmaece só a folha, em 160 ms; a barra não pisca | `motion.layout.test.ts`, "a troca de tela esmaece a folha" | should |
+| 7 | U2 | Toda mudança de caminho, pela barra ou depois de uma ação, esmaece só a folha, em 160 ms; a barra não pisca. Com uma gaveta ou uma janela aberta, a troca é de uma vez. A carga da página e uma mudança só da busca do endereço não esmaecem | `motion-screen.layout.test.ts`, "a troca de tela esmaece a folha", "a troca depois de uma ação esmaece a folha", "com a gaveta aberta a troca é de uma vez", "com a janela aberta a troca é de uma vez" e as três recusas (carga, letra na busca, aba da barra) | should |
 | 8 | U3 | O Hub pinta, nos dois temas, os valores da tabela de cores da U3 ("Os contratos que a unidade cria"); `DESIGN.md` e `tokens.css` dizem o mesmo valor por nome | `apps/web/src/brand/tokens.test.ts` (existente) e `apps/web/tokens.layout.test.ts`, "o tema" | must |
 | 9 | U3 | Todo par de texto e fundo dos tokens passa 4,5:1 nos dois temas; o ponto e o ícone de estado passam 3:1; recusa: um par abaixo falha nomeando o par e o tema | `apps/web/contrast.layout.test.ts`, "cada par se lê nos dois temas" | must |
 | 10 | U3 | A moldura e a barra são grafite nos dois temas; a folha tem 8 px de margem e canto de 16 px a partir de 768 px; a 390 px não há rolagem lateral | `apps/web/frame.layout.test.ts`, caso novo "a folha encaixada na moldura" | must |
@@ -156,11 +157,11 @@ grafite; "decisão 2" é a dele do mesmo dia ao movimento.
 | 4 | O rastro dobra sem esticar | U1 | decisão 2: nem altura | `ui/trace.tsx:104` | Base UI `docs/react/components/collapsible.md` (`--collapsible-panel-height`) **documentado** | a altura vem por variável; sem transição, abre na hora | nativo | · | não precisa | · |
 | 5 | Passar o mouse | U1 | decisão 2 | `ui/button.tsx`, itens da `ui/sidebar.tsx` sem transição | MA `theme/motion.css:3` (mesma situação) | só a cor do controle anima no hover **lido** | nativo | · | não precisa | · |
 | 6 | Apertar e mudar de estado | U1 | decisão A-b, 2026-11-26: o toque em 420 ms e a mudança de estado em 560 ms, nas molas | `ui/button.tsx` sem `:active`; `ui/switch.tsx:11,18`, `ui/checkbox.tsx:13` | CR `tokens.css:131-136` (molas em `linear()`, situação diferente); protótipo `carater.css:12-19` **herdado** | `:active` com `scale` e a curva do token | nativo | · | A-b | · |
-| 7 | Menu, popover, seletor, combobox | U2 | decisão 2: opacidade e escala | `ui/popover.tsx`, `ui/dropdown-menu.tsx`, `ui/select.tsx`, `ui/combobox.tsx` sem transição | Base UI `docs/react/handbook/animation.md:19-24` e `docs/react/components/tooltip.md:79` (mesma situação) | `data-starting-style`/`data-ending-style`, `origin-[var(--transform-origin)]`, transição que se cancela no meio **lido** | nativo | · | não precisa | · |
+| 7 | Menu, popover, seletor, combobox | U2 | decisão 2: opacidade e escala; 2026-11-26, "2. A": o seletor sobre o gatilho sem a entrada (Base UI `docs/react/components/select.md:285-290`) | `ui/popover.tsx`, `ui/dropdown-menu.tsx`, `ui/select.tsx`, `ui/combobox.tsx` sem transição | Base UI `docs/react/handbook/animation.md:19-24` e `docs/react/components/tooltip.md:79` (mesma situação) | `data-starting-style`/`data-ending-style`, `origin-[var(--transform-origin)]`, transição que se cancela no meio **lido** | nativo | · | não precisa | · |
 | 8 | Dica | U2 | decisão 2 | `ui/tooltip.tsx:4-7` | MA-ds `Tooltip/tooltip.tsx:106-110` (mesma situação) | escala .95 e opacidade 0 nos dois atributos; `data-instant` sem transição **lido** | nativo | · | não precisa | · |
 | 9 | Janela | U2 | decisão 2: 150 ms | `ui/dialog.tsx:53,58`, `ui/alert-dialog.tsx:31,36` | Base UI `animation.md` | opacidade nos dois atributos | nativo | · | não precisa | · |
 | 10 | Gaveta e painel | U2 | estudo 13.2: 200 a 250 ms; folha de 17/11: sai em 150 | `ui/sheet.tsx:22,24,57,62`, `ui/drawer.tsx:30,36` | SH-ui `sheet.tsx:31,56` e DF-ui `drawer/index.tsx:57,90-98` (mesma situação) | deslocamento curto nos dois atributos; `data-swiping:duration-0` **lido** | nativo | · | não precisa | · |
-| 11 | Troca de tela | U2 | decisão 2: fade de 160 ms | `main.tsx:84` sem `defaultViewTransition` | `@tanstack/router-core` `router.d.ts:156`, `router.js:491-506` | o roteador chama `document.startViewTransition`; o CSS nomeia só a folha **lido**; passa na CSP com folha externa (estudo 6.3) **provado** | nativo | · | não precisa | · |
+| 11 | Troca de tela | U2 | decisão 2: fade de 160 ms; 2026-11-26, "1. A" e "3. A": toda mudança de caminho, menos com gaveta ou janela aberta | `main.tsx:84` sem `defaultViewTransition` | `@tanstack/router-core` `router.d.ts:156`, `router.js:491-506` | o roteador chama `document.startViewTransition`; o CSS nomeia só a folha **lido**; passa na CSP com folha externa (estudo 6.3) **provado** | nativo | · | não precisa | · |
 | 12 | As cores | U3 | "Fecha"; decisão 3 | `brand/tokens.css:50-80`; `DESIGN.md` front matter; `brand/tokens.test.ts` | protótipo `b-noites.css:7,16-35` e a tabela "A paleta final" **herdado** | os valores medidos em `light-dark()` | nativo | · | "Fecha" | · |
 | 13 | A moldura grafite e a folha encaixada | U3 | "Fecha": 8 px de margem, canto de 16 px | `ui/frame.tsx`, `ui/sidebar.tsx:198` | SH-ui `sidebar.tsx:154,162,224-235` (variante `inset`, mesma situação) **lido** | a moldura pinta o grafite; a folha ganha margem e raio | embrulhado: a nossa `sidebar` ganha a variante `inset` | · | B-a | · |
 | 14 | A borda é sombra | U3 | "Fecha" | `border border-line` em `ui/input.tsx:19`, `ui/card.tsx:11`, `ui/input-group.tsx:18`; `tokens.css:155-156` | CR `tokens.css:120` (a borda dentro da sombra) **lido** | um token de sombra por camada | nativo | · | B-a | · |
@@ -344,9 +345,11 @@ Nenhum tipo. Uma classe por peça e a regra da troca de tela:
      soltas (`ease-in-out`, `ease-out`) saem; `data-swiping:duration-0` fica.
    - **Testes:** "a janela e a gaveta".
 3. **A troca de tela.** Critérios: 7.
-   - **O que entra:** `defaultViewTransition: true` nos dois `createRouter`; a regra acima em
-     `tokens.css`. Sob reduzir, a duração já é 0.
-   - **Testes:** "a troca de tela esmaece a folha": navega pela barra e lê
+   - **O que entra:** `defaultViewTransition` no `createRouter` do Hub, com `types` que liga a
+     transição quando o caminho muda e a recusa na carga, quando só a busca muda, durante outra
+     transição e com uma gaveta ou uma janela aberta; a regra acima no CSS da marca. A vitrine fica
+     sem a opção: as duas molduras dela repetiriam o nome da folha. Sob reduzir, a duração já é 0.
+   - **Testes:** os do critério 7; "a troca de tela esmaece a folha" navega pela barra e lê
      `document.getAnimations()` filtrando `pseudoElement` `::view-transition-new(sheet)`.
 
 ### Como se prova
