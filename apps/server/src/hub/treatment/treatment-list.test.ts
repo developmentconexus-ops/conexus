@@ -132,7 +132,7 @@ test('lista: a receita anterior e o lago ausente se dizem', async (t) => {
 
 async function plantRun(
   on: TreatmentOn,
-  run: Readonly<{ lake: string; state: string; hours: number; rows: number }>,
+  run: Readonly<{ lake: string; state: string; hours: number; rows: number | null }>,
   name: string,
 ) {
   const id = randomUUID()
@@ -142,8 +142,8 @@ async function plantRun(
     [id, on.companyId, run.lake, run.state, run.hours, run.state === 'STOPPED' ? on.ana.id : null],
   )
   await on.rows(
-    `insert into treatment.model_run (run_id, company_id, name, status, rows) values ($1, $2, $3, 'BUILT', $4)`,
-    [id, on.companyId, name, run.rows],
+    `insert into treatment.model_run (run_id, company_id, name, status, rows) values ($1, $2, $3, $4, $5)`,
+    [id, on.companyId, name, run.rows === null ? 'SKIPPED' : 'BUILT', run.rows],
   )
 }
 
@@ -167,6 +167,17 @@ test('rodadas: a lista e o modelo mostram só as do lago de agora, a mais nova p
     [2, 1],
   )
   assert.equal(tableOf(view, 'tratado', 'sankhya_notas').lastRun, null)
+})
+
+test('lista: o modelo pulado na última rodada mostra as linhas da última boa', async (t) => {
+  const on = await treatmentOn(t)
+  await on.proposed(OF_NOTAS)
+  const [lake] = await on.rows('select lake_id from lake.company_lake')
+  const now = String(Object(lake).lake_id)
+  await plantRun(on, { lake: now, state: 'DONE', hours: 3, rows: 7 }, 'negocio__venda')
+  await plantRun(on, { lake: now, state: 'DONE', hours: 1, rows: null }, 'negocio__venda')
+  const { lastRun } = tableOf(await on.listed(), 'negocio', 'venda')
+  assert.equal(lastRun?.status === 'BUILT' ? lastRun.rows : null, 7)
 })
 
 async function plantTreatment(hub: Hub, company: string, person: string) {

@@ -26,21 +26,23 @@ test('a árvore: fora de Dados, as conversas ficam', async () => {
   expect(screen.queryByRole('navigation', { name: 'Dados' })).toBeNull()
 })
 
-test('a árvore: o membro em Dados vê Bruto sem tabela do papel e não vê Apps', async () => {
+test('a árvore: o membro em Dados vê Copiado sem tabela do papel e não vê Apps', async () => {
   openData(server, {}, `${LIST}?layer=apps`, 'member')
   const nav = await tree()
-  expect(await nav.findByRole('link', { name: 'Negócio 0' })).toBeTruthy()
-  expect(nav.getByRole('link', { name: 'Bruto 0' })).toBeTruthy()
+  expect(await nav.findByRole('link', { name: 'Negócio' })).toBeTruthy()
+  expect(nav.getByRole('link', { name: 'Tratado' })).toBeTruthy()
+  expect(nav.getByRole('link', { name: 'Copiado 0' })).toBeTruthy()
   expect(nav.getByText('Seu papel ainda não lê nenhuma tabela.')).toBeTruthy()
   expect(nav.queryByRole('link', { name: 'Apps' })).toBeNull()
   expect(screen.queryByRole('link', { name: 'Nova conversa' })).toBeNull()
 })
 
-test('a árvore: Negócio 0, Bruto 0, Apps, e nenhuma tabela nem sistema aberto', async () => {
+test('a árvore: Copiado 0, Tratado, Negócio, Apps, e nenhuma tabela nem sistema aberto', async () => {
   openData(server, { connections: [connection()] }, LIST)
   const nav = await tree()
-  expect(await nav.findByRole('link', { name: 'Negócio 0' })).toBeTruthy()
-  expect(nav.getByRole('link', { name: 'Bruto 0' })).toBeTruthy()
+  expect(await nav.findByRole('link', { name: 'Negócio' })).toBeTruthy()
+  expect(nav.getByRole('link', { name: 'Tratado' })).toBeTruthy()
+  expect(nav.getByRole('link', { name: 'Copiado 0' })).toBeTruthy()
   expect(nav.getByRole('link', { name: 'Apps' })).toBeTruthy()
   expect(
     await nav.findByText('Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'),
@@ -54,19 +56,28 @@ async function currentGroups(path: string) {
   async function current(name: string) {
     return (await nav.findByRole('link', { name })).getAttribute('aria-current')
   }
-  return [await current('Negócio 0'), await current('Bruto 0'), await current('Apps')]
+  return [
+    await current('Copiado 0'),
+    await current('Tratado'),
+    await current('Negócio'),
+    await current('Apps'),
+  ]
 }
 
-test('a árvore: Bruto é o lugar atual na camada Bruta e só nela', async () => {
-  expect(await currentGroups(LIST)).toEqual([null, 'page', null])
+test('a árvore: Copiado é o lugar atual na camada copiada e só nela', async () => {
+  expect(await currentGroups(LIST)).toEqual(['page', null, null, null])
+})
+
+test('a árvore: Tratado é o lugar atual em ?layer=treated', async () => {
+  expect(await currentGroups(`${LIST}?layer=treated`)).toEqual([null, 'page', null, null])
 })
 
 test('a árvore: Negócio é o lugar atual em ?layer=business', async () => {
-  expect(await currentGroups(`${LIST}?layer=business`)).toEqual(['page', null, null])
+  expect(await currentGroups(`${LIST}?layer=business`)).toEqual([null, null, 'page', null])
 })
 
 test('a árvore: Apps é o lugar atual em ?layer=apps', async () => {
-  expect(await currentGroups(`${LIST}?layer=apps`)).toEqual([null, null, 'page'])
+  expect(await currentGroups(`${LIST}?layer=apps`)).toEqual([null, null, null, 'page'])
 })
 
 test('a árvore: carregando, três esqueletos', async () => {
@@ -104,9 +115,9 @@ test('a árvore: a falha das conexões e Tentar de novo', async () => {
   ).toBeTruthy()
 })
 
-test('a árvore: sem sistema, Bruto 0 e a frase', async () => {
+test('a árvore: sem sistema, Copiado 0 e a frase', async () => {
   openData(server, { connections: [] }, LIST)
   const nav = await tree()
-  expect(await nav.findByRole('link', { name: 'Bruto 0' })).toBeTruthy()
+  expect(await nav.findByRole('link', { name: 'Copiado 0' })).toBeTruthy()
   expect(await nav.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
 })

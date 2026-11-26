@@ -4,6 +4,7 @@ import { ConnectionId, LakeUnavailable } from './connectors.ts'
 import { defineOperation } from './operation.ts'
 
 export const LAKE_TABLE_NAME_PATTERN = /^[a-z][a-z0-9_]{0,59}$/
+export const LAKE_TABLE_NAME_MAX = 60
 export const SOURCE_TABLE_ID_PATTERN = /^[A-Za-z][A-Za-z0-9_]{0,59}$/
 
 export const LakeRunId = z.uuid().brand('LakeRunId')

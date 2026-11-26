@@ -1,4 +1,4 @@
-import { ConnectionId } from '@conexus/hub-api'
+import { ConnectionId, TreatedTables } from '@conexus/hub-api'
 import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
@@ -142,13 +142,59 @@ test('Dados: o membro vê a frase do papel, sem sistemas', async () => {
   expect(main.queryByText('Matriz · Lago')).toBeNull()
 })
 
-test('Dados: o grupo Negócio abre a camada Negócio', async () => {
+test('Dados: o grupo Negócio abre a camada Negócio, sem o aviso dos conceitos', async () => {
   openData(server, {}, LIST)
   const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
-  fireEvent.click(await nav.findByRole('link', { name: 'Negócio 0' }))
+  fireEvent.click(await nav.findByRole('link', { name: 'Negócio' }))
   const main = await page()
-  expect(await main.findByText('Nenhum conceito aprovado ainda')).toBeTruthy()
-  expect(screen.queryByRole('tablist')).toBeNull()
+  expect(await main.findByText('Nenhum tratamento ainda')).toBeTruthy()
+  expect(screen.queryByText(/Nenhum conceito aprovado/)).toBeNull()
+  expect(screen.queryByText(/Um conceito é o significado/)).toBeNull()
+})
+
+test.each([['owner'], ['admin']])(
+  'Dados: %s vê Copiado, Tratado e Negócio, e abre cada camada',
+  async (role) => {
+    openData(server, {}, LIST, role)
+    const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
+    expect(await nav.findByRole('link', { name: 'Copiado 0' })).toBeTruthy()
+    fireEvent.click(nav.getByRole('link', { name: 'Tratado' }))
+    expect(
+      await (await page()).findByText(/^Nenhuma tabela tratada\. As tabelas de um sistema/),
+    ).toBeTruthy()
+    fireEvent.click(nav.getByRole('link', { name: 'Negócio' }))
+    expect(await (await page()).findByText('Nenhum tratamento ainda')).toBeTruthy()
+    expect((await page()).queryByText(/^Seu papel ainda não lê/)).toBeNull()
+  },
+)
+
+test.each([
+  ['treated', 'Tratado'],
+  ['business', 'Negócio'],
+])('Dados: outro papel vê em %s a frase do papel, sem pedir os tratamentos', async (layer) => {
+  const asked: string[] = []
+  server.events.on('request:start', ({ request }) => {
+    if (request.url.includes('/data/treated')) asked.push(request.url)
+  })
+  openData(server, {}, `${LIST}?layer=${layer}`, 'member')
+  const main = await page()
+  expect(
+    await main.findByText(
+      'Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa.',
+    ),
+  ).toBeTruthy()
+  expect(asked).toEqual([])
+})
+
+test('Dados: com o lago numa receita anterior, Tratado diz para apagar e criar de novo na Central', async () => {
+  openData(
+    server,
+    { treated: TreatedTables.parse({ lake: 'OUTDATED', lastRun: null, tables: [] }) },
+    `${LIST}?layer=treated`,
+  )
+  const main = await page()
+  expect(await main.findByText('Apague e crie o lago de novo na Central para tratar')).toBeTruthy()
+  expect(main.queryByText(/^Nenhuma tabela tratada/)).toBeNull()
 })
 
 test('Dados: a camada fica no endereço', async () => {
@@ -156,7 +202,7 @@ test('Dados: a camada fica no endereço', async () => {
   const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
   expect((await nav.findByRole('link', { name: 'Apps' })).getAttribute('aria-current')).toBe('page')
   expect(await (await page()).findByText(/^As tabelas que cada app guarda/)).toBeTruthy()
-  expect(nav.getByRole('link', { name: 'Negócio 0' }).getAttribute('aria-current')).toBeNull()
+  expect(nav.getByRole('link', { name: 'Negócio' }).getAttribute('aria-current')).toBeNull()
 })
 
 test('Dados: sem nenhum sistema ligado não manda escolher o que copiar', async () => {

@@ -130,10 +130,10 @@ test('um sistema sem tabela no lago diz a frase da matriz ao lado do que tem', a
   ).toHaveLength(1)
 })
 
-test('a árvore conta as tabelas do lago em Bruto e diz quantas são', async () => {
+test('a árvore conta as tabelas do lago em Copiado e diz quantas são', async () => {
   openData(server, { tables: [lakeTable(), NFE] }, LIST)
   const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
-  expect(await nav.findByRole('link', { name: 'Bruto 2' })).toBeTruthy()
+  expect(await nav.findByRole('link', { name: 'Copiado 2' })).toBeTruthy()
   expect(nav.getByText('2 tabelas no lago')).toBeTruthy()
 })
 
