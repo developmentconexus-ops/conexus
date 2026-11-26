@@ -130,25 +130,34 @@ export type CloseDeps = {
   watch?: Readonly<{ ended(run: LakeRunId): void }>
 }
 
-/** The winning close's counts on each table, and the connection's 100 newest rounds kept. */
+/**
+ * The winning close's counts on each table, and the connection's 100 newest rounds kept. An
+ * interrupted round loads no table: a first load stays one.
+ */
 async function counted(
   tx: CommandTx,
   a: Readonly<{
     at: CompanyScope
     connectionId: ConnectionId
     run: LakeRunId
+    end: RunEnd
     tables: readonly RunTableCounts[]
   }>,
 ) {
+  const columns = { id: lakeTable.id, rows: lakeTable.rows }
   for (const counts of a.tables) {
-    const [table] = await tx
-      .update(lakeTable)
-      .set({
-        rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`,
-        lastRunId: a.run,
-      })
-      .where(and(eq(lakeTable.connectionId, a.connectionId), eq(lakeTable.name, counts.name)))
-      .returning({ id: lakeTable.id, rows: lakeTable.rows })
+    const own = and(eq(lakeTable.connectionId, a.connectionId), eq(lakeTable.name, counts.name))
+    const [table] =
+      a.end.kind === 'INTERRUPTED'
+        ? await tx.select(columns).from(lakeTable).where(own)
+        : await tx
+            .update(lakeTable)
+            .set({
+              rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`,
+              lastRunId: a.run,
+            })
+            .where(own)
+            .returning(columns)
     if (table === undefined) continue
     await tx.insert(lakeTableRun).values({
       runId: a.run,
@@ -234,7 +243,7 @@ export async function closeLakeRun(
       })
       .where(eq(lakeRun.id, close.run))
     const connectionId = ConnectionIdSchema.parse(row.connectionId)
-    await counted(tx, { at, connectionId, run: close.run, tables: close.tables })
+    await counted(tx, { at, connectionId, run: close.run, end, tables: close.tables })
     return { won: { connectionId, end, by }, lake: await lakeOf(tx, at.companyId) }
   })
   const of = { companyId: at.companyId, runId: close.run }

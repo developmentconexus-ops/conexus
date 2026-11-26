@@ -6,6 +6,7 @@ import signal
 import threading
 import time
 import typing as t
+from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
 
@@ -130,10 +131,26 @@ def test_a_falha_do_gravador(task: Task) -> None:
     }
 
 
+def _interrupted_counts(task: Task) -> dict[str, t.Any]:
+    [result] = task.aws.sent
+    assert result["outcome"] == {"kind": "INTERRUPTED"}
+    tables: list[dict[str, t.Any]] = result["tables"]
+    [counts] = tables
+    assert counts["rows"] is None
+    return counts
+
+
+def test_a_rodada_fechada_antes_de_comecar_sai_com_1(task: Task) -> None:
+    task.aws.refuse_after_gets = 0
+    assert task.run(task.spec(NOTAS)) == 1
+    assert task.aws.sent == []
+
+
 def test_a_rodada_fechada_para_a_tarefa(task: Task, capfd: pytest.CaptureFixture[str]) -> None:
     task.aws.refuse_after_gets = 1
-    task.run(task.spec(NOTAS))
-    assert task.aws.sent == []
+    assert task.run(task.spec(NOTAS)) == 0
+    counts = _interrupted_counts(task)
+    assert (counts["read"], counts["written"]) == (0, 0)
     assert not task.lake.table_exists(("raw", "sankhya_notas"))
     assert not task.lake.table_exists(("current", "sankhya_notas"))
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
@@ -144,9 +161,10 @@ def test_a_rodada_fechada_no_meio_da_copia(
 ) -> None:
     monkeypatch.setenv("TARGET_CONEXUS_BATCH_SIZE_ROWS", "100")
     task.aws.refuse_after_gets = 3
-    task.run(task.spec(NOTAS))
-    assert task.aws.sent == []
+    assert task.run(task.spec(NOTAS)) == 0
     assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows == 10
+    counts = _interrupted_counts(task)
+    assert counts["read"] > counts["written"] == 10
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
 
 
@@ -161,16 +179,36 @@ def test_a_rodada_fechada_antes_da_atualizacao_nao_toca_a_atual(
         return code
 
     monkeypatch.setattr(Round, "run", closed_after_the_copy)
-    task.run(task.spec(NOTAS))
-    assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows
-    assert task.aws.sent == []
+    assert task.run(task.spec(NOTAS)) == 0
+    raw = task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows
+    assert _interrupted_counts(task)["written"] == raw > 0
     assert not task.athena.statements
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
 
 
-def test_o_stoptask_para_o_meltano_e_nao_manda_resultado(
+def test_a_parada_com_o_parametro_no_lugar_nao_manda_resultado(
     task: Task, capfd: pytest.CaptureFixture[str]
 ) -> None:
+    stopped = _stop_while_copying(task, before=lambda: None)
+    assert task.run(task.spec(NOTAS)) == 1
+    assert task.aws.sent == []
+    assert stopped.exists()
+    logged = "".join(capfd.readouterr())
+    assert '"event": "RUN_STOPPED"' in logged
+    assert "RUN_UNEXPLAINED" not in logged
+
+
+def test_o_stoptask_depois_do_parametro_apagado_manda_o_resultado_interrompido(
+    task: Task,
+) -> None:
+    stopped = _stop_while_copying(task, before=task.aws.parameters.clear)
+    assert task.run(task.spec(NOTAS)) == 0
+    assert stopped.exists()
+    assert _interrupted_counts(task)["written"] == 0
+
+
+def _stop_while_copying(task: Task, before: Callable[[], None]) -> Path:
+    """A writer that waits for the SIGTERM the thread sends once it started."""
     started, stopped = task.dumps / "target.started", task.dumps / "target.stopped"
     (task.plugins / "target-conexus").write_text(
         "\n".join(
@@ -182,19 +220,15 @@ def test_o_stoptask_para_o_meltano_e_nao_manda_resultado(
             ]
         )
     )
-    threading.Thread(target=_stop_when, args=(started,), daemon=True).start()
-    assert task.run(task.spec(NOTAS)) == 1
-    assert task.aws.sent == []
-    assert stopped.exists()
-    logged = "".join(capfd.readouterr())
-    assert '"event": "RUN_STOPPED"' in logged
-    assert "RUN_UNEXPLAINED" not in logged
 
+    def stop() -> None:
+        while not started.exists():
+            time.sleep(0.05)
+        before()
+        os.kill(os.getpid(), signal.SIGTERM)
 
-def _stop_when(started: Path) -> None:
-    while not started.exists():
-        time.sleep(0.05)
-    os.kill(os.getpid(), signal.SIGTERM)
+    threading.Thread(target=stop, daemon=True).start()
+    return stopped
 
 
 def test_a_conferencia_recusada_e_falha_do_gravador(task: Task) -> None:
