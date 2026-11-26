@@ -92,7 +92,7 @@ export function Chooser(props: Part & { saving: Saving; onClose: () => void }) {
       </DialogBody>
       <DialogFooter>
         {props.saving.error !== undefined && (
-          <p role="alert" className="text-danger">
+          <p role="alert" className="text-danger-text">
             {props.saving.error}
           </p>
         )}

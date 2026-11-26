@@ -59,7 +59,7 @@ export function SheetContent({
       <SheetPrimitive.Popup
         data-slot="sheet-content"
         className={cn(
-          'fixed z-50 flex flex-col gap-lg border-line bg-surface p-lg text-text transition duration-move ease-enter data-ending-style:duration-window data-ending-style:ease-exit data-ending-style:opacity-0 data-starting-style:opacity-0',
+          'fixed z-50 flex flex-col gap-lg border-transparent bg-raised p-lg text-text shadow-float transition duration-move ease-enter data-ending-style:duration-window data-ending-style:ease-exit data-ending-style:opacity-0 data-starting-style:opacity-0',
           SIDES[side],
           className,
         )}

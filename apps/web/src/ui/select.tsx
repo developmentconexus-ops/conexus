@@ -24,7 +24,7 @@ export function SelectTrigger({ className, children, ...props }: SelectPrimitive
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        'flex h-9 w-full min-w-0 items-center justify-between gap-sm rounded-control border border-line bg-surface px-md text-base md:text-body text-text whitespace-nowrap select-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger data-placeholder:text-text-2 *:data-[slot=select-value]:line-clamp-1 [&_svg]:pointer-events-none [&_svg]:shrink-0',
+        'flex h-9 w-full min-w-0 items-center justify-between gap-sm rounded-control border border-transparent bg-raised px-md shadow-1 text-base md:text-body text-text whitespace-nowrap select-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger data-placeholder:text-text-2 *:data-[slot=select-value]:line-clamp-1 [&_svg]:pointer-events-none [&_svg]:shrink-0',
         className,
       )}
       {...props}
@@ -74,7 +74,7 @@ export function SelectContent({
           data-slot="select-content"
           className={cn(
             // Over its trigger (`data-side="none"`) the popup is there at once (design V26).
-            'popup-motion data-[side=none]:data-starting-style:scale-none data-[side=none]:data-starting-style:opacity-100 relative isolate max-h-(--available-height) w-(--anchor-width) overflow-x-hidden overflow-y-auto rounded-object border border-line bg-surface text-text outline-none',
+            'popup-motion data-[side=none]:data-starting-style:scale-none data-[side=none]:data-starting-style:opacity-100 relative isolate max-h-(--available-height) w-(--anchor-width) overflow-x-hidden overflow-y-auto rounded-object border border-transparent bg-raised text-text shadow-float outline-none',
             className,
           )}
           {...props}
@@ -165,7 +165,7 @@ function SelectScrollUpButton({
     <SelectPrimitive.ScrollUpArrow
       data-slot="select-scroll-up-button"
       className={cn(
-        'top-0 z-10 flex w-full cursor-default items-center justify-center bg-surface py-xs',
+        'top-0 z-10 flex w-full cursor-default items-center justify-center bg-raised py-xs',
         className,
       )}
       {...props}
@@ -183,7 +183,7 @@ function SelectScrollDownButton({
     <SelectPrimitive.ScrollDownArrow
       data-slot="select-scroll-down-button"
       className={cn(
-        'bottom-0 z-10 flex w-full cursor-default items-center justify-center bg-surface py-xs',
+        'bottom-0 z-10 flex w-full cursor-default items-center justify-center bg-raised py-xs',
         className,
       )}
       {...props}

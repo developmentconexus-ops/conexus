@@ -8,7 +8,7 @@ import { cn } from './cn.ts'
 const alertVariants = cva('font-body text-label', {
   variants: {
     tone: {
-      danger: 'text-danger',
+      danger: 'text-danger-text',
     },
   },
 })

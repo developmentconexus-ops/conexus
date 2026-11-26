@@ -13,6 +13,7 @@ import { createCache } from './platform/cache.ts'
 import { HubFailure } from './platform/hub.ts'
 import { applyChosenTheme } from './platform/theme.ts'
 import { routeTree } from './routeTree.gen.ts'
+import { NoticeProvider } from './ui/notice.tsx'
 import type { SectionMeta } from './ui/settings-index.tsx'
 import { Failure, Loading, NotFound } from './ui/states.tsx'
 
@@ -116,7 +117,9 @@ export function Conexus({ conexus }: { conexus: ReturnType<typeof createConexus>
     <StrictMode>
       <CSPProvider disableStyleElements>
         <QueryClientProvider client={conexus.queryClient}>
-          <RouterProvider router={conexus.router} />
+          <NoticeProvider>
+            <RouterProvider router={conexus.router} />
+          </NoticeProvider>
         </QueryClientProvider>
       </CSPProvider>
     </StrictMode>

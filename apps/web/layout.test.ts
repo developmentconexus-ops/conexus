@@ -192,12 +192,12 @@ test('Esc fecha a gaveta e devolve o foco a "Abrir navegação"', async () => {
 })
 
 for (const viewport of [DESKTOP, PHONE]) {
-  test(`não encontrado na moldura fica na área, sem rolagem, e o link-botão tem borda, numa tela de ${viewport.width}px`, async () => {
+  test(`não encontrado na moldura fica na área, sem rolagem, e o link-botão tem a borda de sombra, numa tela de ${viewport.width}px`, async () => {
     const page = await open(`/companies/${COMPANY_ID}/nada`, viewport, HOUSE)
     const back = page.getByRole('link', { name: 'Voltar ao início' })
-    // A link drawn as a button keeps its variant's border, not the base's transparent one.
-    const border = await back.evaluate((link) => getComputedStyle(link).borderTopColor)
-    assert.notEqual(border, 'rgba(0, 0, 0, 0)')
+    // A link drawn as a button keeps its variant's edge, which is a shadow (design V19).
+    const edge = await back.evaluate((link) => getComputedStyle(link).boxShadow)
+    assert.notEqual(edge, 'none')
     const { scroll, inner } = await page.evaluate(() => ({
       scroll: document.documentElement.scrollHeight,
       inner: window.innerHeight,

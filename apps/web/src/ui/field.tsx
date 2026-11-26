@@ -30,7 +30,7 @@ export function FieldError({ className, ...props }: ComponentProps<'p'>) {
     <p
       role="alert"
       data-slot="field-error"
-      className={cn('font-body text-label text-danger', className)}
+      className={cn('font-body text-label text-danger-text', className)}
       {...props}
     />
   )

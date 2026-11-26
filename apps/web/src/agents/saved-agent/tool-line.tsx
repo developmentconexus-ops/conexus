@@ -58,7 +58,7 @@ export function Line(props: {
           <span className="text-fact text-text-2">{props.detail}</span>
         )}
         {props.warning !== undefined && (
-          <span className="text-fact text-danger">{props.warning}</span>
+          <span className="text-fact text-danger-text">{props.warning}</span>
         )}
       </label>
       {props.newer !== undefined && (

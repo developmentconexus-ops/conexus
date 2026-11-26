@@ -91,7 +91,7 @@ function Actions(props: { busy: boolean; onTest: () => void; onUnlink: () => voi
           <MoreHorizontalIcon aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuItem className="text-danger" onClick={props.onUnlink}>
+          <DropdownMenuItem className="text-danger-text" onClick={props.onUnlink}>
             Desligar
           </DropdownMenuItem>
         </DropdownMenuContent>

@@ -70,6 +70,64 @@ test('as peças sob a política do Hub: nenhum erro nem violação, arrastar o d
   await page.close()
 })
 
+// The lit ipê and the one ink on it (design V5).
+const LIT = {
+  light: 'linear-gradient(135deg, rgb(245, 171, 14), rgb(255, 212, 69))',
+  dark: 'linear-gradient(135deg, rgb(240, 173, 39), rgb(255, 215, 102))',
+}
+const ON_LIT = 'rgb(31, 22, 0)'
+
+function within(page: Page, file: string, band: 'light' | 'dark'): Locator {
+  return page.locator(`[data-file="${file}"] [data-band=${band}]`)
+}
+
+function fillOf(locator: Locator): Promise<string[]> {
+  return locator.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return [style.backgroundImage, style.color]
+  })
+}
+
+test('o ipê acende só o que está ligado', async () => {
+  const page = await open('/pieces')
+  for (const band of ['light', 'dark'] as const) {
+    const lit = [LIT[band], ON_LIT]
+    const buttons = within(page, 'button.tsx', band).locator('[data-slot=button]')
+    assert.deepEqual(await fillOf(buttons.first()), lit, `${band}: the primary button`)
+    const switches = within(page, 'switch.tsx', band).getByRole('switch')
+    assert.deepEqual(await fillOf(switches.first()), lit, `${band}: the switch that is on`)
+    const boxes = within(page, 'checkbox.tsx', band).getByRole('checkbox')
+    assert.deepEqual(await fillOf(boxes.first()), lit, `${band}: the checkbox that is on`)
+    assert.equal(
+      await boxes
+        .first()
+        .locator('svg')
+        .evaluate((icon) => getComputedStyle(icon).color),
+      ON_LIT,
+      `${band}: the check`,
+    )
+    // What is off, a resting action and every pinned state of one (hover, focus, active) stay unlit.
+    for (const rest of [switches, boxes, buttons]) {
+      assert.ok((await rest.count()) > 1, `${band}: the showcase has no piece at rest`)
+      const fills = await rest.evaluateAll((all) =>
+        all.slice(1).map((element) => getComputedStyle(element).backgroundImage),
+      )
+      assert.deepEqual([...new Set(fills)], ['none'], `${band}: a piece at rest is lit`)
+    }
+  }
+  // A title is ink or secondary ink, never a hue: each of its channels is the same.
+  const titles = await page.locator('h1, h2, h3').evaluateAll((all) =>
+    all
+      .map((title) => {
+        const style = getComputedStyle(title)
+        return `${style.color} ${style.backgroundImage}`
+      })
+      .filter((painted) => !/^rgb\((\d+), \1, \1\) none$/.test(painted)),
+  )
+  assert.deepEqual(titles, [], 'a title takes the ipê')
+  await page.close()
+})
+
 for (const [reducedMotion, moves] of [
   ['no-preference', true],
   ['reduce', false],

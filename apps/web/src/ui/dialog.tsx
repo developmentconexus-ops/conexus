@@ -14,15 +14,15 @@ import { cn } from './cn.ts'
 // (design V31).
 const SHAPE = {
   // A short ask, such as a name: a card in the middle at every width, like AlertDialog.
-  form: 'top-1/2 left-1/2 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-column -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-object border border-line',
+  form: 'top-1/2 left-1/2 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-column -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-object border border-transparent',
   // Reading a long text: the whole screen under sm, a page-wide window above it.
-  page: 'inset-0 overflow-hidden sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-4rem)] sm:max-w-page sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-object sm:border sm:border-line',
+  page: 'inset-0 overflow-hidden sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-4rem)] sm:max-w-page sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-object sm:border sm:border-transparent',
   // Several fields and the help for them: the page's window, narrower, with the body scrolling
   // between a header and a footer that stay in view (see DialogBody and DialogFooter).
   fields:
-    'inset-0 overflow-hidden sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-4rem)] sm:max-w-wide sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-object sm:border sm:border-line',
+    'inset-0 overflow-hidden sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-4rem)] sm:max-w-wide sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-object sm:border sm:border-transparent',
   // One field with a sentence: the card of `form` under sm, the window of `fields` above it.
-  ask: 'top-1/2 left-1/2 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-object border border-line sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-4rem)] sm:max-w-wide',
+  ask: 'top-1/2 left-1/2 max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-object border border-transparent sm:max-h-[calc(100dvh-4rem)] sm:w-[calc(100%-4rem)] sm:max-w-wide',
 } as const
 
 export function Dialog(props: DialogPrimitive.Root.Props) {
@@ -55,7 +55,7 @@ export function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          'fixed z-50 flex flex-col gap-md bg-surface p-lg text-text transition-opacity duration-window data-ending-style:opacity-0 data-starting-style:opacity-0',
+          'fixed z-50 flex flex-col gap-md bg-raised p-lg text-text shadow-float transition-opacity duration-window data-ending-style:opacity-0 data-starting-style:opacity-0',
           SHAPE[size],
           className,
         )}

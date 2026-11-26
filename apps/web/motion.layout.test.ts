@@ -205,6 +205,9 @@ test('com reduzir, nada anima', async () => {
   await still('with a tooltip open')
   await piece(page, 'switch.tsx').getByRole('switch', { name: 'Avisos' }).first().click()
   await still('as a switch turns')
+  await piece(page, 'notice.tsx').getByRole('button', { name: 'Salvar padrão' }).click()
+  await page.locator('[data-slot=notice]').waitFor()
+  await still('with a notice shown')
   assert.deepEqual(page.problems, [])
   await page.close()
 

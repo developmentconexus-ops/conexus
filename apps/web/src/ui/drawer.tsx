@@ -33,7 +33,7 @@ export function DrawerContent({
         <DrawerPrimitive.Popup
           data-slot="drawer-content"
           className={cn(
-            'flex max-h-[85dvh] w-full flex-col gap-md rounded-t-card border-t border-line bg-surface px-lg pt-sm pb-[max(1rem,env(safe-area-inset-bottom))] text-text outline-none [transform:translateY(var(--drawer-swipe-movement-y))] transition-transform duration-move ease-enter data-ending-style:duration-window data-ending-style:ease-exit data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)] data-swiping:duration-0',
+            'flex max-h-[85dvh] w-full flex-col gap-md rounded-t-card border-t border-transparent bg-raised shadow-float px-lg pt-sm pb-[max(1rem,env(safe-area-inset-bottom))] text-text outline-none [transform:translateY(var(--drawer-swipe-movement-y))] transition-transform duration-move ease-enter data-ending-style:duration-window data-ending-style:ease-exit data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)] data-swiping:duration-0',
             className,
           )}
           {...props}
