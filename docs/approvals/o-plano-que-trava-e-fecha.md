@@ -14,3 +14,5 @@ Cartão curto de O plano que trava e fecha (`docs/steps/o-plano-que-trava-e-fech
 Linha de uso: você pede um app novo no Construir, o Conexus pesquisa, escreve o plano com os pedidos numerados e
 espera; antes de você aprovar, ele recusa mexer no app; depois, constrói fase a fase e só diz "pronto" com cada
 pedido conferido no plano.
+
+Emenda do cartão curto de O plano que trava e fecha (`docs/steps/o-plano-que-trava-e-fecha.md`) aprovada em 2026-11-26 (commit fc3f72acd699d703556bce8ffdfb3ff1ba76b805), o cartão que junta as dez rodadas do quadro de revisão do A3 contra as referências (o Construtor igual ao Mastra Code, a U8, as ferramentas e os ajudantes do Mastra Code, o modo de construir como padrão, o Code Mode e o juiz nos quatro agentes fora, a primeira linha do Claude Code, o idioma de quem escreve, o MEMORY.md como hoje) e a leitura de outro modelo, depois de trazer o main: "E eu aprovo tudo do prompt considere aprovado"
