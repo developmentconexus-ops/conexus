@@ -163,6 +163,7 @@ test('o papel de cada um: o texto fixo diz que o Builder faz apps e o Assistente
   }
   assert.match(app, /Criar app/)
   assert.match(change, /Mandar para Construir/)
+  assert.match(read('./skills/conexus/SKILL.md'), /Mandar para Construir/)
   assert.doesNotMatch(read('./skills/conexus/SKILL.md'), SHOUTED)
 })
 

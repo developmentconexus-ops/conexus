@@ -18,3 +18,11 @@ Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os
 - 2026-11-24, emergência na L20: o fundador aprovou o rótulo no PR do G5-harness ("A") e as três linhas só de caminho do G5-agents em live.md e security.md ("1. Aprovo"); nada mais em guias ou skills.
 
 Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-25 (commit f95e4cd6f4f959c6041a3a8170324cc7dcd94baa), a U9 com o `MachineSpec` como parâmetro do construtor e o `workspace` nativo da ficha, o critério 21 reescrito e o contrato da U10 com `TOOLS_OF`, a opção (b) da revisão do G6: "3. Okay, mas quero entender"
+
+Em 2026-11-25, vistas as capturas do uso na v0.24.130, a 1366 e a 390 px no tema claro, o fundador
+aprovou os textos novos das telas e, na pergunta sobre a linha de trabalho do agente salvo,
+trocou a marca do Conexus pelo ícone de agente: "aPROVO e b". A linha `mark` do `DESIGN.md`, cujo
+texto a U4 tinha aprovado, passa a dizer, no pull request
+https://github.com/developmentconexus-ops/conexus/pull/1416: "the Conexus mark on the rail, and beside "Conexus" at the head of an answer and on the working line in the platform's three conversations (Construir, Agentes, Conversas); nothing else. A company's agent signs with its own name and the agent icon in `text-2`, and its working line carries that icon; founder, 2026-11-25".
+
+Emenda do cartão curto de Uma sala e os nomes certos (`docs/steps/uma-sala-e-os-nomes-certos.md`) aprovada em 2026-11-25 (commit 20c184c0e13d9109cfa9b3ce0aab204d9253f4a6), a skill `conexus` troca "Mandar ao Builder" por "Mandar para Construir", terceira exceção ao pedido igual byte a byte do critério 14, a opção (a) do achado F3 da revisão do PR 1416: "A"
