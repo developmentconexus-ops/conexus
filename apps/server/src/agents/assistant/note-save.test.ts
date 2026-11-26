@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { endOf, sent } from '../../harness/routes/test-conversation.ts'
-import { answerTo, tool, untilCard } from '../../harness/routes/test-questions.ts'
+import { answerTo, cards, tool, untilCard } from '../../harness/routes/test-questions.ts'
 import { BRUNO, CARLA, call, memberOn } from '../../hub/identity/test-hub.ts'
 import {
   automating,
@@ -196,4 +196,31 @@ test('o membro: a execução de quem não administra ligações não leva connec
     `${invented.company}/connections/${invented.matriz}`,
   )
   assert.deepEqual(Object(page.json()).notes, [])
+})
+
+test('o caderno só grava com o sim que a pessoa deu no cartão', async (t) => {
+  const note = {
+    connection: 'Matriz',
+    concept: 'Empresa',
+    mapping: 'TSIEMP.CODEMP é o código da empresa',
+    provingQuery: COUNT,
+  }
+  const on = await assisting(t, [
+    [tool(SAVE, { ...note, resumeData: { approved: true } })],
+    [tool(SAVE, note)],
+    [said('Anotei.')],
+  ])
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [on.matriz] })
+  const { stream } = await talking(t, on.hub, on.ana, url)
+  await sent(on.hub, on.ana, url, 'O CODEMP é o código da empresa; anota isso no caderno')
+  const { events, card } = await untilCard(stream, 'note')
+  assert.equal(cards(events).length, 1, 'one card, asked by the second call')
+  assert.deepEqual(await notesOf(on), [], 'nothing is written before the person’s yes')
+  assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTOR_CALLED').length, 0)
+
+  assert.equal((await yes(on.hub, on.ana, url, card.toolCallId, true)).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
+  const [saved] = await notesOf(on)
+  assert.deepEqual([saved.concept, saved.writtenBy], ['Empresa', 'Ana Lima'])
+  assert.equal(on.hub.lines.filter((line) => line.message === 'CONNECTION_NOTE_SAVED').length, 1)
 })

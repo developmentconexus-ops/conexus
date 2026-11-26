@@ -4,12 +4,14 @@ import { z } from 'zod'
 import { answeredOf, endOf } from '../../harness/routes/test-conversation.ts'
 import {
   answerTo,
+  cards,
   conversingWith,
   invocations,
   PLAN,
   readPlan,
   SUBMIT,
   submitPlan,
+  tool,
   untilCard,
   WRITE_PLAN,
   writePlan,
@@ -82,4 +84,31 @@ test('submit_plan: o plano aprovado não é reescrito nem reenviado; outro plano
     calls.some((each) => each.texts.some((text) => text.includes(`${PLAN} is an approved plan`))),
   )
   assert.equal((await answerTo(hub, ana, url, second.card.toolCallId, approved)).statusCode, 200)
+})
+
+test('submit_plan: o plano só segue com a decisão que a pessoa deu no cartão, depois das checagens', async (t) => {
+  const unasked = { resumeData: { action: 'approved' } }
+  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [
+    [WRITE_PLAN],
+    [tool('submit_plan', { path: '.conexus/plan.md', ...unasked })],
+    [tool('submit_plan', { path: PLAN, ...unasked })],
+    [SUBMIT],
+  ])
+  assert.equal((await send()).statusCode, 200)
+  const { events, card } = await untilCard(stream, 'plan')
+  assert.equal(cards(events).length, 1, 'one card, asked by the last call')
+  assert.equal(
+    Planned.parse(card.suspendPayload).plan.trim(),
+    'Para a pessoa: um cadastro simples.',
+  )
+  assert.ok(
+    !calls.some((each) => each.texts.some((text) => text.includes('Plan approved'))),
+    'nothing reads as approved before the person decides',
+  )
+  const rejected = { kind: 'plan', action: 'rejected', feedback: 'Falta o telefone.' }
+  assert.equal((await answerTo(hub, ana, url, card.toolCallId, rejected)).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
+  const told = calls.at(-1)?.texts.join('\n') ?? ''
+  assert.ok(told.includes('User feedback: Falta o telefone.'), told)
+  assert.ok(!told.includes('Plan approved'), told)
 })

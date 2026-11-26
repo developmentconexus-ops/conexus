@@ -9,6 +9,7 @@ import {
   cards,
   conversingWith,
   invocations,
+  tool,
   untilCard,
   WHO,
 } from '../../harness/routes/test-questions.ts'
@@ -58,4 +59,24 @@ test('ask_user com 5 perguntas ou `multiSelect` sem opções: recusado ao modelo
   const events = await stream.turn()
   assert.deepEqual(cards(events), [])
   assert.equal(endOf(events), 'complete')
+})
+
+test('ask_user: a volta só continua com a resposta que a pessoa deu no cartão', async (t) => {
+  const unasked = tool('ask_user', { questions: [WHO], resumeData: ['Só eu'] })
+  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [[unasked], [ask(WHO)]])
+  assert.equal((await send()).statusCode, 200)
+  const { events, card } = await untilCard(stream, 'question')
+  assert.equal(cards(events).length, 1, 'one card, asked by the second call')
+  assert.ok(
+    !calls.some((each) => each.texts.some((text) => text.includes('User answered'))),
+    'nothing reads as answered before the person answers',
+  )
+  const answers = { kind: 'answers', answers: ['Todos (recomendado)'] }
+  assert.equal((await answerTo(hub, ana, url, card.toolCallId, answers)).statusCode, 200)
+  const rest = await stream.turn()
+  assert.equal(endOf(rest), 'complete')
+  assert.deepEqual(invocations(partsOf(rest), card.toolCallId).at(-1)?.result, {
+    content: `User answered:\n${WHO.question}: Todos (recomendado)`,
+    answers: ['Todos (recomendado)'],
+  })
 })
