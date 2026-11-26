@@ -51,9 +51,11 @@ montagem só, e o pedido de cada um ao modelo ficou igual, byte a byte. O desenh
 [boundaries](../../reference/boundaries.md). O cartão foi apagado com o fechamento; está no
 histórico do `main`.
 
-O cartão da etapa 2 do harness, "Uma sala e os nomes certos", é
-[uma-sala-e-os-nomes-certos.md](../uma-sala-e-os-nomes-certos.md), no trilho `harness`. A parte da
-tela anda com a aprovação da página, e a do servidor já não espera o `A1`, que fechou.
+A etapa 2 do harness, "Uma sala e os nomes certos", fechou: o uso na nuvem foi em 2026-11-25, na
+v0.24.130, e a linha de fechamento está no
+[arquivo de aprovação](../../approvals/uma-sala-e-os-nomes-certos.md). As quatro conversas usam uma
+sala só, e o desenho está na [explicação do harness](../../explanation/harness.md). O cartão está no
+histórico do `main`, no commit `20c184c0`, o último que o mudou.
 
 `A1`, "O Builder vê o que construiu", fechou em 2026-11-24: o fundador fez o roteiro na nuvem, na
 v0.24.122, e a linha de fechamento está no
