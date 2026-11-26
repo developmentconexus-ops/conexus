@@ -8,9 +8,10 @@ repositório (delivery L21), na pasta `redesenho-r1`; a sua tabela de referênci
 unidade de cada linha. Lido no `main` em `b2db2c3e` (v0.24.132): `@base-ui/react` 1.9.0,
 `tailwindcss` 4.3.3, `@tanstack/react-router` 1.170.44. Referências: Mastra playground-ui
 (`mastra@252efe1`), Dify dify-ui (`dify@fce5d30`), shadcn base (`ui@0e5b2e6`), Craft Agents
-(`craft-agents-oss@ce04aa3`). A vaga do trilho `desenho` ainda é do cartão
-[publicar pelo merge da nota](publicar-pelo-merge-da-nota.md): este cartão espera num pull request de
-rascunho até aquele fechar (delivery L5).
+(`craft-agents-oss@ce04aa3`). A vaga do trilho `desenho` ficou livre em 2026-11-26, quando o cartão
+"Publicar pelo merge da nota" passou à vaga do Assistente
+(https://github.com/developmentconexus-ops/conexus/pull/1469): este cartão não espera mais por ele
+(delivery L5).
 
 ## A página do fundador
 
@@ -332,6 +333,7 @@ Uma peça copiada do Base UI ou do shadcn escreve a duração por estilo inline:
 | `apps/web/motion-entries.layout.test.ts` | cria: os casos dos critérios 5 e 6 | `test:browser` |
 | `apps/web/motion-screen.layout.test.ts` | cria: os casos do critério 7 | `test:browser` |
 | `apps/web/motion-harness.ts` | cria: o que os três arquivos de movimento dividem | os três testes |
+| `apps/web/first-start.ts` | cria: o começo pela primeira entrada | `home.layout.test.ts`, `motion-screen.layout.test.ts` |
 
 ### Os contratos que a unidade cria
 
