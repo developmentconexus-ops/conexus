@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs'
 import type { AutomationId, ProjectId } from '@conexus/hub-api'
-import { CONSTRUTOR_TOOL, CONVERSATION_TOOL, TASK_TOOLS } from '@conexus/hub-api'
+import {
+  CONSTRUTOR_TOOL,
+  CONVERSATION_TOOL,
+  DEVELOPMENT_HOSTS,
+  MACHINE_TOOL,
+  TASK_TOOLS,
+} from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
@@ -10,26 +16,15 @@ import type {
   ConversationMachines,
   MachineTuning,
 } from '../../harness/machine/public.ts'
-import {
-  ALLOWED_HOSTS,
-  createConversationMachines,
-  machineMarksOf,
-  machinePart,
-} from '../../harness/machine/public.ts'
+import { createConversationMachines, machinePart } from '../../harness/machine/public.ts'
 import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import type { NetworkStore } from '../../harness/network/public.ts'
+import { askingByRole, requestNetworkTool } from '../../harness/network/public.ts'
 import { CONEXUS_PROMPT, TITLE } from '../../harness/prompt/public.ts'
-import type {
-  ConversationSpec,
-  Owner,
-  ReleaseScope,
-  RunMark,
-  RunScope,
-  Speakers,
-} from '../../harness/spec/public.ts'
+import type { ConversationSpec, Owner, ReleaseScope, Speakers } from '../../harness/spec/public.ts'
 import {
   ASK_USER_TOOL,
-  agentManagerAdmission,
   blockOf,
   CONVERSATION_MODE,
   conversationMemory,
@@ -38,7 +33,6 @@ import {
   oncePerRun,
   principalOf,
   releaseByMarks,
-  runResolver,
   sessionModel,
   takeOfScope,
   toolsOf,
@@ -63,6 +57,8 @@ import type { AgentsAlive, InProject } from '../saved-agent/public.ts'
 import { databaseScopeOf } from '../saved-agent/public.ts'
 import { testDraft } from './draft-trial.ts'
 import { registerConstrutorRoutes } from './routes.ts'
+import type { RunOf } from './run.ts'
+import { construtorAdmission, construtorRuns, inProjectOf, machineMarks } from './run.ts'
 import { construtorTools } from './tools.ts'
 
 const turnKey = turnKeyOn('conexus-construtor-turn-key')
@@ -72,8 +68,8 @@ const MANUAL = readFileSync(new URL('./prompt/construtor.md', import.meta.url), 
 /**
  * The closed set the mode offers the model (criterion 22): the layer that enforces it. It holds of
  * the controller's own tools `ask_user` (a real question to the person, as a card) and the task
- * list, which the person follows the work by; none of these publishes or writes in a company's
- * system.
+ * list, which the person follows the work by, and the request for a domain; none of these
+ * publishes or writes in a company's system.
  */
 const AVAILABLE_TOOLS: readonly string[] = [
   ...TOOLS_OF.construtor,
@@ -81,6 +77,7 @@ const AVAILABLE_TOOLS: readonly string[] = [
   CONVERSATION_TOOL.webSearch,
   ASK_USER_TOOL,
   ...Object.values(CONSTRUTOR_TOOL),
+  MACHINE_TOOL.requestNetwork,
   ...TASK_TOOLS,
 ]
 
@@ -109,66 +106,8 @@ type Deps = {
   /** The machine's provider (the Assistant's kit and API) and the tests' folder and toolchain; E2B's when absent. */
   machine: ConversationMachine
   machineTuning?: MachineTuning
+  network: NetworkStore
   log: FailureLog
-}
-
-type RunOf = (requestContext: RequestContext) => Promise<RunScope | undefined>
-
-/** Whether the Projeto a thread is marked with is a live one of the owner's company. */
-async function liveIn(deps: Deps, owner: Owner, projectId: ProjectId): Promise<boolean> {
-  const live = await deps.database.read({ kind: 'COMPANY', ...owner }, (tx) =>
-    deps.liveProjectOf(tx, { companyId: owner.companyId, projectId }),
-  )
-  return live !== undefined
-}
-
-/** The guard's admission: the person builds agents now, in a Projeto of the company (criterion 21). */
-function construtorAdmission(deps: Deps) {
-  const manager = agentManagerAdmission({ database: deps.database, identity: deps.identity })
-  return async (input: Parameters<typeof manager>[0] & { mark: RunMark }): Promise<void> => {
-    await manager(input)
-    const owner = { companyId: input.companyId, personId: input.person.id }
-    const { projectId } = input.mark
-    if (projectId === undefined || !(await liveIn(deps, owner, projectId))) {
-      throw new Failure('CONVERSATION_NOT_FOUND')
-    }
-  }
-}
-
-/**
- * The Construtor's run: the Hub keeps no row of it, so its Projeto is its thread's mark, checked
- * against the company's live Projetos (Factory `tools/scope.ts:107`); every connection it received.
- */
-function construtorRuns(deps: Deps, memory: Pick<Memory, 'getThreadById'>): RunOf {
-  return runResolver('construtor', {
-    memory,
-    stored: async ({ owner, mark }) => {
-      const { projectId } = mark
-      if (projectId === undefined || !(await liveIn(deps, owner, projectId))) return undefined
-      return {
-        place: { kind: 'PROJECT', projectId },
-        choice: { kind: 'ANY' },
-        ceiling: { kind: 'PERSON' },
-        attended: true,
-      }
-    },
-  })
-}
-
-/** The person and the Projeto of the run, as the Construtor's tools act on them. */
-function inProjectOf(run: RunScope): InProject | undefined {
-  if (run.place.kind !== 'PROJECT') return undefined
-  return { ...run.owner, projectId: run.place.projectId }
-}
-
-/** The marks of the conversation's machine: its company and its Projeto (security S36). */
-function machineMarks(runOf: RunOf) {
-  return async (requestContext: RequestContext) => {
-    const run = await runOf(requestContext)
-    const scope = run === undefined ? undefined : inProjectOf(run)
-    if (scope === undefined) return undefined
-    return machineMarksOf({ companyId: scope.companyId, projectId: scope.projectId })
-  }
 }
 
 /** What the Construtor's tools read of the Projeto: its name, what it received in the run's view and its app's tables. */
@@ -286,7 +225,17 @@ function construtorSpec(
     },
     threads: parts.memory,
     mode: { id: CONVERSATION_MODE, availableTools: AVAILABLE_TOOLS },
-    own: { fixed: { [ASK_USER_TOOL]: createAskUserTool() } },
+    own: {
+      fixed: {
+        [ASK_USER_TOOL]: createAskUserTool(),
+        [MACHINE_TOOL.requestNetwork]: requestNetworkTool({
+          store: deps.network,
+          machines: parts.machines,
+          asking: async (requestContext) =>
+            askingByRole(deps, (await runScope(requestContext)).run),
+        }),
+      },
+    },
   }
 }
 
@@ -295,7 +244,8 @@ function construtorSpec(
  * tools, `yolo` (the draft without asking; nothing publishes). Its conversations are threads under
  * `construtor:company:<c>:person:<p>` marked with the Projeto; the Hub keeps no table of them. Its
  * turn takes the person's accounts as the Assistant's, with no Projeto's run. Its machine (step 24.4) is
- * the Hub's own, for the tool in code it writes and tests: the model gets none of the machine's tools.
+ * the Hub's own, for the tool in code it writes and tests: the model gets none of the machine's tools
+ * but the request for a domain.
  */
 export function createConstrutor(deps: Deps) {
   const { storage, queue, log } = deps
@@ -305,11 +255,15 @@ export function createConstrutor(deps: Deps) {
   })
   const scopeOf = construtorRuns(deps, memory)
   const machines = createConversationMachines(
-    { hosts: ALLOWED_HOSTS, otherTemplate: 'replace', marks: machineMarks(scopeOf) },
+    {
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: deps.network.opened },
+      otherTemplate: 'replace',
+      marks: machineMarks(scopeOf),
+    },
     { ...deps.machine, log },
     deps.machineTuning,
   )
-  const { each, ...wired } = machinePart(machines)
+  const { each, ...wired } = machinePart(machines, deps.network)
   const { controller } = mountAgent(construtorSpec(deps, { memory, scopeOf, machines }), {
     queue,
     storage,

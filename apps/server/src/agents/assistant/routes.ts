@@ -23,8 +23,9 @@ import type { StorageThreadType } from '@mastra/core/memory'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { ConversationMachines } from '../../harness/machine/public.ts'
-import { registerFile } from '../../harness/machine/public.ts'
+import { deletionOf, registerFile } from '../../harness/machine/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import type { NetworkStore } from '../../harness/network/public.ts'
 import type { Owner } from '../../harness/spec/public.ts'
 import { attemptIdOf, ownThread, RUN_MARKS, releaseThreads } from '../../harness/spec/public.ts'
 import type { CompanyProjects } from '../../harness/tools/public.ts'
@@ -66,6 +67,7 @@ type Deps = {
   memory: ReturnType<typeof assistantMemory>
   company: CompanyMemory
   machines: ConversationMachines
+  network: Pick<NetworkStore, 'forget'>
   chosen: ChosenConnections
   log: FailureLog
 }
@@ -220,10 +222,11 @@ function registerChanges(app: FastifyInstance, deps: Deps): void {
     const { conversationId } = input.params
     await admitted(deps, owner, { kind: 'COMPANY' }, 'askAssistant')
     await ownThread(deps.memory, 'assistant', owner, conversationId)
-    // The session first, so its answer stops; then its machines; the thread last, so a failure
-    // halfway leaves what the next delete finds again. The row of its choice stays until
+    // The session first, so its answer stops; then its domains and its machines; the thread last, so
+    // a failure halfway leaves what the next delete finds again. The row of its choice stays until
     // its Projeto, person or company leaves: the Hub holds no `DELETE` on it (data D11).
-    await releaseThreads(deps, [conversationId], (id) => deps.machines.kill(id))
+    const forget = deletionOf(deps.machines, deps.network, owner.companyId)
+    await releaseThreads(deps, [conversationId], forget)
     deps.log.info(
       { companyId: owner.companyId, traceId: input.traceId, conversationId },
       'ASSISTANT_CONVERSATION_DELETED',

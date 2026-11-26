@@ -4,7 +4,12 @@ import { dirname, join } from 'node:path'
 import { VERSION_FOLDER } from '@conexus/app/check'
 import type { AppSessionToken, CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { AppSessionToken as AppSessionTokenSchema } from '@conexus/hub-api'
-import type { BrowserReport, ConferPlatformFailed, Sha } from '../../../harness/machine/public.ts'
+import type {
+  BrowserReport,
+  ConferPlatformFailed,
+  MachinesDeps,
+  Sha,
+} from '../../../harness/machine/public.ts'
 import { createMachines } from '../../../harness/machine/public.ts'
 import { testConversationMachines } from '../../../harness/machine/test-conversation-machines.ts'
 import {
@@ -188,9 +193,10 @@ export function testBuilderPorts(
     const real = openRepository({ root: config.gitRoot, ...ids, log: silent })
     return restoreGuarded(withKnobs(real, knobs), bucket.copy, ids)
   }
-  function machinesOf() {
+  function machinesOf(opened: MachinesDeps['opened']) {
     const machines = createMachines({
       log: silent,
+      opened,
       kit: localKit(folder, control),
       api: {
         kill: async (conversationId) => {

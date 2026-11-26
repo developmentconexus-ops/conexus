@@ -28,12 +28,6 @@ export const MARK = {
   template: 'conexus_template',
 } as const
 
-/** The hosts a machine may reach: `npm install` needs the registry and nothing else (decision 0051). */
-export const ALLOWED_HOSTS = ['registry.npmjs.org']
-
-/** The hosts a conversation's machine may reach: the package registries, for pip and npm (decision 0059). */
-export const PACKAGE_HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
-
 /**
  * The most bytes the Hub takes from the machine in one read, by the file tools or as the turn's
  * bundle: a version's cap, for nothing larger can be saved (code C59).
@@ -87,10 +81,10 @@ export type Kit = {
   /** The provider's own file API is what the file tools use: E2B's sandbox always has one. */
   sandbox: WorkspaceSandbox & { readonly filesystem: WorkspaceFilesystem }
   transport: Transport
-  /** Opens a running machine to the allowed hosts and `extra`, and nothing else: the list is replaced, not added to. */
+  /** Replaces a running machine's list with the hosts of its creation and `extra`, and nothing else. */
   openNetwork(extra: readonly string[]): Promise<void>
-  /** Narrows a running machine to the allowed hosts again. */
-  closeNetwork(): Promise<void>
+  /** Lets a running machine reach any address, until the next `openNetwork`. */
+  openAll(): Promise<void>
 }
 
 type KitOptions = {
@@ -98,7 +92,6 @@ type KitOptions = {
   id: string
   /** The provider's id of a machine found before: the start reattaches it and never makes another. */
   foundAs?: string
-  /** The hosts the machine may reach, and nothing else (decision 0051): at its start and in `closeNetwork`. */
   allowOut: readonly string[]
   metadata: Record<string, string>
   onStart: SandboxStartHook
@@ -108,7 +101,7 @@ type KitOptions = {
 
 /**
  * The machine as the model is told of it (card of step 14, criterion 32): what the template holds
- * (`infra/e2b/template.ts`), the closed network (decision 0051) and the folder its commands start
+ * (`infra/e2b/template.ts`), the network its list holds and the folder its commands start
  * in. The shell is not held in the folder: the machine is the boundary, and holds nothing of
  * Conexus but its check (card, U4). `conflicts` are what the machine's start found of work not
  * yet saved meeting a newer saved version, for the Builder to resolve as ordinary work.
@@ -116,7 +109,9 @@ type KitOptions = {
 export function machineInstructions(workdir: string, conflicts: Conflicts = NO_CONFLICTS): string {
   const lines = [
     `The conversation's own Linux machine, with Node 24, npm and git. Commands start in ${workdir},`,
-    `the app folder: work there and nowhere else. Its network reaches only ${ALLOWED_HOSTS.join(', ')}.`,
+    'the app folder: work there and nowhere else. Its network reaches only the development list',
+    '(the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company',
+    'or this conversation allowed: ask for another with request_network_access.',
     'Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.',
   ]
   const { markers, deleted, replaced, tooManyFiles, tooLarge } = conflicts

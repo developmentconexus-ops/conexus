@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { DEVELOPMENT_HOSTS, MACHINE_TOOL } from '@conexus/hub-api'
 import { INSTALLATION } from '../../harness/machine/test-machine.ts'
 import {
   endOf,
@@ -10,18 +11,19 @@ import {
   messagesOf,
   PARTIAL,
   sent,
+  sessionUrl,
   streamOf,
   title,
 } from '../../harness/routes/test-conversation.ts'
 import { tool } from '../../harness/routes/test-questions.ts'
-import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
+import { BRUNO, CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { said, talking } from '../assistant/test-assistant.ts'
 import { agentsOn, drafted, madeAgent, publishedAgent, talkedTo } from './test-agents.ts'
 
 const COMMAND = 'mastra_workspace_execute_command'
 const WRITE = 'mastra_workspace_write_file'
 const SHOW = 'show_file'
-const HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
 
 function idOf(url: string) {
   return url.slice(url.lastIndexOf('/') + 1)
@@ -67,8 +69,10 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
   )
   assert.ok(control.names.every((name) => name === `conexus-${INSTALLATION}-${idOf(url)}`))
   assert.ok(control.names.length > 0)
-  assert.deepEqual(control.allowOut.at(0), HOSTS)
-  assert.ok(control.allowOut.every((each) => JSON.stringify(each) === JSON.stringify(HOSTS)))
+  assert.deepEqual(control.allowOut.at(0), DEVELOPMENT_HOSTS)
+  assert.ok(
+    control.allowOut.every((each) => JSON.stringify(each) === JSON.stringify(DEVELOPMENT_HOSTS)),
+  )
   const marks = control.marks[0]
   assert.equal(marks?.conexus_company, on.companyId)
   assert.equal(marks?.conexus_project, on.projectId)
@@ -86,6 +90,86 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
     media: 'text/markdown',
     content: '# Vendas',
   })
+})
+
+test('a rede: a máquina do agente salvo parte com os domínios da empresa, e remover um pela rota a fecha na hora (8, 10)', async (t) => {
+  const on = await agentsOn(t, [[tool(COMMAND, { command: 'echo oi' })], [said('Pronto.')]])
+  const domains = `/api/companies/${on.companyId}/network/domains`
+  const asked = { domain: 'api.example.com', reason: 'Ler o catálogo de preços' }
+  const added = await post(on.hub, on.ana, domains, asked)
+  assert.equal(added.statusCode, 200, added.body)
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda.',
+    machine: true,
+  })
+  const url = await talkedTo(on.hub, on.ana, on.agents, agent.id)
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Rode')), 'complete')
+  const { control } = on.hub.conversationMachines
+  function sent() {
+    return control.networkApplied.map((each) => each.hosts)
+  }
+  assert.deepEqual(sent(), [[...DEVELOPMENT_HOSTS, 'api.example.com']])
+  const one = Object(added.json()).id
+  const removed = await call(on.hub, on.ana, 'DELETE', `${domains}/${one}`)
+  assert.equal(removed.statusCode, 204, removed.body)
+  await until(() => sent().length === 2, 'the running machine took the shorter list')
+  assert.deepEqual(sent().at(-1), DEVELOPMENT_HOSTS)
+})
+
+test('a ferramenta vem com o Computador: request_network_access suspende com os alcances do papel de quem fala, só quem conversa responde o cartão, o agente sem Computador não a recebe, e o agente apagado leva a lista das conversas dele (14, 16, 17, 18)', async (t) => {
+  const asked = tool(MACHINE_TOOL.requestNetwork, {
+    domains: ['loja.example.com'],
+    reason: 'ler os preços',
+  })
+  const on = await agentsOn(t, [[asked], [said('Abriu.')], [said('Oi.')]])
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda.',
+    machine: true,
+  })
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'developer')
+  const url = await talkedTo(on.hub, carla, on.agents, agent.id)
+  const { say, stream } = await talking(t, on.hub, carla, url)
+  const card = (await say('Leia a loja')).flatMap((event) =>
+    event.type === 'tool_suspended' ? [event] : [],
+  )[0]
+  assert.equal(card?.toolName, MACHINE_TOOL.requestNetwork)
+  assert.deepEqual(card.suspendPayload, {
+    domains: ['loja.example.com'],
+    reason: 'ler os preços',
+    scopes: ['CONVERSATION'],
+  })
+  const answer = { toolCallId: card.toolCallId, resumeData: { scope: 'CONVERSATION' } }
+  const route = `${sessionUrl(url)}/tool-suspension`
+  const stranger = await post(on.hub, on.ana, route, answer)
+  assert.equal(stranger.statusCode, 404, stranger.body)
+  const answered = await post(on.hub, carla, route, answer)
+  assert.equal(answered.statusCode, 200, answered.body)
+  assert.equal(endOf(await stream.turn()), 'complete')
+  function allowed() {
+    return on.hub.test.asOwner(
+      'select conversation_id, person_id, domain from builder.conversation_network_domain',
+    )
+  }
+  assert.deepEqual(await allowed(), [
+    { conversation_id: idOf(url), person_id: carla.id, domain: 'loja.example.com' },
+  ])
+
+  const plain = await publishedAgent(on.hub, on.ana, on.agents, {
+    name: 'Sem computador',
+    instructions: 'Responda.',
+  })
+  const other = await talkedTo(on.hub, on.ana, on.agents, plain.id)
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, other)).say('Oi')), 'complete')
+  assert.ok(on.calls[0]?.tools.includes(MACHINE_TOOL.requestNetwork))
+  assert.equal(on.calls.at(-1)?.tools.includes(MACHINE_TOOL.requestNetwork), false)
+
+  const gone = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${agent.id}`)
+  assert.equal(gone.statusCode, 204, gone.body)
+  await until(
+    async () => (await allowed()).length === 0,
+    'the list of the deleted agent’s conversation left',
+  )
 })
 
 test('o Computador: um agente sem a chave não recebe ferramenta de máquina nem show_file, e nenhuma máquina liga; listar os agentes não liga nada (15)', async (t) => {

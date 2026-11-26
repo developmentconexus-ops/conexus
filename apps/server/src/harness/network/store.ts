@@ -24,7 +24,8 @@ const REFUSED_AS = {
   openAllNetwork: 'a internet toda da empresa',
 } as const
 
-type NetworkStore = {
+export type NetworkStore = {
+  /** What the conversation's machine reaches beyond the development list, or the whole internet. */
   opened(where: { companyId: CompanyId; conversationId: ConversationId }): Promise<NetworkOpened>
   /**
    * Opens what a person allowed on the card; refused unless their role holds the scope's action now:

@@ -58,6 +58,8 @@ export function createBuilderConversations(deps: {
   data: BuilderData
   companyData: Parameters<typeof createBuilder>[0]['companyData']
   access: Parameters<typeof createBuilder>[0]['access']
+  network: Parameters<typeof createBuilder>[0]['network']
+  speakersOf: Parameters<typeof createBuilder>[0]['speakersOf']
   log: FailureLog
 }) {
   const { database, identity, queue } = deps
@@ -67,6 +69,7 @@ export function createBuilderConversations(deps: {
     ...{ storage: deps.storage, queue, runs: deps.runs, log: deps.log },
     ...{ index: store, connectors: deps.connectors, data: deps.data },
     ...{ companyData: deps.companyData, access: deps.access, refusals },
+    ...{ network: deps.network, identity, speakersOf: deps.speakersOf },
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
         return (await deps.projects.liveProjectOf(tx, ids))?.name
