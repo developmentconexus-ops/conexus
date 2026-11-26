@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { listAssistantConnections } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import { createHarness, ok, PHONE, SMALL_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
@@ -139,6 +140,7 @@ test('a 390, o menu da pasta do Início com um Projeto de nome comprido cabe na 
   const folder = page.getByRole('listbox', { name: 'Projeto da conversa' })
   const option = folder.getByRole('option').nth(1)
   await option.waitFor()
+  await atRest(page)
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), PHONE.width)
   const menu = await folder.boundingBox()
   assert.ok(menu && menu.x >= 0 && menu.x + menu.width <= PHONE.width, 'the menu left the screen')

@@ -283,7 +283,7 @@ test('com 11 ferramentas, as linhas do "+" mantêm 32 px e a lista rola (U5, cri
   const rows = await dialog
     .getByRole('switch')
     .evaluateAll((switches) =>
-      switches.map((one) => (one.closest('li') ?? one).getBoundingClientRect().height),
+      switches.map((one) => Number.parseFloat(getComputedStyle(one.closest('li') ?? one).height)),
     )
   assert.equal(rows.length, 11)
   for (const height of rows) assert.ok(height >= 32, `a row shrank to ${height}px`)
@@ -303,7 +303,7 @@ async function plusRows(viewport: typeof DESKTOP, touch: boolean) {
   if (touch) await touching(page)
   const rows = await dialog
     .getByRole('button')
-    .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))
+    .evaluateAll((all) => all.map((one) => Number.parseFloat(getComputedStyle(one).height)))
   await page.close()
   return rows
 }

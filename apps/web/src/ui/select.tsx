@@ -73,7 +73,7 @@ export function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            'relative isolate max-h-(--available-height) w-(--anchor-width) origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-object border border-line bg-surface text-text outline-none',
+            'popup-motion relative isolate max-h-(--available-height) w-(--anchor-width) overflow-x-hidden overflow-y-auto rounded-object border border-line bg-surface text-text outline-none',
             className,
           )}
           {...props}

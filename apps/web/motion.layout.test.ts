@@ -1,25 +1,15 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
-import { createHarness, DESKTOP } from './layout-harness.ts'
+import { atHome, curveOf, harness, piece, showcase, slowed } from './motion-harness.ts'
 
 // Motion in a real browser (design V26, docs/reference/movimento.md): which properties of a piece
 // move, for how long and on which curve; jsdom computes no transition.
-const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
 after(async () => {
   await harness.stop()
   assert.deepEqual(harness.unanswered, [], 'the page asked the Hub for something no reply covers')
 })
-
-function showcase() {
-  return harness.open('/pieces', { viewport: DESKTOP, replies: {} })
-}
-
-/** One piece's block on the page, in its light band. */
-function piece(page: Page, file: string): Locator {
-  return page.locator(`[data-file="${file}"] [data-band=light]`)
-}
 
 type Move = { property: string; duration: string; easing: string }
 
@@ -39,18 +29,6 @@ function movesOf(locator: Locator): Promise<Move[]> {
       easing: easings[at % easings.length] ?? '',
     }))
   })
-}
-
-/** The curve a token paints, as the browser writes it. */
-function curveOf(page: Page, token: string): Promise<string> {
-  return page.evaluate((name) => {
-    const probe = document.createElement('div')
-    probe.style.transitionTimingFunction = `var(${name})`
-    document.body.append(probe)
-    const curve = getComputedStyle(probe).transitionTimingFunction
-    probe.remove()
-    return curve
-  }, token)
 }
 
 /** The transitions running on the element now: each property with its milliseconds. */
@@ -229,4 +207,17 @@ test('com reduzir, nada anima', async () => {
   await still('as a switch turns')
   assert.deepEqual(page.problems, [])
   await page.close()
+
+  const home = await atHome()
+  await home.page.emulateMedia({ reducedMotion: 'reduce' })
+  await slowed(home.page)
+  await home.integrations.click()
+  await home.page.getByText('Nenhuma integração ligada ainda.').waitFor()
+  assert.equal(
+    await home.page.evaluate(() => document.getAnimations().length),
+    0,
+    'something animates as the screen changes',
+  )
+  assert.deepEqual(home.page.problems, [])
+  await home.page.close()
 })

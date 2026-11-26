@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import { createHarness, DESKTOP, PHONE, reachOf, touching } from './layout-harness.ts'
 import { STATES } from './sweep-states.ts'
 
@@ -176,6 +177,7 @@ test('a medida: itens de menu e linhas da barra de 32 px, campos de 36 px, a 136
   assert.ok(rows.includes(32), 'no sidebar row is 32 px')
   assert.ok(!rows.includes(34), 'a sidebar row is still 34 px')
   await page.getByRole('button', { name: /^Conta de / }).click()
+  await atRest(page)
   const item = await page.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
   assert.equal(item?.height, 32, 'a menu item is not 32 px')
   await page.close()
@@ -213,6 +215,7 @@ test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)',
   const page = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
   await home.settle(page)
   await page.getByRole('button', { name: /^Conta de / }).click()
+  await atRest(page)
   await touching(page)
   const rows = await page
     .locator('[data-slot=sidebar-menu-item] > a')
@@ -232,6 +235,7 @@ test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)',
   assert.ok(fine.includes(32), 'no sidebar row is 32 px with a mouse')
   assert.ok(!fine.includes(44), 'a sidebar row is 44 px with a mouse')
   await mouse.getByRole('button', { name: /^Conta de / }).click()
+  await atRest(mouse)
   const fineItem = await mouse.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
   assert.equal(fineItem?.height, 32, 'a menu item is not 32 px with a mouse')
   await mouse.close()

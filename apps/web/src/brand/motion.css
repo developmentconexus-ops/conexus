@@ -127,3 +127,35 @@
     var(--default-transition-timing-function), var(--default-transition-timing-function),
     var(--default-transition-timing-function), var(--ease-spring-press);
 }
+
+/* A popup grows out of its trigger and leaves faster than it came (design V26). */
+@utility popup-motion {
+  transform-origin: var(--transform-origin);
+  transition-property: scale, opacity;
+  transition-duration: var(--duration-menu);
+  transition-timing-function: var(--ease-enter);
+  &[data-starting-style],
+  &[data-ending-style] {
+    scale: 0.96;
+    opacity: 0;
+  }
+  &[data-ending-style] {
+    transition-duration: var(--duration-row);
+  }
+}
+
+/* A change of screen fades the sheet and nothing else: the rail and the list stay as they are. */
+[data-slot="sidebar-inset"] {
+  view-transition-name: sheet;
+}
+/* `*`, since Biome takes `sheet` in the parentheses for an element; the root opts out below. */
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: var(--duration-page);
+}
+/* No picture travels or resizes: outside the sheet the screen changes at once. */
+::view-transition-group(*),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
