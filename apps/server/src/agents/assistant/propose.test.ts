@@ -92,7 +92,7 @@ test('a mudança no Projeto: o propose_app_change guarda o resumo e o briefing c
   const on = await assisting(t, [
     [write('mudanca.md', BRIEFING)],
     [tool(CHANGE, { summary: 'Mostrar a cobertura em dias.', briefing: 'mudanca.md' })],
-    [said('Toque Mandar ao Construtor de apps.')],
+    [said('Toque Mandar para Construir.')],
   ])
   const url = await created(on.hub, on.ana, on.assistant, {
     projectId: on.projectId,
@@ -107,7 +107,7 @@ test('a mudança no Projeto: o propose_app_change guarda o resumo e o briefing c
       briefing: { name: 'mudanca.md', content: BRIEFING },
     },
   ])
-  assert.match(on.calls.at(2)?.texts.join('\n') ?? '', /Mandar ao Construtor de apps/)
+  assert.match(on.calls.at(2)?.texts.join('\n') ?? '', /Mandar para Construir/)
 })
 
 test('a rodada de automação: numa conversa que a rodada abriu, no Início ou no Projeto, o modelo não recebe propose_app nem propose_app_change (4)', {
