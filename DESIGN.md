@@ -434,7 +434,7 @@ inside the frame takes its dark value in both themes.
 | Sheet | `surface` | the work sheet |
 | Tile | `surface-3` | recessed areas, hover of rows and tiles, the person's bubble, table header |
 | What floats | `raised` | button, field, card, badge, the composer, menus, popovers, dialogs and drawers |
-| Stronger fill | `surface-4` | an open trigger, the switch's off track, the checkbox's off box, a meter's track, a disabled primary button |
+| Stronger fill | `surface-4` | an open trigger, the switch's off track, the checkbox's off box, a meter's track, a skeleton, a disabled primary button |
 | Hairline | `line` | a rule between two rows or blocks of the same piece; never the edge of a white piece (V19) |
 | Hairline strong | `line-strong` | control boundaries that must be seen, the scrollbar thumb |
 | Ink | `text`, `ink` | text; the tooltip's fill |
@@ -575,8 +575,8 @@ What moves, and how:
   fades only the sheet; the sidebar does not blink. With a drawer or a window open the screen changes
   at once, and they leave in their own time. A page's load, a change of the address's search alone
   (the sidebar's search and tab) and a change that arrives during a fade apply at once too.
-- **Toast** (none exists yet), only for what went well: one line, inverted; it enters, leaves and
-  goes away by itself.
+- **Toast**, only for what went well: it enters by a short rise and opacity, leaves by opacity and
+  goes away by itself; its height never animates, so the ones under it take its place at once.
 - **AI pieces and tables** move only under the mouse. **Skeleton** keeps its pulse.
 - **At once**: the sidebar collapsing, a folding panel (tool line, reasoning, group), a new message
   and arriving text (only the scroll to the end is smooth), a row entering or leaving a list, a page
@@ -709,7 +709,8 @@ which shadcn file it was copied from; the front matter holds their values. Their
 - **Empty, loading, error.** Empty is one sentence row or a centred column of 448 at most; loading is
   skeletons with a pulse (none under reduced motion) and `role="status"`; an error is danger text
   with `role="alert"` and an action.
-- **Notice.** A `role="status"` line in the body colour.
+- **Notice.** A `role="status"` line in the body colour, in the page's flow; the toast is its form
+  for what was done away from the eye.
 - **Separator.** A 1px `line` rule between two blocks of a column; a region's own edge stays a
   border of that region.
 - **Spinner.** The turning `Loader2` icon, 16px, a `status` with a name; it stops under reduced
@@ -731,7 +732,12 @@ which shadcn file it was copied from; the front matter holds their values. Their
   animates while work runs (V26).
 - **Invitation e-mail.** React Email at send time with inline values and a dark media query, the
   `invitation-email` width, system fonts, no remote resource (V3).
-- **Toast.** None exists; the Base UI Toast is the base when a card asks for one.
+- **Toast.** `ui/notice.tsx`, over the Base UI Toast: `useNotice()` says what the Hub confirmed, in
+  one line and at most a second under it. Inverted against the theme (`notice`, `on-notice`),
+  `rounded.object`, shadow `float`, a disc in the state's colour, at the foot of the screen (its
+  right corner from `sm`). It leaves by itself in 5s, by its close button or by Esc, never takes the
+  focus (F6 goes to it) and at most three show. An error never goes to a toast: it stays
+  beside what failed (V26). First use: "Padrão salvo", in Configurações › Modelos.
 
 The signature is the lit ipê on the graphite frame: the one fill with colour marks what is on, and
 in the sidebar the current place is a lighter tile whose icon takes the ipê, with

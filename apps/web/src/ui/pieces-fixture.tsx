@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router'
 import { createRoot } from 'react-dom/client'
 import { ConexusMark } from '../brand/mark.tsx'
+import { NoticeProvider } from './notice.tsx'
 import type { ShowcaseEntry, ShowcaseGroup } from './showcase/types.ts'
 import { SHOWCASE } from './showcase.ts'
 import { TooltipProvider } from './tooltip.tsx'
@@ -90,7 +91,9 @@ const root = document.getElementById('root')
 if (root !== null) {
   createRoot(root).render(
     <CSPProvider disableStyleElements>
-      <RouterProvider router={router} />
+      <NoticeProvider>
+        <RouterProvider router={router} />
+      </NoticeProvider>
     </CSPProvider>,
   )
 }
