@@ -17,8 +17,8 @@ rascunho até a vez dele (delivery L5), e a trilha ainda põe a R3 e o teste com
 ## A página do fundador
 
 **No fim desta etapa** você acha qualquer área do Hub pelo nome, entra num projeto e vê as seções dele,
-volta com um clique, e chega em qualquer página pelo Ctrl+K. A coluna de conversas, que hoje aparece ao
-lado de quase toda área, some: a barra é uma só.
+volta com um clique, e chega pelo Ctrl+K em qualquer área, seção das Configurações, projeto ou conversa
+recente. A coluna de conversas, que hoje aparece ao lado de quase toda área, some: a barra é uma só.
 
 **O roteiro de uso.** No Hub da nuvem, sem terminal.
 
@@ -42,16 +42,16 @@ lado de quase toda área, some: a barra é uma só.
    abre a troca.
 
 **O que você faz, e quando.** Antes: nada a fornecer. No começo: responde as cinco decisões abaixo e
-aprova esta página; o pull request de método da decisão D entra em `main` antes da primeira unidade.
-No fim: faz o roteiro, diz o que viu e aprova os textos ("Buscar ou ir para…", "Ver todas as conversas",
+aprova esta página; a mudança dos guias (decisão D) entra antes da primeira unidade. Com a aprovação, a
+página da trilha muda em duas frases: a da R2 perde "num agente ou" (decisão A) e a da R6 perde "a casa
+do pedido (Início) vai com R2". No fim: faz o roteiro, diz o que viu e aprova os textos ("Buscar ou ir para…", "Ver todas as conversas",
 "← Todos os projetos", "Nada encontrado.", "Recolher a barra lateral").
 
 **A visão.** "Na tela elas se chamam Dados e contexto, Agentes e Apps": são os três títulos da barra.
 "Cada pessoa vê o que usa" e "Uma ação fora do papel fica à vista, desligada, e diz quem pode": uma área
-que o papel não usa não aparece na barra nem na busca; a regra tem um dono só. "Tudo que nasce numa
-conversa ganha uma linha numa lista, com estado e dono, e se abre sem reler a conversa": a lista de
-conversas ganha a página dela. "Cada capacidade do Conexus tem uma lógica só, que serve toda conversa e
-toda tela": a barra, a gaveta e a busca leem a mesma lista de lugares.
+que o papel não usa não aparece na barra nem na busca; a regra tem um dono só. "Cada capacidade do
+Conexus tem uma lógica só, que serve toda conversa e toda tela": a barra, a gaveta e a busca leem a
+mesma lista de lugares.
 
 **Fica de fora.**
 
@@ -59,21 +59,21 @@ toda tela": a barra, a gaveta e a busca leem a mesma lista de lugares.
   Publicar): essas páginas não existem. Hoje o agente mora dentro de um projeto e a página dele é uma
   só, com duas abas. Vai com a R5 (decisão A).
 - **Conhecimento na barra.** O mapa de 2026-11-17 decidiu o lugar, mostrando o que hoje é "Memória da
-  empresa" nas Configurações. Mudar essa tela de endereço mexe no contrato de páginas
-  (`packages/hub-api/src/pages.ts`), que é das outras trilhas. Quando a tela existir, entrar na barra é
-  uma linha de dados.
+  empresa" nas Configurações. Mudar essa tela de endereço mexe numa lista de endereços que é das outras
+  trilhas. Quando a tela existir, entrar na barra é uma linha.
 - **As sugestões, o bloco de estado em números e o checklist de primeiro valor no Início.** O Início de
   hoje já é a caixa do pedido com Continuar, Projetos e Ligações. O redesenho dele usa as peças da R3
   e vai com a etapa do Início (R6).
 - **A caixa de Avisos única** para agentes, automações e projetos: decisão sua ainda aberta, da R6.
   Aqui o sino de hoje só muda de lugar: vira a linha "Notificações" no pé da barra.
-- **Achar pela busca uma conversa antiga**, fora das 30 mais recentes: a página Conversas tem a busca
-  completa.
+- **Achar pelo Ctrl+K uma conversa antiga**, fora das 30 mais recentes, ou uma automação, uma ligação
+  ou um agente pelo nome: a página Conversas tem a busca completa, e cada lista tem a sua.
 - **Os nomes repetidos** entre o Hub e o projeto (Agentes, Automações, Integrações e Dados nos dois): as
   oito seções do projeto são as que você aprovou em 2026-10-30; mudar é da etapa de Projetos (R6).
 - **Levar o foco do teclado ao lugar atual quando a barra troca.** Nenhum produto de referência faz, e o
-  Hub de hoje não faz em nenhuma troca de tela. Aqui o navegador segue o Tab de onde o link estava, no
-  alto da barra (critério 11). Código nosso para isso seria uma decisão sua à parte (delivery L28).
+  Hub de hoje não faz em nenhuma troca de tela. O esperado é que o navegador siga o Tab de onde o link
+  estava, no alto da barra; só o teste do critério 11 confirma. Código nosso para isso seria uma decisão
+  sua à parte.
 - **O terceiro grupo "Dados" nas Configurações** e a barra que cada pessoa arruma: sem cartão.
 
 **As decisões suas nesta etapa.**
@@ -92,11 +92,11 @@ toda tela": a barra, a gaveta e a busca leem a mesma lista de lugares.
     navegação que a escolhida.
   - **A-c.** A barra do agente já agora, com as duas partes que a página tem (Configuração, Conversas).
     Custa: mexe na página do agente antes de a R5 a redesenhar.
-- **B. Os títulos dos grupos.**
-  - **B-a (recomendada).** Três, com os nomes da visão: "Dados e contexto", "Agentes", "Apps". Uma
-    empresa sem Apps simplesmente não vê o grupo. Nativo: dados.
-  - **B-b.** Dois, como no protótipo de navegação que você viu: "Dados e contexto" e "Agentes e apps". Um título a
-    menos; perde a correspondência com as três Solutions.
+- **B. Os títulos dos grupos: confirmar.** Você já decidiu três grupos, em 2026-11-02, e a visão os
+  nomeia. O protótipo de navegação que você escolheu mostrava dois.
+  - **B-a (recomendada).** Manter os três: "Dados e contexto", "Agentes", "Apps". Nativo: dados.
+  - **B-b.** Mudar para os dois do protótipo: "Dados e contexto" e "Agentes e apps". Um título a menos;
+    perde a correspondência com as três Solutions e muda a sua decisão de 2026-11-02.
 - **C. Onde mora a lista inteira de conversas**, que sai da coluna.
   - **C-a (recomendada).** Uma página "Conversas", aberta por "Ver todas as conversas" no Início e pela
     busca do Ctrl+K, como a página Chats do Claude. O Início continua curto. Nativo: a mesma lista de
@@ -105,17 +105,16 @@ toda tela": a barra, a gaveta e a busca leem a mesma lista de lugares.
     os blocos Projetos e Ligações descem.
   - **C-c.** As três conversas mais recentes na barra, sob Início, com "Ver todas", como o Dropbox Dash.
     Volta a pôr conversa na barra, que a navegação escolhida tirou.
-- **D. As regras dos guias.** A casca nova contraria o que os guias dizem hoje.
-  - **D-a (recomendada).** Um pull request de método, só de documentos, depois desta aprovação e antes
-    da primeira unidade (delivery L20), como o #1428 da R1. Ele reescreve: web W30 (trilho de ícones e
-    coluna do lugar viram a barra com grupos; as conversas saem da coluna; as camadas de Dados vão
-    para a página); web W31 (a barra do projeto ganha "← Todos os projetos"); design V56 (a gaveta leva
-    a barra); design V34 (o ícone de 20 px era do trilho); o mapa, seções 3, 4, 5.3 e 7; a árvore de
-    web W1; e acrescenta uma regra: a navegação é declarada em dados num arquivo só, e a barra, a
-    gaveta e a busca leem dele.
+- **D. As regras escritas dos guias.** A casca nova contraria o que os guias dizem hoje sobre o trilho
+  de ícones, a coluna ao lado, a gaveta do celular e o mapa do Hub.
+  - **D-a (recomendada).** Mudar os guias antes de construir, num pull request só de documentos, logo
+    depois desta aprovação, como foi na R1 (#1428). Entra uma regra nova: os lugares do Hub são
+    declarados num arquivo só, e a barra, a gaveta e a busca leem dele; assim um lugar novo não entra
+    na barra e fica esquecido na busca. A lista do que muda está em "O que a aprovação muda nos
+    documentos".
   - **D-b.** Mudar os guias no fechamento da etapa. A etapa seria construída e revista contra regras que
     dizem o contrário.
-- **E. A vez da R2 na trilha.**
+- **E. A vez da R2 na trilha: confirmar.**
   - **E-a (recomendada).** Como a trilha diz: R1, R3, o teste com cinco pessoas, e então a R2. Este
     cartão espera pronto e é emendado pelo que o teste mostrar. É o processo que você aprovou (decisão 4).
   - **E-b.** A R2 logo depois da R1. Ela não usa nenhuma peça da R3, e o teste passa a usar a casca de
@@ -128,11 +127,11 @@ toda tela": a barra, a gaveta e a busca leem a mesma lista de lugares.
 | G1 | U1 As listas saem da coluna | a página Conversas e "Ver todas as conversas"; as camadas de Dados em abas; a coluna deixa de mostrar conversas e árvore | `apps/web/src/agents/assistant/`, `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/$companyId/`, `docs/reference/screens.md` | web | a R1 em `main`; o pull request de método da decisão D em `main`; nenhuma unidade aberta das outras trilhas nesses arquivos (delivery L1) |
 | G1 | U2 A barra com grupos e a barra do objeto | a navegação em dados; a barra de 240 px com grupos, o botão de recolher e a escolha guardada; a barra do projeto com "← Todos os projetos"; Configurações e Central na moldura nova | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `apps/web/src/hub/projects/`, `apps/web/src/hub/identity/`, `apps/web/src/platform/`, `apps/web/src/brand/`, `DESIGN.md` | design | U1 |
 | G2 | U3 A paleta de comando | Ctrl+K sobre o Base UI, com as páginas saídas da navegação, as conversas e os projetos recentes; o gatilho na barra | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `DESIGN.md` | design | U2 |
-| G2 | U4 A gaveta e a troca de empresa | a gaveta do celular com a barra do lugar e a busca; a troca de empresa pela peça `Picker` | `apps/web/src/ui/`, `apps/web/src/hub/identity/`, `apps/web/src/hub/operations/` | design | U3 |
+| G2 | U4 A gaveta e a troca de empresa | a gaveta do celular com a barra do lugar e a busca; a troca de empresa pela peça `Picker` | `apps/web/src/ui/`, `apps/web/src/hub/identity/` | design | U3 |
 
 Dois pull requests (delivery L9): G1 e G2.
 
-**Orçamento de código alterado.** U1: 450 linhas. U2: 950. U3: 500. U4: 300. Total da etapa: cerca de
+**Orçamento de código alterado.** U1: 500 linhas. U2: 950. U3: 550. U4: 200. Total da etapa: cerca de
 2.200, abaixo do teto de 4.000 (delivery L2).
 
 ## Os critérios de aceite
@@ -141,20 +140,20 @@ Dois pull requests (delivery L9): G1 e G2.
 | --- | --- | --- | --- | --- |
 | 1 | U1 | `/companies/<e>/conversations` mostra as conversas da pessoa por dia, 30 por página com o paginador, a busca pelo título, o filtro por lugar e a aba Projetos, tudo no endereço (`q`, `place`, `tab`, `conversations`); recusa: um `place` que não é um lugar abre a lista inteira | `apps/web/src/agents/assistant/conversations-page.test.tsx`, "a lista por dia, a busca e o filtro no endereço" e "um lugar inválido abre a lista inteira" | must |
 | 2 | U1 | No Início, "Continuar" tem "Ver todas as conversas", que abre a página; sem nenhuma conversa a frase de hoje fica e o link não aparece | `apps/web/src/agents/assistant/day.test.tsx`, "Continuar leva à lista inteira" | must |
-| 3 | U1 | Dados mostra Negócio, Bruto e Apps como abas com a contagem; a camada segue no endereço (`layer`); recusa: nenhuma coluna de Dados ao lado da barra | `apps/web/src/hub/copies/data-page.test.tsx`, "as camadas são abas e a camada fica no endereço" | must |
+| 3 | U1 | Dados mostra as camadas como abas: Negócio e Bruto com a contagem, Apps só para quem vê os dados dos apps; a camada segue no endereço (`layer`) e a nota do Bruto fica sob as abas; recusa: nenhuma coluna de Dados ao lado da barra | `apps/web/src/hub/copies/data-page.test.tsx`, "as camadas são abas e a camada fica no endereço" e "a nota do Bruto fica na página" | must |
 | 4 | U2 | A barra do Hub mostra, com nome, na ordem: Início; Dados e contexto (Integrações, Dados); Agentes (Agentes, Automações); Apps (Projetos); no pé Notificações, Configurações e a conta. Nenhuma lista de conversas em Integrações, Agentes, Automações, Projetos ou Dados | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "a barra com grupos" e "nenhuma área lista conversas na barra" | must |
-| 5 | U2, U3 | Quem não gerencia agentes nem automações não vê "Agentes" nem "Automações" na barra nem na paleta, e o grupo sem item não mostra o título; recusa: o endereço `/agents` segue respondendo não encontrado (S10) | `route.test.tsx`, "o membro não vê Agentes nem Automações"; `apps/web/src/routes/_app/-navigation.test.ts`, "um grupo vazio some com o título"; `-destinations.test.tsx`, "o membro não acha o que não vê" | must |
-| 6 | U2 | Cada destino das três listas (`HUB_NAV`, `PROJECT_NAV`, `CENTRAL_NAV`) é um endereço que o roteador conhece, e nenhum nome se repete na mesma barra; recusa: um endereço que não existe deixa o teste vermelho dizendo qual | `-navigation.test.ts`, "cada destino existe no roteador" | must |
+| 5 | U2, U3 | Quem não gerencia agentes nem automações não vê "Agentes" nem "Automações" na barra nem na paleta, e o grupo sem item não mostra o título; recusa: o endereço `/agents` segue respondendo não encontrado (S10) | `route.test.tsx`, "o membro não vê Agentes nem Automações"; `apps/web/src/routes/_app/-navigation.test.tsx`, "um grupo vazio some com o título"; `-destinations.test.tsx`, "o membro não acha o que não vê"; a recusa, `apps/web/src/agents/saved-agent/agent-list.test.tsx`, "o membro: a página dá não encontrado e a entrada não aparece" (existente) | must |
+| 6 | U2 | Cada destino das três listas (`HUB_NAV`, `PROJECT_NAV`, `CENTRAL_NAV`) é um endereço que o roteador conhece, e nenhum nome se repete na mesma barra; recusa: um endereço que não existe deixa o teste vermelho dizendo qual | `-navigation.test.tsx`, "cada destino existe no roteador" e "nenhum nome se repete na mesma barra" | must |
 | 7 | U2 | A partir de 768 px a barra tem 240 px aberta e 56 px recolhida; o botão "Recolher a barra lateral" está no Tab e Ctrl+B faz o mesmo; a largura troca de uma vez (o critério 3 da R1 segue verde) | `apps/web/shell.layout.test.ts`, "a barra aberta e recolhida"; `motion.layout.test.ts`, "nada estica" (existente) | must |
 | 8 | U2 | Recolhida, cada ícone tem nome acessível e mostra a dica no mouse e no foco do teclado, na barra do Hub, na do projeto e no índice das Configurações; o item atual tem `aria-current="page"` | `shell.layout.test.ts`, "recolhida, cada ícone diz o nome pelo teclado" | must |
 | 9 | U2 | A escolha de recolher volta depois de recarregar; com o armazenamento do navegador bloqueado a barra recolhe e abre do mesmo jeito, só não lembra; entre 768 e 1023 px, sem escolha guardada, abre recolhida | `shell.layout.test.ts`, "a escolha volta depois de recarregar" e "sem armazenamento a barra funciona" | should |
-| 10 | U2 | Dentro de um projeto a barra é a dele: "← Todos os projetos", o nome com o seletor de projeto, e as oito seções de hoje nos quatro grupos, cada uma só para quem pode; a página de um agente mantém "Agentes" marcado | `route.test.tsx`, "a barra do projeto" e "o agente aberto marca Agentes" | must |
+| 10 | U2 | Dentro de um projeto a barra é a dele: "← Todos os projetos", o nome com o seletor de projeto, e as oito seções de hoje nos quatro grupos, cada uma só para quem pode; a página de um agente mantém "Agentes" marcado, e uma conversa do Construir mantém "Construir" | `route.test.tsx`, "a barra do projeto", "o agente aberto marca Agentes" e "a conversa do Construir marca Construir" | must |
 | 11 | U2 | Só pelo teclado: depois de Enter em "← Todos os projetos", o Tab seguinte cai num controle da barra do Hub, e "Projetos" tem `aria-current="page"`; recusa: o Tab não recomeça no corpo da folha nem fica preso fora da tela | `apps/web/keyboard.test.ts`, "depois de voltar, o Tab segue na barra" | should |
-| 12 | U2 | Configurações e Central usam a mesma moldura: a linha do alto com "← Voltar" (Configurações) ou o nome (Central), o botão de recolher, e os mesmos estados; o índice, a busca e os grupos das Configurações ficam como hoje | `apps/web/src/routes/_app/companies/$companyId_/settings/settings.test.tsx` (existente) e `shell.layout.test.ts`, "a mesma linha do alto em toda barra" | must |
+| 12 | U2 | Configurações e Central usam a mesma moldura: a linha do alto com "← Voltar" (Configurações) ou a marca (Central), a busca e o botão de recolher. O pé das Configurações é Notificações e a conta; o da Central, que não tem empresa, é só a conta; o índice, a busca e os grupos das Configurações ficam como hoje | `apps/web/src/routes/_app/companies/$companyId_/settings/settings.test.tsx` (existente) e `shell.layout.test.ts`, "a mesma linha do alto em toda barra" | must |
 | 13 | U2 | O texto e o ícone do item atual passam 3:1 sobre o fundo dele, e o título de grupo passa 4,5:1 sobre a moldura, nos dois temas | `apps/web/contrast.layout.test.ts`, os pares novos | must |
 | 14 | U3 | Ctrl+K e ⌘K abrem a paleta em qualquer tela com sessão (empresa, projeto, Configurações, Central), também com o foco num campo de texto; Esc fecha e o foco volta ao elemento de antes; recusa: na entrada e na primeira entrada a tecla não abre nada | `apps/web/palette.layout.test.ts`, "abre de qualquer tela e devolve o foco" e "sem moldura não abre" | must |
-| 15 | U3 | Digitar "integ" deixa Integrações em primeiro e destacada, Enter navega e fecha, as setas mudam o destaque; "configuracoes", sem acento, acha Configurações; sem resultado diz "Nada encontrado."; cada página diz o grupo dela | `palette.layout.test.ts`, "achar, escolher e não achar" | must |
-| 16 | U3 | A paleta lista, nesta ordem: Conversas recentes (as 30 da primeira página), Ir para (as páginas da barra do lugar, as do Hub, as seções das Configurações que a pessoa vê, Central para quem opera) e Projetos; dentro de um projeto, as seções dele levam o nome do projeto. Se a leitura das conversas ou dos projetos falha, o grupo some e o resto funciona | `apps/web/src/routes/_app/-destinations.test.tsx`, "os grupos e a ordem" e "uma leitura que falha não derruba a paleta" | must |
+| 15 | U3 | Digitar "integ" deixa a página Integrações em primeiro e destacada, mesmo havendo uma conversa chamada "Integração com o ERP"; Enter navega e fecha, as setas mudam o destaque; "configuracoes", sem acento, acha Configurações; sem resultado diz "Nada encontrado."; cada página diz o grupo dela | `palette.layout.test.ts`, "achar, escolher e não achar" | must |
+| 16 | U3 | Numa empresa a paleta lista, nesta ordem: Ir para (as seções do projeto, quando dentro de um, com o nome dele; as páginas do Hub; as seções das Configurações que a pessoa vê; Central para quem opera), Projetos (a primeira página) e Conversas recentes (as 30 da primeira página). Na Central: Ir para (Clientes, Estado do Hub) e Empresas (as de quem opera). Se a leitura das conversas ou dos projetos falha, o grupo some e o resto funciona | `apps/web/src/routes/_app/-destinations.test.tsx`, "os grupos e a ordem", "na Central" e "uma leitura que falha não derruba a paleta" | must |
 | 17 | U3 | A paleta é um diálogo com nome, a lista é uma `listbox`, o Tab não sai dela, não há violação de CSP, a 390 px não há rolagem lateral e as dicas de tecla somem no toque; sob reduzir movimento ela aparece sem animar | `palette.layout.test.ts`, "o diálogo e o celular"; `motion.layout.test.ts`, "com reduzir, nada anima" (caso acrescentado) | must |
 | 18 | U4 | A 390 e a 320 px a gaveta traz a barra do lugar inteira (Hub, projeto ou índice das Configurações) com a conta; seguir um link fecha a gaveta; "Buscar ou ir para…" fecha a gaveta e abre a paleta; sem rolagem lateral | `apps/web/phone-menu.layout.test.ts`, "a gaveta leva a barra do lugar" e "a busca sai da gaveta"; `phone.layout.test.ts` (existente) | must |
 | 19 | U4 | Com uma empresa, o alto da barra mostra só o nome; com duas ou mais, abre a lista "Suas empresas"; a partir de sete, com busca; escolher leva ao Início da outra; o nome acessível diz "Trocar de empresa. Agora: <nome>" | `apps/web/src/hub/identity/company-switcher.test.tsx`, "uma, duas e sete empresas" | must |
@@ -166,18 +165,21 @@ Dois pull requests (delivery L9): G1 e G2.
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | A barra do Hub | aberta a partir de 1024 px, recolhida entre 768 e 1023 | um grupo sem item não aparece | a barra desenha na hora; o nome da empresa é um esqueleto | a barra fica; o erro é da folha (W34) | · | Agentes e Automações somem para quem não gerencia; o endereço responde não encontrado | sessão vencida: a entrada, como hoje (W15) |
-| A barra do projeto | "Construir" marcado | · | o nome do projeto é um esqueleto | o nome vira "Projeto" e as seções seguem (como hoje) | a folha diz não encontrado; a barra do Hub volta | cada seção só para quem pode (`manageAgents`, `manageAutomations`, `viewAppData`) | · |
-| A paleta | Conversas recentes vazia: o grupo não aparece; "Ir para" primeiro | "Nada encontrado." | os grupos lidos entram quando chegam; "Ir para" já está | o grupo que falhou some | · | o que a barra não mostra a paleta não acha | · |
-| Conversas | sem conversa: a frase de hoje e "Nova conversa" | busca ou filtro sem resultado: as frases de hoje | três linhas de esqueleto | a frase da leitura e "Tentar de novo" | · | todo papel vê as suas | · |
-| Dados (as abas) | a aba Bruto | as frases de hoje por camada | a contagem entra quando a leitura chega | a aba fica; o erro é da camada | · | o que cada papel vê hoje, sem mudança | · |
+| A barra do projeto | "Construir" marcado | · | o nome do projeto é um esqueleto | o nome vira "Projeto" e as seções seguem (como hoje) | a folha diz não encontrado; a barra do projeto fica, com "Projeto" no nome e "← Todos os projetos" | cada seção só para quem pode (`manageAgents`, `manageAutomations`, `viewAppData`) | · |
+| A barra das Configurações | "← Voltar", a busca do índice e os grupos de hoje | a busca do índice sem resultado: a frase de hoje | como hoje | como hoje | · | cada seção só para quem pode (`needs`), como hoje | · |
+| A barra da Central | Clientes marcado | · | · | · | · | quem não opera recebe não encontrado (S11), como hoje | · |
+| A paleta | sem conversa e sem projeto: só "Ir para" | "Nada encontrado." | "Ir para" já está; Projetos e Conversas recentes entram quando chegam | o grupo que falhou some | · | o que a barra não mostra a paleta não acha | · |
+| Conversas | sem conversa: "Nenhuma conversa ainda." (`NO_CONVERSATIONS_BLOCK`) e "Nova conversa" | busca ou filtro sem resultado: as frases de hoje (`NO_CONVERSATION_FOUND`, `NO_CONVERSATION_IN_PLACE`) | três linhas de esqueleto | a frase da leitura e "Tentar de novo" (`ReadFailure`) | · | todo papel vê as suas | · |
+| Dados (as abas) | a camada que o endereço diz; sem `layer`, a de hoje | as frases de hoje por camada | a contagem entra quando a leitura chega | a aba fica; o erro é da camada | · | Apps só com `viewAppData`; a nota do Bruto diz a quem não copia o que diz hoje | · |
 | A gaveta (celular) | fechada | · | · | · | · | igual à barra | · |
 | A troca de empresa | uma empresa: só o nome | · | esqueleto no nome | a lista some; o nome fica | · | só as empresas que o Hub lista | · |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `NavSection[]` (`HUB_NAV`, `PROJECT_NAV`, `CENTRAL_NAV`) | U2, em `routes/_app/-navigation.ts` | a barra (`SidebarNav`), a gaveta, a paleta (`useHubDestinations`), `-navigation.test.ts` |
+| `NavSection[]` (`HUB_NAV`, `PROJECT_NAV`, `CENTRAL_NAV`) | U2, em `routes/_app/-navigation.ts` | a barra (`SidebarNav`), a gaveta, a paleta (`useHubDestinations`), `-navigation.test.tsx` |
 | `NavItem.needs` | U2 | `seen()`, o único filtro de permissão da barra e da paleta |
-| `NavItem.places` | U2 | `SidebarNav`, para marcar o lugar num endereço mais fundo; lê `staticData.place` da rota |
+| `NavItem.to`, `label`, `icon` | U2 | `SidebarNav` (o link, o nome e a dica); a paleta (o destino e o nome) |
+| `NavItem.exact`, `NavItem.places` | U2 | `SidebarNav`, para marcar o lugar atual: `exact` só no próprio endereço, `places` também quando a rota à vista tem um desses `staticData.place` |
 | a escolha `conexus-sidebar` no navegador | `Frame`, por `platform/sidebar.ts` | `Frame`, ao montar |
 | `PaletteGroup[]` | U3, em `routes/_app/-destinations.tsx` | `ui/command-palette.tsx` |
 
@@ -186,10 +188,10 @@ Os desenhos de caixas. A 1280 px, a barra do Hub e a do projeto:
 ```text
 +--------------------------+------------------------------------------------+
 | [C] Conexus         [<<] |                                                |
-| [ Buscar ou ir para… ⌃K ]|   a folha, encaixada na moldura grafite        |
+| [ Buscar ou ir…  Ctrl K ]|   a folha, encaixada na moldura grafite        |
 | [P] Padaria Sol       v  |                                                |
 |  Início                  |   Dados                                        |
-| Dados e contexto         |   [ Negócio 0 ][ Bruto 12 ][ Apps 3 ]          |
+| Dados e contexto         |   [ Negócio 0 ][ Bruto 12 ][ Apps ]            |
 |  Integrações             |   ...                                          |
 |  Dados              <--  |                                                |
 | Agentes                  |                                                |
@@ -205,7 +207,7 @@ Os desenhos de caixas. A 1280 px, a barra do Hub e a do projeto:
 
 +--------------------------+     recolhida        a 390 px
 | <- Todos os projetos [<<]|     +----+          +---------------------+
-| [ Buscar ou ir para… ⌃K ]|     |[>>]|          | [=] Conexus   Dados |
+| [ Buscar ou ir…  Ctrl K ]|     |[>>]|          | [=] Conexus   Dados |
 | [P] Pedidos de enc.   v  |     | Q  |          +---------------------+
 | O app                    |     | o  |          |   a folha           |
 |  Construir          <--  |     | -- |          |                     |
@@ -230,14 +232,14 @@ largura menos 8 px de cada lado:
 +----------------------------------------------+
 | Q  Buscar ou ir para…                        |
 +----------------------------------------------+
-| Conversas recentes                           |
-|   Quanto vendemos de pão francês?     há 2 h |
 | Ir para                                      |
 | > Integrações            Dados e contexto    |
 |   Dados                  Dados e contexto    |
 |   Pessoas e convites     Configurações       |
 | Projetos                                     |
 |   Pedidos de encomenda                       |
+| Conversas recentes                           |
+|   Quanto vendemos de pão francês?     há 2 h |
 +----------------------------------------------+
 | ↑↓ escolher   Enter abrir   Esc fechar       |
 +----------------------------------------------+
@@ -266,7 +268,7 @@ projetos e seções das Configurações, e esconde as teclas no toque (16, 17); 
 arquivo; a conferência no navegador é do ponto de conferência de cada grupo.
 
 As peças de `ui/` que a etapa usa: `sidebar`, `sidebar-selector`, `sidebar-trigger`, `frame`,
-`tooltip`, `dialog`, `tabs`, `picker`, `pager`, `skeleton`, `settings-index`. Sai:
+`tooltip`, `dialog`, `tabs`, `picker`, `pager`, `skeleton`, `block`, `states`, `settings-index`. Sai:
 `sidebar-rail-button`. Novas, cada uma com a sua linha da tabela de referência, a entrada na vitrine e
 a linha do `DESIGN.md` (V62): `nav` (linhas 1 e 2), `command-palette` (linha 10), `kbd` (linha 13).
 
@@ -305,7 +307,7 @@ os caminhos a partir de `apps/web/src`. "A navegação" é a do pedido e do obje
 | 16 | As camadas de Dados em abas | U1 | a navegação (uma barra só); o mapa 4 punha a árvore na coluna | `hub/copies/data-tree.tsx:33-58,104-113` | [Databricks](https://mobbin.com/screens/c02170fd-f44b-42c0-8fd2-59a04b9ad0b0) (a árvore é painel do catálogo) **visto**; BU `tabs.md` | três abas que mudam o `layer` do endereço | nativo | · | D | · |
 | 17 | A gaveta do celular | U4 | V56 (2026-11-01); mapa 7 | `ui/sidebar.tsx:124-142`; `ui/frame.tsx:88-127` | SH `ui/sidebar.tsx:182-205` (a mesma barra dentro da `Sheet`) **lido** | no celular os filhos da barra vão para a gaveta | nativo (fica) | · | D | · |
 | 18 | A troca de empresa | U4 | W30 ("Suas empresas") | `hub/identity/company-switcher.tsx:17-42`; `ui/picker.tsx:25,132` | SB `AppLayout/OrganizationDropdown.tsx:60-101` (lista com busca num popover; sobre `cmdk`: situação diferente na fundação); [Vercel](https://mobbin.com/screens/7be05ea5-e875-439d-bd1f-7aef97281d3b) **visto** | a lista com busca, aberta do nome | nativo: a peça `Picker` do Hub (Base UI Combobox, busca a partir de 7 itens) | · | não precisa | · |
-| 19 | O sino e a conta no pé | U2 | W30 (2026-11-02, "Opção 1") | `route.tsx:109-120`; `hub/notifications/bell.tsx:35-43`; `hub/identity/account-menu.tsx:36-124` | SH `blocks/sidebar-07/components/nav-user.tsx` (a conta no pé) | ficam; saem as variantes do trilho (`compact`) e o sino ganha o nome à vista | nativo (fica) | · | não precisa | · |
+| 19 | O sino e a conta no pé | U2 | W30 (2026-11-02, "Opção 1") | `route.tsx:109-120`; `hub/notifications/bell.tsx:182-213` (um botão de ícone com a contagem); `hub/identity/account-menu.tsx:36-124` | SH `blocks/sidebar-07/components/nav-user.tsx` (a conta no pé) | ficam; sai a variante `compact` da conta, e o sino passa de botão de ícone a linha com o nome e a contagem | nativo (fica) | · | não precisa | · |
 | 20 | O teclado na troca de barra | U2 | V30 | nenhum código de foco em `ui/frame.tsx` nem nas rotas | MA `domains/agent-builder/layouts/agent-builder-sidebar.tsx:68-99` (mesma situação) | troca a barra sem código de foco **lido**; o link some com a barra e o navegador segue o Tab do ponto onde ele estava | nativo | · | não precisa | · |
 | 21 | A vitrine e a CSP | todas | W22, V17, V62 | `ui/showcase/navigation.tsx`; `showcase.layout.test.ts` | · | o harness já abre a vitrine com a CSP | nativo | · | não precisa | · |
 | 22 | A barra do agente | fica de fora: R5 (decisão A) | nada registrado | `agents/saved-agent/agent-page.tsx:87-94,177-181` | [Intercom Fin](https://mobbin.com/screens/16c18036-56a1-4ea3-9bba-561c7da42cdc) **visto** | · | nativo (dados), fora | · | A | · |
@@ -316,9 +318,16 @@ os caminhos a partir de `apps/web/src`. "A navegação" é a do pedido e do obje
 lugar sem mudar de dono: a lista de conversas (232 linhas, cerca de 60 mudam) e as camadas de Dados.
 
 **A dívida.** As seções das Configurações seguem declaradas em cada rota (`staticData.section`), ao lado
-do arquivo de navegação: juntar é da etapa de Configurações. A paleta acha só as 30 conversas mais
-recentes. O rótulo de um lugar existe no arquivo de navegação e no `staticData.place` da rota, que o
-alto do celular lê; o critério 6 confere os endereços, não os nomes.
+do arquivo de navegação, que só ganha o gancho que as lê: juntar é da etapa de Configurações. A paleta
+acha as páginas, os projetos da primeira página e as 30 conversas mais recentes; não acha um agente, uma
+automação nem uma ligação pelo nome. O rótulo de um lugar existe no arquivo de navegação e no
+`staticData.place` da rota, que o alto do celular lê; o critério 6 confere os endereços, não os nomes.
+
+**As issues `next-card`.** A #1235 tem gatilho na próxima mudança de `ui/picker.tsx`: a etapa usa a
+`Picker` na troca de empresa sem mudar o arquivo, e os itens dela esperam. O item 3 (a lista de 288 px
+e o rótulo no alto) pede a palavra do fundador na etapa que mudar a peça; aqui o critério 19 só confere
+que a lista cabe a 320 px. Nenhuma outra issue `next-card` aberta fala da moldura, da barra ou da
+gaveta.
 
 ## As decisões do firstmate
 
@@ -329,6 +338,26 @@ alto do celular lê; o critério 6 confere os endereços, não os nomes.
 | 3 | A paleta lista as 30 conversas da primeira página, sem buscar no Hub | a leitura já está em cache pelo Início; a busca completa mora na página Conversas | ligar o exemplo "Async search" do Base UI |
 | 4 | A troca de barra é de uma vez; só a folha esmaece | a folha de movimento: "a barra não pisca" (`DESIGN.md:581-582`) | um `view-transition-name` na barra |
 | 5 | "← Voltar" das Configurações segue levando ao Início da empresa | é o que W32 e o código fazem hoje; voltar à última tela do Hub pede guardar o lugar | um cartão das Configurações |
+| 6 | Na paleta as páginas vêm antes das conversas | o primeiro trabalho da paleta é ir a um lugar: "integ" e Enter abre Integrações mesmo com uma conversa de nome parecido (critério 15) | trocar a ordem dos grupos em `-destinations.tsx` |
+| 7 | Na Central a paleta lista Clientes, Estado do Hub e as empresas de quem opera | a Central não tem empresa, então não tem conversas, projetos nem Configurações; as empresas são o que o alto da Central já oferece (`hub/operations/central-header.tsx:15-35`) | tirar o grupo Empresas |
+
+## O que a aprovação muda nos documentos
+
+O pull request de método da decisão D, só de documentos (delivery L20), antes da U1:
+
+- web W30: o trilho de ícones e a coluna do lugar viram a barra com grupos; as conversas saem da coluna
+  e ganham a página; as camadas de Dados vão para a página; a escolha de recolher fica no navegador.
+- web W31: a barra do projeto leva "← Todos os projetos" no alto.
+- design V56: a gaveta leva a barra do lugar, e não o trilho com a coluna.
+- design V34: o ícone de 20 px era do trilho; a barra usa o do menu.
+- `docs/explanation/mapa.md`, seções 3, 4, 5.3 e 7; a árvore de web W1, se `routes/_app/-navigation.ts`
+  pedir.
+- Uma regra nova em web: a navegação é declarada em dados num arquivo só, e a barra, a gaveta e a
+  paleta leem dele com um filtro só de permissão.
+
+A página da trilha, no commit da aprovação: a frase da R2 perde "num agente ou" se a resposta for A-a, e
+a linha da R6 perde "a casa do pedido (Início) vai com `R2`", porque o redesenho do Início fica com a
+etapa dele.
 
 ## U1 As listas saem da coluna
 
@@ -338,7 +367,7 @@ trocar uma árvore por abas, dentro de dois assuntos.
 ### As linhas da tabela
 
 15 e 16. Ler `agents/assistant/sidebar-conversations.tsx` inteiro, `list-view.ts`, `day.tsx:23-78,125-150`,
-`conversation-row.tsx`, `place-filter.tsx`, `projects-tab.tsx`, `text.ts`; a rota do Início
+`conversation-row.tsx`, `place-filter.tsx`, `projects-tab.tsx`, `text.ts`, `ui/block.tsx`; a rota do Início
 (`routes/_app/companies/$companyId/index.tsx:33-45`, o `validateSearch`); `hub/copies/data-tree.tsx`
 inteiro e `data-page.tsx`; `route.tsx:132-143` (onde a coluna as desenha hoje). Seguir as telas do
 Claude e do Databricks da tabela do Mobbin.
@@ -349,13 +378,14 @@ Claude e do Databricks da tabela do Mobbin.
 | --- | --- | --- |
 | `agents/assistant/sidebar-conversations.tsx` e os seus dois testes | apaga | `agents/assistant/public.ts`, `route.tsx` |
 | `agents/assistant/conversations-page.tsx` e o teste | cria | `public.ts`, a rota nova |
-| `agents/assistant/day.tsx`, `text.ts`, `public.ts` | muda | o Início |
+| `agents/assistant/conversation-row.tsx`, `projects-tab.tsx` | muda: saem `SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton` e `SidebarMenuSkeleton`; a linha é a da folha (`blockRow` de `ui/block.tsx`, como "Continuar") e o esqueleto é `Skeleton`; o menu da linha fica | `conversations-page.tsx` |
+| `agents/assistant/day.tsx`, `text.ts`, `public.ts` | muda: `public.ts` deixa de exportar `SidebarConversations` e passa a exportar `ConversationsPage` e `ConversationsSearch`; `NewConversation` segue exportado, agora de `conversations-page.tsx` | o Início, `route.tsx` |
 | `routes/_app/companies/$companyId/conversations/index.tsx` | cria | o roteador; `routeTree.gen.ts` (gerado) |
 | `routes/_app/companies/$companyId/index.tsx` | muda: `q`, `place`, `tab` e `conversations` saem do `validateSearch` do Início | os links para o Início |
-| `routes/_app/companies/$companyId/route.tsx` | muda: a coluna não recebe mais conversas nem a árvore | · |
+| `routes/_app/companies/$companyId/route.tsx` | muda: fora de um projeto a coluna fica só com `NewConversation`, sem a lista nem a árvore, até a U2 tirar a coluna (as duas unidades saem no mesmo pull request) | · |
 | `hub/copies/data-tree.tsx` e o teste | apaga | `hub/copies/public.ts`, `route.tsx` |
 | `hub/copies/data-page.tsx` e o teste | muda | a rota de Dados |
-| `docs/reference/screens.md` | muda: a linha de Conversas no andar Empresa (W29) | · |
+| `docs/reference/screens.md` | muda: entra a linha de Conversas no andar Empresa (W29); a do Início (linha 18) perde "the recent conversations" como lista; a de Dados (linha 24) troca "a tree beside the rail" pelas abas | · |
 | `apps/web/phone-list.layout.test.ts`, `sweep-house-states.ts`, `home.layout.test.ts` | muda: a lista está na página | `test:browser`, `test:sweep` |
 
 ### Os contratos que a unidade cria
@@ -369,15 +399,21 @@ export const ConversationsSearch: z.ZodType<{ conversations?: string; q?: string
 
 A rota `/_app/companies/$companyId/conversations/` tem `staticData: { place: 'Conversas' }`,
 `validateSearch: ConversationsSearch.catch({})` (C27: o endereço é entrada externa, lido uma vez) e
-desenha `ConversationsPage`. O estado da lista segue o de hoje, `ListView` de `list-view.ts` (a aba
-separa `tab: 'PROJECTS' | undefined`, C22); os ids são `CompanyId`, `ProjectId` e `ConversationId` do
-`hub-api`, conferidos nos parâmetros da rota (C23). A lista segue em páginas de 30 com o paginador
-(C44). O dono das frases é `text.ts`; entra `ALL_CONVERSATIONS = 'Ver todas as conversas'` (C26).
-`NewConversation` continua exportado: a página o mostra no alto. O arquivo modelo é o próprio
-`sidebar-conversations.tsx`: cumpre C22, C23 e C26.
+desenha `ConversationsPage`. O esquema só garante a forma; quem recusa um valor é `viewOf` de
+`list-view.ts`, como hoje: `placeOf` (`list-view.ts:18-22`) devolve `undefined` para um lugar que não é
+`HOME`, `AUTOMATIONS` nem um `ProjectId`. O estado da lista é `ListView` (a aba é
+`tab: 'PROJECTS' | undefined`, C21); os ids são `CompanyId`, `ProjectId` e `ConversationId` do `hub-api`
+(C23). A lista segue em páginas de 30 com o paginador (C44). O dono das frases é `text.ts`; entra
+`ALL_CONVERSATIONS = 'Ver todas as conversas'`, e o vazio usa `NO_CONVERSATIONS_BLOCK`, que já existe
+(C26). `NewConversation` (`sidebar-conversations.tsx:41-53`) muda para `conversations-page.tsx` sem
+mudar: a página o mostra no alto. O arquivo modelo é o próprio `sidebar-conversations.tsx`: cumpre C21,
+C23 e C26.
 
 Em `hub/copies/data-page.tsx`, `DataPage` ganha as abas das camadas no alto, com `Tabs` de `ui/tabs.tsx`
-e `DataLayer` de `search.ts` como valor; a contagem de cada aba é a que a árvore mostra hoje.
+e `DataLayer` de `search.ts` como valor. A contagem é a que a árvore mostra hoje (`data-tree.tsx:60-71,104-113`):
+Negócio 0, Bruto o número de tabelas do lago, Apps sem número e só com `viewAppData`. A nota do Bruto
+(`RawNote`, `data-tree.tsx:73-101`) vai para a página, sob as abas, quando a aba é Bruto, com os mesmos
+textos e estados, sem as peças `Sidebar*`.
 
 ### As skills e a leitura
 
@@ -390,12 +426,13 @@ As linhas de `docs/reference/stack.md` de `@tanstack/react-router` (as skills `r
    - **Arquivos:** cria `conversations-page.tsx`, o teste e a rota; apaga `sidebar-conversations.tsx`.
    - **O que sai:** `SidebarConversations` e os dois testes dela, cujos casos passam para o teste novo.
    - **O que entra:** a mesma lista, na largura do eixo do Início (V59), sem as peças `Sidebar*`: o
-     título "Conversas", "Nova conversa", a busca sempre à vista, o filtro por lugar, as abas e os dias.
-     Regras: W18, V58, V59.
+     título "Conversas", "Nova conversa", a busca sempre à vista, o filtro por lugar, as abas e os dias,
+     com as linhas de `ui/block.tsx`. Sem nenhuma conversa a página diz "Nenhuma conversa ainda." (a
+     coluna de hoje some inteira nesse caso, `sidebar-conversations.tsx:197`). Regras: W18, V58, V59.
    - **Testes:** `conversations-page.test.tsx`, pela porta da rota (`createConexus` com histórico em
      memória e o Hub dublado, como `old-copy-addresses.test.tsx`).
-   - **Mutações à mão:** tirar o `.catch({})` do `validateSearch`: "um lugar inválido abre a lista
-     inteira" fica vermelho.
+   - **Mutações à mão:** em `list-view.ts`, fazer `placeOf` devolver o valor sem conferir: "um lugar
+     inválido abre a lista inteira" fica vermelho.
    - **Pronto quando:** `/companies/<e>/conversations?q=pão` abre com a busca preenchida.
 2. **Continuar leva à lista.** Critérios: 2.
    - **Arquivos:** muda `day.tsx` (a `action` do bloco "Continuar", como a do bloco Ligações em
@@ -404,14 +441,17 @@ As linhas de `docs/reference/stack.md` de `@tanstack/react-router` (as skills `r
 3. **As camadas em abas.** Critérios: 3.
    - **Arquivos:** muda `data-page.tsx`; apaga `data-tree.tsx` e o teste; muda `route.tsx:132-143`.
    - **O que sai:** `DataTree` e o ramo `inData` da moldura.
-   - **Testes:** `data-page.test.tsx`, "as camadas são abas e a camada fica no endereço".
+   - **Testes:** `data-page.test.tsx`, "as camadas são abas e a camada fica no endereço" e "a nota do
+     Bruto fica na página" (os casos de `data-tree.test.tsx` passam para cá).
    - **Mutações à mão:** trocar o `layer` da aba Apps por `raw`: o teste fica vermelho.
-4. **A linha em `screens.md`.** Critérios: 1.
+4. **As linhas em `screens.md`.** Critérios: 1, 3 (as telas que mudaram, W29).
+   - **Arquivos:** `docs/reference/screens.md`, as linhas 18 e 24 e a linha nova de Conversas.
 
 ### Como se prova
 
-`npm run test:unit -w @conexus/web` e `npm run test:browser -w @conexus/web`. Hoje os critérios 1 a 3
-falham: o endereço `/conversations` não existe e Dados não tem abas.
+`npm run test:unit -w @conexus/web`, `npm run test:browser -w @conexus/web` e `npm run lint:design -w
+@conexus/web` (critério 21). Hoje os critérios 1 a 3 falham: o endereço `/conversations` sem id não
+existe e Dados não tem abas.
 
 ### Parar se
 
@@ -440,14 +480,15 @@ desenham, o assunto Projetos e a conta.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `ui/nav.tsx` | cria | as três rotas de moldura; `ui/showcase/navigation.tsx` |
-| `routes/_app/-navigation.ts` e o teste | cria | as três rotas; a U3 |
+| `routes/_app/-navigation.ts` e `-navigation.test.tsx` (o Vitest do pacote só roda `src/**/*.test.tsx`) | cria | as três rotas; a U3 |
 | `platform/sidebar.ts` | cria | `ui/frame.tsx` |
 | `ui/sidebar.tsx` | muda: saem `RailColumn`, `RailContent`, a propriedade `rail` e `SidebarRail`; entra o botão de recolher | `ui/frame.tsx`, as peças que usam `useSidebar` |
 | `ui/frame.tsx` | muda: a assinatura de `Frame`; sai `FrameLink` | as três rotas, `ui/settings-index.tsx`, a vitrine |
 | `ui/sidebar-rail-button.tsx` | apaga | `route.tsx`, a vitrine |
 | `ui/settings-index.tsx` | muda: desenha por `SidebarNav` | a rota das Configurações |
-| `hub/projects/project-rail.tsx`, `public.ts` | muda: ficam `ProjectRailHead` e o seletor; saem `RAIL` e `ProjectRailNav` | `route.tsx` |
-| `hub/identity/account-menu.tsx`, `hub/notifications/bell.tsx` | muda: sai `compact`; o sino vira uma linha com nome e contagem | as rotas de moldura |
+| `hub/projects/project-rail.tsx`, `public.ts` | muda: ficam `ProjectRailHead` e o seletor; saem `RAIL`, `ProjectRailNav` e `BUILD_ROUTE` | `route.tsx` |
+| `hub/identity/account-menu.tsx` | muda: sai a variante `compact` | as rotas de moldura |
+| `hub/notifications/bell.tsx` | muda: o gatilho de `NotificationBell` (`bell.tsx:182-213`) passa de botão de ícone a `SidebarMenuButton` com o nome "Notificações", a contagem e a dica quando recolhida; o painel e a assinatura ficam | a rota da empresa e a das Configurações |
 | `brand/tokens.css`, `DESIGN.md` | muda: `sidebar` 15 rem; saem `rail-tile` e a prosa do trilho | o Impeccable, `brand/tokens.test.ts` |
 | `apps/web/shell.layout.test.ts` | cria | `apps/web/package.json` (`test:browser`) |
 | `route.test.tsx`, `frame.layout.test.ts`, `frame-inset.layout.test.ts`, `focus.layout.test.ts`, `contrast.layout.test.ts`, `keyboard.test.ts`, `layout.test.ts`, `motion*.layout.test.ts`, `workbench.layout.test.ts`, `picker-places.ts`, `sweep-*-states.ts`, os três testes `hub/projects/project-{bar,rail,phone}.test.tsx`, `account-menu.test.tsx`, `bell.test.tsx` | muda: os seletores do trilho passam aos da barra | `test:unit`, `test:browser`, `test:sweep` |
@@ -485,7 +526,11 @@ export const CENTRAL_NAV: readonly NavSection[]  // Clientes, Estado do Hub
 `HUB_NAV`: Início (`exact`, `places: ['Início', 'Conversas']`); "Dados e contexto": Integrações, Dados;
 "Agentes": Agentes (`needs: 'manageAgents'`), Automações (`needs: 'manageAutomations'`); "Apps":
 Projetos. Os títulos e a divisão são os da decisão B; `PROJECT_NAV` copia `project-rail.tsx:81-145`
-sem mudar item, grupo nem permissão.
+sem mudar item, grupo nem permissão. O `holdsConversations` de Construir vira `exact` com
+`places: ['Projeto']`: só a rota de Construir e a das conversas dele têm esse `staticData.place`
+(`$projectId.index.tsx:8` e `$projectId.conversations.$conversationId.tsx:10`, em
+`routes/_app/companies/$companyId/projects/`), o que dispensa `BUILD_ROUTE`. `CENTRAL_NAV`: uma seção sem título, com Clientes e Estado do Hub
+(`operations/route.tsx:22-23`).
 
 Em `ui/frame.tsx`:
 
@@ -504,8 +549,8 @@ export function Frame(props: {
 ```
 
 Em `platform/sidebar.ts`: `readSidebarChoice(): 'collapsed' | 'expanded' | undefined` e
-`keepSidebarChoice(choice: 'collapsed' | 'expanded'): void`, com a chave `conexus-sidebar`; o valor lido
-passa por `z.enum(['collapsed', 'expanded'])` com `.catch(undefined)` (C27), e uma gravação que o
+`keepSidebarChoice(choice: 'collapsed' | 'expanded'): void`, com a chave `conexus-sidebar` sobre
+`pageStorage('local')`, como `platform/theme.ts:16-17`; o valor lido passa por `z.enum(['collapsed', 'expanded'])` com `.catch(undefined)` (C27), e uma gravação que o
 navegador recusa não lança. O estado da barra é a união `'expanded' | 'collapsed'` que `useSidebar` já
 tem (C21). Os ids são os do `hub-api`, conferidos nos parâmetros das rotas (C23). O arquivo modelo é
 `ui/settings-index.tsx`: recebe dados prontos com `needs` e cumpre C21, C23 e C26.
@@ -524,13 +569,15 @@ o pull request de método da decisão D os deixou.
    - **O que sai:** `RailColumn`, `RailContent`, `rail`, `SidebarRail`, `compact` da conta, `rail-tile`.
    - **Pronto quando:** nenhum `sidebar-rail-column` no DOM.
 2. **A navegação em dados e a peça.** Critérios: 4, 5, 6.
-   - **Arquivos:** cria `ui/nav.tsx`, `-navigation.ts` e o teste.
+   - **Arquivos:** cria `ui/nav.tsx`, `-navigation.ts` e `-navigation.test.tsx`.
    - **Referência a seguir:** MA `nav-items.tsx:24-39`; SH `nav-main.tsx:20-37`.
    - **O que entra:** `SidebarNav` desenha cada seção com `SidebarGroup`, `SidebarGroupLabel` e
      `SidebarMenuButton` (a dica já vem de `ui/sidebar.tsx:304-328`); o lugar atual sai do `Link` do
      roteador e de `places`. Regras: W34, V5, V35.
-   - **Testes:** `-navigation.test.ts`: "cada destino existe no roteador" (confere cada `to` contra
-     `routesById` do roteador de `createConexus`) e "um grupo vazio some com o título".
+   - **Testes:** `-navigation.test.tsx`: "cada destino existe no roteador" (confere cada `to` contra o
+     `fullPath` das rotas do roteador de `createConexus`, sem a barra final; `settings/route.tsx:44` já
+     monta um `to` de `route.fullPath`), "nenhum nome se repete na mesma barra" e "um grupo vazio some
+     com o título".
    - **Mutações à mão:** trocar `/companies/$companyId/data` por `/companies/$companyId/dados`:
      vermelho, dizendo o endereço.
 3. **A moldura nova e recolher.** Critérios: 7, 8, 9, 13.
@@ -546,9 +593,13 @@ o pull request de método da decisão D os deixou.
    - **Arquivos:** muda as três rotas, `project-rail.tsx`, `settings-index.tsx`, `bell.tsx`.
    - **Referência a seguir:** MA `agent-builder-sidebar.tsx:68-99`.
    - **O que entra:** a empresa passa `SidebarNav` com `seen(HUB_NAV, may)`; com `projectId`,
-     `back` "Todos os projetos", `ProjectRailHead` e `seen(PROJECT_NAV, may)`; o pé é Notificações,
-     Configurações e a conta nas três. Regras: W30, W31, W32.
-   - **Testes:** `route.test.tsx`, os casos dos critérios 4, 5 e 10.
+     `back` "Todos os projetos", `ProjectRailHead` e `seen(PROJECT_NAV, may)`; o pé dela é
+     `NotificationBell`, o link Configurações e `AccountMenu`. As Configurações: `back` "Voltar", o
+     índice de hoje, e no pé `NotificationBell` e `AccountMenu`, sem link para si mesmas. A Central, que
+     não tem empresa: a marca no alto, `CentralHeader`, `SidebarNav` com `CENTRAL_NAV` e só `AccountMenu`
+     no pé, como hoje. Regras: W30, W31, W32.
+   - **Testes:** `route.test.tsx`, os casos dos critérios 4, 5 e 10; `settings.test.tsx` e
+     `shell.layout.test.ts`, "a mesma linha do alto em toda barra" (critério 12).
 5. **O teclado na troca.** Critérios: 11.
    - **O que entra:** nenhum código de foco (linha 20). A linha do alto vem primeiro e o menu depois,
      na mesma ordem nas duas barras, e a barra vem antes da folha no documento. Regras: V30.
@@ -594,7 +645,7 @@ leituras que já existem.
 | --- | --- | --- |
 | `ui/command-palette.tsx`, `ui/kbd.tsx` | cria | `ui/frame.tsx`, a vitrine |
 | `routes/_app/-destinations.tsx` e o teste | cria | as três rotas de moldura |
-| `routes/_app/-navigation.ts` | muda: ganha `settingsSections`, que a rota das Configurações passa a usar | a rota das Configurações, `-destinations.tsx` |
+| `routes/_app/-navigation.ts` | muda: ganha `useSettingsSections`, a `useSections` de hoje mudada de lugar | a rota das Configurações, `-destinations.tsx` |
 | `ui/frame.tsx` | muda: `search`, o gatilho e a tecla | as três rotas |
 | `agents/assistant/public.ts` | muda: exporta a leitura da primeira página de conversas | `-destinations.tsx` |
 | `ui/showcase/`, `DESIGN.md` ("Paleta") | muda | a vitrine, o Impeccable |
@@ -624,14 +675,24 @@ PaletteGroup[]`: com ele, a moldura é dona do estado aberto, da tecla e do gati
 entrada), nada abre. Em `routes/_app/-destinations.tsx`:
 
 ```ts
-export function useHubDestinations(scope: {
-  companyId: CompanyId
-  projectId?: ProjectId
-  may: CompanyMay
-  operator: boolean
-}): PaletteGroup[]
+export type Destinations =
+  | { place: 'company'; companyId: CompanyId; projectId?: ProjectId; may: CompanyMay }
+  | { place: 'central' }
+export function useHubDestinations(scope: Destinations): PaletteGroup[]
 ```
 
+`Destinations` separa a empresa da Central por `place` (C21): a Central não tem empresa, e a paleta dela
+lista `CENTRAL_NAV` e as empresas de `useCompanies` (o que `hub/operations/central-header.tsx` já
+oferece). Numa empresa, "Central" entra para quem opera, pela mesma condição do menu da conta
+(`companies?.mayOperate`, `hub/identity/account-menu.tsx:96`). Em `routes/_app/-navigation.ts` entra:
+
+```ts
+/** The sections of Configurações a person sees, read from each route's `staticData.section` (web W32). */
+export function useSettingsSections(companyId: CompanyId): SettingsSection[]
+```
+
+É a `useSections` de `settings/route.tsx:30-45`, com o mesmo corpo e `companyId` como argumento;
+`SettingsSection` é o tipo de `ui/settings-index.tsx`, e as seções continuam declaradas em cada rota.
 Os ids são os do `hub-api` (C23). O filtro de permissão é o `seen` da U2 e mais nenhum (C26). As frases
 ("Buscar ou ir para…", "Nada encontrado.", "Conversas recentes", "Ir para", "Projetos") têm um dono, a
 peça. Nenhuma entrada externa nova: as leituras já passam pelo esquema da operação (W9). O arquivo
@@ -661,25 +722,30 @@ W21 e W22 e design V17, V26, V30 e V31, e "Motion" do `DESIGN.md` (a paleta segu
    - **Arquivos:** cria `-destinations.tsx` e o teste; muda `-navigation.ts`, a rota das Configurações,
      `agents/assistant/public.ts`.
    - **Referência a seguir:** MA `navigation-command.tsx:511-534`.
-   - **O que entra:** "Conversas recentes" da primeira página (o título por `titleOf`, a idade como
-     `hint`); "Ir para" com `seen(PROJECT_NAV, may)` quando há projeto (o `hint` é o nome dele),
-     `seen(HUB_NAV, may)` (o `hint` é o título do grupo), as seções das Configurações (o `hint` é
-     "Configurações") e Central para quem opera; "Projetos" da primeira página. Uma leitura pendente ou
-     com erro não entra.
-   - **Testes:** `-destinations.test.tsx`, os três casos dos critérios 5 e 16.
+   - **O que entra:** numa empresa, nesta ordem: "Ir para" com `seen(PROJECT_NAV, may)` quando há
+     projeto (o `hint` é o nome dele), `seen(HUB_NAV, may)` (o `hint` é o título do grupo), as seções de
+     `useSettingsSections` (o `hint` é "Configurações") e Central para quem opera; "Projetos" da primeira
+     página; "Conversas recentes" da primeira página (o título por `titleOf`, a idade como `hint`). Na
+     Central: "Ir para" com `CENTRAL_NAV` e "Empresas". Uma leitura pendente ou com erro não entra.
+   - **Testes:** `-destinations.test.tsx`, os casos dos critérios 5 e 16.
 3. **A tecla e o gatilho.** Critérios: 14.
    - **Arquivos:** muda `ui/frame.tsx` e as três rotas.
    - **Referência a seguir:** MA `use-navigation-command.ts:42-54`; `ui/sidebar.tsx:56-66`.
    - **O que entra:** o botão "Buscar ou ir para…" com a tecla na linha do alto da barra (recolhida,
-     só a lupa com a dica); a tecla escrita é "⌘K" no Mac e "Ctrl K" no resto.
+     só a lupa com a dica); a tecla escrita é "⌘K" no Mac e "Ctrl K" no resto. No celular o botão chama
+     `setOpenMobile(false)` antes de abrir a paleta (MA `app-sidebar.tsx:59-62`). Cada rota de moldura
+     passa `search` com `useHubDestinations`: a da empresa e a das Configurações com
+     `place: 'company'`, a da Central com `place: 'central'`.
    - **Testes:** `palette.layout.test.ts`, "abre de qualquer tela e devolve o foco" e "sem moldura não
      abre".
 4. **O reduzir.** Critérios: 17.
+   - **Arquivos:** muda `apps/web/motion.layout.test.ts`: a paleta entra no caso "com reduzir, nada
+     anima".
 
 ### Como se prova
 
-`npm run test:unit -w @conexus/web` e `npm run test:browser -w @conexus/web`. Hoje os critérios 14 a 17
-falham: Ctrl+K não faz nada.
+`npm run test:unit -w @conexus/web`, `npm run test:browser -w @conexus/web` e `npm run lint:design -w
+@conexus/web` (critério 21). Hoje os critérios 14 a 17 falham: Ctrl+K não faz nada.
 
 ### Parar se
 
@@ -696,26 +762,26 @@ falham: Ctrl+K não faz nada.
 
 17 e 18. Ler `ui/sidebar.tsx:124-142`, `ui/frame.tsx:88-127`, `ui/sidebar-trigger.tsx`,
 `ui/sidebar-selector.tsx`, `ui/picker.tsx:25-45,132`, `hub/identity/company-switcher.tsx`,
-`hub/identity/use-companies.ts`, `hub/operations/central-header.tsx`, `hub/projects/project-picker.tsx:20-37`
-(como um assunto usa a `Picker`). Seguir SH `ui/sidebar.tsx:182-205` e SB
+`hub/identity/use-companies.ts`, `hub/projects/project-rail.tsx:38-71` (como a cabeça do projeto abre
+uma lista com `SidebarSwitch` de gatilho). Seguir SH `ui/sidebar.tsx:182-205` e SB
 `AppLayout/OrganizationDropdown.tsx:60-101`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `hub/identity/company-switcher.tsx` e o teste | muda | a rota da empresa |
-| `hub/operations/central-header.tsx` | muda: a mesma peça | a rota da Central |
-| `ui/sidebar-selector.tsx` | muda: fica `SidebarSwitch`, a cabeça que abre uma lista; sai `SidebarSelector` com o menu | os dois acima, `project-rail.tsx`, a vitrine |
-| `ui/frame.tsx`, `ui/sidebar.tsx` | muda: o gatilho da busca fecha a gaveta | · |
+| `hub/identity/company-switcher.tsx` e o teste | muda: o menu sai e entra a `Picker` | a rota da empresa |
 | `phone-menu.layout.test.ts`, `phone.layout.test.ts`, `project-phone.test.tsx` | muda | `test:browser`, `test:unit` |
 
 ### Os contratos que a unidade cria
 
-Nenhum tipo novo. `CompanySwitcher({ current: CompanyId })` mantém a assinatura e passa a desenhar a
-`Picker` de `ui/picker.tsx` com um grupo "Suas empresas", a busca a partir de `SEARCH_FROM` (7) e
-`SidebarSwitch` como gatilho; com uma empresa só, a cabeça sem botão, como hoje
-(`company-switcher.tsx:27`). O id é `CompanyId` (C23); o dono da lista é `useCompanies` (C26).
+Nenhum tipo novo. `CompanySwitcher({ current: CompanyId })` mantém a assinatura. Com duas ou mais
+empresas desenha a `Picker` de `ui/picker.tsx` com um grupo "Suas empresas", a busca a partir de
+`SEARCH_FROM` (7) e `SidebarSwitch` como gatilho; com uma só, a cabeça sem botão, que é
+`SidebarSelector` sem filhos, como hoje (`company-switcher.tsx:22-27`, `ui/sidebar-selector.tsx:50-53`).
+`ui/sidebar-selector.tsx` e a cabeça da Central (`hub/operations/central-header.tsx`) não mudam. O id é
+`CompanyId` (C23); o dono da lista é `useCompanies` (C26). O arquivo modelo é
+`hub/projects/project-rail.tsx:38-71`: cumpre C21, C23 e C26.
 
 ### As skills e a leitura
 
@@ -725,20 +791,22 @@ V32 e V56 e web W30.
 ### A ordem do trabalho
 
 1. **A troca de empresa.** Critérios: 19.
-   - **O que sai:** o menu `DropdownMenu` de `SidebarSelector` (`ui/sidebar-selector.tsx:39-70`).
+   - **O que sai:** o grupo `DropdownMenuGroup` de `company-switcher.tsx:28-38`.
    - **Testes:** `company-switcher.test.tsx`, "uma, duas e sete empresas".
    - **Mutações à mão:** tirar o filtro `others.length === 0`: com uma empresa aparece o botão e o
      teste fica vermelho.
 2. **A gaveta.** Critérios: 18.
-   - **O que entra:** a gaveta desenha a mesma barra do lugar; o gatilho da busca chama
-     `setOpenMobile(false)` antes de abrir a paleta (MA `app-sidebar.tsx:59-62`); o alto do celular
-     segue dizendo o lugar (`frame.tsx:88-110`).
+   - **O que entra:** só o que os testes pedirem: a gaveta já desenha a barra do lugar
+     (`ui/sidebar.tsx:124-142`) e a U3 já fez o gatilho da busca fechá-la; o alto do celular segue
+     dizendo o lugar (`frame.tsx:88-110`). A lista da troca de empresa cabe a 320 px.
    - **Testes:** `phone-menu.layout.test.ts`, os dois casos, a 390 e a 320 px.
 
 ### Como se prova
 
-Os critérios 18 e 19 falham hoje em parte: dentro de um projeto a gaveta não traz as seções dele (mapa
-7) e a troca de empresa não tem busca.
+`npm run test:unit -w @conexus/web`, `npm run test:browser -w @conexus/web` e `npm run lint:design -w
+@conexus/web` (critério 21). Hoje a gaveta já traz as seções do projeto
+(`hub/projects/project-phone.test.tsx`); os critérios 18 e 19 falham pela busca, que não existe na
+gaveta, e pela troca de empresa, que é um menu sem busca.
 
 ### Parar se
 
