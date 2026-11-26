@@ -727,7 +727,8 @@ which shadcn file it was copied from; the front matter holds their values. Their
 - **Search field.** An input group with a magnifier and a `search` input, `spacing.control` tall;
   the browser's clear button is not shown.
 - **Page header.** The page title with its actions at the end; the actions wrap under it when the
-  box is narrow, and an intro under the title lines them up with the top.
+  box is narrow, and an intro under the title lines them up with the top. A page of Configurações
+  is headed by `SettingsPageTitle` (`ui/list.tsx`), the page title in `display-narrow`.
 - **Card, Project card.** Card radius, `raised`, shadow `1`, no border; the Início shows the
   Projetos as block rows instead. **Settings section:** title and a sentence on the left from `md`, controls on the right,
   parts apart by a hairline (V19).

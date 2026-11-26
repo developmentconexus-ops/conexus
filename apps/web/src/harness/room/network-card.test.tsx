@@ -1,7 +1,7 @@
 import { CompanyId, MACHINE_TOOL } from '@conexus/hub-api'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { http } from 'msw'
+import { delay, HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { companyRead, hubServer, refusal } from '../../platform/test-hub.tsx'
@@ -49,17 +49,22 @@ function cardOf(
   return item
 }
 
-function show(item: NetworkCardItem, role = 'owner', ok = true) {
+type CompanyAnswer = 'owner' | 'admin' | 'developer' | 'member' | 'read-fails' | 'read-pending'
+
+function companyHandlers(answer: CompanyAnswer) {
+  const company = `*/api/companies/${COMPANY.id}`
+  if (answer === 'read-fails') return [http.get(company, () => refusal('DATABASE_UNAVAILABLE'))]
+  if (answer !== 'read-pending') return companyRead({ role: answer })
+  return [http.get(company, () => delay('infinite').then(() => HttpResponse.json({})))]
+}
+
+function show(item: NetworkCardItem, company: CompanyAnswer = 'owner', ok = true) {
   const answers: [string, unknown][] = []
   function answer(toolCallId: string, resumeData: unknown) {
     answers.push([toolCallId, resumeData])
     return Promise.resolve({ ok })
   }
-  server.use(
-    ...(role === 'unread'
-      ? [http.get(`*/api/companies/${COMPANY.id}`, () => refusal('DATABASE_UNAVAILABLE'))]
-      : companyRead({ role })),
-  )
+  server.use(...companyHandlers(company))
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const room = assistantRoomOf({ network: { companyId: CompanyId.parse(COMPANY.id) } })
   render(
@@ -100,7 +105,7 @@ test('o cartão aberto diz cada domínio, a estrela em palavras, o motivo e que 
   expect(screen.getByText(STEER)).toBeTruthy()
 })
 
-for (const role of ['owner', 'admin']) {
+for (const role of ['owner', 'admin'] as const) {
   test(`quem é ${role} vê os três botões, a empresa antes da conversa (20)`, async () => {
     show(cardOf(CALL, EVERY_SCOPE), role)
     const region = await card()
@@ -112,6 +117,13 @@ for (const role of ['owner', 'admin']) {
     ])
   })
 }
+
+test('um domínio pedido duas vezes aparece numa linha só (20)', async () => {
+  const twice = ['loja.exemplo.com.br', 'Loja.Exemplo.com.br']
+  show(cardOf(CALL, { ...EVERY_SCOPE, domains: twice }))
+  const domains = (await card()).getByText('Domínios').nextSibling?.childNodes
+  expect([...(domains ?? [])].map((line) => line.textContent)).toEqual(['loja.exemplo.com.br'])
+})
 
 test('o desenvolvedor vê só Liberar nesta conversa e Recusar, e o sim responde a conversa (20)', async () => {
   const answers = show(cardOf(CALL, { ...ASKED, scopes: ['CONVERSATION'] }), 'developer')
@@ -160,8 +172,15 @@ test('o envio que o Hub não segura mais diz a frase embaixo e devolve os botõe
   await lit(region, 'Liberar nesta conversa')
 })
 
+test('enquanto o papel é lido, os botões da suspensão ficam apagados', async () => {
+  show(cardOf(CALL, EVERY_SCOPE), 'read-pending')
+  const region = await card()
+  const buttons = region.getAllByRole('button')
+  expect(buttons.map((button) => button.hasAttribute('disabled'))).toEqual([true, true, true])
+})
+
 test('sem ler o papel, os botões são os da suspensão e o Hub decide', async () => {
-  const answers = show(cardOf(CALL, { ...ASKED, scopes: ['CONVERSATION'] }), 'unread')
+  const answers = show(cardOf(CALL, { ...ASKED, scopes: ['CONVERSATION'] }), 'read-fails')
   const region = await card()
   fireEvent.click(await lit(region, 'Liberar nesta conversa'))
   await waitFor(() => expect(answers).toHaveLength(1))
@@ -216,10 +235,21 @@ for (const [result, said] of [
   })
 }
 
-test('a chamada que o Mastra negou (Parar, um reinício) fecha como Recusado', async () => {
-  show(cardOf({ ...CALL, state: 'output-denied' }))
-  expect((await card()).getByText('Recusado.')).toBeTruthy()
-})
+// The part Mastra saves for a parked call on Parar (`settleSuspendedToolCallsAsDenied`).
+const STOP = { id: CALL.toolCallId, approved: false, reason: 'Aborted by the user' } as const
+
+for (const [by, closed] of [
+  ['que o Parar fechou', { ...CALL, state: 'output-denied', approval: STOP }],
+  ['negada sem motivo', { ...CALL, state: 'output-denied' }],
+] as const) {
+  test(`a chamada ${by} fecha como Recusado, sem botões`, async () => {
+    show(cardOf(closed))
+    const region = await card()
+    expect(region.getByText('Recusado.')).toBeTruthy()
+    expect(buttonsOf(region)).toEqual([])
+    expect(screen.queryByText(STEER)).toBeNull()
+  })
+}
 
 test('o domínio já aberto e a chamada que falhou ficam na linha da ferramenta', () => {
   const already = { kind: 'OPEN', domains: ASKED.domains, scope: 'ALREADY' }

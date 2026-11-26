@@ -12,7 +12,7 @@ import {
   CodeBlockTitle,
 } from '../code-block.tsx'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible.tsx'
-import { List, PageTitle, Row, SectionTitle } from '../list.tsx'
+import { List, PageTitle, Row, SectionTitle, SettingsPageTitle } from '../list.tsx'
 import { Meter, MeterLabel } from '../meter.tsx'
 import { Page } from '../page.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../resizable.tsx'
@@ -82,6 +82,7 @@ export const DATA: readonly ShowcaseEntry[] = [
   entry('list.tsx', 'Dados', 'Títulos de página e de seção, e a lista de linhas simples.', () => (
     <>
       <PageTitle>Clientes</PageTitle>
+      <SettingsPageTitle>Pessoas e convites</SettingsPageTitle>
       <SectionTitle>Recentes</SectionTitle>
       <List>
         <Row>Maria</Row>

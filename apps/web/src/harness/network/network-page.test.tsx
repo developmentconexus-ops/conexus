@@ -116,7 +116,7 @@ test.each<[Role, boolean]>([
   },
 )
 
-test('adicionar e remover: o domínio fora da forma recebe a frase do campo, e a lista muda sem recarregar', async () => {
+test('adicionar e remover: os erros dos campos aparecem juntos, e a lista muda sem recarregar', async () => {
   const hub = open('admin')
   const list = within(await section('Lista da empresa'))
   expect(list.getByText('Nenhum domínio liberado.')).toBeTruthy()
@@ -127,11 +127,11 @@ test('adicionar e remover: o domínio fora da forma recebe a frase do campo, e a
   fireEvent.change(domain, { target: { value: 'https://loja.exemplo.com.br/ofertas' } })
   fireEvent.click(dialog.getByRole('button', { name: 'Adicionar' }))
   expect(await dialog.findByText('Escreva o motivo.')).toBeTruthy()
-  fireEvent.change(reason, { target: { value: 'ler os preços' } })
-  fireEvent.click(dialog.getByRole('button', { name: 'Adicionar' }))
-  expect(await dialog.findByText('Este domínio não pode ser liberado.')).toBeTruthy()
+  expect(dialog.getByText('Este domínio não pode ser liberado.')).toBeTruthy()
   expect(domain.getAttribute('aria-invalid')).toBe('true')
+  expect(reason.getAttribute('aria-invalid')).toBe('true')
   expect(hub.domains).toEqual([])
+  fireEvent.change(reason, { target: { value: 'ler os preços' } })
   fireEvent.change(domain, { target: { value: 'Loja.Exemplo.com.br' } })
   fireEvent.click(dialog.getByRole('button', { name: 'Adicionar' }))
   const remove = await list.findByRole('button', { name: 'Remover loja.exemplo.com.br' })
@@ -151,6 +151,22 @@ test('adicionar e remover: o domínio fora da forma recebe a frase do campo, e a
   expect(await list.findByText('Nenhum domínio liberado.')).toBeTruthy()
   await gone()
   expect(hub.domains).toEqual([])
+})
+
+test('o domínio que a tela aceitou e o Hub recusa recebe a frase no campo', async () => {
+  open('admin')
+  const list = within(await section('Lista da empresa'))
+  server.use(http.post(DOMAINS, () => refusal('NETWORK_DOMAIN_INVALID')))
+  fireEvent.click(list.getByRole('button', { name: 'Adicionar' }))
+  const dialog = within(await screen.findByRole('dialog', { name: 'Adicionar domínio' }))
+  const domain = dialog.getByRole('textbox', { name: 'Domínio' })
+  fireEvent.change(domain, { target: { value: 'loja.exemplo.com.br' } })
+  fireEvent.change(dialog.getByRole('textbox', { name: 'Motivo' }), {
+    target: { value: 'ler os preços' },
+  })
+  fireEvent.click(dialog.getByRole('button', { name: 'Adicionar' }))
+  expect(await dialog.findByText('Este domínio não pode ser liberado.')).toBeTruthy()
+  expect(domain.getAttribute('aria-invalid')).toBe('true')
 })
 
 test('remover um domínio já tirado relê a lista, sem erro', async () => {

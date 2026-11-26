@@ -47,7 +47,6 @@ export function networkItemOf(
   call: { toolCallId: string; toolName: string; state: string; args: unknown; result?: unknown },
   suspension: Suspended | undefined,
   at: 'open' | 'result' | 'closed' | 'none',
-  stopped: boolean,
 ): NetworkCardItem | undefined {
   if (call.toolName !== NETWORK_TOOL) return undefined
   const card = {
@@ -70,7 +69,7 @@ export function networkItemOf(
     }
     case 'closed': {
       const asked = networkAskedOf(call.args)
-      const denied = stopped || call.state === 'output-denied'
+      const denied = call.state === 'output-denied'
       return denied && asked !== undefined ? { ...card, state: 'refused', asked } : undefined
     }
     case 'none':

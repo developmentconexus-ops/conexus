@@ -1,10 +1,11 @@
 import type { CompanyId } from '@conexus/hub-api'
-import { addNetworkDomain, NETWORK_LIMITS } from '@conexus/hub-api'
+import { addNetworkDomain, NETWORK_LIMITS, NetworkDomain } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useFormContext } from 'react-hook-form'
-import { unconfirmedText } from '../../platform/hub.ts'
+import type { z } from 'zod'
+import { sentenceOfCode, unconfirmedText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
@@ -21,6 +22,8 @@ import { Fact } from './domain-words.tsx'
 import { addNetworkDomainMutation } from './queries.ts'
 
 const UNCONFIRMED = unconfirmedText('a mudança', 'Veja a lista.')
+
+const BodyWithCheckedDomain = addNetworkDomain.input.body.extend({ domain: NetworkDomain })
 
 function HintedField(props: {
   name: 'domain' | 'reason'
@@ -53,9 +56,9 @@ function HintedField(props: {
 
 function AddForm({ companyId, onClose }: { companyId: CompanyId; onClose: () => void }) {
   const send = useMutation(addNetworkDomainMutation)
-  const form = useSchemaForm(addNetworkDomain.input.body, { domain: '', reason: '' })
+  const form = useSchemaForm(BodyWithCheckedDomain, { domain: '', reason: '' })
 
-  async function submit(body: { domain: string; reason: string }) {
+  async function submit(body: z.output<typeof BodyWithCheckedDomain>) {
     try {
       await send.mutateAsync({ params: { companyId }, body })
       onClose()
@@ -69,6 +72,7 @@ function AddForm({ companyId, onClose }: { companyId: CompanyId; onClose: () => 
       <HintedField
         name="domain"
         label="Domínio"
+        invalid={sentenceOfCode('NETWORK_DOMAIN_INVALID')}
         hint={
           <>
             Só o nome, como <Fact>loja.exemplo.com.br</Fact>, ou <Fact>*.cdn.exemplo.com</Fact> para

@@ -185,10 +185,9 @@ export function invocationToItem(
 
 function suspendingCardOrRow(inv: Invocation, suspension: Suspended | undefined): TranscriptItem {
   const at = cardState(inv, suspension !== undefined)
-  const stopped = stoppedBy(inv)
   return (
-    noteItemOf(inv, suspension, at, stopped) ??
-    networkItemOf(inv, suspension, at, stopped) ??
+    noteItemOf(inv, suspension, at, stoppedBy(inv)) ??
+    networkItemOf(inv, suspension, at) ??
     toolRowOf(inv)
   )
 }
