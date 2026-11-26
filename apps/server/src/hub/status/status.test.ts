@@ -48,6 +48,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     dataReads,
     lakeCopies,
     network,
+    treatment,
   } = subjectsOf({
     mastraPool: test.mastraPool,
     database: test.database,
@@ -75,6 +76,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     dataReads,
     lakeCopies,
     network,
+    treatment,
   })
   t.after(() => app.close())
   return { app, status, test }
@@ -137,7 +139,7 @@ test('recordStart grava a versão que roda, e o último início passa a ser ele'
   assert.equal((await app.inject(STATUS)).json().previousStart.state, 'RECORDED')
 })
 
-test('com o banco fora, /api/status responde 503 e /api/health continua 200', async (t) => {
+async function hubWithoutDatabase(t: Parameters<typeof unreachableDatabase>[0]) {
   const database = await unreachableDatabase(t)
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
@@ -159,6 +161,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     dataReads,
     lakeCopies,
     network,
+    treatment,
   } = subjectsOf({
     mastraPool: testMastraPool(t, config),
     database,
@@ -186,8 +189,14 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     dataReads,
     lakeCopies,
     network,
+    treatment,
   })
   t.after(() => app.close())
+  return app
+}
+
+test('com o banco fora, /api/status responde 503 e /api/health continua 200', async (t) => {
+  const app = await hubWithoutDatabase(t)
   const response = await app.inject(STATUS)
   assert.equal(response.statusCode, 503)
   assert.match(String(response.headers['content-type']), /^application\/problem\+json/)

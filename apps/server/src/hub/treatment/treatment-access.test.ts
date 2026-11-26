@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
+import type { Person } from '../identity/test-hub.ts'
 import {
   BRUNO,
   CARLA,
@@ -28,6 +29,11 @@ function routesOf(base: string, id: string, version: { number: number; hash: str
   ] as const
 }
 
+function asked(on: TreatmentOn, who: Person, route: ReturnType<typeof routesOf>[number]) {
+  const [method, url, body] = route
+  return method === 'GET' ? call(on.hub, who, method, url) : post(on.hub, who, url, body)
+}
+
 async function without(on: TreatmentOn) {
   const carla = await memberOn(on.hub, on.companyId, CARLA, 'developer')
   const davi = await memberOn(
@@ -50,8 +56,9 @@ test('permissão: o desenvolvedor, o membro e o papel próprio recebem 404 em ca
   const on = await treatmentOn(t)
   const { id, version } = await on.proposed(OF_NOTAS)
   for (const who of await without(on)) {
-    for (const [method, url, body] of routesOf(on.base, id, version)) {
-      const refused = await call(on.hub, who, method, url, body)
+    for (const route of routesOf(on.base, id, version)) {
+      const [method, url] = route
+      const refused = await asked(on, who, route)
       assert.deepEqual(
         [refused.statusCode, codeOf(refused)],
         [404, 'NOT_FOUND'],
@@ -116,10 +123,11 @@ test('outra empresa: o modelo dela não se lê, não muda e não se liga', async
      values ($1, $2, $3, 1, 'select 1', '[]', $4, $5, now())`,
     [randomUUID(), id, other, hash, on.ana.id],
   )
-  for (const [method, url, body] of routesOf(on.base, id, { number: 1, hash }).filter(([, url]) =>
-    url.includes(id),
-  )) {
-    const refused = await call(on.hub, on.ana, method, url, body)
+  const named = routesOf(on.base, id, { number: 1, hash }).filter(([, url]) => url.includes(id))
+  assert.equal(named.length, 3)
+  for (const route of named) {
+    const [method, url] = route
+    const refused = await asked(on, on.ana, route)
     assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'], `${method} ${url}`)
   }
   assert.equal((await on.listed()).tables.filter((table) => table.layer === 'negocio').length, 0)
