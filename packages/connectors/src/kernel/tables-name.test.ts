@@ -11,6 +11,19 @@ test('o nome no lago é o prefixo mais o nome, e o da tabela só minúsculo', ()
   assert.throws(() => TableName.parse('x'.repeat(41)), 'até 40')
 })
 
+test('o corte do nome da ligação que cai num _ não deixa dois', () => {
+  assert.equal(
+    suggestedLakeName({
+      connector: ConnectorId.parse('mercado-livre'),
+      table: TableName.parse('periodos_de_faturamento'),
+      connectionName: 'Loja oficial da empre sa',
+      taken: (name) => name === 'mercado_livre_periodos_de_faturamento',
+    }),
+    'mercado_livre_loja_oficial_da_empre_periodos_de_faturamento',
+    'o corte que cai num _ não deixa dois',
+  )
+})
+
 test('o nome sugerido: o prefixo do conector, o da ligação quando o nome já existe, e nunca acima de 60', () => {
   const sankhyaId = ConnectorId.parse('sankhya')
   const notas = TableName.parse('notas')
@@ -46,16 +59,6 @@ test('o nome sugerido: o prefixo do conector, o da ligação quando o nome já e
   })
   assert.equal(long, 'mercado_livre_loja_oficial_da_empres_periodos_de_faturamento')
   assert.equal(long.length, 60)
-  assert.equal(
-    suggestedLakeName({
-      connector: ConnectorId.parse('mercado-livre'),
-      table: TableName.parse('periodos_de_faturamento'),
-      connectionName: 'Loja oficial da empre sa',
-      taken: (name) => name === 'mercado_livre_periodos_de_faturamento',
-    }),
-    'mercado_livre_loja_oficial_da_empre_periodos_de_faturamento',
-    'o corte que cai num _ não deixa dois',
-  )
   const names = new Set(['sankhya_notas', 'sankhya_matriz_notas', 'sankhya_matriz_notas_2'])
   function held(name: string) {
     return names.has(name)

@@ -185,17 +185,12 @@ test('o teto não dá à plataforma nenhuma forma de o que escreve mudar o trata
 
 test('o teto recusa criar e apagar nas áreas da cópia, e deixa só mudar', () => {
   const boundary = statementsOf(find(platform, 'Boundary'))
-  const bucket = 's3tablescatalog/conexus-lagodeaaaaaa'
-  for (const area of ['raw', 'current']) {
-    for (const resource of [`database/${bucket}/${area}`, `table/${bucket}/${area}/notas`]) {
-      const arn = `arn:aws:glue:${REGION}:${ACCOUNT}:${resource}`
-      for (const [action, held] of [
-        ['glue:CreateTable', false],
-        ['glue:DeleteTable', false],
-        ['glue:UpdateTable', true],
-      ] as const) {
-        assert.equal(allows(boundary, asked(action, arn)), held, `${action} ${resource}`)
-      }
+  const kept = { 'glue:CreateTable': false, 'glue:DeleteTable': false, 'glue:UpdateTable': true }
+  for (const path of ['raw', 'raw/notas', 'current', 'current/notas']) {
+    const kind = path.includes('/') ? 'table' : 'database'
+    const arn = `arn:aws:glue:${REGION}:${ACCOUNT}:${kind}/s3tablescatalog/conexus-lagodeaaaaaa/${path}`
+    for (const [action, held] of Object.entries(kept)) {
+      assert.equal(allows(boundary, asked(action, arn)), held, `${action} ${path}`)
     }
   }
 })
