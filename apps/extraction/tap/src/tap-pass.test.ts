@@ -284,6 +284,10 @@ test('a data que recua com uma passada inteira salva: a passada é planejada de 
   for (const startDate of ['2026-10-01', '2026-11-01']) {
     assert.deepEqual((await again(startDate)).versions, [NOW], startDate)
   }
+  const changed = await again('2026-08-01', {
+    bookmarks: { efd: { pass: { ...pass, whole: false } } },
+  })
+  assert.equal(changed.months.includes('2026-08'), false, 'a passada que não é inteira retoma')
 })
 
 test('o binário: base64 com contentEncoding no esquema, os bytes como vieram; o CLOB é texto', () => {
