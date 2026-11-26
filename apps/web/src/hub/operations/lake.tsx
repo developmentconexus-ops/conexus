@@ -16,6 +16,8 @@ import { clientLakeQuery, sendLakeCreation, sendLakeDeletion } from './queries.t
 
 const LOST =
   'Tudo o que for copiado para o lago desta empresa sai, sem volta. O dado continua nos sistemas da empresa.'
+const OUTDATED =
+  'Este lago é de uma receita anterior. Para tratar o dado, apague e crie o lago de novo.'
 
 /**
  * Set when an action of the block starts: the control that has the focus may leave with the state it
@@ -160,11 +162,14 @@ function stateOf(client: Client, lake: ClientLake, acted: Acted): ReactNode {
     case 'READY':
       return (
         <div className="flex flex-col gap-md sm:flex-row sm:items-end sm:justify-between">
-          <p className="min-w-0 break-words">
-            Pronto. O lago <code className="break-all">{lake.bucket}</code> está em{' '}
-            <span className="whitespace-nowrap">{lake.region}</span>
-            {` desde ${dayOf(lake.readyAt)} ${clockOf(lake.readyAt)}.`}
-          </p>
+          <div className="flex min-w-0 flex-col gap-xs">
+            <p className="break-words">
+              Pronto. O lago <code className="break-all">{lake.bucket}</code> está em{' '}
+              <span className="whitespace-nowrap">{lake.region}</span>
+              {` desde ${dayOf(lake.readyAt)} ${clockOf(lake.readyAt)}.`}
+            </p>
+            {lake.outdated && <p>{OUTDATED}</p>}
+          </div>
           <div className="shrink-0">
             <DeleteLake client={client} acted={acted} />
           </div>

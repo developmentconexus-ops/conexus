@@ -8,8 +8,9 @@ import type { Attempt, AwsAnswer, Session, Where } from './aws-session.ts'
 import { isNamed, POLL_SECONDS } from './aws-session.ts'
 import { forgetStoppingPoint } from './aws-state.ts'
 import type { AwsConfig } from './config-aws.ts'
+import { LakeArea } from './lake-areas.ts'
 
-type LakeTable = Readonly<{ namespace: 'raw' | 'current'; name: string }>
+type LakeTable = Readonly<{ namespace: LakeArea; name: string }>
 
 export type CopyQueue = {
   /** One long poll, never the database. Aborting `signal` ends it with no answer. */
@@ -31,7 +32,7 @@ const ListedTables = z.object({
   tables: z
     .array(
       z.object({
-        namespace: z.tuple([z.enum(['raw', 'current'])]),
+        namespace: z.tuple([LakeArea]),
         name: z.string(),
       }),
     )

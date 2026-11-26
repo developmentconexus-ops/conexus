@@ -4,11 +4,13 @@ import { z } from 'zod'
 import type { TableColumn, TableDeclaration, TablePosition } from '../index.ts'
 import {
   discoverTables,
+  lakeNameOf,
   readTablePage,
   sankhyaFake,
   startDateLimits,
   tableCeiling,
   tableMonths,
+  treatedSelect,
 } from '../index.ts'
 import { sendTo, tableReachOf, walkTable } from '../kernel/conformance-tables.ts'
 import { defineConnector } from '../kernel/definition.ts'
@@ -279,4 +281,30 @@ test('a coluna que o dicionário não lista: a descoberta a traz pelo tipo do Or
     rows: null,
     bodyBytes: null,
   })
+})
+
+test('o Sankhya trata as quatro tabelas de venda, cada coluna lida de uma que a tabela copiada tem, e a data da negociação em DATE', async () => {
+  const found = await discoverTables(await tableReachOf(sankhya, sankhyaFake()))
+  const treated = found.flatMap(({ declaration: { name, treated }, columns }) => {
+    if (treated === undefined) return []
+    assert.ok(treated.description.length > 0, name)
+    const source = new Set(columns?.map((column) => column.name.toLowerCase()))
+    const read = treated.columns.map(({ column, as, cast }) => {
+      assert.ok(source.has(column), `${name}: ${column}`)
+      assert.equal(as, column)
+      return cast === 'KEEP' ? column : `${column}:${cast}`
+    })
+    return [[name, read.join(' ')]]
+  })
+  assert.deepEqual(Object.fromEntries(treated), {
+    notas:
+      'nunota numnota codemp codtipoper tipmov statusnota dtneg:DATE codparc codvend vlrnota dtalter',
+    notas_itens: 'nunota sequencia codprod qtdneg vlrunit vlrtot codvol dtalter',
+    parceiros: 'codparc nomeparc razaosocial cgc_cpf tippessoa ativo cliente fornecedor dtalter',
+    produtos: 'codprod descrprod referencia codgrupoprod codvol marca ativo dtalter',
+  })
+  const notas = tableOf('notas').treated ?? assert.fail()
+  const sql = treatedSelect(lakeNameOf('sankhya_', 'notas'), notas)
+  assert.ok(sql.includes('\n  CAST("dtneg" AS DATE) AS "dtneg",\n'), sql)
+  assert.ok(sql.includes('\n  "vlrnota" AS "vlrnota",\n'), sql)
 })

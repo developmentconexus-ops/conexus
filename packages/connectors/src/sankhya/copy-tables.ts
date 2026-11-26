@@ -1,10 +1,15 @@
 import { defineTables } from '../kernel/tables.ts'
+import type { TreatedColumn } from '../kernel/tables-treated.ts'
 import { contarMeses, descobrirTabelas, lerTabela, maiorAlteracao } from './copy-reads.ts'
 import type { Row } from './copy-tables-fiscal.ts'
 import { changed, FISCAL_TABLES, FULL } from './copy-tables-fiscal.ts'
 
 /** The columns a TABLE source declares nothing of: the dictionary gives them, less the ones the copy leaves out. */
 const ALL = { kind: 'DISCOVERED', exclude: [] } as const
+
+function kept(...columns: readonly string[]): readonly TreatedColumn[] {
+  return columns.map((column) => ({ column, as: column, cast: 'KEEP' }))
+}
 
 function declared(rows: readonly Row[]) {
   return rows.map(({ table, exclude, ...row }) => ({
@@ -25,6 +30,14 @@ const CORE_TABLES: readonly Row[] = [
     table: 'TGFCAB',
     key: ['NUNOTA'],
     mode: changed('DTALTER', false),
+    treated: {
+      description: 'Notas e pedidos (TGFCAB), limpos: uma linha por nota, com os tipos de negócio.',
+      columns: [
+        ...kept('nunota', 'numnota', 'codemp', 'codtipoper', 'tipmov', 'statusnota'),
+        { column: 'dtneg', as: 'dtneg', cast: 'DATE' },
+        ...kept('codparc', 'codvend', 'vlrnota', 'dtalter'),
+      ],
+    },
   },
   {
     name: 'notas_itens',
@@ -34,6 +47,19 @@ const CORE_TABLES: readonly Row[] = [
     table: 'TGFITE',
     key: ['NUNOTA', 'SEQUENCIA'],
     mode: changed('DTALTER', false),
+    treated: {
+      description: 'Itens das notas (TGFITE), limpos: uma linha por item de nota.',
+      columns: kept(
+        'nunota',
+        'sequencia',
+        'codprod',
+        'qtdneg',
+        'vlrunit',
+        'vlrtot',
+        'codvol',
+        'dtalter',
+      ),
+    },
   },
   {
     name: 'financeiro',
@@ -72,6 +98,20 @@ const CORE_TABLES: readonly Row[] = [
     table: 'TGFPAR',
     key: ['CODPARC'],
     mode: changed('DTALTER', true),
+    treated: {
+      description: 'Parceiros (TGFPAR), limpos: uma linha por parceiro.',
+      columns: kept(
+        'codparc',
+        'nomeparc',
+        'razaosocial',
+        'cgc_cpf',
+        'tippessoa',
+        'ativo',
+        'cliente',
+        'fornecedor',
+        'dtalter',
+      ),
+    },
   },
   {
     name: 'produtos',
@@ -82,6 +122,19 @@ const CORE_TABLES: readonly Row[] = [
     key: ['CODPROD'],
     mode: changed('DTALTER', true),
     exclude: ['IMAGEM'],
+    treated: {
+      description: 'Produtos (TGFPRO), limpos: uma linha por produto ou serviço.',
+      columns: kept(
+        'codprod',
+        'descrprod',
+        'referencia',
+        'codgrupoprod',
+        'codvol',
+        'marca',
+        'ativo',
+        'dtalter',
+      ),
+    },
   },
   {
     name: 'vendedores',

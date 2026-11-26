@@ -1,7 +1,6 @@
 import type { AccountRef, Connector, TableDeclaration, TableMode } from '@conexus/connectors'
 import {
   discoverTables,
-  lakeNameOf,
   sourceOf,
   startDateLimits,
   suggestedLakeName,
@@ -75,7 +74,7 @@ export type CopySource = {
   connection(at: Where): Promise<CopyConnection>
   open(at: Where): Promise<CopyOpened>
   columns(at: Where): Promise<CopyColumns>
-  /** A name is the connector's prefix and a part after it, inside the contract's pattern and the kit's rule (T.16). */
+  /** A name is the connector's prefix and a part after it, inside the contract's pattern (T.16). */
   nameIsValid(connector: ConnectorId, name: string): boolean
   /** The kit's suggestion for a table, with the connection's name when the plain one is taken (T.16). */
   suggestedName(
@@ -128,14 +127,9 @@ export function unavailableFor(connector: Connector): LakeUnavailable | null {
 
 function nameIsValid(connector: ConnectorId, name: string): boolean {
   const prefix = tablePrefixOf(connector)
-  if (!name.startsWith(prefix) || name.length === prefix.length) return false
-  if (!LAKE_TABLE_NAME_PATTERN.test(name)) return false
-  try {
-    return lakeNameOf(prefix, name.slice(prefix.length)) === name
-  } catch (error) {
-    if (error instanceof RangeError) return false
-    throw error
-  }
+  return (
+    name.startsWith(prefix) && name.length > prefix.length && LAKE_TABLE_NAME_PATTERN.test(name)
+  )
 }
 
 /**

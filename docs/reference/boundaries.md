@@ -1699,3 +1699,27 @@ reference tool checks a read against its documentation.
   the laboratory has no writer role, and the queue's policy denies the send to anyone else.
 - **Revisit when** the queue or the rule changes, or a measured delay of the result exceeds the
   grace.
+
+## dbt-athena 1.11.2: a treated table is dropped and created again (O primeiro modelo vira tabela tratada)
+
+- **Library line.** On an `S3 Tables` database, `materialized='table'` drops the table that exists
+  and creates it again (`dbt-athena@1.11.2 macros/materializations/models/table/table.sql:102-112`),
+  because `S3 Tables` has no `ALTER TABLE RENAME` (`:103-105`). On Glue Iceberg the same macro
+  builds beside and swaps (`:124-169`). It also creates a schema that is missing, which the
+  treatment role may not do.
+- **Hand-made piece.** None for the window. In the project `treat.py` writes, an empty
+  `athena__create_schema` macro, since the areas are the lake recipe's, and
+  `LINES_BEFORE_THE_SQL`, the lines this version sends to Athena before a model's SQL, so that a
+  failure names the line of the person's SQL.
+- **What it costs.** A table is missing to its readers while its `CREATE TABLE AS` runs: a median of
+  24.5 s and at most 28.7 s over ten builds of 450 columns and 100,000 rows, on the laboratory
+  lake. A statement that fails leaves the table out until the next good run, the one it had before
+  included.
+- **Native way out.** `S3 Tables` renames a table (`RenameTable`): build beside, drop, rename. The
+  laboratory measured a median of 675 ms between the calls; a Lake Formation grant per table does
+  not follow the new name, so the swap needs wildcard grants on the areas, or a grant again at
+  each swap. It comes with the `T2` step.
+- **Proof.** `apps/extraction/tests/test_treat.py`: a real `dbt build` sends Athena the statements
+  of the recorded build, drops each table before creating it again, and gives the line of the
+  person's SQL with no `depends_on` line and with two.
+- **Revisit when** `T2` starts, or a version of dbt-athena changes the statement it sends.

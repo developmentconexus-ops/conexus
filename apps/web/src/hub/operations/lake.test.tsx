@@ -20,7 +20,10 @@ const READY = {
   bucket: 'conexus-k3x9a0b1c2d3',
   region: 'us-east-2',
   readyAt: AT,
+  outdated: false,
 } as const
+const OUTDATED =
+  'Este lago é de uma receita anterior. Para tratar o dado, apague e crie o lago de novo.'
 
 beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }))
 afterEach(() => vi.useRealTimers())
@@ -87,7 +90,15 @@ test('lago: do sem lago ao pronto, perguntando de novo a cada 5 s', async () => 
     /^Pronto\. O lago conexus-k3x9a0b1c2d3 está em us-east-2 desde \d\d\/\d\d\/2026 \d\d:\d\d\.$/,
   )
   expect(lake.getByRole('button', { name: 'Apagar o lago' })).toBeTruthy()
+  expect(lake.queryByText(OUTDATED)).toBeNull()
   expect(held.created).toBe(1)
+})
+
+test('lago: o pronto de uma receita anterior diz para apagar e criar de novo', async () => {
+  world({ ...READY, outdated: true })
+  const lake = await block()
+  expect(await lake.findByText(OUTDATED)).toBeTruthy()
+  expect(lake.getByRole('button', { name: 'Apagar o lago' })).toBeTruthy()
 })
 
 test('lago: a falha oferece tentar de novo, que cria outro', async () => {

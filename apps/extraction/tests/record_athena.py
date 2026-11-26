@@ -73,12 +73,13 @@ def main(lake: str) -> None:
     wire = Wire()
     athena.meta.events.register("response-received.athena.*", wire)
     name = f"conexus-{lake}"
-    context = {"Catalog": f"s3tablescatalog/{name}", "Database": "raw"}
     kept: dict[str, tuple[str, dict[str, t.Any]]] = {}
 
     def start(query: str, file: str) -> str:
         query_id: str = athena.start_query_execution(
-            QueryString=query, WorkGroup=name, QueryExecutionContext=context
+            QueryString=query,
+            WorkGroup=name,
+            QueryExecutionContext={"Catalog": f"s3tablescatalog/{name}", "Database": "raw"},
         )["QueryExecutionId"]
         kept[file] = ("StartQueryExecution", wire.last)
         return query_id

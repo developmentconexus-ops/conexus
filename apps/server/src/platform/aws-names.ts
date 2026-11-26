@@ -11,8 +11,8 @@ export type StackId = z.infer<typeof StackId>
 export const StackName = z.string().startsWith('conexus-lago-').brand('StackName')
 export type StackName = z.infer<typeof StackName>
 
-// The names infra/aws/lib/names.ts owns on the platform's side (C26); aws.test.ts checks them
-// against lake.template.json, the Hub role's pattern and names.ts itself.
+// The names infra/aws/lib/names.ts owns on the platform's side (C26); aws.test.ts and
+// aws-names.test.ts check them against lake.template.json, the Hub role's pattern and names.ts.
 const STACK_PREFIX = 'conexus-lago-'
 const BUCKET_PREFIX = 'conexus-'
 const TEMPLATE_PREFIX = 'lago/'
@@ -27,6 +27,7 @@ export const COPY_CONTAINER = 'copia'
 export const RUN_PARAMETER_VARIABLE = 'CONEXUS_RUN_PARAMETER'
 
 const WRITER_SUFFIX = '-escritor'
+const TREATER_SUFFIX = '-tratador'
 const STATE_BUCKET_PREFIX = 'conexus-estado-'
 /** The id Meltano gives the copy's one pipeline: the environment, the tap and the target (`meltano run`). */
 const STATE_ID = 'copia:tap-conexus-to-target-conexus'
@@ -39,6 +40,11 @@ export function runParameterName(company: string, run: string): string {
 /** The lake's writer role, which the copy task runs as (`infra/aws/lib/names.ts` `WRITER_SUFFIX`). */
 export function writerRoleArn(account: string, lake: LakeId): string {
   return `arn:aws:iam::${account}:role/${BUCKET_PREFIX}${lake}${WRITER_SUFFIX}`
+}
+
+/** The lake's treatment role, which a treatment round runs as (`infra/aws/lib/names.ts` `TREATER_SUFFIX`). */
+export function treaterRoleArn(account: string, lake: LakeId): string {
+  return `arn:aws:iam::${account}:role/${BUCKET_PREFIX}${lake}${TREATER_SUFFIX}`
 }
 
 export function stackName(lake: LakeId): string {

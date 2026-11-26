@@ -68,8 +68,8 @@ async function lakeOf(tx: ReadTx, companyId: CompanyId, lock = false): Promise<L
   }
 }
 
-/** What the screen shows of the row (decision A). */
-function viewOf(lake: Lake | undefined): ClientLake {
+/** What the screen shows of the row (decision A), against the recipe this image publishes. */
+function viewOf(deps: LakeDeps, lake: Lake | undefined): ClientLake {
   if (lake === undefined) return { state: 'NONE' }
   const at = lake.since.toISOString()
   switch (lake.state) {
@@ -81,6 +81,7 @@ function viewOf(lake: Lake | undefined): ClientLake {
         bucket: bucketName(lake.lakeId),
         region: lake.at.region,
         readyAt: at,
+        outdated: lake.template !== deps.config.aws.templateVersion,
       }
     case 'failed':
       return { state: 'FAILED', code: 'LAKE_CREATE_FAILED', at }
@@ -243,8 +244,8 @@ async function read(deps: LakeDeps, input: Input): Promise<ClientLake> {
     await known(deps, tx, admitted, input.companyId)
     return lakeOf(tx, input.companyId)
   })
-  if (lake === undefined || !moving(lake)) return viewOf(lake)
-  return viewOf(await settled(deps, scope, lake))
+  if (lake === undefined || !moving(lake)) return viewOf(deps, lake)
+  return viewOf(deps, await settled(deps, scope, lake))
 }
 
 /** A new try's row: a new id, this image's template, no stack, no failure (card L.4). */
@@ -280,8 +281,8 @@ async function create(deps: LakeDeps, input: Input): Promise<ClientLake> {
     if (before !== undefined && before.state !== 'failed') throw new Failure('LAKE_BUSY')
     return { lake: await started(deps, tx, input, before), fresh: true }
   })
-  if (!begun.fresh || begun.lake === undefined) return viewOf(begun.lake)
-  return viewOf(await sendCreate(deps, scope, begun.lake))
+  if (!begun.fresh || begun.lake === undefined) return viewOf(deps, begun.lake)
+  return viewOf(deps, await sendCreate(deps, scope, begun.lake))
 }
 
 /** Deletes at once and for good, by the company's name (decision B); the read settles the rest. */
@@ -305,7 +306,7 @@ async function remove(deps: LakeDeps, input: Input & { name: string }): Promise<
     return lakeOf(tx, input.companyId)
   })
   if (lake !== undefined) await sendDelete(deps, scope, lake)
-  return viewOf(lake)
+  return viewOf(deps, lake)
 }
 
 type Of = { admitted: OperatorProof; companyId: CompanyId }

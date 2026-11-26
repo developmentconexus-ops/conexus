@@ -1,24 +1,11 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { Template } from 'aws-cdk-lib/assertions'
 import { conexusApp } from '../lib/app.ts'
 import type { Call } from './iam.ts'
-import { mayAssume, refusedUpdateResources } from './iam.ts'
-import type { Statement } from './policies.ts'
-import {
-  ACCOUNT,
-  actionsOf,
-  find,
-  REGION,
-  readable,
-  readableResources,
-  statementsOf,
-  trustOf,
-} from './policies.ts'
-
-const stored = readFileSync(new URL('../lake.template.json', import.meta.url), 'utf8')
-const lake = readableResources(JSON.parse(stored))
+import { allows, asked, refusedGlueResources } from './iam.ts'
+import { lake, roleOf, stored } from './lake-model.ts'
+import { ACCOUNT, actionsOf, find, REGION, statementsOf, trustOf } from './policies.ts'
 
 test('o modelo guardado é o que a síntese escreve', () => {
   const { lake: stack } = conexusApp()
@@ -37,11 +24,12 @@ test('o modelo leva só as peças da empresa', () => {
       .sort(),
     [
       'AWS::Athena::WorkGroup',
+      'AWS::Athena::WorkGroup',
       'AWS::IAM::Role',
       'AWS::IAM::Role',
-      ...Array(6).fill('AWS::LakeFormation::PrincipalPermissions'),
-      'AWS::S3Tables::Namespace',
-      'AWS::S3Tables::Namespace',
+      'AWS::IAM::Role',
+      ...Array(10).fill('AWS::LakeFormation::PrincipalPermissions'),
+      ...Array(4).fill('AWS::S3Tables::Namespace'),
       'AWS::S3Tables::TableBucket',
     ],
   )
@@ -49,8 +37,9 @@ test('o modelo leva só as peças da empresa', () => {
     TableBucketName: 'conexus-{LakeId}',
     Tags: [{ Key: 'conexus-empresa', Value: '{CompanyId}' }],
   })
-  assert.equal(find(lake, 'Raw').Properties.Namespace, 'raw')
-  assert.equal(find(lake, 'Current').Properties.Namespace, 'current')
+  for (const area of ['Raw', 'Current', 'Tratado', 'Negocio']) {
+    assert.equal(find(lake, area).Properties.Namespace, area.toLowerCase())
+  }
   assert.partialDeepStrictEqual(find(lake, 'Reader').Properties, {
     RoleName: 'conexus-{LakeId}-leitor',
     PermissionsBoundary: `arn:aws:iam::${ACCOUNT}:policy/conexus-limite`,
@@ -110,10 +99,11 @@ test('o papel que escreve', () => {
   assert.deepEqual(
     statements.map((statement) => [statement.Sid, statement.Resource, statement.Condition]),
     [
+      ['OpenTheCompanyBucket', '<Bucket.TableBucketARN>', undefined],
       [
         'WriteTheCompanyTables',
         ['<Bucket.TableBucketARN>', '<Bucket.TableBucketARN>/table/*'],
-        undefined,
+        { StringEquals: { 's3tables:namespace': ['raw', 'current'] } },
       ],
       [
         'TheCompanyCatalog',
@@ -146,33 +136,76 @@ test('o papel que escreve', () => {
   assert.ok(!statements.flatMap(actionsOf).some((action) => /^(iam|sts):/.test(action)))
 })
 
-function writerOf(lakeId: string): Statement[] {
-  return JSON.parse(
-    JSON.stringify(statementsOf(find(lake, 'Writer'))).replaceAll('{LakeId}', lakeId),
-  )
+const TABLE_ACTIONS = [
+  's3tables:GetNamespace',
+  's3tables:ListTables',
+  's3tables:GetTable',
+  's3tables:CreateTable',
+  's3tables:GetTableMetadataLocation',
+  's3tables:UpdateTableMetadataLocation',
+  's3tables:GetTableData',
+  's3tables:PutTableData',
+]
+
+function onTheBucket(action: string, namespace?: string): Call {
+  const context = namespace ? { 's3tables:namespace': namespace } : undefined
+  return { ...asked(action, '<Bucket.TableBucketARN>'), context }
 }
 
-test('o que escreve muda a tabela das duas áreas do próprio lago, em cada recurso que o Glue pede', () => {
-  const writer = writerOf('lagodeaaaaaa')
-  for (const area of ['raw', 'current']) {
-    assert.deepEqual(refusedUpdateResources(writer, 'conexus-lagodeaaaaaa', area), [], area)
+test('o que escreve só cria e grava tabela em raw e current, e abre o depósito sem área', () => {
+  const writer = statementsOf(find(lake, 'Writer'))
+  for (const action of TABLE_ACTIONS) {
+    for (const area of ['raw', 'current']) {
+      assert.equal(allows(writer, onTheBucket(action, area)), true, `${action} ${area}`)
+    }
+    for (const area of ['tratado', 'negocio', undefined]) {
+      assert.equal(allows(writer, onTheBucket(action, area)), false, `${action} ${area}`)
+    }
+  }
+  for (const action of ['s3tables:GetTableBucket', 's3tables:ListNamespaces']) {
+    assert.equal(allows(writer, onTheBucket(action)), true, action)
   }
 })
 
-test('o que escreve não muda tabela de outro lago nem de uma terceira área', () => {
-  const writer = writerOf('lagodeaaaaaa')
+test('o que escreve muda a tabela das duas áreas do próprio lago, em cada recurso que o Glue pede', () => {
+  const writer = roleOf('Writer', 'lagodeaaaaaa')
+  for (const area of ['raw', 'current']) {
+    const of = { action: 'glue:UpdateTable', bucket: 'conexus-lagodeaaaaaa', area }
+    assert.deepEqual(refusedGlueResources(writer, of), [], area)
+  }
+})
+
+test('o que escreve não muda tabela de outro lago nem das áreas do tratamento', () => {
+  const writer = roleOf('Writer', 'lagodeaaaaaa')
   const glue = `arn:aws:glue:${REGION}:${ACCOUNT}`
   const other = 's3tablescatalog/conexus-lagodebbbbbb'
-  assert.deepEqual(refusedUpdateResources(writer, 'conexus-lagodebbbbbb', 'current'), [
+  const update = 'glue:UpdateTable'
+  const ofB = { action: update, bucket: 'conexus-lagodebbbbbb', area: 'current' }
+  assert.deepEqual(refusedGlueResources(writer, ofB), [
     `${glue}:catalog/${other}`,
     `${glue}:database/${other}/current`,
     `${glue}:table/${other}/current/notas`,
   ])
   const own = 's3tablescatalog/conexus-lagodeaaaaaa'
-  assert.deepEqual(refusedUpdateResources(writer, 'conexus-lagodeaaaaaa', 'outra'), [
-    `${glue}:database/${own}/outra`,
-    `${glue}:table/${own}/outra/notas`,
-  ])
+  for (const area of ['tratado', 'negocio']) {
+    const of = { action: update, bucket: 'conexus-lagodeaaaaaa', area }
+    assert.deepEqual(refusedGlueResources(writer, of), [
+      `${glue}:database/${own}/${area}`,
+      `${glue}:table/${own}/${area}/notas`,
+    ])
+    for (const action of ['glue:CreateTable', 'glue:DeleteTable']) {
+      assert.equal(refusedGlueResources(writer, { ...of, action }).length, 5, `${action} ${area}`)
+    }
+  }
+})
+
+test('o que escreve não lê, não grava e não apaga a especificação do tratamento', () => {
+  const company = 'EmpresaTesteA0000000000000000001'
+  const writer = roleOf('Writer', 'lagodeaaaaaa', company)
+  const spec = `arn:aws:s3:::conexus-estado-${ACCOUNT}-${REGION}/tratamento/${company}/rodada.json`
+  for (const action of ['s3:GetObject', 's3:PutObject', 's3:DeleteObject']) {
+    assert.equal(allows(writer, asked(action, spec)), false, action)
+  }
 })
 
 test('o que escreve grava nas duas áreas pelo Lake Formation', () => {
@@ -195,89 +228,6 @@ test('o que escreve grava nas duas áreas pelo Lake Formation', () => {
       Resource: { Database: { CatalogId: catalogId, Name: name } },
     })
   }
-})
-
-const HUB = `arn:aws:iam::${ACCOUNT}:role/conexus-hub`
-const A = 'EmpresaTesteA0000000000000000001'
-const B = 'EmpresaTesteB0000000000000000002'
-
-test('o leitor só confia no Hub com as duas etiquetas', () => {
-  const thisCompany = {
-    'aws:PrincipalTag/conexus-empresa': '{CompanyId}',
-    'aws:RequestTag/conexus-empresa': '{CompanyId}',
-  }
-  const common = {
-    Effect: 'Allow',
-    Principal: { AWS: `arn:aws:iam::${ACCOUNT}:root` },
-  }
-  assert.deepEqual(trustOf(find(lake, 'Reader')), [
-    {
-      ...common,
-      Action: 'sts:AssumeRole',
-      Condition: {
-        ArnEquals: { 'aws:PrincipalArn': HUB },
-        StringEquals: thisCompany,
-        Null: { 'aws:RequestTag/conexus-leitor': 'false' },
-      },
-    },
-    {
-      ...common,
-      Action: 'sts:TagSession',
-      Condition: {
-        ArnEquals: { 'aws:PrincipalArn': HUB },
-        StringEquals: thisCompany,
-        'ForAllValues:StringEquals': { 'aws:TagKeys': ['conexus-empresa', 'conexus-leitor'] },
-        Null: { 'aws:TagKeys': 'false' },
-      },
-    },
-  ])
-})
-
-/** The reader of one company's lake, as IAM would hold it once the stack exists. */
-function readerOf(company: string): Statement[] {
-  return JSON.parse(
-    JSON.stringify(trustOf(find(lake, 'Reader'))).replaceAll('{CompanyId}', company),
-  )
-}
-
-function asks(session: string, reader: string, tags: Record<string, string>) {
-  return ['sts:AssumeRole', 'sts:TagSession'].map((action) => ({
-    action,
-    resource: `arn:aws:iam::${ACCOUNT}:role/conexus-${reader}-leitor`,
-    principalArn: HUB,
-    principalTags: { 'conexus-empresa': session },
-    requestTags: tags,
-  }))
-}
-
-function assumes(identity: Statement[], calls: Call[], trust: Statement[]): boolean {
-  return calls.every((call) => mayAssume(trust, identity, call))
-}
-
-test('a sessão de A não assume o leitor de B, e o Hub sem sts:AssumeRole não assume nenhum', () => {
-  const hub = statementsOf(find(readable('platform'), 'HubRole'))
-  const ofA = { 'conexus-empresa': A, 'conexus-leitor': 'r1' }
-  const ofB = { 'conexus-empresa': B, 'conexus-leitor': 'r1' }
-  assert.equal(assumes(hub, asks(A, 'lagodeaaaaaa', ofA), readerOf(A)), false)
-  assert.equal(assumes(hub, asks(A, 'lagodebbbbbb', ofB), readerOf(B)), false)
-
-  // The step that first lets the Hub read (step 3) gives its policy sts:AssumeRole on the readers.
-  const step3: Statement[] = [
-    {
-      Effect: 'Allow',
-      Action: ['sts:AssumeRole', 'sts:TagSession'],
-      Resource: `arn:aws:iam::${ACCOUNT}:role/conexus-*-leitor`,
-    },
-  ]
-  assert.equal(assumes(step3, asks(A, 'lagodeaaaaaa', ofA), readerOf(A)), true)
-  assert.equal(assumes(step3, asks(A, 'lagodebbbbbb', ofB), readerOf(B)), false)
-  assert.equal(assumes(step3, asks(A, 'lagodebbbbbb', ofA), readerOf(B)), false)
-  assert.equal(
-    assumes(step3, asks(A, 'lagodeaaaaaa', { 'conexus-empresa': A }), readerOf(A)),
-    false,
-  )
-  const third = { ...ofA, 'conexus-outra': 'x' }
-  assert.equal(assumes(step3, asks(A, 'lagodeaaaaaa', third), readerOf(A)), false)
 })
 
 test('nenhum número de conta no modelo', () => {
