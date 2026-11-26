@@ -92,6 +92,6 @@ construction needs a card first (AGENTS.md; [delivery L1](../../../../docs/guide
 
 ## Check it
 
-Run the connector's tests and `node --test packages/app/src/check/connectors.test.ts`, then
-`npm run deps` and `npm run check`. When the skill's frontmatter changed, update the request
-snapshots ([live](live.md)).
+Commit, then run `npm run check:local -- <the connector's test files>
+packages/app/src/check/connectors.test.ts`. When the skill's frontmatter changed, update the
+request snapshots ([live](live.md)).

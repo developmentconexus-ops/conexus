@@ -13,6 +13,26 @@ changes, reread the line it names.
 - **Hand-made piece.** `scripts/check-radius.ts` reads the declared radius and reports departures without failing.
 - **Why.** Delivery L7 says radius departures are reported rather than stopped. The native candidates cannot resolve card-specific unit boundaries without this parser. The check appends to the native step summary; it is not a gate.
 
+## Biome 2.5.14 and wrangler 4.151.1
+
+### The local check starts the program, not its launcher
+
+- **Library line.** `@biomejs/biome/bin/biome:69` sets `process.exitCode = result.status`, null
+  when a signal ends the binary, so it answers 0. `wrangler/bin/wrangler.js:37` answers 0 for a
+  null code. `biome check --changed --since` takes its list of files from the commits since the
+  ref and reads their content from disk, so an uncommitted fix hides a committed error.
+- **Hand-made piece.** `scripts/check-local.ts` starts the platform's Biome binary and
+  `wrangler/wrangler-dist/cli.js` itself, turns 128 plus a signal from `npm run` into a red step,
+  and refuses uncommitted work before `--changed`.
+- **Why.** [Delivery L29](../guides/delivery.md): a step the machine's memory guard ended must be
+  red, and the check reads the commit to be pushed. `jscpd/run-jscpd.js:71` raises the signal again
+  and needs nothing. `quality --fast` also starts Biome through the launcher
+  (`scripts/quality-complexity.ts:101`) and reads no status, which would be 0: a killed Biome leaves
+  no report, so reading it at line 105 fails the step, as an ordinary exit that does not run again.
+  The planted cases in `scripts/check-local-steps.test.ts` cover the killed step. CI's `lint` and
+  `typecheck` still start the launchers
+  ([issue 1453](https://github.com/developmentconexus-ops/conexus/issues/1453)).
+
 ## Better Auth 1.7.8
 
 ### The session's total lifetime

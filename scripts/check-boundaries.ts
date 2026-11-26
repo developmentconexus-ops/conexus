@@ -22,6 +22,7 @@ const PACKAGES: Record<string, string> = {
   'React Email': 'react-email',
   'React Hook Form': 'react-hook-form',
   renderer: '@react-email/render',
+  Biome: '@biomejs/biome',
   Fastify: 'fastify',
   Drizzle: 'drizzle-orm',
   Mastra: '@mastra/core',
