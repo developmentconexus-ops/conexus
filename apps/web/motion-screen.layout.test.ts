@@ -92,12 +92,14 @@ test('a troca depois de uma ação esmaece a folha', async () => {
   const faded = page.waitForFunction(
     () =>
       location.pathname.includes('/conversations/') &&
-      document.getAnimations().some(
-        (one) =>
-          one.effect instanceof KeyframeEffect &&
-          one.effect.pseudoElement === '::view-transition-new(sheet)' &&
-          one.effect.getTiming().duration === 160,
-      ),
+      document
+        .getAnimations()
+        .some(
+          (one) =>
+            one.effect instanceof KeyframeEffect &&
+            one.effect.pseudoElement === '::view-transition-new(sheet)' &&
+            one.effect.getTiming().duration === 160,
+        ),
   )
   await start(page)
   await faded

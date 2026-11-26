@@ -6,7 +6,6 @@ import { BUILD, CONVERSATION_ID, MESSAGES, REQUEST, start, starting } from './fi
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { HANDOFF_UNCONFIRMED } from './src/harness/room/text.ts'
-import { COMPANY } from './src/platform/fixtures.ts'
 import { companies } from './sweep-replies.ts'
 
 // Início in a real browser: one company Ana is a member of, whose Início asks the Assistant in the company's frame.
