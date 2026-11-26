@@ -127,6 +127,7 @@ test('o nome: fora do padrão, fixo depois de marcado, repetido e a corrida pelo
     'notas',
     'sankhya_',
     'Sankhya_notas',
+    'outro_sankhya_notas',
     'sankhya notas',
     `sankhya_${'a'.repeat(60)}`,
   ]
