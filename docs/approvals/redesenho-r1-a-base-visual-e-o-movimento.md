@@ -5,3 +5,5 @@ Cartão curto "R1, a base visual e o movimento" (`docs/steps/redesenho-r1-a-base
 As decisões da página, no mesmo dia: "A A-b / B. B-a / C. Recomendado / D. Sim". A-b: a escala curta mais as molas, o toque em 420 ms e a mudança de estado em 560 ms. B-a: V5, V19, V22 e V28 reescritas como a direção B num pull request de método, só de documentos, antes da U1, com o nome da trilha Redesenho na delivery L1. C: o primeiro aviso em "Salvar padrão", em Configurações › Modelos. D: a trilha Redesenho como terceira trilha do roteiro.
 
 Antes, à direção visual, em 2026-11-26: a direção B em grafite, "Fecha".
+
+Emenda do cartão curto "R1, a base visual e o movimento" (`docs/steps/redesenho-r1-a-base-visual-e-o-movimento.md`) aprovada em 2026-11-26 (commit f0da8202c45e6d06ea79c3c4700f4d5a3dcbd01a): "Aprovo". Lida pelo firstmate como a aprovação da emenda que ele resumiu ao fundador: sai o trabalho que o pull request de método #1428 já faz (`docs/reference/movimento.md`, `docs/reference/impeccable.md`, `PRODUCT.md`); entra a troca do tique do item atual da barra pelo fundo mais claro com o ícone em ipê, com o critério 17; e a construção só começa depois do #1428 em `main`.
