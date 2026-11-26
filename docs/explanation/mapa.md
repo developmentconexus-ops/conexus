@@ -1,6 +1,6 @@
 # O mapa das áreas
 
-Estado: **aprovado em 2026-11-17**. O trilho, a coluna, o mapa inteiro, Conhecimento, os grupos das Configurações (seção 6.4) e a coluna do menu (seção 5.3) estão decididos. O mapa está fechado.
+Estado: **aprovado em 2026-11-17**. O trilho, a coluna, o mapa inteiro, Conhecimento, os grupos das Configurações (seção 6.4) e a coluna do menu (seção 5.3) estão decididos. O mapa está fechado. Em 2026-11-26, a casca da etapa `R2` do redesenho trocou o trilho e a coluna por uma barra só: as seções 1, 3, 4, 5.3 e 7 dizem o que mudou, cada uma com a sua data.
 
 Este documento é o parte da camada de produto. Ele diz quais são as áreas, o que mora em cada uma,
 como a pessoa anda entre elas e o que a coluna ao lado do trilho mostra em cada lugar. O endereço de
@@ -9,8 +9,9 @@ cada tela continua em [`docs/reference/screens.md`](../reference/screens.md). Os
 ## 1. O que não muda
 
 - Os andares de W29: Entrada, Primeira entrada, Empresa, Projeto, Configurações, Central.
-- A moldura aprovada em 2026-11-01 ("Ficou boa a versão do layout"): um trilho de ícones, uma coluna
-  ao lado e a folha branca (web W30, design V19 e V56).
+- A moldura: uma barra com grupos e a folha (web W30, design V19 e V56). A de 2026-11-01 ("Ficou boa a
+  versão do layout"), com um trilho de ícones e uma coluna ao lado, valeu até a casca da `R2`, que o
+  fundador aprovou em 2026-11-26 ("Aprovo a R2").
 - O Projeto como a casa do que roda: a conversa, zero ou um app, os agentes, as automações, as
   liberações e as pessoas (decisão J1 do fundador, 2026-10-30). A empresa guarda o dado, as ligações,
   as pessoas e as visões gerais.
@@ -68,7 +69,14 @@ Quem não usa um item não o vê (web W34): o membro continua sem Automações, 
 
 As referências: três plataformas agrupam a navegação por área, com título de grupo. Nenhuma das três
 usa trilho só de ícones; uma ferramenta de agentes para desktop usa. O trilho do Conexus foi aprovado
-em 2026-11-01 e fica; o que as referências acrescentam é o grupo.
+em 2026-11-01 e ficou até a `R2`; o que as referências acrescentavam era o grupo.
+
+Em 2026-11-26, com a casca da `R2`: o trilho vira uma barra com o nome de cada lugar, e a linha fina
+entre os grupos vira o título escrito de cada um, "Dados e contexto", "Agentes" e "Apps" (o fundador:
+"B b"). Os grupos e os itens da tabela ficam. Conversas entra como lugar, depois de Início; no
+alto da barra fica "Nova conversa", e no fim, "Recentes", com as últimas conversas da pessoa ("Ca"). No
+pé, a ordem passa a Avisos (o sino), Configurações e a conta, com a empresa sob o nome da pessoa. A barra recolhe
+para uma faixa de ícones.
 
 ### 3.1 Onde mora o contexto
 
@@ -108,14 +116,18 @@ página ocupa a largura. As conversas aparecem na coluna só no Início. O funda
 opções de construir, conversar etc." (grafia corrigida). Dentro de um Projeto, as conversas dele são
 um item do menu do Projeto, não a coluna da empresa.
 
-| Lugar | A coluna mostra | A página |
+Em 2026-11-26, com a casca da `R2`, a coluna sai de todo lugar, e a tabela abaixo passa a dizer onde
+ficou o que ela mostrava. O fundador perguntou se não valia manter a coluna de conversas no Início;
+depois do estudo que pediu, escolheu a barra ("Ca").
+
+| Lugar | A coluna mostrava | Com a casca da `R2` |
 | --- | --- | --- |
-| Início e uma conversa | Nova conversa e as conversas por dia | a conversa |
-| Dados | a busca e a árvore (Negócio, Bruto, Apps) | a lista ou a tabela aberta |
-| Conhecimento | a árvore das páginas e, depois, dos conceitos | a página ou o conceito aberto |
-| Dentro de um Projeto | o nome do Projeto e o menu dele | a parte aberta |
-| Configurações | Voltar, a busca e o índice | a seção |
-| Integrações, Agentes, Automações, Todos os projetos | nada: a página ocupa a largura | a lista |
+| Início e uma conversa | Nova conversa e as conversas por dia | "Nova conversa" e "Recentes" na barra; a lista por dia, com a busca e o filtro, é a página Conversas |
+| Dados | a busca e a árvore (Negócio, Bruto, Apps) | as camadas são abas no alto da página |
+| Conhecimento | a árvore das páginas e, depois, dos conceitos | a lista das páginas fica na página |
+| Dentro de um Projeto | o nome do Projeto e o menu dele | a barra troca pela do Projeto (seção 5.3) |
+| Configurações | Voltar, a busca e o índice | a barra troca pelo índice, com "← Voltar" |
+| Integrações, Agentes, Automações, Todos os projetos | nada: a página ocupa a largura | igual |
 
 As referências: numa plataforma de dados a segunda coluna aparece só no catálogo, no explorador e na
 camada de contexto, onde há árvore; em fontes, execuções e MCPs a página ocupa a largura. Em outra, a
@@ -181,6 +193,11 @@ queixas viram regra da peça de navegação lateral ([o catálogo](../reference/
 As outras: (b) a barra troca dentro do Projeto, como o construtor de fluxos de IA e o Mastra: uma coluna só, com "Voltar à
 empresa"; perde o trilho da empresa a um clique. (c) Abas no topo, como o espaço de conversa de dados: oito abas não cabem
 ao lado de Prévia e Código, que a página do Projeto já tem.
+
+Em 2026-11-26, com a casca da `R2`, vale a (b): a barra troca pela do Projeto, com "← Todos os
+projetos" no alto, o nome do Projeto com o seletor e o estado do app embaixo ("F a"). Da (a) ficam a
+largura perto de 240 px, o botão de recolher com Ctrl+B e a escolha guardada no navegador, agora na
+barra única.
 
 ## 6. Configurações
 
@@ -255,15 +272,18 @@ dois donos.
 
 ## 7. No celular
 
-A gaveta leva o trilho e a coluna do lugar juntos (design V56). Isso já é regra. Dois defeitos contra
-ela, que o mapa não muda e que entram na área onde estão:
+A gaveta leva a barra do lugar inteira: a do Hub, a do Projeto ou o índice das Configurações (design
+V56). Até 2026-11-26 ela levava o trilho e a coluna juntos. O mapa de 2026-11-17 apontava dois
+defeitos contra a regra:
 
-- Dentro de um Projeto, a gaveta não traz o menu do Projeto.
-- Nas configurações a 390 px não há índice à vista.
+- Dentro de um Projeto, a gaveta não trazia o menu do Projeto. Já foi consertado: a gaveta tem as
+  mesmas entradas da barra do Projeto.
+- Nas configurações a 390 px não havia índice à vista. A gaveta da `R2` traz o índice.
 
 ## 8. O que este mapa não decide
 
 - O desenho de nenhuma tela. Isso é a camada de área, A1 a A3.
 - Se o trilho ganha o nome embaixo de cada ícone. É decisão visual, do protótipo da primeira área.
+  Em 2026-11-26 a pergunta deixou de valer: a barra da `R2` mostra o nome ao lado do ícone.
 - As telas de marcos que ainda não existem (`D1` a `D6`, `A1` a `A6`). Cada uma entra no mapa pelo
   estudo do seu marco.

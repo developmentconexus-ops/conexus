@@ -188,8 +188,8 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
 
 ## Iconography
 
-- **V34.** Size follows the neighbour: 14px in toolbars, 16px beside a label, 20px in the rail.
-  Founder, 2026-11-01: "Aprovo". [`layout.test.ts`, review]
+- **V34.** Size follows the neighbour: 14px in toolbars, 16px beside a label, 18px in the sidebar.
+  Founder, 2026-11-01: "Aprovo"; 18px since 2026-11-26 (method approvals). [`layout.test.ts`, review]
 - **V35.** Status **should** have words, not only a color or icon, and decorative icons stay out of
   the accessible name. Failure: a green circle without a word is undecipherable to someone who
   cannot distinguish its color. The filled Stop remains a detail of its piece. [review]

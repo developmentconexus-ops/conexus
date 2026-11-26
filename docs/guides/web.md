@@ -131,25 +131,28 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   with its conversations with the Assistant); Configurações
   (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
   sees only "Seus apps" at `/` and never enters them. [review]
-- **W30.** The frame **should** be an icon rail: Início, then groups by area: Dados e contexto
-  (Integrações, Dados, Conhecimento), Agentes (Agentes, Automações; founder, 2026-11-02, `V1`) and Apps
-  (Projetos), Agentes and Dados for an owner, administrator or developer (step 24.3.4, founder, 2026-11-04: "2.
-  Aprovo"); Configurações, the bell and the account at the foot. The
-  place's list sits beside it only where the place owns a list or tree. Início: Nova conversa and Conversas by day, for
-  every role, since the member talks with the Assistant too; Dados and Conhecimento show their tree (founder, 2026-11-15). The list has a visible collapse button, kept per person. Inside a Projeto
-  the rail stays and the list is the Projeto's (W31). The account menu holds the
-  name, theme, Central for whoever operates it, and Sair. On a phone the rail and the list go
-  together into a drawer opened from the top button (design V56). A person with two companies
-  opens the last one used; "Suas empresas" is the switcher's menu. Founder, 2026-11-02, on where Automações and the bell go: "Opção 1". [review]
+- **W30.** The frame **should** be one sidebar: Nova conversa on top; Início and Conversas; then
+  titled groups: Dados e contexto (Integrações, Dados, Conhecimento), Agentes (Agentes, Automações)
+  and Apps (Projetos), Agentes and Automações for whoever manages them (W34); then Recentes,
+  the person's last conversations; Avisos, Configurações and the account at the foot, the company
+  under the person's name. Nova conversa, Conversas and Recentes are for every role. No list sits
+  beside it: Conversas is a page, and Dados and Conhecimento show their layers and pages inside the
+  page. A visible button or Ctrl+B collapses it to icons, the choice kept in the browser. A Projeto, Configurações and the
+  Central swap it for their own (W31, W32), without Nova conversa and Recentes. The account menu
+  holds the name, theme, Central for whoever operates it, Sair and "Suas empresas" for a person with
+  two companies, who opens the last one used. On a phone it goes into a drawer (design V56).
+  Founder, 2026-11-02, 2026-11-04 and 2026-11-26 (method approvals). [review]
 - **W31.** A Projeto **should** open on its Prévia with the latest conversation on the right; a new
   one focuses the composer. The top line holds the tabs Prévia, Código and Alterações, and Versão ▾,
-  Abrir app and Publicar on the right; the Projeto's name with the switcher heads its sidebar (W30), in groups: Construir; Conversas, Agentes, Automações; Integrações, Dados; Quem usa o app, Sobre (founder, 2026-10-30, R2). A control appears
+  Abrir app and Publicar on the right; its sidebar opens with "← Todos os projetos" and the Projeto's name with the switcher, the app's state below, in groups: Construir; Conversas, Agentes, Automações; Integrações, Dados; Quem usa o app, Sobre (founder, 2026-10-30, R2). A control appears
   only when its step exists, never as "em breve". Sobre lists its parts, each added by its step:
   Sobre, Versões, Publicação (founder, 2026-10-30, A1). [review]
+- **W36.** The Hub's places, Configurações' sections apart (W32), **must** be declared in one file, read by the sidebar, the drawer and
+  the command palette through one permission filter (W34). Failure: a place enters the sidebar and
+  the search forgets it. [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
-  groups by owner, the company's by task: Você (Minha conta, Suas contas de modelo, Meus padrões) and, under the company's name, Geral, Pessoas e acesso, Modelos (Contas da empresa, Padrões da empresa, a collapsed Avançado with Memória observacional) and Avisos; founder,
-  2026-10-20: "1. A"; 2026-10-27: "Opcao C", "1. Sim 2. Antes", "Aprovado". Integrações is not
-  there (founder, 2026-10-28: "O1"). Owner and administrator change the company's group; a developer or a member
+  groups by owner, the company's by task: Você (Minha conta, Suas contas de modelo, Meus padrões) and, under the company's name, Geral, Pessoas e acesso, Modelos (Contas da empresa, Padrões da empresa, a collapsed Avançado with Memória observacional) and Avisos. Integrações is not
+  there. Owner and administrator change the company's group; a developer or a member
   reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Registro de dados: owner and administrator only, after Papéis.
   Atividade and Uso are reserved there and appear only when a card asks. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
@@ -164,12 +167,9 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   forms, as references do (Mastra 1.82 Studio's `filterItem`,
   `packages/playground/src/components/ui/app-sidebar.tsx:64-77`; GitHub's organization roles). An
   administration area the person's role never uses is hidden from the navigation and its address
-  answers not found (S10): Automações, Agentes and Cópias for the member (founder, 2026-11-01: "1 A";
-  2026-11-02: "3.A"), Papéis for the developer and the member; the developer sees Automações,
+  answers not found (S10): Automações, Agentes and Cópias for the member, Papéis for the developer and the member; the developer sees Automações,
   Agentes and Cópias (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). On a page the person uses, an action
   outside the role says who can (design V29), as Conectores and Contas de modelo do.
-  Founder, 2026-11-07: "Vamos revisar a regra W34 então, se referencias fazem assim não teriamso
-  que mudar", then "1. Aprovo".
   Failure: a used page hiding an action leaves them guessing. [review]
 - **W35.** The Hub added to the iPhone home screen (iOS 26.1 or newer) draws a blurred band under
   the status bar: WebKit bug 301994, with no fix in the page. The page **must not** carry a
