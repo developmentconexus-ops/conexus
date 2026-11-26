@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { Template } from 'aws-cdk-lib/assertions'
 import { conexusApp } from '../lib/app.ts'
 import type { Call } from './iam.ts'
-import { mayAssume } from './iam.ts'
+import { mayAssume, refusedUpdateResources } from './iam.ts'
 import type { Statement } from './policies.ts'
 import {
   ACCOUNT,
@@ -79,6 +79,16 @@ test('o modelo leva só as peças da empresa', () => {
   })
 })
 
+const CHANGED_BY_THE_WRITER = [
+  'catalog',
+  'catalog/s3tablescatalog',
+  'catalog/s3tablescatalog/conexus-{LakeId}',
+  'database/s3tablescatalog/conexus-{LakeId}/raw',
+  'table/s3tablescatalog/conexus-{LakeId}/raw/*',
+  'database/s3tablescatalog/conexus-{LakeId}/current',
+  'table/s3tablescatalog/conexus-{LakeId}/current/*',
+].map((resource) => `arn:aws:glue:${REGION}:${ACCOUNT}:${resource}`)
+
 test('o papel que escreve', () => {
   const writer = find(lake, 'Writer')
   assert.partialDeepStrictEqual(writer.Properties, {
@@ -116,14 +126,7 @@ test('o papel que escreve', () => {
         ],
         undefined,
       ],
-      [
-        'ChangeTheCompanyTables',
-        [
-          `${glue}:table/s3tablescatalog/conexus-{LakeId}/raw/*`,
-          `${glue}:table/s3tablescatalog/conexus-{LakeId}/current/*`,
-        ],
-        undefined,
-      ],
+      ['ChangeTheCompanyTables', CHANGED_BY_THE_WRITER, undefined],
       [undefined, '*', undefined],
       [
         'QueryInTheCompanyWorkGroup',
@@ -141,6 +144,35 @@ test('o papel que escreve', () => {
     ],
   )
   assert.ok(!statements.flatMap(actionsOf).some((action) => /^(iam|sts):/.test(action)))
+})
+
+function writerOf(lakeId: string): Statement[] {
+  return JSON.parse(
+    JSON.stringify(statementsOf(find(lake, 'Writer'))).replaceAll('{LakeId}', lakeId),
+  )
+}
+
+test('o que escreve muda a tabela das duas áreas do próprio lago, em cada recurso que o Glue pede', () => {
+  const writer = writerOf('lagodeaaaaaa')
+  for (const area of ['raw', 'current']) {
+    assert.deepEqual(refusedUpdateResources(writer, 'conexus-lagodeaaaaaa', area), [], area)
+  }
+})
+
+test('o que escreve não muda tabela de outro lago nem de uma terceira área', () => {
+  const writer = writerOf('lagodeaaaaaa')
+  const glue = `arn:aws:glue:${REGION}:${ACCOUNT}`
+  const other = 's3tablescatalog/conexus-lagodebbbbbb'
+  assert.deepEqual(refusedUpdateResources(writer, 'conexus-lagodebbbbbb', 'current'), [
+    `${glue}:catalog/${other}`,
+    `${glue}:database/${other}/current`,
+    `${glue}:table/${other}/current/notas`,
+  ])
+  const own = 's3tablescatalog/conexus-lagodeaaaaaa'
+  assert.deepEqual(refusedUpdateResources(writer, 'conexus-lagodeaaaaaa', 'outra'), [
+    `${glue}:database/${own}/outra`,
+    `${glue}:table/${own}/outra/notas`,
+  ])
 })
 
 test('o que escreve grava nas duas áreas pelo Lake Formation', () => {

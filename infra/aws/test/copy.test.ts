@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { refusedUpdateResources } from './iam.ts'
 import {
   ACCOUNT,
   actionsOf,
@@ -132,7 +133,12 @@ test('o teto deixa o que escreve e nada de IAM', () => {
     [
       [LAKE_BUCKETS, `${LAKE_BUCKETS}/table/*`],
       [
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog/s3tablescatalog`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog/s3tablescatalog/conexus-*`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:database/s3tablescatalog/conexus-*/raw`,
         `arn:aws:glue:${REGION}:${ACCOUNT}:table/s3tablescatalog/conexus-*/raw/*`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:database/s3tablescatalog/conexus-*/current`,
         `arn:aws:glue:${REGION}:${ACCOUNT}:table/s3tablescatalog/conexus-*/current/*`,
       ],
       [`arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/conexus/copia/*`],
@@ -141,6 +147,25 @@ test('o teto deixa o que escreve e nada de IAM', () => {
       [state],
     ],
   )
+})
+
+test('o teto deixa mudar a tabela das duas áreas de um lago do Conexus, e de nenhum outro', () => {
+  const boundary = statementsOf(find(platform, 'Boundary'))
+  for (const area of ['raw', 'current']) {
+    assert.deepEqual(refusedUpdateResources(boundary, 'conexus-lagodeaaaaaa', area), [], area)
+  }
+  const glue = `arn:aws:glue:${REGION}:${ACCOUNT}`
+  const outside = 's3tablescatalog/outro-lago'
+  assert.deepEqual(refusedUpdateResources(boundary, 'outro-lago', 'current'), [
+    `${glue}:catalog/${outside}`,
+    `${glue}:database/${outside}/current`,
+    `${glue}:table/${outside}/current/notas`,
+  ])
+  const own = 's3tablescatalog/conexus-lagodeaaaaaa'
+  assert.deepEqual(refusedUpdateResources(boundary, 'conexus-lagodeaaaaaa', 'outra'), [
+    `${glue}:database/${own}/outra`,
+    `${glue}:table/${own}/outra/notas`,
+  ])
 })
 
 test('a fila da cópia ouve só a regra e os que escrevem, e passa a de mortos na terceira falha', () => {
