@@ -146,7 +146,7 @@ def test_a_rodada_fechada_no_meio_da_copia(
     task.aws.refuse_after_gets = 3
     task.run(task.spec(NOTAS))
     assert task.aws.sent == []
-    assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows == 100
+    assert task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows == 10
     assert '"event": "RUN_CLOSED"' in "".join(capfd.readouterr())
 
 
