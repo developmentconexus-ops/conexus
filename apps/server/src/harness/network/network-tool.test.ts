@@ -230,9 +230,18 @@ test('a lista morre com a conversa: o Apagar do Assistente e a remoção do Proj
   }
   assert.deepEqual(await listed(), [first.id, id].sort())
 
+  const { api } = on.hub.conversationMachines.deps
+  const { kill } = api
+  api.kill = async () => {
+    throw new Error('the provider did not answer')
+  }
+  const failed = await call(on.hub, on.ana, 'DELETE', first.url)
+  assert.equal(failed.statusCode, 500, failed.body)
+  assert.deepEqual(await listed(), [id], 'the list goes before the machine')
+  api.kill = kill
   const deleted = await call(on.hub, on.ana, 'DELETE', first.url)
   assert.equal(deleted.statusCode, 204, deleted.body)
-  assert.deepEqual(await listed(), [id])
+  assert.ok(on.hub.conversationMachines.killed.map(String).includes(first.id))
   const second = await on.conversation()
   cardIn(await second.say('Leia a loja'))
 

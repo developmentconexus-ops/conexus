@@ -3,6 +3,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { causeChain, Failure } from '../../platform/failure.ts'
 import type { NetworkStore } from '../network/public.ts'
 import type { Kit } from './kit.ts'
+import { createLanes } from './lanes.ts'
 
 type NetworkChange = 'START' | 'GRANT' | 'REMOVE' | 'CONFER'
 
@@ -17,13 +18,12 @@ export type NetworkedSession = {
   conferring?: string | undefined
 }
 
-export type Line = ConversationId | `network:${ConversationId}`
-
 type Deps = {
   opened: NetworkStore['opened']
   log: FailureLog
   sessions: ReadonlyMap<ConversationId, NetworkedSession>
-  inLane<T>(line: Line, work: () => Promise<T>): Promise<T>
+  /** The queue the conversation's pauses run in, where its owner pauses machines. */
+  amongPauses?<T>(conversationId: ConversationId, work: () => Promise<T>): Promise<T>
 }
 
 export function networkNotApplied(): Failure {
@@ -53,21 +53,31 @@ async function replaceList(session: NetworkedSession, opened: NetworkStore['open
   }
 }
 
-export function machineNetwork({ opened, log, sessions, inLane }: Deps) {
+/** The classes along a failure's causes and no message, which may name a domain (security S41). */
+function classesOf(error: unknown): string {
+  return causeChain(error)
+    .map((each) => (each instanceof Error ? each.constructor.name : typeof each))
+    .join(' < ')
+}
+
+export function machineNetwork({ opened, log, sessions, amongPauses = (_, work) => work() }: Deps) {
+  const inTurn = createLanes<ConversationId>()
+
   /**
    * The changes of one machine's list run in turn, each reading the lists when it runs, so the last
-   * one wins. The cause of a failure is not logged: it may name a domain (security S41).
+   * one wins.
    */
   function change(session: NetworkedSession, reason: NetworkChange): Promise<boolean> {
     const { conversationId } = session
-    return inLane(`network:${conversationId}`, async () => {
+    return inTurn(conversationId, async () => {
       try {
         await replaceList(session, opened)
         session.networkStale = undefined
         return true
-      } catch {
+      } catch (error) {
         session.networkStale = reason
-        log.error({ conversationId, reason }, 'MACHINE_NETWORK_FAILED')
+        const causes = classesOf(error)
+        log.error({ conversationId, reason, causes }, 'MACHINE_NETWORK_FAILED')
         return false
       }
     })
@@ -80,7 +90,7 @@ export function machineNetwork({ opened, log, sessions, inLane }: Deps) {
   }
 
   function changeHeld(conversationId: ConversationId, reason: NetworkChange) {
-    return inLane(conversationId, () => changeRunning(sessions.get(conversationId), reason))
+    return amongPauses(conversationId, () => changeRunning(sessions.get(conversationId), reason))
   }
 
   function confer(session: NetworkedSession, host: string | undefined) {

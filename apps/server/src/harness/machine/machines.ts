@@ -13,8 +13,6 @@ import {
   OUTPUT_MAX,
   readCapped,
 } from './kit.ts'
-import { createLanes } from './lanes.ts'
-import type { Line } from './network.ts'
 import { isNetworkNotApplied, machineNetwork, networkNotApplied } from './network.ts'
 import { packIn } from './pack.ts'
 import type { Machines, MachinesDeps } from './port.ts'
@@ -52,8 +50,7 @@ class BuilderMachines implements Machines {
     this.startMs = deps.startMs ?? 120_000
     this.commandMs = deps.commandMs ?? 120_000
     const { opened, log } = deps
-    const inLane = createLanes<Line>()
-    this.network = machineNetwork({ opened, log, sessions: this.sessions, inLane })
+    this.network = machineNetwork({ opened, log, sessions: this.sessions })
   }
 
   reopen(conversationId: ConversationId) {

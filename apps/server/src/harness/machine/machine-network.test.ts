@@ -1,90 +1,14 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId, ConversationId, DEVELOPMENT_HOSTS, NetworkDomain } from '@conexus/hub-api'
-import { RequestContext } from '@mastra/core/request-context'
-import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
+import { ConversationId, DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { until } from '../../platform/test-until.ts'
-import type { NetworkStore } from '../network/public.ts'
-import { createConversationMachines, MARK } from './public.ts'
 import { confer, conferring, stubBrowser, TOKEN } from './test-confer.ts'
-import { testConversationMachines } from './test-conversation-machines.ts'
-import { COMPANY as BUILDERS, INSTALLATION, pausedByE2b } from './test-machine.ts'
-
-const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
-const OTHER_COMPANY = CompanyId.parse('companyBBBBBBBBBBBBBBBBBBBBBBBBB')
-
-function domains(...names: string[]) {
-  return names.map((name) => NetworkDomain.parse(name))
-}
-
-function nameOf(id: ConversationId) {
-  return `conexus-${INSTALLATION}-${id}`
-}
-
-function world(t: TestContext) {
-  const folder = mkdtempSync(join(tmpdir(), 'conexus-network-'))
-  t.after(() => rmSync(folder, { recursive: true, force: true }))
-  const doubles = testConversationMachines(folder)
-  const company = new Map<CompanyId, NetworkDomain[]>()
-  const conversation = new Map<ConversationId, NetworkDomain[]>()
-  const lines: { message: string; fields: Record<string, unknown> }[] = []
-  const log = {
-    info: (fields: Record<string, unknown>, message: string) => lines.push({ message, fields }),
-    error: (fields: Record<string, unknown>, message: string) => lines.push({ message, fields }),
-  }
-  const internet = new Set<CompanyId>()
-  const opened: NetworkStore['opened'] = async ({ companyId, conversationId }) => {
-    if (internet.has(companyId)) return { kind: 'ALL' }
-    const hosts = [...(company.get(companyId) ?? []), ...(conversation.get(conversationId) ?? [])]
-    return { kind: 'LIST', hosts }
-  }
-  function hub(lists = opened) {
-    return createConversationMachines(
-      {
-        network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: lists },
-        otherTemplate: 'resume',
-        marks: async (context) => ({ [MARK.company]: String(context.get('company')) }),
-      },
-      { ...doubles.deps, log },
-      doubles.tuning,
-    )
-  }
-  function appliedTo(id: ConversationId) {
-    return doubles.control.networkApplied
-      .filter((each) => each.name === nameOf(id))
-      .map((each) => each.hosts)
-  }
-  return { ...doubles, company, conversation, internet, lines, opened, hub, appliedTo }
-}
-
-async function turn(machines: ReturnType<ReturnType<typeof world>['hub']>, companyId = COMPANY) {
-  const id = ConversationId.parse(randomUUID())
-  const context = new RequestContext<unknown>([
-    ['controller', { sessionId: id }],
-    ['company', companyId],
-  ])
-  const workspace = await machines.workspace(context)
-  const files = workspace?.filesystem
-  assert.ok(workspace !== undefined && files !== undefined)
-  const held = workspace
-  const written = files
-  function write() {
-    return written.writeFile('a.txt', 'um')
-  }
-  async function command() {
-    const tools = await createWorkspaceTools(held)
-    const execute = tools[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]
-    assert.ok(execute, 'the workspace offers execute_command')
-    const input = { description: 'Listando', command: 'echo feito' }
-    return JSON.stringify(await execute.execute(input, { workspace: held }))
-  }
-  return { id, context, write, command }
-}
+import { COMPANY as BUILDERS, pausedByE2b } from './test-machine.ts'
+import { COMPANY, domains, nameOf, OTHER_COMPANY, turn, world } from './test-network-world.ts'
 
 test('a rede na partida: a máquina criada leva a lista pronta, a lista da empresa e a da conversa, e nada mais (8)', async (t) => {
   const on = world(t)
@@ -190,7 +114,10 @@ test('a troca que falha refaz na próxima ferramenta, antes de o comando rodar, 
   on.control.openFails = 100
   await machines.narrow(COMPANY)
   assert.deepEqual(on.lines.slice(1), [
-    { message: 'MACHINE_NETWORK_FAILED', fields: { conversationId: asked.id, reason: 'REMOVE' } },
+    {
+      message: 'MACHINE_NETWORK_FAILED',
+      fields: { conversationId: asked.id, reason: 'REMOVE', causes: 'Error' },
+    },
   ])
   const during: unknown[] = []
   on.control.afterCommand = () => during.push(on.appliedTo(asked.id).at(-1))
@@ -238,6 +165,30 @@ test('a remoção que chega durante a partida entra depois dela, e a máquina fi
   gate.resolve()
   await Promise.all([writing, narrowing])
   assert.deepEqual(on.appliedTo(asked.id).at(-1), DEVELOPMENT_HOSTS)
+})
+
+test('a pausa espera a troca em curso: a liberação não corre sobre uma máquina que pausa (10, C65)', async (t) => {
+  const on = world(t)
+  const gate = Promise.withResolvers<void>()
+  let reads = 0
+  const machines = on.hub(async (where) => {
+    reads += 1
+    if (reads === 2) await gate.promise
+    return on.opened(where)
+  })
+  const asked = await turn(machines)
+  await asked.write()
+  on.conversation.set(asked.id, domains('api.example.com'))
+  const reopening = machines.reopen(asked.id)
+  await until(() => reads === 2, 'the grant read the lists')
+  const stopping = machines.stopAll()
+  await new Promise((later) => setTimeout(later, 50))
+  assert.equal(on.control.stops, 0, 'no pause while the change is in flight')
+  gate.resolve()
+  assert.equal(await reopening, true)
+  await stopping
+  assert.equal(on.control.stops, 1)
+  assert.deepEqual(on.appliedTo(asked.id).at(-1), [...DEVELOPMENT_HOSTS, 'api.example.com'])
 })
 
 test('a partida sem a rede certa falha: a máquina não é entregue, o turno vê MACHINE_UNAVAILABLE, e a seguinte parte (11)', async (t) => {

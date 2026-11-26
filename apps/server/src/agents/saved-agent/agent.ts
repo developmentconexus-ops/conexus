@@ -12,6 +12,7 @@ import type { MastraMemory } from '@mastra/core/memory'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import type { ConversationMachines } from '../../harness/machine/public.ts'
+import { conversationMachineTools } from '../../harness/machine/public.ts'
 import { conversationRun } from '../../harness/memory/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import {
@@ -47,7 +48,6 @@ import { agentToolScope, agentTools } from './company.ts'
 import type { FrozenTool, FrozenVersion } from './frozen.ts'
 import { declaredOf } from './frozen.ts'
 import { legacyTools } from './legacy.ts'
-import { machineTools } from './machine-tools.ts'
 import type { WriteAuthor } from './tools.ts'
 import { presetTools } from './tools.ts'
 
@@ -263,7 +263,8 @@ function runToolsOf(
 ) {
   const machines = frozen.machine ? deps.machines : undefined
   const ofMachine =
-    machines && machineTools(deps, machines, async (context) => (await plan(context)).runScope)
+    machines &&
+    conversationMachineTools(machines, deps, async (context) => (await plan(context)).runScope)
   const companyOf = agentTools(deps, turnKey.of, frozen.agentId)
   return oncePerRun(async (requestContext) => {
     const { scope, offered, start, tools, toolScope } = await plan(requestContext)

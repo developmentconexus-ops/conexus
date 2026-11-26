@@ -292,11 +292,20 @@ test('as frases de ferramenta vão no bloco, com o papel', async (t) => {
     department: null,
     projectName: undefined,
   }
-  const mays = { note: false, automate: true, companyMemory: true, network: [] }
-  const noteOnly = blockOf(speakers, [], { ...mays, byAutomation: false })
+  const noteOnly = blockOf(speakers, [], {
+    note: false,
+    automate: true,
+    byAutomation: false,
+    companyMemory: true,
+  })
   assert.match(noteOnly, /You cannot note/)
   assert.doesNotMatch(noteOnly, /does not create automations|run of an automation/)
-  const run = blockOf(speakers, [], { ...mays, byAutomation: true })
+  const run = blockOf(speakers, [], {
+    note: false,
+    automate: true,
+    byAutomation: true,
+    companyMemory: true,
+  })
   assert.match(run, /run of an automation the person already created/)
 })
 

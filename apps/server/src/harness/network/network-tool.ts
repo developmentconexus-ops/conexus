@@ -1,11 +1,11 @@
-import type { CompanyId, ConversationId, NetworkResult, PersonId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, NetworkDomain, PersonId } from '@conexus/hub-api'
 import {
   DEVELOPMENT_HOSTS,
   MACHINE_TOOL,
   NETWORK_LIMITS,
   NetworkAnswer,
   NetworkAsked,
-  NetworkDomain,
+  NetworkResult,
 } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { createTool } from '@mastra/core/tools'
@@ -25,7 +25,7 @@ const ACTION_OF = {
   COMPANY: 'manageNetwork',
 } as const satisfies Record<CardScope, string>
 
-export function networkScopes(
+function networkScopes(
   identity: Pick<IdentityPorts, 'allows'>,
   role: Parameters<IdentityPorts['allows']>[0],
 ): CardScope[] {
@@ -48,7 +48,7 @@ type Asking =
     }
 
 /** Who a run can ask: nobody in an automation's run, and nobody whose role holds no answer. */
-export function askingOf(run: RunScope | undefined, scopes: readonly CardScope[]): Asking {
+function askingOf(run: RunScope | undefined, scopes: readonly CardScope[]): Asking {
   if (run?.conversation.kind !== 'THREAD') {
     throw new Failure('INTERNAL_UNEXPECTED', {
       details: { reason: 'NETWORK_WITHOUT_CONVERSATION' },
@@ -79,22 +79,6 @@ type Deps = {
   /** Who the run can ask; the resume reads it again, so a role lost since the card counts. */
   asking(requestContext: RequestContext): Promise<Asking>
 }
-
-const Domains = z.array(NetworkDomain)
-
-const Result = z.discriminatedUnion('kind', [
-  z.object({
-    kind: z.literal('OPEN'),
-    domains: Domains,
-    scope: z.enum(['ALREADY', ...CardScope.options]),
-  }),
-  z.object({ kind: z.literal('REFUSED'), domains: Domains }),
-  z.object({
-    kind: z.literal('NOT_OPEN'),
-    domains: Domains,
-    reason: z.enum(['ROLE', 'AUTOMATION', 'MACHINE_UNAVAILABLE', 'DATABASE']),
-  }),
-]) satisfies z.ZodType<NetworkResult>
 
 const OPENED = {
   ALREADY: 'already allowed',
@@ -220,6 +204,7 @@ export function requestNetworkTool(deps: Deps) {
     inputSchema: NetworkAsked,
     suspendSchema: Card,
     resumeSchema: NetworkAnswer,
+    outputSchema: NetworkResult,
     execute: async (args, { requestContext, agent }) => {
       // A resume skips the input schema (`@mastra/core@1.83.0` `tool-3X7mHzgh.js:880`).
       const request = NetworkAsked.parse(args)
@@ -241,7 +226,7 @@ export function requestNetworkTool(deps: Deps) {
       })
     },
     toModelOutput: (output) => {
-      const result = Result.safeParse(output)
+      const result = NetworkResult.safeParse(output)
       return result.success ? { type: 'text', value: lineOf(result.data) } : undefined
     },
   })

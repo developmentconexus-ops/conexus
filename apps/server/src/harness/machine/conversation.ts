@@ -12,7 +12,7 @@ import { MAX_BYTES } from './git-facts.ts'
 import type { ConversationMachine, Kit } from './kit.ts'
 import { MARK, readCapped } from './kit.ts'
 import { createLanes } from './lanes.ts'
-import type { Line, NetworkedSession } from './network.ts'
+import type { NetworkedSession } from './network.ts'
 import { isNetworkNotApplied, machineNetwork, networkNotApplied } from './network.ts'
 import type { Phase } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
@@ -123,10 +123,10 @@ class Machines implements ConversationMachines {
    * `reopen` and `narrow` run one after another, so neither a download nor the next turn starts a
    * machine while one is being paused. The turn's start itself is not in the line: a download
    * during the turn reads the turn's own session, whose start it shares. Every change of a
-   * machine's list also waits in the machine's `network:` line, apart, because a download holds
-   * the conversation's line while its machine's start applies the list.
+   * machine's list also waits in the list's own queue (`network.ts`), apart, because a download
+   * holds the conversation's line while its machine's start applies the list.
    */
-  private readonly inLane = createLanes<Line>()
+  private readonly inLane = createLanes<ConversationId>()
   private readonly phases = new Map<ConversationId, (phase: Phase) => void>()
   private readonly network: ReturnType<typeof machineNetwork>
 
@@ -146,7 +146,7 @@ class Machines implements ConversationMachines {
     this.told = `The conversation's own Linux machine. Commands start in ${this.folder}.`
     const { opened } = spec.network
     this.network = machineNetwork({
-      ...{ opened, log: deps.log, sessions: this.sessions, inLane: this.inLane },
+      ...{ opened, log: deps.log, sessions: this.sessions, amongPauses: this.inLane },
     })
   }
 

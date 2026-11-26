@@ -10,7 +10,11 @@ import type {
   ConversationMachines,
   MachineTuning,
 } from '../../harness/machine/public.ts'
-import { createConversationMachines, machinePart } from '../../harness/machine/public.ts'
+import {
+  conversationMachineTools,
+  createConversationMachines,
+  machinePart,
+} from '../../harness/machine/public.ts'
 import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { subagentModel } from '../../harness/model-accounts/public.ts'
@@ -62,12 +66,11 @@ import { chosenConnections } from './chosen.ts'
 import { companyMemory, companyScopes } from './company-memory.ts'
 import { readsFiles } from './connector-access.ts'
 import type { RunOf } from './context.ts'
-import { assistantRuns, machineMarks } from './context.ts'
+import { assistantRuns, machineMarks, speakersOf } from './context.ts'
 import { machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
 import { FIXED, MODEL_BLOCKS } from './instructions.ts'
-import { machineTools } from './machine-tools.ts'
 import type { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
@@ -142,7 +145,7 @@ async function inRequestOrder(
   }
 }
 
-type Parts = Pick<Deps, 'network'> & {
+type Parts = {
   memory: ReturnType<typeof assistantMemory>
   company: ReturnType<typeof companyMemory>
   machines: ConversationMachines
@@ -162,9 +165,10 @@ function chosenIn({ toolScopeOf }: Parts) {
 }
 
 /** The tools of a run, in the order the request lists them: the model's provider's, the company's first, the Assistant's own, the hand-offs, the rest. */
-function assistantTools(parts: Parts) {
+function assistantTools(deps: Deps, parts: Parts) {
   const { scopeOf, toolScopeOf, maysFor, machines } = parts
-  const ofMachine = machineTools(parts)
+  const roles = { ...deps, speakersOf: speakersOf.bind(null, deps) }
+  const ofMachine = conversationMachineTools(machines, roles, scopeOf)
   const proposeMemory = proposeCompanyMemoryTool({ memory: parts.company, scopeOf })
   const proposals = proposeTools(machines)
   const chosenOf = chosenIn(parts)
@@ -232,7 +236,7 @@ function assistantSpec(deps: Deps, parts: Parts): ConversationSpec {
       ],
     },
     model: MODEL,
-    tools: assistantTools(parts),
+    tools: assistantTools(deps, parts),
     // Decision 0053: nothing waits to be approved; the systems get no write.
     approval: { kind: 'NOTHING_ASKS' },
     turn: assistantTurn({ queue, scopeOf }),
@@ -301,7 +305,7 @@ export function createAssistant(deps: Deps) {
   const { speakersFor, maysFor, toolScopeOf } = runReads(deps, scopeOf)
   const { controller } = mountAgent(
     assistantSpec(deps, {
-      ...{ memory, company, scopeOf, machines, network: deps.network },
+      ...{ memory, company, scopeOf, machines },
       ...{ toolScopeOf, tools, maysFor, speakersFor },
     }),
     { queue, storage },
