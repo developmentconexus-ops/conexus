@@ -55,7 +55,8 @@ target nosso que grava e o dinheiro exato. O lugar onde a tarefa roda e o lago e
   2026-11-23). O Hub ainda não declara o cliente do Athena: ele entra com a etapa que ler o lago.
 - O `singer-sdk` 0.54.9 só entrega o estado do alvo no fim da entrada ou depois de mais de 5 minutos
   (`target_base.py:56`, `:288-296`, `:470-490`; `conexus-v024133-conferencia`,
-  https://github.com/developmentconexus-ops/conexus/issues/1439).
+  https://github.com/developmentconexus-ops/conexus/issues/1439). Por isso o nosso target chama
+  `drain_all` a cada `STATE` (https://github.com/developmentconexus-ops/conexus/pull/1464).
 
 ## Superado
 

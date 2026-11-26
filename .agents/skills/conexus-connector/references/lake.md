@@ -3,7 +3,7 @@
 The copy to the lake is built: the kit declares the tables and `apps/extraction/` runs the copy.
 This page was written as the plan of the step [A primeira cópia chega ao
 lago](../../../../docs/approvals/a-primeira-copia-chega-ao-lago.md) and still reads as one; where it
-and the code differ, the code wins. The step's card is in `main`'s history at commit `6c234763`.
+and the code differ, the code wins. The step's card is in `main`'s history at commit `50aae548`.
 
 ## The decisions it rests on
 

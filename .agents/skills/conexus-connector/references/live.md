@@ -45,7 +45,7 @@ a typed read with `toolNameOf`, `<connector>_<operation>`. The skill never write
 The operation ids (`pedidos`, `lancarPedido`) and the answer `{ linhas, temMais }` are read in five
 places: the published app, the saved tool, the role (`connector_<id>: [operation]`), the Caderno and
 the typed tool's name. A rebuilt folder keeps the ids, and today's tests pass through it without
-changing what they expect (the card of A primeira cópia chega ao lago at commit `6c234763`, "O que
+changing what they expect (the card of A primeira cópia chega ao lago at commit `50aae548`, "O que
 prende a troca"). The founder kept this contract on 2026-11-24. For a new connector, the ids it ships with are permanent: pick them in Portuguese, as
 the system's users say them, before the first app can read them.
 
