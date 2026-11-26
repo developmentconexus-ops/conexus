@@ -170,3 +170,13 @@ export function lastState(run: TapRun): TapState {
   const states = run.messages.filter((message) => message.type === 'STATE')
   return z.object({ value: z.custom<TapState>() }).parse(states.at(-1)).value
 }
+
+export const WINDOW = [selected('TGFEFDVMRSTDIA', 'efd')]
+
+export function monthsOf(run: TapRun): readonly string[] {
+  return [...new Set(recordsOf(run, 'efd').map((row) => String(row.dtref).slice(0, 7)))]
+}
+
+export function activated(run: TapRun, stream: string): readonly Message[] {
+  return run.messages.filter(({ type, stream: of }) => type === 'ACTIVATE_VERSION' && of === stream)
+}

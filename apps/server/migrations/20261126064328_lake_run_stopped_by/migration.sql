@@ -1,0 +1,1 @@
+ALTER TABLE "copies"."lake_run" ADD COLUMN "stopped_by" text;

@@ -1,7 +1,6 @@
 import type { ModelId } from '@conexus/hub-api'
 import { FailureData, MachineData, NoticeData, PreviewData, VersionData } from '@conexus/hub-api'
-import { BotIcon } from 'lucide-react'
-import { ConexusMark } from '../../brand/mark.tsx'
+import { AgentSign } from '../../ui/ai/agent-sign.tsx'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
@@ -14,7 +13,7 @@ import { NoteSaveCard } from './note-card.tsx'
 import { PlanCard } from './plan-card.tsx'
 import { PreviewLine } from './preview-line.tsx'
 import { QuestionCard } from './question-card.tsx'
-import { useRoom } from './room.ts'
+import { signerOf, useRoom } from './room.ts'
 import type { TranscriptItem } from './rows.ts'
 import { Sources } from './sources.tsx'
 import { ThinkingLine } from './thinking-line.tsx'
@@ -125,11 +124,7 @@ export function BuilderTurn(props: {
     <Message>
       <MessageContent>
         <MessageHeader>
-          {room.kind === 'SAVED_AGENT' ? (
-            <BotIcon aria-hidden="true" data-slot="agent-icon" className="size-4 text-text-2" />
-          ) : (
-            <ConexusMark size={16} />
-          )}
+          <AgentSign signer={signerOf(room)} working={false} />
           <span className="font-semibold text-text">{agent}</span>
           {props.model !== null && (
             <span className="min-w-0 truncate rounded-pill bg-surface-3 px-sm py-xs">

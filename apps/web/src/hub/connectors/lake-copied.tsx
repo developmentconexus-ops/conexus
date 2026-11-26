@@ -18,7 +18,7 @@ import { CopiedRow } from './lake-copied-row.tsx'
 import type { Picks, Table } from './lake-pick.ts'
 import { copyBody, groupsOf, isMarked, picksOfCopied, prefixOf } from './lake-pick.ts'
 import { Group, LakePicker } from './lake-picker.tsx'
-import { lakeTablesPrefix, sendLakeCopy, sendLakeRun } from './lake-queries.ts'
+import { lakeTablesPrefix, sendLakeCopy, sendLakeRun, sendLakeStop } from './lake-queries.ts'
 import { LeaveDialog, ReadAgainDialog, readAgainTables } from './lake-read-again.tsx'
 import {
   dateEffectText,
@@ -59,7 +59,7 @@ function useCopyEdit(props: Props) {
 
 type Edit = ReturnType<typeof useCopyEdit>
 
-/** The two writes of the section: "Salvar" sets the copy, "Rodar agora" and "Ler de novo" ask for a round. */
+/** The writes of the section: "Salvar" sets the copy, "Rodar agora" and "Ler de novo" ask for a round, "Parar cópia" asks the open one to stop. */
 function useCopyWrites(props: Props, edit: Edit) {
   const { companyId, connectionId, entry, lake } = props
   const { picks, interval, since, savedSince, setReading } = edit
@@ -70,8 +70,13 @@ function useCopyWrites(props: Props, edit: Edit) {
   const queryClient = useQueryClient()
   const save = useMutation(sendLakeCopy)
   const run = useMutation(sendLakeRun)
+  const stop = useMutation(sendLakeStop)
+  const [refusedStop, setRefusedStop] = useState<string | null>(null)
   const params = { companyId, connectionId }
-  const running = lake.lastRun?.outcome === 'RUNNING' || run.isPending
+  const round = lake.lastRun?.outcome === 'RUNNING' ? lake.lastRun : null
+  const running = round !== null || run.isPending
+  // The Hub may keep an ask whose request it refused, so that round offers the stop again.
+  const stopping = round?.stopping === true && round.id !== refusedStop
 
   function stale() {
     void queryClient.invalidateQueries({ queryKey: lakeTablesPrefix(companyId, connectionId) })
@@ -112,11 +117,23 @@ function useCopyWrites(props: Props, edit: Edit) {
     stale()
   }
 
+  async function stopRound() {
+    setFailure(null)
+    setRefusedStop(null)
+    try {
+      await stop.mutateAsync({ params })
+    } catch (error) {
+      setRefusedStop(round?.id ?? null)
+      setFailure(sentenceOf(error))
+    }
+  }
+
   return {
     note,
     failure,
     nameRefusal,
     running,
+    stop: { stopping, pending: stop.isPending, send: stopRound },
     saving: save.isPending,
     pending: run.isPending,
     submit,
@@ -152,7 +169,17 @@ function CopiedList(props: {
   ))
 }
 
-/** What the last "Salvar" or run said: the effect of the date once saved, or why it did not go. */
+function Heading(props: { editable: boolean }) {
+  return (
+    <div className="flex flex-col gap-xs">
+      <SectionTitle>{LAKE_TABLES}</SectionTitle>
+      <p className="max-w-message text-text-2">{SECTION_LEAD}</p>
+      {!props.editable && <p className="max-w-message text-text-2">{ONLY_COPY_MANAGER}</p>}
+    </div>
+  )
+}
+
+/** What the last "Salvar", run or stop said: the effect of the date once saved, or why it did not go. */
 function Outcome(props: { note: string | null; failure: string | null }) {
   return (
     <>
@@ -209,11 +236,7 @@ export function CopiedTables(props: Props & { editable: boolean }) {
   const { note, failure, nameRefusal, running, submit, start } = writes
   return (
     <section aria-label={LAKE_TABLES} className="flex flex-col gap-lg">
-      <div className="flex flex-col gap-xs">
-        <SectionTitle>{LAKE_TABLES}</SectionTitle>
-        <p className="max-w-message text-text-2">{SECTION_LEAD}</p>
-        {!props.editable && <p className="max-w-message text-text-2">{ONLY_COPY_MANAGER}</p>}
-      </div>
+      <Heading editable={props.editable} />
       <CopiedList
         tables={copied}
         entry={entry}
@@ -250,6 +273,7 @@ export function CopiedTables(props: Props & { editable: boolean }) {
         running={running}
         stale={since !== savedSince}
         again={again.length}
+        stop={writes.stop}
         onRun={() => void start(false)}
         onReadAgain={() => setReading(true)}
       />
@@ -266,10 +290,7 @@ export function CopiedTables(props: Props & { editable: boolean }) {
         open={confirming}
         tables={leaving}
         pending={writes.saving}
-        onConfirm={async () => {
-          await submit()
-          setConfirming(false)
-        }}
+        onConfirm={() => void submit().then(() => setConfirming(false))}
         onCancel={() => setConfirming(false)}
       />
     </section>

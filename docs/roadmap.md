@@ -56,8 +56,7 @@ trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilh
 
 `D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b"), mais a 3a, dos
 arquivos, e o XML lido em linhas; depois vêm os conectores por classe e a porta
-de fora. Segue a 2, com a etapa O conector no padrão novo entre a parte 0 e a parte
-1 dela. As etapas, os onze de `D3` e o
+de fora. A 1 e a 2 fecharam; seguem o aviso de cópia parada e a 3. As etapas, os onze de `D3` e o
 Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
@@ -71,7 +70,7 @@ Brain estão na [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A etapa 1 do harness e `A1` fecharam; segue a etapa 2 ("Uma sala e os nomes certos"), depois `A2` e
+A etapa 1 do harness, `A1` e a etapa 2 ("Uma sala e os nomes certos") fecharam; seguem `A2` e
 `A3`. Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 

@@ -235,6 +235,17 @@
             },
             "required": ["kind", "code", "table", "system"],
             "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "INTERRUPTED"
+              }
+            },
+            "required": ["kind"],
+            "additionalProperties": false
           }
         ]
       },

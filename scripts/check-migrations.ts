@@ -36,12 +36,12 @@ function git(...args: string[]): string {
 }
 
 function reachedMain(file: string): boolean {
-  return (
-    spawnCommand('git', ['cat-file', '-e', `${main}:${file}`], {
-      cwd: root,
-      deadline: GIT_DEADLINE_MS,
-    }).status === 0
-  )
+  const { status } = spawnCommand('git', ['cat-file', '-e', `${main}:${file}`], {
+    cwd: root,
+    deadline: GIT_DEADLINE_MS,
+  })
+  if (status === null) throw new Error(`git cat-file gave no answer for ${file}`)
+  return status === 0
 }
 
 function checkContract(file: string): void {

@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { LakeCopyDeps } from './lake-copy.ts'
-import { runViewOf } from './lake-run-view.ts'
+import { RUN_COLUMNS, runViewOf } from './lake-run-view.ts'
 import { lakeCopy, lakeRun, lakeTable, lakeTableRun } from './tables.ts'
 
 type Viewer = Readonly<{ person: PersonId; companyId: CompanyId }>
@@ -48,7 +48,7 @@ function storedOf(deps: Deps, viewer: Viewer) {
           eq(lakeCopy.connectionId, lakeTable.connectionId),
         ),
       )
-    const all = await tx.select().from(lakeRun).orderBy(desc(lakeRun.startedAt))
+    const all = await tx.select(RUN_COLUMNS).from(lakeRun).orderBy(desc(lakeRun.startedAt))
     const runs = [...new Map(all.reverse().map((run) => [run.connectionId, run])).values()]
     const carried =
       runs.length === 0
@@ -117,12 +117,12 @@ function runsOf(deps: Deps, viewer: Viewer, tableId: LakeTableId) {
       .where(eq(lakeTable.id, tableId))
     if (table === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'TABLE' } })
     const carried = await tx
-      .select({ run: lakeRun, ...getTableColumns(lakeTableRun) })
+      .select({ run: RUN_COLUMNS, ...getTableColumns(lakeTableRun) })
       .from(lakeTableRun)
       .innerJoin(lakeRun, eq(lakeRun.id, lakeTableRun.runId))
       .where(eq(lakeTableRun.tableId, tableId))
     const stopped = await tx
-      .select()
+      .select(RUN_COLUMNS)
       .from(lakeRun)
       .where(
         and(

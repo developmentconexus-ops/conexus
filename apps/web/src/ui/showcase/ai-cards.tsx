@@ -9,7 +9,10 @@ import { entry, noop } from './kit.tsx'
 import type { ShowcaseEntry } from './types.ts'
 
 const WAITING_LINE = (
-  <WorkingLine state={{ kind: 'WAITING', sentence: 'Conexus esperando sua resposta' }} />
+  <WorkingLine
+    signer="CONEXUS"
+    state={{ kind: 'WAITING', sentence: 'Conexus esperando sua resposta' }}
+  />
 )
 
 const PLAN_TEXT: PlanText = {

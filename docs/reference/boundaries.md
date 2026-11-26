@@ -13,6 +13,26 @@ changes, reread the line it names.
 - **Hand-made piece.** `scripts/check-radius.ts` reads the declared radius and reports departures without failing.
 - **Why.** Delivery L7 says radius departures are reported rather than stopped. The native candidates cannot resolve card-specific unit boundaries without this parser. The check appends to the native step summary; it is not a gate.
 
+## Biome 2.5.14 and wrangler 4.151.1
+
+### The local check starts the program, not its launcher
+
+- **Library line.** `@biomejs/biome/bin/biome:69` sets `process.exitCode = result.status`, null
+  when a signal ends the binary, so it answers 0. `wrangler/bin/wrangler.js:37` answers 0 for a
+  null code. `biome check --changed --since` takes its list of files from the commits since the
+  ref and reads their content from disk, so an uncommitted fix hides a committed error.
+- **Hand-made piece.** `scripts/check-local.ts` starts the platform's Biome binary and
+  `wrangler/wrangler-dist/cli.js` itself, turns 128 plus a signal from `npm run` into a red step,
+  and refuses uncommitted work before `--changed`.
+- **Why.** [Delivery L29](../guides/delivery.md): a step the machine's memory guard ended must be
+  red, and the check reads the commit to be pushed. `jscpd/run-jscpd.js:71` raises the signal again
+  and needs nothing. `quality --fast` also starts Biome through the launcher
+  (`scripts/quality-complexity.ts:101`) and reads no status, which would be 0: a killed Biome leaves
+  no report, so reading it at line 105 fails the step, as an ordinary exit that does not run again.
+  The planted cases in `scripts/check-local-steps.test.ts` cover the killed step. CI's `lint` and
+  `typecheck` still start the launchers
+  ([issue 1453](https://github.com/developmentconexus-ops/conexus/issues/1453)).
+
 ## Better Auth 1.7.8
 
 ### The session's total lifetime
@@ -1106,6 +1126,24 @@ changes, reread the line it names.
   refusing a lock that is taken.
 - **Revisit when** Mastra can lock by a key other than the conversation.
 
+## Mastra 1.83.0: the Builder's refused turn kept beside the run (Uma sala e os nomes certos)
+
+- **Library line.** A processor's `abort` ends the run with `finishReason: 'tripwire'`. The agent
+  controller folds the processor's id and reason into the text of its `error` event and passes no
+  `processorId` (`@mastra/core` 1.83.0 `dist/agent-controller-BhkzVgCi.js:1186-1197`, emitted at
+  `:738-746`), so nothing typed carries the code or the name of whose run holds the Project.
+- **Hand-made piece.** `createRefusals` in `apps/server/src/agents/app-builder/turn-of.ts`, a map
+  by conversation in the Hub's memory. `projectTurn` clears it, then records `RUN_BUSY` with the
+  holder's name before it refuses; `builderEnds` (`end.ts`) reads it once, and
+  `harness/turn/end.ts` takes it only for an `error` event with `finishReason: 'tripwire'`.
+- **Why.** [Code C52](../guides/code.md): a failure is told by its code, never read from its text.
+  A restart loses the map, and the refusal is only of a live turn.
+- **Proof.** `turn.test.ts`, "o evento error do controlador, na 1.83.0, traz finishReason tripwire
+  e não traz processorId…", which fails when an upgrade passes the field;
+  `conversation-turns.test.ts`, a second conversation of the Project ending `RUN_BUSY` with the
+  name.
+- **Revisit when** Mastra's `error` event carries the processor's id or a typed payload.
+
 ## Mastra 1.83.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
 
 - **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`): the session's native "never ask" is the `allow`
@@ -1358,10 +1396,11 @@ reference tool checks a read against its documentation.
   that lost a row in the source loses it in the lake, and the months before the re-read stay.
   `kernel/conformance.test.ts`, "a declaração por tabela", refuses a window on a column that is not
   a date.
-- **Not proved.** The count on the real Oracle: the double runs the same SQL in SQLite. The
-  delete by month on Athena (the double runs it in DuckDB): L.7. A month the source emptied whole
-  brings no row, so it stays in the lake until a whole pass, the limit dlt documents for an empty
-  snapshot (`merge-loading.md:999-1003`).
+- **Proved in the lab (2026-11-26, v0.24.132).** Rounds of a window table ran the month count on the
+  real Oracle and the delete by month on Athena.
+- **Not proved.** A row the source took out of a re-read month leaving the lake: the source took none
+  out. A month the source emptied whole brings no row, so it stays in the lake until a whole pass,
+  the limit dlt documents for an empty snapshot (`merge-loading.md:999-1003`).
 - **Revisit when** `singer-sdk` or `meltano` gains a partition or window mode.
 
 ## Connectors (A primeira cópia chega ao lago): the current layer, one case a statement
@@ -1371,7 +1410,8 @@ reference tool checks a read against its documentation.
   (`AB JdbcSqlGenerator.kt:219-238`), and dlt's merge job is the other form read
   (`DLT dlt/destinations/sql_jobs.py:1120-1139`). Athena on `S3 Tables` fails a `MERGE` of two or more
   cases from about 230 to 337 columns and runs one case with 450 (`EST/achados-auditoria:49`,
-  `:321`).
+  `:321`). Here `boto3` 1.44.6 sends each statement to Athena and `pyiceberg` 0.12.0 adds a new
+  column to the current table.
 - **Hand-made piece.** `Updater._merges` in `apps/extraction/src/conexus_extraction/update.py`:
   two `MERGE` statements over the rows the pass added to the raw table, one case each. The first
   updates the rows that match, the second inserts what does not match. No connector marks a row
@@ -1391,8 +1431,10 @@ reference tool checks a read against its documentation.
 - **Proof.** `apps/extraction/tests/test_update.py`, "a atual segue a fonte" (the source's note,
   changed and created, and no statement with two cases) and "a coluna nova na atual"; the
   hand mutation that cleans before the `MERGE` turns "a limpeza" and "a atual segue a fonte" red.
-- **Not proved.** On Athena, with the real 450 columns: L.7. The tests run the statements in DuckDB,
-  whose dialect is not Trino's, over the recorded Athena envelopes.
+- **Proved in the lab (2026-11-26, v0.24.132 and v0.24.133).** On Athena, with the notes table's
+  full width, the two statements ran with matching rows, a changed row took the source's value, and
+  the current table kept one row for each key (L.7). The tests run the statements in DuckDB, whose
+  dialect is not Trino's, over the recorded Athena envelopes.
 - **Revisit when** Athena runs a multi-case `MERGE` on a wide table, or `S3 Tables` maintains
   the history itself.
 
@@ -1400,7 +1442,8 @@ reference tool checks a read against its documentation.
 
 - **Library line.** No reference cleans a raw layer: Nekt keeps the history as an optional module of
   each table (`NK:8635`), Databricks keeps a type 2 history per table, Airbyte kept everything, and
-  `S3 Tables` keeps 120 hours of snapshots.
+  `S3 Tables` keeps 120 hours of snapshots. `pyiceberg` 0.12.0 writes the raw table; the delete is an
+  Athena statement sent through `boto3` 1.44.6.
 - **Hand-made piece.** The last step of `Updater._update`: `DELETE FROM raw` of every row up to the
   update's highest `_sdc_sequence`, after the current table and its properties are written, in every
   table, the NF-e's XML included. A table declared `history: true` skips it. A crash between the
@@ -1409,7 +1452,8 @@ reference tool checks a read against its documentation.
   not an archive. Decision 0080.
 - **Proof.** `apps/extraction/tests/test_update.py`, "a limpeza", "o xml sem historico" and "a
   limpeza pula o historico".
-- **Not proved.** The cleaning on Athena's real `DELETE`: L.7.
+- **Proved in the lab (2026-11-26, v0.24.132).** Athena's own `DELETE` left the raw tables empty
+  after each round, the rows left by an interrupted round included (L.7).
 - **Revisit when** the founder asks for history of a table, or the raw tables hold more than the
   rounds in flight.
 
@@ -1435,13 +1479,16 @@ reference tool checks a read against its documentation.
 - **Why.** The live calls and the lake copy must read one definition (0071), and only the kit
   holds it.
 - **Proof.** `apps/extraction/tap/src/tap.test.ts` and `tap-pass.test.ts` run the command line
-  against the Sankhya and HubSpot doubles; `tap-ceiling.test.ts` changes a low key and then
-  writes a high one between two pages, and the next pass reads both. singer-sdk 0.54.9's standard tap battery, run outside
-  the repository against the tap's own output, passed 284 tests over the Sankhya double's seven
-  tables and 13 over the HubSpot double's one. `test_tap_battery.py` enters with U5.
-- **Not proved.** A run under Meltano (U5), the real Sankhya, and a HubSpot token that expires
-  during a run: the tap never renews it. A table read through an operation has no ceiling to
-  ask, so its pass still saves the latest change it read; no declared table does so today.
+  against the Sankhya and HubSpot doubles; `tap-ceiling.test.ts` changes a low key and then writes a
+  high one between two pages, and the next pass reads both. singer-sdk 0.54.9's standard tap
+  battery, run outside the repository against the tap's own output, passed 284 tests over the
+  Sankhya double's seven tables and 13 over the HubSpot double's one. The battery is not in the
+  repository: the card's `test_tap_battery.py` was not written.
+- **Proved in the lab (2026-11-26).** Rounds under Meltano against the real Sankhya (v0.24.132 and
+  v0.24.133), with one table of each mode.
+- **Not proved.** A HubSpot token that expires during a run: the tap never renews it. A table read
+  through an operation has no ceiling to ask, so its pass still saves the latest change it read; no
+  declared table does so today.
 - **Revisit when** the kit can be read from Python, or Meltano changes how it calls a tap.
 
 ## Mastra 1.83.0: a conversation's changing state lives in a Hub table (step 24.1)
@@ -1599,8 +1646,8 @@ reference tool checks a read against its documentation.
 
 ### The start: one door, `iniciarRodada`, with a start line of its own
 
-- **Library line.** `@aws-sdk/client-ecs` `dist-types/models/models_1.d.ts:3243-3343` (`RunTask`, its `clientToken`
-  and `overrides`) and `:2858`. The library runs a task; it keeps no schedule, no run record and no pace.
+- **Library line.** `@aws-sdk/client-ecs` 3.1175.0 `dist-types/models/models_1.d.ts:3243-3343`
+  (`RunTask`, its `clientToken` and `overrides`) and `:2858`. The library runs a task; it keeps no schedule, no run record and no pace.
   `@mastra/core` 1.83.0 `mastra.schedules` keeps a cron per workflow id, and runs the workflow's step.
   The eight systems the study of the clock read keep the schedule in their own control plane, not in
   a cloud scheduler. SSM `PutParameter` answers at most 3 writes a second by default (the study of
@@ -1620,14 +1667,15 @@ reference tool checks a read against its documentation.
 - **Proof.** `lake-run.test.ts` "o disparo", "o tamanho da máquina", "uma partida por vez" (the
   parameter double never receives more than 3 in a second), "dois disparos juntos", "a AWS recusa",
   "a AWS não responde"; `lake-sweep.test.ts`; `clock.test.ts` "o relógio conta da hora em que a cópia
-  nasceu" and "o relógio só diz quando"; `mastra.test.ts` "o relógio da ligação". On AWS, L.9 ten
-  starts in a second (the laboratory output in the pull request of group G4).
+  nasceu" and "o relógio só diz quando"; `mastra.test.ts` "o relógio da ligação". On AWS, L.9: ten
+  parameter writes through the start line, none refused
+  (https://github.com/developmentconexus-ops/conexus/pull/1369).
 - **Revisit when** `@aws-sdk/client-ecs` or Mastra's schedules change, or SSM's default rate does.
 
 ### The end: the result and the stop in one queue; the first to arrive closes
 
-- **Library line.** `@aws-sdk/client-sqs` `dist-types/models/models_0.d.ts:1373` (a standard queue
-  delivers at least once and keeps no order). The EventBridge rule sends ECS's `STOPPED` to the same
+- **Library line.** `@aws-sdk/client-sqs` 3.1175.0 `dist-types/models/models_0.d.ts:1373` (a standard
+  queue delivers at least once and keeps no order). The EventBridge rule sends ECS's `STOPPED` to the same
   queue; ECS keeps no record of why a Conexus task ended.
 - **Hand-made piece.** `lake-queue.ts` reads the queue only while a round is open, and closes a round
   through `closeLakeRun` in `lake-close.ts`: `UPDATE ... WHERE ended_at IS NULL`, so the first to

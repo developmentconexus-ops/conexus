@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { WorkingLine as Line } from '../../ui/ai/working-line.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { useEverySecond } from './elapsed.ts'
-import { useRoom } from './room.ts'
+import { signerOf, useRoom } from './room.ts'
 import { durationOf, STILL_WORKING, workingText } from './text.ts'
 
 /** The line while a question, a plan or an approval waits on the person (founder, 2026-10-22, "Aprovo"). */
@@ -33,7 +33,8 @@ export function WorkingLine({
   waiting: boolean
 }) {
   useEverySecond()
-  const { agent } = useRoom()
+  const room = useRoom()
+  const { agent } = room
   const [last, setLast] = useState({ heard, at: Date.now() })
   if (last.heard !== heard) setLast({ heard, at: Date.now() })
   const quiet = Date.now() - last.at >= QUIET_MS
@@ -41,6 +42,7 @@ export function WorkingLine({
   return (
     <div className="px-md py-sm">
       <Line
+        signer={signerOf(room)}
         state={
           waiting
             ? { kind: 'WAITING', sentence: waitingText(agent) }
@@ -63,7 +65,12 @@ export function WorkingLine({
  */
 /** The waiting line at the top of an open card on a phone; its own component, so the phone check re-renders only it, not the card. */
 export function WaitingOnPhone() {
-  const { agent } = useRoom()
+  const room = useRoom()
   if (!useIsMobile()) return null
-  return <Line state={{ kind: 'WAITING', sentence: `${agent} esperando sua resposta` }} />
+  return (
+    <Line
+      signer={signerOf(room)}
+      state={{ kind: 'WAITING', sentence: `${room.agent} esperando sua resposta` }}
+    />
+  )
 }

@@ -112,9 +112,9 @@ export const Briefing = z.object({ name: z.string(), content: z.string().max(SHO
 export type Briefing = z.infer<typeof Briefing>
 
 /**
- * What `propose_app` (Início, **Criar app**) and `propose_app_change` (a Projeto, **Mandar ao
- * Builder**) answer: the need, summarized, and its briefing. Mastra keeps each output as stored, so
- * a proposal stored before step 24.3.2 has no briefing.
+ * What `propose_app` (Início, **Criar app**) and `propose_app_change` (a Projeto, **Mandar para
+ * Construir**) answer: the need, summarized, and its briefing. Mastra keeps each output as stored,
+ * so a proposal stored before step 24.3.2 has no briefing.
  */
 export const ProposedApp = z.object({ summary: Summary, briefing: Briefing.optional() })
 export type ProposedApp = z.infer<typeof ProposedApp>

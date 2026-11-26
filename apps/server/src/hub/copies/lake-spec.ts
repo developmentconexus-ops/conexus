@@ -34,6 +34,10 @@ export type Started = Readonly<{
   copy: CopyRead
 }>
 
+export function isFirstLoad(table: Pick<typeof lakeTable.$inferSelect, 'lastRunId'>): boolean {
+  return table.lastRunId === null
+}
+
 export async function readCopy(database: Database, at: CompanyScope, connection: ConnectionId) {
   return database.read(at, async (tx): Promise<CopyRead | null> => {
     const [copy] = await tx
@@ -42,13 +46,17 @@ export async function readCopy(database: Database, at: CompanyScope, connection:
       .where(eq(lakeCopy.connectionId, connection))
     if (copy === undefined) return null
     const rows = await tx
-      .select({ source: lakeTable.sourceTable, name: lakeTable.name, last: lakeTable.lastRunId })
+      .select({
+        source: lakeTable.sourceTable,
+        name: lakeTable.name,
+        lastRunId: lakeTable.lastRunId,
+      })
       .from(lakeTable)
       .where(eq(lakeTable.connectionId, connection))
     const tables = rows.map((row) => ({
       source: SourceTableId.parse(row.source),
       name: LakeTableName.parse(row.name),
-      firstLoad: row.last === null,
+      firstLoad: isFirstLoad(row),
     }))
     return { startDate: copy.startDate, tables, lake: await lakeOf(tx, at.companyId) }
   })
@@ -89,11 +97,14 @@ export async function specOf(
   deps: { source: CopySource; copy: AwsConfig['copy'] },
   started: Started,
   lake: Readonly<{ where: Where; bucket: string }>,
-): Promise<string | null> {
+): Promise<Readonly<{ spec: string; reread: readonly LakeTableName[] }> | null> {
   const { at, connection, copy } = started
   const opened = await deps.source.open({ companyId: at.companyId, connectionId: connection })
   if (opened.kind === 'GONE') return null
   const { region, account } = lake.where
+  const reread = started.whole
+    ? copy.tables.filter((table) => opened.limited.get(table.source) === true)
+    : []
   const spec = CopyTaskSpec.parse({
     version: 1,
     runId: started.run,
@@ -107,10 +118,10 @@ export async function specOf(
     tables: copy.tables.map((table) => ({
       source: table.source,
       name: table.name,
-      whole: table.firstLoad || (started.whole && opened.limited.get(table.source) === true),
+      whole: table.firstLoad || reread.includes(table),
     })),
     lake: { bucketArn: `arn:aws:s3tables:${region}:${account}:bucket/${lake.bucket}`, region },
     queueUrl: deps.copy.queueUrl,
   })
-  return JSON.stringify(spec)
+  return { spec: JSON.stringify(spec), reread: reread.map((table) => table.name) }
 }
