@@ -147,6 +147,29 @@ function nameIsValid(connector: ConnectorId, name: string): boolean {
   )
 }
 
+async function treatedLookupIn(
+  deps: Deps,
+  tx: ReadTx,
+  companyId: CompanyId,
+): ReturnType<CopySource['treatedLookup']> {
+  const rows = await tx
+    .select({ id: connection.id, connector: connection.connectorId })
+    .from(connection)
+    .where(eq(connection.companyId, companyId))
+  const connectors = new Map(rows.map((row) => [row.id, row.connector]))
+  return ({ connectionId, source }) => {
+    const id = connectors.get(connectionId)
+    const declared = id === undefined ? [] : (connectorIn(deps, id)?.tables?.declared ?? [])
+    const treated = declared.find((each) => sourceOf(each) === source)?.treated
+    if (treated === undefined) return null
+    return {
+      description: treated.description,
+      columns: treated.columns.map(({ column, as }) => ({ column, as })),
+      select: (lakeName) => treatedSelect(KitLakeTableName.parse(lakeName), treated),
+    }
+  }
+}
+
 /**
  * The connection as the lake copy reads it (decision 0056: this subject alone opens a seal and
  * imports the kit), in a company scope with no person. The dictionary is the kit's one discovery
@@ -163,24 +186,7 @@ export function createCopySource(deps: Deps): CopySource {
     }
   }
   return {
-    async treatedLookup(tx, companyId) {
-      const rows = await tx
-        .select({ id: connection.id, connector: connection.connectorId })
-        .from(connection)
-        .where(eq(connection.companyId, companyId))
-      const connectors = new Map(rows.map((row) => [row.id, row.connector]))
-      return ({ connectionId, source }) => {
-        const id = connectors.get(connectionId)
-        const declared = id === undefined ? [] : (connectorIn(deps, id)?.tables?.declared ?? [])
-        const treated = declared.find((each) => sourceOf(each) === source)?.treated
-        if (treated === undefined) return null
-        return {
-          description: treated.description,
-          columns: treated.columns.map(({ column, as }) => ({ column, as })),
-          select: (lakeName) => treatedSelect(KitLakeTableName.parse(lakeName), treated),
-        }
-      }
-    },
+    treatedLookup: (tx, companyId) => treatedLookupIn(deps, tx, companyId),
     async connection(at) {
       const scope = { kind: 'COMPANY', companyId: at.companyId, personId: null } as const
       const [row] = await deps.database.read(scope, (tx) =>

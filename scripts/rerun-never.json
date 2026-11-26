@@ -27,7 +27,7 @@
     "apps/server/src/hub/data/reads.test.ts",
     "apps/server/src/hub/projects/app-access.test.ts",
     "apps/server/src/hub/treatment/tables.test.ts",
-    "apps/server/src/hub/treatment/treatment-routes.test.ts",
+    "apps/server/src/hub/treatment/treatment-access.test.ts",
     "apps/server/src/platform/access.test.ts",
     "apps/server/src/platform/isolation-apps.test.ts",
     "apps/server/src/platform/isolation-conversations.test.ts",

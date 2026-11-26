@@ -8,6 +8,7 @@ import {
   VersionView,
 } from '@conexus/hub-api'
 import { and, asc, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
+import type { LakeId } from '../../platform/aws.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CopySource } from '../connectors/public.ts'
@@ -160,14 +161,14 @@ export async function treatmentLakeOf(
   reads: TreatmentReads,
   tx: ReadTx,
   companyId: CompanyId,
-): Promise<Readonly<{ state: TreatedTables['lake']; lakeId: string | null }>> {
+): Promise<Readonly<{ state: TreatedTables['lake']; lakeId: LakeId | null }>> {
   const lake = await lakeOf(tx, companyId)
   if (lake === null) return { state: 'NONE', lakeId: null }
   if (lake.template !== reads.templateVersion) return { state: 'OUTDATED', lakeId: lake.lakeId }
   return { state: lake.ready ? 'CURRENT' : 'NONE', lakeId: lake.lakeId }
 }
 
-async function modelRunsOf(tx: ReadTx, lakeId: string | null, names: readonly string[]) {
+async function modelRunsOf(tx: ReadTx, lakeId: LakeId | null, names: readonly string[]) {
   if (lakeId === null || names.length === 0) return []
   return tx
     .select({ ...getTableColumns(treatmentModelRun), at: treatmentRun.endedAt })
@@ -183,7 +184,7 @@ function modelRunViewOf(row: ModelRunRow): ModelRunView {
   return ModelRunView.parse({ ...row, at: row.at?.toISOString() })
 }
 
-async function lastRunOf(tx: ReadTx, lakeId: string | null): Promise<RunView | null> {
+async function lastRunOf(tx: ReadTx, lakeId: LakeId | null): Promise<RunView | null> {
   if (lakeId === null) return null
   const [row] = await tx
     .select({

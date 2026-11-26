@@ -52,7 +52,7 @@ for (const [form, sql, inputs] of [
 
 test('leitor de SQL não escreve no console ao ler um join ... on true', (t) => {
   const written = (['log', 'warn', 'error'] as const).map((level) =>
-    t.mock.method(console, level, () => {}),
+    t.mock.method(console, level, () => undefined),
   )
   assert.deepEqual(inputsOf('select * from current.a join current.b on true'), [
     'current.a',
