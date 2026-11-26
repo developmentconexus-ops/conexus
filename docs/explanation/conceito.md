@@ -94,7 +94,7 @@ trilha ou numa decisão gravada.
 | A2 | Aprovar o plano antes de qualquer código, e ver cada pedido conferido no fim | falta | `A3` |
 | A3 | Receber um app que funciona: o Builder vê o que construiu e conserta sozinho | falta | `A1` |
 | A4 | Receber um app com a cara da empresa | falta | `A2` |
-| A5 | Ter o app lendo o dado e os conceitos da empresa pelo mesmo contrato dos agentes | parte: as cópias liberadas; os conceitos vêm depois | `D2`, 0064 (`M`) |
+| A5 | Ter o app lendo o dado e os conceitos da empresa pelo mesmo contrato dos agentes | parte: a leitura ao vivo pelas ligações; o lago e os conceitos vêm depois | `D2`, 0064 (`M`) |
 | A6 | Decidir quem usa cada app, por papel, e voltar a uma versão | tem: Quem usa o app, Versões | · |
 | A7 | Para quem programa: ler o código, ver o que mudou, acompanhar | parte: a aba Código; a aba Alterações está em web W31 e ainda não existe | · |
 | A8 | Um segundo olhar antes da entrega | falta | `A4` |

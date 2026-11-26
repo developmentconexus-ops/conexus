@@ -9,8 +9,8 @@ free SQL, so the lake itself must refuse what the reader may not read.
 
 A rule in layers: the Hub decides, AWS enforces at each query.
 
-- The Hub is the one source of who reads what and the only caller of Athena; nobody else gets an
-  AWS credential.
+- The Hub decides who reads and alone reads Athena; the copy task only writes through it [0076].
+  No person gets AWS credentials.
 - One reader IAM role per company, entered with two session tags: the company and who reads. Today
   who reads is a person's role, by its id, which the owner cannot change.
 - Lake Formation grants by tag, per table; grants derive from the Hub's marks and are reconciled.
