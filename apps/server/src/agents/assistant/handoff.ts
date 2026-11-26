@@ -267,7 +267,7 @@ async function projectOf(
 }
 
 /**
- * The touch of **Criar app** or **Mandar ao Builder** (step 24.3.2, U2): the proposal read from
+ * The touch of **Criar app** or **Mandar para Construir** (step 24.3.2, U2): the proposal read from
  * the person's conversation, the Projeto, the marked connections released, then a conversation of
  * that Projeto's Builder that receives the proposal once, as a signal marked as the Assistant's
  * (as an automation's run sends its own, `automations/run.ts`). Every step is keyed by the attempt,

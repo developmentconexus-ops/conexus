@@ -13,6 +13,7 @@ import type { Page } from 'playwright-core'
 import { atRest } from './at-rest.ts'
 import { holdsColumn } from './chat-column.ts'
 import { createHarness, DESKTOP, LAPTOP, ok, PHONE } from './layout-harness.ts'
+import { AgentStart, recordedEvent } from './src/harness/room/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { connectionsPage } from './sweep-connections.ts'
 import { WITH_ACCOUNT } from './sweep-conversation-states.ts'
@@ -195,6 +196,31 @@ test('a 1366 px, o arquivo alarga o painel de teste e, fechado, ele volta', asyn
   assert.deepEqual(page.problems, [])
   await page.close()
 })
+
+for (const viewport of [DESKTOP, PHONE])
+  test(`a ${viewport.width} px, a linha de trabalho do agente salvo leva o ícone de agente, sem a marca`, async () => {
+    const page = await harness.open(
+      `/companies/${COMPANY.id}/projects/${PROJECT_ID}/agents/${AGENT}/${CHAT}`,
+      {
+        viewport,
+        replies: {
+          ...replies,
+          ...sessionReplies(CHAT, {
+            messages: MESSAGES,
+            controller: AGENTS_CONTROLLER,
+            display: { isRunning: true },
+            events: [recordedEvent('abort', AgentStart)],
+          }),
+        },
+      },
+    )
+    const working = page.getByRole('status').filter({ hasText: `${DRAFT.name} trabalhando` })
+    await working.waitFor()
+    assert.equal(await working.locator('[data-slot=agent-icon]').isVisible(), true)
+    assert.equal(await working.locator('[data-slot=conexus-mark]').count(), 0)
+    assert.deepEqual(page.problems, [])
+    await page.close()
+  })
 
 // The two scenes the founder is shown beside the file's (step 24.4, U4): choosing the Computador in
 // the library's list, and its row among the agent's tools with the connection it reads.
