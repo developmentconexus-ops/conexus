@@ -111,7 +111,7 @@ export function machineInstructions(workdir: string, conflicts: Conflicts = NO_C
     `The conversation's own Linux machine, with Node 24, npm and git. Commands start in ${workdir},`,
     'the app folder: work there and nowhere else. Its network reaches only the development list',
     '(the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company',
-    'or this conversation allowed.',
+    'or this conversation allowed: ask for another with request_network_access.',
     'Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.',
   ]
   const { markers, deleted, replaced, tooManyFiles, tooLarge } = conflicts

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { DEVELOPMENT_HOSTS } from '@conexus/hub-api'
+import { DEVELOPMENT_HOSTS, MACHINE_TOOL } from '@conexus/hub-api'
 import { INSTALLATION } from '../../harness/machine/test-machine.ts'
 import {
   endOf,
@@ -11,6 +11,7 @@ import {
   messagesOf,
   PARTIAL,
   sent,
+  sessionUrl,
   streamOf,
   title,
 } from '../../harness/routes/test-conversation.ts'
@@ -114,6 +115,61 @@ test('a rede: a máquina do agente salvo parte com os domínios da empresa, e re
   assert.equal(removed.statusCode, 204, removed.body)
   await until(() => sent().length === 2, 'the running machine took the shorter list')
   assert.deepEqual(sent().at(-1), DEVELOPMENT_HOSTS)
+})
+
+test('a ferramenta vem com o Computador: request_network_access suspende com os alcances do papel de quem fala, só quem conversa responde o cartão, o agente sem Computador não a recebe, e o agente apagado leva a lista das conversas dele (14, 16, 17, 18)', async (t) => {
+  const asked = tool(MACHINE_TOOL.requestNetwork, {
+    domains: ['loja.example.com'],
+    reason: 'ler os preços',
+  })
+  const on = await agentsOn(t, [[asked], [said('Abriu.')], [said('Oi.')]])
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda.',
+    machine: true,
+  })
+  const carla = await memberOn(on.hub, on.companyId, CARLA, 'developer')
+  const url = await talkedTo(on.hub, carla, on.agents, agent.id)
+  const { say, stream } = await talking(t, on.hub, carla, url)
+  const card = (await say('Leia a loja')).flatMap((event) =>
+    event.type === 'tool_suspended' ? [event] : [],
+  )[0]
+  assert.equal(card?.toolName, MACHINE_TOOL.requestNetwork)
+  assert.deepEqual(card.suspendPayload, {
+    domains: ['loja.example.com'],
+    reason: 'ler os preços',
+    scopes: ['CONVERSATION'],
+  })
+  const answer = { toolCallId: card.toolCallId, resumeData: { scope: 'CONVERSATION' } }
+  const route = `${sessionUrl(url)}/tool-suspension`
+  const stranger = await post(on.hub, on.ana, route, answer)
+  assert.equal(stranger.statusCode, 404, stranger.body)
+  const answered = await post(on.hub, carla, route, answer)
+  assert.equal(answered.statusCode, 200, answered.body)
+  assert.equal(endOf(await stream.turn()), 'complete')
+  function allowed() {
+    return on.hub.test.asOwner(
+      'select conversation_id, person_id, domain from builder.conversation_network_domain',
+    )
+  }
+  assert.deepEqual(await allowed(), [
+    { conversation_id: idOf(url), person_id: carla.id, domain: 'loja.example.com' },
+  ])
+
+  const plain = await publishedAgent(on.hub, on.ana, on.agents, {
+    name: 'Sem computador',
+    instructions: 'Responda.',
+  })
+  const other = await talkedTo(on.hub, on.ana, on.agents, plain.id)
+  assert.equal(endOf(await (await talking(t, on.hub, on.ana, other)).say('Oi')), 'complete')
+  assert.ok(on.calls[0]?.tools.includes(MACHINE_TOOL.requestNetwork))
+  assert.equal(on.calls.at(-1)?.tools.includes(MACHINE_TOOL.requestNetwork), false)
+
+  const gone = await call(on.hub, on.ana, 'DELETE', `${on.agents}/${agent.id}`)
+  assert.equal(gone.statusCode, 204, gone.body)
+  await until(
+    async () => (await allowed()).length === 0,
+    'the list of the deleted agent’s conversation left',
+  )
 })
 
 test('o Computador: um agente sem a chave não recebe ferramenta de máquina nem show_file, e nenhuma máquina liga; listar os agentes não liga nada (15)', async (t) => {

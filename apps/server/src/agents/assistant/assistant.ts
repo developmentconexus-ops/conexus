@@ -10,11 +10,7 @@ import type {
   ConversationMachines,
   MachineTuning,
 } from '../../harness/machine/public.ts'
-import {
-  createConversationMachines,
-  machinePart,
-  showFileTool,
-} from '../../harness/machine/public.ts'
+import { createConversationMachines, machinePart } from '../../harness/machine/public.ts'
 import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { subagentModel } from '../../harness/model-accounts/public.ts'
@@ -71,6 +67,7 @@ import { machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
 import { FIXED, MODEL_BLOCKS } from './instructions.ts'
+import { machineTools } from './machine-tools.ts'
 import type { maysOf } from './mays.ts'
 import { assistantMemory } from './memory.ts'
 import type { OpenDeps } from './open.ts'
@@ -113,7 +110,7 @@ type Deps = {
    */
   machine: ConversationMachine
   machineTuning?: MachineTuning
-  network: Pick<NetworkStore, 'opened' | 'onRemoved'>
+  network: NetworkStore
   /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
   handOffs: () => HandOffDoors
   log: FailureLog
@@ -145,7 +142,7 @@ async function inRequestOrder(
   }
 }
 
-type Parts = {
+type Parts = Pick<Deps, 'network'> & {
   memory: ReturnType<typeof assistantMemory>
   company: ReturnType<typeof companyMemory>
   machines: ConversationMachines
@@ -167,7 +164,7 @@ function chosenIn({ toolScopeOf }: Parts) {
 /** The tools of a run, in the order the request lists them: the model's provider's, the company's first, the Assistant's own, the hand-offs, the rest. */
 function assistantTools(parts: Parts) {
   const { scopeOf, toolScopeOf, maysFor, machines } = parts
-  const showFile = showFileTool(machines)
+  const ofMachine = machineTools(parts)
   const proposeMemory = proposeCompanyMemoryTool({ memory: parts.company, scopeOf })
   const proposals = proposeTools(machines)
   const chosenOf = chosenIn(parts)
@@ -178,7 +175,7 @@ function assistantTools(parts: Parts) {
     return {
       ...toolsOf(sessionModel(requestContext)),
       ...first,
-      [ASSISTANT_TOOL.showFile]: showFile,
+      ...ofMachine,
       [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,
       ...(automate
         ? {
@@ -304,7 +301,7 @@ export function createAssistant(deps: Deps) {
   const { speakersFor, maysFor, toolScopeOf } = runReads(deps, scopeOf)
   const { controller } = mountAgent(
     assistantSpec(deps, {
-      ...{ memory, company, scopeOf, machines },
+      ...{ memory, company, scopeOf, machines, network: deps.network },
       ...{ toolScopeOf, tools, maysFor, speakersFor },
     }),
     { queue, storage },

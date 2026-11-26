@@ -4,11 +4,6 @@ import { causeChain, Failure } from '../../platform/failure.ts'
 import type { NetworkStore } from '../network/public.ts'
 import type { Kit } from './kit.ts'
 
-export type NetworkLists = {
-  opened: NetworkStore['opened']
-  onRemoved(listener: (companyId: CompanyId) => void): unknown
-}
-
 type NetworkChange = 'START' | 'GRANT' | 'REMOVE' | 'CONFER'
 
 export type NetworkedSession = {

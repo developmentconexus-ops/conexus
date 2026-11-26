@@ -1,4 +1,4 @@
-import type { FixedRole, Role } from '@conexus/hub-api'
+import type { FixedRole, NetworkAnswer, Role } from '@conexus/hub-api'
 import { fixedNameOf } from '@conexus/hub-api'
 
 /** Today as `YYYY-MM-DD` in `America/Sao_Paulo` (Conexus OS `e0353c36` `harness/prompt.ts:91-92`). */
@@ -32,13 +32,15 @@ export type Speakers = {
 
 /**
  * What the person's role and the run allow of the tools that depend on them, read once per run by
- * the one that builds the tools: the block says in words what the tools leave out.
+ * the one that builds the tools.
  */
 export type Mays = {
   note: boolean
   automate: boolean
   byAutomation: boolean
   companyMemory: boolean
+  /** The answers the person's role allows on a domain's card; none in an automation's run. */
+  network: readonly Exclude<NetworkAnswer['scope'], 'REFUSED'>[]
 }
 
 const NO_NOTE =
@@ -77,7 +79,7 @@ function workOf(speakers: Pick<Speakers, 'jobTitle' | 'department'>): string {
 /**
  * The conversation's block: the company, the person, today, the place and the chosen connections,
  * and what the tools this run lacks leave unsaid; no other rule of how to answer. `may` is the
- * Assistant's: the agents and the Construtor have no such tools.
+ * Assistant's alone.
  */
 export function blockOf(
   speakers: Speakers,

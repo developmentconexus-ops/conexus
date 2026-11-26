@@ -1,11 +1,12 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan, files, tasks, reads, research, research-failed, title, title-observer, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, network, files, tasks, reads, research, research-failed, title, title-observer, handoff, approval, approval-declined, approval-interrupted, approval-stopped or approval-refused) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
 // three model calls (a plan, a tool, an answer), so its calls are streamed by the Messages API stream
 // the server tests' double uses (`test-anthropic-stream.ts`), and the run is approved and steered the
-// way a person does. `files` is scripted the same way (a tool call, then an answer): a message with
+// way a person does. `network` is scripted the same way: `request_network_access` waits on the
+// person's card, and the run goes on with the answer. `files` is scripted the same way (a tool call, then an answer): a message with
 // a markdown file, a PDF and a PNG, and a second one with a PDF while the run works. It saves
 // every event the session emitted and every row Mastra stored, with the library, its version and the
 // date in the first line, in apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service
@@ -41,6 +42,8 @@ import {
   HANDOFF_SIGNAL,
   MORE_FILE,
   MORE_FILES_PROMPT,
+  NETWORK_CALLS,
+  NETWORK_PROMPT,
   PLAN_CALLS,
   PLAN_PROMPT,
   READS_CALLS,
@@ -69,12 +72,19 @@ const PROMPTS: Record<string, string> = {
   thinking:
     'Uma padaria inventada vende 120 pães por dia a R$ 0,80 cada. Quanto ela fatura em 30 dias? Pense antes de responder.',
   abort: 'Escreva uma lista de 60 nomes inventados de padarias, um por linha, sem comentários.',
+  plan: PLAN_PROMPT,
+  network: NETWORK_PROMPT,
 }
+const CARD_ANSWERS = new Map<string, Record<string, string>>([
+  ['plan', { action: 'approved' }],
+  ['network', { scope: 'CONVERSATION' }],
+])
 const Scenario = z.enum([
   'cited',
   'thinking',
   'abort',
   'plan',
+  'network',
   'files',
   'tasks',
   'reads',
@@ -119,6 +129,7 @@ type Session = Awaited<ReturnType<AgentController['createSession']>>
 const Scripted = Scenario.exclude(['cited', 'thinking', 'abort'])
 const CALLS = {
   plan: PLAN_CALLS,
+  network: NETWORK_CALLS,
   files: FILES_CALLS,
   tasks: TASKS_CALLS,
   reads: READS_CALLS,
@@ -171,7 +182,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     )
       ended.resolve()
     approval.approvalReaction(session, scenario, event, ended)
-    if (scenario === 'plan' && event.type === 'agent_end') {
+    if (CARD_ANSWERS.has(scenario) && event.type === 'agent_end') {
       ends += 1
       if (ends === 2) ended.resolve()
     }
@@ -203,16 +214,12 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       await session.sendMessage({ content: asked.get(scenario) ?? '' })
       await ended.promise
     } else {
-      await session.sendMessage({
-        content: scenario === 'plan' ? PLAN_PROMPT : (PROMPTS[scenario] ?? ''),
-      })
+      await session.sendMessage({ content: PROMPTS[scenario] ?? '' })
     }
-    if (scenario === 'plan') {
-      if (suspended === undefined) throw new Error('The plan was not parked on the person.')
-      await session.respondToToolSuspension({
-        toolCallId: suspended,
-        resumeData: { action: 'approved' },
-      })
+    const resumeData = CARD_ANSWERS.get(scenario)
+    if (resumeData !== undefined) {
+      if (suspended === undefined) throw new Error('The run was not parked on the person.')
+      await session.respondToToolSuspension({ toolCallId: suspended, resumeData })
       await ended.promise
     }
   } finally {

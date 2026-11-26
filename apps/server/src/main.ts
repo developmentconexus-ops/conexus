@@ -168,7 +168,7 @@ export function subjectsOf(deps: SubjectDeps) {
   const machines = deps.machinesOf(network.store.opened)
   network.store.onRemoved((companyId) => void machines.narrow(companyId))
   const runs = createRuns({
-    ...{ database, log, machines, repository, copy },
+    ...{ database, log, machines, repository, copy, network: network.store },
     repositories: () => repositoriesIn(config.gitRoot),
     // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
     send: (version) => apps.sendFromBuilder(version),

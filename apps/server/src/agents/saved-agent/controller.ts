@@ -1,4 +1,4 @@
-import type { ConversationId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId } from '@conexus/hub-api'
 import { AgentId as AgentIdSchema, DEVELOPMENT_HOSTS, ProjectId } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
@@ -207,7 +207,7 @@ type Deps = {
   /** The conversations' machines at the provider; an agent with its Computador gets one (step 24.4, U4). */
   machine: ConversationMachine
   machineTuning?: MachineTuning
-  network: Pick<NetworkStore, 'opened' | 'onRemoved'>
+  network: NetworkStore
   /** The one `Mastra` the registry adds the agents to, made after the parts. */
   mastra: () => Mastra
   /** The saved tools' calls at the edge (step 24.4, U3). */
@@ -256,8 +256,9 @@ export function createAgentConversations(deps: Deps) {
   )
   const { controller } = mountAgent(spec, { queue, storage })
 
-  async function sweep(marks: Record<string, string>): Promise<number> {
-    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), each)
+  async function sweep(companyId: CompanyId, marks: Record<string, string>): Promise<number> {
+    const ids = await threadsByMarks(memory, marks)
+    return releaseThreads({ controller, memory }, ids, each(companyId))
   }
   deps.agents.onChange((event) => followed(event, { registry, sweep, log }))
 
@@ -303,7 +304,7 @@ async function followed(
   event: AgentEvent,
   own: {
     registry: Registry
-    sweep: (marks: Record<string, string>) => Promise<number>
+    sweep: (companyId: CompanyId, marks: Record<string, string>) => Promise<number>
     log: FailureLog
   },
 ): Promise<void> {
@@ -318,7 +319,7 @@ async function followed(
     default:
       return event satisfies never
   }
-  const count = await own.sweep({
+  const count = await own.sweep(event.companyId, {
     [RUN_MARKS.agents.company]: event.companyId,
     [RUN_MARKS.agents.agent]: event.agentId,
   })

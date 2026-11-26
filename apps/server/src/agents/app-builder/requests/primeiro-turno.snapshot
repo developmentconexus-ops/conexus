@@ -98,7 +98,7 @@
       {
         "type": "text",
         "text": [
-          "The conversation's own Linux machine, with Node 24, npm and git. Commands start in /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, the app folder: work there and nowhere else. Its network reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation allowed. Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.",
+          "The conversation's own Linux machine, with Node 24, npm and git. Commands start in /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, the app folder: work there and nowhere else. Its network reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation allowed: ask for another with request_network_access. Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.",
           "",
           "Files are stored in a remote sandbox at /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app. File tools take paths relative to /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, or absolute paths under it. Any other absolute path is placed inside /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app (/tmp/x becomes /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app/tmp/x), while commands see the real path: keep every file a tool and a command share under /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app."
         ]
@@ -428,6 +428,33 @@
           "properties": {},
           "additionalProperties": false,
           "required": []
+        },
+        "eager_input_streaming": true
+      },
+      {
+        "name": "request_network_access",
+        "description": "Opens domains to your machine, whose network otherwise reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation already allowed. Pass every domain you need in one call, at most 10: a host name such as loja.exemplo.com.br, or *. before a domain for every name under it; never a URL, a path or a port. Write `reason` in Brazilian Portuguese, in a few words the person reads on the card. Allowed domains open at once; a person answers a card for the others, and in an automation, or for a person whose role does not allow domains, they stay closed.",
+        "input_schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "domains": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "constraints: minimum length 1, maximum length 10"
+            },
+            "reason": {
+              "type": "string",
+              "description": "constraints: minimum length 1, maximum length 200"
+            }
+          },
+          "required": [
+            "domains",
+            "reason"
+          ],
+          "additionalProperties": false
         },
         "eager_input_streaming": true
       },
@@ -1335,7 +1362,7 @@
       {
         "type": "text",
         "text": [
-          "The conversation's own Linux machine, with Node 24, npm and git. Commands start in /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, the app folder: work there and nowhere else. Its network reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation allowed. Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.",
+          "The conversation's own Linux machine, with Node 24, npm and git. Commands start in /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, the app folder: work there and nowhere else. Its network reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation allowed: ask for another with request_network_access. Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.",
           "",
           "Files are stored in a remote sandbox at /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app. File tools take paths relative to /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, or absolute paths under it. Any other absolute path is placed inside /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app (/tmp/x becomes /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app/tmp/x), while commands see the real path: keep every file a tool and a command share under /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app."
         ]
@@ -1692,6 +1719,33 @@
           "properties": {},
           "additionalProperties": false,
           "required": []
+        },
+        "eager_input_streaming": true
+      },
+      {
+        "name": "request_network_access",
+        "description": "Opens domains to your machine, whose network otherwise reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation already allowed. Pass every domain you need in one call, at most 10: a host name such as loja.exemplo.com.br, or *. before a domain for every name under it; never a URL, a path or a port. Write `reason` in Brazilian Portuguese, in a few words the person reads on the card. Allowed domains open at once; a person answers a card for the others, and in an automation, or for a person whose role does not allow domains, they stay closed.",
+        "input_schema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "domains": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "constraints: minimum length 1, maximum length 10"
+            },
+            "reason": {
+              "type": "string",
+              "description": "constraints: minimum length 1, maximum length 200"
+            }
+          },
+          "required": [
+            "domains",
+            "reason"
+          ],
+          "additionalProperties": false
         },
         "eager_input_streaming": true
       },
