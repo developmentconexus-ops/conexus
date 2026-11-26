@@ -109,7 +109,7 @@ export async function lakeRunOn(t: TestContext, clock = testClock()) {
   }
   const runs = createLakeRuns({
     ...{ database: hub.test.database, source: hub.connectors.copies, copy: config.aws.copy },
-    ...{ tasks: ports.tasks, queue: ports.queue, log, clock, companies },
+    ...{ tasks: ports.tasks, tables: ports.tables, queue: ports.queue, log, clock, companies },
   })
   t.after(() => runs.queue.stop())
   await plantLake(hub, companyId, config.aws)
@@ -230,6 +230,7 @@ export function heldStart(t: TestContext, on: LakeRunOn) {
   const runs = createLakeRuns({
     ...{ database: held.database, source: on.hub.connectors.copies, copy: on.config.aws.copy },
     ...{ queue: on.ports.queue, log: silent, clock: testClock(), companies: on.companies },
+    tables: on.ports.tables,
     tasks: {
       ...on.ports.tasks,
       find: (...asked) => {

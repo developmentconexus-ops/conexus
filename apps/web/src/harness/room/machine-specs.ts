@@ -1,5 +1,5 @@
 import { MACHINE_TOOL, ShownFile } from '@conexus/hub-api'
-import { CircleAlertIcon, CodeIcon, PresentationIcon } from 'lucide-react'
+import { CircleAlertIcon, CodeIcon, GlobeIcon, PresentationIcon } from 'lucide-react'
 import { z } from 'zod'
 import type { ToolSpec } from './tool-spec.ts'
 import { headOf } from './tool-spec.ts'
@@ -43,6 +43,15 @@ export const MACHINE_SPECS: Record<(typeof MACHINE_TOOL)[keyof typeof MACHINE_TO
     groups: false,
     refusal: (result) =>
       ShownFile.safeParse(result).data?.kind === 'SHOW_REFUSED' ? 'SAID' : undefined,
+  },
+  [MACHINE_TOOL.requestNetwork]: {
+    icon: GlobeIcon,
+    running: 'Pedindo acesso à internet',
+    done: 'Pediu acesso à internet',
+    failed: 'Não conseguiu pedir acesso à internet',
+    verb: 'pediu acesso',
+    body: 'generic',
+    groups: false,
   },
   [MACHINE_TOOL.codeMode]: {
     icon: CodeIcon,

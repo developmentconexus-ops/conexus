@@ -40,11 +40,14 @@ export const CopyTaskResult = z.object({
   version: z.literal(1),
   runId: LakeRunId,
   attempt: z.int().min(1),
-  outcome: taskOutcome({
-    code: LakeRunFailureCode,
-    table: LakeTableName.nullable(),
-    system: SystemMessage.nullable(),
-  }),
+  outcome: z.discriminatedUnion('kind', [
+    ...taskOutcome({
+      code: LakeRunFailureCode,
+      table: LakeTableName.nullable(),
+      system: SystemMessage.nullable(),
+    }).options,
+    z.object({ kind: z.literal('INTERRUPTED') }),
+  ]),
   tables: z.array(
     z.object({
       name: LakeTableName,

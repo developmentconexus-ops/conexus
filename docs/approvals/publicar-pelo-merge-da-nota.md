@@ -1,3 +1,7 @@
 # Publicar pelo merge da nota
 
 Cartão curto "Publicar pelo merge da nota" (`docs/steps/publicar-pelo-merge-da-nota.md`) aprovado em 2026-11-22 (commit 7b98b69bf961d0c4dcc1908db966d1e9078f26da): "Aprovo". Lido pelo firstmate como a aprovação da página do cartão, com as unidades U1 a U5; vem depois das palavras "`A1 B1 C1 D1`" ao estudo, de 2026-11-22, e de "Approved" ao caminho da release pelo merge. A decisão E (como a L17 nova entra): "1. E1", contra a recomendação do firstmate (E3): o texto novo da L17 entra no pull request desta etapa, com o rótulo `emergência`, que o fundador aplica.
+
+Em 2026-11-26, o fundador disse sobre a R1, a etapa que espera a vaga do desenho (https://github.com/developmentconexus-ops/conexus/pull/1427, https://github.com/developmentconexus-ops/conexus/pull/1444 e https://github.com/developmentconexus-ops/conexus/pull/1454): "Pode fazer o merge do R1 então". Depois, de novo: "Porque ele não ta ocnseguindo publicar no to entendendo ta travando meu desenvolvimento".
+
+Emenda do cartão curto Publicar pelo merge da nota (`docs/steps/publicar-pelo-merge-da-nota.md`) aprovada em 2026-11-26 (commit 835269c8e8a3a44fea7eca042d07beea6aee8e75), antes de haver commit; este commit a aplica ao cartão: a linha 3 passa de `Trilho: desenho` para `Trilho: assistente`, e a frase sobre a vaga passa a nomear a do Assistente, que está livre, para a vaga do desenho ficar para a R1, à opção de liberar a vaga de desenho: "A"

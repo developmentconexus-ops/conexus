@@ -20,23 +20,19 @@ Depois de `D1`, a trilha segue o método leve da fila do molde (delivery L27).
 
 ## O cartão de hoje
 
-O lago da empresa nasce e some, a etapa 1 do lago, fechou em 2026-11-23: o fundador o usou na
-nuvem, na v0.24.110, e a linha de fechamento está no
-[arquivo de aprovação](../../approvals/o-lago-da-empresa-nasce-e-some.md). O operador cria e apaga o
-lago de uma empresa pela Central, e apagar o cliente leva o lago. O cartão está no histórico do
-`main`, no commit `0a3e4d1c`, o último que o mudou. A trilha está sem cartão em `docs/steps/` até o
-cartão da etapa seguinte entrar.
+A primeira cópia chega ao lago, a etapa 2 do lago, fechou em 2026-11-26, com as provas na v0.24.133 e a
+v0.24.134 no ar, e a linha de fechamento está no [arquivo de aprovação](../../approvals/a-primeira-copia-chega-ao-lago.md). A
+pessoa liga um sistema numa janela só, escolhe as tabelas e quando copiar, a cópia chega ao lago da
+empresa, e a página Dados a mostra. O cartão está no histórico do `main`, no commit `50aae548`, o
+último que o mudou. A trilha está sem cartão em `docs/steps/` até o cartão seguinte entrar: o do
+aviso de cópia parada vem primeiro.
 
-A etapa seguinte é a 2 do lago, A primeira cópia chega ao lago: o cartão dela está em
-[a-primeira-copia-chega-ao-lago.md](../a-primeira-copia-chega-ao-lago.md), à espera da aprovação do
-fundador. Ele vem em três partes: a parte 0, em que o legado sai do banco da empresa; a etapa O
-conector no padrão novo; e a parte 1, em que a pessoa liga um sistema numa janela só e a cópia chega.
-O aviso de cópia parada vem num cartão próprio, logo depois.
-
-As etapas anteriores fecharam: a pergunta respondida com a origem, em 2026-11-16
-([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md)); cada papel lê só o seu, com
-a porta única, em 2026-11-17 ([aprovação](../../approvals/cada-papel-le-so-o-seu.md)); e o Registro
-e conformidade, em 2026-11-22 ([aprovação](../../approvals/registro-e-conformidade.md)).
+As etapas anteriores fecharam: o lago da empresa nasce e some, a etapa 1 do lago, em 2026-11-23, na
+v0.24.110 ([aprovação](../../approvals/o-lago-da-empresa-nasce-e-some.md)); a pergunta respondida
+com a origem, em 2026-11-16 ([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md));
+cada papel lê só o seu, com a porta única, em 2026-11-17
+([aprovação](../../approvals/cada-papel-le-so-o-seu.md)); e o Registro e conformidade, em
+2026-11-22 ([aprovação](../../approvals/registro-e-conformidade.md)).
 
 As concessões por instância entram quando o primeiro cartão precisar de instância. A conexão MCP
 tem cartão próprio quando a primeira ferramenta de IA entrar.
@@ -97,17 +93,26 @@ empresa do fundador.
 
 A etapa 1 deixa às seguintes o que o estudo dela achou e o cartão não construiu:
 
-- **Para o cartão da etapa 2.** Apagar uma área do depósito com tabela dentro falha ("namespace not
-  empty"); o apagar do lago e o do que sobrou de uma criação que falha hoje só encontram áreas
-  vazias.
 - **Para o cartão da etapa 3.** A recusa por `DESCRIBE` e a recusa por `SELECT` têm de virar o mesmo
   "não encontrado" (security S10), como a https://github.com/developmentconexus-ops/conexus/issues/1226
   pede para o nome e as colunas.
-- **Para a primeira etapa que usar o lago.** A linha em `ready` não relê a AWS: uma pilha mudada ou
-  apagada por fora só aparece quando alguém apaga o lago. Essa etapa decide quando reler: antes de
-  agir na pilha, como o exemplo serverless da AWS, ou por um relógio, como o Crossplane. Uma pilha
+- **Para uma etapa seguinte do lago.** A linha em `ready` não relê a AWS: uma pilha mudada ou
+  apagada por fora só aparece quando alguém apaga o lago. A etapa 2 não decidiu quando reler: antes
+  de agir na pilha, como o exemplo serverless da AWS, ou por um relógio, como o Crossplane. Uma pilha
   sem linha, que só nasce de um banco do Hub restaurado de cópia, acha-se pelas etiquetas
   `conexus-empresa` e `conexus-modelo`; nenhuma etapa constrói esse inventário (0073).
+
+A etapa 2 deixa às seguintes:
+
+- **A NF-e lida inteira a cada rodada.** As decisões do fundador de 2026-11-26 (as notas novas pelo
+  número em cada rodada, o resto numa passada inteira agendada, opção por ligação, e a nota
+  cancelada saindo nela) e o que falta decidir estão na
+  [issue 1460](https://github.com/developmentconexus-ops/conexus/issues/1460).
+- **Para a etapa 5.** A tarefa só provou a renovação da credencial no Sankhya: o dublê do HubSpot
+  invalida a chave anterior a cada renovação, e a bateria não a renova.
+- **Para medir depois.** A imagem em ARM (T.6 do cartão).
+- O `connector_read` genérico do ajudante de pesquisa, do Builder e do Construtor fica ao lado das
+  leituras tipadas do Assistente (`EST/ao-vivo-estudo:149`), e a H2b da outra trilha segue aberta.
 
 Depois da etapa 7 vêm duas frentes, cada etapa com estudo e cartão próprios:
 
@@ -169,7 +174,9 @@ cópias de backup datadas ficam fora") sai a parte dos anexos: anexos e colunas 
 lago; índices, logs e cópias de backup datadas continuam fora (`conexus-arquivos-no-lago`). O XML da
 NF-e entra na etapa 2 ("Já no Lago 2, como a Nekt") como uma coluna de texto da tabela dos dados da
 NF-e (`sankhya_notas_nfe`, a `TGFNFE`), e não numa tabela própria (2026-11-23, à recomendação do
-firstmate: "E, não, beleza"), com o histórico ligado nessa tabela ("Okay"). Vale para todo conector
+firstmate: "E, não, beleza"). A tabela fica sem histórico (2026-11-24: "vamos deixar sem o
+histórico, porque eu acho que o jeito que você está querendo montar o histórico não é como as
+referências fazem"). Vale para todo conector
 uma regra só, pelo tipo que a descoberta lê: texto longo (`CLOB`, `NCLOB`, `LONG`) vira texto, e
 binário (`BLOB`, `RAW`, `LONG RAW`) vira o tipo binário do Iceberg; ninguém marca arquivo à mão, e o
 kit pode declarar o significado de uma coluna só como metadado. O XML é lido em `nfe_notas` e
@@ -199,7 +206,6 @@ As decisões do fundador que chegam com a etapa delas, e não antes:
 
 | A decisão | Chega em |
 | --- | --- |
-| Por quanto tempo a camada bruta guarda o histórico (a decisão de 2026-11-18: histórico desligado por padrão, ligado por tabela) | O cartão da etapa 2: só até entrar na atual (A a), e ligado na tabela do XML ("Okay", 2026-11-23) |
 | Por onde a tarefa pede ao Hub a credencial exclusiva ([0077](../../decisions/0077-how-a-credential-reaches-the-copy-task.md)) | O estudo da etapa 5 |
 | A fila justa de consultas no Hub, peça nossa sem referência (delivery L28) | Quando a segunda empresa entrar |
 | A ligação por pessoa: cada funcionário liga o próprio Gmail ao agente | O estudo da etapa do Google |

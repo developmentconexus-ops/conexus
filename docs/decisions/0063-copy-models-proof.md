@@ -37,7 +37,7 @@ repository. Stop rules: a template table without `DTALTER` (stop for `vendas`, `
 
 ## Consequences
 
-U1 writes these columns and types. A large table's first pass spans several capped runs.
+The five templates are gone; the kit declares each table [0080].
 
 ## Reopens when
 

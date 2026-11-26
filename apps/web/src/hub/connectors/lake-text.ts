@@ -127,6 +127,24 @@ export const READ_AGAIN_CONFIRM = 'Ler de novo'
 export const RUNNING = 'Rodando…'
 export const UP_TO_DATE = 'Em dia'
 export const WITH_ERROR = 'Com erro'
+export const INTERRUPTED = 'Interrompida.'
+
+export const STOP_COPY = 'Parar cópia'
+export const STOPPING = 'Parando…'
+export const STOP_TITLE = 'Parar a cópia?'
+export const STOP_LEAD = 'As linhas já lidas ficam no lago; a próxima cópia continua de onde parou.'
+export const STOP_OTHERS =
+  'Nas outras tabelas, as linhas já lidas ficam no lago e a próxima cópia continua de onde parou.'
+
+export function stopFirstLoadLead(count: number): string {
+  return count === 1
+    ? 'Esta tabela ainda não terminou a primeira carga. A próxima cópia a começa do zero:'
+    : 'Estas tabelas ainda não terminaram a primeira carga. A próxima cópia começa cada uma do zero:'
+}
+
+export function stoppedByText(name: string, time: string): string {
+  return `Parada por ${name} às ${time}`
+}
 
 export function readingDictionaryText(name: string): string {
   return `Lendo o dicionário do ${name}…`

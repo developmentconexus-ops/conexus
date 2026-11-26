@@ -1,10 +1,9 @@
 # The lake path
 
-**Planejado.** Nothing of the kit copies to the lake today: `apps/extraction/` does not exist, and
-the kit has no table declaration. Part 0 of the card removed the old copy engine; part 1 builds the
-path below. This page follows the card [A primeira cópia chega ao
-lago](../../../../docs/steps/a-primeira-copia-chega-ao-lago.md), units U3 to U5, and changes when
-they land. Until then, cite the card for every contract here, never this page.
+The copy to the lake is built: the kit declares the tables and `apps/extraction/` runs the copy.
+This page was written as the plan of the step [A primeira cópia chega ao
+lago](../../../../docs/approvals/a-primeira-copia-chega-ao-lago.md) and still reads as one; where it
+and the code differ, the code wins. The step's card is in `main`'s history at commit `50aae548`.
 
 ## The decisions it rests on
 
@@ -54,7 +53,7 @@ arrives as exact text and becomes `decimal(38, 9)`; a value that does not fit fa
 hands the task a `CopyTaskSpec` (the connector, the account, the opened credential, the tables) and
 reads a `CopyTaskResult`.
 
-## What a connector author does before part 1 lands
+## What a connector author does for the lake
 
 - Declare `list` on every read that pages, with `changed` when the provider filters by a change
   instant: the `OPERATION` source reads it.
@@ -62,15 +61,11 @@ reads a `CopyTaskResult`.
 - Measure the credential class, or leave it `EXCLUSIVE`. An exclusive connector, every OAuth login
   so far, is read live only, and copies nothing, until stage 5 of the roadmap designs how the task
   asks the Hub.
-- Declare no table and add no copy code: U3 owns the shape.
+- Declare tables in the connector's `tables`, as the Sankhya's `copy-tables.ts` does. The adapter in
+  `apps/extraction/` names no connector.
 
-## Known holes in the plan
+## Known holes
 
-The kit audit of 2026-11-24 found three the card does not settle yet:
-
-- The task does not retry a passing 5xx. The singer-sdk retries 429 and 5xx (from the studies, not
-  reread at the source); with `STATE` per page the next run resumes, so the cost is one lost run. The audit asks
-  for a line in U4 on who retries and how many times.
 - The `OPERATION` source declares its columns by hand, and HubSpot, a spreadsheet, a SharePoint list
   and TOTVS need them discovered (K4 in [gaps](gaps.md)).
 - No exclusive credential copies before stage 5.

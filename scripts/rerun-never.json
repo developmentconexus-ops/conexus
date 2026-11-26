@@ -1378,6 +1378,34 @@
     {
       "file": "apps/web/src/hub/connectors/lake-tabs.test.tsx",
       "name": "uma ligação de outro sistema não tem abas nem a seção"
+    },
+    {
+      "file": "apps/server/src/hub/copies/lake-stop.test.ts",
+      "name": "parar é de quem gerencia cópias: membro, desenvolvedor, estranho e ligação desconhecida recebem 404 sem tocar a rodada; o administrador para"
+    },
+    {
+      "file": "apps/server/src/harness/network/network-store.test.ts",
+      "name": "as políticas de linha: outra empresa não lê, outra pessoa não lê a conversa"
+    },
+    {
+      "file": "apps/server/src/harness/network/network-store.test.ts",
+      "name": "liberar pede o papel de agora: o desenvolvedor só na conversa"
+    },
+    {
+      "file": "apps/server/src/harness/network/network-store.test.ts",
+      "name": "o papel é segurado até gravar: rebaixado durante a liberação, nada se grava"
+    },
+    {
+      "file": "apps/server/src/harness/network/network-routes.test.ts",
+      "name": "só o dono liga a internet toda"
+    },
+    {
+      "file": "apps/server/src/harness/network/network-routes.test.ts",
+      "name": "só o dono desliga"
+    },
+    {
+      "file": "apps/server/src/harness/network/network-routes.test.ts",
+      "name": "o dono rebaixado durante o pedido não liga a internet toda"
     }
   ]
 }

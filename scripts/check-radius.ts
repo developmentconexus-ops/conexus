@@ -133,7 +133,7 @@ function cardOfUnit(): string {
   return readFileSync(join(root, 'docs/steps', owners[0] ?? names[0] ?? ''), 'utf8')
 }
 
-if (!/^U\d+$/.test(unit)) refuse('usage', 'npm run radius -- U<k> [commit] [card.md]')
+if (!/^U\d+[a-z]?$/.test(unit)) refuse('usage', 'npm run radius -- U<k> [commit] [card.md]')
 const card = cardOfUnit()
 const radius = radiusOf(card)
 const outside = changedFiles().filter((file) => !radius.some((pattern) => isInside(file, pattern)))

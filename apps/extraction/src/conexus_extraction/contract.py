@@ -67,6 +67,10 @@ class Failed(t.TypedDict):
     system: SystemMessage | None
 
 
+class Interrupted(t.TypedDict):
+    kind: t.Literal["INTERRUPTED"]
+
+
 class TableCounts(t.TypedDict):
     name: str
     read: int
@@ -98,7 +102,7 @@ class Result(t.TypedDict):
     version: t.Literal[1]
     runId: str
     attempt: int
-    outcome: Complete | Failed
+    outcome: Complete | Failed | Interrupted
     tables: list[TableCounts]
     machine: t.NotRequired[Machine | None]
 

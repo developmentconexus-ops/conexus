@@ -11,6 +11,11 @@ import {
   READ_AGAIN_LEAD,
   readAgainEffectText,
   readAgainTitle,
+  STOP_COPY,
+  STOP_LEAD,
+  STOP_OTHERS,
+  STOP_TITLE,
+  stopFirstLoadLead,
 } from './lake-text.ts'
 
 /** The copied tables a start date limits: the ones "Ler de novo desde a data" replaces in the lake. */
@@ -22,15 +27,20 @@ export function readAgainTables(tables: readonly Table[]): Table[] {
 
 type Row = { key: string; label: string; detail: string; fact: boolean }
 
+function namedRow(table: MarkedTable): Row {
+  return { key: table.source, label: table.label, detail: table.copy.name, fact: true }
+}
+
 /**
  * A confirmation that lists what a write does to the lake, table by table, in one line each, and
- * that the others stay as they are. Cancelling asks the Hub for nothing.
+ * what happens to the others. Cancelling asks the Hub for nothing.
  */
 function TablesDialog(props: {
   open: boolean
   title: string
   lead: string
   rows: readonly Row[]
+  others: string | null
   confirm: string
   pending: boolean
   onConfirm: () => void
@@ -39,20 +49,22 @@ function TablesDialog(props: {
   return (
     <AlertDialog open={props.open} onOpenChange={(open) => open || props.onCancel()}>
       <AlertDialogContent title={props.title} description={props.lead}>
-        <ul className="flex flex-col">
-          {props.rows.map((row) => (
-            <li
-              key={row.key}
-              className="flex flex-col gap-xs border-b border-line py-sm first:border-t"
-            >
-              <span className="font-medium">{row.label}</span>
-              <span className={row.fact ? 'font-mono text-fact text-text-2' : 'text-text-2'}>
-                {row.detail}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p>{OTHERS_STAY}</p>
+        {props.rows.length > 0 && (
+          <ul className="flex flex-col">
+            {props.rows.map((row) => (
+              <li
+                key={row.key}
+                className="flex flex-col gap-xs border-b border-line py-sm first:border-t"
+              >
+                <span className="font-medium">{row.label}</span>
+                <span className={row.fact ? 'font-mono text-fact text-text-2' : 'text-text-2'}>
+                  {row.detail}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {props.others !== null && <p>{props.others}</p>}
         <div className="flex flex-wrap gap-md">
           <Button variant="danger-confirm" disabled={props.pending} onClick={props.onConfirm}>
             {props.confirm}
@@ -76,6 +88,7 @@ export function ReadAgainDialog(
       title={readAgainTitle(props.since)}
       lead={READ_AGAIN_LEAD}
       confirm={READ_AGAIN_CONFIRM}
+      others={OTHERS_STAY}
       rows={props.tables.map((table) => ({
         key: table.source,
         label: table.label,
@@ -97,12 +110,23 @@ export function LeaveDialog(props: Ask & { open: boolean; tables: readonly Marke
       title={leaveTitle(props.tables.length)}
       lead={LEAVE_LEAD}
       confirm={LEAVE_CONFIRM}
-      rows={props.tables.map((table) => ({
-        key: table.source,
-        label: table.label,
-        detail: table.copy.name,
-        fact: true,
-      }))}
+      others={OTHERS_STAY}
+      rows={props.tables.map(namedRow)}
+    />
+  )
+}
+
+/** "Parar cópia": the tables still on their first load are named, since the next copy reads them from zero. */
+export function StopDialog(props: Ask & { open: boolean; tables: readonly MarkedTable[] }) {
+  const first = props.tables.filter((table) => table.copy.firstLoad)
+  return (
+    <TablesDialog
+      {...props}
+      title={STOP_TITLE}
+      lead={first.length === 0 ? STOP_LEAD : stopFirstLoadLead(first.length)}
+      confirm={STOP_COPY}
+      others={first.length > 0 && first.length < props.tables.length ? STOP_OTHERS : null}
+      rows={first.map(namedRow)}
     />
   )
 }

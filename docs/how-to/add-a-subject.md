@@ -48,4 +48,4 @@ write those.
 
 ## Check it
 
-Run `npm run deps`, `npm run docs`, `npm run migrations` and `npm run check`.
+Commit, then run `npm run check:local`, which runs `deps`, `docs` and `migrations` among its checks.

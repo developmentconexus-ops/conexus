@@ -20,6 +20,7 @@ from conexus_extraction.contract import (
     PROJECT,
     Complete,
     Failed,
+    Interrupted,
     Lake,
     Machine,
     Result,
@@ -187,7 +188,7 @@ def _chosen(
 
 def _result(
     spec: Spec,
-    outcome: Complete | Failed,
+    outcome: Complete | Failed | Interrupted,
     report: Mapping[str, t.Any],
     updated: Mapping[str, UpdateCounts] | None = None,
 ) -> Result:
@@ -225,6 +226,15 @@ def _measured(result: Result, machine: Machine | None) -> Result:
         return t.cast("Result", {**result, "machine": None})
 
 
+def _interrupted_if_closed(
+    spec: Spec, report: Mapping[str, t.Any], still_open: StillOpen
+) -> Result | None:
+    if still_open():
+        return None
+    log("RUN_CLOSED", runId=spec["runId"])
+    return _result(spec, {"kind": "INTERRUPTED"}, report)
+
+
 def _tables_safe_to_apply(
     spec: Spec, report: Mapping[str, t.Any], failed: Failed | None
 ) -> list[str]:
@@ -244,10 +254,7 @@ def _update_unless_interrupted(
     for asked in spec["tables"]:
         if asked["name"] not in safe:
             continue
-        if stopping.asked:
-            return None
-        if not still_open():
-            log("RUN_CLOSED", runId=spec["runId"])
+        if stopping.asked or not still_open():
             return None
         plan = plans[asked["name"]]
         try:
@@ -283,7 +290,7 @@ def copied(
     guard: tuple[Stopping, StillOpen],
 ) -> Result | None:
     catalog_of, athena = lake
-    stopping = guard[0]
+    stopping, still_open = guard
     try:
         round_ = Round(spec, work, base, stopping)
     except OSError:
@@ -292,7 +299,9 @@ def copied(
     discovered = round_.discovered()
     if discovered is None:
         failure = round_.tap_failure()
-        return None if failure is None else _result(spec, failure, round_.target_report())
+        if failure is None:
+            return _interrupted_if_closed(spec, round_.target_report(), still_open)
+        return _result(spec, failure, round_.target_report())
     tables, plans, missing = _chosen(discovered, spec)
     if missing is not None:
         unreadable: Failed = {
@@ -310,12 +319,9 @@ def copied(
         "region": base["AWS_REGION"],
     }
     code = round_.run(discovered, target)
-    if stopping.asked:
-        return None
     report = round_.target_report()
-    if report["closed"]:
-        log("RUN_CLOSED", runId=spec["runId"])
-        return None
+    if stopping.asked or report["closed"]:
+        return _interrupted_if_closed(spec, report, still_open)
     failure = round_.tap_failure()
     if failure is None and report["failed"] is not None:
         failure = {
@@ -331,7 +337,7 @@ def copied(
     updater = Updater(load_catalog("lake", **catalog), athena)
     updated = _update_unless_interrupted(spec, updater, plans, guard, safe)
     if updated is None:
-        return None
+        return _interrupted_if_closed(spec, report, still_open)
     counts, failed = updated
     outcome: Complete | Failed = failure or failed or {"kind": "COMPLETE"}
     return _result(spec, outcome, report, counts)
@@ -404,7 +410,7 @@ def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
         answer = ssm.get_parameter(Name=parameter, WithDecryption=True)
     except ssm.exceptions.ParameterNotFound:
         log("RUN_CLOSED", parameter=parameter)
-        return 0
+        return 1
     try:
         spec = parse_spec(answer["Parameter"]["Value"])
     except SpecInvalid as invalid:
@@ -424,10 +430,9 @@ def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
             )
     finally:
         machine = meter.stop()
-    if stopping.asked:
-        log("RUN_STOPPED", runId=spec["runId"])
-        return 1
     if result is None:
+        if stopping.asked:
+            log("RUN_STOPPED", runId=spec["runId"])
         return 1
     return _send(aws, spec["queueUrl"], _measured(result, machine))
 

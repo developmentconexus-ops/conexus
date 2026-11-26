@@ -4,6 +4,8 @@ import json
 import typing as t
 from decimal import Decimal
 
+import pytest
+
 from conexus_extraction.contract import Spec
 from tests.conftest import COMPANY, Task
 
@@ -52,6 +54,24 @@ def test_a_segunda_rodada(task: Task) -> None:
     assert moved >= point
     current = task.lake.load_table(("current", "sankhya_notas")).scan().to_arrow().to_pylist()
     assert {row["nunota"]: row["vlrnota"] for row in current}[100000] == Decimal("1.000000000")
+
+
+@pytest.mark.parametrize("batch_size_rows", ["10", "1000"])
+def test_a_rodada_parada_guarda_o_ponto_da_ultima_pagina_gravada(
+    task: Task, monkeypatch: pytest.MonkeyPatch, batch_size_rows: str
+) -> None:
+    monkeypatch.setenv("TARGET_CONEXUS_BATCH_SIZE_ROWS", batch_size_rows)
+    stopped = task.spec(NOTAS, whole=False)
+    task.aws.refuse_after_gets = 3
+    task.run(stopped)
+    written = task.lake.load_table(("raw", "sankhya_notas")).scan().to_arrow().num_rows
+    total = len(task.source(stopped)["sankhya_notas"])
+    assert 0 < written < total
+    task.aws.refuse_after_gets = None
+    again = task.spec(NOTAS, whole=False, connection=stopped["connectionId"])
+    assert task.run(again) == 0
+    sent = _counts(task)["sankhya_notas"]
+    assert (sent["read"], sent["rows"]) == (total - written, total)
 
 
 def test_o_estado_fica_no_prefixo_da_ligacao(task: Task) -> None:

@@ -21,18 +21,27 @@ export const PARCEIROS = { source: 'TGFPAR', name: 'sankhya_parceiros' }
 const Batch = z.object({ Messages: z.array(z.object({ Body: z.string() })) })
 const Stop = z.object({ detail: z.object({ taskArn: z.string(), startedBy: z.string() }) })
 
+type StopCode = 'EssentialContainerExited' | 'UserInitiated'
+
 /**
  * ECS's stop of a task whose container exited 0, after its result: the recorded stop of an exit 1
- * said of this task and round, with the exit code changed (values only, T29).
+ * said of this task and round, with the exit code changed, and the stop code when asked (values
+ * only, T29).
  */
-export function finished(on: LakeRunOn, task: { run: string; arn: string }) {
+export function finished(
+  on: Pick<LakeRunOn, 'aws'>,
+  task: { run: string; arn: string },
+  stopCode: StopCode = 'EssentialContainerExited',
+) {
   const [, exited] = Batch.parse(JSON.parse(awsRecording('receive-message-lote').body)).Messages
   assert.ok(exited !== undefined, 'the recording holds the exit 1')
   const { detail } = Stop.parse(JSON.parse(exited.Body))
   const body = exited.Body.replaceAll(detail.taskArn, task.arn)
     .replaceAll(detail.startedBy, task.run)
     .replace('"exitCode":1', '"exitCode":0')
+    .replace('"stopCode":"EssentialContainerExited"', `"stopCode":"${stopCode}"`)
   assert.ok(body.includes('"exitCode":0'), 'the exit code changed')
+  assert.ok(body.includes(`"stopCode":"${stopCode}"`), 'the stop code is the asked one')
   on.aws.enqueue(body)
 }
 
@@ -67,7 +76,7 @@ export async function roundOf(on: LakeRunOn, run: string) {
 }
 
 /** Every message the consumer read left the queue. */
-export async function drained(on: LakeRunOn) {
+export async function drained(on: Pick<LakeRunOn, 'aws'>) {
   await until(() => on.aws.queued() === 0, 'the queue emptied')
 }
 

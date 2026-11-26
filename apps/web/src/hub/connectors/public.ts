@@ -2,6 +2,7 @@ export { ConnectionPage, ConnectionReadFailure } from './connection-page.tsx'
 export { Integrations } from './integrations.tsx'
 export {
   DICTIONARY_OUT,
+  INTERRUPTED,
   LINES_STAY,
   NAME_FIXED,
   RUNNING,

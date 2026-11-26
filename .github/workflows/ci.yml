@@ -158,7 +158,7 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           for card in docs/steps/*.md; do
-            grep -ohE '^## U[0-9]+' "$card" | grep -oE 'U[0-9]+' | while read -r unit; do
+            grep -ohE '^## U[0-9]+[a-z]?' "$card" | grep -oE 'U[0-9]+[a-z]?' | while read -r unit; do
               npm run radius -- "$unit" "$SHA" "$(basename "$card")" < /dev/null
             done
           done

@@ -82,7 +82,7 @@ test('a ligação de nome igual ao do sistema não repete o sistema no título d
 })
 
 test('uma rodada aberta diz Rodando… e sem hora; a com erro diz Com erro e a frase do código; a interrompida diz Interrompida.', async () => {
-  const running = lakeTable({ lastRun: { ...lakeRun(), outcome: 'RUNNING', endedAt: undefined } })
+  const running = lakeTable({ lastRun: lakeRun({ outcome: 'RUNNING', endedAt: undefined }) })
   const failed = lakeTable({
     id: FISCAL,
     label: 'Dados da NF-e',
