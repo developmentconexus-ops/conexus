@@ -22,7 +22,7 @@ import type { hubServer } from '../../platform/test-hub.tsx'
 import { companyRead, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { connectionOf, SANKHYA, workingOf } from './fixtures.ts'
 import type { LakeView } from './lake-fixtures.ts'
-import { applied, stopOpenRound, NO_LAKE, RUNNING_ROUND } from './lake-fixtures.ts'
+import { applied, NO_LAKE, RUNNING_ROUND, stopOpenRound } from './lake-fixtures.ts'
 
 const LinkBody = z.object({ name: z.string() })
 const BASE = `*/api/companies/${COMPANY.id}`

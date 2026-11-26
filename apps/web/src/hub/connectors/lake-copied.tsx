@@ -76,7 +76,7 @@ function useCopyWrites(props: Props, edit: Edit) {
   const round = lake.lastRun?.outcome === 'RUNNING' ? lake.lastRun : null
   const running = round !== null || run.isPending
   // The Hub may keep an ask whose request it refused, so that round offers the stop again.
-  const stopping = round !== null && round.stopping && round.id !== refusedStop
+  const stopping = round?.stopping === true && round.id !== refusedStop
 
   function stale() {
     void queryClient.invalidateQueries({ queryKey: lakeTablesPrefix(companyId, connectionId) })
@@ -290,10 +290,7 @@ export function CopiedTables(props: Props & { editable: boolean }) {
         open={confirming}
         tables={leaving}
         pending={writes.saving}
-        onConfirm={async () => {
-          await submit()
-          setConfirming(false)
-        }}
+        onConfirm={() => void submit().then(() => setConfirming(false))}
         onCancel={() => setConfirming(false)}
       />
     </section>
