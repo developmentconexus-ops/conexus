@@ -148,3 +148,14 @@ Em 2026-11-24, à lista dos passos da parte 1 do Lago 2, que inclui a mudança d
 - A T26 ganha uma frase para as formas do Singer e do Meltano.
 
 Nada sai: o `main` ainda não tinha Python.
+
+## Mudança de método: a direção B no guia de design e a trilha Redesenho
+
+Em 2026-11-26, às quatro decisões da página do cartão R1 do redesenho, o fundador respondeu: "A A-b / B. B-a / C. Recomendado / D. Sim". No mesmo dia, depois de aprovar a página do cartão ("Aprovo"), foi perguntado: opção 1, autorizar mudar também a V23 (o botão principal em tinta, que trava o botão em ipê), a V55 ("no lugar da tinta") e a introdução do guia ("regiões planas separadas por filete") no mesmo pull request, e ele aplicar o rótulo `emergência`; opção 2, abrir o pull request como está, com a V23 para depois; opção 3, esperar as trilhas ficarem livres. Respondeu: "1". Entram, só de documentos (L20):
+
+- **B-a.** A V5, a V19, a V22 e a V28 do guia de design passam a dizer a direção B em grafite: o ipê aceso no botão principal, na chave e na caixa ligadas, no progresso, no enviar e no selo "Novo"; a borda como sombra e a folha encaixada com canto de 16 px; os raios 10, 14, 16 e 22; o foco em tinta no claro e em ipê no escuro. Os valores no `DESIGN.md` e no código são de uma unidade da R1.
+- **1.** A V23 passa a dizer o botão principal em ipê com a tinta escura; a V55, a confirmação em vermelho no lugar desse botão; a introdução do guia troca a Pauta pela direção B em grafite. No aro de foco da V28, a tinta e o ipê valem para botões, abas e links; o campo de texto segue com a borda e o halo em ipê, como no protótipo.
+- **D.** A L1 do guia de entrega nomeia a terceira trilha, Redesenho, só do Hub (casca e peças), com uma etapa em construção por vez.
+
+Para caber no teto de palavras (L24), a frase da L1 sobre as unidades da etapa irmã fica mais curta, sem mudar a regra.
+

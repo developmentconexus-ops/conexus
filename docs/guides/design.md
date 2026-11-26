@@ -12,9 +12,10 @@ The founder can reopen a screen's choices.
 
 ## Overview
 
-**Pauta.** Graphite neutrals, flat and separated by hairlines, keep the person's app the most
-colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts are mono. Founder,
-2026-11-01: "Aprovo".
+**Direction B, in graphite.** Graphite neutrals, with a dark frame in both themes around the sheet
+and shadows for edges, keep the person's app the most colorful thing on screen. Ipê is the warm
+gold accent, lit on the primary action and on what is on (V5); prose is sans and facts are mono.
+Founder, 2026-11-01: "Aprovo"; on direction B, 2026-11-26: "Fecha", and on this overview: "1".
 
 ## Colors
 
@@ -29,12 +30,14 @@ colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts 
   and the kit refuses a wide one (`packages/connectors/src/kernel/logo.ts`); founder, 2026-10-29:
   "só a logo mesmo, igual eu te mandei" and "a logo do Mercado Livre é só a logo, sem escrita".
   [oxlint `shadcn/no-raw-colors` in warning under the ratchet, review]
-- **V5.** Ipê **should** mark only the current place (the tick of the rail and of the list, the
-  active tab), the focus, the caret and the mark, not every resting action, hover or heading. Two
-  exceptions: the mark of the item the person chose (V57's toggle icon, the chosen Projeto's check)
-  and the busy composer's arc (V28). Failure: making everything gold hides the difference between focus and
-  decoration. The one other hue is violet, `memory`: it colors only the Memória budget beside Ipê's
-  Mensagens. [review]
+- **V5.** Ipê **should** light, as a fill with dark ink on it, only the primary button, a switch
+  and a checkbox that are on, progress, send and the "Novo" badge. Beyond that fill it marks only
+  the current place (the tick of the rail and of the list, the active tab), the focus (V28), the
+  caret and the mark, not any other resting action, hover or heading. Two exceptions: the mark of
+  the item the person chose (V57's toggle icon, the chosen Projeto's check) and the busy
+  composer's arc (V28). Founder, 2026-11-26: "B. B-a". Failure: making everything gold hides the
+  difference between what is on and decoration. The one other hue is violet, `memory`: it colors
+  only the Memória budget beside Ipê's Mensagens. [review]
 - **V8.** Text **should** remain readable in both themes, with 4.5:1 as its contrast reference.
   Failure: a pale subtitle disappears on the light background. Syntax lint does not measure
   rendered contrast. [review]
@@ -83,27 +86,29 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
 
 ## Elevation and depth
 
-- **V19.** Pauta **should** use two flat regions separated by a line: the frame (chrome) and the
-  white sheet, leaving the frame quiet and the Preview as content. Resting cards do not float;
-  only what floats has a shadow: the menu, the popover and the composer. Founder, 2026-11-01:
-  "Aprovo". Failure: shadows on every panel look like overlapping windows competing
-  with the Preview. [review]
+- **V19.** The screen **should** be two regions, the graphite frame (chrome) and the sheet inset
+  in it with a 16px corner, leaving the frame quiet and the Preview as content. An edge is a
+  shadow, not a hairline: what is white (button, field, row, card) draws no border. What floats
+  (menu, popover, composer) casts the higher shadow; resting pieces do not float. Founder,
+  2026-11-26: "B. B-a". Failure: raised shadows on every panel look like overlapping windows
+  competing with the Preview. [review]
 
 ## Shapes
 
-- **V22.** Every radius comes from `rounded`: `control` (8) for buttons and inputs, `object` (12) for windows,
-  popovers and panels, `card` (12) for Project cards, `composer` (16) for the composer, `pill` for
-  chips. Founder, 2026-11-01: "Aprovo".
-  Regions and panes take none. One more radius, 36 px, is for the Prévia's drawn phone frame only,
-  as its own token, `rounded.phone`; founder, 2026-10-28: "1. Sim". [oxlint
-  `shadcn/no-arbitrary-values` in warning under the ratchet, review]
+- **V22.** Every radius comes from `rounded`: `control` (10) for buttons and inputs, `object` (14) for windows,
+  popovers and panels, `card` (16) for Project cards, `composer` (22) for the composer, `pill` for
+  chips. Founder, 2026-11-26: "B. B-a".
+  Regions and panes take none, but the inset sheet's 16px corner (V19). One more radius, 36 px, is
+  for the Prévia's drawn phone frame only, as its own token, `rounded.phone`; founder, 2026-10-28:
+  "1. Sim". [oxlint `shadcn/no-arbitrary-values` in warning under the ratchet, review]
 
 ## Components
 
 - **V23.** Shared pieces **should** own appearance through brand tokens for color, radius and
-  typography, retaining the current ink/on-ink primary action, Hanken Grotesk for display and prose
-  and tabular mono facts; every figure that can change (ages, counts, versions, percentages) is set
-  in tabular figures. Founder, 2026-11-01: "Aprovo". The piece owns its icon set, sizing and state styling. Tailwind named
+  typography, retaining the Ipê primary action with dark ink on it (V5), Hanken Grotesk for display
+  and prose and tabular mono facts; every figure that can change (ages, counts, versions,
+  percentages) is set in tabular figures. Founder, 2026-11-01: "Aprovo"; on the primary action,
+  2026-11-26: "1". The piece owns its icon set, sizing and state styling. Tailwind named
   widths avoid brand spacing names (`xs` to `2xl`): Tailwind 4 resolves spacing before containers,
   so `max-w-sm` becomes 0.5rem. Use a distinct container name; numeric, intrinsic and zero widths
   remain valid. Failure: a copied hex misses a theme change, or a spacing name makes a column 8px
@@ -114,8 +119,8 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   curto. [review]
 - **V55.** Destructive actions **should** retain the approved distinction: neutral `button-danger`
   with danger text on the page, full-danger `button-danger-confirm` only at the final confirmation
-  instead of ink. Founder, 2026-10-14: "B". Failure: two equally red actions obscure which click
-  actually removes the item. [review]
+  in place of the Ipê primary action. Founder, 2026-10-14: "B"; 2026-11-26: "1". Failure: two
+  equally red actions obscure which click actually removes the item. [review]
 - **V57.** The selected item of a toggle (the Prévia's Computador and Celular) has the gold
   `accent-text` icon in both themes; in the dark theme its background is neutral, not the filled
   gold block (the choice is shown, not shouted; one of V5's two exceptions). Founder, 2026-10-28, on proposal B: "2.
@@ -150,7 +155,8 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
 
 ## Interaction and accessibility
 
-- **V28.** `:focus-visible` draws a 2px `accent` outline on buttons, tabs and links. A text field,
+- **V28.** `:focus-visible` draws a 2px outline on buttons, tabs and links, in ink in the light
+  theme and in Ipê in the dark one; founder, 2026-11-26: "B. B-a". A text field,
   or the group that holds one, shows focus on its own edge instead: an `accent` edge with a soft
   `accent` halo, shadcn's field focus; a busy composer turns its working ring `accent` inside the
   same halo. Founder, 2026-10-20: "1. B". Failure: an outline drawn around a rounded field inside
