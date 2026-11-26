@@ -50,12 +50,12 @@ export function DialogContent({
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
         data-slot="dialog-overlay"
-        className="fixed inset-0 z-50 bg-canvas opacity-80 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none"
+        className="fixed inset-0 z-50 bg-canvas opacity-80 transition-opacity duration-window data-ending-style:opacity-0 data-starting-style:opacity-0"
       />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          'fixed z-50 flex flex-col gap-md bg-surface p-lg text-text transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none',
+          'fixed z-50 flex flex-col gap-md bg-surface p-lg text-text transition-opacity duration-window data-ending-style:opacity-0 data-starting-style:opacity-0',
           SHAPE[size],
           className,
         )}

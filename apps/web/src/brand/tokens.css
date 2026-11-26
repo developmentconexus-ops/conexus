@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./motion.css";
 
 @custom-variant dark {
   @media (prefers-color-scheme: dark) {
@@ -155,10 +156,8 @@
   --shadow-float: 0 1px 2px rgb(18 21 24 / 0.04), 0 8px 24px -8px rgb(18 21 24 / 0.14);
   --shadow-composer: 0 1px 2px rgb(18 21 24 / 0.04), 0 6px 20px -10px rgb(18 21 24 / 0.12);
 
-  --ease-fit: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
-  --animate-fit-a: fit-a 0.9s var(--ease-arrive) 0.3s both;
-  --animate-fit-b: fit-b 0.9s var(--ease-arrive) 0.3s both;
+  --animate-fit-a: fit-a 0.9s var(--ease-enter) 0.3s both;
+  --animate-fit-b: fit-b 0.9s var(--ease-enter) 0.3s both;
   --animate-working-a: working-a 1.2s var(--ease-fit) infinite;
   --animate-working-b: working-b 1.2s var(--ease-fit) infinite;
   --animate-ring-sweep: ring-sweep 1.6s linear infinite;
@@ -300,6 +299,12 @@
 @layer base {
   body {
     @apply bg-canvas font-body text-body text-text;
+  }
+
+  /* The ring's colour is on every element before the focus, so a piece that eases its colours
+     still draws the ring at once (design V26). */
+  * {
+    outline-color: var(--color-accent);
   }
 
   /* One keyboard focus for every piece (design V28); a utility that removes the outline wins. */
