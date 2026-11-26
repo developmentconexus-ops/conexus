@@ -25,7 +25,9 @@ hoje) e G-a (o Início não muda por dentro na `R2`). A decisão C, de como se c
 começa uma nova, voltou a ele com o estudo que pediu, em quatro opções; no quadro, no mesmo dia: "Ca"
 (como escrito). Fica decidida a C-a: na barra do Hub, "Nova conversa", o lugar "Conversas" e as
 conversas recentes. O quadro dizia "em toda tela"; o cartão escreve, na página dele, que a barra do
-projeto e a das Configurações não trazem o botão nem as recentes, para ele aprovar ou mudar.
+projeto e a das Configurações não trazem o botão nem as recentes, para ele aprovar ou mudar. A essa
+pergunta, no mesmo dia: "A" (ficam só na barra do Hub). E à página do cartão: "Aprovo a R2"; o registro
+está em `docs/approvals/redesenho-r2-a-casca-nova.md`.
 
 Esta página não é um cartão de etapa (delivery L5). O estudo, os protótipos e as capturas ficam fora do
 repositório (delivery L21). A trilha usa a vaga `desenho` que o código já conhece (`scripts/cli.ts`);
@@ -85,4 +87,4 @@ fundador em 2026-11-26.
 
 O cartão da [R2, a casca nova](../redesenho-r2-a-casca-nova.md) está escrito pela versão 2 dos
 protótipos e espera a vez dele num pull request de rascunho (delivery L5), com as seis decisões
-respondidas e a página do fundador à espera da aprovação dele.
+respondidas e a página do fundador aprovada em 2026-11-26.
