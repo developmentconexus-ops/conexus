@@ -1,8 +1,8 @@
 {
-  "id": "d543a822-bc69-4340-9edf-c5255077b2f6",
-  "prevIds": ["26a6f9ef-5cdf-42ab-8ad9-93e03eb4f152"],
   "version": "8",
   "dialect": "postgres",
+  "id": "d543a822-bc69-4340-9edf-c5255077b2f6",
+  "prevIds": ["26a6f9ef-5cdf-42ab-8ad9-93e03eb4f152"],
   "ddl": [
     {
       "name": "builder",
@@ -10088,40 +10088,40 @@
       "table": "request"
     },
     {
-      "nameExplicit": false,
-      "columns": ["run_id"],
+      "nameExplicit": true,
+      "columns": ["company_id", "run_id"],
       "schemaTo": "treatment",
       "tableTo": "run",
-      "columnsTo": ["id"],
+      "columnsTo": ["company_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "model_run_run_id_run_id_fkey",
+      "name": "treatment_model_run_run_fkey",
       "entityType": "fks",
       "schema": "treatment",
       "table": "model_run"
     },
     {
-      "nameExplicit": false,
-      "columns": ["version_id"],
+      "nameExplicit": true,
+      "columns": ["company_id", "version_id"],
       "schemaTo": "treatment",
       "tableTo": "version",
-      "columnsTo": ["id"],
+      "columnsTo": ["company_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
-      "name": "model_run_version_id_version_id_fkey",
+      "name": "treatment_model_run_version_fkey",
       "entityType": "fks",
       "schema": "treatment",
       "table": "model_run"
     },
     {
-      "nameExplicit": false,
-      "columns": ["model_id"],
+      "nameExplicit": true,
+      "columns": ["company_id", "model_id"],
       "schemaTo": "treatment",
       "tableTo": "model",
-      "columnsTo": ["id"],
+      "columnsTo": ["company_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "version_model_id_model_id_fkey",
+      "name": "treatment_version_model_fkey",
       "entityType": "fks",
       "schema": "treatment",
       "table": "version"
@@ -10992,12 +10992,39 @@
     },
     {
       "nameExplicit": true,
+      "columns": ["company_id", "id"],
+      "nullsNotDistinct": false,
+      "name": "treatment_model_company_id_id_key",
+      "entityType": "uniques",
+      "schema": "treatment",
+      "table": "model"
+    },
+    {
+      "nameExplicit": true,
       "columns": ["company_id", "name"],
       "nullsNotDistinct": false,
       "name": "treatment_model_name_key",
       "entityType": "uniques",
       "schema": "treatment",
       "table": "model"
+    },
+    {
+      "nameExplicit": true,
+      "columns": ["company_id", "id"],
+      "nullsNotDistinct": false,
+      "name": "treatment_run_company_id_id_key",
+      "entityType": "uniques",
+      "schema": "treatment",
+      "table": "run"
+    },
+    {
+      "nameExplicit": true,
+      "columns": ["company_id", "id"],
+      "nullsNotDistinct": false,
+      "name": "treatment_version_company_id_id_key",
+      "entityType": "uniques",
+      "schema": "treatment",
+      "table": "version"
     },
     {
       "nameExplicit": true,

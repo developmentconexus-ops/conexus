@@ -92,6 +92,32 @@ test('tratamento: a empresa lê só as suas linhas nas quatro tabelas e não gra
   for (const table of TABLES) assert.deepEqual(await companiesOf(table), [A, B], table)
 })
 
+test('tratamento: a empresa não grava linha sua que aponta para o modelo, a rodada ou a versão de outra empresa', async (t) => {
+  const { database, asOwner } = await seeded(t)
+  for (const insert of [
+    sql`insert into treatment.version(id, model_id, company_id, number, sql, inputs, hash, proposed_by, proposed_at)
+      values ('version-x', 'model-b', ${A}, 2, 'select 1', '[]', ${HASH}, 'person-a', now())`,
+    sql`insert into treatment.model_run(run_id, company_id, name, status)
+      values ('run-b', ${A}, 'negocio__outra', 'SKIPPED')`,
+    sql`insert into treatment.model_run(run_id, company_id, name, version_id, status)
+      values ('run-a', ${A}, 'negocio__outra', 'version-b', 'SKIPPED')`,
+  ]) {
+    await assert.rejects(
+      database.command(IN_A, (tx) => tx.execute(insert)),
+      refusedWith('23503'),
+    )
+  }
+  // A version that goes takes only its own mention: the model run stays, with its company.
+  await asOwner(`delete from treatment.version where id = 'version-a'`)
+  assert.deepEqual(
+    await asOwner(`select company_id, version_id from treatment.model_run order by 1`),
+    [
+      { company_id: A, version_id: null },
+      { company_id: B, version_id: 'version-b' },
+    ],
+  )
+})
+
 test('tratamento: a empresa não apaga linha nenhuma e só muda as colunas concedidas', async (t) => {
   const { database, companiesOf } = await seeded(t)
   for (const statement of [
@@ -163,8 +189,21 @@ test('tratamento: o banco recusa uma segunda rodada aberta, um nome repetido e u
     asOwner(`update treatment.version set approved_at = now() where id = 'version-a'`),
     { constraint: 'treatment_version_approved' },
   )
-  await assert.rejects(
-    asOwner(`update treatment.model_run set status = 'SKIPPED' where run_id = 'run-a'`),
-    { constraint: 'treatment_model_run_rows' },
-  )
+  for (const [constraint, statement] of [
+    ['treatment_model_name', `update treatment.model set name = 'Venda' where id = 'model-a'`],
+    ['treatment_version_hash', `update treatment.version set hash = 'abc' where id = 'version-a'`],
+    ['treatment_run_cause', `update treatment.run set cause = 'OUTRA' where id = 'run-a'`],
+    ['treatment_run_attempt', `update treatment.run set attempt = 0 where id = 'run-a'`],
+    [
+      'treatment_model_run_rows',
+      `update treatment.model_run set status = 'SKIPPED' where run_id = 'run-a'`,
+    ],
+    [
+      'treatment_model_run_failure',
+      `update treatment.model_run set status = 'FAILED', rows = null where run_id = 'run-a'`,
+    ],
+    ['treatment_model_run_line', `update treatment.model_run set line = 1 where run_id = 'run-a'`],
+  ] as const) {
+    await assert.rejects(asOwner(statement), { constraint })
+  }
 })

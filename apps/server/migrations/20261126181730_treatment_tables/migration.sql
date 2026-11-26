@@ -7,6 +7,7 @@ CREATE TABLE "treatment"."model" (
 	"description" text NOT NULL,
 	"created_by" text NOT NULL,
 	"created_at" timestamp with time zone NOT NULL,
+	CONSTRAINT "treatment_model_company_id_id_key" UNIQUE("company_id","id"),
 	CONSTRAINT "treatment_model_name_key" UNIQUE("company_id","name"),
 	CONSTRAINT "treatment_model_name" CHECK ("name" ~ '^[a-z][a-z0-9_]{0,59}$'),
 	CONSTRAINT "treatment_model_description" CHECK (char_length("description") <= 500)
@@ -44,6 +45,7 @@ CREATE TABLE "treatment"."run" (
 	"task" text,
 	"started_at" timestamp with time zone NOT NULL,
 	"ended_at" timestamp with time zone,
+	CONSTRAINT "treatment_run_company_id_id_key" UNIQUE("company_id","id"),
 	CONSTRAINT "treatment_run_cause" CHECK ("cause" IN ('COPY', 'NOW')),
 	CONSTRAINT "treatment_run_state" CHECK ("state" IN ('STARTING', 'RUNNING', 'DONE', 'FAILED', 'STOPPED')),
 	CONSTRAINT "treatment_run_ended" CHECK (("ended_at" IS NULL) = ("state" IN ('STARTING', 'RUNNING'))),
@@ -67,6 +69,7 @@ CREATE TABLE "treatment"."version" (
 	"proposed_at" timestamp with time zone NOT NULL,
 	"approved_by" text,
 	"approved_at" timestamp with time zone,
+	CONSTRAINT "treatment_version_company_id_id_key" UNIQUE("company_id","id"),
 	CONSTRAINT "treatment_version_number_key" UNIQUE("model_id","number"),
 	CONSTRAINT "treatment_version_number" CHECK ("number" >= 1),
 	CONSTRAINT "treatment_version_sql" CHECK (char_length("sql") <= 20000),
@@ -77,9 +80,9 @@ CREATE TABLE "treatment"."version" (
 --> statement-breakpoint
 ALTER TABLE "treatment"."version" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 CREATE UNIQUE INDEX "treatment_run_open_key" ON "treatment"."run" ("company_id") WHERE "ended_at" IS NULL;--> statement-breakpoint
-ALTER TABLE "treatment"."model_run" ADD CONSTRAINT "model_run_run_id_run_id_fkey" FOREIGN KEY ("run_id") REFERENCES "treatment"."run"("id") ON DELETE CASCADE;--> statement-breakpoint
-ALTER TABLE "treatment"."model_run" ADD CONSTRAINT "model_run_version_id_version_id_fkey" FOREIGN KEY ("version_id") REFERENCES "treatment"."version"("id") ON DELETE SET NULL;--> statement-breakpoint
-ALTER TABLE "treatment"."version" ADD CONSTRAINT "version_model_id_model_id_fkey" FOREIGN KEY ("model_id") REFERENCES "treatment"."model"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "treatment"."model_run" ADD CONSTRAINT "treatment_model_run_run_fkey" FOREIGN KEY ("company_id","run_id") REFERENCES "treatment"."run"("company_id","id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "treatment"."model_run" ADD CONSTRAINT "treatment_model_run_version_fkey" FOREIGN KEY ("company_id","version_id") REFERENCES "treatment"."version"("company_id","id") ON DELETE SET NULL ("version_id");--> statement-breakpoint
+ALTER TABLE "treatment"."version" ADD CONSTRAINT "treatment_version_model_fkey" FOREIGN KEY ("company_id","model_id") REFERENCES "treatment"."model"("company_id","id") ON DELETE CASCADE;--> statement-breakpoint
 CREATE POLICY "company_all" ON "treatment"."model" AS PERMISSIVE FOR ALL TO "hub_company" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint
 CREATE POLICY "operator_select" ON "treatment"."model" AS PERMISSIVE FOR SELECT TO "hub_operator" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint
 CREATE POLICY "operator_delete" ON "treatment"."model" AS PERMISSIVE FOR DELETE TO "hub_operator" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint
