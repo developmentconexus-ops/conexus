@@ -57,8 +57,8 @@ separada; o que a prévia de um app pode gravar; dado pessoal na amostra).
 
 ## O cartão de hoje
 
-[R1, a base visual e o movimento](../redesenho-r1-a-base-visual-e-o-movimento.md), à espera da
-aprovação do fundador.
+[R1, a base visual e o movimento](../redesenho-r1-a-base-visual-e-o-movimento.md), aprovado pelo
+fundador em 2026-11-26.
 
 O cartão da [R2, a casca nova](../redesenho-r2-a-casca-nova.md) está escrito e espera a vez dele num
 pull request de rascunho (delivery L5), sem a palavra do fundador.

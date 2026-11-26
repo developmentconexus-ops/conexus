@@ -65,7 +65,6 @@ const QueueEntry = z.union([CopyTaskResult, EcsStopped])
 
 /** ECS's `stopCode` for a `StopTask`: only the Hub stops a copy's task. */
 const STOPPED_BY_THE_HUB = 'UserInitiated'
-const CONTAINER_EXITED = 'EssentialContainerExited'
 const LOST: RunEnd = { kind: 'ERROR', code: 'COPY_TASK_LOST', table: null, system: null }
 const RECEIVE_RETRY_MS = 5_000
 
@@ -86,12 +85,8 @@ function endOf(message: CopyQueueMessage): Readonly<{
   machine?: LakeRunMachine | null
 }> {
   if (message.type === 'RESULT') {
-    const { outcome } = message
-    const end: RunEnd =
-      outcome.kind === 'COMPLETE'
-        ? { kind: 'COMPLETE' }
-        : { kind: 'ERROR', code: outcome.code, table: outcome.table, system: outcome.system }
-    return { end, tables: message.tables, cause: 'RESULT', machine: message.machine ?? null }
+    const { outcome: end, tables, machine = null } = message
+    return { end, tables, cause: 'RESULT', machine }
   }
   const lost: RunEnd = {
     kind: 'ERROR',
@@ -107,11 +102,7 @@ function endOf(message: CopyQueueMessage): Readonly<{
 }
 
 function exitedWell(message: CopyQueueMessage): boolean {
-  return (
-    message.type === 'ECS_STOPPED' &&
-    message.stopCode === CONTAINER_EXITED &&
-    message.exitCode === 0
-  )
+  return message.type === 'ECS_STOPPED' && message.exitCode === 0
 }
 
 /** Within one batch the results go first: a standard queue keeps no order between them. */

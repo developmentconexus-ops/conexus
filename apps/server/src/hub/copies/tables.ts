@@ -84,6 +84,8 @@ export const lakeRun = copies.table(
     systemMessage: text('system_message'),
     taskArn: text('task_arn'),
     attempt: integer('attempt').notNull(),
+    /** The person who first asked this round to stop; it stays however the round ends. */
+    stoppedBy: text('stopped_by'),
     cpuAllocated: numeric('cpu_allocated', { precision: 5, scale: 2, mode: 'number' }),
     memoryAllocatedMib: integer('memory_allocated_mib'),
     cpuPeak: numeric('cpu_peak', { precision: 5, scale: 2, mode: 'number' }),

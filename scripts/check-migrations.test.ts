@@ -57,6 +57,7 @@ function commit(dir: string, message: string) {
 function check(
   change: (dir: string) => void,
   step?: (dir: string) => void,
+  env: Record<string, string> = {},
 ): { status: number | null; stderr: string } {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-migrations-'))
   dirs.push(dir)
@@ -81,6 +82,7 @@ function check(
   const run = spawnSync('node', [SCRIPT, '--base', base, '--main', 'main', '--root', dir], {
     encoding: 'utf8',
     timeout: 120_000,
+    env: { ...process.env, ...env },
   })
   return { status: run.status, stderr: run.stderr }
 }
@@ -234,4 +236,19 @@ test('aceita set_config dentro da transação e a trava de transação', () => {
     ),
   )
   assert.deepEqual(run, { status: 0, stderr: '' })
+})
+
+test('um git morto por sinal não responde que a migração é nova', () => {
+  const bin = mkdtempSync(join(tmpdir(), 'conexus-migrations-git-'))
+  dirs.push(bin)
+  const real = execFileSync('sh', ['-c', 'command -v git'], { encoding: 'utf8', timeout: 10_000 })
+  const killed = `#!/bin/sh\nif [ "$1" = cat-file ]; then kill -KILL $$; fi\nexec ${real.trim()} "$@"\n`
+  writeFileSync(join(bin, 'git'), killed, { mode: 0o755 })
+  const run = check(
+    (dir) => write(dir, 'apps/server/migrations/20260101000000_first/migration.sql', 'SELECT 1;\n'),
+    undefined,
+    { PATH: `${bin}:${process.env.PATH}` },
+  )
+  assert.equal(run.status, 1, run.stderr)
+  assert.match(run.stderr, /git cat-file gave no answer/)
 })
