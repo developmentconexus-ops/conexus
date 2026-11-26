@@ -93,15 +93,17 @@ no Assistente.
 O que você não vê, e muda: a pasta `builder/` do código, que hoje guarda os quatro agentes, se
 divide em `harness/` (o que é comum às conversas) e `agents/` (um por agente), na web e no
 servidor. O que **não** muda: o que cada agente responde, as conversas guardadas e o pedido que
-cada agente manda ao modelo, que segue igual byte a byte, como na etapa 1. Duas exceções, as duas
-na parte do servidor (a U15): a frase da ferramenta do Assistente que cita o botão "Mandar ao
-Builder" passa a citar o botão "Mandar para Construir", o texto que a U4 põe no botão
+cada agente manda ao modelo, que segue igual byte a byte, como na etapa 1. Três exceções. A
+primeira e a segunda são da parte do servidor (a U15): a frase da ferramenta do Assistente que
+cita o botão "Mandar ao Builder" passa a citar o botão "Mandar para Construir", o texto que a U4 põe no botão
 (`Wb/assistant/text.ts:105`; a decisão 6 do firstmate); e o agendador das automações deixa de
 apagar sozinho uma automação cujo fluxo ele não acha registrado na terceira falta seguida, e só
 apaga na quinta. Cada tique do agendador dura 10 segundos (`DEFAULT_TICK_INTERVAL_MS` da 1.83.0),
 então são uns 30 segundos hoje e uns 50 depois. Hoje isso acontece quando um fluxo muda de nome.
 Entre a parte da tela e a U15, o Assistente ainda cita o botão pelo nome velho; o botão que a
-pessoa toca já diz "Mandar para Construir".
+pessoa toca já diz "Mandar para Construir". A terceira entra no fechamento (emenda de
+2026-11-25): a skill `conexus`, que o Assistente carrega para passar um pedido ao Builder, troca
+"Mandar ao Builder" por "Mandar para Construir".
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página. Depois: vê o protótipo
 dos nomes, do menu do Projeto e do lugar de Renomear, a 1366 e a 390 px, e o aprova (a sua
@@ -257,7 +259,7 @@ conta, porque cada arquivo movido sai igual.
 | 11 | U4 | Nenhum texto da tela diz "Builder", "Construtor" ou "Assistente" como quem fala: os textos de `apps/web/src` e as frases de `packages/hub-api/src/*-failures.ts`. Os ids, os caminhos e os nomes no código não contam | `apps/web/src/harness/names.test.ts`, que lê os módulos de texto e as frases de falha e recusa as três palavras | must |
 | 12 | U4 | O menu do Projeto tem quatro grupos com título, nesta ordem: "O app" (Construir), "Agentes" (Conversas, Agentes, Automações), "Dados" (Integrações, Dados) e "O Projeto" (Quem usa o app, Sobre). Um membro sem `manageAgents`, `manageAutomations` e `viewAppData` vê "Agentes" só com Conversas e "Dados" só com Integrações; nenhum título aparece sem item | `apps/web/src/hub/projects/project-rail.test.tsx`, um caso de dono e um de membro | must |
 | 13 | U4 | Os textos das contas de modelo dizem que os agentes tentam as contas, não "o Builder": a fila, a reserva e a página de Configurações | `names.test.ts` (critério 11); `model-accounts.test.ts` do e2e, sem mudar a jornada | must |
-| 14 | U15 | O pedido do Assistente ao modelo muda só na frase da ferramenta que cita o botão: o retrato regravado mostra "Mandar para Construir" no lugar de "Mandar ao Builder" e nada mais; os retratos dos outros três agentes não mudam | `B/assistant/request.test.ts` com `--test-update-snapshots` no commit da U15; `B/assistant/propose.test.ts:95,110` e `instructions.test.ts:165` com a frase nova; o diff do retrato no pull request | must |
+| 14 | U15 | O pedido do Assistente ao modelo muda só na frase da ferramenta que cita o botão: o retrato regravado mostra "Mandar para Construir" no lugar de "Mandar ao Builder" e nada mais; os retratos dos outros três agentes não mudam. No fechamento, a skill `conexus` (`B/assistant/skills/conexus/SKILL.md`), que não está em nenhum retrato, troca o mesmo nome (emenda de 2026-11-25) | `B/assistant/request.test.ts` com `--test-update-snapshots` no commit da U15; `B/assistant/propose.test.ts:95,110` e `instructions.test.ts:165` com a frase nova; o diff do retrato no pull request | must |
 | 15 | U4 | A tela de cada parte bate com o protótipo aprovado, elemento por elemento, a 1366 e a 390 px, nos dois temas: o menu do Projeto e a cabeça das quatro respostas | QA (testing T25) | must |
 | 16 | U5 | A máquina da conversa roda só pelo caminho nativo do Mastra: o caminho por shell, a opção `instructions` nunca lida e os donos repetidos de `quoted`, `CANDIDATE_REF` e `IDENTITY` saem; os testes da máquina passam com `native: true` como padrão do dublê; os quatro retratos não mudam | `B/machine/machine*.test.ts`; `request.test.ts` dos quatro | must |
 | 17 | U6 | A ficha não tem `base`, `ended`, nem os campos que só repassam o que o `AgentConfig` do Mastra já tem; o Construtor de apps ganha os sinais de tarefa pela própria ficha; os quatro retratos não mudam | `controller-kit/spec.test.ts`; `request.test.ts` dos quatro | must |
@@ -1177,7 +1179,9 @@ pequenas, cada uma num commit, com um retrato regravado.
   citam o botão "Mandar ao Builder" (`description` e `next` de `change`). Só o nome do botão muda,
   para o texto novo, "Mandar para Construir";
   o resto do texto que o modelo lê, "Builder" incluído, fica igual byte a byte (a etapa não muda o
-  pedido de nenhum agente, e o nome do agente no pedido é do `A3`). Os testes que afirmam a frase:
+  pedido de nenhum agente, e o nome do agente no pedido é do `A3`). Só a skill `conexus` troca o
+  nome do botão no fechamento, com a asserção em `instructions.test.ts` (emenda de 2026-11-25). Os
+  testes que afirmam a frase:
   `B/assistant/propose.test.ts:95,110`, `B/assistant/instructions.test.ts:165`.
 - **O agendador que não apaga.** `schedulerOf` (`B/mastra/mastra.ts:14-21`) não passa
   `missesBeforeDelete`. Na referência: `@mastra/core` 1.83.0 `dist/worker-DCnErilX.js:342-348`
