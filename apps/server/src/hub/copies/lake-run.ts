@@ -1,8 +1,15 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, ConnectionId, LakeInterval } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, LakeInterval, LakeTableName } from '@conexus/hub-api'
 import { ConnectionId as ConnectionIdSchema, LakeRunId } from '@conexus/hub-api'
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import type { AwsAnswer, CopyQueue, CopyTasks, TaskArn, Where } from '../../platform/aws.ts'
+import type {
+  AwsAnswer,
+  CopyQueue,
+  CopyTasks,
+  LakeTables,
+  TaskArn,
+  Where,
+} from '../../platform/aws.ts'
 import { bucketName, RunParameter, runParameterName, writerRoleArn } from '../../platform/aws.ts'
 import type { AwsConfig } from '../../platform/config-aws.ts'
 import type { Database } from '../../platform/database.ts'
@@ -70,6 +77,7 @@ export type ScheduledCopy = Readonly<{
 export type LakeRunDeps = {
   database: Database
   tasks: CopyTasks
+  tables: Pick<LakeTables, 'forget'>
   source: CopySource
   copy: AwsConfig['copy']
   log: FailureLog
@@ -128,15 +136,27 @@ async function tried<T>(
 
 type Launch = Readonly<{ where: Where; writer: string; spec: string }>
 
+async function startFailed(
+  deps: LakeRunDeps,
+  started: Started,
+  call: string,
+  answer: AwsAnswer<unknown>,
+) {
+  const { at, connection } = started
+  const run = LakeRunId.parse(started.run)
+  const fields = { companyId: at.companyId, connectionId: connection, runId: run }
+  const said = { ...fields, call, answer: answer.kind }
+  const named = answer.kind === 'REFUSED' ? { ...said, code: answer.code } : said
+  deps.log.error(named, 'COPY_LAKE_START_FAILED')
+  await closeLakeRun(deps, at, { run, end: UNAVAILABLE, tables: [], cause: 'START' })
+}
+
 async function launch(deps: LakeRunDeps, line: Line, started: Started, a: Launch) {
   const { at, connection, copy } = started
   const run = LakeRunId.parse(started.run)
   const fields = { companyId: at.companyId, connectionId: connection, runId: run }
-  async function failed(call: string, answer: AwsAnswer<unknown>) {
-    const said = { ...fields, call, answer: answer.kind }
-    const named = answer.kind === 'REFUSED' ? { ...said, code: answer.code } : said
-    deps.log.error(named, 'COPY_LAKE_START_FAILED')
-    await closeLakeRun(deps, at, { run, end: UNAVAILABLE, tables: [], cause: 'START' })
+  function failed(call: string, answer: AwsAnswer<unknown>) {
+    return startFailed(deps, started, call, answer)
   }
   const parameter = RunParameter.parse(runParameterName(at.companyId, run))
   const spec = { name: parameter, spec: a.spec }
@@ -191,6 +211,24 @@ async function undone(
   await deleteParameter(deps, a.where, a.fields)
 }
 
+async function forgotStoppingPoints(
+  deps: LakeRunDeps,
+  line: Line,
+  started: Started,
+  where: Where,
+  tables: readonly LakeTableName[],
+): Promise<boolean> {
+  for (const table of tables) {
+    const forgot = await tried(line.clock, () =>
+      deps.tables.forget(where, started.connection, table),
+    )
+    if (forgot.kind === 'DONE') continue
+    await startFailed(deps, started, 'ForgetStoppingPoint', forgot)
+    return false
+  }
+  return true
+}
+
 async function start(deps: LakeRunDeps, line: Line, started: Started) {
   const { at, copy } = started
   const run = LakeRunId.parse(started.run)
@@ -200,13 +238,15 @@ async function start(deps: LakeRunDeps, line: Line, started: Started) {
   if (copy.lake === null || !copy.lake.ready) return unavailable()
   const { where, lakeId } = copy.lake
   await writeColumns(deps, started)
-  const spec = await specOf(deps, started, { where, bucket: bucketName(lakeId) })
-  if (spec === null) return
+  const asked = await specOf(deps, started, { where, bucket: bucketName(lakeId) })
+  if (asked === null) return
+  const { spec, reread } = asked
   const bytes = Buffer.byteLength(spec)
   if (bytes > PARAMETER_MAX_BYTES) {
     deps.log.error({ companyId: at.companyId, runId: run, bytes }, 'COPY_LAKE_START_FAILED')
     return unavailable()
   }
+  if (!(await forgotStoppingPoints(deps, line, started, where, reread))) return
   const writer = writerRoleArn(where.account, lakeId)
   await line.inLine(() => launch(deps, line, started, { where, writer, spec }))
 }
