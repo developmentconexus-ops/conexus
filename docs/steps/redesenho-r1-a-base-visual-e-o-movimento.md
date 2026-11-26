@@ -83,7 +83,7 @@ Recomendado / D. Sim".
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 | U1 Tokens de movimento e reduzir | a escala curta com nome no `tokens.css`; com reduzir, nada anima; a barra e o rastro sem esticar; hover e toque | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md` | design | o pull request de método da decisão B-a ([#1428](https://github.com/developmentconexus-ops/conexus/pull/1428)) em `main` |
+| G1 | U1 Tokens de movimento e reduzir | a escala curta com nome no `brand/motion.css`; com reduzir, nada anima; a barra e o rastro sem esticar; hover e toque | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md` | design | o pull request de método da decisão B-a ([#1428](https://github.com/developmentconexus-ops/conexus/pull/1428)) em `main` |
 | G1 | U2 Entradas e saídas | menu, popover, seletor, combobox, dica, janela, gaveta e painel pelos tokens; a troca de tela | `apps/web/src/ui/`, `apps/web/src/main.tsx`, `apps/web/src/brand/` | design | U1 |
 | G2 | U3 A direção visual nos tokens | a B em grafite nas cores, sombras, raios, título e foco; a moldura; o ipê aceso; o item atual da barra sem tique; o `DESIGN.md` pelo `document`; o teste de contraste | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md` | design | U1 |
 | G2 | U4 Aviso e esqueleto | o aviso sobre o Base UI, com o primeiro uso; o esqueleto nos tokens | `apps/web/src/ui/`, `apps/web/src/main.tsx`, `apps/web/src/harness/model-accounts/` | design | U1, U3 |
@@ -102,7 +102,7 @@ Dois pull requests (delivery L9): G1 e G2.
 | 3 | U1 | A barra recolhida e o passo do rastro trocam de largura e de altura de uma vez: no `sidebar-container`, no `sidebar-gap` e no `trace-collapsible-content`, nenhum par de `transition-property` e `transition-duration` junta `width`, `height` ou `all` a uma duração acima de 0 s; recusa: devolver `transition-[width]` a `ui/sidebar.tsx:152` deixa o teste vermelho | `motion.layout.test.ts`, "nada estica" | must |
 | 4 | U1, U2, U4 | Sob `prefers-reduced-motion: reduce`, toda duração de transição computada na vitrine é 0 s e `document.getAnimations()` fica vazio depois de abrir menu, dica, gaveta, janela e aviso e de trocar de tela; os laços de trabalho param (a marca, o arco, o brilho). A U1 cria o caso com a gaveta e a janela de hoje; a U2 e a U4 acrescentam o menu, a dica, a troca de tela e o aviso ao mesmo caso | `motion.layout.test.ts`, "com reduzir, nada anima" | must |
 | 5 | U2 | Menu, popover, seletor, combobox e dica entram de opacidade 0 e escala .96 em 120 ms e saem mais rápido que entram; o seletor aberto sobre o gatilho pelo mouse (`data-side="none"`) aparece sem a entrada; ao passar de uma dica para outra, a segunda abre sem transição | `motion-entries.layout.test.ts`, "o menu e a dica entram curtos" e "o seletor sobre o gatilho aparece sem a entrada" | must |
-| 6 | U2 | A janela entra em 150 ms só por opacidade; a gaveta e o painel entram em 200 ms com deslocamento curto e saem em 150 ms; com `data-swiping` a duração da gaveta é 0 s | `motion.layout.test.ts`, "a janela e a gaveta" | must |
+| 6 | U2 | A janela entra em 150 ms só por opacidade; o painel entra em 200 ms com deslocamento curto e a gaveta sobe de baixo, da altura inteira, em 200 ms; os dois saem em 150 ms; com `data-swiping` a duração da gaveta é 0 s | `motion-entries.layout.test.ts`, "a janela e a gaveta" | must |
 | 7 | U2 | Toda mudança de caminho, pela barra ou depois de uma ação, esmaece só a folha, em 160 ms; a barra não pisca. Com uma gaveta ou uma janela aberta, a troca é de uma vez. A carga da página e uma mudança só da busca do endereço não esmaecem | `motion-screen.layout.test.ts`, "a troca de tela esmaece a folha", "a troca depois de uma ação esmaece a folha", "com a gaveta aberta a troca é de uma vez", "com a janela aberta a troca é de uma vez" e as três recusas (carga, letra na busca, aba da barra) | should |
 | 8 | U3 | O Hub pinta, nos dois temas, os valores da tabela de cores da U3 ("Os contratos que a unidade cria"); `DESIGN.md` e `tokens.css` dizem o mesmo valor por nome | `apps/web/src/brand/tokens.test.ts` (existente) e `apps/web/tokens.layout.test.ts`, "o tema" | must |
 | 9 | U3 | Todo par de texto e fundo dos tokens passa 4,5:1 nos dois temas, a letra de estado (`success-text`, `warning-text`, `danger-text`) incluída, sobre a folha, o azulejo e o que flutua; o ponto e o ícone de estado (`success`, `warning`, `danger`) passam 3:1 sobre a folha e sobre o que flutua; recusa: um par abaixo falha nomeando o par e o tema | `apps/web/contrast.layout.test.ts`, "cada par se lê nos dois temas" | must |
@@ -125,7 +125,7 @@ Dois pull requests (delivery L9): G1 e G2.
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| os nomes de duração e de curva em `brand/tokens.css` | U1 | U2, U3, U4, todas as peças de `ui/` |
+| os nomes de duração e de curva em `brand/motion.css` | U1 | U2, U3, U4, todas as peças de `ui/` |
 | os valores de cor, sombra, raio, título e foco em `brand/tokens.css` e no front matter do `DESIGN.md` | U3 | `brand/tokens.test.ts`, `contrast.layout.test.ts`, `ui/notice.tsx` (`notice`, `on-notice`), o Impeccable |
 | o aviso (`ui/notice.tsx`, `useNotice`) | U4 | `harness/model-accounts/default-choice.tsx` |
 
@@ -151,16 +151,16 @@ grafite; "decisão 2" é a dele do mesmo dia ao movimento.
 
 | # | Peça | Unidade | O que o fundador já decidiu | Hoje no main | Referência | Como a referência faz | Veredito | Prova | Decisão | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Durações e curvas com nome | U1 | decisão 2: hover 75 e 160 ms, pressionar 100, menu e dica 100 a 150, janela 150, troca de tela 160 | `DESIGN.md:499-506` (nomes sem token); `brand/tokens.css:158-159` | MA `theme/motion.css:2-10,30-40` (mesma situação); CR `tokens.css:123-130` (situação diferente: Electron sem CSP) | durações em `@theme static` e `@utility duration-*`; saída menor que a entrada **lido** | nativo | · | não precisa | · |
+| 1 | Durações e curvas com nome | U1 | decisão 2: hover 75 e 160 ms, pressionar 100, menu e dica 100 a 150, janela 150, troca de tela 160 | `DESIGN.md:499-506` (nomes sem token); `brand/tokens.css:158-159` | MA `theme/motion.css:2-10,30-40` (mesma situação); CR `tokens.css:123-130` (situação diferente: Electron sem CSP) | durações em `@theme static` e `@utility duration-*`; saída menor que a entrada **lido**; no Hub, a escala mora em `brand/motion.css`, importado pelo `tokens.css`, porque com as duas molas o `tokens.css` passaria o teto de 300 linhas do Biome | nativo | · | não precisa | `apps/web/src/brand/motion.css` |
 | 2 | Com reduzir, nada anima | U1 | decisão 2; V26 | um `motion-reduce:` por peça; `ui/table.tsx:37`, `ui/attachment.tsx:12` sem guarda | CR `tokens.css:276-287,312` (situação diferente: mantém um fade; serve a técnica) | um `@media` em `:root` troca as variáveis; `--default-transition-duration` segue o token **lido** | nativo | · | não precisa | · |
 | 3 | A barra recolhe sem esticar | U1 | decisão 2: nada anima largura | `ui/sidebar.tsx:152,158` | SH `sidebar.tsx:233` (anima a largura: o contrário) | tirar a classe | nativo | · | não precisa | · |
 | 4 | O rastro dobra sem esticar | U1 | decisão 2: nem altura | `ui/trace.tsx:104` | Base UI `docs/react/components/collapsible.md` (`--collapsible-panel-height`) **documentado** | a altura vem por variável; sem transição, abre na hora | nativo | · | não precisa | · |
-| 5 | Passar o mouse | U1 | decisão 2 | `ui/button.tsx`, itens da `ui/sidebar.tsx` sem transição | MA `theme/motion.css:3` (mesma situação) | só a cor do controle anima no hover **lido** | nativo | · | não precisa | · |
-| 6 | Apertar e mudar de estado | U1 | decisão A-b, 2026-11-26: o toque em 420 ms e a mudança de estado em 560 ms, nas molas | `ui/button.tsx` sem `:active`; `ui/switch.tsx:11,18`, `ui/checkbox.tsx:13` | CR `tokens.css:131-136` (molas em `linear()`, situação diferente); protótipo `carater.css:12-19` **herdado** | `:active` com `scale` e a curva do token | nativo | · | A-b | · |
-| 7 | Menu, popover, seletor, combobox | U2 | decisão 2: opacidade e escala; 2026-11-26, "2. A": o seletor sobre o gatilho sem a entrada (Base UI `docs/react/components/select.md:285-290`) | `ui/popover.tsx`, `ui/dropdown-menu.tsx`, `ui/select.tsx`, `ui/combobox.tsx` sem transição | Base UI `docs/react/handbook/animation.md:19-24` e `docs/react/components/tooltip.md:79` (mesma situação) | `data-starting-style`/`data-ending-style`, `origin-[var(--transform-origin)]`, transição que se cancela no meio **lido** | nativo | · | não precisa | · |
+| 5 | Passar o mouse | U1 | decisão 2 | `ui/button.tsx`, itens da `ui/sidebar.tsx` sem transição | MA `theme/motion.css:3` (mesma situação) | só a cor do controle anima no hover **lido**; no Hub, todo elemento já tem a cor do aro de foco antes do foco (uma só regra em `brand/tokens.css`, para `*`, `:focus-visible` e o estado de foco da vitrine), para uma peça que anima as cores não esmaecer o aro; nenhuma referência precisou da regra | nativo | · | não precisa | · |
+| 6 | Apertar e mudar de estado | U1 | decisão A-b, 2026-11-26: o toque em 420 ms e a mudança de estado em 560 ms, nas molas | `ui/button.tsx` sem `:active`; `ui/switch.tsx:11,18`, `ui/checkbox.tsx:13` | CR `tokens.css:131-136` (molas em `linear()`, situação diferente); protótipo `carater.css:12-19` **herdado** | `:active` com `scale` e a curva do token; no Hub, o utilitário `button-motion` de `brand/motion.css`, com uma duração e uma curva por propriedade, para a volta do toque também correr na mola | nativo | · | A-b | · |
+| 7 | Menu, popover, seletor, combobox | U2 | decisão 2: opacidade e escala; 2026-11-26, "2. A": o seletor sobre o gatilho sem a entrada (Base UI `docs/react/components/select.md:285-290`) | `ui/popover.tsx`, `ui/dropdown-menu.tsx`, `ui/select.tsx`, `ui/combobox.tsx` sem transição | Base UI `docs/react/handbook/animation.md:19-24` e `docs/react/components/tooltip.md:79` (mesma situação) | `data-starting-style`/`data-ending-style`, `origin-[var(--transform-origin)]`, transição que se cancela no meio **lido**; no Hub, o utilitário `popup-motion` de `brand/motion.css`, que a dica da linha 8 também usa | nativo | · | não precisa | · |
 | 8 | Dica | U2 | decisão 2 | `ui/tooltip.tsx:4-7` | MA-ds `Tooltip/tooltip.tsx:106-110` (mesma situação) | escala .95 e opacidade 0 nos dois atributos; `data-instant` sem transição **lido** | nativo | · | não precisa | · |
 | 9 | Janela | U2 | decisão 2: 150 ms | `ui/dialog.tsx:53,58`, `ui/alert-dialog.tsx:31,36` | Base UI `animation.md` | opacidade nos dois atributos | nativo | · | não precisa | · |
-| 10 | Gaveta e painel | U2 | estudo 13.2: 200 a 250 ms; folha de 17/11: sai em 150 | `ui/sheet.tsx:22,24,57,62`, `ui/drawer.tsx:30,36` | SH-ui `sheet.tsx:31,56` e DF-ui `drawer/index.tsx:57,90-98` (mesma situação) | deslocamento curto nos dois atributos; `data-swiping:duration-0` **lido** | nativo | · | não precisa | · |
+| 10 | Gaveta e painel | U2 | estudo 13.2: 200 a 250 ms; folha de 17/11: sai em 150 | `ui/sheet.tsx:22,24,57,62`, `ui/drawer.tsx:30,36` | SH-ui `sheet.tsx:31,56` e DF-ui `drawer/index.tsx:57,90-98` (mesma situação) | nos dois atributos, deslocamento curto no painel e a altura inteira na gaveta; `data-swiping:duration-0` **lido** | nativo | · | não precisa | · |
 | 11 | Troca de tela | U2 | decisão 2: fade de 160 ms; 2026-11-26, "1. A" e "3. A": toda mudança de caminho, menos com gaveta ou janela aberta | `main.tsx:84` sem `defaultViewTransition` | `@tanstack/router-core` `router.d.ts:156`, `router.js:491-506` | o roteador chama `document.startViewTransition`; o CSS nomeia só a folha **lido**; passa na CSP com folha externa (estudo 6.3) **provado** | nativo | · | não precisa | · |
 | 12 | As cores | U3 | "Fecha"; decisão 3 | `brand/tokens.css:50-80`; `DESIGN.md` front matter; `brand/tokens.test.ts` | protótipo `b-noites.css:7,16-35` e a tabela "A paleta final" **herdado** | os valores medidos em `light-dark()` | nativo | · | "Fecha" | · |
 | 13 | A moldura grafite e a folha encaixada | U3 | "Fecha": 8 px de margem, canto de 16 px | `ui/frame.tsx`, `ui/sidebar.tsx:198` | SH-ui `sidebar.tsx:154,162,224-235` (variante `inset`, mesma situação) **lido** | a moldura pinta o grafite; a folha ganha margem e raio | embrulhado: a nossa `sidebar` ganha a variante `inset` | · | B-a | · |
@@ -180,7 +180,9 @@ grafite; "decisão 2" é a dele do mesmo dia ao movimento.
 
 **A medida do transplante.** Nenhuma parte trazida: a etapa troca valores e acrescenta uma peça.
 
-**A dívida.** A cópia do toast do protocolo do Base UI anima a altura da pilha (`toast.md:69`); aqui a
+**A dívida.** Enquanto a troca de tela esmaece, cerca de 160 ms, a página não recebe clique, e um
+clique nesse intervalo se perde: é o comportamento da View Transition API, e `pointer-events: none`
+no pseudo-elemento não muda isso no Chromium. A cópia do toast do protocolo do Base UI anima a altura da pilha (`toast.md:69`); aqui a
 altura troca na hora. O contraste dos selos de estado nunca foi medido um a um; a U3 mede.
 
 ## As decisões do firstmate
@@ -209,7 +211,8 @@ entre módulos.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/web/src/brand/tokens.css` | muda | todo `apps/web/src` pelo Tailwind |
+| `apps/web/src/brand/tokens.css` | muda: importa o `motion.css` | todo `apps/web/src` pelo Tailwind |
+| `apps/web/src/brand/motion.css` | cria: a escala, as curvas, o reduzir e os `@utility` | `brand/tokens.css`; as peças de `ui/` |
 | `apps/web/src/ui/` (`sidebar`, `trace`, `button`, `table`, `attachment`, `switch`, `checkbox`) | muda | as telas |
 | `DESIGN.md` "Motion" | muda | o Impeccable, a U2 e a U3 |
 | `apps/web/motion.layout.test.ts` | cria | `apps/web/package.json` `test:browser` |
@@ -217,7 +220,8 @@ entre módulos.
 
 ### Os contratos que a unidade cria
 
-Os nomes, em `@theme` do `tokens.css`, cada um dono do seu número (C26):
+Os nomes, em `@theme static` de `brand/motion.css`, que o `tokens.css` importa (o teto de 300 linhas do
+Biome), cada um dono do seu número (C26):
 
 ```css
 --duration-row: 75ms;      /* linha da barra, do menu, da paleta */
@@ -250,6 +254,12 @@ um bloco em `:root` põe todas as `--duration-*` em `0ms`. O Tailwind 4 instalad
 
 O `ease-*` lê `--ease-*`: `ease-enter`, `ease-exit` e `ease-fit` saem do `@theme` sem `@utility`.
 
+O mesmo arquivo dá nome a duas listas de classes que as próximas peças repetem, e que escritas na
+peça passariam a catraca do lint de design: `button-motion` (cor, fundo e sombra em
+`duration-control`, a escala em `duration-press` na mola, na ida e na volta) e `popup-motion` (menu,
+popover, seletor, combobox e dica: escala .96 e opacidade em `duration-menu ease-enter`, saída em
+`duration-row`).
+
 ### As skills e a leitura
 
 As linhas de `docs/reference/stack.md` para `apps/web/src/ui/` e `apps/web/src/brand/` (Tailwind 4,
@@ -280,7 +290,7 @@ shadcn, Base UI). Ler primeiro `docs/guides/design.md` V17, V26 e V28.
 3. **Hover e toque.** Critérios: 1, 2.
    - **Arquivos:** muda `ui/button.tsx`, itens de `ui/sidebar.tsx`, `ui/table.tsx:37`,
      `ui/attachment.tsx:12`, `ui/switch.tsx`, `ui/checkbox.tsx`.
-   - **O que entra:** `transition-colors duration-row` nas linhas da barra; `transition-[color,background-color,box-shadow,scale] duration-control` no botão, com `active:scale-96` em `duration-press ease-spring-press`; a chave e a caixa em `duration-state ease-spring-state`. Regras: V17, V26.
+   - **O que entra:** `transition-colors duration-row` nas linhas da barra; `button-motion` no botão, com `active:scale-96`; a chave e a caixa em `duration-state ease-spring-state`. Regras: V17, V26.
    - **Testes:** "o mouse muda só a cor, no tempo da escala" (o estado `data-preview="hover"` da
      vitrine, `tokens.css:15-25`); "o toque cede e volta" (`data-preview="active"`).
 4. **O `DESIGN.md`.** Critérios: 1 a 4.
@@ -316,7 +326,7 @@ Uma peça copiada do Base UI ou do shadcn escreve a duração por estilo inline:
 | --- | --- | --- |
 | `apps/web/src/ui/` (as nove peças acima) | muda | as telas |
 | `apps/web/src/main.tsx`, `apps/web/src/ui/pieces-fixture.tsx` | muda (`defaultViewTransition`) | o Hub e a vitrine |
-| `apps/web/src/brand/tokens.css` | muda (a regra `::view-transition` da folha) | · |
+| `apps/web/src/brand/motion.css` | muda (a regra `::view-transition` da folha) | · |
 | `apps/web/src/ui/sidebar.tsx:198` (`sidebar-inset`) | muda só se o seletor da regra pedir uma classe | `ui/frame.tsx` |
 | `apps/web/motion.layout.test.ts` | muda: os casos dos critérios 4 a 7 | `test:browser` |
 
@@ -336,13 +346,17 @@ Nenhum tipo. Uma classe por peça e a regra da troca de tela:
    - **Referência a seguir:** `components/tooltip.md:79`: `origin-(--transform-origin) transition-[scale,opacity]
      duration-menu ease-enter data-starting-style:scale-96 data-starting-style:opacity-0
      data-ending-style:scale-96 data-ending-style:opacity-0 data-ending-style:duration-row` e, na
-     dica, `data-instant:transition-none` (MA `tooltip.tsx:110`).
+     dica, `data-instant:transition-none` (MA `tooltip.tsx:110`). No Hub, a lista é o utilitário
+     `popup-motion`; a peça escreve o nome e, a dica, o `data-instant:transition-none`.
    - **O que sai:** a nota de `ui/tooltip.tsx:4-5` que diz que a entrada foi tirada.
    - **Testes:** "o menu e a dica entram curtos".
 2. **Janela, gaveta, painel.** Critérios: 6.
    - **O que entra:** `duration-window` no véu e na janela; na gaveta e no painel,
      `duration-move ease-enter` na entrada e `data-ending-style:duration-window ease-exit`; as curvas
-     soltas (`ease-in-out`, `ease-out`) saem; `data-swiping:duration-0` fica.
+     soltas (`ease-in-out`, `ease-out`) saem; `data-swiping:duration-0` fica. No véu, é essa classe que
+     zera a duração sob o dedo. No corpo da gaveta o Base UI já escreve `transition: none` durante o
+     arrasto, e tirar a classe não deixa teste vermelho; ela fica para o caso de a biblioteca deixar
+     de escrever o estilo, que o teste "a janela e a gaveta" pegaria.
    - **Testes:** "a janela e a gaveta".
 3. **A troca de tela.** Critérios: 7.
    - **O que entra:** `defaultViewTransition` no `createRouter` do Hub, com `types` que liga a
