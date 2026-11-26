@@ -23,16 +23,28 @@ const TreatModel = z.object({
   after: z.array(ModelName),
 })
 
-export const TreatTaskSpec = z.object({
-  version: z.literal(1),
-  runId: TreatmentRunId,
-  attempt: z.int().min(1),
-  companyId: CompanyId,
-  lake: z.object({ bucketArn: z.string(), region: AwsRegion }),
-  queueUrl: z.url(),
-  models: z.array(TreatModel).min(1).max(200),
-  select: z.array(ModelName).min(1),
-})
+export const TreatTaskSpec = z
+  .object({
+    version: z.literal(1),
+    runId: TreatmentRunId,
+    attempt: z.int().min(1),
+    companyId: CompanyId,
+    lake: z.object({ bucketArn: z.string(), region: AwsRegion }),
+    queueUrl: z.url(),
+    models: z.array(TreatModel).min(1).max(200),
+    select: z.array(ModelName).min(1),
+  })
+  .superRefine(({ models, select }, context) => {
+    const names = new Set(models.map((model) => model.name))
+    function refuse(field: 'models' | 'select', message: string) {
+      context.addIssue({ code: 'custom', path: [field], message })
+    }
+    if (names.size < models.length) refuse('models', 'a model name repeats')
+    if (models.some((model) => model.after.some((name) => !names.has(name))))
+      refuse('models', 'after names a model outside models')
+    if (select.some((name) => !names.has(name)))
+      refuse('select', 'select names a model outside models')
+  })
 export type TreatTaskSpec = z.infer<typeof TreatTaskSpec>
 
 /** A code only: Athena's sentence may carry a cell's value, and the result must not. */

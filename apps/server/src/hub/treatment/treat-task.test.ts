@@ -44,6 +44,26 @@ test('o SQL com um template do dbt é recusado, e o esquema gerado leva a recusa
   assert.equal(new RegExp(pattern).test(plain), true)
 })
 
+test('recusa a especificação com um nome em select ou after fora de models, ou um nome repetido', () => {
+  const spec = specWith({})
+  const [model] = spec.models
+  const outside = 'tratado__que_nao_veio'
+  const refused: [string, object][] = [
+    ['select', { select: [MODEL.name, outside] }],
+    ['models', { models: [{ ...model, after: [outside] }] }],
+    ['models', { models: [model, model] }],
+  ]
+  for (const [field, change] of refused) {
+    const parsed = TreatTaskSpec.safeParse({ ...spec, ...change })
+    assert.deepEqual(
+      parsed.error?.issues.map((issue) => issue.path),
+      [[field]],
+    )
+  }
+  const reader = { ...model, name: 'negocio__notas', layer: 'negocio', after: [MODEL.name] }
+  assert.equal(TreatTaskSpec.safeParse({ ...spec, models: [reader, model] }).success, true)
+})
+
 test('o resultado leva as linhas de quem gravou, o tipo e a linha de quem falhou, e nenhuma frase', () => {
   const result = {
     ...{ type: 'TREAT_RESULT', version: 1, runId: randomUUID(), attempt: 1 },

@@ -183,7 +183,14 @@ def parse_spec(text: str) -> Spec:
 
 
 def parse_treat_spec(text: str) -> TreatSpec:
-    return t.cast("TreatSpec", _parsed(text, _TREAT_SPEC))
+    spec = t.cast("TreatSpec", _parsed(text, _TREAT_SPEC))
+    names = {model["name"] for model in spec["models"]}
+    read = {name for model in spec["models"] for name in model["after"]}
+    if len(names) < len(spec["models"]) or not read <= names:
+        raise SpecInvalid("models")
+    if not names.issuperset(spec["select"]):
+        raise SpecInvalid("select")
+    return spec
 
 
 def reply_address(text: str) -> ReplyAddress | None:

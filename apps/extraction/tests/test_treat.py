@@ -279,6 +279,12 @@ def test_a_missing_area_gives_no_athena_type(treat: Treatment) -> None:
     [
         ({"models": [model("tratado", "parceiros", 'select {{ env_var("HOME") }}')]}, {}),
         ({"companyId": "outra"}, {}),
+        ({"select": ["tratado__que_nao_veio"]}, {}),
+        (
+            {"models": [model("tratado", "parceiros", PEOPLE, after=("tratado__que_nao_veio",))]},
+            {},
+        ),
+        ({"models": [model("tratado", "parceiros", PEOPLE)] * 2}, {}),
         ({}, {entry.RUN_PARAMETER: "/conexus/copia/x/y"}),
     ],
 )
@@ -342,9 +348,10 @@ def test_with_no_address_to_answer_the_task_only_fails(
 
 
 def test_a_build_dbt_cannot_start_ends_the_run_in_engine_failed(treat: Treatment) -> None:
-    broken = model("negocio", "orfao", "select 1 as um", after=("tratado__que_nao_veio",))
+    first = model("negocio", "um", "select 1 as um", after=("negocio__dois",))
+    second = model("negocio", "dois", "select 2 as dois", after=("negocio__um",))
 
-    assert treat.run(treat.spec(broken)) == 0
+    assert treat.run(treat.spec(first, second)) == 0
 
     assert treat.aws.sent[0]["outcome"] == {"kind": "ERROR", "code": "TREAT_ENGINE_FAILED"}
     assert treat.aws.sent[0]["models"] == []
