@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CompanyId, LakeRunId } from '@conexus/hub-api'
+import { CompanyId, LakeRunId, TreatmentRunId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { COPY_CLUSTER, COPY_CONTAINER } from '../../../../infra/aws/lib/names.ts'
 import { RunParameter, TaskArn } from './aws-copy.ts'
@@ -124,6 +124,51 @@ test('aws copia: iniciar manda a rodada inteira e lê só o ARN da tarefa', asyn
     },
   })
   assert.ok(!JSON.stringify(received).includes('clientSecret'))
+})
+
+test('aws copia: tratar manda o RunTask da cópia com o papel do tratamento e o objeto da especificação no lugar do parâmetro', async (t) => {
+  const { tasks, received } = await awsAt(t, inOrder('run-task', 'run-task'))
+  const run = TreatmentRunId.parse('00000000-0000-4000-8000-0000000000b2')
+  const treater = `arn:aws:iam::${TEST_AWS_ACCOUNT}:role/conexus-${LAKE}-tratador`
+  const key = `tratamento/${AT.company}/${run}-1.json`
+  assert.deepEqual(
+    await tasks.treat(AT, {
+      ...{ token: `${run}-1`, startedBy: run, role: treater, object: { key } },
+      machine: START.machine,
+    }),
+    { kind: 'DONE', value: TASK },
+  )
+  await tasks.start(AT, START)
+  const [treated, copied] = received
+    .filter((r) => r.action === 'RunTask')
+    .map((r) => sentBody(r.body))
+  const object = `s3://conexus-estado-${TEST_AWS_ACCOUNT}-${TEST_AWS_REGION}/tratamento/${AT.company}/${run}-1.json`
+  assert.deepEqual(treated?.overrides, {
+    cpu: '1024',
+    memory: '2048',
+    taskRoleArn: treater,
+    containerOverrides: [
+      { name: COPY_CONTAINER, environment: [{ name: 'CONEXUS_TREAT_OBJECT', value: object }] },
+    ],
+  })
+  const apart = { overrides: null, clientToken: null, startedBy: null }
+  assert.deepEqual({ ...treated, ...apart }, { ...copied, ...apart })
+  assert.deepEqual([treated?.clientToken, treated?.startedBy], [`${run}-1`, run])
+})
+
+test('aws copia: a especificação do tratamento vai ao depósito de estado da região, na raiz tratamento/<empresa>/', async (t) => {
+  const { tasks, received } = await awsAt(t, inOrder('put-object'))
+  const key = `tratamento/${AT.company}/00000000-0000-4000-8000-0000000000b2-1.json`
+  assert.deepEqual(await tasks.putTreat(AT, { key, spec: '{"version":1}' }), {
+    kind: 'DONE',
+    value: undefined,
+  })
+  const [put] = received.filter((r) => r.action.startsWith('PUT '))
+  assert.equal(
+    put?.action,
+    `PUT /conexus-estado-${TEST_AWS_ACCOUNT}-${TEST_AWS_REGION}/${key}?x-id=PutObject`,
+  )
+  assert.equal(put?.body, '{"version":1}')
 })
 
 test('aws copia: a repetição leva o mesmo clientToken e o mesmo pedido, e a AWS devolve a mesma tarefa', async (t) => {

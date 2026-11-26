@@ -17,7 +17,7 @@ import { databaseFailure, violatedConstraint } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { logFailure } from '../../platform/failure.ts'
 import type { CopySource } from '../connectors/public.ts'
-import type { CompanyScope, RunEnd, RunFields } from './lake-close.ts'
+import type { CompanyScope, RunEnd, RunFields, TreatmentHooks } from './lake-close.ts'
 import { closeLakeRun, companyScope, deleteParameter } from './lake-close.ts'
 import { createLakeQueue } from './lake-queue.ts'
 import type { Started } from './lake-spec.ts'
@@ -86,6 +86,8 @@ export type LakeRunDeps = {
   clock?: StartClock
   /** Where the task's result and ECS's stop arrive: its consumer is the rounds' end. */
   queue: CopyQueue
+  /** The treatment, made after the copies: its rounds end through the same queue. */
+  treatment?: () => TreatmentHooks
 }
 
 type Line = ReturnType<typeof startLine>
@@ -119,7 +121,8 @@ function startLine(clock: StartClock) {
   return { inLine, writeTurn, waiting: () => waiting, clock }
 }
 
-async function tried<T>(
+/** A call tried three times, a second and then two between them, until AWS answers. */
+export async function tried<T>(
   clock: StartClock,
   call: () => Promise<AwsAnswer<T>>,
   before?: () => Promise<void>,
@@ -338,6 +341,8 @@ export function createLakeRuns(input: LakeRunDeps) {
     scheduled: () => scheduled(deps),
     /** The rounds' end: `start` reads the open rounds once, then the queue while one is open (D27). */
     queue: { start: consumer.start, stop: consumer.stop, reading: consumer.reading },
+    /** The consumer told of a treatment round opened and closed, so it reads the queue meanwhile. */
+    watch: consumer.watch,
     /** Resolves when every start in the line has ended: a test's wait, and the Hub's end. */
     async idle(): Promise<void> {
       while (pending.size > 0) await Promise.all(pending)

@@ -10,17 +10,24 @@ import type { Database } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { logFailure } from '../../platform/failure.ts'
-import type { CloseCause, RunEnd, RunTableCounts } from './lake-close.ts'
+import type { CloseCause, RunEnd, RunTableCounts, TreatmentHooks } from './lake-close.ts'
 import { closeLakeRun, companyScope, RESULT_GRACE_MS } from './lake-close.ts'
 import { CopyTaskResult } from './lake-task.ts'
 import { lakeRun } from './tables.ts'
 
-/** What reaches the queue, once read: the task's result, or ECS's stop of the round's task. */
+/** A treatment round's result as the queue sees it: its run, the rest read by the treatment. */
+const TreatResultEnvelope = z.looseObject({ type: z.literal('TREAT_RESULT'), runId: z.uuid() })
+
+/**
+ * What reaches the queue, once read: a copy's or a treatment's result, or ECS's stop of a round's
+ * task, whose `runId` is the round of either.
+ */
 const CopyQueueMessage = z.discriminatedUnion('type', [
   CopyTaskResult,
+  TreatResultEnvelope,
   z.object({
     type: z.literal('ECS_STOPPED'),
-    runId: LakeRunId,
+    runId: z.uuid(),
     task: TaskArn,
     stopCode: z.string(),
     exitCode: z.int().nullable(),
@@ -36,7 +43,7 @@ const EcsStopped = z
     'detail-type': z.literal('ECS Task State Change'),
     detail: z.object({
       lastStatus: z.literal('STOPPED'),
-      startedBy: LakeRunId,
+      startedBy: z.uuid(),
       taskArn: TaskArn,
       stopCode: z.string(),
       stoppedReason: z.string().optional(),
@@ -61,7 +68,7 @@ const EcsStopped = z
     }
   })
 
-const QueueEntry = z.union([CopyTaskResult, EcsStopped])
+const QueueEntry = z.union([CopyTaskResult, TreatResultEnvelope, EcsStopped])
 
 /** ECS's `stopCode` for a `StopTask`: only the Hub stops a copy's task. */
 const STOPPED_BY_THE_HUB = 'UserInitiated'
@@ -78,7 +85,9 @@ function readEntry(body: string): CopyQueueMessage | null {
   }
 }
 
-function endOf(message: CopyQueueMessage): Readonly<{
+type RoundMessage = Exclude<CopyQueueMessage, { type: 'TREAT_RESULT' }>
+
+function endOf(message: RoundMessage): Readonly<{
   end: RunEnd
   tables: readonly RunTableCounts[]
   cause: CloseCause
@@ -110,9 +119,12 @@ function stopsLast(a: { entry: CopyQueueMessage | null }, b: { entry: CopyQueueM
   return Number(a.entry?.type === 'ECS_STOPPED') - Number(b.entry?.type === 'ECS_STOPPED')
 }
 
+type Kind = 'COPY' | 'TREATMENT'
+type Open = Readonly<{ companyId: CompanyId; kind: Kind }>
+
 type RunWatch = Readonly<{
-  opened(companyId: CompanyId, run: LakeRunId): void
-  ended(run: LakeRunId): void
+  opened(companyId: CompanyId, run: string, kind?: Kind): void
+  ended(run: string): void
 }>
 
 export type LakeQueueDeps = {
@@ -124,35 +136,55 @@ export type LakeQueueDeps = {
   companies: () => Promise<readonly CompanyId[]>
   /** The clock of the result's grace; the machine's by default. */
   clock?: Readonly<{ now(): number }>
+  /** The treatment's rounds, read from the same queue; none in a Hub without the treatment. */
+  treatment?: () => TreatmentHooks
 }
 
-async function openRuns(deps: LakeQueueDeps): Promise<Map<LakeRunId, CompanyId>> {
-  const found = new Map<LakeRunId, CompanyId>()
+async function openRuns(deps: LakeQueueDeps): Promise<Map<string, Open>> {
+  const found = new Map<string, Open>()
   for (const companyId of await deps.companies()) {
     const rows = await deps.database.read(companyScope(companyId), (tx) =>
       tx.select({ id: lakeRun.id }).from(lakeRun).where(isNull(lakeRun.endedAt)),
     )
-    for (const row of rows) found.set(LakeRunId.parse(row.id), companyId)
+    for (const row of rows) found.set(row.id, { companyId, kind: 'COPY' })
   }
+  for (const [run, companyId] of (await deps.treatment?.().openRuns()) ?? [])
+    found.set(run, { companyId, kind: 'TREATMENT' })
   return found
 }
 
-async function companyOf(deps: LakeQueueDeps, run: LakeRunId): Promise<CompanyId | undefined> {
+/** The round's company, by its id in the copy's rounds and then in the treatment's. */
+async function roundOf(deps: LakeQueueDeps, run: string): Promise<Open | undefined> {
   for (const companyId of await deps.companies()) {
     const [row] = await deps.database.read(companyScope(companyId), (tx) =>
       tx.select({ id: lakeRun.id }).from(lakeRun).where(eq(lakeRun.id, run)),
     )
-    if (row !== undefined) return companyId
+    if (row !== undefined) return { companyId, kind: 'COPY' }
   }
-  return undefined
+  const companyId = await deps.treatment?.().companyOf(run)
+  return companyId === undefined ? undefined : { companyId, kind: 'TREATMENT' }
 }
 
 type Held = Readonly<{
   deps: LakeQueueDeps
   closing: LakeQueueDeps & { watch: RunWatch }
-  open: Map<LakeRunId, CompanyId>
-  resultDeadlines: Map<LakeRunId, number>
+  open: Map<string, Open>
+  resultDeadlines: Map<string, number>
 }>
+
+/** A result reaches only a round of its own kind; ECS's stop, either. */
+function ofKind(kind: Kind, entry: CopyQueueMessage): boolean {
+  if (entry.type === 'ECS_STOPPED') return true
+  return (entry.type === 'TREAT_RESULT') === (kind === 'TREATMENT')
+}
+
+async function treatmentEnd(held: Held, round: Open, entry: CopyQueueMessage) {
+  const treatment = held.deps.treatment?.()
+  if (treatment === undefined) return
+  if (entry.type !== 'TREAT_RESULT') return treatment.closeLost(round.companyId, entry.runId)
+  const read = await treatment.closeResult(round.companyId, entry)
+  if (read === 'UNREADABLE') held.deps.log.error({ runId: entry.runId }, 'COPY_QUEUE_UNREADABLE')
+}
 
 async function handle(held: Held, message: { handle: string; entry: CopyQueueMessage | null }) {
   const { deps, open, resultDeadlines } = held
@@ -169,15 +201,26 @@ async function handle(held: Held, message: { handle: string; entry: CopyQueueMes
     await deps.queue.acknowledge(message.handle)
     return
   }
-  const companyId = open.get(run) ?? (await companyOf(deps, run))
-  if (companyId === undefined) {
+  const round = open.get(run) ?? (await roundOf(deps, run))
+  if (round === undefined || !ofKind(round.kind, entry)) {
     deps.log.info({ runId: run, type: entry.type }, 'COPY_QUEUE_RUN_UNKNOWN')
     await deps.queue.acknowledge(message.handle)
     return
   }
-  const closed = await closeLakeRun(held.closing, companyScope(companyId), { run, ...endOf(entry) })
+  if (round.kind === 'TREATMENT') {
+    await treatmentEnd(held, round, entry)
+    open.delete(run)
+    resultDeadlines.delete(run)
+    await deps.queue.acknowledge(message.handle)
+    return
+  }
+  if (entry.type === 'TREAT_RESULT') return
+  const { companyId } = round
+  const closed = await closeLakeRun(held.closing, companyScope(companyId), {
+    ...{ run: LakeRunId.parse(run), ...endOf(entry) },
+  })
   if (closed.parameter === 'LEFT') {
-    open.set(run, companyId)
+    open.set(run, round)
     resultDeadlines.set(run, (deps.clock ?? Date).now() + RESULT_GRACE_MS)
     return
   }
@@ -189,12 +232,14 @@ async function handle(held: Held, message: { handle: string; entry: CopyQueueMes
 async function closeOverdue({ deps, closing, open, resultDeadlines }: Held): Promise<void> {
   const now = (deps.clock ?? Date).now()
   for (const [run, until] of resultDeadlines) {
-    const companyId = open.get(run)
-    if (until > now || companyId === undefined) continue
+    const round = open.get(run)
+    if (until > now || round === undefined) continue
     try {
-      await closeLakeRun(closing, companyScope(companyId), {
-        ...{ run, end: LOST, tables: [], cause: 'ECS_STOPPED' },
-      })
+      if (round.kind === 'TREATMENT') await deps.treatment?.().closeLost(round.companyId, run)
+      else
+        await closeLakeRun(closing, companyScope(round.companyId), {
+          ...{ run: LakeRunId.parse(run), end: LOST, tables: [], cause: 'ECS_STOPPED' },
+        })
       open.delete(run)
       resultDeadlines.delete(run)
     } catch (error) {
@@ -231,15 +276,15 @@ async function handleBatch(held: Held, bodies: readonly { handle: string; body: 
  * next start's sweep deletes it.
  */
 export function createLakeQueue(deps: LakeQueueDeps) {
-  const open = new Map<LakeRunId, CompanyId>()
-  const resultDeadlines = new Map<LakeRunId, number>()
+  const open = new Map<string, Open>()
+  const resultDeadlines = new Map<string, number>()
   const stopping = new AbortController()
   let started = false
   let reading: Promise<void> | null = null
 
   const watch: RunWatch = {
-    opened(companyId, run) {
-      open.set(run, companyId)
+    opened(companyId, run, kind = 'COPY') {
+      open.set(run, { companyId, kind })
       wake()
     },
     ended(run) {
@@ -273,7 +318,7 @@ export function createLakeQueue(deps: LakeQueueDeps) {
     watch,
     /** Reads the open rounds once, then the queue while one is open. */
     async start(): Promise<void> {
-      for (const [run, companyId] of await openRuns(deps)) open.set(run, companyId)
+      for (const [run, round] of await openRuns(deps)) open.set(run, round)
       started = true
       wake()
     },

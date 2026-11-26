@@ -219,8 +219,12 @@ export function subjectsOf(deps: SubjectDeps) {
     leaveCopy: (at) => lakeCopies.leave(at),
   })
   const lake = { ...deps, identity, source: connectors.copies, clock: lakeClock }
-  const { lakeRuns, lakeCopies } = lakeCopiesOf(lake)
-  const treatment = createTreatment({ ...lake, templateVersion: config.aws.templateVersion })
+  // The treatment comes below, over the copies' queue; a copy ends long after.
+  const { lakeRuns, lakeCopies } = lakeCopiesOf({ ...lake, treatment: () => treatment.hooks })
+  const treatment = createTreatment({
+    ...{ database, identity, log, source: connectors.copies, tasks: deps.copyTasks },
+    ...{ copy: config.aws.copy, treatable: config.aws.treatable, watch: () => lakeRuns.watch },
+  })
   const access = createAccess({ database, identity, sources: connectors.access })
   const { data, dataReads } = dataOf({
     ...{ database, identity, log, access, projects: projects.ports },
@@ -288,6 +292,7 @@ async function runServer(): Promise<void> {
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      void subjects.treatment.sweepAll()
       // The copies the bucket did not take before the stop are tried again.
       void runs
         .resumeCopies()

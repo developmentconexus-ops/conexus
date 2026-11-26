@@ -31,4 +31,6 @@ export const TREATMENT_FAILURES = {
     ...USER_409,
     phrase: 'O lago desta empresa não está pronto para tratar. Peça ao operador do Conexus.',
   },
+  ALREADY_RUNNING: { ...USER_409, phrase: 'Uma rodada de tratamento já está em curso.' },
+  NOTHING_TO_TREAT: { ...USER_409, phrase: 'A empresa ainda não tem tratamento para rodar.' },
 } as const satisfies Record<string, FailureRow>

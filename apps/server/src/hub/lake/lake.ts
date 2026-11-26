@@ -81,7 +81,7 @@ function viewOf(deps: LakeDeps, lake: Lake | undefined): ClientLake {
         bucket: bucketName(lake.lakeId),
         region: lake.at.region,
         readyAt: at,
-        outdated: lake.template !== deps.config.aws.templateVersion,
+        outdated: !deps.config.aws.treatable.has(lake.template),
       }
     case 'failed':
       return { state: 'FAILED', code: 'LAKE_CREATE_FAILED', at }

@@ -193,3 +193,36 @@ test('ciclo: duas propostas ao mesmo tempo não fecham um ciclo entre si', async
     },
   )
 })
+
+test('Tratar agora: abre uma rodada com todos os modelos da empresa e responde 202 sem esperar; com uma aberta, ALREADY_RUNNING', async (t) => {
+  const on = await treatmentOn(t)
+  const venda = await on.proposed(OF_NOTAS)
+  await on.approved(venda.id, venda.version)
+
+  const opened = await on.treatNow()
+  assert.equal(opened.statusCode, 202, opened.body)
+  await on.hub.treatment.idle()
+  const [run, ...more] = await on.treatRuns()
+  assert.deepEqual(more, [])
+  assert.deepEqual(opened.json(), { run: run?.id })
+  assert.deepEqual(
+    [run?.cause, run?.state, run?.select],
+    ['NOW', 'RUNNING', ['tratado__sankhya_notas', 'tratado__sankhya_parceiros', 'negocio__venda']],
+  )
+
+  const again = await on.treatNow()
+  assert.deepEqual([again.statusCode, codeOf(again)], [409, 'ALREADY_RUNNING'])
+  assert.equal((await on.treatRuns()).length, 1)
+})
+
+test('Tratar agora: o lago sem a receita nova recusa com LAKE_NOT_READY, e sem modelo com NOTHING_TO_TREAT; nada abre', async (t) => {
+  const on = await treatmentOn(t)
+  await on.rows(`update lake.company_lake set template = repeat('0', 64)`)
+  const outdated = await on.treatNow()
+  assert.deepEqual([outdated.statusCode, codeOf(outdated)], [409, 'LAKE_NOT_READY'])
+  await on.rows(`update lake.company_lake set template = $1`, [on.config.aws.templateVersion])
+  await on.rows(`delete from copies.lake_table`)
+  const empty = await on.treatNow()
+  assert.deepEqual([empty.statusCode, codeOf(empty)], [409, 'NOTHING_TO_TREAT'])
+  assert.deepEqual(await on.treatRuns(), [])
+})

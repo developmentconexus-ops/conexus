@@ -1,7 +1,13 @@
-import type { CompanyId, ConnectionId, PersonId, StopLakeCopyRunAnswer } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  ConnectionId,
+  PersonId,
+  StopLakeCopyRunAnswer,
+  TreatmentRunId,
+} from '@conexus/hub-api'
 import { LakeRunId } from '@conexus/hub-api'
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import type { AwsAnswer, Where } from '../../platform/aws.ts'
+import type { AwsAnswer, CopyTasks, Where } from '../../platform/aws.ts'
 import { RunParameter, runParameterName, TaskArn } from '../../platform/aws.ts'
 import { companyScope, lakeOf, openRoundOf } from './lake-close.ts'
 import type { LakeCopyDeps } from './lake-copy.ts'
@@ -17,11 +23,12 @@ export async function silenceWriter(deps: LakeCopyDeps, at: Of, where: Where, ru
   if (deleted.kind !== 'DONE') return awsDown(deps.log, at, 'DeleteParameter', deleted)
 }
 
+/** The round's task stopped, found by its round when its ARN was not kept; null when it has none. */
 export async function requestTaskStop(
-  deps: LakeCopyDeps,
-  at: Of,
+  deps: Readonly<{ tasks: Pick<CopyTasks, 'find' | 'stop'>; log: LakeCopyDeps['log'] }>,
+  at: Pick<Of, 'companyId'> & Partial<Pick<Of, 'connectionId'>>,
   where: Where,
-  run: LakeRunId,
+  run: LakeRunId | TreatmentRunId,
   taskArn: string | null,
 ): Promise<TaskArn | null> {
   const task: AwsAnswer<TaskArn | null> =

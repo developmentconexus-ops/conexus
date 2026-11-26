@@ -16,7 +16,7 @@ export const ClientLake = z.discriminatedUnion('state', [
     bucket: z.string(),
     region: z.string(),
     readyAt: At,
-    /** The lake was made by a recipe other than the one this image publishes. */
+    /** The lake was made by a recipe without the treatment's areas, `tratado` and `negocio`. */
     outdated: z.boolean(),
   }),
   z.object({ state: z.literal('FAILED'), code: z.literal('LAKE_CREATE_FAILED'), at: At }),

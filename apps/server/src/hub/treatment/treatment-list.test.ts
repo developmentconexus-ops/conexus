@@ -55,7 +55,7 @@ test('os modelos da rodada: um por molde, com o SELECT do conector, e cada trata
   await on.approved(venda.id, venda.version)
   const reads = {
     source: on.hub.connectors.copies,
-    templateVersion: on.config.aws.templateVersion,
+    treatable: on.config.aws.treatable,
   }
   const models = await on.hub.test.database.read(on.at, (tx) =>
     treatModelsOf(reads, tx, on.companyId),

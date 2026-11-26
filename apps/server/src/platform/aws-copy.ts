@@ -5,11 +5,18 @@ import {
   RunTaskCommand,
   StopTaskCommand,
 } from '@aws-sdk/client-ecs'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
 import type { PutParameterCommandInput } from '@aws-sdk/client-ssm'
 import { DeleteParameterCommand, PutParameterCommand } from '@aws-sdk/client-ssm'
-import type { LakeRunId } from '@conexus/hub-api'
+import type { LakeRunId, TreatmentRunId } from '@conexus/hub-api'
 import { z } from 'zod'
-import { COPY_CONTAINER, RUN_PARAMETER_PREFIX, RUN_PARAMETER_VARIABLE } from './aws-names.ts'
+import {
+  COPY_CONTAINER,
+  RUN_PARAMETER_PREFIX,
+  RUN_PARAMETER_VARIABLE,
+  stateBucketName,
+  TREAT_OBJECT_VARIABLE,
+} from './aws-names.ts'
 import type { Attempt, AwsAnswer, Session, Where } from './aws-session.ts'
 import { isNamed } from './aws-session.ts'
 import type { AwsConfig } from './config-aws.ts'
@@ -42,11 +49,24 @@ export type CopyTasks = {
       machine: Machine
     },
   ): Promise<AwsAnswer<TaskArn>>
+  /** A treatment round's task: the copy's, with the treatment role and the specification's object. */
+  treat(
+    at: Where,
+    run: {
+      token: string
+      startedBy: TreatmentRunId
+      role: string
+      object: { key: string }
+      machine: Machine
+    },
+  ): Promise<AwsAnswer<TaskArn>>
+  /** A treatment round's specification, written in the region's state bucket under `key`. */
+  putTreat(at: Where, spec: { key: string; spec: string }): Promise<AwsAnswer<void>>
   /** A task AWS does not have, or has stopped, counts as stopped. */
   stop(at: Where, task: TaskArn): Promise<AwsAnswer<void>>
   state(at: Where, task: TaskArn): Promise<AwsAnswer<TaskState>>
   /** The task a round started, found by its `startedBy` when the Hub fell before it kept the ARN (running first, then stopped). */
-  find(at: Where, startedBy: LakeRunId): Promise<AwsAnswer<TaskArn | null>>
+  find(at: Where, startedBy: LakeRunId | TreatmentRunId): Promise<AwsAnswer<TaskArn | null>>
 }
 
 const Started = z.object({
@@ -58,8 +78,13 @@ const Described = z.object({
 })
 const Listed = z.object({ taskArns: z.array(TaskArn).optional() })
 
-/** The `RunTask` request of a round, shared with `scripts/record-aws.ts` so that what is recorded is what is sent. */
-export function runTaskInput(copy: AwsConfig['copy'], run: Parameters<CopyTasks['start']>[1]) {
+type TaskRun = Readonly<{ token: string; startedBy: string; role: string; machine: Machine }>
+
+function taskInput(
+  copy: AwsConfig['copy'],
+  run: TaskRun,
+  variable: { name: string; value: string },
+) {
   return {
     cluster: copy.clusterArn,
     taskDefinition: copy.taskFamily,
@@ -77,25 +102,30 @@ export function runTaskInput(copy: AwsConfig['copy'], run: Parameters<CopyTasks[
     overrides: {
       cpu: String(run.machine.cpu),
       memory: String(run.machine.memory),
-      taskRoleArn: run.writer,
-      containerOverrides: [
-        {
-          name: COPY_CONTAINER,
-          environment: [{ name: RUN_PARAMETER_VARIABLE, value: run.parameter }],
-        },
-      ],
+      taskRoleArn: run.role,
+      containerOverrides: [{ name: COPY_CONTAINER, environment: [variable] }],
     },
   } as const satisfies RunTaskCommandInput
 }
 
-async function runTask(
-  { clients, abortSignal }: Session,
+/** The `RunTask` request of a round, shared with `scripts/record-aws.ts` so that what is recorded is what is sent. */
+export function runTaskInput(copy: AwsConfig['copy'], run: Parameters<CopyTasks['start']>[1]) {
+  const variable = { name: RUN_PARAMETER_VARIABLE, value: run.parameter }
+  return taskInput(copy, { ...run, role: run.writer }, variable)
+}
+
+/** The `RunTask` request of a treatment round: the copy's, with the object's address in place of the parameter. */
+function treatTaskInput(
   copy: AwsConfig['copy'],
-  run: Parameters<CopyTasks['start']>[1],
+  at: Where,
+  run: Parameters<CopyTasks['treat']>[1],
 ) {
-  const read = Started.parse(
-    await clients.ecs.send(new RunTaskCommand(runTaskInput(copy, run)), { abortSignal }),
-  )
+  const value = `s3://${stateBucketName(at.account, at.region)}/${run.object.key}`
+  return taskInput(copy, run, { name: TREAT_OBJECT_VARIABLE, value })
+}
+
+async function runTask({ clients, abortSignal }: Session, input: ReturnType<typeof taskInput>) {
+  const read = Started.parse(await clients.ecs.send(new RunTaskCommand(input), { abortSignal }))
   const task = read.tasks?.[0]
   if (task !== undefined) return { kind: 'STARTED', task: task.taskArn } as const
   return { kind: 'NOT_STARTED', reason: read.failures?.[0]?.reason ?? 'NO_TASK' } as const
@@ -120,7 +150,7 @@ async function taskState(
 async function findTask(
   { clients, abortSignal }: Session,
   copy: AwsConfig['copy'],
-  startedBy: LakeRunId,
+  startedBy: LakeRunId | TreatmentRunId,
 ) {
   for (const desiredStatus of ['RUNNING', 'STOPPED'] as const) {
     const read = Listed.parse(
@@ -168,6 +198,18 @@ async function deleteParameter({ clients, abortSignal }: Session, name: RunParam
   }
 }
 
+async function started(
+  attempt: Attempt,
+  at: Where,
+  input: ReturnType<typeof taskInput>,
+): Promise<AwsAnswer<TaskArn>> {
+  const answer = await attempt('RunTask', at, (session) => runTask(session, input))
+  if (answer.kind !== 'DONE') return answer
+  return answer.value.kind === 'STARTED'
+    ? { kind: 'DONE', value: answer.value.task }
+    : { kind: 'REFUSED', code: answer.value.reason }
+}
+
 /** The copy's tasks and round parameters over one `Attempt`, which owns the sessions (C56). */
 export function copyTasks(attempt: Attempt, copy: AwsConfig['copy']): CopyTasks {
   return {
@@ -177,13 +219,14 @@ export function copyTasks(attempt: Attempt, copy: AwsConfig['copy']): CopyTasks 
       }),
     deleteRun: (at, name) =>
       attempt('DeleteParameter', at, (session) => deleteParameter(session, name)),
-    start: async (at, run) => {
-      const answer = await attempt('RunTask', at, (session) => runTask(session, copy, run))
-      if (answer.kind !== 'DONE') return answer
-      return answer.value.kind === 'STARTED'
-        ? { kind: 'DONE', value: answer.value.task }
-        : { kind: 'REFUSED', code: answer.value.reason }
-    },
+    start: (at, run) => started(attempt, at, runTaskInput(copy, run)),
+    treat: (at, run) => started(attempt, at, treatTaskInput(copy, at, run)),
+    putTreat: (at, { key, spec }) =>
+      attempt('PutObject', at, async ({ clients, abortSignal }) => {
+        const Bucket = stateBucketName(at.account, at.region)
+        const object = { Bucket, Key: key, Body: spec, ContentType: 'application/json' }
+        await clients.state.send(new PutObjectCommand(object), { abortSignal })
+      }),
     stop: (at, task) => attempt('StopTask', at, (session) => stopTask(session, copy, task)),
     state: (at, task) => attempt('DescribeTasks', at, (session) => taskState(session, copy, task)),
     find: (at, startedBy) =>

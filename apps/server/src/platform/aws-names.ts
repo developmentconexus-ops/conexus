@@ -25,6 +25,10 @@ export const RUN_PARAMETER_PREFIX = '/conexus/copia/'
 export const COPY_CONTAINER = 'copia'
 /** The variable that carries the round's parameter name to the task (the parameter holds the secret, S31). */
 export const RUN_PARAMETER_VARIABLE = 'CONEXUS_RUN_PARAMETER'
+/** The variable that carries a treatment round's specification object to the task. */
+export const TREAT_OBJECT_VARIABLE = 'CONEXUS_TREAT_OBJECT'
+/** The root of the treatment rounds' specifications in the state bucket (`infra/aws/lib/names.ts` `TREAT_SPEC_ROOT`). */
+const TREAT_SPEC_ROOT = 'tratamento'
 
 const WRITER_SUFFIX = '-escritor'
 const TREATER_SUFFIX = '-tratador'
@@ -64,6 +68,11 @@ export function templateUrl(bucket: string, region: string, version: string): st
 /** The bucket of the copies' stopping points, as `infra/aws/lib/names.ts` `stateBucket` names it. */
 export function stateBucketName(account: string, region: string): string {
   return `${STATE_BUCKET_PREFIX}${account}-${region}`
+}
+
+/** A treatment round's specification, outside the `<company>/` prefix the writer writes and deletes (decision 4.2, fix 4). */
+export function treatSpecKey(company: string, run: string, attempt: number): string {
+  return `${TREAT_SPEC_ROOT}/${company}/${run}-${attempt}.json`
 }
 
 /** The connection's state file, where the task's Meltano keeps it: `<company>/<connection>/<state id>/state.json`. */

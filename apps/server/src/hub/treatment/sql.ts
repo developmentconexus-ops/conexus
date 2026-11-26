@@ -8,7 +8,7 @@ import {
 } from './trino-parser.mjs'
 
 export type ModelSql =
-  | Readonly<{ kind: 'QUERY'; inputs: TableRef[] }>
+  | Readonly<{ kind: 'QUERY'; sql: string; inputs: TableRef[] }>
   | Readonly<{
       kind: 'REFUSED'
       code:
@@ -37,6 +37,33 @@ function tableRefOf(written: string): TableRef | undefined {
   return TableRef.safeParse({ layer, table }).data
 }
 
+/** dbt-athena writes the SQL last, after `as`: a final `;` would end the statement it builds. */
+function withoutEnd(sql: string, statement: Readonly<{ text: string; endIndex: number }>) {
+  if (!statement.text.endsWith(';')) return sql
+  return sql.slice(0, statement.endIndex) + sql.slice(statement.endIndex + 1)
+}
+
+/** The tables the query reads, by area and name, or the first one written without its area. */
+function inputsOf(sql: string): ReadonlyMap<string, TableRef> | string {
+  // `getAllEntities` parses again without the library's error strategy and prints to the console on
+  // a valid `join ... on true`, so the same collector walks the tree `parse` builds.
+  const collector = new TrinoEntityCollector(sql, trino.getAllTokens(sql))
+  trino.listen(collector, trino.parse(sql))
+  const inputs = new Map<string, TableRef>()
+  for (const entity of collector.getEntities()) {
+    if (entity.entityContextType !== EntityContextType.TABLE) continue
+    // The collector binds a CTE by its unquoted text, so a CTE named "raw.x" would pass the real
+    // table raw.x off as itself.
+    const dottedName = ONE_QUOTED_NAME.test(entity.text) && entity.text.includes('.')
+    const declared = 'declareType' in entity ? entity.declareType : undefined
+    if (!dottedName && declared === TableDeclareType.EXPRESSION) continue
+    const input = tableRefOf(entity.text)
+    if (input === undefined) return entity.text
+    inputs.set(`${input.layer}.${input.table}`, input)
+  }
+  return inputs
+}
+
 export function readModelSql(sql: string): ModelSql {
   if (JINJA.test(sql)) return refused('TREATMENT_SQL_TEMPLATE')
   const [error] = trino.validate(sql)
@@ -48,23 +75,12 @@ export function readModelSql(sql: string): ModelSql {
   if (statement === undefined || second !== undefined || !A_QUERY.test(statement.text)) {
     return refused('TREATMENT_SQL_NOT_A_QUERY')
   }
-  // `getAllEntities` parses again without the library's error strategy and prints to the console on
-  // a valid `join ... on true`, so the same collector walks the tree `parse` builds.
-  const collector = new TrinoEntityCollector(sql, trino.getAllTokens(sql))
-  trino.listen(collector, trino.parse(sql))
-  const inputs = new Map<string, TableRef>()
-  for (const entity of collector.getEntities()) {
-    if (entity.entityContextType !== EntityContextType.TABLE) continue
-    // The collector binds a CTE by its unquoted text, so a CTE named "raw.x" would pass the real
-    // table raw.x off as itself.
-    const dottedName = ONE_QUOTED_NAME.test(entity.text) && entity.text.includes('.')
-    if (!dottedName && entity.declareType === TableDeclareType.EXPRESSION) continue
-    const input = tableRefOf(entity.text)
-    if (input === undefined) {
-      return refused('TREATMENT_INPUT_UNQUALIFIED', { table: entity.text })
-    }
-    inputs.set(`${input.layer}.${input.table}`, input)
-  }
+  const inputs = inputsOf(sql)
+  if (typeof inputs === 'string') return refused('TREATMENT_INPUT_UNQUALIFIED', { table: inputs })
   const sorted = [...inputs].sort(([a], [b]) => a.localeCompare(b))
-  return { kind: 'QUERY', inputs: sorted.map(([, input]) => input) }
+  return {
+    kind: 'QUERY',
+    sql: withoutEnd(sql, statement),
+    inputs: sorted.map(([, input]) => input),
+  }
 }

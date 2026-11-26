@@ -1,16 +1,20 @@
 import { writeFileSync } from 'node:fs'
-import { CompanyId, LakeTableName } from '@conexus/hub-api'
+import { CompanyId, LakeTableName, TreatmentRunId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { AwsRegion } from '../../platform/config-aws.ts'
 import { LakeArea } from '../../platform/lake-areas.ts'
 import { taskOutcome } from '../../platform/task-outcome.ts'
 
-const TreatmentRunId = z.uuid().brand('TreatmentRunId')
-
-const ModelName = z
+export const ModelName = z
   .string()
   .regex(/^(tratado|negocio)__[a-z][a-z0-9_]{0,59}$/)
   .brand('ModelName')
+export type ModelName = z.infer<typeof ModelName>
+
+/** The dbt model of a table: the name the task builds and `model_run` records. */
+export function modelNameOf(layer: string, table: string) {
+  return `${layer}__${table}`
+}
 
 /** A person's SQL that dbt would not read as a template. A regex, so the JSON Schema carries it and the task refuses it too. */
 const NoTemplate = /^(?![\s\S]*\{[{%#])[\s\S]+$/
