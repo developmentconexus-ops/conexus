@@ -173,6 +173,21 @@ export const AI_CARDS: readonly ShowcaseEntry[] = [
         ),
       ],
       [
+        'ApprovalState.OPEN com o sim mais largo',
+        () => (
+          <AnApproval
+            state={{
+              ...APPROVAL_OPEN,
+              wider: { label: 'Aprovar para a empresa', onClick: noop },
+            }}
+          />
+        ),
+      ],
+      [
+        'ApprovalState.OPEN sem o sim mais largo',
+        () => <AnApproval state={{ ...APPROVAL_OPEN, wider: 'NOT_OFFERED' }} />,
+      ],
+      [
         'ApprovalState.OPEN com escrita aberta',
         () => (
           <AnApproval

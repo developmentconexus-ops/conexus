@@ -60,6 +60,8 @@ type AgentTools = { toolDescription: (slug: string) => string | undefined }
 /** The company whose connections the notebook's card asks about: whether the person manages them. */
 type Notebook = { notebook: { companyId: CompanyId } }
 
+type Network = { network: { companyId: CompanyId } }
+
 /** The cards the Assistant draws from what its tools proposed, each with no button once `closed`. */
 type AssistantProposals = {
   app: (proposal: { proposed: ProposedApp; toolCallId: string; closed: boolean }) => ReactNode
@@ -76,13 +78,15 @@ export type RunChange = 'VERSION_SAVED' | 'PREVIEW_READY'
  */
 export type Room =
   | (RoomBase &
-      Notebook & {
+      Notebook &
+      Network & {
         kind: 'APP_BUILDER'
         changed: (change: RunChange) => void
       })
-  | (RoomBase & Opened & Notebook & { kind: 'ASSISTANT'; proposals: AssistantProposals })
+  | (RoomBase & Opened & Notebook & Network & { kind: 'ASSISTANT'; proposals: AssistantProposals })
   | (RoomBase &
-      AgentTools & {
+      AgentTools &
+      Network & {
         kind: 'AGENT_BUILDER'
         /** Shows the draft `agent_draft` or `agent_set` saved beside the chat: by a call of the answer, or by a tap of its line. */
         openAgent: (agentId: AgentId, by: 'CALL' | 'TAP') => void
@@ -91,7 +95,8 @@ export type Room =
       })
   | (RoomBase &
       Opened &
-      AgentTools & {
+      AgentTools &
+      Network & {
         kind: 'SAVED_AGENT'
         /** The write a tool `tool_<slug>` is, with its connection, for the card that asks about it. */
         writeOf: (toolName: string) => WriteTool | undefined
@@ -141,6 +146,7 @@ export function appBuilderRoom(
     overrides: {},
     failures: {},
     notebook: { companyId },
+    network: { companyId },
     changed,
   }
 }
@@ -148,7 +154,7 @@ export function appBuilderRoom(
 export function assistantRoom(
   held: Pick<
     RoomOf<'ASSISTANT'>,
-    'connectors' | 'notebook' | 'openFile' | 'openedPath' | 'proposals'
+    'connectors' | 'notebook' | 'network' | 'openFile' | 'openedPath' | 'proposals'
   >,
 ): RoomOf<'ASSISTANT'> {
   return {
@@ -162,7 +168,7 @@ export function assistantRoom(
 export function agentBuilderRoom(
   held: Pick<
     RoomOf<'AGENT_BUILDER'>,
-    'connectors' | 'toolDescription' | 'openAgent' | 'openedAgent'
+    'connectors' | 'network' | 'toolDescription' | 'openAgent' | 'openedAgent'
   >,
 ): RoomOf<'AGENT_BUILDER'> {
   return {
@@ -178,6 +184,7 @@ export function savedAgentRoom(
   held: Pick<
     RoomOf<'SAVED_AGENT'>,
     | 'connectors'
+    | 'network'
     | 'toolDescription'
     | 'writeOf'
     | 'connectorOf'

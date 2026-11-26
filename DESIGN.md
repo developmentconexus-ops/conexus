@@ -710,7 +710,9 @@ which shadcn file it was copied from; the front matter holds their values. Their
   it opens on what the tool received and returned (V39).
 - **AI pieces.** `apps/web/src/ui/ai/` holds what the agent did and asks, on `Trace` and shadcn's
   AI recipes: the tool line and group, the reasoning line, the sign of who answers, the working line
-  (also the waiting line at the top of an open card on a phone), the plan, the tasks, the approval,
+  (also the waiting line at the top of an open card on a phone), the plan, the tasks, the approval
+  (with one wider yes beside the yes, its answers then start the line and on a phone stack with the
+  yes on top),
   the questions and the sources. Each takes ready data and its words as props; the conversation
   turns events into them.
 - **Empty, loading, error.** Empty is one sentence row or a centred column of 448 at most; loading is
@@ -725,7 +727,8 @@ which shadcn file it was copied from; the front matter holds their values. Their
 - **Search field.** An input group with a magnifier and a `search` input, `spacing.control` tall;
   the browser's clear button is not shown.
 - **Page header.** The page title with its actions at the end; the actions wrap under it when the
-  box is narrow, and an intro under the title lines them up with the top.
+  box is narrow, and an intro under the title lines them up with the top. A page of Configurações
+  is headed by `SettingsPageTitle` (`ui/list.tsx`), the page title in `display-narrow`.
 - **Card, Project card.** Card radius, `raised`, shadow `1`, no border; the Início shows the
   Projetos as block rows instead. **Settings section:** title and a sentence on the left from `md`, controls on the right,
   parts apart by a hairline (V19).

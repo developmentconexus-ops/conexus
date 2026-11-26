@@ -22,17 +22,17 @@ const MORE_THAN_A_HOST = /[\s/\\?#@:%]/
 
 function domainOf(typed: string): string | null {
   if (MORE_THAN_A_HOST.test(typed)) return null
-  const host = URL.parse(`https://${typed}`)?.hostname
-  if (host === undefined) return null
-  const starred = host.startsWith('*.')
-  const name = starred ? host.slice(2) : host
+  const starred = typed.startsWith('*.')
+  // The star never reaches the URL parser: a browser writes it as `%2A` where Node keeps it.
+  const name = URL.parse(`https://${starred ? typed.slice(2) : typed}`)?.hostname
+  if (name === undefined) return null
   const listed = parse(name, { allowPrivateDomains: true })
   // `tldts` names no suffix for an IP address or for a text that is no hostname.
   if (listed.publicSuffix === null || !name.includes('.') || name.endsWith('.')) return null
   if (/(^|\.)(e2b\.(app|dev)|localhost)$/.test(name)) return null
   const starOverPublicSuffix = starred && listed.domain === null
   if (starOverPublicSuffix) return null
-  return host
+  return starred ? `*.${name}` : name
 }
 
 /** A domain the machines may reach: lowercase, punycode, an optional leading `*.` whose base is not a public suffix. */

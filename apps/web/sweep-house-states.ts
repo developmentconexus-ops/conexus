@@ -6,6 +6,7 @@ import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
+import { networkFilled } from './sweep-network.ts'
 import { central, MEMBER, OWNER, startsOn } from './sweep-replies.ts'
 
 const HOME = `/companies/${COMPANY.id}`
@@ -116,6 +117,24 @@ export const HOUSE_STATES: State[] = [
     path: `${SETTINGS}/company-memory`,
     replies: MEMBER,
     settle: (p) => waitFor(p, 'Só o dono ou um administrador muda a memória da empresa.'),
+  },
+  {
+    name: 'Configurações, internet',
+    path: `${SETTINGS}/network`,
+    replies: OWNER,
+    settle: (p) => waitFor(p, 'Nenhum domínio liberado.'),
+  },
+  {
+    name: 'Configurações, internet toda ligada, com domínios',
+    path: `${SETTINGS}/network`,
+    replies: { ...OWNER, ...networkFilled(COMPANY.id) },
+    settle: (p) => waitFor(p, 'esta lista não limita as máquinas'),
+  },
+  {
+    name: 'Configurações, internet sem permissão',
+    path: `${SETTINGS}/network`,
+    replies: { ...MEMBER, ...networkFilled(COMPANY.id) },
+    settle: (p) => waitFor(p, 'Só o dono liga a internet toda.'),
   },
   {
     name: 'Configurações, geral',
