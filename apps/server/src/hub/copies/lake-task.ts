@@ -47,6 +47,7 @@ export const CopyTaskResult = z.object({
       table: LakeTableName.nullable(),
       system: SystemMessage.nullable(),
     }),
+    z.object({ kind: z.literal('INTERRUPTED') }),
   ]),
   tables: z.array(
     z.object({

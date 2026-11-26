@@ -1,9 +1,9 @@
 # Publicar pelo merge da nota
 
-Trilho: desenho
+Trilho: assistente
 
-Cartão curto, fora da ordem do roteiro. Ocupa a vaga do desenho só porque nenhuma etapa de desenho
-está em construção; não muda tela, e a marca existe para a verificação `second-card`
+Cartão curto, fora da ordem do roteiro. Ocupa a vaga do Assistente só porque nenhuma etapa do
+Assistente está em construção; não muda tela, e a marca existe para a verificação `second-card`
 (`scripts/cli.ts`, `trackOf`) não pô-lo ao lado do Registro, na vaga de Dados. A palavra do fundador,
 em 2026-11-22, ao estudo "publicar a release pelo merge de uma nota": "`A1 B1 C1 D1`". O estudo fica
 fora do repositório (delivery L21); a sua tabela de referência está abaixo, com a unidade de cada

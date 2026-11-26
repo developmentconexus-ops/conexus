@@ -8,9 +8,10 @@ repositório (delivery L21), na pasta `redesenho-r1`; a sua tabela de referênci
 unidade de cada linha. Lido no `main` em `b2db2c3e` (v0.24.132): `@base-ui/react` 1.9.0,
 `tailwindcss` 4.3.3, `@tanstack/react-router` 1.170.44. Referências: Mastra playground-ui
 (`mastra@252efe1`), Dify dify-ui (`dify@fce5d30`), shadcn base (`ui@0e5b2e6`), Craft Agents
-(`craft-agents-oss@ce04aa3`). A vaga do trilho `desenho` ainda é do cartão
-[publicar pelo merge da nota](publicar-pelo-merge-da-nota.md): este cartão espera num pull request de
-rascunho até aquele fechar (delivery L5).
+(`craft-agents-oss@ce04aa3`). A vaga do trilho `desenho` ficou livre em 2026-11-26, quando o cartão
+"Publicar pelo merge da nota" passou à vaga do Assistente
+(https://github.com/developmentconexus-ops/conexus/pull/1469): este cartão não espera mais por ele
+(delivery L5).
 
 ## A página do fundador
 
@@ -106,7 +107,7 @@ Dois pull requests (delivery L9): G1 e G2.
 | 7 | U2 | Toda mudança de caminho, pela barra ou depois de uma ação, esmaece só a folha, em 160 ms; a barra não pisca. Com uma gaveta ou uma janela aberta, a troca é de uma vez. A carga da página e uma mudança só da busca do endereço não esmaecem | `motion-screen.layout.test.ts`, "a troca de tela esmaece a folha", "a troca depois de uma ação esmaece a folha", "com a gaveta aberta a troca é de uma vez", "com a janela aberta a troca é de uma vez" e as três recusas (carga, letra na busca, aba da barra) | should |
 | 8 | U3 | O Hub pinta, nos dois temas, os valores da tabela de cores da U3 ("Os contratos que a unidade cria"); `DESIGN.md` e `tokens.css` dizem o mesmo valor por nome | `apps/web/src/brand/tokens.test.ts` (existente) e `apps/web/tokens.layout.test.ts`, "o tema" | must |
 | 9 | U3 | Todo par de texto e fundo dos tokens passa 4,5:1 nos dois temas, a letra de estado (`success-text`, `warning-text`, `danger-text`) incluída, sobre a folha, o azulejo e o que flutua; o ponto e o ícone de estado (`success`, `warning`, `danger`) passam 3:1 sobre a folha e sobre o que flutua; recusa: um par abaixo falha nomeando o par e o tema | `apps/web/contrast.layout.test.ts`, "cada par se lê nos dois temas" | must |
-| 10 | U3 | A moldura e a barra são grafite nos dois temas; a folha tem 8 px de margem e canto de 16 px a partir de 768 px; a 390 px não há rolagem lateral; a rolagem de uma conversa acaba na borda da folha, que é a borda nova dela (2026-11-26, "Vale as cinco") | `apps/web/frame-inset.layout.test.ts`, "a folha encaixada na moldura" | must |
+| 10 | U3 | A moldura e a barra são grafite nos dois temas; a folha tem 8 px de margem e canto de 16 px a partir de 768 px; a 390 px não há rolagem lateral; a rolagem de uma conversa acaba na borda da folha, que é a borda nova dela (2026-11-26, "Vale as cinco") | `apps/web/frame-inset.layout.test.ts`, "a folha encaixada na moldura"; `apps/web/axis.layout.test.ts`, "na conversa em andamento a rolagem vai à borda" | must |
 | 11 | U3 | O botão principal, a chave e a caixa ligadas são ipê com a tinta escura; nenhum título, hover ou ação de repouso usa o ipê | `apps/web/pieces.layout.test.ts`, caso novo "o ipê acende só o que está ligado" | must |
 | 12 | U3 | O foco do teclado é visível em toda peça da vitrine nos dois temas | `apps/web/focus.layout.test.ts` (existente, com a cor nova) | must |
 | 13 | U4 | Salvar o padrão em Configurações › Modelos mostra "Padrão salvo" num aviso anunciado pela região do Toast do Base UI (`role="region"`, `aria-live="polite"`), sem `role="status"` por dentro, que um leitor de tela poderia ler duas vezes (2026-11-26, "Vale as cinco"), só depois da resposta do servidor; um erro do servidor não mostra aviso e continua no campo | `apps/web/notice.layout.test.ts`, "salvar o padrão avisa" e "o erro fica no campo" | must |
@@ -216,7 +217,7 @@ entre módulos.
 | `apps/web/src/ui/` (`sidebar`, `trace`, `button`, `table`, `attachment`, `switch`, `checkbox`) | muda | as telas |
 | `DESIGN.md` "Motion" | muda | o Impeccable, a U2 e a U3 |
 | `apps/web/motion.layout.test.ts` | cria | `apps/web/package.json` `test:browser` |
-| `apps/web/package.json` | muda: `test:browser` ganha o teste; `lint:design` desce para `--max-warnings 303` | CI |
+| `apps/web/package.json` | muda: `test:browser` ganha o teste; `lint:design` desce o `--max-warnings` (critério 16) | CI |
 
 ### Os contratos que a unidade cria
 
@@ -328,7 +329,11 @@ Uma peça copiada do Base UI ou do shadcn escreve a duração por estilo inline:
 | `apps/web/src/main.tsx`, `apps/web/src/ui/pieces-fixture.tsx` | muda (`defaultViewTransition`) | o Hub e a vitrine |
 | `apps/web/src/brand/motion.css` | muda (a regra `::view-transition` da folha) | · |
 | `apps/web/src/ui/sidebar.tsx:198` (`sidebar-inset`) | muda só se o seletor da regra pedir uma classe | `ui/frame.tsx` |
-| `apps/web/motion.layout.test.ts` | muda: os casos dos critérios 4 a 7 | `test:browser` |
+| `apps/web/motion.layout.test.ts` | muda: o caso do critério 4 | `test:browser` |
+| `apps/web/motion-entries.layout.test.ts` | cria: os casos dos critérios 5 e 6 | `test:browser` |
+| `apps/web/motion-screen.layout.test.ts` | cria: os casos do critério 7 | `test:browser` |
+| `apps/web/motion-harness.ts` | cria: o que os três arquivos de movimento dividem | os três testes |
+| `apps/web/first-start.ts` | cria: o começo pela primeira entrada | `home.layout.test.ts`, `motion-screen.layout.test.ts` |
 
 ### Os contratos que a unidade cria
 
@@ -405,7 +410,7 @@ guia como o #1428 os deixou; `docs/reference/impeccable.md` e `PRODUCT.md` só p
 | `apps/web/src/ui/` (as peças da linha da matriz) | muda | as telas |
 | `apps/web/contrast.layout.test.ts` | cria | `test:browser` |
 | `apps/web/package.json` | muda: `test:browser` ganha o teste | CI |
-| `apps/web/src/brand/tokens.test.ts`, `apps/web/tokens.layout.test.ts`, `frame.layout.test.ts`, `pieces.layout.test.ts`, `focus.layout.test.ts` | muda: os valores e os casos dos critérios 8, 10, 11 e 12 | `test:browser`, `test:unit` |
+| `apps/web/src/brand/tokens.test.ts`, `apps/web/tokens.layout.test.ts`, `frame.layout.test.ts`, `pieces.layout.test.ts`, `focus.layout.test.ts` | muda: os valores e os casos dos critérios 8, 11 e 12 | `test:browser`, `test:unit` |
 
 ### Os contratos que a unidade cria
 
@@ -467,7 +472,8 @@ não é letra (traço, aro e ícone, 3:1); `mark` (2,97) é a marca.
    - **Testes:** `tokens.test.ts`, `tokens.layout.test.ts` "o tema" com os valores novos.
 3. **A moldura e a folha.** Critérios: 10.
    - **Referência a seguir:** SH-ui `sidebar.tsx:224-235` (a variante `inset`: margem e raio na folha).
-   - **Testes:** `frame.layout.test.ts`, "a folha encaixada na moldura".
+   - **Testes:** `frame-inset.layout.test.ts`, "a folha encaixada na moldura";
+     `axis.layout.test.ts`, "na conversa em andamento a rolagem vai à borda".
 4. **O item atual da barra.** Critérios: 17.
    - **O que sai:** o tique de 2 px (`data-[status=active]:before:*`, com `before:bg-accent`) de
      `ui/sidebar.tsx:287` e de `ui/sidebar-rail-button.tsx:30`, e a frase do tique no `DESIGN.md`
@@ -475,7 +481,7 @@ não é letra (traço, aro e ícone, 3:1); `mark` (2,97) é a marca.
    - **O que entra:** o item atual com o fundo mais claro (a moldura com 14% de branco, #333333 /
      #2b2b2b) e o ícone em ipê (`--color-accent-to`); o texto fica `text`. Regras: V5, V35 (o
      `aria-current="page"` fica: o estado não depende só da cor).
-   - **Testes:** `frame.layout.test.ts`, "o item atual acende o ícone".
+   - **Testes:** `frame-inset.layout.test.ts`, "o item atual acende o ícone".
 5. **A sombra no lugar do filete e o ipê aceso.** Critérios: 11.
    - **O que sai:** `border border-line` das peças brancas; `bg-ink` do botão principal, da chave e da
      caixa ligadas.

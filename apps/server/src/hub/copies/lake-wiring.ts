@@ -33,6 +33,7 @@ export function lakeCopiesOf(deps: {
   const { database, log, source } = deps
   const lakeRuns = createLakeRuns({
     ...{ database, log, source, tasks: deps.copyTasks, copy: deps.config.aws.copy },
+    tables: deps.lakeTables,
     ...{ queue: deps.copyQueue, companies: () => companiesWithConnections(database) },
   })
   const lakeCopies = createLakeCopies({
