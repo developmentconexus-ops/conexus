@@ -13,6 +13,7 @@ import { createAws, LakeId } from '../../platform/aws.ts'
 import { testAws } from '../../platform/test-aws.ts'
 import { awsServer } from '../../platform/test-aws-server.ts'
 import { silent } from '../../platform/test-database.ts'
+import type { Connector } from '../connectors/public.ts'
 import { linkSankhya } from '../connectors/test-connections.ts'
 import { sankhyaFake } from '../connectors/test-copy-source.ts'
 import type { Person } from '../identity/test-hub.ts'
@@ -43,6 +44,7 @@ type Options = {
   noLake?: boolean
   /** The clock a disconnection waits for its task's stop on. */
   stopWait?: StartClock
+  catalog?: readonly Connector[]
 }
 
 type Double = Awaited<ReturnType<typeof awsServer>>
@@ -58,6 +60,7 @@ function hubOf(t: TestContext, doubles: { aws: Double; origin: string }, options
     }),
     {
       ...(now === undefined ? {} : { now: () => now }),
+      ...(options.catalog === undefined ? {} : { catalog: options.catalog }),
       outside: (config, log) => {
         const real = createAws({ config, log })
         return {

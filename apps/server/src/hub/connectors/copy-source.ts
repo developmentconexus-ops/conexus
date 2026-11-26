@@ -1,15 +1,18 @@
 import type { AccountRef, Connector, TableDeclaration, TableMode } from '@conexus/connectors'
 import {
   discoverTables,
+  LakeTableName as KitLakeTableName,
   sourceOf,
   startDateLimits,
   suggestedLakeName,
   TableName,
   tablePrefixOf,
+  treatedSelect,
 } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, ConnectorId, LakeUnavailable } from '@conexus/hub-api'
 import { LAKE_TABLE_NAME_PATTERN } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
+import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { OpenedConnection } from './executor.ts'
 import { valuesOf } from './executor.ts'
@@ -70,7 +73,19 @@ export type CopyConnection =
     }>
   | Readonly<{ kind: 'GONE' }>
 
+type TreatedTemplate = Readonly<{
+  description: string
+  columns: readonly Readonly<{ copied: string; name: string }>[]
+  select(lakeName: string): string
+}>
+
 export type CopySource = {
+  treatedLookup(
+    tx: ReadTx,
+    companyId: CompanyId,
+  ): Promise<
+    (table: Readonly<{ connectionId: ConnectionId; source: string }>) => TreatedTemplate | null
+  >
   connection(at: Where): Promise<CopyConnection>
   open(at: Where): Promise<CopyOpened>
   columns(at: Where): Promise<CopyColumns>
@@ -132,6 +147,29 @@ function nameIsValid(connector: ConnectorId, name: string): boolean {
   )
 }
 
+async function treatedLookupIn(
+  deps: Deps,
+  tx: ReadTx,
+  companyId: CompanyId,
+): ReturnType<CopySource['treatedLookup']> {
+  const rows = await tx
+    .select({ id: connection.id, connector: connection.connectorId })
+    .from(connection)
+    .where(eq(connection.companyId, companyId))
+  const connectors = new Map(rows.map((row) => [row.id, row.connector]))
+  return ({ connectionId, source }) => {
+    const id = connectors.get(connectionId)
+    const declared = id === undefined ? [] : (connectorIn(deps, id)?.tables?.declared ?? [])
+    const treated = declared.find((each) => sourceOf(each) === source)?.treated
+    if (treated === undefined) return null
+    return {
+      description: treated.description,
+      columns: treated.columns.map(({ column, as }) => ({ copied: column, name: as })),
+      select: (lakeName) => treatedSelect(KitLakeTableName.parse(lakeName), treated),
+    }
+  }
+}
+
 /**
  * The connection as the lake copy reads it (decision 0056: this subject alone opens a seal and
  * imports the kit), in a company scope with no person. The dictionary is the kit's one discovery
@@ -148,6 +186,7 @@ export function createCopySource(deps: Deps): CopySource {
     }
   }
   return {
+    treatedLookup: (tx, companyId) => treatedLookupIn(deps, tx, companyId),
     async connection(at) {
       const scope = { kind: 'COMPANY', companyId: at.companyId, personId: null } as const
       const [row] = await deps.database.read(scope, (tx) =>

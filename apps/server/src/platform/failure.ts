@@ -3,6 +3,7 @@ import type {
   MigrationCause,
   ProblemAgents,
   ProblemField,
+  ProblemPosition,
   ProblemReason,
 } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
@@ -24,6 +25,8 @@ export type Named = Readonly<{
   operation?: string
   reason?: ProblemReason
   agents?: ProblemAgents
+  table?: string
+  position?: ProblemPosition
 }>
 
 export class Failure extends Error {

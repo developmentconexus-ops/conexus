@@ -15,6 +15,7 @@ import { PEOPLE_FAILURES } from './people-failures.ts'
 import { PROJECT_FAILURES } from './project-failures.ts'
 import { REQUEST_FAILURES } from './request-failures.ts'
 import { SOURCE_FAILURES } from './source-failures.ts'
+import { ProblemPosition, TREATMENT_FAILURES } from './treatment-failures.ts'
 
 export const FAILURES = {
   INTERNAL_UNEXPECTED: {
@@ -240,6 +241,7 @@ export const FAILURES = {
   ...MODEL_ACCOUNT_FAILURES,
   ...CONNECTOR_FAILURES,
   ...LAKE_COPY_FAILURES,
+  ...TREATMENT_FAILURES,
   ...ASSISTANT_FAILURES,
   ...AGENT_FAILURES,
   ...REQUEST_FAILURES,
@@ -264,6 +266,9 @@ export const Problem = z.object({
   field: ProblemField.optional(),
   reason: ProblemReason.optional(),
   agents: ProblemAgents.optional(),
+  /** The table a treatment refusal names, as `area.table`; `TREATMENT_INPUT_UNQUALIFIED` gives it as the SQL writes it. */
+  table: z.string().optional(),
+  position: ProblemPosition.optional(),
 })
 export type Problem = z.infer<typeof Problem>
 

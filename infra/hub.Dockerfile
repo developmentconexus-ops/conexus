@@ -63,6 +63,7 @@ COPY --from=build /app/apps/web/dist apps/web/dist
 COPY --from=cliproxy /opt/cliproxy /opt/cliproxy
 COPY --from=build /app/apps/server/src/hub/identity/invitation-render.mjs apps/server/src/hub/identity/invitation-render.mjs
 COPY --from=build /app/apps/server/src/hub/notifications/notification-render.mjs apps/server/src/hub/notifications/notification-render.mjs
+COPY --from=build /app/apps/server/src/hub/treatment/trino-parser.mjs apps/server/src/hub/treatment/trino-parser.mjs
 USER node
 EXPOSE 8080
 # 4096 MiB of heap: half the 8 GB host, beside the kernel, Docker, cloudflared and CLIProxyAPI. V8's

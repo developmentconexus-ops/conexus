@@ -60,6 +60,8 @@ export const CompanyMay = z.object({
   manageNetwork: z.boolean(),
   openAllNetwork: z.boolean(),
   openConversationNetwork: z.boolean(),
+  proposeTreatment: z.boolean(),
+  approveTreatment: z.boolean(),
   manageRoles: z.boolean(),
   readDataReads: z.boolean(),
   viewAppData: z.boolean(),

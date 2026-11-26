@@ -6,7 +6,7 @@
   "scripts": {
     "prestart": "npm run build",
     "start": "node src/main.ts",
-    "build": "esbuild src/hub/identity/invitation-email.tsx --bundle --platform=node --format=esm --minify --define:process.env.NODE_ENV='\"production\"' --jsx=automatic --alias:react=./node_modules/react --alias:react-dom=./node_modules/react-dom --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=src/hub/identity/invitation-render.mjs && esbuild src/hub/notifications/automation-email.tsx --bundle --platform=node --format=esm --minify --define:process.env.NODE_ENV='\"production\"' --jsx=automatic --alias:react=./node_modules/react --alias:react-dom=./node_modules/react-dom --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=src/hub/notifications/notification-render.mjs",
+    "build": "esbuild src/hub/identity/invitation-email.tsx --bundle --platform=node --format=esm --minify --define:process.env.NODE_ENV='\"production\"' --jsx=automatic --alias:react=./node_modules/react --alias:react-dom=./node_modules/react-dom --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=src/hub/identity/invitation-render.mjs && esbuild src/hub/notifications/automation-email.tsx --bundle --platform=node --format=esm --minify --define:process.env.NODE_ENV='\"production\"' --jsx=automatic --alias:react=./node_modules/react --alias:react-dom=./node_modules/react-dom --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=src/hub/notifications/notification-render.mjs && esbuild src/hub/treatment/trino-entry.js --bundle --platform=node --format=esm --outfile=src/hub/treatment/trino-parser.mjs",
     "pretest": "npm run build",
     "generate": "drizzle-kit generate",
     "typecheck": "tsc -p tsconfig.json",
@@ -56,6 +56,7 @@
     "@react-email/render": "2.1.0",
     "@types/pg": "8.23.1",
     "drizzle-kit": "1.0.0-rc.4",
+    "dt-sql-parser": "4.6.1",
     "esbuild": "0.28.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",

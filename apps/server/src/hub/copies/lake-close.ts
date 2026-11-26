@@ -66,18 +66,20 @@ const LakeRow = z.object({
   state: z.string(),
   account: AwsAccount,
   region: AwsRegion,
+  template: z.string(),
 })
 
 /** The company's lake as the company's login reads it (decision H): where to reach AWS, and whether it is ready. */
 export async function lakeOf(tx: ReadTx, companyId: CompanyId) {
   const found = await tx.execute(
-    sql`select lake_id, state, account, region from lake.company_lake where company_id = ${companyId}`,
+    sql`select lake_id, state, account, region, template from lake.company_lake where company_id = ${companyId}`,
   )
   const [row] = found.rows
   if (row === undefined) return null
   const lake = LakeRow.parse(row)
   const where: Where = { company: companyId, account: lake.account, region: lake.region }
-  return { where, lakeId: lake.lake_id, ready: lake.state === 'ready' }
+  const ready = lake.state === 'ready'
+  return { where, lakeId: lake.lake_id, ready, template: lake.template }
 }
 
 /** The connection's open round, which a person's stop and the leave end. */

@@ -15,13 +15,14 @@ const ModelName = z
 /** A person's SQL that dbt would not read as a template. A regex, so the JSON Schema carries it and the task refuses it too. */
 const NoTemplate = /^(?![\s\S]*\{[{%#])[\s\S]+$/
 
-const TreatModel = z.object({
+export const TreatModel = z.object({
   name: ModelName,
   layer: LakeArea.extract(['tratado', 'negocio']),
   table: LakeTableName,
   sql: z.string().max(20_000).regex(NoTemplate),
   after: z.array(ModelName),
 })
+export type TreatModel = z.infer<typeof TreatModel>
 
 export const TreatTaskSpec = z
   .object({

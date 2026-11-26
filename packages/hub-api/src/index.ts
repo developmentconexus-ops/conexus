@@ -286,3 +286,4 @@ export {
 export { getStatus, HubStatus, Start, Version } from './status.ts'
 export * from './tools.ts'
 export * from './treatment.ts'
+export { ProblemPosition } from './treatment-failures.ts'
