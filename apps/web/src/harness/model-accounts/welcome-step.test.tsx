@@ -43,13 +43,13 @@ async function fillKey() {
 
 test('Passo 2, chave de API: ligada uma conta, o botão passa a Continuar e leva ao Passo 3', async () => {
   const sent = open([])
-  expect((await screen.findByRole('button', { name: 'Ligar conta' })).className).toContain('bg-ink')
+  expect((await screen.findByRole('button', { name: 'Ligar conta' })).className).toContain('lit')
   await openPanel()
   await fillKey()
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
   expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
   await waitFor(() =>
-    expect(screen.getByRole('button', { name: 'Ligar conta' }).className).toContain('border-line'),
+    expect(screen.getByRole('button', { name: 'Ligar conta' }).className).toContain('shadow-1'),
   )
   expect(sent[0]?.body).toMatchObject({ owner: 'company', provider: 'mistral', label: 'Time 3' })
   fireEvent.click(await screen.findByRole('link', { name: 'Continuar' }))

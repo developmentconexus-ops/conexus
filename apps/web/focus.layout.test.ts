@@ -127,31 +127,58 @@ test('na gaveta, Estado do Hub é um link: seguido, muda o endereço, fecha a ga
   await page.close()
 })
 
-function colourOf(page: Page, name: string) {
-  return page.evaluate((className) => {
-    const probe = document.createElement('div')
-    probe.className = className
-    document.body.append(probe)
-    const value = getComputedStyle(probe).backgroundColor
-    probe.remove()
-    return value
-  }, name)
+function fillOf(page: Page) {
+  return page
+    .getByRole('button', { name: 'Enviar' })
+    .evaluate((one) => getComputedStyle(one).backgroundImage)
 }
 
-test('o dourado: o enviar, ao passar o mouse, fica no cinza de destaque (surface-3), não dourado', async () => {
+test('o dourado: o enviar é o ipê aceso, parado e sob o mouse', async () => {
   const page = await open('/', DESKTOP, { ...HOUSE, ...startsOn('0'.repeat(32)) })
   const box = page.getByRole('textbox', { name: 'Mensagem para o Conexus' })
   await box.fill('Como foram as vendas?')
-  const send = page.getByRole('button', { name: 'Enviar' })
   await page.waitForFunction(
     () =>
       document.querySelector<HTMLButtonElement>('button[aria-label=Enviar]')?.disabled === false,
   )
-  const [grey, gold] = [await colourOf(page, 'bg-surface-3'), await colourOf(page, 'bg-accent')]
-  assert.notEqual(grey, gold)
-  await send.hover()
+  const rest = await fillOf(page)
+  assert.equal(rest, 'linear-gradient(135deg, rgb(245, 171, 14), rgb(255, 212, 69))')
+  await page.getByRole('button', { name: 'Enviar' }).hover()
   await atRest(page)
-  assert.equal(await send.evaluate((one) => getComputedStyle(one).backgroundColor), grey)
+  const hovered = await fillOf(page)
+  assert.match(hovered, /^linear-gradient\(135deg, /)
+  assert.notEqual(hovered, rest, 'the lit send does not answer the pointer')
+  await page.close()
+})
+
+// The outline, and the edge a field shows instead (design V28).
+const FOCUS = {
+  light: { outline: 'rgb(29, 29, 29)', edge: 'rgb(176, 122, 12)' },
+  dark: { outline: 'rgb(255, 215, 102)', edge: 'rgb(242, 181, 58)' },
+}
+
+test('o foco é visível em toda peça da vitrine: contorno de tinta no claro e de ipê no escuro, a borda nos campos', async () => {
+  const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {} })
+  for (const band of ['light', 'dark'] as const) {
+    const drawn = await page
+      .locator(`[data-band=${band}] [data-preview~=focus]`)
+      .evaluateAll((all) =>
+        all.map((piece) => {
+          const style = getComputedStyle(piece)
+          const slot = piece.getAttribute('data-slot') ?? piece.tagName.toLowerCase()
+          return style.outlineColor === 'rgba(0, 0, 0, 0)'
+            ? `${slot} edge ${style.borderTopColor} ${style.boxShadow === 'none' ? 'no halo' : 'halo'}`
+            : `${slot} ${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor}`
+        }),
+      )
+    assert.ok(drawn.length > 0, `${band}: the showcase pins no focus`)
+    const unseen = drawn.filter(
+      (one) =>
+        !one.endsWith(` solid 2px ${FOCUS[band].outline}`) &&
+        !one.endsWith(` edge ${FOCUS[band].edge} halo`),
+    )
+    assert.deepEqual(unseen, [], `${band}: a piece's focus is not drawn in the theme's colour`)
+  }
   await page.close()
 })
 

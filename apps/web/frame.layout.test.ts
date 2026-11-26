@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { getProject, listAssistantConnections, listAssistantConversations } from '@conexus/hub-api'
+import { getProject } from '@conexus/hub-api'
 import type { Locator } from 'playwright-core'
 import { atRest } from './at-rest.ts'
+import { CONVERSATIONS, NOW, OPENED, onlyList, owner } from './frame-replies.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, failure, ok, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { ANA, COMPANY } from './src/platform/fixtures.ts'
@@ -39,48 +40,8 @@ async function centreOf(locator: Locator): Promise<number> {
   return (left + right) / 2
 }
 
-const ASSISTANT_API = `/api/companies/${COMPANY.id}/assistant`
-const OPENED = ASSISTANT_PATH.split('/').at(-1) ?? ''
-const NOW = '2026-10-19T12:00:00.000Z'
-
-/** The owner's Início with a few conversations in the list and in Continuar. */
-function owner(conversations: { id: string; title: string }[]): Replies {
-  return {
-    ...OWNER,
-    ...projectsPage(COMPANY.id),
-    ...startsOn(COMPANY.id),
-    [`GET ${ASSISTANT_API}/connections`]: ok(listAssistantConnections, { connections: [] }),
-    [`GET ${ASSISTANT_API}/conversations`]: ok(listAssistantConversations, {
-      conversations: conversations.map((one) => ({
-        ...one,
-        createdAt: NOW,
-        updatedAt: NOW,
-        project: null,
-        automation: null,
-      })),
-      next: { kind: 'END' },
-    }),
-  }
-}
-
-function onlyList(replies: Replies): Replies {
-  const key = `GET ${ASSISTANT_API}/conversations`
-  const reply = replies[key]
-  if (reply === undefined) throw new Error('the owner has no conversations reply')
-  return { [key]: reply }
-}
-
-function tickOf(element: Element) {
-  const tick = getComputedStyle(element, '::before')
-  return { width: tick.width, drawn: tick.backgroundColor !== 'rgba(0, 0, 0, 0)' }
-}
-
-test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar atual o traço de 2px com aria-current', async () => {
-  const conversations = [
-    { id: '33333333-3333-4333-8333-333333333333', title: 'Vendas da semana' },
-    { id: '44444444-4444-4444-8444-444444444444', title: 'Metas da Matriz' },
-  ]
-  const page = await open(`/companies/${COMPANY.id}`, DESKTOP, owner(conversations))
+test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar atual tem aria-current', async () => {
+  const page = await open(`/companies/${COMPANY.id}`, DESKTOP, owner(CONVERSATIONS))
   const nav = page.getByRole('navigation', { name: 'Navegação' })
   const list = nav.locator('[data-sidebar=sidebar]')
   await list.getByRole('link', { name: /Vendas da semana/ }).waitFor()
@@ -108,7 +69,6 @@ test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar
   ])
   const home = nav.getByRole('link', { name: 'Início' })
   assert.equal(await home.getAttribute('aria-current'), 'page')
-  assert.deepEqual(await home.evaluate(tickOf), { width: '2px', drawn: true })
   assert.equal(await nav.getByRole('link', { name: 'Projetos' }).getAttribute('aria-current'), null)
   await page.close()
 
@@ -122,7 +82,6 @@ test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar
     .getByRole('link', { name: /Vendas da semana/ })
   await row.waitFor()
   assert.equal(await row.getAttribute('aria-current'), 'page')
-  assert.deepEqual(await row.evaluate(tickOf), { width: '2px', drawn: true })
   await opened.close()
 })
 

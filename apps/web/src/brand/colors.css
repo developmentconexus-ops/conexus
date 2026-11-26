@@ -1,0 +1,109 @@
+/* The Hub's colours and the two paints made of them, the lit ipê and the frame's own ground (design
+   V5, V19), imported by tokens.css; DESIGN.md's front matter holds the same values, name by name.
+
+   Inline, so a utility carries its `light-dark()` pair and resolves it on the element: a region
+   with its own `color-scheme` (the sidebar, dark in both themes) turns every colour inside it. A
+   rule of tokens.css takes a colour the same way, by `--theme(… inline)`. The import makes them
+   static, so `var(--color-*)` finds every name, as the page's theme has it. */
+@theme inline {
+  --color-*: initial;
+  /* The frame round the sheet is graphite in both themes (design V19). */
+  --color-frame: light-dark(#181818, #101010);
+  --color-canvas: light-dark(#f1f1f1, #141414);
+  --color-surface: light-dark(#fcfcfc, #191919);
+  --color-surface-3: light-dark(#f1f1f1, #222222);
+  --color-surface-4: light-dark(#e6e6e6, #2f2f2f);
+  /* What sits on the sheet and what floats over it: button, field, card, menu. */
+  --color-raised: light-dark(#ffffff, #282828);
+  --color-line: light-dark(#e2e2e2, #303030);
+  --color-line-strong: light-dark(#808080, #7a7a7a);
+  --color-text: light-dark(#1d1d1d, #f0f0f0);
+  --color-text-2: light-dark(#585858, #b1b1b1);
+  --color-ink: light-dark(#1d1d1d, #f0f0f0);
+  --color-on-ink: light-dark(#ffffff, #191919);
+  --color-accent: light-dark(#b07a0c, #f2b53a);
+  --color-accent-text: light-dark(#8a6006, #f2b53a);
+  --color-accent-soft: light-dark(#f8e8bd, #2b2a1c);
+  /* The lit ipê runs from one to the other, with `on-accent` on it (design V5). */
+  --color-accent-from: light-dark(#f5ab0e, #f0ad27);
+  --color-accent-to: light-dark(#ffd445, #ffd766);
+  --color-on-accent: light-dark(#1f1600, #1f1600);
+  --color-focus: light-dark(#1d1d1d, #ffd766);
+  /* The toast is inverted: ink on the light sheet, sheet on the dark one. */
+  --color-notice: light-dark(#191919, #f2f2f2);
+  --color-on-notice: light-dark(#f2f2f2, #191919);
+  --color-mark: light-dark(#c08a12, #f2b53a);
+  --color-memory: light-dark(#903bdb, #b979ff);
+  --color-success: light-dark(#1f9d5c, #55d394);
+  --color-warning: light-dark(#d97a06, #f5a742);
+  --color-danger: light-dark(#d93a4a, #ff7d8a);
+  --color-preview-paper: light-dark(#ffffff, #ffffff);
+  /* The dark frame the Prévia draws round the app on a phone (design V3). */
+  --color-phone-frame: light-dark(#1d2125, #3a4148);
+  /* The light plate a provider's logo sits on, in both themes: a wordmark is drawn for a light ground. */
+  --color-logo-plate: light-dark(#ffffff, #ffffff);
+  --color-code-keyword: light-dark(#cf222e, #ff7b72);
+  --color-code-string: light-dark(#0a3069, #a5d6ff);
+  --color-code-comment: light-dark(#6e7781, #8b949e);
+  --color-code-function: light-dark(#8250df, #d2a8ff);
+  --color-code-constant: light-dark(#0550ae, #79c0ff);
+  --color-code-parameter: light-dark(#953800, #ffa657);
+  --color-code-expression: light-dark(#116329, #7ee787);
+}
+
+/* The lit ipê: the fill of the primary action and of what is on, with dark ink on it (design V5). */
+@utility lit {
+  background-image: linear-gradient(
+    135deg,
+    --theme(--color-accent-from inline),
+    --theme(--color-accent-to inline)
+  );
+  color: --theme(--color-on-accent inline);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    inset 0 -1px 0 rgb(130 78 0 / 0.14),
+    inset 0 0 0 1px rgb(168 108 0 / 0.24),
+    0 1px 2px rgb(130 78 0 / 0.28);
+}
+
+/* The lit ipê under the pointer: a step brighter, over a halo of its own colour. */
+@utility lit-bright {
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in oklab, --theme(--color-accent-from inline), white 12%),
+    color-mix(in oklab, --theme(--color-accent-to inline), white 14%)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    inset 0 -1px 0 rgb(130 78 0 / 0.14),
+    inset 0 0 0 1px rgb(168 108 0 / 0.24),
+    0 1px 2px rgb(130 78 0 / 0.28),
+    0 4px 12px -4px color-mix(in srgb, --theme(--color-accent-from inline) 32%, transparent);
+}
+
+/* The frame's graphite and its current place, the frame with 14% of white. Registered, so each is
+   read as a colour where the theme is set: inside the sidebar every `light-dark()` resolves on its
+   dark side, and the frame's own colours must not follow. */
+@property --frame {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+@property --frame-current {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+
+@utility frame-ground {
+  background-color: var(--frame);
+}
+@utility frame-current {
+  background-color: var(--frame-current);
+}
+
+:root,
+[data-theme] {
+  --frame: --theme(--color-frame inline);
+  --frame-current: color-mix(in oklab, --theme(--color-frame inline), white 14%);
+}

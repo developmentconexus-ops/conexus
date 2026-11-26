@@ -161,7 +161,7 @@ function tone(label: string) {
   return rowOf(label).getByText(/ligada|No limite|pausada|recusada/).className
 }
 
-test('a etiqueta pinta o estado: verde ligada, laranja no limite ou pausada, vermelha recusada', async () => {
+test('a etiqueta pinta o ponto do estado: verde ligada, laranja no limite ou pausada, vermelho recusada', async () => {
   const until = new Date(Date.now() + 3_600_000)
   open(
     view({
@@ -174,10 +174,10 @@ test('a etiqueta pinta o estado: verde ligada, laranja no limite ou pausada, ver
     }),
   )
   await screen.findByText('Time 1')
-  expect(tone('Time 1')).toContain('text-success')
-  expect(tone('Time 2')).toContain('text-warning')
-  expect(tone('Time 3')).toContain('text-warning')
-  expect(tone('Time 4')).toContain('text-danger')
+  expect(tone('Time 1')).toContain('before:bg-success')
+  expect(tone('Time 2')).toContain('before:bg-warning')
+  expect(tone('Time 3')).toContain('before:bg-warning')
+  expect(tone('Time 4')).toContain('before:bg-danger')
 })
 
 test('uma conta no limite diz até que horas, na hora de quem lê', async () => {
@@ -191,17 +191,17 @@ test('uma conta no limite diz até que horas, na hora de quem lê', async () => 
   expect(await screen.findByText(`No limite até ${hour}`)).toBeTruthy()
 })
 
-test('Ligar conta é de contorno quando a fila tem contas e preta quando está vazia', async () => {
+test('Ligar conta é de contorno quando a fila tem contas e acesa quando está vazia', async () => {
   open(view({ company: [accountOf({ label: 'Time 1' })] }))
   const company = await screen.findByRole('region', { name: 'Contas da empresa' })
   const mine = screen.getByRole('region', { name: 'Suas contas' })
   expect(within(company).getByRole('button', { name: 'Ligar conta' }).className).not.toContain(
-    'bg-ink',
+    'lit',
   )
   expect(within(company).getByRole('button', { name: 'Ligar conta' }).className).toContain(
-    'border-line',
+    'shadow-1',
   )
-  expect(within(mine).getByRole('button', { name: 'Ligar conta' }).className).toContain('bg-ink')
+  expect(within(mine).getByRole('button', { name: 'Ligar conta' }).className).toContain('lit')
 })
 
 test('as setas ficam nas pontas desabilitadas, mandam a ordem inteira e o foco fica na seta usada', async () => {

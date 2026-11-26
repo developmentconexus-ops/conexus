@@ -37,10 +37,10 @@ function Block({ entry }: { entry: ShowcaseEntry }) {
     <article data-file={entry.file} className="flex flex-col gap-sm border-b border-line pb-xl">
       <h3 className="font-display text-title">{entry.name}</h3>
       <p className="text-text-2">{entry.when}</p>
-      <div data-band="light" className="scheme-light bg-canvas">
+      <div data-band="light" className="scheme-light bg-surface">
         <Body entry={entry} />
       </div>
-      <div data-band="dark" data-theme="dark" className="scheme-dark bg-canvas text-text">
+      <div data-band="dark" data-theme="dark" className="scheme-dark bg-surface text-text">
         <Body entry={entry} />
       </div>
     </article>

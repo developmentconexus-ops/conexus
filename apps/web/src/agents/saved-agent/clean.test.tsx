@@ -70,7 +70,7 @@ test('Apagar fica só no menu ⋯, também no computador', async () => {
 test('Publicar é o botão principal da página', async () => {
   at(PAGE, { agents: [agent()] })
   const publish = await screen.findByRole('button', { name: /^Publicar v\d/ })
-  expect(publish.className).toContain('bg-ink')
+  expect(publish.className).toContain('lit')
 })
 
 test('a conversa de teste fica na folha branca', async () => {

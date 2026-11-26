@@ -9,7 +9,7 @@ export function Textarea({ className, ...props }: ComponentProps<'textarea'>) {
     <textarea
       data-slot="textarea"
       className={cn(
-        'field-sizing-content max-h-48 min-h-9 w-full min-w-0 resize-none rounded-control border border-line bg-surface px-md py-sm text-base md:text-body text-text placeholder:text-text-2 focus-visible:outline-transparent not-data-[slot=input-group-control]:focus-visible:focus-field disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
+        'field-sizing-content max-h-48 min-h-9 w-full min-w-0 resize-none rounded-control border border-transparent bg-raised shadow-1 px-md py-sm text-base md:text-body text-text placeholder:text-text-2 focus-visible:outline-transparent not-data-[slot=input-group-control]:focus-visible:focus-field disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger',
         className,
       )}
       {...props}

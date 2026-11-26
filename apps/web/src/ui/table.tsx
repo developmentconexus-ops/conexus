@@ -72,7 +72,7 @@ export function TableCell({ className, ...props }: ComponentProps<'td'>) {
  */
 export type FramedColumn = { name: string; leavesOnPhone?: boolean; width?: string }
 
-/** A settings table in its frame: the hairline border, a header read by screen readers alone unless `showHeader`, and the columns that leave on a phone. */
+/** A settings table in its frame: white, its edge a shadow, a header read by screen readers alone unless `showHeader`, and the columns that leave on a phone. */
 export function FramedTable({
   columns,
   showHeader = false,
@@ -82,7 +82,7 @@ export function FramedTable({
   const phone = useIsMobile()
   const shown = columns.filter((column) => !(phone && column.leavesOnPhone))
   return (
-    <div className="overflow-hidden rounded-object border border-line bg-surface">
+    <div className="overflow-hidden rounded-object border border-transparent bg-raised shadow-1">
       <Table {...props} className={cn('lg:table-fixed', props.className)}>
         <colgroup>
           {shown.map((column) => (

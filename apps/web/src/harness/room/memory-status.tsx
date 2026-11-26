@@ -84,15 +84,21 @@ function Budget(props: {
   used: number
   threshold: number
   tone: string
+  /** The bar takes the tone too, instead of the lit ipê: the Memória budget is violet (design V5). */
+  toned?: boolean
   description: string
   className?: string
 }) {
-  const { icon, label, used, threshold, tone, description, className } = props
+  const { icon, label, used, threshold, tone, toned, description, className } = props
   const percent = threshold > 0 ? Math.min(100, (used / threshold) * 100) : 0
 
   return (
     <div className={cn('flex flex-col gap-xs', className)}>
-      <Meter value={percent} className={cn('flex flex-col gap-xs', tone)}>
+      <Meter
+        value={percent}
+        fill={toned ? 'current' : 'lit'}
+        className={cn('flex flex-col gap-xs', tone)}
+      >
         <div className="flex items-center gap-xs font-semibold text-text">
           <span className={tone}>{icon}</span>
           <MeterLabel>{label}</MeterLabel>
@@ -173,6 +179,7 @@ export function MemoryStatus(props: {
           used={observations}
           threshold={reflectionThreshold}
           tone="text-memory"
+          toned
           className="border-t border-line pt-sm"
           description={
             failed === 'reflection'

@@ -68,7 +68,7 @@ export function QuestionnaireChoice({
     <QuestionnairePrimitive.Choice
       data-slot="questionnaire-choice"
       className={cn(
-        'flex min-h-11 md:min-h-0 cursor-pointer items-start gap-sm rounded-control border border-line bg-surface px-md py-sm md:border-transparent md:bg-transparent md:px-xs md:py-xs text-text hover:bg-surface-3 data-checked:border-line-strong data-checked:bg-surface-3 md:data-checked:border-transparent data-disabled:cursor-not-allowed data-disabled:opacity-50 data-invalid:border-danger',
+        'flex min-h-11 md:min-h-0 cursor-pointer items-start gap-sm rounded-control border border-transparent bg-raised px-md py-sm shadow-1 md:bg-transparent md:px-xs md:py-xs md:shadow-none text-text hover:bg-surface-3 data-checked:border-line-strong data-checked:bg-surface-3 md:data-checked:border-transparent data-disabled:cursor-not-allowed data-disabled:opacity-50 data-invalid:border-danger',
         className,
       )}
       {...props}
@@ -95,7 +95,7 @@ export function QuestionnaireInput({
     <QuestionnairePrimitive.Input
       data-slot="questionnaire-input"
       className={cn(
-        'h-9 w-full min-w-0 rounded-control border border-line bg-surface px-md text-base text-text placeholder:text-text-2 focus-visible:outline-transparent focus-visible:focus-field md:text-body aria-invalid:border-danger',
+        'h-9 w-full min-w-0 rounded-control border border-transparent bg-raised px-md shadow-1 text-base text-text placeholder:text-text-2 focus-visible:outline-transparent focus-visible:focus-field md:text-body aria-invalid:border-danger',
         className,
       )}
       {...props}

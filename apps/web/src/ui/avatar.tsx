@@ -7,7 +7,7 @@ export function Avatar({ className, ...props }: AvatarPrimitive.Root.Props) {
     <AvatarPrimitive.Root
       data-slot="avatar"
       className={cn(
-        'relative flex size-7 shrink-0 overflow-hidden rounded-pill border border-line select-none',
+        'relative flex size-7 shrink-0 overflow-hidden rounded-pill shadow-ring select-none',
         className,
       )}
       {...props}

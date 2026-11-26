@@ -30,7 +30,7 @@ export function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            'popup-motion flex w-72 flex-col gap-sm rounded-object border border-line bg-surface p-md text-body text-text outline-none',
+            'popup-motion flex w-72 flex-col gap-sm rounded-object border border-transparent bg-raised shadow-float p-md text-body text-text outline-none',
             className,
           )}
           {...props}

@@ -3,7 +3,8 @@ import type { VariantProps } from 'class-variance-authority'
 import { cva } from 'class-variance-authority'
 import { cn } from './cn.ts'
 
-// Copied from shadcn's base-nova `button`, painted with the brand's button rows (design V6, V27).
+// Copied from shadcn's base-nova `button`, painted with the brand's button rows (design V5, V19):
+// the primary one is the lit ipê, and a white one takes its edge from a shadow.
 // Where a finger points, the press reaches 44 px around the visible control (Apple's 44 pt hit target,
 // WCAG 2.5.5) without drawing it bigger.
 export const touchArea =
@@ -14,11 +15,12 @@ const buttonClasses = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-ink text-on-ink',
-        default: 'border-line bg-surface text-text hover:bg-surface-3',
+        primary:
+          'lit hover:lit-bright disabled:bg-none disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100 disabled:shadow-none',
+        default: 'bg-raised text-text shadow-1 hover:shadow-2',
         ghost: 'bg-transparent text-text-2 hover:bg-surface-3 hover:text-text',
         // A destructive action: neutral on the page, full danger only at its confirmation (V55).
-        danger: 'border-line bg-surface text-danger hover:bg-surface-3',
+        danger: 'bg-raised text-danger shadow-1 hover:shadow-2',
         'danger-confirm': 'bg-danger text-on-ink',
       },
       size: {
@@ -31,17 +33,14 @@ const buttonClasses = cva(
       },
       // A link that is a labelled button from `md` and the quiet icon button (`ghost`, `icon`) under it.
       phoneIcon: {
-        true: 'max-md:size-control max-md:border-transparent max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text max-md:[&_svg]:size-3.5',
+        true: 'max-md:size-control max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:shadow-none max-md:hover:bg-surface-3 max-md:hover:text-text max-md:hover:shadow-none max-md:[&_svg]:size-3.5',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },
   },
 )
 
-/**
- * A button's classes, merged: the base's transparent border gives way to a variant's own, also on a
- * link drawn as a button, which no `cn` reaches.
- */
+/** A button's classes, merged, also for a link drawn as a button, which no `cn` reaches. */
 export function buttonVariants(props?: VariantProps<typeof buttonClasses>): string {
   return cn(buttonClasses(props))
 }
