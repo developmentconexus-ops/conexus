@@ -1,0 +1,161 @@
+/* The Hub's motion (design V26, docs/reference/movimento.md), imported by tokens.css: each name
+   owns its number, and DESIGN.md "Motion" says what each is for. */
+
+/* Static, so a rule outside a utility finds every name. */
+@theme static {
+  --duration-row: 75ms;
+  --duration-control: 160ms;
+  --duration-press: 420ms;
+  --duration-state: 560ms;
+  --duration-menu: 120ms;
+  --duration-window: 150ms;
+  --duration-move: 200ms;
+  --duration-page: 160ms;
+
+  --ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-exit: ease-in;
+  --ease-fit: cubic-bezier(0.65, 0, 0.35, 1);
+  /* The two springs: a press gives and comes back, a switch or a checkbox settles into its state. */
+  --ease-spring-press: linear(
+    0,
+    0.061,
+    0.201,
+    0.371,
+    0.539,
+    0.687,
+    0.808,
+    0.898,
+    0.962,
+    1.003,
+    1.026,
+    1.036,
+    1.038,
+    1.035,
+    1.029,
+    1.023,
+    1.016,
+    1.011,
+    1.007,
+    1.003,
+    1.001,
+    1,
+    0.999,
+    0.999,
+    0.999,
+    1
+  );
+  --ease-spring-state: linear(
+    0,
+    0.043,
+    0.143,
+    0.268,
+    0.397,
+    0.519,
+    0.627,
+    0.719,
+    0.793,
+    0.853,
+    0.898,
+    0.933,
+    0.958,
+    0.975,
+    0.987,
+    0.995,
+    1,
+    1.003,
+    1.005,
+    1.005,
+    1.005,
+    1.004,
+    1.004,
+    1.003,
+    1.003,
+    1
+  );
+
+  /* A transition that names no time takes the control's. */
+  --default-transition-duration: var(--duration-control);
+}
+
+/* Under reduced motion every duration of the scale is zero (design V26). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-row: 0ms;
+    --duration-control: 0ms;
+    --duration-press: 0ms;
+    --duration-state: 0ms;
+    --duration-menu: 0ms;
+    --duration-window: 0ms;
+    --duration-move: 0ms;
+    --duration-page: 0ms;
+  }
+}
+
+/* Tailwind reads `duration-*` from `--transition-duration-*`, so each name has its own utility. */
+@utility duration-row {
+  transition-duration: var(--duration-row);
+}
+@utility duration-control {
+  transition-duration: var(--duration-control);
+}
+@utility duration-press {
+  transition-duration: var(--duration-press);
+}
+@utility duration-state {
+  transition-duration: var(--duration-state);
+}
+@utility duration-menu {
+  transition-duration: var(--duration-menu);
+}
+@utility duration-window {
+  transition-duration: var(--duration-window);
+}
+@utility duration-move {
+  transition-duration: var(--duration-move);
+}
+@utility duration-page {
+  transition-duration: var(--duration-page);
+}
+
+/* A button answers the pointer in the control's time, and its press gives and comes back on the
+   spring: one list per property, because the way back takes the rest state's times. */
+@utility button-motion {
+  transition-property: color, background-color, box-shadow, scale;
+  transition-duration:
+    var(--duration-control), var(--duration-control), var(--duration-control), var(--duration-press);
+  transition-timing-function:
+    var(--default-transition-timing-function), var(--default-transition-timing-function),
+    var(--default-transition-timing-function), var(--ease-spring-press);
+}
+
+/* A popup grows out of its trigger and leaves faster than it came (design V26). */
+@utility popup-motion {
+  transform-origin: var(--transform-origin);
+  transition-property: scale, opacity;
+  transition-duration: var(--duration-menu);
+  transition-timing-function: var(--ease-enter);
+  &[data-starting-style],
+  &[data-ending-style] {
+    scale: 0.96;
+    opacity: 0;
+  }
+  &[data-ending-style] {
+    transition-duration: var(--duration-row);
+  }
+}
+
+/* A change of screen fades the sheet and nothing else: the rail and the list stay as they are. */
+[data-slot="sidebar-inset"] {
+  view-transition-name: sheet;
+}
+/* `*`, since Biome takes `sheet` in the parentheses for an element; the root opts out below. */
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: var(--duration-page);
+}
+/* No picture travels or resizes: outside the sheet the screen changes at once. */
+::view-transition-group(*),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}

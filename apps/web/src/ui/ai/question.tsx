@@ -133,7 +133,7 @@ export function Question(props: {
     <div
       className={
         open
-          ? 'flex min-w-0 flex-col gap-sm rounded-card border border-line bg-surface p-md md:p-sm'
+          ? 'flex min-w-0 flex-col gap-sm rounded-card border border-transparent bg-raised shadow-1 p-md md:p-sm'
           : 'flex min-w-0 flex-col gap-sm'
       }
     >

@@ -23,7 +23,9 @@ function State({ version }: { version: AppVersion }) {
   if (version.state === 'failed') {
     const why = version.failure === null ? undefined : FAILURES[version.failure].phrase
     return (
-      <span className="text-danger">{why === undefined ? '· Falhou' : `· Falhou: ${why}`}</span>
+      <span className="text-danger-text">
+        {why === undefined ? '· Falhou' : `· Falhou: ${why}`}
+      </span>
     )
   }
   const marks = [version.live && 'Na Prévia', version.published && 'Publicada'].filter(Boolean)

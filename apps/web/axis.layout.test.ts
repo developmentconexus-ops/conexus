@@ -132,7 +132,9 @@ for (const viewport of [DESKTOP, PHONE])
 
 const WIDE = { width: 1800, height: 900 }
 
-// The scrollbar belongs to the window's edge and the working line to the box (founder, 2026-11-03).
+// The scrollbar belongs to the sheet's edge, which on a phone is the window's, and the working line
+// to the box (founder, 2026-11-03).
+const SHEET = '[data-slot=sidebar-inset]'
 for (const viewport of [DESKTOP, WIDE, PHONE])
   test(`na conversa em andamento a rolagem vai à borda e "trabalhando" alinha com a caixa a ${viewport.width}`, async () => {
     const page = await harness.open(ASSISTANT_PATH, {
@@ -156,23 +158,24 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
       await mark.evaluate((path) => path.getAnimations().length > 0),
       'the Conexus mark does not move while at work',
     )
-    const [scroll, line, box, log, last] = await Promise.all([
+    const [scroll, sheet, line, box, log, last] = await Promise.all([
       scroller.boundingBox(),
+      page.locator(SHEET).boundingBox(),
       working.locator('svg').first().boundingBox(),
       form.boundingBox(),
       page.getByRole('log', { name: /^Conversa com o / }).boundingBox(),
       page.locator('[data-slot=message-scroller-item]').last().boundingBox(),
     ])
-    assert.ok(scroll && line && box && log && last, 'the conversation is not laid out')
+    assert.ok(scroll && sheet && line && box && log && last, 'the conversation is not laid out')
     assert.equal(
       Math.round(scroll.x + scroll.width),
-      viewport.width,
-      'the scrollbar is not at the window edge',
+      Math.round(sheet.x + sheet.width),
+      "the scrollbar is not at the sheet's edge",
     )
     assert.equal(
       Math.round(scroll.y + scroll.height),
-      viewport.height,
-      'the scrollbar stops above the bottom of the window',
+      Math.round(sheet.y + sheet.height),
+      'the scrollbar stops above the bottom of the sheet',
     )
     assert.ok(
       box.y >= scroll.y && box.y + box.height <= scroll.y + scroll.height,
@@ -224,14 +227,19 @@ test('no painel estreito do Construtor a caixa fica dentro da área de rolagem, 
   const scroller = page.getByLabel('Rolagem da conversa')
   const form = page.locator('form').filter({ has: page.getByLabel('Mensagem') })
   await form.waitFor()
-  const [scroll, box, bar] = await Promise.all([
+  const [scroll, sheet, box, bar] = await Promise.all([
     scroller.boundingBox(),
+    page.locator(SHEET).boundingBox(),
     form.boundingBox(),
     scroller.evaluate((element: HTMLElement) => element.offsetWidth - element.clientWidth),
   ])
-  assert.ok(scroll && box, 'the panel is not laid out')
+  assert.ok(scroll && sheet && box, 'the panel is not laid out')
   assert.ok(bar > 0, 'the browser shows no scrollbar')
   assert.ok(box.x + box.width <= scroll.x + scroll.width - bar, 'the box covers the scrollbar')
-  assert.equal(Math.round(scroll.y + scroll.height), 560, 'the scrollbar stops above the bottom')
+  assert.equal(
+    Math.round(scroll.y + scroll.height),
+    Math.round(sheet.y + sheet.height),
+    'the scrollbar stops above the bottom of the sheet',
+  )
   await page.close()
 })

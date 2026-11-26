@@ -40,8 +40,8 @@ banco que a empresa já tem, como o seu exemplo do Databricks ou os bancos que o
 Ideia nova entra pelo único estudo aberto de uma
 trilha, nunca por fora do roteiro.
 
-As duas trilhas andam ao mesmo tempo, cada uma na ordem dos seus marcos. Cada página de
-trilha está em [steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilhas/dados-spec/README.md).
+As trilhas andam juntas, cada uma na ordem dos seus marcos, com a página em
+[steps/trilhas/](steps/trilhas/). A [spec dos dados](steps/trilhas/dados-spec/README.md).
 
 **Trilha Dados.**
 
@@ -77,13 +77,15 @@ A etapa 1 do harness, `A1` e a etapa 2 ("Uma sala e os nomes certos") fecharam; 
 `A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
 plano em `A3`, código e teste em `A1`, revisão em `A4`.
 
+**Trilha Redesenho:** [`R1` a `R6`](steps/trilhas/redesenho.md).
+
 **O que brilha primeiro.** `D1`, `D2` e `A2`: ligar um sistema em um clique, perguntar sobre o dado
 copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o `A2` entrega apps
 bonitos e quebrados.
 
 **O que não se faz agora.** O que nunca se faz está na [VISION.md](../VISION.md). Mais de um estudo
 aberto por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
-agente. Tratamento e qualidade dos dados antes do lago implementado (2026-11-20).
+agente.
 
 ### O que você fornece, e quando
 

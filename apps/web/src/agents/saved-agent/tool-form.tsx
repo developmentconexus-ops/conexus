@@ -194,7 +194,7 @@ function Values(props: {
 function FormFailure(props: { newer: boolean; error: string | undefined }) {
   if (!props.newer && props.error === undefined) return null
   return (
-    <p role="alert" className="text-danger">
+    <p role="alert" className="text-danger-text">
       {props.newer ? reasonText('STALE_VERSION') : props.error}
     </p>
   )

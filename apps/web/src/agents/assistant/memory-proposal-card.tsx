@@ -58,7 +58,7 @@ export function MemoryProposalCard(props: {
       {props.may === false && <p className="text-text-2">{ONLY_MANAGERS_MEMORY}</p>}
       {props.may === true &&
         (state === 'SAVED' ? (
-          <p role="status" className="text-success">
+          <p role="status" className="text-success-text">
             {MEMORY_SAVED}
           </p>
         ) : (

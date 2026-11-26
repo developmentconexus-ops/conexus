@@ -4,10 +4,13 @@ import { test } from 'node:test'
 import { parse } from 'yaml'
 import { z } from 'zod'
 
-// DESIGN.md's front matter is the one source of the brand's values; tokens.css writes them for the
-// browser. This test reads both and refuses a difference in either direction, by token name.
+// DESIGN.md's front matter is the one source of the brand's values; tokens.css, with the colours it
+// imports, writes them for the browser. This test reads both and refuses a difference in either
+// direction, by token name.
 const DESIGN = readFileSync(new URL('../../../../DESIGN.md', import.meta.url), 'utf8')
-const CSS = readFileSync(new URL('./tokens.css', import.meta.url), 'utf8')
+const CSS = ['./colors.css', './tokens.css']
+  .map((file) => readFileSync(new URL(file, import.meta.url), 'utf8'))
+  .join('\n')
 
 const Section = z.record(z.string(), z.union([z.string(), z.number()]))
 const Front = z.object({
@@ -36,15 +39,11 @@ function plain(value: string | number): string {
     .toLowerCase()
 }
 
-/** The declarations written directly inside `@theme { ... }`, nested blocks (keyframes) skipped. */
-function themeDeclarations(): Map<string, string> {
-  const css = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
-  const open = css.indexOf('@theme {')
-  if (open < 0) throw new Error('tokens.css has no @theme block')
-  const found = new Map<string, string>()
+/** The declarations written directly inside one `@theme ... { ... }`, nested blocks (keyframes) skipped. */
+function blockDeclarations(block: string, found: Map<string, string>) {
   let depth = 0
   let statement = ''
-  for (const char of css.slice(open + '@theme '.length)) {
+  for (const char of block) {
     if (char === '{') {
       depth += 1
       if (depth > 1) statement = ''
@@ -58,6 +57,15 @@ function themeDeclarations(): Map<string, string> {
       statement = ''
     } else if (depth === 1) statement += char
   }
+}
+
+/** Every theme variable of colors.css and tokens.css. */
+function themeDeclarations(): Map<string, string> {
+  const css = CSS.replace(/\/\*[\s\S]*?\*\//g, '')
+  const blocks = [...css.matchAll(/@theme[^{]*{/g)]
+  if (blocks.length === 0) throw new Error('tokens.css has no @theme block')
+  const found = new Map<string, string>()
+  for (const block of blocks) blockDeclarations(css.slice(block.index + block[0].length - 1), found)
   return found
 }
 

@@ -32,7 +32,7 @@ export function WelcomeFrame(props: {
             {STEPS.map((step) => (
               <span
                 key={step}
-                className={cn('h-1 flex-1 rounded-pill', step <= props.step ? 'bg-ink' : 'bg-line')}
+                className={cn('h-1 flex-1 rounded-pill', step <= props.step ? 'lit' : 'bg-line')}
               />
             ))}
           </div>

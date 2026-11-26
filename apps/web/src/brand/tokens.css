@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./colors.css" theme(static);
+@import "./motion.css";
 
 @custom-variant dark {
   @media (prefers-color-scheme: dark) {
@@ -46,52 +48,19 @@
 }
 
 @theme {
-  --color-*: initial;
-  --color-canvas: light-dark(#f5f6f7, #121417);
-  --color-surface: light-dark(#ffffff, #181b1f);
-  --color-surface-3: light-dark(#f0f2f4, #1f2328);
-  --color-surface-4: light-dark(#e9ecef, #262b30);
-  --color-line: light-dark(#e3e6ea, #2a3036);
-  --color-line-strong: light-dark(#8a939c, #6e7780);
-  --color-text: light-dark(#121518, #eef0f2);
-  --color-text-2: light-dark(#59616a, #a3abb3);
-  --color-ink: light-dark(#121518, #eef0f2);
-  --color-on-ink: light-dark(#ffffff, #121518);
-  --color-accent: light-dark(#b07a0c, #f2b53a);
-  --color-accent-text: light-dark(#8a6006, #f2b53a);
-  --color-accent-soft: light-dark(#fbf1d9, #3a2e12);
-  --color-mark: light-dark(#c08a12, #f2b53a);
-  --color-memory: light-dark(#903bdb, #b979ff);
-  --color-success: light-dark(#1a7f4b, #6fd39a);
-  --color-warning: light-dark(#b54708, #f5a25b);
-  --color-danger: light-dark(#c0283d, #f28b9a);
-  --color-on-accent: light-dark(#ffffff, #ffffff);
-  --color-preview-paper: light-dark(#ffffff, #ffffff);
-  /* The dark frame the Prévia draws round the app on a phone (design V3). */
-  --color-phone-frame: light-dark(#1d2125, #3a4148);
-  /* The light plate a provider's logo sits on, in both themes: a wordmark is drawn for a light ground. */
-  --color-logo-plate: light-dark(#ffffff, #ffffff);
-  --color-code-keyword: light-dark(#cf222e, #ff7b72);
-  --color-code-string: light-dark(#0a3069, #a5d6ff);
-  --color-code-comment: light-dark(#6e7781, #8b949e);
-  --color-code-function: light-dark(#8250df, #d2a8ff);
-  --color-code-constant: light-dark(#0550ae, #79c0ff);
-  --color-code-parameter: light-dark(#953800, #ffa657);
-  --color-code-expression: light-dark(#116329, #7ee787);
-
   --font-display: Hanken Grotesk, system-ui, sans-serif;
   --font-body: Hanken Grotesk, system-ui, sans-serif;
   --font-mono: JetBrains Mono, ui-monospace, monospace;
 
-  --text-display: 1.75rem;
+  --text-display: 1.875rem;
   --text-display--line-height: 2.25rem;
   --text-display--letter-spacing: -0.02em;
-  --text-display--font-weight: 600;
+  --text-display--font-weight: 700;
   /* The display title on a phone (design V13). */
   --text-display-narrow: 1.5rem;
   --text-display-narrow--line-height: 2rem;
   --text-display-narrow--letter-spacing: -0.02em;
-  --text-display-narrow--font-weight: 600;
+  --text-display-narrow--font-weight: 700;
   --text-heading: 1.25rem;
   --text-heading--line-height: 1.75rem;
   --text-heading--letter-spacing: -0.01em;
@@ -117,10 +86,10 @@
   --text-fact--font-weight: 400;
   --text-fact--font-feature-settings: "tnum" 1;
 
-  --radius-control: 8px;
-  --radius-object: 12px;
-  --radius-card: 12px;
-  --radius-composer: 16px;
+  --radius-control: 10px;
+  --radius-object: 14px;
+  --radius-card: 16px;
+  --radius-composer: 22px;
   --radius-pill: 999px;
   /* The corner of the Prévia's drawn phone frame, and only of it (design V22). */
   --radius-phone: 36px;
@@ -152,13 +121,31 @@
   --container-half: 22rem;
   --container-phone: 390px;
 
-  --shadow-float: 0 1px 2px rgb(18 21 24 / 0.04), 0 8px 24px -8px rgb(18 21 24 / 0.14);
-  --shadow-composer: 0 1px 2px rgb(18 21 24 / 0.04), 0 6px 20px -10px rgb(18 21 24 / 0.12);
+  /* An edge is a shadow (design V19): the ring is the edge, and each layer above it adds its lift;
+     in the dark theme a layer also takes a line of light along its top. */
+  --shadow-ring: 0 0 0 1px light-dark(rgb(29 29 29 / 0.1), rgb(238 238 238 / 0.09));
+  --shadow-1:
+    0 0 0 1px light-dark(rgb(29 29 29 / 0.1), rgb(238 238 238 / 0.09)),
+    0 1px 2px light-dark(rgb(29 29 29 / 0.07), rgb(0 0 0 / 0.45)),
+    inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.07));
+  --shadow-2:
+    0 0 0 1px light-dark(rgb(29 29 29 / 0.1), rgb(238 238 238 / 0.09)),
+    0 1px 2px light-dark(rgb(29 29 29 / 0.07), rgb(0 0 0 / 0.45)),
+    0 3px 8px -2px light-dark(rgb(29 29 29 / 0.12), rgb(0 0 0 / 0.55)),
+    inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.07));
+  --shadow-float:
+    0 0 0 1px light-dark(rgb(29 29 29 / 0.1), rgb(238 238 238 / 0.09)),
+    0 4px 10px -2px light-dark(rgb(29 29 29 / 0.07), rgb(0 0 0 / 0.45)),
+    0 24px 48px -12px light-dark(rgb(29 29 29 / 0.12), rgb(0 0 0 / 0.55)),
+    inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.07));
+  --shadow-composer:
+    0 0 0 1px light-dark(rgb(29 29 29 / 0.1), rgb(238 238 238 / 0.09)),
+    0 2px 4px light-dark(rgb(29 29 29 / 0.07), rgb(0 0 0 / 0.45)),
+    0 16px 40px -18px light-dark(rgb(29 29 29 / 0.12), rgb(0 0 0 / 0.55)),
+    inset 0 1px 0 light-dark(transparent, rgb(255 255 255 / 0.07));
 
-  --ease-fit: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
-  --animate-fit-a: fit-a 0.9s var(--ease-arrive) 0.3s both;
-  --animate-fit-b: fit-b 0.9s var(--ease-arrive) 0.3s both;
+  --animate-fit-a: fit-a 0.9s var(--ease-enter) 0.3s both;
+  --animate-fit-b: fit-b 0.9s var(--ease-enter) 0.3s both;
   --animate-working-a: working-a 1.2s var(--ease-fit) infinite;
   --animate-working-b: working-b 1.2s var(--ease-fit) infinite;
   --animate-ring-sweep: ring-sweep 1.6s linear infinite;
@@ -211,7 +198,12 @@
 /* A light sweeps across the text of work in progress; under reduced motion the text keeps its resting colour. */
 @utility shimmer {
   background:
-    linear-gradient(110deg, var(--color-text-2) 40%, var(--color-text) 50%, var(--color-text-2) 60%)
+    linear-gradient(
+      110deg,
+      --theme(--color-text-2 inline) 40%,
+      --theme(--color-text inline) 50%,
+      --theme(--color-text-2 inline) 60%
+    )
     100% 0 / 250% 100% no-repeat;
   background-clip: text;
   color: transparent;
@@ -223,18 +215,19 @@
 /* A field shows focus on its own edge, as shadcn's fields do: the edge turns ipê inside a soft ipê
    halo (design V28). The field keeps a transparent outline, which forced colours paint instead. */
 @utility focus-field {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  border-color: --theme(--color-accent inline);
+  box-shadow: 0 0 0 3px color-mix(in srgb, --theme(--color-accent inline) 22%, transparent);
 }
 
 /* A busy field's edge is the turning ring: focused, the whole ring turns ipê in the same halo. */
 @utility focus-ring {
-  --ring-base: color-mix(in srgb, var(--color-accent) 60%, var(--color-line));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  --ring-base: color-mix(in srgb, --theme(--color-accent inline) 60%, --theme(--color-line inline));
+  box-shadow: 0 0 0 3px color-mix(in srgb, --theme(--color-accent inline) 22%, transparent);
 }
 
-/* The thumb of a slider lifts off its track. */
+/* The thumb of a slider or a switch: white in both themes, lifted off its track. */
 @utility lift {
+  background-color: #ffffff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
 }
 
@@ -250,15 +243,15 @@
 @utility working-ring {
   border-color: transparent;
   background:
-    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    linear-gradient(--theme(--color-raised inline), --theme(--color-raised inline)) padding-box,
     conic-gradient(
       from var(--ring-angle),
-      var(--ring-base, var(--color-line)) 0deg,
-      var(--color-accent) 120deg,
-      var(--ring-base, var(--color-line)) 180deg,
-      var(--ring-base, var(--color-line)) 200deg,
-      var(--color-accent) 300deg,
-      var(--ring-base, var(--color-line)) 360deg
+      var(--ring-base, --theme(--color-line inline)) 0deg,
+      --theme(--color-accent inline) 120deg,
+      var(--ring-base, --theme(--color-line inline)) 180deg,
+      var(--ring-base, --theme(--color-line inline)) 200deg,
+      --theme(--color-accent inline) 300deg,
+      var(--ring-base, --theme(--color-line inline)) 360deg
     )
     border-box;
   @media (prefers-reduced-motion: no-preference) {
@@ -302,10 +295,19 @@
     @apply bg-canvas font-body text-body text-text;
   }
 
+  /* The ring's colour is on every element before the focus, so a piece that eases its colours
+     still draws the ring at once (design V26). The focus is named too, to win over the
+     preflight's `outline: auto` on `:-moz-focusring`. */
+  *,
+  :focus-visible,
+  [data-preview~="focus"] {
+    outline-color: --theme(--color-focus inline);
+  }
+
   /* One keyboard focus for every piece (design V28); a utility that removes the outline wins. */
   :focus-visible,
   [data-preview~="focus"] {
-    @apply outline-2 outline-offset-2 outline-solid outline-accent;
+    @apply outline-2 outline-offset-2 outline-solid;
   }
 
   /* A title the program focuses draws no ring (design V28; founder, 2026-10-27). */
