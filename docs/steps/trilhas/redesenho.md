@@ -23,8 +23,9 @@ própria nasce na `R5`), B-b (três títulos na barra: "Dados e contexto", "Agen
 guias mudam antes de construir), F-a (a barra do projeto na forma da versão 2, com as oito seções de
 hoje) e G-a (o Início não muda por dentro na `R2`). A decisão C, de como se chega nas conversas e se
 começa uma nova, voltou a ele com o estudo que pediu, em quatro opções; no quadro, no mesmo dia: "Ca"
-(como escrito). Fica decidida a C-a: na barra, em toda tela, "Nova conversa", o lugar "Conversas" e as
-conversas recentes que couberem.
+(como escrito). Fica decidida a C-a: na barra do Hub, "Nova conversa", o lugar "Conversas" e as
+conversas recentes. O quadro dizia "em toda tela"; o cartão escreve, na página dele, que a barra do
+projeto e a das Configurações não trazem o botão nem as recentes, para ele aprovar ou mudar.
 
 Esta página não é um cartão de etapa (delivery L5). O estudo, os protótipos e as capturas ficam fora do
 repositório (delivery L21). A trilha usa a vaga `desenho` que o código já conhece (`scripts/cli.ts`);

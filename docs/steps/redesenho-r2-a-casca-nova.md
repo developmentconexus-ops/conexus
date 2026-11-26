@@ -21,8 +21,8 @@ estão na página da trilha.
 **No fim desta etapa** você acha qualquer área do Hub pelo nome, entra num projeto e vê as seções dele,
 volta com um clique, e chega pelo Ctrl+K em qualquer área, seção das Configurações, projeto ou conversa
 recente. A coluna de conversas, que hoje aparece ao lado de quase toda área, some: a barra é uma só, e
-é nela que você começa uma conversa nova ou abre uma das últimas, de qualquer tela. É a moldura da
-versão 2 dos protótipos; o que está dentro de cada tela (a galeria de agentes, os cartões
+é nela que você começa uma conversa nova ou abre uma das últimas, de qualquer área do Hub. É a moldura
+da versão 2 dos protótipos; o que está dentro de cada tela (a galeria de agentes, os cartões
 de ligação, a galeria de projetos) chega nas etapas seguintes.
 
 **O roteiro de uso.** No Hub da nuvem, sem terminal.
@@ -30,7 +30,8 @@ de ligação, a galeria de projetos) chega nas etapas seguintes.
 1. Abra o Hub. A barra tem o nome de cada lugar: Início; **Dados e contexto** (Integrações, Dados,
    Conhecimento); **Agentes** (Agentes, Automações); **Apps** (Projetos); no pé, Avisos, Configurações
    e a sua conta, com o nome da empresa embaixo do seu. No alto fica "Nova conversa"; depois de Início,
-   "Conversas"; no fim, "Recentes", com as suas últimas conversas. Clique em Conhecimento: são as instruções e as
+   "Conversas"; no fim, "Recentes", com as suas últimas conversas (até oito; role a barra se a tela
+   for baixa). Clique em Conhecimento: são as instruções e as
    páginas da empresa, que saíram das Configurações. Clique em Dados: as camadas Negócio, Bruto e Apps
    são abas no alto da página, e não há coluna ao lado.
 2. Recolha a barra pelo botão do alto (ou Ctrl+B): ficam só os ícones. Passe o mouse, e depois o Tab,
@@ -121,12 +122,18 @@ versão 2 e das telas do Mobbin.
 - **C. Como você chega nas conversas de antes e começa uma nova. Decidida: C-a** (2026-11-26). Você
   perguntou se não valia deixar a segunda coluna no Início, "para facilitar", ou algo como um "nova
   conversa"; o estudo olhou dezenove produtos no Mobbin, desenhou quatro opções sobre o protótipo da
-  versão 2 e passou as quatro pela crítica do Impeccable. Você escolheu: na barra, em toda tela, o
-  botão "Nova conversa", o lugar "Conversas" (a lista inteira, por dia, com a busca e o filtro) e, no
-  fim, "Recentes", com as últimas conversas que couberem, até oito. É o que fazem os produtos com uma
+  versão 2 e passou as quatro pela crítica do Impeccable. Você escolheu: na barra do Hub, em toda área
+  dele, o botão "Nova conversa", o lugar "Conversas" (a lista inteira, por dia, com a busca e o filtro)
+  e, no fim, "Recentes", com as suas últimas conversas, até oito. É o que fazem os produtos com uma
   barra larga como a nossa (Claude, ChatGPT, Gemini, Langdock, WRITER, Dropbox Dash). O que você
-  aceitou: com três títulos de grupo, a 768 px de altura cabem três recentes (oito numa tela alta, uma
-  na gaveta do celular), e a barra recolhida e a do projeto não as mostram. Ficaram de fora: C-b (a
+  aceitou: com três títulos de grupo, a 768 px de altura aparecem três recentes sem rolar a barra (oito
+  numa tela alta, uma na gaveta do celular), e a barra recolhida não as mostra. **Um ponto que o quadro
+  não deixou claro, e que você aprova com esta página:** o quadro dizia "em toda tela", mas dentro de
+  um projeto e nas Configurações a barra é outra (a do projeto, o índice) e não traz "Nova conversa"
+  nem "Recentes"; de lá você volta com um clique ("← Todos os projetos", "← Voltar") ou usa o Ctrl+K,
+  que acha as conversas recentes. O motivo: dentro de um projeto, "Nova conversa" se confundiria com
+  as conversas do próprio projeto. Se quiser o botão também nessas barras, diga: é uma linha em cada
+  moldura. Ficaram de fora: C-b (a
   coluna de conversas só no Início e numa conversa aberta), C-c (a barra sem "Recentes") e C-d (a
   coluna em toda tela, como hoje).
 - **D. As regras escritas dos guias. Decidida: D-a** (2026-11-26). Os guias mudam antes de construir,
@@ -151,7 +158,7 @@ versão 2 e das telas do Mobbin.
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
 | G1 | U1 As listas saem da coluna e Conhecimento ganha o lugar | a página Conversas, com a lista inteira; a lista ao lado vira "Recentes", curta; as camadas de Dados em abas; a tela "Memória da empresa" muda de endereço e vira Conhecimento; a coluna deixa de mostrar a árvore | `apps/web/src/agents/assistant/`, `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/`, `apps/web/` (os testes de moldura que leem a lista), `packages/hub-api/src/pages.ts`, `docs/reference/screens.md`, `docs/reference/telas.md` | web | a R1 em `main`; o pull request de método da decisão D em `main`; nenhuma unidade aberta das outras trilhas nesses arquivos (delivery L1) |
-| G1 | U2 A barra com grupos e a barra do objeto | a navegação em dados; a barra de 240 px com grupos, o botão de recolher e a escolha guardada; "Nova conversa", o lugar "Conversas" e "Recentes" na barra do Hub; a barra do projeto com "← Todos os projetos" e o estado; a conta com a empresa e "Suas empresas" no menu dela; Configurações e Central na moldura nova | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `apps/web/src/hub/projects/`, `apps/web/src/hub/identity/`, `apps/web/src/hub/notifications/`, `apps/web/src/platform/`, `apps/web/src/brand/`, `DESIGN.md` | design | U1 |
+| G1 | U2 A barra com grupos e a barra do objeto | a navegação em dados; a barra de 240 px com grupos, o botão de recolher e a escolha guardada; "Nova conversa", o lugar "Conversas" e "Recentes" na barra do Hub; a barra do projeto com "← Todos os projetos" e o estado; a conta com a empresa e "Suas empresas" no menu dela; Configurações e Central na moldura nova | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `apps/web/src/hub/projects/`, `apps/web/src/hub/identity/`, `apps/web/src/hub/notifications/`, `apps/web/src/agents/assistant/`, `apps/web/src/platform/`, `apps/web/src/brand/`, `apps/web/` (os testes de navegador e o `package.json`), `DESIGN.md` | design | U1 |
 | G2 | U3 A paleta de comando | Ctrl+K sobre o Base UI, com as páginas saídas da navegação, os projetos, as conversas recentes e as empresas de quem tem mais de uma; o gatilho na barra | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `apps/web/src/agents/assistant/` (o que `public.ts` exporta), `DESIGN.md` | design | U2 |
 | G2 | U4 A gaveta | a gaveta do celular com a barra do lugar, a busca e a conta, a 390 e a 320 px | `apps/web/` (os testes de celular), `apps/web/src/ui/` | design | U3 |
 
@@ -186,7 +193,7 @@ Dois pull requests (delivery L9): G1 e G2.
 | 20 | todas | Cada peça nova (`nav`, `command-palette`, `kbd`) tem entrada na vitrine; a vitrine abre sem violação de CSP nos dois temas a 1366 e 390 px; o foco é visível em toda peça | `apps/web/showcase.layout.test.ts`, `pieces.layout.test.ts`, `focus.layout.test.ts` (existentes) | must |
 | 21 | todas | A catraca do lint de design não sobe (303 na ponta da R1) | `npm run lint:design -w @conexus/web` | must |
 | 22 | U1 | `/companies/<e>/knowledge` mostra, sob o título "Conhecimento", as instruções e as páginas que hoje estão em Configurações › Memória da empresa: todo papel lê, e só quem gerencia a memória salva, como hoje. As Configurações deixam de listar "Memória da empresa"; recusa: o endereço antigo, `/companies/<e>/settings/company-memory`, responde não encontrado | `apps/web/src/agents/assistant/company-memory.test.tsx`, os casos de hoje no endereço novo e "o endereço antigo não existe"; `apps/web/src/routes/_app/companies/$companyId_/settings/settings.test.tsx`, as listas sem a seção; `apps/web/src/routes/__root.test.tsx`, "cada endereço do roteador é uma página que o Hub abre" (existente) | must |
-| 23 | U2 | Em toda tela da empresa fora de um projeto, a barra tem "Nova conversa" sob a linha do alto, que abre o Início, e "Recentes" depois dos grupos. Numa conversa aberta e na lista, o lugar atual é Conversas, e não Início. Recolhida, "Nova conversa" é um ícone com a dica e "Recentes" não aparece; recusa: a barra do projeto, a das Configurações e a da Central não têm "Nova conversa" nem "Recentes" | `route.test.tsx`, "a barra tem Nova conversa e Recentes" e "numa conversa o lugar é Conversas"; `settings.test.tsx` e `hub/projects/project-bar.test.tsx`, "a barra do objeto não lista conversas"; `apps/web/shell.layout.test.ts`, "recolhida, Recentes some" | must |
+| 23 | U2 | Em toda tela da empresa fora de um projeto, a barra tem "Nova conversa" sob a linha do alto, que abre o Início, e "Recentes" depois dos grupos. Numa conversa aberta e na lista, o lugar atual é Conversas, e não Início, na barra e no alto do celular; no Início, só "Início" é o lugar atual. Recolhida, "Nova conversa" é um ícone com a dica e "Recentes" não aparece; recusa: a barra do projeto, a das Configurações e a da Central não têm "Nova conversa" nem "Recentes" | `route.test.tsx`, "a barra tem Nova conversa e Recentes" e "numa conversa o lugar é Conversas"; `settings.test.tsx` e `hub/projects/project-bar.test.tsx`, "a barra do objeto não lista conversas"; `apps/web/shell.layout.test.ts`, "recolhida, Recentes some" | must |
 
 ## A matriz de estados
 
@@ -401,10 +408,13 @@ itens dela esperam. Nenhuma outra issue `next-card` aberta fala da moldura, da b
 | 12 | O nome do projeto na barra mantém o seletor de projeto de hoje, que a v2 não desenha | trocar de projeto sem voltar à lista já existe (`hub/projects/project-rail.tsx:38-71`) e tirar seria perder uma função numa etapa de moldura | passar só o nome e o estado, sem `SidebarSwitch` |
 | 13 | O lugar se chama "Conhecimento"; as frases da conversa e da tela que dizem "memória da empresa" (`agents/assistant/text.ts:103-111`) ficam como estão | a tela é da trilha Dados (ficha TD11), e o nome do que o Assistente guarda é assunto dela; a R2 só dá o lugar na barra | trocar as frases em `text.ts`, numa etapa da trilha Dados |
 | 14 | A linha da conta lê a empresa como `CompanySwitcher` lê hoje (`useSuspenseQuery`), sem estado de carregando nem de erro próprio | `enterHouse` lê a empresa antes de a moldura montar (`hub/identity/enter-company.ts`); um esqueleto ali nunca apareceria pela porta pública | · |
-| 15 | "Recentes" mostra até oito conversas, sem os dias; quando não cabem, a barra rola | a primeira página que a lista já lê tem trinta; os dias, a busca e o filtro estão na página Conversas; Claude e Gemini listam as recentes sem dias | mudar o número em `sidebar-conversations.tsx` |
-| 16 | A página Conversas não repete "Nova conversa" no alto | o botão está na barra em toda tela; a crítica da forma apontou os dois na mesma tela | passar o botão em `actions` do `PageHeader` |
+| 15 | "Recentes" mostra sempre até oito conversas, sem os dias; quando não cabem na altura, a barra rola, com os lugares no alto | a primeira página que a lista já lê tem trinta; os dias, a busca e o filtro estão na página Conversas; Claude e Gemini listam as recentes sem dias | mudar o número em `sidebar-conversations.tsx` |
+| 16 | A página Conversas não repete "Nova conversa" no alto | o botão está na barra em toda área do Hub; a crítica da forma apontou os dois na mesma tela | passar o botão em `actions` do `PageHeader` |
 | 17 | Entre a U1 e a U2 a página Conversas e Conhecimento só abrem pelo endereço | as duas unidades saem no mesmo pull request (G1); nenhuma versão publicada fica sem a porta | levar o passo 4 da U1 para a U2 |
 | 18 | As telas das opções da decisão C usam o miolo do Início da versão 2, que a R2 não constrói (G-a) | o fundador escolhe a moldura vendo-a sobre o protótipo que aprovou | · |
+| 19 | "Nova conversa" e "Recentes" ficam só na barra do Hub; a barra do projeto, o índice das Configurações e a Central não os trazem | dentro de um projeto, "Nova conversa" se confundiria com as conversas do projeto (Construir e a seção Conversas); a versão 2 não os desenha nessas barras. O quadro que o fundador respondeu dizia "em toda tela": o ponto está escrito na decisão C da página dele, para ele aprovar ou mudar | passar `NewConversation` como `header` também nas outras molduras |
+| 20 | Uma conversa aberta passa a ter o lugar "Conversas", e não "Início" | a lista inteira virou um lugar da barra; o alto do celular e o item marcado dizem onde a pessoa está | voltar `staticData.place` da rota da conversa a 'Início' |
+| 21 | "Nova conversa" segue um botão (`buttonVariants`), e não um item da navegação | é uma ação, não um lugar: no Início só "Início" leva o fundo de lugar atual, como na captura `c2-inicio` | desenhá-lo com `SidebarMenuButton` |
 
 ## O que a aprovação muda nos documentos
 
@@ -447,11 +457,11 @@ Databricks da tabela do Mobbin.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `agents/assistant/sidebar-conversations.tsx` e os seus dois testes | muda: `SidebarConversations` vira a lista curta "Recentes" (as oito primeiras da primeira página, sem busca, filtro por lugar, abas, dias nem paginador); `NewConversation` fica; os casos de busca, filtro, abas e paginador dos dois testes passam para o teste da página | `agents/assistant/public.ts`, `route.tsx` |
+| `agents/assistant/sidebar-conversations.tsx` e os seus dois testes (`sidebar-conversations.test.tsx`, `sidebar-search.test.tsx`) | muda: `SidebarConversations` vira a lista curta "Recentes" (as oito primeiras da primeira página, sem busca, filtro por lugar, abas, dias nem paginador); `NewConversation` fica; os casos de busca, filtro, abas e paginador dos dois testes passam para o teste da página | `agents/assistant/public.ts`, `route.tsx` |
 | `agents/assistant/conversations-page.tsx` e o teste | cria | `public.ts`, a rota nova |
 | `agents/assistant/conversation-row.tsx` | fica: é a linha de "Recentes", com as peças `Sidebar*` de hoje | `sidebar-conversations.tsx` |
 | `agents/assistant/projects-tab.tsx` | muda: sai da coluna para a página; as linhas são as da folha (`blockRow` de `ui/block.tsx`, como "Continuar") e o esqueleto é `Skeleton` | `conversations-page.tsx` |
-| `agents/assistant/text.ts`, `public.ts` | muda: `public.ts` passa a exportar `ConversationsPage` e `ConversationsSearch`; `SidebarConversations` e `NewConversation` seguem exportados; `text.ts` ganha `RECENT_CONVERSATIONS = 'Recentes'` | a rota nova, `route.tsx` |
+| `agents/assistant/text.ts`, `public.ts` | muda: `public.ts` passa a exportar `ConversationsPage` e `ConversationsSearch`; `SidebarConversations` e `NewConversation` seguem exportados; em `text.ts`, `RECENT_TAB` passa a se chamar `RECENT` (a mesma frase na aba e no grupo da barra) | a rota nova, `route.tsx` |
 | `routes/_app/companies/$companyId/conversations/index.tsx` | cria | o roteador; `routeTree.gen.ts` (gerado) |
 | `routes/_app/companies/$companyId/index.tsx` | muda: `q`, `place`, `tab` e `conversations` saem do `validateSearch` do Início | os links para o Início |
 | `routes/_app/companies/$companyId/route.tsx` | muda: sai o ramo `inData`, da árvore; fora de um projeto a coluna segue com `NewConversation` e `SidebarConversations`, agora a lista curta, até a U2 levá-los para a barra (as duas unidades saem no mesmo pull request) | · |
@@ -468,6 +478,7 @@ Databricks da tabela do Mobbin.
 | `apps/web/frame.layout.test.ts:53`, `frame-inset.layout.test.ts:52-54` | muda: o rótulo do grupo que os dois esperam passa de "Conversas" a "Recentes" | `test:browser` |
 | `apps/web/axis.layout.test.ts:73-84` | muda: o caso dos rótulos espera só o rótulo de grupo da barra; os rótulos de dia (`sidebar-day-label`) saem da barra, e a mesma conferência (V61) passa para a página Conversas | `test:browser` |
 | `apps/web/motion-screen.layout.test.ts:215-237` | muda: "a letra na busca da barra" e "a aba da barra" passam a abrir `/conversations` e a usar a busca e a aba da página | `test:browser` |
+| `apps/web/picker-places.ts:96-104` | muda: o lugar "o filtro de conversas" passa a abrir `/companies/<e>/conversations?place=HOME`, com `drawer: false` (o filtro está na página, não na coluna); ele alimenta `keyboard.test.ts:244-263` e `project-picker.layout.test.ts` | `test:browser` |
 | `routes/_app/companies/$companyId/route.test.tsx:67-109`, `hub/projects/project-bar.test.tsx:93-111` | muda: onde o caso lê o grupo "Conversas" ou a busca na coluna, passa a ler "Recentes"; "Nova conversa" segue | `test:unit` |
 
 ### Os contratos que a unidade cria
@@ -486,13 +497,14 @@ desenha `ConversationsPage`. O esquema só garante a forma; quem recusa um valor
 `HOME`, `AUTOMATIONS` nem um `ProjectId`. O estado da lista é `ListView` (a aba é
 `tab: 'PROJECTS' | undefined`, C21); os ids são `CompanyId`, `ProjectId` e `ConversationId` do `hub-api`
 (C23). A lista segue em páginas de 30 com o paginador (C44). O dono das frases é `text.ts`; entra
-`RECENT_CONVERSATIONS = 'Recentes'`, e o vazio usa `NO_CONVERSATIONS_BLOCK`, que já existe
+nenhuma frase nova: `RECENT_TAB = 'Recentes'` (`text.ts:85`) passa a se chamar `RECENT` e serve à aba
+da página e ao rótulo do grupo da barra, e o vazio usa `NO_CONVERSATIONS_BLOCK`, que já existe
 (C26). `NewConversation` (`sidebar-conversations.tsx:41-53`) fica onde está, sem mudar, e a página não
 o repete (decisão 16 do firstmate). `SidebarConversations` mantém a assinatura
 (`props: { companyId: CompanyId }`) e passa a ler só a primeira página sem filtro,
-`assistantConversationsQuery(companyId, undefined, 1, {})`, a mesma chave que a página usa sem busca
-(um dono, C26); desenha as oito primeiras com `ConversationRow`, sob o rótulo `RECENT_CONVERSATIONS`, e
-devolve `null` sem conversa ou se a leitura falha. O arquivo modelo é o próprio `sidebar-conversations.tsx`: cumpre C21,
+`assistantConversationsQuery(companyId, undefined, undefined)`, a mesma chamada do bloco "Continuar"
+(`day.tsx:24`) e a mesma chave da página sem busca (um dono, C26); desenha as oito primeiras com
+`ConversationRow`, sob o rótulo `RECENT`, e devolve `null` sem conversa ou se a leitura falha. O arquivo modelo é o próprio `sidebar-conversations.tsx`: cumpre C21,
 C23 e C26.
 
 Em `hub/copies/data-page.tsx`, `DataPage` ganha as abas das camadas no alto, com `Tabs` de `ui/tabs.tsx`
@@ -613,13 +625,15 @@ rotas de moldura (`routes/_app/companies/$companyId/route.tsx`, `.../$companyId_
 | `ui/sidebar-rail-button.tsx` | apaga | `route.tsx`, a vitrine |
 | `ui/settings-index.tsx` | muda: desenha por `SidebarNav` | a rota das Configurações |
 | `hub/projects/project-rail.tsx`, `public.ts` | muda: ficam `ProjectRailHead` e o seletor, com o estado do app sob o nome; saem `RAIL`, `ProjectRailNav` e `BUILD_ROUTE` | `route.tsx` |
-| `agents/assistant/sidebar-conversations.tsx` | muda: o grupo "Recentes" some com a barra recolhida, e `NewConversation` vira ícone com a dica | `route.tsx` |
+| `agents/assistant/sidebar-conversations.tsx` | muda: o grupo "Recentes" some com a barra recolhida (`group-data-[collapsible=icon]:hidden`, como SH `nav-projects.tsx:32`); `NewConversation` segue um `Link` com `buttonVariants` e, recolhida, vira o botão de ícone com `Tooltip` (não um `SidebarMenuButton`: decisão 21 do firstmate) | `route.tsx` |
+| `routes/_app/companies/$companyId/conversations/$conversationId.tsx` | muda: `staticData.place` passa de 'Início' a 'Conversas' (linha 8) | a barra (`places`), o alto do celular |
 | `ui/sidebar-selector.tsx` | muda: a cabeça ganha a segunda linha opcional (`note`) | `ProjectRailHead`, `hub/operations/central-header.tsx` (sem `note`) |
 | `hub/identity/account-menu.tsx` e o teste | muda: sai a variante `compact`; entra `companyId`, a empresa na segunda linha e o grupo "Suas empresas" no menu | as rotas de moldura |
 | `hub/identity/company-switcher.tsx` e o teste, `public.ts` | apaga: o grupo "Suas empresas" (`company-switcher.tsx:28-38`) muda para o menu da conta | `route.tsx` |
 | `hub/notifications/bell.tsx` | muda: o gatilho de `NotificationBell` (`bell.tsx:182-213`) passa de botão de ícone a `SidebarMenuButton` com o nome "Avisos", a contagem e a dica quando recolhida; o título do painel e o nome acessível passam de "Notificações" a "Avisos"; o painel e a assinatura ficam | a rota da empresa e a das Configurações |
 | `brand/tokens.css`, `DESIGN.md` | muda: `sidebar` 15 rem; saem `rail-tile` e a prosa do trilho | o Impeccable, `brand/tokens.test.ts` |
-| `apps/web/shell.layout.test.ts` | cria | `apps/web/package.json` (`test:browser`) |
+| `apps/web/shell.layout.test.ts` | cria | `apps/web/package.json:12` (`test:browser`), que muda: o arquivo novo entra na lista |
+| `routes/_app/companies/$companyId_/settings/settings.test.tsx` | muda: entra "a barra do objeto não lista conversas" (critério 23) | `test:unit` |
 | `route.test.tsx`, `frame.layout.test.ts`, `frame-inset.layout.test.ts`, `focus.layout.test.ts`, `contrast.layout.test.ts`, `keyboard.test.ts`, `layout.test.ts`, `motion*.layout.test.ts`, `workbench.layout.test.ts`, `picker-places.ts`, `sweep-*-states.ts`, os três testes `hub/projects/project-{bar,rail,phone}.test.tsx`, `account-menu.test.tsx`, `bell.test.tsx` | muda: os seletores do trilho passam aos da barra | `test:unit`, `test:browser`, `test:sweep` |
 
 ### Os contratos que a unidade cria
@@ -653,7 +667,8 @@ export const CENTRAL_NAV: readonly NavSection[]  // Clientes, Estado do Hub
 ```
 
 `HUB_NAV`: Início (`exact`) e Conversas (`/companies/$companyId/conversations`, o ícone
-`MessageSquareIcon`, `places: ['Conversas']`, sem `needs`), numa seção sem título; "Dados e contexto": Integrações, Dados,
+`MessageSquareIcon`, `places: ['Conversas']`, sem `needs`), numa seção sem título (a rota da lista e a
+da conversa aberta têm esse `staticData.place`: a da conversa muda nesta unidade); "Dados e contexto": Integrações, Dados,
 Conhecimento (`/companies/$companyId/knowledge`, o ícone `BookOpenIcon`, sem `needs`: todo papel lê);
 "Agentes": Agentes (`needs: 'manageAgents'`), Automações (`needs: 'manageAutomations'`); "Apps":
 Projetos. Os títulos e a divisão são os da decisão B (B-b, 2026-11-26); `PROJECT_NAV` copia `project-rail.tsx:81-145`
@@ -669,7 +684,7 @@ Em `ui/frame.tsx`:
 export function Frame(props: {
   /** The way out of an inner place, in the top line instead of the mark: "← Todos os projetos", "← Voltar". */
   back?: Pick<LinkProps, 'to' | 'params'> & { label: string }
-  /** Under the top line: the Projeto's name with its switcher, or the Central's head. The company's frame gives none. */
+  /** Under the top line: "Nova conversa" in the company's frame, the Projeto's name with its switcher, or the Central's head. */
   header?: ReactNode
   nav: ReactNode
   footer: ReactNode
@@ -749,7 +764,8 @@ o pull request de método da decisão D os deixou.
      `team-switcher.tsx:43-56`.
    - **O que sai:** `CompanySwitcher` e o nome da empresa no alto da barra.
    - **O que entra:** a empresa passa `NewConversation` como `header` e, em `nav`, `SidebarNav` com
-     `seen(HUB_NAV, may)` seguido de `SidebarConversations`; com `projectId`, `back` "Todos os
+     `seen(HUB_NAV, may)` seguido de `SidebarConversations`; a rota da conversa aberta passa a
+     `place: 'Conversas'`; com `projectId`, `back` "Todos os
      projetos", `ProjectRailHead` com o estado e só `seen(PROJECT_NAV, may)`, sem conversas;
      o pé dela é `NotificationBell` ("Avisos"), o link Configurações e `AccountMenu` com `companyId`. As
      Configurações: `back` "Voltar", o índice de hoje, e no pé `NotificationBell` e `AccountMenu` com
@@ -813,7 +829,7 @@ leituras que já existem.
 | `ui/frame.tsx` | muda: `search`, o gatilho e a tecla | as três rotas |
 | `agents/assistant/public.ts` | muda: exporta a leitura da primeira página de conversas | `-destinations.tsx` |
 | `ui/showcase/`, `DESIGN.md` ("Paleta") | muda | a vitrine, o Impeccable |
-| `apps/web/palette.layout.test.ts` | cria | `apps/web/package.json` (`test:browser`) |
+| `apps/web/palette.layout.test.ts` | cria | `apps/web/package.json:12` (`test:browser`), que muda: o arquivo novo entra na lista |
 | `apps/web/motion.layout.test.ts` | muda: a paleta no caso do reduzir | `test:browser` |
 
 ### Os contratos que a unidade cria
