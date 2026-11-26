@@ -1,6 +1,11 @@
 import type { Stack, aws_s3tables as s3tables } from 'aws-cdk-lib'
 import { aws_iam as iam, aws_lakeformation as lakeformation, Tags } from 'aws-cdk-lib'
-import { AREAS, READER_ACTIONS, WRITER_GRANTS, WRITER_TABLE_ACTIONS } from './actions.ts'
+import {
+  READER_ACTIONS,
+  updatedTableResources,
+  WRITER_GRANTS,
+  WRITER_TABLE_ACTIONS,
+} from './actions.ts'
 import {
   BOUNDARY,
   COPY_QUEUE,
@@ -73,7 +78,7 @@ function writerStatements(
     new iam.PolicyStatement({
       sid: 'ChangeTheCompanyTables',
       actions: ['glue:UpdateTable'],
-      resources: AREAS.map((area) => arn('glue', `table/${catalog}/${area}/*`)),
+      resources: updatedTableResources(name).map((resource) => arn('glue', resource)),
     }),
     new iam.PolicyStatement({ actions: ['lakeformation:GetDataAccess'], resources: ['*'] }),
     new iam.PolicyStatement({

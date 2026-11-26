@@ -1,5 +1,5 @@
 import type { Statement } from './policies.ts'
-import { actionsOf, resourcesOf } from './policies.ts'
+import { ACCOUNT, actionsOf, REGION, resourcesOf } from './policies.ts'
 
 /** What a call carries that the policies of this package read. */
 export type Call = {
@@ -30,6 +30,36 @@ export function allows(identity: Statement[], call: Call): boolean {
   return (
     matching(identity, call, 'Deny').length === 0 && matching(identity, call, 'Allow').length > 0
   )
+}
+
+/**
+ * Glue asks for the action on the table and on each of its ancestors (AWS Glue guide, "Specifying
+ * AWS Glue resource ARNs").
+ */
+export function refusedUpdateResources(
+  identity: Statement[],
+  bucket: string,
+  area: string,
+): string[] {
+  const child = `s3tablescatalog/${bucket}`
+  return [
+    'catalog',
+    'catalog/s3tablescatalog',
+    `catalog/${child}`,
+    `database/${child}/${area}`,
+    `table/${child}/${area}/notas`,
+  ]
+    .map((resource) => `arn:aws:glue:${REGION}:${ACCOUNT}:${resource}`)
+    .filter(
+      (resource) =>
+        !allows(identity, {
+          action: 'glue:UpdateTable',
+          resource,
+          principalArn: `arn:aws:iam::${ACCOUNT}:role/conexus-lagodeaaaaaa-escritor`,
+          principalTags: {},
+          requestTags: {},
+        }),
+    )
 }
 
 function matching(statements: Statement[], call: Call, effect: 'Allow' | 'Deny'): Statement[] {

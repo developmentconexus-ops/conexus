@@ -245,7 +245,7 @@ As respostas da entrevista, que o cartão da etapa 2 segue:
 - `infra/aws/`, a plataforma em CDK e o modelo da pilha de cada empresa
   ([0073](../../decisions/0073-platform-by-cdk-one-stack-per-company.md)).
 - `apps/server/src/hub/connectors/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/ontology/`, `apps/server/src/hub/data/` e `apps/server/src/hub/lake/`, o lago de cada empresa.
-- `apps/server/src/builder/copy-clock/` e `apps/server/src/platform/copy-sql.ts`.
+- `apps/server/src/harness/copy-clock/` e `apps/server/src/platform/copy-sql.ts`.
 - As telas de Integrações, Dados (que toma o lugar de Cópias, resposta E1a) e Conhecimento.
 - O contrato de acesso, com o teste de conformidade dele.
 

@@ -38,8 +38,8 @@ function handOffs() {
     },
     change: {
       id: ASSISTANT_TOOL.proposeAppChange,
-      description: `Hands a change of this Projeto's app to its Builder. The person sees a button, Mandar ao Construtor de apps, that opens a new conversation of this Projeto's Builder with your summary and briefing; nothing happens until they touch it. Call it when the person wants this app to change, to show or record something new, or to fix how it works, in the turn in which you know what the change is for, after the research it asks for. What neither the data nor the person settled goes in the briefing as an open question, also where a connector's skill says to ask the person: the Builder asks those questions on its cards before it plans, so a question from you makes the person answer twice. ${twoButtons} ${notFor}`,
-      next: 'The person sees Mandar ao Construtor de apps. The Builder plans from your briefing and asks its open questions. Do not propose again unless the change asked changes.',
+      description: `Hands a change of this Projeto's app to its Builder. The person sees a button, Mandar para Construir, that opens a new conversation of this Projeto's Builder with your summary and briefing; nothing happens until they touch it. Call it when the person wants this app to change, to show or record something new, or to fix how it works, in the turn in which you know what the change is for, after the research it asks for. What neither the data nor the person settled goes in the briefing as an open question, also where a connector's skill says to ask the person: the Builder asks those questions on its cards before it plans, so a question from you makes the person answer twice. ${twoButtons} ${notFor}`,
+      next: 'The person sees Mandar para Construir. The Builder plans from your briefing and asks its open questions. Do not propose again unless the change asked changes.',
     },
   } as const
 }

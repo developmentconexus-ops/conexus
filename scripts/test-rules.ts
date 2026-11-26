@@ -145,6 +145,21 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     '../hub/a/public.ts',
     { 'apps/web/src/hub/a/public.ts': PUBLIC },
   ],
+  'web-harness-imports-no-agent': [
+    'apps/web/src/harness/a/room.ts',
+    '../../agents/assistant/public.ts',
+    { 'apps/web/src/agents/assistant/public.ts': PUBLIC },
+  ],
+  'web-agent-imports-no-other-agent': [
+    'apps/web/src/agents/saved-agent/a.ts',
+    '../agent-builder/public.ts',
+    { 'apps/web/src/agents/agent-builder/public.ts': PUBLIC },
+  ],
+  'web-agent-builder-imports-only-the-saved-agent': [
+    'apps/web/src/agents/agent-builder/a.ts',
+    '../app-builder/public.ts',
+    { 'apps/web/src/agents/app-builder/public.ts': PUBLIC },
+  ],
   'routes-reach-subject-through-public': [
     'apps/web/src/routes/r.ts',
     '../hub/a/inner.ts',

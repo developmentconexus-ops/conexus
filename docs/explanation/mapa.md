@@ -194,7 +194,7 @@ Dois grupos, Você e o nome da empresa.
 
 | Grupo hoje | Seção | De quem é |
 | --- | --- | --- |
-| Você | Minha conta (perfil, cargo e área, o que o Assistente lembra de você) | da pessoa |
+| Você | Minha conta (perfil, cargo e área, o que o Conexus lembra de você) | da pessoa |
 | Você | Contas de modelo (Suas contas, Contas da empresa, Troca automática) | **dos dois**: a única página com dois donos |
 | Você | Meus padrões (conversa nova, modelo e raciocínio) | da pessoa |
 | Empresa | Geral (nome e apelido, só leitura) | da empresa |

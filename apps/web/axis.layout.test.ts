@@ -151,6 +151,11 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
     const working = page.getByRole('status').filter({ hasText: 'trabalhando' })
     const form = page.locator('form').filter({ has: page.getByLabel('Mensagem') })
     await working.waitFor()
+    const mark = working.locator('[data-slot=conexus-mark] path').first()
+    assert.ok(
+      await mark.evaluate((path) => path.getAnimations().length > 0),
+      'the Conexus mark does not move while at work',
+    )
     const [scroll, line, box, log, last] = await Promise.all([
       scroller.boundingBox(),
       working.locator('svg').first().boundingBox(),
@@ -184,6 +189,25 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
     assert.ok(
       Math.abs(line.x - box.x) <= 1,
       `the working line starts at ${line.x}, the box at ${box.x}`,
+    )
+    await page.close()
+  })
+
+for (const viewport of [DESKTOP, PHONE])
+  test(`na linha "esperando sua resposta" a marca do Conexus fica parada a ${viewport.width}`, async () => {
+    const page = await harness.open(
+      `/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations/${WORKING}`,
+      { viewport, replies: { ...WITH_ACCOUNT, ...WORKING_REPLIES } },
+    )
+    if (viewport === PHONE)
+      await page.getByRole('button', { name: 'Conversa', exact: true }).click()
+    const waiting = page.getByRole('status').filter({ hasText: 'esperando sua resposta' })
+    await waiting.waitFor()
+    const mark = waiting.locator('[data-slot=conexus-mark] path').first()
+    assert.equal(
+      await mark.evaluate((path) => path.getAnimations().length),
+      0,
+      'the Conexus mark moves while it waits on the person',
     )
     await page.close()
   })
