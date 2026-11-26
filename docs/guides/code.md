@@ -24,8 +24,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   importing the Builder. [dependency-cruiser]
 - **C5.** Between programs, code **must** import by package name, such as `@conexus/hub-api`, never
   by path. [dependency-cruiser]
-- **C6.** There **must not** be an import cycle, or a file loose in `hub/` or `builder/` outside a
-  subject. [dependency-cruiser]
+- **C6.** There **must not** be an import cycle, or a file loose in `hub/`, `harness/` or `agents/` outside
+  a subject. [dependency-cruiser]
 - **C7.** `platform/` **must not** import a subject or hold a subject file. [dependency-cruiser]
 - **C8.** A module **must not** import another owner's table object; it calls the owner's
   operation, in the same transaction when needed. The exceptions are a foreign key and the file that

@@ -1106,6 +1106,24 @@ changes, reread the line it names.
   refusing a lock that is taken.
 - **Revisit when** Mastra can lock by a key other than the conversation.
 
+## Mastra 1.83.0: the Builder's refused turn kept beside the run (Uma sala e os nomes certos)
+
+- **Library line.** A processor's `abort` ends the run with `finishReason: 'tripwire'`. The agent
+  controller folds the processor's id and reason into the text of its `error` event and passes no
+  `processorId` (`@mastra/core` 1.83.0 `dist/agent-controller-BhkzVgCi.js:1186-1197`, emitted at
+  `:738-746`), so nothing typed carries the code or the name of whose run holds the Project.
+- **Hand-made piece.** `createRefusals` in `apps/server/src/agents/app-builder/turn-of.ts`, a map
+  by conversation in the Hub's memory. `projectTurn` clears it, then records `RUN_BUSY` with the
+  holder's name before it refuses; `builderEnds` (`end.ts`) reads it once, and
+  `harness/turn/end.ts` takes it only for an `error` event with `finishReason: 'tripwire'`.
+- **Why.** [Code C52](../guides/code.md): a failure is told by its code, never read from its text.
+  A restart loses the map, and the refusal is only of a live turn.
+- **Proof.** `turn.test.ts`, "o evento error do controlador, na 1.83.0, traz finishReason tripwire
+  e não traz processorId…", which fails when an upgrade passes the field;
+  `conversation-turns.test.ts`, a second conversation of the Project ending `RUN_BUSY` with the
+  name.
+- **Revisit when** Mastra's `error` event carries the processor's id or a typed payload.
+
 ## Mastra 1.83.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
 
 - **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`): the session's native "never ask" is the `allow`

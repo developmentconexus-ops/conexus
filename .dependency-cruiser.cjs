@@ -22,6 +22,7 @@ const DATA = `^(${SERVER}/hub/(connectors|copies|ontology|data)/|packages/connec
 const AGENTS_AND_APPS = `^(${SERVER}/(agents/(assistant|agent-builder|saved-agent|app-builder/(?!runs/|git/))|harness/(spec|turn|memory|prompt|routes|tools)/)|packages/app(-contract)?/)`
 // C56: each SDK of a provider only in its adapter.
 const ADAPTERS = require('./.dependency-cruiser-adapters.cjs')
+const WEB_DIRECTION = require('./.dependency-cruiser-web.cjs')
 // The connectors the kit holds: each folder of packages/connectors/src but the kernel.
 const CONNECTORS = readdirSync(join(__dirname, 'packages/connectors/src'), { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && entry.name !== 'kernel')
@@ -284,6 +285,7 @@ module.exports = {
       from: { path: `${WEB}/(ui|platform|brand)/` },
       to: { path: `${WEB}/(hub|harness|agents|routes)/` },
     },
+    ...WEB_DIRECTION(WEB_TEST_HELPER),
     {
       name: 'ui-ai-takes-ready-data',
       comment:

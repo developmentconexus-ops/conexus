@@ -144,7 +144,6 @@ Entrou no pull request que trouxe estes documentos, com a palavra do fundador de
   Agents", e disse "pode deixar assim por agora". Este documento usa Dados e contexto, Agentes e Apps.
 - Se o Supervisor do Início (decisão E1 de 2026-10-30) é o Assistente com outro nome ou outro
   agente. É do estudo do marco `A6`.
-- O rótulo "Estúdio" no lugar de "Builder" (2026-11-14) é a última unidade do plano da harness.
 
 ## 8. A língua
 

@@ -71,7 +71,7 @@ Brain estão na [trilha Dados](steps/trilhas/dados.md).
 | `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
 | `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A etapa 1 do harness e `A1` fecharam; segue a etapa 2 ("Uma sala e os nomes certos"), depois `A2` e
+A etapa 1 do harness, `A1` e a etapa 2 ("Uma sala e os nomes certos") fecharam; seguem `A2` e
 `A3`. Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
 
