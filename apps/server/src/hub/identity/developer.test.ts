@@ -110,6 +110,8 @@ test('o que a pessoa pode: a empresa diz, para cada um dos quatro papéis, o que
         manageAutomations: mayBuild,
         manageCopies: mayGovern,
         manageNetwork: mayGovern,
+        openAllNetwork: role === 'owner',
+        openConversationNetwork: mayBuild,
         manageRoles: mayGovern,
         readDataReads: mayGovern,
         viewAppData: mayBuild,
