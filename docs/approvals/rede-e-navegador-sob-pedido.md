@@ -9,3 +9,7 @@ Nas decisões C e D da rodada 1, o fundador marcou "outra" e pediu estudo. Para 
 O texto do cartão com as quatro respostas está no commit b57e0f079bc59ddeba95787c3400a187a131f4ac.
 
 Cartão curto de A rede e o navegador sob pedido (`docs/steps/rede-e-navegador-sob-pedido.md`) aprovado em 2026-11-25 (commit 9b89ec701235e08611c561cbe86fb1ff1c6436b5), no quadro da página do fundador, antes de haver commit; este commit guarda o texto de b57e0f07 com correções só de forma feitas em 2026-11-26 ao trazer o main, e a página do fundador não mudou: "Cartão: aprovado"
+
+Em 2026-11-26, no quadro do estudo "internet, pacotes e API de fora, sem capar o modelo", o fundador respondeu: "Escolha A: a: sim, a mesma lista da empresa, a da conversa e o mesmo cartão"; "Escolha B: a: o desenvolvedor libera nesta conversa; para a empresa, só dono e administrador"; "Escolha C: a: lista pronta de desenvolvimento ligada, cartão para o resto, e o dono pode ligar internet toda com aviso"; "Escolha D: a: cartão novo Conexão própria, a chave no cofre do Hub e o app chamando pela plataforma".
+
+Emenda do cartão curto A rede e o navegador sob pedido (`docs/steps/rede-e-navegador-sob-pedido.md`) aprovada em 2026-11-26 (commit a387a8d49986c61b3f7c414cdf2de5da24e04186), no chat, sobre o texto da emenda do estudo, antes de haver commit; 6b22cb8485cce9245211675d8d9d1cdd7a721ecd o aplica ao cartão, com as decisões 8 e 9 do firstmate, e este commit só corrige depois o número de um passo, à pergunta "O senhor aprova a emenda, e qual a sua escolha na E?": "A"
