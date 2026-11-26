@@ -1,8 +1,9 @@
 # v0.24.132
 
 Esta versão publica o que entrou no `main` em 25 e 26/11 depois da v0.24.131: o conserto da gravação da
-cópia no lago, o fechamento da etapa "Uma sala e os nomes certos" e o conserto de uma permissão que
-tinha parado a publicação anterior. A cópia e o lago são da etapa "A primeira cópia chega ao lago".
+cópia no lago, o fechamento da etapa "Uma sala e os nomes certos", o conserto de uma permissão que
+tinha parado a publicação anterior e o plano aprovado de uma etapa. A cópia e o lago são da etapa "A
+primeira cópia chega ao lago".
 
 **A cópia na nuvem não gravava a versão de hoje de cada tabela.** Na v0.24.131, a primeira cópia feita
 pela máquina de cópia na nuvem leu e guardou as tabelas marcadas, mas parou antes de atualizar a versão
@@ -63,5 +64,9 @@ fechamento é documentação do projeto e não muda tela.
 onde a cópia guarda até onde leu (https://github.com/developmentconexus-ops/conexus/pull/1414). A
 permissão foi dada à conta, a v0.24.131 entrou no ar na segunda tentativa, e esta publicação não pede
 outro passo na conta antes de sair.
+
+**O plano da etapa "A rede e o navegador sob pedido".** O plano foi aprovado e entrou no projeto
+(https://github.com/developmentconexus-ops/conexus/pull/1417). É só o documento: nada do que ele
+descreve está nesta versão, e nenhuma tela muda.
 
 Segue a etapa A primeira cópia chega ao lago.
