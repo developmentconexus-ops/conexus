@@ -22,9 +22,11 @@ const RUN = {
 const ENDED = { endedAt: '2026-11-24T10:01:00.000Z', read: 3, written: 3, machine: null }
 
 test('a rodada é uma união por resultado: só a que terminou tem contagens, e só o erro tem código', () => {
-  assert.ok(LakeRun.safeParse({ ...RUN, outcome: 'RUNNING' }).success)
+  assert.ok(LakeRun.safeParse({ ...RUN, outcome: 'RUNNING', stopping: false }).success)
   assert.ok(LakeRun.safeParse({ ...RUN, ...ENDED, outcome: 'COMPLETE' }).success)
-  assert.ok(LakeRun.safeParse({ ...RUN, ...ENDED, outcome: 'INTERRUPTED' }).success)
+  const interrupted = { ...RUN, ...ENDED, outcome: 'INTERRUPTED' }
+  assert.ok(LakeRun.safeParse({ ...interrupted, stoppedBy: null }).success)
+  assert.ok(LakeRun.safeParse({ ...interrupted, stoppedBy: { name: 'Ana' } }).success)
   assert.equal(LakeRun.safeParse({ ...RUN, outcome: 'COMPLETE' }).success, false)
   const error = { ...RUN, ...ENDED, outcome: 'ERROR', failedTable: null, system: null }
   assert.equal(LakeRun.safeParse(error).success, false)

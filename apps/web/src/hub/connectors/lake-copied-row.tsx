@@ -3,6 +3,7 @@ import { Checkbox } from '../../ui/checkbox.tsx'
 import type { Picks, Table } from './lake-pick.ts'
 import {
   columnsText,
+  INTERRUPTED,
   NAME_FIXED,
   RUNNING,
   sinceOfRowText,
@@ -17,7 +18,8 @@ function Status(props: { table: Table; running: boolean; system: string }) {
   const { copy } = props.table
   if (props.running) return <Badge>{RUNNING}</Badge>
   const run = copy.kind === 'MARKED' ? copy.lastRun : null
-  if (run === null || run.outcome === 'INTERRUPTED') return null
+  if (run === null) return null
+  if (run.outcome === 'INTERRUPTED') return <Badge>{INTERRUPTED}</Badge>
   if (run.outcome === 'ERROR') {
     return (
       <span className="flex flex-col gap-xs">

@@ -211,6 +211,7 @@ export {
   setDefaultModel,
   setMyModelDefault,
 } from './model-defaults.ts'
+export * from './network.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
   ObservationalMemoryModels,

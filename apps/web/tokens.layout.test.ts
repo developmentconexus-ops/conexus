@@ -86,6 +86,23 @@ test('o tema', async () => {
   }
 })
 
+// Base UI marks a disabled button with `data-disabled` too, whose fade must not reach the primary one.
+test('o botão principal desabilitado é cinza, não desbotado', async () => {
+  const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {} })
+  for (const [band, theme] of [
+    ['light', 0],
+    ['dark', 1],
+  ] as const) {
+    const off = page.locator(`[data-file="button.tsx"] [data-band=${band}] button.lit:disabled`)
+    const painted = await off.evaluate((element) => {
+      const style = getComputedStyle(element)
+      return [style.backgroundImage, style.backgroundColor, style.opacity]
+    })
+    assert.deepEqual(painted, ['none', rgb(PALETTE['surface-4'][theme]), '1'], band)
+  }
+  await page.close()
+})
+
 /** The colour a half-mixed accent paints in a scheme, read from a probe in a real page. */
 async function mixed(scheme: 'light' | 'dark') {
   const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {}, scheme })

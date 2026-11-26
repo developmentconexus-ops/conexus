@@ -22,7 +22,17 @@ export const ACTIONS: readonly ShowcaseEntry[] = [
       ['hover', () => <Button {...HOVER}>Salvar</Button>],
       ['focus', () => <Button {...FOCUS}>Salvar</Button>],
       ['active', () => <Button {...ACTIVE}>Salvar</Button>],
-      ['disabled', () => <Button disabled>Salvar</Button>],
+      [
+        'disabled',
+        () => (
+          <div className="flex gap-lg">
+            <Button disabled>Salvar</Button>
+            <Button variant="primary" disabled>
+              Salvar
+            </Button>
+          </div>
+        ),
+      ],
     ],
   ),
   entry(

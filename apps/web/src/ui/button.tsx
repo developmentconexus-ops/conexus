@@ -11,12 +11,12 @@ export const touchArea =
   'relative pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:h-full pointer-coarse:after:min-h-11 pointer-coarse:after:w-full pointer-coarse:after:min-w-11 pointer-coarse:after:-translate-1/2'
 
 const buttonClasses = cva(
-  `${touchArea} inline-flex shrink-0 items-center justify-center gap-sm whitespace-nowrap rounded-control border border-transparent font-body text-label select-none button-motion active:scale-96 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0`,
+  `${touchArea} inline-flex shrink-0 items-center justify-center gap-sm whitespace-nowrap rounded-control border border-transparent font-body text-label select-none button-motion active:scale-96 disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0`,
   {
     variants: {
       variant: {
         primary:
-          'lit hover:lit-bright disabled:bg-none disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100 disabled:shadow-none',
+          'lit hover:lit-bright disabled:bg-none disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100 disabled:shadow-none data-disabled:bg-none data-disabled:bg-surface-4 data-disabled:text-text-2 data-disabled:opacity-100 data-disabled:shadow-none',
         default: 'bg-raised text-text shadow-1 hover:shadow-2',
         ghost: 'bg-transparent text-text-2 hover:bg-surface-3 hover:text-text',
         // A destructive action: neutral on the page, full danger only at its confirmation (V55).

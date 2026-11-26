@@ -1,19 +1,19 @@
 import type { CompanyId, ConnectionId } from '@conexus/hub-api'
 import { ConnectionId as ConnectionIdSchema, LakeRunId } from '@conexus/hub-api'
-import { and, eq, isNull } from 'drizzle-orm'
-import type { AwsAnswer, Where } from '../../platform/aws.ts'
-import { RunParameter, runParameterName, TaskArn } from '../../platform/aws.ts'
+import { eq } from 'drizzle-orm'
+import type { TaskArn, Where } from '../../platform/aws.ts'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyScope } from './lake-close.ts'
-import { companyScope, deleteParameter, lakeOf, lastClosedOf } from './lake-close.ts'
+import { companyScope, deleteParameter, lakeOf, lastClosedOf, openRoundOf } from './lake-close.ts'
 import type { LakeCopyDeps } from './lake-copy.ts'
 import { awsDown, dropTables } from './lake-copy.ts'
 import { MACHINE_CLOCK } from './lake-run.ts'
-import { lakeCopy, lakeRun, lakeTable } from './tables.ts'
+import { requestTaskStop, silenceWriter } from './lake-stop.ts'
+import { lakeCopy, lakeTable } from './tables.ts'
 
 type Of = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
-type Open = Readonly<{ id: string; taskArn: string | null }>
+type Open = NonNullable<Awaited<ReturnType<typeof openRoundOf>>>
 
 /**
  * How long a leave waits for its task to stop, read every `STOP_POLL_MS`. The task definition sets
@@ -38,10 +38,10 @@ async function stoppedIn(deps: LakeCopyDeps, at: Of, where: Where, task: TaskArn
 }
 
 /**
- * The connection's open round ended in AWS before any table is dropped (issue #1356): its parameter
- * deleted first, so the writer, which reads it before each batch, writes no more; then the task
- * stopped and waited for until ECS says STOPPED, since a batch begun before the SIGTERM may still
- * close; then the round closes `INTERRUPTED`. A task AWS does not have counts as stopped.
+ * The connection's open round ended in AWS before any table is dropped (issue #1356): the writer
+ * silenced, then the task stopped and waited for until ECS says STOPPED, since a batch begun before
+ * the SIGTERM may still close; then the round closes `INTERRUPTED`. A task AWS does not have counts
+ * as stopped.
  */
 async function stopRun(
   deps: LakeCopyDeps,
@@ -52,24 +52,14 @@ async function stopRun(
 ) {
   const run = LakeRunId.parse(open.id)
   if (where !== null) {
-    const parameter = RunParameter.parse(runParameterName(at.companyId, run))
-    const deleted = await deps.tasks.deleteRun(where, parameter)
-    if (deleted.kind !== 'DONE') return awsDown(deps.log, at, 'DeleteParameter', deleted)
-    const task: AwsAnswer<TaskArn | null> =
-      open.taskArn === null
-        ? await deps.tasks.find(where, run)
-        : { kind: 'DONE', value: TaskArn.parse(open.taskArn) }
-    if (task.kind !== 'DONE') return awsDown(deps.log, at, 'ListTasks', task)
-    if (task.value !== null) {
-      const stopped = await deps.tasks.stop(where, task.value)
-      if (stopped.kind !== 'DONE') return awsDown(deps.log, at, 'StopTask', stopped)
-      if (!(await stoppedIn(deps, at, where, task.value))) {
-        deps.log.error(
-          { companyId: at.companyId, connectionId: at.connectionId, runId: run },
-          'COPY_TASK_STOP_SLOW',
-        )
-        throw new Failure('COPY_AWS_UNAVAILABLE')
-      }
+    await silenceWriter(deps, at, where, run)
+    const task = await requestTaskStop(deps, at, where, run, open.taskArn)
+    if (task !== null && !(await stoppedIn(deps, at, where, task))) {
+      deps.log.error(
+        { companyId: at.companyId, connectionId: at.connectionId, runId: run },
+        'COPY_TASK_STOP_SLOW',
+      )
+      throw new Failure('COPY_AWS_UNAVAILABLE')
     }
   }
   await deps.runs.closeLakeRun(scope, {
@@ -83,10 +73,7 @@ async function stopRun(
 type Rounds = Readonly<{ open: Open | undefined; last: { id: string } | undefined }>
 
 async function roundsOf(tx: ReadTx, connection: ConnectionId): Promise<Rounds> {
-  const [open] = await tx
-    .select({ id: lakeRun.id, taskArn: lakeRun.taskArn })
-    .from(lakeRun)
-    .where(and(eq(lakeRun.connectionId, connection), isNull(lakeRun.endedAt)))
+  const open = await openRoundOf(tx, connection)
   const [last] = await lastClosedOf(tx, connection)
   return { open, last }
 }

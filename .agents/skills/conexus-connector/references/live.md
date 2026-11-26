@@ -81,5 +81,5 @@ confirm instead of a person (the card's reference table, row 48).
 Hub tests run the real executor against the connector's double served on loopback
 (`HUB_CONNECTOR_ORIGINS`, loopback only). A change to a connector skill's frontmatter changes the
 model request snapshots in `apps/server/src/agents/assistant/request.test.ts`; update them in the
-same commit and say why. A change to a read's types can pass `npm run check` and still break the
-app SDK's declaration build; run `packages/app/src/check/connectors.test.ts`.
+same commit and say why. A change to a read's types can pass `npm run check:local` and still break
+the app SDK's declaration build; name `packages/app/src/check/connectors.test.ts` to it.
