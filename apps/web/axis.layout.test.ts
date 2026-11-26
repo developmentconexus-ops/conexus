@@ -193,6 +193,25 @@ for (const viewport of [DESKTOP, WIDE, PHONE])
     await page.close()
   })
 
+for (const viewport of [DESKTOP, PHONE])
+  test(`na linha "esperando sua resposta" a marca do Conexus fica parada a ${viewport.width}`, async () => {
+    const page = await harness.open(
+      `/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations/${WORKING}`,
+      { viewport, replies: { ...WITH_ACCOUNT, ...WORKING_REPLIES } },
+    )
+    if (viewport === PHONE)
+      await page.getByRole('button', { name: 'Conversa', exact: true }).click()
+    const waiting = page.getByRole('status').filter({ hasText: 'esperando sua resposta' })
+    await waiting.waitFor()
+    const mark = waiting.locator('[data-slot=conexus-mark] path').first()
+    assert.equal(
+      await mark.evaluate((path) => path.getAnimations().length),
+      0,
+      'the Conexus mark moves while it waits on the person',
+    )
+    await page.close()
+  })
+
 // The panel at the Builder's side is narrower than the axis and its gutters: the footer must not cover the scrollbar's end.
 test('no painel estreito do Construtor a caixa fica dentro da área de rolagem, sem cobrir a barra', async () => {
   const page = await harness.open(
