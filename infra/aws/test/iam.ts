@@ -26,6 +26,12 @@ export function mayAssume(trust: Statement[], identity: Statement[], call: Call)
   return trusted.length > 0 && matching(identity, call, 'Allow').length > 0
 }
 
+export function allows(identity: Statement[], call: Call): boolean {
+  return (
+    matching(identity, call, 'Deny').length === 0 && matching(identity, call, 'Allow').length > 0
+  )
+}
+
 function matching(statements: Statement[], call: Call, effect: 'Allow' | 'Deny'): Statement[] {
   return statements.filter(
     (statement) =>
