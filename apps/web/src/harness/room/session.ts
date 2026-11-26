@@ -7,6 +7,7 @@ import type {
   ConversationId,
   Effort,
   ModelId,
+  NetworkAnswer,
   ProjectId,
 } from '@conexus/hub-api'
 import { CONVERSATION_ROUTES } from '@conexus/hub-api'
@@ -79,10 +80,13 @@ export function sessionOf(conversationId: ConversationId, controller: Controller
       said(session.approveTool(toolCallId, approved)),
     /**
      * A card's answer: the answers of `ask_user`, one per question (ours takes a list for a
-     * multiple choice, which the client's type does not say), the plan's decision, or the yes or no
-     * on the notebook's save.
+     * multiple choice, which the client's type does not say), the plan's decision, the yes or no
+     * on the notebook's save, or the scope of the internet request.
      */
-    answer: (toolCallId: string, resumeData: readonly Answer[] | PlanResume | NoteResume) =>
+    answer: (
+      toolCallId: string,
+      resumeData: readonly Answer[] | PlanResume | NoteResume | NetworkAnswer,
+    ) =>
       said(
         session.request<{ ok: boolean }>(`${path}/tool-suspension`, {
           method: 'POST',

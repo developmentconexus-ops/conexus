@@ -710,7 +710,9 @@ which shadcn file it was copied from; the front matter holds their values. Their
   it opens on what the tool received and returned (V39).
 - **AI pieces.** `apps/web/src/ui/ai/` holds what the agent did and asks, on `Trace` and shadcn's
   AI recipes: the tool line and group, the reasoning line, the sign of who answers, the working line
-  (also the waiting line at the top of an open card on a phone), the plan, the tasks, the approval,
+  (also the waiting line at the top of an open card on a phone), the plan, the tasks, the approval
+  (with one wider yes beside the yes, its answers then start the line and on a phone stack with the
+  yes on top),
   the questions and the sources. Each takes ready data and its words as props; the conversation
   turns events into them.
 - **Empty, loading, error.** Empty is one sentence row or a centred column of 448 at most; loading is

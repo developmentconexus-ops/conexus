@@ -9,6 +9,7 @@ import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
 import { FailureLine, MachineLine, NoticeLine, VersionLine } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
+import { NetworkAccessCard } from './network-card.tsx'
 import { NoteSaveCard } from './note-card.tsx'
 import { PlanCard } from './plan-card.tsx'
 import { PreviewLine } from './preview-line.tsx'
@@ -95,6 +96,8 @@ function CardOf({ item }: { item: Extract<TranscriptItem, { kind: 'card' }> }) {
       return <ApprovalCard part={item} />
     case 'note':
       return <NoteSaveCard part={item} />
+    case 'network':
+      return <NetworkAccessCard part={item} />
     default:
       return item satisfies never
   }

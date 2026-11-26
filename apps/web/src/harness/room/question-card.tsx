@@ -1,4 +1,4 @@
-import type { Answer, Question } from '@conexus/hub-api'
+import type { Answer, NetworkAnswer, Question } from '@conexus/hub-api'
 import { ToolCallId } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
 import { useRef, useState } from 'react'
@@ -45,7 +45,9 @@ export function useAnswer(toolCallId: ToolCallId) {
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string>()
   const sent = useRef(false)
-  async function answer(resumeData: readonly Answer[] | PlanResume | NoteResume): Promise<void> {
+  async function answer(
+    resumeData: readonly Answer[] | PlanResume | NoteResume | NetworkAnswer,
+  ): Promise<void> {
     if (sent.current) return
     sent.current = true
     setSending(true)

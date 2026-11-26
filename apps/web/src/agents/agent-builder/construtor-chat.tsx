@@ -62,6 +62,7 @@ function useConstrutorRoom(
     () =>
       agentBuilderRoom({
         connectors: words,
+        network: { companyId },
         toolDescription: (slug: string) => library?.find((one) => one.slug === slug)?.description,
         openAgent: (id: AgentId, by: 'CALL' | 'TAP') => {
           setAgentId(id)

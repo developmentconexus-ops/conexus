@@ -46,6 +46,7 @@ function useAssistantRoom(held: {
         openFile: setFile,
         openedPath: file?.path,
         notebook: { companyId },
+        network: { companyId },
         proposals: {
           app: ({ proposed, toolCallId, closed }) => (
             <AppProposalCard
