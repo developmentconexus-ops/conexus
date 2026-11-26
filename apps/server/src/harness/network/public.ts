@@ -4,10 +4,7 @@ import { createNetworkStore } from './store.ts'
 
 export type { NetworkStore } from './store.ts'
 
-/**
- * The domains the company's machines and each conversation's may reach beyond the package
- * registries.
- */
+/** The company's domain list, each conversation's, and the whole-internet switch. */
 export function createNetwork(deps: Parameters<typeof createNetworkStore>[0]) {
   const store = createNetworkStore(deps)
   return Object.freeze({

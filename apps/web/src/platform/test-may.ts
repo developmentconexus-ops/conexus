@@ -7,6 +7,8 @@ export function mayOf(role: string) {
     manageAutomations: builds,
     manageCopies: governs,
     manageNetwork: governs,
+    openAllNetwork: role === 'owner',
+    openConversationNetwork: builds,
     manageRoles: governs,
     readDataReads: governs,
     viewAppData: builds,

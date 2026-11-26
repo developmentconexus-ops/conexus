@@ -40,6 +40,28 @@ export const companyNetworkDomain = builder.table(
   ],
 )
 
+export const companyNetworkOpen = builder.table(
+  'company_network_open',
+  {
+    companyId: text('company_id').primaryKey(),
+    openedBy: text('opened_by'),
+    openedAt: instant('opened_at').notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'company_network_open_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'company_network_open_opened_by_fkey',
+      columns: [table.openedBy],
+      foreignColumns: [user.id],
+    }).onDelete('set null'),
+    policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
+  ],
+)
+
 export const conversationNetworkDomain = builder.table(
   'conversation_network_domain',
   {

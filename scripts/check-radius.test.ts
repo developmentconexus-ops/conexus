@@ -94,6 +94,12 @@ test('raio: o mesmo arquivo dentro do raio de outra unidade', () => {
   assert.equal(radius(repo, 'U2', 'HEAD').status, 0)
 })
 
+test('raio: a unidade com letra no nome é medida contra a própria seção', () => {
+  const card = CARD.replace('## U2 Segunda', '## U1b Segunda')
+  const result = radius(committed(['apps/server/src/d.ts'], card), 'U1b')
+  assert.match(result.stdout, /^radius: U1b HEAD inside$/m, result.stderr)
+})
+
 test('raio: commit desconhecido, saída 1', () => {
   const repo = committed(['apps/server/src/c.ts'])
   const result = radius(repo, 'U1', 'nao-existe')
