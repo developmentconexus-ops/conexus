@@ -15,7 +15,13 @@ import type {
 } from './aws.ts'
 import { bucketName, StackId, stackName } from './aws.ts'
 import type { AwsConfig } from './config-aws.ts'
-import { AwsAccount, AwsRegion, LAKE_TEMPLATE, TemplateVersion } from './config-aws.ts'
+import {
+  AwsAccount,
+  AwsRegion,
+  LAKE_TEMPLATE,
+  TemplateVersion,
+  treatableWith,
+} from './config-aws.ts'
 
 export const TEST_AWS_ACCOUNT = AwsAccount.parse('111122223333')
 export const TEST_AWS_REGION = AwsRegion.parse('us-east-2')
@@ -24,6 +30,9 @@ const NO_AWS_SERVER = 'http://127.0.0.1:9'
 
 /** The AWS part of a test configuration: the image's template version, and no reachable AWS. */
 export function testAws(endpoint = NO_AWS_SERVER, credentialsFile = '/nonexistent/aws'): AwsConfig {
+  const version = TemplateVersion.parse(
+    createHash('sha256').update(readFileSync(LAKE_TEMPLATE)).digest('hex'),
+  )
   return {
     account: TEST_AWS_ACCOUNT,
     region: TEST_AWS_REGION,
@@ -31,9 +40,8 @@ export function testAws(endpoint = NO_AWS_SERVER, credentialsFile = '/nonexisten
     serviceRoleArn: `arn:aws:iam::${TEST_AWS_ACCOUNT}:role/conexus-cfn`,
     templateBucket: `conexus-receitas-${TEST_AWS_ACCOUNT}-${TEST_AWS_REGION}`,
     credentialsFile,
-    templateVersion: TemplateVersion.parse(
-      createHash('sha256').update(readFileSync(LAKE_TEMPLATE)).digest('hex'),
-    ),
+    templateVersion: version,
+    treatable: treatableWith(version),
     copy: {
       clusterArn: `arn:aws:ecs:${TEST_AWS_REGION}:${TEST_AWS_ACCOUNT}:cluster/conexus-copia`,
       taskFamily: 'conexus-copia',

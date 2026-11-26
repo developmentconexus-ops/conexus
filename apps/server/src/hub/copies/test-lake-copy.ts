@@ -208,4 +208,5 @@ export async function finished(
     cause: 'RESULT',
     machine,
   })
+  await on.hub.treatment.idle()
 }

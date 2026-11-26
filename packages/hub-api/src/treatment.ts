@@ -6,6 +6,8 @@ import { defineOperation } from './operation.ts'
 
 export const TreatmentModelId = z.uuid().brand('TreatmentModelId')
 export type TreatmentModelId = z.infer<typeof TreatmentModelId>
+export const TreatmentRunId = z.uuid().brand('TreatmentRunId')
+export type TreatmentRunId = z.infer<typeof TreatmentRunId>
 
 /** Why a treatment run failed, and the only text a failed run carries. */
 export const TREATMENT_RUN_FAILURES = [
@@ -117,7 +119,7 @@ export const ProposeTreatment = z.object({
   description: Description,
   sql: Sql,
 })
-export type ProposeTreatment = z.input<typeof ProposeTreatment>
+export type ProposeTreatment = z.infer<typeof ProposeTreatment>
 
 export const ProposedTreatment = z.object({
   id: TreatmentModelId,
@@ -213,4 +215,34 @@ export const approveTreatmentVersion = defineOperation({
   },
   success: { status: 200, body: VersionView },
   failures: [...READ, 'TREATMENT_VERSION_CHANGED'],
+})
+
+export const runTreatmentNow = defineOperation({
+  id: 'runTreatmentNow',
+  summary:
+    'Opens a treatment run of every treatment of the company and answers before it ends; with a run open it refuses.',
+  access: 'session',
+  method: 'POST',
+  path: '/api/companies/{companyId}/data/treated/run',
+  bodyLimit: 1024,
+  input: { params: InCompany },
+  success: { status: 202, body: z.object({ run: TreatmentRunId }) },
+  failures: [...READ, 'ALREADY_RUNNING', 'LAKE_NOT_READY', 'NOTHING_TO_TREAT'],
+})
+
+export const StopTreatmentRunAnswer = z.object({ stopping: z.boolean() })
+export type StopTreatmentRunAnswer = z.infer<typeof StopTreatmentRunAnswer>
+
+export const stopTreatmentRun = defineOperation({
+  id: 'stopTreatmentRun',
+  summary:
+    "Asks the company's open treatment run to stop and answers before it ends; with no run open it writes nothing.",
+  access: 'session',
+  method: 'POST',
+  path: '/api/companies/{companyId}/data/treated/run/stop',
+  bodyLimit: 1024,
+  input: { params: InCompany },
+  success: { status: 202, body: StopTreatmentRunAnswer },
+  alsoAnswers: [{ status: 200, body: StopTreatmentRunAnswer }],
+  failures: [...READ, 'COPY_AWS_UNAVAILABLE'],
 })

@@ -26,12 +26,15 @@ function routesOf(base: string, id: string, version: { number: number; hash: str
     ['POST', `${base}/models`, { name: 'nova', description: '', sql: OF_NOTAS }],
     ['POST', `${model}/versions`, { description: '', sql: OF_NOTAS }],
     ['POST', `${model}/versions/${version.number}/approve`, { hash: version.hash }],
+    ['POST', `${base}/run`, undefined],
+    ['POST', `${base}/run/stop`, undefined],
   ] as const
 }
 
 function asked(on: TreatmentOn, who: Person, route: ReturnType<typeof routesOf>[number]) {
   const [method, url, body] = route
-  return method === 'GET' ? call(on.hub, who, method, url) : post(on.hub, who, url, body)
+  if (method === 'GET') return call(on.hub, who, method, url)
+  return body === undefined ? on.bare(url, who) : post(on.hub, who, url, body)
 }
 
 async function without(on: TreatmentOn) {
@@ -105,7 +108,7 @@ test('permissão: o registro do 404 diz FORBIDDEN em cada rota', async (t) => {
     await stop()
   }
   const reasons = lines.filter((line) => line.msg === 'NOT_FOUND').map((line) => line.reason)
-  assert.deepEqual(reasons, Array(5).fill('FORBIDDEN'))
+  assert.deepEqual(reasons, Array(7).fill('FORBIDDEN'))
 })
 
 test('outra empresa: o modelo dela não se lê, não muda e não se liga', async (t) => {

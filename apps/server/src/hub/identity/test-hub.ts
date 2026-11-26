@@ -130,7 +130,7 @@ async function hubServing(
     ...{ connectors: subjects.connectors, access: subjects.access, apps },
     ...{ lakeRuns: subjects.lakeRuns, lakeClock: subjects.lakeClock },
     ...{ identity: identity.ports, agents: subjects.agents, data: subjects.data, sendMail },
-    notify: subjects.notifications.notify,
+    ...{ notify: subjects.notifications.notify, treatment: subjects.treatment },
     mastra: conversations.mastra,
     settle: (bound: AbortSignal) => conversations.settle(bound),
     repair: apps.repair,

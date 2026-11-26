@@ -4,7 +4,7 @@ import type { AwsAnswer, CopyTasks, LakeStacks, LakeTables } from '../../platfor
 import { StackName, stackName } from '../../platform/aws.ts'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { transactionLock, violatedConstraint, violatedReference } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
+import type { FailureLog, Scalar } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { LakeArea } from '../../platform/lake-areas.ts'
 import type { CopyColumn, CopySource, CopyTable } from '../connectors/public.ts'
@@ -157,11 +157,12 @@ function planOf(
 
 export function awsDown(
   log: FailureLog,
-  at: Pick<Marker, 'companyId' | 'connectionId'>,
+  at: Pick<Marker, 'companyId'> & Partial<Pick<Marker, 'connectionId'>>,
   call: string,
   answer: AwsAnswer<unknown>,
 ): never {
-  const said = { companyId: at.companyId, connectionId: at.connectionId, call, answer: answer.kind }
+  const said: Record<string, Scalar> = { companyId: at.companyId, call, answer: answer.kind }
+  if (at.connectionId !== undefined) said.connectionId = at.connectionId
   log.error(
     answer.kind === 'REFUSED' ? { ...said, code: answer.code } : said,
     'COPY_AWS_UNAVAILABLE',

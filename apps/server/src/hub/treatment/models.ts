@@ -15,9 +15,13 @@ import type { CopySource } from '../connectors/public.ts'
 import { lakeOf, markedTablesOf } from '../copies/public.ts'
 import { personNameColumn } from '../identity/public.ts'
 import { treatmentModel, treatmentModelRun, treatmentRun, treatmentVersion } from './tables.ts'
-import { TreatModel } from './treat-task.ts'
+import { modelNameOf, TreatModel } from './treat-task.ts'
 
-export type TreatmentReads = Readonly<{ source: CopySource; templateVersion: string }>
+export type TreatmentReads = Readonly<{
+  source: CopySource
+  /** The recipes whose lakes have the treatment's areas (card F15). */
+  treatable: ReadonlySet<string>
+}>
 
 const VERSION_COLUMNS = {
   ...getTableColumns(treatmentVersion),
@@ -38,7 +42,7 @@ function versionViewOf(row: VersionRow): VersionView {
   })
 }
 
-export async function businessModelsOf(tx: ReadTx) {
+async function businessModelsOf(tx: ReadTx) {
   const models = await tx.select().from(treatmentModel).orderBy(asc(treatmentModel.name))
   const rows = await tx
     .select(VERSION_COLUMNS)
@@ -56,9 +60,15 @@ export async function businessModelsOf(tx: ReadTx) {
   })
 }
 
-export async function versionOf(tx: ReadTx, modelId: TreatmentModelId, number: number) {
+export async function businessModelOf(tx: ReadTx, modelId: TreatmentModelId) {
   const model = (await businessModelsOf(tx)).find((each) => each.id === modelId)
-  const version = model?.versions.find((each) => each.number === number)
+  if (model === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'MODEL' } })
+  return model
+}
+
+export async function versionOf(tx: ReadTx, modelId: TreatmentModelId, number: number) {
+  const model = await businessModelOf(tx, modelId)
+  const version = model.versions.find((each) => each.number === number)
   if (version === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'MODEL' } })
   return version
 }
@@ -83,7 +93,7 @@ export async function treatModelsOf(
   reads: TreatmentReads,
   tx: ReadTx,
   companyId: CompanyId,
-): Promise<TreatModel[]> {
+): Promise<(TreatModel & Readonly<{ inputs: readonly TableRef[] }>)[]> {
   const { templates } = await markedAndTemplatesOf(reads, tx, companyId)
   const business = await businessModelsOf(tx)
   const defined = [
@@ -99,16 +109,17 @@ export async function treatModelsOf(
         : [{ layer: 'negocio' as const, table: name, sql: active.sql, inputs: active.inputs }],
     ),
   ]
-  const built = new Set(defined.map(({ layer, table }) => `${layer}__${table}`))
-  return defined.map(({ inputs, ...model }) =>
-    TreatModel.parse({
+  const built = new Set(defined.map(({ layer, table }) => modelNameOf(layer, table)))
+  return defined.map(({ inputs, ...model }) => ({
+    ...TreatModel.parse({
       ...model,
-      name: `${model.layer}__${model.table}`,
+      name: modelNameOf(model.layer, model.table),
       after: inputs
-        .map(({ layer, table }) => `${layer}__${table}`)
+        .map(({ layer, table }) => modelNameOf(layer, table))
         .filter((name) => built.has(name)),
     }),
-  )
+    inputs,
+  }))
 }
 
 function readsItself(name: LakeTableName, reads: ReadonlyMap<string, readonly TableRef[]>) {
@@ -163,18 +174,33 @@ export async function treatmentLakeOf(
 ): Promise<Readonly<{ state: TreatedTables['lake']; lakeId: LakeId | null }>> {
   const lake = await lakeOf(tx, companyId)
   if (lake === null) return { state: 'NONE', lakeId: null }
-  if (lake.template !== reads.templateVersion) return { state: 'OUTDATED', lakeId: lake.lakeId }
+  if (!reads.treatable.has(lake.template)) return { state: 'OUTDATED', lakeId: lake.lakeId }
   return { state: lake.ready ? 'CURRENT' : 'NONE', lakeId: lake.lakeId }
 }
 
-async function modelRunsOf(tx: ReadTx, lakeId: LakeId | null, names: readonly string[]) {
+const RUN_COLUMNS = { ...getTableColumns(treatmentModelRun), at: treatmentRun.endedAt }
+
+/** The last run of each of the models in the lake. */
+async function lastModelRunsOf(tx: ReadTx, lakeId: LakeId | null, names: readonly string[]) {
   if (lakeId === null || names.length === 0) return []
   return tx
-    .select({ ...getTableColumns(treatmentModelRun), at: treatmentRun.endedAt })
+    .selectDistinctOn([treatmentModelRun.name], RUN_COLUMNS)
     .from(treatmentModelRun)
     .innerJoin(treatmentRun, eq(treatmentRun.id, treatmentModelRun.runId))
     .where(and(eq(treatmentRun.lakeId, lakeId), inArray(treatmentModelRun.name, [...names])))
+    .orderBy(treatmentModelRun.name, desc(treatmentRun.startedAt))
+}
+
+/** One model's newest page of runs in the lake. */
+async function modelRunsOf(tx: ReadTx, lakeId: LakeId | null, name: string) {
+  if (lakeId === null) return []
+  return tx
+    .select(RUN_COLUMNS)
+    .from(treatmentModelRun)
+    .innerJoin(treatmentRun, eq(treatmentRun.id, treatmentModelRun.runId))
+    .where(and(eq(treatmentRun.lakeId, lakeId), eq(treatmentModelRun.name, name)))
     .orderBy(desc(treatmentRun.startedAt))
+    .limit(PAGE_SIZE)
 }
 
 type ModelRunRow = Awaited<ReturnType<typeof modelRunsOf>>[number]
@@ -214,17 +240,17 @@ export async function treatedTablesOf(
   const { templates } = await markedAndTemplatesOf(reads, tx, companyId)
   const business = await businessModelsOf(tx)
   const names = [
-    ...templates.map((table) => `tratado__${table.name}`),
-    ...business.map((model) => `negocio__${model.name}`),
+    ...templates.map((table) => modelNameOf('tratado', table.name)),
+    ...business.map((model) => modelNameOf('negocio', model.name)),
   ]
-  const runs = await modelRunsOf(tx, lake.lakeId, names)
+  const runs = await lastModelRunsOf(tx, lake.lakeId, names)
   function standing(layer: 'tratado' | 'negocio', name: LakeTableName) {
     const readBy = business
       .filter((model) =>
         model.active?.inputs.some((input) => input.layer === layer && input.table === name),
       )
       .map((model) => ({ layer: 'negocio' as const, table: model.name }))
-    const run = runs.find((each) => each.name === `${layer}__${name}`)
+    const run = runs.find((each) => each.name === modelNameOf(layer, name))
     return { readBy, lastRun: run === undefined ? null : modelRunViewOf(run) }
   }
   return {
@@ -236,9 +262,9 @@ export async function treatedTablesOf(
         name,
         connectionId,
         description: treated.description,
-        columns: treated.columns.map(({ copied, name }) => ({
-          name,
-          description: columns.find((column) => column.name === copied)?.description ?? null,
+        columns: treated.columns.map(({ column, as }) => ({
+          name: as,
+          description: columns.find((each) => each.name === column)?.description ?? null,
         })),
         ...standing('tratado', name),
       })),
@@ -257,12 +283,11 @@ export async function treatmentModelViewOf(
   companyId: CompanyId,
   modelId: TreatmentModelId,
 ): Promise<TreatmentModel> {
-  const model = (await businessModelsOf(tx)).find((each) => each.id === modelId)
-  if (model === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'MODEL' } })
+  const model = await businessModelOf(tx, modelId)
   const { lakeId } = await treatmentLakeOf(reads, tx, companyId)
-  const runs = await modelRunsOf(tx, lakeId, [`negocio__${model.name}`])
+  const runs = await modelRunsOf(tx, lakeId, modelNameOf('negocio', model.name))
   const { id, name, description, versions } = model
-  return { id, name, description, versions, runs: runs.slice(0, PAGE_SIZE).map(modelRunViewOf) }
+  return { id, name, description, versions, runs: runs.map(modelRunViewOf) }
 }
 
 export async function deleteCompanyTreatments(tx: CommandTx, companyId: CompanyId): Promise<void> {

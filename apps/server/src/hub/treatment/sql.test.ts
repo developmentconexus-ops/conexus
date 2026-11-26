@@ -50,6 +50,19 @@ for (const [form, sql, inputs] of [
   })
 }
 
+function sqlOf(sql: string) {
+  return Object(readModelSql(sql)).sql
+}
+
+test('leitor de SQL tira só o ponto e vírgula do fim, que o dbt-athena deixaria dentro do create table', () => {
+  assert.equal(
+    sqlOf('-- regra; da venda\n/* ; */ select * from current.itens;'),
+    '-- regra; da venda\n/* ; */ select * from current.itens',
+  )
+  assert.equal(sqlOf('select 1 ;  \n -- fim\n'), 'select 1   \n -- fim\n')
+  assert.equal(sqlOf("select ';' as x"), "select ';' as x")
+})
+
 test('leitor de SQL não escreve no console ao ler um join ... on true', (t) => {
   const written = (['log', 'warn', 'error'] as const).map((level) =>
     t.mock.method(console, level, () => undefined),

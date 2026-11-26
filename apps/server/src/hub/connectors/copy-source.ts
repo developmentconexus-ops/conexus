@@ -1,4 +1,10 @@
-import type { AccountRef, Connector, TableDeclaration, TableMode } from '@conexus/connectors'
+import type {
+  AccountRef,
+  Connector,
+  TableDeclaration,
+  TableMode,
+  TreatedTable,
+} from '@conexus/connectors'
 import {
   discoverTables,
   LakeTableName as KitLakeTableName,
@@ -73,11 +79,7 @@ export type CopyConnection =
     }>
   | Readonly<{ kind: 'GONE' }>
 
-type TreatedTemplate = Readonly<{
-  description: string
-  columns: readonly Readonly<{ copied: string; name: string }>[]
-  select(lakeName: string): string
-}>
+type TreatedTemplate = TreatedTable & Readonly<{ select(lakeName: string): string }>
 
 export type CopySource = {
   treatedLookup(
@@ -163,8 +165,7 @@ async function treatedLookupIn(
     const treated = declared.find((each) => sourceOf(each) === source)?.treated
     if (treated === undefined) return null
     return {
-      description: treated.description,
-      columns: treated.columns.map(({ column, as }) => ({ copied: column, name: as })),
+      ...treated,
       select: (lakeName) => treatedSelect(KitLakeTableName.parse(lakeName), treated),
     }
   }
