@@ -6,28 +6,31 @@ A etapa da casca da [trilha Redesenho](trilhas/redesenho.md): a navegação do p
 fundador escolheu em 2026-11-26 (decisão 1 do estudo do redesenho), na forma da versão 2 dos protótipos
 das jornadas, a que ele aprovou. O estudo desta etapa fica fora do repositório (delivery L21), na pasta
 `redesenho-r2-cartao`, com o quadro das decisões em imagem; a sua tabela de referência está abaixo, com
-a unidade de cada linha. O código foi lido no segundo grupo da R1, `feat/redesenho-r1-g2` em `6067d718`
-(ainda fora de `main`; a ponta, `9803bb90`, só trouxe `main` e não mudou nenhum arquivo citado):
+a unidade de cada linha. O código foi lido no segundo grupo da R1, `feat/redesenho-r1-g2` em `6067d718`,
+que entrou em `main` em `301ee9b5` sem mudar nenhum arquivo citado:
 `@base-ui/react` 1.9.0, `@tanstack/react-router` 1.170.44, `@tanstack/router-plugin` 1.168.46,
 `tailwindcss` 4.3.3. Referências, nos mesmos commits do cartão da R1: Mastra (`mastra@252efe1`), shadcn
 base (`ui@0e5b2e6`), Supabase (`supabase@3089aa3`), Dify (`dify@fce5d30`). A vaga do trilho `desenho` é
 do cartão da [R1](redesenho-r1-a-base-visual-e-o-movimento.md), aprovado em 2026-11-26: este cartão
 espera num pull request de rascunho até a R1 fechar (delivery L5). O fundador pôs a R2 logo depois da
-R1 ("Concordo", 2026-11-26, na página da trilha).
+R1 ("Concordo", 2026-11-26) e respondeu cinco das seis decisões desta página no mesmo dia; as palavras
+dele estão na página da trilha. Falta a decisão C.
 
 ## A página do fundador
 
 **No fim desta etapa** você acha qualquer área do Hub pelo nome, entra num projeto e vê as seções dele,
 volta com um clique, e chega pelo Ctrl+K em qualquer área, seção das Configurações, projeto ou conversa
-recente. A coluna de conversas, que hoje aparece ao lado de quase toda área, some: a barra é uma só. É
-a moldura da versão 2 dos protótipos; o que está dentro de cada tela (a galeria de agentes, os cartões
+recente. A coluna de conversas, que hoje aparece ao lado de quase toda área, some: a barra é uma só, e
+é nela que você começa uma conversa nova ou abre uma das últimas, de qualquer tela. É a moldura da
+versão 2 dos protótipos; o que está dentro de cada tela (a galeria de agentes, os cartões
 de ligação, a galeria de projetos) chega nas etapas seguintes.
 
 **O roteiro de uso.** No Hub da nuvem, sem terminal.
 
 1. Abra o Hub. A barra tem o nome de cada lugar: Início; **Dados e contexto** (Integrações, Dados,
-   Conhecimento); **Agentes e apps** (Agentes, Automações, Projetos); no pé, Avisos, Configurações e a
-   sua conta, com o nome da empresa embaixo do seu. Clique em Conhecimento: são as instruções e as
+   Conhecimento); **Agentes** (Agentes, Automações); **Apps** (Projetos); no pé, Avisos, Configurações
+   e a sua conta, com o nome da empresa embaixo do seu. No alto fica "Nova conversa"; depois de Início,
+   "Conversas"; no fim, "Recentes", com as suas últimas conversas. Clique em Conhecimento: são as instruções e as
    páginas da empresa, que saíram das Configurações. Clique em Dados: as camadas Negócio, Bruto e Apps
    são abas no alto da página, e não há coluna ao lado.
 2. Recolha a barra pelo botão do alto (ou Ctrl+B): ficam só os ícones. Passe o mouse, e depois o Tab,
@@ -39,19 +42,21 @@ de ligação, a galeria de projetos) chega nas etapas seguintes.
 4. Aperte Ctrl+K em qualquer tela, digite "integ" e Enter: abre Integrações. Aperte de novo e digite um
    pedaço do título de uma conversa: ela aparece em "Conversas recentes". Esc fecha e devolve o foco
    para onde estava.
-5. No Início, em "Continuar", clique em "Ver todas as conversas": é a lista por dia, com a busca e o
-   filtro, que antes ficava na coluna. Abra Configurações: a barra troca pelo índice, com "← Voltar".
+5. Clique em Conversas, na barra: é a lista por dia, com a busca e o filtro, que antes ficava na
+   coluna. Abra uma conversa: ela fica marcada em Recentes. De Integrações, clique em outra conversa de
+   Recentes e depois em "Nova conversa": você cai no Início, na caixa do pedido. Abra Configurações: a
+   barra troca pelo índice, com "← Voltar".
 6. No celular, o botão do alto abre a gaveta com a mesma barra (a do Hub, a do projeto ou o índice), e
    "Buscar ou ir para…" abre a busca. Se você tem duas empresas, o menu da sua conta lista "Suas
    empresas".
 
-**O que você faz, e quando.** Antes: nada a fornecer. No começo: responde as seis decisões abaixo,
-vendo cada opção no quadro da etapa, e aprova esta página; a mudança dos guias (decisão D) entra antes
-da primeira unidade. No fim: faz o roteiro, vê o quadro do fim (cada tela do Hub ao lado da captura da
-versão 2), diz o que viu e aprova os textos ("Buscar ou ir para…", "Ver todas as conversas", "← Todos
+**O que você faz, e quando.** Antes: nada a fornecer. No começo: responde a decisão C, a única que
+falta, vendo cada opção no quadro da etapa, e aprova esta página; a mudança dos guias (decisão D) entra
+antes da primeira unidade. No fim: faz o roteiro, vê o quadro do fim (cada tela do Hub ao lado da captura da
+versão 2), diz o que viu e aprova os textos ("Buscar ou ir para…", "Conversas", "Recentes", "← Todos
 os projetos", "Nada encontrado.", "Recolher a barra lateral", "Avisos", "Conhecimento").
 
-**A visão.** "Na tela elas se chamam Dados e contexto, Agentes e Apps": os títulos da barra levam os
+**A visão.** "Na tela elas se chamam Dados e contexto, Agentes e Apps": os títulos da barra são esses
 três nomes (decisão B). "Cada pessoa vê o que usa" e "Uma ação fora do papel fica à vista, desligada, e
 diz quem pode": uma área que o papel não usa não aparece na barra nem na busca; a regra tem um dono só.
 "Cada capacidade do Conexus tem uma lógica só, que serve toda conversa e toda tela": a barra, a gaveta
@@ -66,7 +71,11 @@ navegação e, em quatro pontos, fugia dele; agora segue o que você aprovou.
   decisão de 2026-11-17: "o item nasce com o que já existe").
 - A linha do sino se chama "Avisos", e o nome do projeto na barra leva o estado do app.
 - Os títulos dos grupos, a barra do projeto, a barra do agente e o Início viraram decisões em imagem
-  (B, F, A e G). A vez da R2 já está decidida (E).
+  (B, F, A e G), que você respondeu em 2026-11-26. A vez da R2 já estava decidida (E).
+- As conversas: você perguntou se não valia manter a segunda coluna no Início, ou um "nova conversa"
+  à mão. O estudo está no quadro e virou a decisão C, refeita, com quatro opções.
+- As camadas de Dados viram abas no alto da página. A árvore ao lado, que você aprovou em 2026-11-15,
+  morava na coluna que some; a versão 2 não desenha as camadas.
 
 **Fica de fora.**
 
@@ -80,6 +89,10 @@ navegação e, em quatro pontos, fugia dele; agora segue o que você aprovou.
 - **O título em pergunta, o "Continuar" com agentes e projetos e os três números de "Estado" no
   Início** (decisão G). O Início de hoje já tem a caixa do pedido, as sugestões, Continuar, Projetos e
   Ligações.
+- **A segunda coluna de conversas**, no Início ou em toda tela (decisão C, opções C-b e C-d).
+- **Levar o foco à caixa do pedido quando você clica em "Nova conversa" já estando no Início.** Hoje o
+  botão leva ao Início e, no próprio Início, não faz nada novo; fica assim, e vai com a etapa do Início
+  (R6).
 - **A caixa de Avisos única** para agentes, automações e projetos: decisão sua ainda aberta, da R6.
   Aqui a linha "Avisos" abre o painel do sino de hoje.
 - **Achar pelo Ctrl+K uma conversa antiga**, fora das 30 mais recentes, ou uma automação, uma ligação
@@ -95,119 +108,112 @@ navegação e, em quatro pontos, fugia dele; agora segue o que você aprovou.
 **As decisões suas nesta etapa.** Cada opção está desenhada no quadro da etapa, ao lado das capturas da
 versão 2 e das telas do Mobbin.
 
-- **A. Ao abrir um agente, que barra aparece.** A versão 2 respondeu uma parte: "Agentes" é um lugar
-  da barra e abre a galeria. Falta a barra própria do agente.
-  - **A-a (recomendada).** Na R2, abrir um agente mostra a barra do projeto dele, como hoje, com
-    "Agentes" marcado. A barra do agente nasce na R5, com as cinco páginas dela. Exemplo: você abre o
-    Agente de Escalas e vê "← Todos os projetos", "Pedidos de encomenda" e as seções do projeto. Por
-    quê: três das cinco seções não foram desenhadas, e uma barra sem seções seria um "em breve".
-    Nativo: uma linha na lista de lugares.
-  - **A-b.** A barra do agente já na R2, só com "← Todos os agentes", o nome e o estado, sem seções.
-    Custa: uma barra quase vazia até a R5, e o agente deixa de mostrar o projeto dele. Nativo (dados).
-  - **A-c.** Cada agente é uma linha da barra, com avatar e estado, como nos Galts do G4 OS e na
-    Langdock. Custa: a barra cresce sem limite e passa a ler os agentes em toda tela; desfaz a galeria
-    que você aprovou. Nativo, mas outra navegação.
-- **B. Os títulos dos grupos.** Em 2026-11-02 você decidiu três grupos; naquele dia a barra era um
-  trilho de ícones e o grupo era uma linha fina, sem título escrito. Os dois protótipos têm dois.
-  - **B-a (recomendada).** Dois títulos, como na versão 2: "Dados e contexto" e "Agentes e apps".
-    Exemplo: três itens em cada grupo. Por quê: com o título escrito, três grupos põem "Agentes" em
-    cima de "Agentes" e "Apps" em cima de um item só. Custa: muda a sua decisão de 2026-11-02 nas
-    regras escritas, e o membro, que não vê Agentes nem Automações, lê "Agentes e apps" em cima de
-    Projetos só. Nativo: dados.
-  - **B-b.** Três títulos: "Dados e contexto", "Agentes", "Apps". Um título por Solution; quem não tem
-    Apps não vê o grupo. Nativo: dados.
-- **C. Onde mora a lista inteira de conversas**, que sai da coluna.
-  - **C-a (recomendada).** Uma página "Conversas", aberta por "Ver todas as conversas" no Início e pela
-    busca do Ctrl+K, como a página Chats do Claude. O Início continua curto. Nativo: a mesma lista de
-    hoje, desenhada na folha.
-  - **C-b.** A lista inteira dentro do Início, embaixo da caixa. Sem página nova; o Início fica longo e
-    os blocos Projetos e Ligações descem.
-  - **C-c.** As três conversas mais recentes na barra, sob Início, com "Ver todas", como o Dropbox Dash.
-    Volta a pôr conversa na barra, que a navegação escolhida tirou.
-- **D. As regras escritas dos guias.** A casca nova contraria o que os guias dizem hoje sobre o trilho
-  de ícones, a coluna ao lado, a gaveta do celular e o mapa do Hub.
-  - **D-a (recomendada).** Mudar os guias antes de construir, num pull request só de documentos, logo
-    depois desta aprovação, como foi na R1. Entra uma regra nova: os lugares do Hub são declarados num
-    arquivo só, e a barra, a gaveta e a busca leem dele; assim um lugar novo não entra na barra e fica
-    esquecido na busca. A lista do que muda está em "O que a aprovação muda nos documentos".
-  - **D-b.** Mudar os guias no fechamento da etapa. A etapa seria construída e revista contra regras que
-    dizem o contrário.
-- **E. A vez da R2 na trilha: decidida.** "Concordo" (2026-11-26): a R2 logo depois da R1, a R3 em
+- **A. Ao abrir um agente, que barra aparece. Decidida: A-a** (2026-11-26). Na R2, abrir um agente
+  mostra a barra do projeto dele, como hoje, com "Agentes" marcado; a barra própria do agente nasce na
+  R5, com as cinco páginas dela. O que você aceitou: quem chega num agente pela lista "Agentes" do Hub
+  volta por "← Todos os projetos", e não por uma volta para Agentes, até a R5. Ficaram de fora: A-b (a
+  barra do agente já, sem seções) e A-c (cada agente uma linha da barra).
+- **B. Os títulos dos grupos. Decidida: B-b** (2026-11-26). Três títulos: "Dados e contexto",
+  "Agentes" e "Apps", um por Solution, como a visão os chama e como a sua decisão de 2026-11-02 os
+  dividiu. O que você aceitou: o título "Agentes" fica em cima do item "Agentes", e "Apps" em cima de
+  um item só, Projetos. Quem não gerencia agentes nem automações não vê o grupo Agentes. Ficou de fora:
+  B-a (os dois títulos da versão 2, que era a recomendada).
+- **C. Como você chega nas conversas de antes e começa uma nova. Aberta.** Você perguntou, em
+  2026-11-26, se não vale deixar a segunda coluna no Início, "para facilitar", ou algo como um "nova
+  conversa". O estudo olhou dezenove produtos no Mobbin, desenhou quatro opções sobre o protótipo da
+  versão 2 e passou as quatro pela crítica do Impeccable; está no quadro da etapa. As letras são novas.
+  - **C-a (recomendada).** Na barra, em toda tela: o botão "Nova conversa", o lugar "Conversas" (a
+    lista inteira, por dia, com a busca e o filtro) e, no fim, "Recentes", com as últimas conversas que
+    couberem, até oito. Exemplo: de Integrações, um clique abre a conversa de ontem. Por quê: é o que
+    fazem os produtos com uma barra larga como a nossa (Claude, ChatGPT, Gemini, Langdock, WRITER,
+    Dropbox Dash); começar e retomar custam um clique de qualquer tela, no celular também, e a casca
+    não muda de forma. Custa: com três títulos de grupo, a 768 px de altura cabem três recentes (oito
+    numa tela alta, uma na gaveta do celular); a barra recolhida e a do projeto não as mostram.
+    Nativo: o botão e a lista de hoje, a lista mais curta.
+  - **C-b.** A coluna de conversas só onde se conversa, a sua ideia: no Início e numa conversa aberta,
+    a segunda coluna com "Nova conversa", a busca e a lista por dia; nas outras áreas, nenhuma. Ganha:
+    treze conversas e a busca à vista onde se conversa. Custa: ali a navegação toma 512 px dos 1366, e
+    a folha muda de lugar ao trocar de área; de Dados, voltar a uma conversa são dois cliques; no
+    celular a coluna não cabe e a página da lista existe do mesmo jeito. Dos quatro produtos que têm
+    a coluna, três a põem ao lado de um trilho fino de ícones (ClickUp, Plane, Productboard); só o
+    Remote a junta a uma barra larga. Nativo, mas a moldura volta a ter duas colunas em dois lugares.
+  - **C-c.** Só "Nova conversa" e "Conversas" na barra, sem "Recentes". A barra mais curta; de dentro
+    de uma conversa, chegar a outra são dois cliques. É a C-a sem o último grupo. Nativo.
+  - **C-d.** A coluna de conversas em toda tela, como hoje. Custa: a navegação toma 512 px em toda
+    área e desfaz o conteúdo no centro da folha, da versão 2; nenhum dos produtos vistos faz assim.
+- **D. As regras escritas dos guias. Decidida: D-a** (2026-11-26). Os guias mudam antes de construir,
+  num pull request só de documentos, logo depois da aprovação desta página, como foi na R1. Entra uma
+  regra nova: os lugares do Hub são declarados num arquivo só, e a barra, a gaveta e a busca leem dele;
+  assim um lugar novo não entra na barra e fica esquecido na busca. A lista do que muda está em "O que
+  a aprovação muda nos documentos".
+- **E. A vez da R2 na trilha. Decidida** ("Concordo", 2026-11-26): a R2 logo depois da R1, a R3 em
   seguida, e um quadro em imagem no começo e no fim de cada etapa. O teste com cinco pessoas passa a
   usar a casca de verdade.
-- **F. A barra do projeto.** Na versão 2 o projeto tem cinco seções (Construir, Conversas, Arquivos,
-  Quem usa, Sobre). Hoje tem oito, porque os agentes, as automações, as integrações e os dados moram
-  no projeto (sua decisão de 2026-10-30).
-  - **F-a (recomendada).** A forma da versão 2 (a volta no alto, o nome com o estado), com as oito
-    seções de hoje. Exemplo: "← Todos os projetos", "Pedidos de encomenda", "Em construção · v1", e os
-    quatro grupos. Por quê: nenhuma tela do projeto fica sem porta, e onde o agente mora é uma regra
-    sua, que o cartão da R5 traz; quando ela mudar, tirar uma seção é uma linha. Nativo: dados.
-  - **F-b.** As seções da versão 2 já, sem "Arquivos": Construir, Conversas, Quem usa o app, Sobre.
-    Custa: você decide agora que o agente é da empresa, antes de o servidor mudar; até a R5, os
-    agentes, as automações, as integrações e os dados de um projeto ficam sem entrada na barra dele.
-- **G. O Início.** A página da trilha dizia "a casa do pedido (Início) vai com R2".
-  - **G-a (recomendada).** Na R2 o Início só ganha a barra nova e "Ver todas as conversas". O título em
-    pergunta, o "Continuar" misto e os três números vão com a etapa do Início (R6), depois da R3, que
-    traz a peça dos números. Por quê: a R2 fica uma etapa de moldura, com um roteiro de poucos minutos.
-    Custa: a frase da trilha muda.
-  - **G-b.** O título e o "Continuar" misto entram na R2, numa unidade a mais. Custa: essa unidade
-    pede estudo antes (de onde vêm as sugestões; como juntar conversa, agente e projeto por data, para
-    cada papel), e o cartão volta a você com ela.
+- **F. A barra do projeto. Decidida: F-a** (2026-11-26). A forma da versão 2 (a volta no alto, o nome
+  com o estado), com as oito seções de hoje nos quatro grupos. O que você aceitou: a barra do projeto
+  ainda não é a da versão 2. Onde o agente mora continua uma regra sua, que o cartão da R5 traz; quando
+  ela mudar, tirar uma seção da barra é uma linha. Ficou de fora: F-b (as cinco seções da versão 2 já).
+- **G. O Início. Decidida: G-a** (2026-11-26). Na R2 o Início só ganha a barra nova e o que a decisão C
+  trouxer para as conversas. O título em pergunta, o "Continuar" com agentes e projetos e os três
+  números vão com a etapa do Início (R6), depois da R3, que traz a peça dos números. Ficou de fora: G-b
+  (o título e o "Continuar" misto numa unidade a mais da R2).
 
 ## As unidades
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 | U1 As listas saem da coluna e Conhecimento ganha o lugar | a página Conversas e "Ver todas as conversas"; as camadas de Dados em abas; a tela "Memória da empresa" muda de endereço e vira Conhecimento; a coluna deixa de mostrar conversas e árvore | `apps/web/src/agents/assistant/`, `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/`, `packages/hub-api/src/pages.ts`, `docs/reference/screens.md` | web | a R1 em `main`; o pull request de método da decisão D em `main`; nenhuma unidade aberta das outras trilhas nesses arquivos (delivery L1) |
-| G1 | U2 A barra com grupos e a barra do objeto | a navegação em dados; a barra de 240 px com grupos, o botão de recolher e a escolha guardada; a barra do projeto com "← Todos os projetos" e o estado; a conta com a empresa e "Suas empresas" no menu dela; Configurações e Central na moldura nova | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `apps/web/src/hub/projects/`, `apps/web/src/hub/identity/`, `apps/web/src/hub/notifications/`, `apps/web/src/platform/`, `apps/web/src/brand/`, `DESIGN.md` | design | U1 |
-| G2 | U3 A paleta de comando | Ctrl+K sobre o Base UI, com as páginas saídas da navegação, os projetos, as conversas recentes e as empresas de quem tem mais de uma; o gatilho na barra | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `DESIGN.md` | design | U2 |
+| G1 | U1 As listas saem da coluna e Conhecimento ganha o lugar | a página Conversas, com a lista inteira; a lista ao lado vira "Recentes", curta; as camadas de Dados em abas; a tela "Memória da empresa" muda de endereço e vira Conhecimento; a coluna deixa de mostrar a árvore | `apps/web/src/agents/assistant/`, `apps/web/src/hub/copies/`, `apps/web/src/routes/_app/companies/`, `apps/web/` (os testes de moldura que leem a lista), `packages/hub-api/src/pages.ts`, `docs/reference/screens.md`, `docs/reference/telas.md` | web | a R1 em `main`; o pull request de método da decisão D em `main`; nenhuma unidade aberta das outras trilhas nesses arquivos (delivery L1) |
+| G1 | U2 A barra com grupos e a barra do objeto | a navegação em dados; a barra de 240 px com grupos, o botão de recolher e a escolha guardada; "Nova conversa", o lugar "Conversas" e "Recentes" na barra do Hub; a barra do projeto com "← Todos os projetos" e o estado; a conta com a empresa e "Suas empresas" no menu dela; Configurações e Central na moldura nova | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `apps/web/src/hub/projects/`, `apps/web/src/hub/identity/`, `apps/web/src/hub/notifications/`, `apps/web/src/platform/`, `apps/web/src/brand/`, `DESIGN.md` | design | U1 |
+| G2 | U3 A paleta de comando | Ctrl+K sobre o Base UI, com as páginas saídas da navegação, os projetos, as conversas recentes e as empresas de quem tem mais de uma; o gatilho na barra | `apps/web/src/ui/`, `apps/web/src/routes/_app/`, `apps/web/src/agents/assistant/` (o que `public.ts` exporta), `DESIGN.md` | design | U2 |
 | G2 | U4 A gaveta | a gaveta do celular com a barra do lugar, a busca e a conta, a 390 e a 320 px | `apps/web/` (os testes de celular), `apps/web/src/ui/` | design | U3 |
 
 Dois pull requests (delivery L9): G1 e G2.
 
-**Orçamento de código alterado.** U1: 650 linhas. U2: 1.000. U3: 580. U4: 120. Total da etapa: cerca de
-2.350, abaixo do teto de 4.000 (delivery L2).
+**Orçamento de código alterado.** U1: 650 linhas. U2: 1.080. U3: 580. U4: 120. Total da etapa: cerca de
+2.430, abaixo do teto de 4.000 (delivery L2).
 
 ## Os critérios de aceite
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | `/companies/<e>/conversations` mostra as conversas da pessoa por dia, 30 por página com o paginador, a busca pelo título, o filtro por lugar e a aba Projetos, tudo no endereço (`q`, `place`, `tab`, `conversations`); o Hub responde a página nesse endereço; recusa: um `place` que não é um lugar abre a lista inteira | `apps/web/src/agents/assistant/conversations-page.test.tsx`, "a lista por dia, a busca e o filtro no endereço" e "um lugar inválido abre a lista inteira"; `apps/web/src/routes/__root.test.tsx`, "cada endereço do roteador é uma página que o Hub abre" (existente) | must |
-| 2 | U1 | No Início, "Continuar" tem "Ver todas as conversas", que abre a página; sem nenhuma conversa a frase de hoje fica e o link não aparece | `apps/web/src/agents/assistant/day.test.tsx`, "Continuar leva à lista inteira" | must |
+| 2 | U1 | A lista de conversas ao lado passa a ser "Recentes": as oito conversas mais recentes da pessoa, cada uma abre a sua, e a conversa aberta fica marcada; a busca, o filtro por lugar, as abas, os dias e o paginador não estão mais ali (estão na página, critério 1). Sem nenhuma conversa o grupo não aparece; recusa: se a leitura das conversas falha, o grupo some e "Nova conversa" segue | `apps/web/src/agents/assistant/sidebar-conversations.test.tsx`, "as oito mais recentes", "sem conversa o grupo não aparece" e "a leitura que falha não derruba a lista" | must |
 | 3 | U1 | Dados mostra as camadas como abas: Negócio e Bruto com a contagem, Apps só para quem vê os dados dos apps; a camada segue no endereço (`layer`) e a nota do Bruto fica sob as abas; recusa: nenhuma coluna de Dados ao lado da barra | `apps/web/src/hub/copies/data-page.test.tsx`, "as camadas são abas e a camada fica no endereço" e "a nota do Bruto fica na página" | must |
-| 4 | U2 | A barra do Hub mostra, com nome, na ordem: Início; Dados e contexto (Integrações, Dados, Conhecimento); Agentes e apps (Agentes, Automações, Projetos); no pé Avisos, com a contagem do que não foi lido, Configurações e a conta. O alto da barra é a marca, o botão de recolher e a busca, sem o nome da empresa. Nenhuma lista de conversas em Integrações, Agentes, Automações, Projetos, Dados ou Conhecimento | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "a barra com grupos" e "nenhuma área lista conversas na barra" | must |
-| 5 | U2, U3 | Quem não gerencia agentes nem automações não vê "Agentes" nem "Automações" na barra nem na paleta, e o grupo "Agentes e apps" segue com Projetos; um grupo sem nenhum item não mostra o título; recusa: o endereço `/agents` segue respondendo não encontrado (S10) | `route.test.tsx`, "o membro não vê Agentes nem Automações"; `apps/web/src/routes/_app/-navigation.test.tsx`, "um grupo vazio some com o título"; `-destinations.test.tsx`, "o membro não acha o que não vê"; a recusa, `apps/web/src/agents/saved-agent/agent-list.test.tsx`, "o membro: a página dá não encontrado e a entrada não aparece" (existente) | must |
+| 4 | U2 | A barra do Hub mostra, com nome, na ordem: Início; Conversas; Dados e contexto (Integrações, Dados, Conhecimento); Agentes (Agentes, Automações); Apps (Projetos); no pé Avisos, com a contagem do que não foi lido, Configurações e a conta. O alto da barra é a marca e o botão de recolher, sem o nome da empresa (a busca entra na U3, critério 14). Depois dos grupos vem "Recentes" (critérios 2 e 23) | `apps/web/src/routes/_app/companies/$companyId/route.test.tsx`, "a barra com grupos" | must |
+| 5 | U2, U3 | Quem não gerencia agentes nem automações não vê "Agentes" nem "Automações" na barra nem na paleta: o grupo Agentes some com o título, e Apps segue com Projetos; um grupo sem nenhum item não mostra o título; recusa: o endereço `/agents` segue respondendo não encontrado (S10) | `route.test.tsx`, "o membro não vê o grupo Agentes"; `apps/web/src/routes/_app/-navigation.test.tsx`, "um grupo vazio some com o título"; `-destinations.test.tsx`, "o membro não acha o que não vê"; a recusa, `apps/web/src/agents/saved-agent/agent-list.test.tsx`, "o membro: a página dá não encontrado e a entrada não aparece" (existente) | must |
 | 6 | U2 | Cada destino das três listas (`HUB_NAV`, `PROJECT_NAV`, `CENTRAL_NAV`) é um endereço que o roteador conhece, e nenhum nome se repete na mesma barra; recusa: um endereço que não existe deixa o teste vermelho dizendo qual | `-navigation.test.tsx`, "cada destino existe no roteador" e "nenhum nome se repete na mesma barra" | must |
 | 7 | U2 | A partir de 768 px a barra tem 240 px aberta e 56 px recolhida; o botão "Recolher a barra lateral" está no Tab e Ctrl+B faz o mesmo; a largura troca de uma vez (o critério 3 da R1 segue verde) | `apps/web/shell.layout.test.ts`, "a barra aberta e recolhida"; `motion.layout.test.ts`, "nada estica" (existente) | must |
 | 8 | U2 | Recolhida, cada ícone tem nome acessível e mostra a dica no mouse e no foco do teclado, na barra do Hub, na do projeto e no índice das Configurações; o item atual tem `aria-current="page"` | `shell.layout.test.ts`, "recolhida, cada ícone diz o nome pelo teclado" | must |
 | 9 | U2 | A escolha de recolher volta depois de recarregar; com o armazenamento do navegador bloqueado a barra recolhe e abre do mesmo jeito, só não lembra; entre 768 e 1023 px, sem escolha guardada, abre recolhida | `shell.layout.test.ts`, "a escolha volta depois de recarregar" e "sem armazenamento a barra funciona" | should |
 | 10 | U2 | Dentro de um projeto a barra é a dele: "← Todos os projetos", o nome com o seletor de projeto e, sob o nome, o estado do app nas palavras da lista de Projetos ("Em construção · v1", "Publicado · v2", "Ainda sem app"), e as oito seções de hoje nos quatro grupos, cada uma só para quem pode; a página de um agente mantém "Agentes" marcado, e uma conversa do Construir mantém "Construir" | `route.test.tsx`, "a barra do projeto", "o agente aberto marca Agentes" e "a conversa do Construir marca Construir" | must |
 | 11 | U2 | Só pelo teclado: depois de Enter em "← Todos os projetos", o Tab seguinte cai num controle da barra do Hub, e "Projetos" tem `aria-current="page"`; recusa: o Tab não recomeça no corpo da folha nem fica preso fora da tela | `apps/web/keyboard.test.ts`, "depois de voltar, o Tab segue na barra" | should |
-| 12 | U2 | Configurações e Central usam a mesma moldura: a linha do alto com "← Voltar" (Configurações) ou a marca (Central), a busca e o botão de recolher. O pé das Configurações é Avisos e a conta; o da Central, que não tem empresa, é só a conta, com o e-mail no lugar da empresa; o índice, a busca e os grupos das Configurações ficam como hoje | `apps/web/src/routes/_app/companies/$companyId_/settings/settings.test.tsx` (existente) e `shell.layout.test.ts`, "a mesma linha do alto em toda barra" | must |
+| 12 | U2 | Configurações e Central usam a mesma moldura: a linha do alto com "← Voltar" (Configurações) ou a marca (Central) e o botão de recolher. O pé das Configurações é Avisos e a conta; o da Central, que não tem empresa, é só a conta, com o e-mail no lugar da empresa; o índice, a busca e os grupos das Configurações ficam como hoje | `apps/web/src/routes/_app/companies/$companyId_/settings/settings.test.tsx` (existente) e `shell.layout.test.ts`, "a mesma linha do alto em toda barra" | must |
 | 13 | U2 | O texto e o ícone do item atual passam 3:1 sobre o fundo dele, e o título de grupo passa 4,5:1 sobre a moldura, nos dois temas | `apps/web/contrast.layout.test.ts`, os pares novos | must |
-| 14 | U3 | Ctrl+K e ⌘K abrem a paleta em qualquer tela com sessão (empresa, projeto, Configurações, Central), também com o foco num campo de texto; Esc fecha e o foco volta ao elemento de antes; recusa: na entrada e na primeira entrada a tecla não abre nada | `apps/web/palette.layout.test.ts`, "abre de qualquer tela e devolve o foco" e "sem moldura não abre" | must |
+| 14 | U3 | "Buscar ou ir para…" está na linha do alto de toda barra (Hub, projeto, Configurações, Central) e abre a paleta; Ctrl+K e ⌘K a abrem em qualquer tela com sessão, também com o foco num campo de texto; Esc fecha e o foco volta ao elemento de antes; recusa: na entrada e na primeira entrada a tecla não abre nada | `apps/web/palette.layout.test.ts`, "a busca está em toda barra", "abre de qualquer tela e devolve o foco" e "sem moldura não abre" | must |
 | 15 | U3 | Digitar "integ" deixa a página Integrações em primeiro e destacada, mesmo havendo uma conversa chamada "Integração com o ERP"; Enter navega e fecha, as setas mudam o destaque; "configuracoes", sem acento, acha Configurações; sem resultado diz "Nada encontrado."; cada página diz o grupo dela | `palette.layout.test.ts`, "achar, escolher e não achar" | must |
-| 16 | U3 | Numa empresa a paleta lista, nesta ordem: Ir para (as seções do projeto, quando dentro de um, com o nome dele; as páginas do Hub; as seções das Configurações que a pessoa vê; Central para quem opera), Projetos (a primeira página), Conversas recentes (as 30 da primeira página) e Empresas (as outras empresas de quem tem mais de uma). Na Central: Ir para (Clientes, Estado do Hub) e Empresas (as de quem opera). Se a leitura das conversas ou dos projetos falha, o grupo some e o resto funciona | `apps/web/src/routes/_app/-destinations.test.tsx`, "os grupos e a ordem", "as empresas só para quem tem mais de uma", "na Central" e "uma leitura que falha não derruba a paleta" | must |
+| 16 | U3 | Numa empresa a paleta lista, nesta ordem: Ir para (as seções do projeto, quando dentro de um, com o nome dele; as páginas do Hub, Conversas entre elas; as seções das Configurações que a pessoa vê; Central para quem opera), Projetos (a primeira página), Conversas recentes (as 30 da primeira página) e Empresas (as outras empresas de quem tem mais de uma). Na Central: Ir para (Clientes, Estado do Hub) e Empresas (as de quem opera). Se a leitura das conversas ou dos projetos falha, o grupo some e o resto funciona | `apps/web/src/routes/_app/-destinations.test.tsx`, "os grupos e a ordem", "as empresas só para quem tem mais de uma", "na Central" e "uma leitura que falha não derruba a paleta" | must |
 | 17 | U3 | A paleta é um diálogo com nome, a lista é uma `listbox`, o Tab não sai dela, não há violação de CSP, a 390 px não há rolagem lateral e as dicas de tecla somem no toque; sob reduzir movimento ela aparece sem animar | `palette.layout.test.ts`, "o diálogo e o celular"; `motion.layout.test.ts`, "com reduzir, nada anima" (caso acrescentado) | must |
-| 18 | U4 | A 390 e a 320 px a gaveta traz a barra do lugar inteira (Hub, projeto ou índice das Configurações) com Avisos e a conta com a empresa; seguir um link fecha a gaveta; "Buscar ou ir para…" fecha a gaveta e abre a paleta; o menu da conta, com "Suas empresas", cabe na tela; sem rolagem lateral | `apps/web/phone-menu.layout.test.ts`, "a gaveta leva a barra do lugar" e "a busca sai da gaveta"; `phone.layout.test.ts` (existente) | must |
-| 19 | U2 | No pé da barra, a linha da conta mostra o nome da pessoa e, embaixo, o da empresa; o nome acessível diz "Conta de <pessoa>, em <empresa>". Com uma empresa, o menu da conta não tem "Suas empresas"; com duas ou mais, lista as empresas e escolher outra leva ao Início dela. Na Central, sem empresa, a segunda linha é o e-mail, como hoje; recusa: enquanto o nome da empresa não chega, a linha mostra um esqueleto, e se a leitura falha mostra o e-mail | `apps/web/src/hub/identity/account-menu.test.tsx`, "a conta mostra a empresa", "uma e duas empresas" e "sem o nome da empresa, o e-mail" | must |
+| 18 | U4 | A 390 e a 320 px a gaveta traz a barra do lugar inteira (Hub, projeto ou índice das Configurações) com Avisos e a conta com a empresa; a do Hub traz "Nova conversa", Conversas e Recentes; seguir um link fecha a gaveta; "Buscar ou ir para…" fecha a gaveta e abre a paleta; o menu da conta, com "Suas empresas", cabe na tela; sem rolagem lateral | `apps/web/phone-menu.layout.test.ts`, "a gaveta leva a barra do lugar" e "a busca sai da gaveta"; `phone.layout.test.ts` (existente) | must |
+| 19 | U2 | No pé da barra, a linha da conta mostra o nome da pessoa e, embaixo, o da empresa; o nome acessível diz "Conta de <pessoa>, em <empresa>". Com uma empresa, o menu da conta não tem "Suas empresas"; com duas ou mais, lista as empresas e escolher outra leva ao Início dela. Na Central, sem empresa, a segunda linha é o e-mail, como hoje; recusa: se a lista de empresas não chega, o menu fica sem "Suas empresas" e o resto dele funciona | `apps/web/src/hub/identity/account-menu.test.tsx`, "a conta mostra a empresa", "uma e duas empresas", "na Central, o e-mail" e "sem a lista de empresas o menu segue" | must |
 | 20 | todas | Cada peça nova (`nav`, `command-palette`, `kbd`) tem entrada na vitrine; a vitrine abre sem violação de CSP nos dois temas a 1366 e 390 px; o foco é visível em toda peça | `apps/web/showcase.layout.test.ts`, `pieces.layout.test.ts`, `focus.layout.test.ts` (existentes) | must |
 | 21 | todas | A catraca do lint de design não sobe (303 na ponta da R1) | `npm run lint:design -w @conexus/web` | must |
 | 22 | U1 | `/companies/<e>/knowledge` mostra, sob o título "Conhecimento", as instruções e as páginas que hoje estão em Configurações › Memória da empresa: todo papel lê, e só quem gerencia a memória salva, como hoje. As Configurações deixam de listar "Memória da empresa"; recusa: o endereço antigo, `/companies/<e>/settings/company-memory`, responde não encontrado | `apps/web/src/agents/assistant/company-memory.test.tsx`, os casos de hoje no endereço novo e "o endereço antigo não existe"; `apps/web/src/routes/_app/companies/$companyId_/settings/settings.test.tsx`, as listas sem a seção; `apps/web/src/routes/__root.test.tsx`, "cada endereço do roteador é uma página que o Hub abre" (existente) | must |
+| 23 | U2 | Em toda tela da empresa fora de um projeto, a barra tem "Nova conversa" sob a linha do alto, que abre o Início, e "Recentes" depois dos grupos. Numa conversa aberta e na lista, o lugar atual é Conversas, e não Início. Recolhida, "Nova conversa" é um ícone com a dica e "Recentes" não aparece; recusa: a barra do projeto, a das Configurações e a da Central não têm "Nova conversa" nem "Recentes" | `route.test.tsx`, "a barra tem Nova conversa e Recentes" e "numa conversa o lugar é Conversas"; `settings.test.tsx` e `hub/projects/project-bar.test.tsx`, "a barra do objeto não lista conversas"; `apps/web/shell.layout.test.ts`, "recolhida, Recentes some" | must |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A barra do Hub | aberta a partir de 1024 px, recolhida entre 768 e 1023 | um grupo sem item não aparece | a barra desenha na hora; o nome da empresa, na linha da conta, é um esqueleto | a barra fica; o erro é da folha (W34) | · | Agentes e Automações somem para quem não gerencia; o endereço responde não encontrado | sessão vencida: a entrada, como hoje (W15) |
+| A barra do Hub | aberta a partir de 1024 px, recolhida entre 768 e 1023 | um grupo sem item não aparece; sem conversa, "Recentes" não aparece | a barra desenha na hora: a entrada na empresa já leu o nome dela | a barra fica; o erro é da folha (W34) | · | Agentes e Automações somem para quem não gerencia; o endereço responde não encontrado | sessão vencida: a entrada, como hoje (W15) |
 | A barra do projeto | "Construir" marcado | · | o nome do projeto é um esqueleto, e o estado não aparece | o nome vira "Projeto", sem estado, e as seções seguem (como hoje) | a folha diz não encontrado; a barra do projeto fica, com "Projeto" no nome e "← Todos os projetos" | cada seção só para quem pode (`manageAgents`, `manageAutomations`, `viewAppData`) | · |
 | A barra das Configurações | "← Voltar", a busca do índice e os grupos de hoje | a busca do índice sem resultado: a frase de hoje | como hoje | como hoje | · | cada seção só para quem pode (`needs`), como hoje | · |
 | A barra da Central | Clientes marcado | · | · | · | · | quem não opera recebe não encontrado (S11), como hoje | · |
 | A paleta | sem conversa e sem projeto: só "Ir para" | "Nada encontrado." | "Ir para" já está; Projetos e Conversas recentes entram quando chegam | o grupo que falhou some | · | o que a barra não mostra a paleta não acha | · |
-| Conversas | sem conversa: "Nenhuma conversa ainda." (`NO_CONVERSATIONS_BLOCK`) e "Nova conversa" | busca ou filtro sem resultado: as frases de hoje (`NO_CONVERSATION_FOUND`, `NO_CONVERSATION_IN_PLACE`) | três linhas de esqueleto | a frase da leitura e "Tentar de novo" (`ReadFailure`) | · | todo papel vê as suas | · |
+| Recentes (na barra) | sem conversa: o grupo não aparece | · | as linhas de esqueleto de hoje (`SidebarMenuSkeleton`) | o grupo some; "Nova conversa" e os lugares seguem | · | todo papel vê as suas | · |
+| Conversas | sem conversa: "Nenhuma conversa ainda." (`NO_CONVERSATIONS_BLOCK`) | busca ou filtro sem resultado: as frases de hoje (`NO_CONVERSATION_FOUND`, `NO_CONVERSATION_IN_PLACE`) | três linhas de esqueleto | a frase da leitura e "Tentar de novo" (`ReadFailure`) | · | todo papel vê as suas | · |
 | Dados (as abas) | a camada que o endereço diz; sem `layer`, a de hoje | as frases de hoje por camada | a contagem entra quando a leitura chega | a aba fica; o erro é da camada | · | Apps só com `viewAppData`; a nota do Bruto diz a quem não copia o que diz hoje | · |
 | A gaveta (celular) | fechada | · | · | · | · | igual à barra | · |
-| A conta e a empresa | uma empresa: o nome dela sob o da pessoa, e o menu sem "Suas empresas" | · | esqueleto na segunda linha | a segunda linha mostra o e-mail; "Suas empresas" some do menu | · | só as empresas que o Hub lista | · |
+| A conta e a empresa | uma empresa: o nome dela sob o da pessoa, e o menu sem "Suas empresas" | · | o nome da empresa já chegou com a entrada; "Suas empresas" entra quando a lista chega | a lista de empresas falha: o menu fica sem "Suas empresas" | · | só as empresas que o Hub lista | · |
 | Conhecimento | sem página: "Nenhuma página guardada ainda." (como hoje) | · | os três esqueletos de hoje | a frase da leitura e "Tentar de novo" (como hoje) | · | quem não gerencia a memória lê, sem "Salvar", com a frase de hoje (`ONLY_MANAGERS_MEMORY`) | "A página mudou enquanto você salvava" (como hoje) |
 
 | Campo de contrato | Quem escreve | Quem lê |
@@ -227,15 +233,21 @@ Os desenhos de caixas. A 1280 px, a barra do Hub e a do projeto:
 +--------------------------+------------------------------------------------+
 | [C] Conexus         [<<] |                                                |
 | [ Buscar ou ir…  Ctrl K ]|   a folha, encaixada na moldura grafite        |
-|  Início                  |                                                |
-| Dados e contexto         |   Dados                                        |
-|  Integrações             |   [ Negócio 0 ][ Bruto 12 ][ Apps ]            |
-|  Dados              <--  |   ...                                          |
+| [ + Nova conversa       ]|                                                |
+|  Início                  |   Dados                                        |
+|  Conversas               |   [ Negócio 0 ][ Bruto 12 ][ Apps ]            |
+| Dados e contexto         |   ...                                          |
+|  Integrações             |                                                |
+|  Dados              <--  |                                                |
 |  Conhecimento            |                                                |
-| Agentes e apps           |                                                |
+| Agentes                  |                                                |
 |  Agentes                 |                                                |
 |  Automações              |                                                |
+| Apps                     |                                                |
 |  Projetos                |                                                |
+| Recentes                 |                                                |
+|  Quanto vendemos de pã…  |                                                |
+|  Quais encomendas venc…  |                                                |
 |                          |                                                |
 |  Avisos              (2) |                                                |
 |  Configurações           |                                                |
@@ -297,6 +309,7 @@ apoiam cada peça, da coleção "Conexus redesenho" e de seis buscas novas (vist
 | Barra com grupos titulados | [Databricks](https://mobbin.com/screens/c02170fd-f44b-42c0-8fd2-59a04b9ad0b0), [WRITER](https://mobbin.com/screens/12b0cb54-3641-4133-9d7c-d96f6d68aa58), [Vercel](https://mobbin.com/screens/8e385d03-bd42-4376-b1de-62263908900a), [Customer.io](https://mobbin.com/screens/0ca9f73c-0002-4c69-a0b4-83666a66add5), [Whop](https://mobbin.com/screens/c7a429c8-a0cd-4460-b9ca-1a5e265f83b9) (barra escura), [Dropbox Dash](https://mobbin.com/screens/3695f322-3bac-43a3-8e96-e589434c3031) (barra escura, "Search ⌘K" no alto) |
 | Recolhida em ícones | [n8n](https://mobbin.com/screens/f248416d-fdae-4cb5-918f-50709158cf82), [Airtable](https://mobbin.com/screens/e110986b-0ea3-46f0-bc68-68cdbdf7f1ea) |
 | A barra do objeto, com a volta no alto | [Gumloop](https://mobbin.com/screens/490f3e5a-96c0-487a-b1fa-bd9fe707f8c0) (a seta de volta, o nome do agente e as seções dele, com a busca e o recolher no alto), [Intercom, "← Customize"](https://mobbin.com/screens/67498dfd-0079-4b66-9cd4-2ce6d41fc87a), [Intercom Fin](https://mobbin.com/screens/16c18036-56a1-4ea3-9bba-561c7da42cdc), [Cursor, "Back to Agents"](https://mobbin.com/screens/cf9a5441-7462-4d39-af22-5d52cec1a0ed), [Lovable](https://mobbin.com/screens/f89924d9-2ea2-4c9e-98dc-05001f4d4bd5), [GitLab](https://mobbin.com/screens/3a76a592-1c75-44ec-867c-72aefcec845d) |
+| As conversas de antes e a nova conversa (decisão C) | as recentes dentro da barra larga, com "New chat" no alto: [Claude](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd), [ChatGPT](https://mobbin.com/screens/efb593c5-be61-47d5-a2bd-87aab6056cd2), [Gemini](https://mobbin.com/screens/9d72be69-e520-4406-9cb7-b8c7b7cb7c73), [Langdock](https://mobbin.com/screens/c4e7cdc1-9038-449d-8787-cd5889e08e94), [WRITER](https://mobbin.com/screens/c3f8b744-4ff6-4f1c-8d95-5d9f56da86a3), [Dropbox Dash](https://mobbin.com/screens/824a3c3d-e26f-4916-9df1-963eb0eca8f5); a segunda coluna só na área do assistente: [Remote](https://mobbin.com/screens/9effb1a2-c07f-4697-b046-99a47370714f) (com a barra larga), [ClickUp](https://mobbin.com/screens/0464978f-1b51-41d4-81a3-3c09084fd7a2), [Plane](https://mobbin.com/screens/567b285a-8208-4b65-b8fb-fd37b2c11237) e [Productboard](https://mobbin.com/screens/2de4d34c-149a-4bf8-bcbf-3c0938fe2501) (com um trilho fino); só o botão e um lugar, com as recentes na página inicial: [Gumloop](https://mobbin.com/screens/077b229c-378b-45fd-a9da-19db94513771), [SchoolAI](https://mobbin.com/screens/9f4e0804-c3ff-4456-aa14-07c8d7ad852f), [Notion](https://mobbin.com/screens/176a7fae-1de4-4d50-a28b-cb14eef8b18b). Nenhum dos dezenove produtos vistos põe a lista ao lado de toda área |
 | Agentes como um lugar, ou na barra | [Jasper, "Agent Library"](https://mobbin.com/screens/0d8f01c3-fc8a-4fe1-ac4a-d5468914ab31) (um lugar), [Langdock](https://mobbin.com/screens/fe015a4f-7142-45d9-a899-4a724d011d0e) (uma árvore na barra); os Galts do G4 OS, abertos no computador (cada um uma linha, com o estado) |
 | Paleta de comando | [Vapi](https://mobbin.com/screens/593d7acd-2e16-4365-bcd6-02ce52f48f3b) (cada página com a área), [Mistral](https://mobbin.com/screens/8450c1c7-7c10-40a3-9af3-c9c234ac4b53), [Base44](https://mobbin.com/screens/675ecfd2-b7fc-4e8d-9078-3eeeaddda7c7) (objetos e páginas), [incident.io](https://mobbin.com/screens/907900ee-1dca-4726-ae50-9e043eecfbe4), [n8n](https://mobbin.com/screens/28338d7a-25d5-4fd0-8357-9a770b30ac00), [Mintlify](https://mobbin.com/screens/7c7ad31f-9dfe-4be7-83d7-6002fe31d4d0) |
 | A conta com a empresa, e a troca | no pé, pela conta: [hilos](https://mobbin.com/screens/392e6413-c649-4ff9-82fd-65ec02979ebc), [Snowflake](https://mobbin.com/screens/41e8b27f-bbca-4be6-9136-a536e37c17b4) (a troca de conta no menu do usuário); no alto: [Vercel, "Find Team…"](https://mobbin.com/screens/7be05ea5-e875-439d-bd1f-7aef97281d3b), [Contra](https://mobbin.com/screens/90be82ab-baa4-4743-9546-3089d12a763e), [Postman](https://mobbin.com/screens/1ecfc49b-a8f1-49dc-9d10-da70f8d9315f). As duas formas existem; a etapa segue a versão 2 |
@@ -337,7 +350,7 @@ escolheu em 2026-11-26; "a v2" é a versão 2 dos protótipos das jornadas, que 
 | # | Peça | Unidade | O que o fundador já decidiu | Hoje | Referência | Como a referência faz | Veredito | Prova | Decisão | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | A navegação em dados | U2 | a navegação; "Cada capacidade ... uma lógica só" | `routes/_app/companies/$companyId/route.tsx:44-96` (`RailPlaces`, à mão); `hub/projects/project-rail.tsx:73-145` (`RAIL`); `routes/_app/operations/route.tsx:19-26` | MA `lib/nav/nav-items.tsx:24-39` e `components/ui/app-sidebar.tsx:83-108,143-145` (mesma situação) | `NavSection[]` com `NavItem`; a barra filtra e desenha as seções **lido** | nativo | · | D | `routes/_app/-navigation.ts` |
-| 2 | Os grupos com título | U2 | a navegação; a v2 (dois títulos); a visão ("Na tela elas se chamam ..."); mapa 3 (2026-11-17, três grupos num trilho sem título escrito) | `ui/sidebar.tsx:245-266` (`SidebarGroup`, `SidebarGroupLabel`, já existem) | SH `ui/sidebar.tsx:389-425`; SH `blocks/sidebar-07/components/nav-main.tsx:20-37` (mesma situação) | um grupo, o rótulo e o menu por seção **lido** | nativo | · | B | `ui/nav.tsx` |
+| 2 | Os grupos com título | U2 | o fundador, 2026-11-26: B-b, três títulos; a navegação; a v2 (dois títulos); a visão ("Na tela elas se chamam ..."); mapa 3 (2026-11-17, três grupos num trilho sem título escrito) | `ui/sidebar.tsx:245-266` (`SidebarGroup`, `SidebarGroupLabel`, já existem) | SH `ui/sidebar.tsx:389-425`; SH `blocks/sidebar-07/components/nav-main.tsx:20-37` (mesma situação) | um grupo, o rótulo e o menu por seção **lido** | nativo | · | B | `ui/nav.tsx` |
 | 3 | Recolher para ícones, com a dica | U2 | mapa 5.3, itens 3 e 4 (2026-11-17); decisão 2 (a largura troca na hora) | `ui/sidebar.tsx:144-175,304-328` | SH `ui/sidebar.tsx:152-163,212,508-560` (mesma situação) | `data-collapsible="icon"`; a dica só aparece recolhida e fora do celular **lido** | nativo | · | não precisa | · |
 | 4 | O botão de recolher à vista | U2 | mapa 5.3, item 3 | `ui/sidebar.tsx:178-192` (uma borda de 12 px, fora do Tab) | SH `ui/sidebar.tsx:254-285` (`SidebarTrigger`); MA `app-sidebar.tsx:112-125` (no cabeçalho, ao lado da marca) | um botão que chama `toggleSidebar` **lido** | nativo | · | não precisa | · |
 | 5 | A escolha guardada | U2 | mapa 5.3, item 4: "fica guardada no navegador" | `ui/frame.tsx:131-133,152` (só `useState`) | SH `ui/sidebar.tsx:28-29,86` (cookie); `platform/theme.ts:16,35,52-53` (o tema, em `localStorage`) | grava ao trocar e lê ao montar **lido** | embrulhado: a nossa guarda em `localStorage`, sem cookie, como o tema | · | não precisa | `platform/sidebar.ts` |
@@ -350,7 +363,7 @@ escolheu em 2026-11-26; "a v2" é a versão 2 dos protótipos das jornadas, que 
 | 12 | A tecla Ctrl+K | U3 | a navegação | `ui/sidebar.tsx:56-66` (o mesmo padrão, para Ctrl+B) | MA `lib/command/use-navigation-command.ts:42-54` | um ouvinte de `keydown` em `document` com `metaKey` ou `ctrlKey` **lido** | nativo | · | não precisa | · |
 | 13 | A tecla desenhada | U3 | · | nenhum | SH `ui/kbd.tsx:3-14` | um `kbd` com classe **lido** | nativo (cópia) | · | não precisa | `ui/kbd.tsx` |
 | 14 | O gatilho "Buscar ou ir para…" | U3 | a navegação | nenhum | MA `app-sidebar.tsx:59-62,117-123` (mesma situação; lá some no celular, aqui fica na gaveta, como o protótipo de navegação) | um botão na barra com o atalho escrito, que abre a paleta e fecha a gaveta **lido** | nativo | · | não precisa | · |
-| 15 | A lista de conversas numa página | U1 | a navegação; mapa 4 (conversas só no Início) | `agents/assistant/sidebar-conversations.tsx:115-232`; `agents/assistant/day.tsx:23-78` | [Claude](https://mobbin.com/screens/ef4dc71f-9d6e-4b35-89d7-26c2393c58c0) (mesma situação) **visto**; o código é o de hoje | a lista como um lugar, fora da barra | nativo | · | C | `agents/assistant/conversations-page.tsx` |
+| 15 | A lista de conversas numa página | U1 | o fundador, 2026-11-26 (a pergunta da segunda coluna; decisão C aberta); a navegação; mapa 4 (conversas só no Início) | `agents/assistant/sidebar-conversations.tsx:115-232`; `agents/assistant/day.tsx:23-78` | [Claude, "Chats"](https://mobbin.com/screens/ef4dc71f-9d6e-4b35-89d7-26c2393c58c0) (mesma situação) e [SchoolAI, "Session history"](https://mobbin.com/screens/9f4e0804-c3ff-4456-aa14-07c8d7ad852f) **visto**; o código é o de hoje | a lista inteira como um lugar | nativo | · | C | `agents/assistant/conversations-page.tsx` |
 | 16 | As camadas de Dados em abas | U1 | a navegação (uma barra só); o mapa 4 punha a árvore na coluna | `hub/copies/data-tree.tsx:33-58,104-113` | [Databricks](https://mobbin.com/screens/c02170fd-f44b-42c0-8fd2-59a04b9ad0b0) (a árvore é painel do catálogo) **visto**; BU `tabs.md` | três abas que mudam o `layer` do endereço | nativo | · | D | · |
 | 17 | A gaveta do celular | U4 | V56 (2026-11-01); mapa 7 | `ui/sidebar.tsx:124-142`; `ui/frame.tsx:88-127` | SH `ui/sidebar.tsx:182-205` (a mesma barra dentro da `Sheet`) **lido** | no celular os filhos da barra vão para a gaveta | nativo (fica) | · | D | · |
 | 18 | A conta com a empresa, e a troca | U2 (a paleta, U3) | a v2 (a empresa sob o nome, no pé); W30 ("Suas empresas") | `hub/identity/company-switcher.tsx:17-42` (a lista, num menu no alto); `hub/identity/account-menu.tsx:36-124` (o nome e o e-mail) | SH `blocks/sidebar-07/components/nav-user.tsx:41-52,68-79` (a conta no pé, com duas linhas e o menu); [hilos](https://mobbin.com/screens/392e6413-c649-4ff9-82fd-65ec02979ebc) e [Snowflake](https://mobbin.com/screens/41e8b27f-bbca-4be6-9136-a536e37c17b4) **visto** (a troca pelo menu da conta); SB `AppLayout/OrganizationDropdown.tsx:60-101` (situação diferente: no alto, com busca, sobre `cmdk`) | a linha da conta com o lugar embaixo do nome, e a lista de lugares no menu dela | nativo (fica): o grupo "Suas empresas" muda do menu do alto para o da conta, sem peça nova; quem tem muitas acha pela paleta | · | não precisa | · |
@@ -363,6 +376,10 @@ escolheu em 2026-11-26; "a v2" é a versão 2 dos protótipos das jornadas, que 
 | 25 | O estado sob o nome do projeto | U2 | a v2 ("Projeto · Em construção" sob o nome) | `hub/projects/project-rail.tsx:38-71`; `hub/projects/project-state.ts:9-17,33-44` (as palavras do estado, já usadas na lista); `ui/sidebar-selector.tsx:6-22` (a cabeça só tem o título) | SH `blocks/sidebar-07/components/team-switcher.tsx:43-56` (a cabeça com duas linhas: o nome e o plano); [Gumloop](https://mobbin.com/screens/490f3e5a-96c0-487a-b1fa-bd9fe707f8c0) **visto** | uma segunda linha na cabeça da barra | nativo: um campo opcional na cabeça, com as palavras que já têm dono | · | não precisa | · |
 | 26 | Os endereços novos na lista do Hub | U1 | web W1 | `packages/hub-api/src/pages.ts:6-67`; `apps/server/src/platform/screens.ts:22-31`; `routes/__root.test.tsx:53-56` | o próprio Hub: cada tela nova entrou assim | uma linha por endereço, e o teste prende o roteador à lista | nativo | · | não precisa | · |
 | 27 | A barra do projeto com as cinco seções da v2, e "Arquivos" | fica de fora (decisão F) | a v2; mapa 1 e 5 (o Projeto como a casa dos agentes e das automações, J1, 2026-10-30) | `hub/projects/project-rail.tsx:81-145` | [Lovable](https://mobbin.com/screens/f89924d9-2ea2-4c9e-98dc-05001f4d4bd5) **visto** (lista curta, sem grupos) | · | nativo (dados), fora: depende da regra de onde o agente mora | · | F | · |
+| 28 | "Nova conversa" na barra | U2 | o fundador, 2026-11-26 ("alguma coisa como new chat") | `agents/assistant/sidebar-conversations.tsx:41-53` (`NewConversation`, hoje no alto da coluna); `route.tsx:136-139` | [Claude](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd), [ChatGPT](https://mobbin.com/screens/efb593c5-be61-47d5-a2bd-87aab6056cd2), [Gemini](https://mobbin.com/screens/9d72be69-e520-4406-9cb7-b8c7b7cb7c73), [Langdock](https://mobbin.com/screens/c4e7cdc1-9038-449d-8787-cd5889e08e94), [Gumloop](https://mobbin.com/screens/077b229c-378b-45fd-a9da-19db94513771) **visto** | o botão no alto da barra, antes dos lugares | nativo (fica): o mesmo link, na barra nova | · | C | · |
+| 29 | As conversas recentes na barra | U1 (a lista curta) e U2 (o lugar na barra) | o fundador, 2026-11-26 ("para facilitar") | `agents/assistant/sidebar-conversations.tsx:183-232`; `agents/assistant/conversation-row.tsx` | SH `blocks/sidebar-07/components/nav-projects.tsx:32-46` (um grupo de itens da barra, escondido quando recolhida); [Claude](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd), [ChatGPT](https://mobbin.com/screens/efb593c5-be61-47d5-a2bd-87aab6056cd2), [Gemini](https://mobbin.com/screens/9d72be69-e520-4406-9cb7-b8c7b7cb7c73), [Langdock](https://mobbin.com/screens/c4e7cdc1-9038-449d-8787-cd5889e08e94), [WRITER](https://mobbin.com/screens/c3f8b744-4ff6-4f1c-8d95-5d9f56da86a3), [Dropbox Dash](https://mobbin.com/screens/824a3c3d-e26f-4916-9df1-963eb0eca8f5) **visto** | as recentes num grupo no fim da barra, sem busca nem abas | nativo (fica): a lista de hoje, mais curta | · | C | · |
+| 30 | "Conversas" como lugar da barra | U2 | a decisão C | `routes/_app/companies/$companyId/conversations/` (hoje só a conversa aberta) | [Claude, "Chats"](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd) e [SchoolAI, "Session history"](https://mobbin.com/screens/9f4e0804-c3ff-4456-aa14-07c8d7ad852f) **visto**; MA `lib/nav/nav-items.tsx:24-39` | a lista inteira é uma linha da navegação | nativo: uma linha de dados | · | C | · |
+| 31 | A segunda coluna de conversas, só onde se conversa ou em toda tela | fica de fora (decisão C, opções C-b e C-d) | o fundador, 2026-11-26 (a pergunta) | `route.tsx:132-143` (a coluna de hoje, em quase toda área) | [Remote](https://mobbin.com/screens/9effb1a2-c07f-4697-b046-99a47370714f), [ClickUp](https://mobbin.com/screens/0464978f-1b51-41d4-81a3-3c09084fd7a2), [Plane](https://mobbin.com/screens/567b285a-8208-4b65-b8fb-fd37b2c11237), [Productboard](https://mobbin.com/screens/2de4d34c-149a-4bf8-bcbf-3c0938fe2501) **visto**: só na área do assistente, e em três dos quatro ao lado de um trilho fino | · | nativo (fica), fora: a moldura voltaria a ter duas colunas | · | C | · |
 
 **A medida do transplante.** Nenhuma parte trazida do produto antigo. Três peças de hoje mudam de
 lugar sem mudar de dono: a lista de conversas (232 linhas, cerca de 60 mudam), as camadas de Dados e a
@@ -393,13 +410,21 @@ itens dela esperam. Nenhuma outra issue `next-card` aberta fala da moldura, da b
 | 9 | O endereço antigo da Memória da empresa deixa de existir, sem redirecionar | nenhuma tela, notificação ou ferramenta aponta para ele: a busca por `settings/company-memory` em `9803bb90` só acha a rota e os testes dela | uma rota de redirecionamento e a linha de volta em `PAGES` |
 | 10 | "Buscar ou ir para…" fica em toda barra, também na do projeto e no índice das Configurações, embora a v2 só o desenhe na barra do Hub | a crítica da forma pediu a mesma linha do alto em toda barra; no celular não há Ctrl+K; o Gumloop mantém a busca dentro do agente | tirar o gatilho das barras de objeto em `ui/frame.tsx` |
 | 11 | Sob o nome do projeto vai `projectStateText`, como está ("Em construção · v1"), sem a palavra "Projeto ·" da v2 | um dono por frase (`hub/projects/project-state.ts:33-44`); a volta, logo acima, já diz "Todos os projetos" | trocar a frase em `ProjectRailHead` |
+| 12 | O nome do projeto na barra mantém o seletor de projeto de hoje, que a v2 não desenha | trocar de projeto sem voltar à lista já existe (`hub/projects/project-rail.tsx:38-71`) e tirar seria perder uma função numa etapa de moldura | passar só o nome e o estado, sem `SidebarSwitch` |
+| 13 | O lugar se chama "Conhecimento"; as frases da conversa e da tela que dizem "memória da empresa" (`agents/assistant/text.ts:103-111`) ficam como estão | a tela é da trilha Dados (ficha TD11), e o nome do que o Assistente guarda é assunto dela; a R2 só dá o lugar na barra | trocar as frases em `text.ts`, numa etapa da trilha Dados |
+| 14 | A linha da conta lê a empresa como `CompanySwitcher` lê hoje (`useSuspenseQuery`), sem estado de carregando nem de erro próprio | `enterHouse` lê a empresa antes de a moldura montar (`hub/identity/enter-company.ts`); um esqueleto ali nunca apareceria pela porta pública | · |
+| 15 | "Recentes" mostra até oito conversas, sem os dias; quando não cabem, a barra rola | a primeira página que a lista já lê tem trinta; os dias, a busca e o filtro estão na página Conversas; Claude e Gemini listam as recentes sem dias | mudar o número em `sidebar-conversations.tsx` |
+| 16 | A página Conversas não repete "Nova conversa" no alto | o botão está na barra em toda tela; a crítica da forma apontou os dois na mesma tela | passar o botão em `actions` do `PageHeader` |
+| 17 | Entre a U1 e a U2 a página Conversas e Conhecimento só abrem pelo endereço | as duas unidades saem no mesmo pull request (G1); nenhuma versão publicada fica sem a porta | levar o passo 4 da U1 para a U2 |
+| 18 | As telas das opções da decisão C usam o miolo do Início da versão 2, que a R2 não constrói (G-a) | o fundador escolhe a moldura vendo-a sobre o protótipo que aprovou | · |
 
 ## O que a aprovação muda nos documentos
 
 O pull request de método da decisão D, só de documentos (delivery L20), antes da U1:
 
-- web W30: o trilho de ícones e a coluna do lugar viram a barra com grupos, com os títulos da decisão
-  B; as conversas saem da coluna e ganham a página; as camadas de Dados e a lista de páginas de
+- web W30: o trilho de ícones e a coluna do lugar viram a barra com grupos; os três grupos de
+  2026-11-02 ganham título escrito (decisão B); a lista de conversas sai da coluna: "Nova conversa", o lugar
+  "Conversas" e "Recentes" ficam na barra do Hub (decisão C); as camadas de Dados e a lista de páginas de
   Conhecimento vão para a página; a escolha de recolher fica no navegador; a empresa fica na linha da
   conta, e "Suas empresas" passa ao menu dela.
 - web W31: a barra do projeto leva "← Todos os projetos" no alto e o estado do app sob o nome.
@@ -410,10 +435,9 @@ O pull request de método da decisão D, só de documentos (delivery L20), antes
 - Uma regra nova em web: a navegação é declarada em dados num arquivo só, e a barra, a gaveta e a
   paleta leem dele com um filtro só de permissão.
 
-A página da trilha: a ordem das etapas (a R2 logo depois da R1) e o quadro no começo e no fim de cada
-etapa já estão lá, com as palavras do fundador. No commit da aprovação, conforme as respostas: a frase
-da R2 perde "num agente ou" se a resposta for A-a, e a linha da R6 perde "a casa do pedido (Início) vai
-com `R2`" se for G-a.
+A página da trilha já traz, com as palavras do fundador: a ordem das etapas (a R2 logo depois da R1),
+o quadro no começo e no fim de cada etapa e as cinco respostas de 2026-11-26. Por elas, a frase da R2
+perdeu "num agente ou" (A-a) e a linha da R6 perdeu "a casa do pedido (Início) vai com `R2`" (G-a).
 
 ## U1 As listas saem da coluna e Conhecimento ganha o lugar
 
@@ -422,7 +446,7 @@ trocar uma árvore por abas e mudar uma tela de endereço, dentro de dois assunt
 
 ### As linhas da tabela
 
-15, 16, 23 e 26. Ler `agents/assistant/sidebar-conversations.tsx` inteiro, `list-view.ts`,
+15, 16, 23, 26 e 29 (a lista curta). Ler `agents/assistant/sidebar-conversations.tsx` inteiro, `list-view.ts`,
 `day.tsx:23-78,125-150`, `conversation-row.tsx`, `place-filter.tsx`, `projects-tab.tsx`, `text.ts`,
 `ui/block.tsx`; a rota do Início (`routes/_app/companies/$companyId/index.tsx:33-45`, o
 `validateSearch`); `hub/copies/data-tree.tsx` inteiro e `data-page.tsx`; `route.tsx:132-143` (onde a
@@ -435,23 +459,28 @@ Databricks da tabela do Mobbin.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `agents/assistant/sidebar-conversations.tsx` e os seus dois testes | apaga | `agents/assistant/public.ts`, `route.tsx` |
+| `agents/assistant/sidebar-conversations.tsx` e os seus dois testes | muda: `SidebarConversations` vira a lista curta "Recentes" (as oito primeiras da primeira página, sem busca, filtro por lugar, abas, dias nem paginador); `NewConversation` fica; os casos de busca, filtro, abas e paginador dos dois testes passam para o teste da página | `agents/assistant/public.ts`, `route.tsx` |
 | `agents/assistant/conversations-page.tsx` e o teste | cria | `public.ts`, a rota nova |
-| `agents/assistant/conversation-row.tsx`, `projects-tab.tsx` | muda: saem `SidebarMenu`, `SidebarMenuItem`, `SidebarMenuButton` e `SidebarMenuSkeleton`; a linha é a da folha (`blockRow` de `ui/block.tsx`, como "Continuar") e o esqueleto é `Skeleton`; o menu da linha fica | `conversations-page.tsx` |
-| `agents/assistant/day.tsx`, `text.ts`, `public.ts` | muda: `public.ts` deixa de exportar `SidebarConversations` e passa a exportar `ConversationsPage` e `ConversationsSearch`; `NewConversation` segue exportado, agora de `conversations-page.tsx` | o Início, `route.tsx` |
+| `agents/assistant/conversation-row.tsx` | fica: é a linha de "Recentes", com as peças `Sidebar*` de hoje | `sidebar-conversations.tsx` |
+| `agents/assistant/projects-tab.tsx` | muda: sai da coluna para a página; as linhas são as da folha (`blockRow` de `ui/block.tsx`, como "Continuar") e o esqueleto é `Skeleton` | `conversations-page.tsx` |
+| `agents/assistant/text.ts`, `public.ts` | muda: `public.ts` passa a exportar `ConversationsPage` e `ConversationsSearch`; `SidebarConversations` e `NewConversation` seguem exportados; `text.ts` ganha `RECENT_CONVERSATIONS = 'Recentes'` | a rota nova, `route.tsx` |
 | `routes/_app/companies/$companyId/conversations/index.tsx` | cria | o roteador; `routeTree.gen.ts` (gerado) |
 | `routes/_app/companies/$companyId/index.tsx` | muda: `q`, `place`, `tab` e `conversations` saem do `validateSearch` do Início | os links para o Início |
-| `routes/_app/companies/$companyId/route.tsx` | muda: fora de um projeto a coluna fica só com `NewConversation`, sem a lista nem a árvore, até a U2 tirar a coluna (as duas unidades saem no mesmo pull request) | · |
+| `routes/_app/companies/$companyId/route.tsx` | muda: sai o ramo `inData`, da árvore; fora de um projeto a coluna segue com `NewConversation` e `SidebarConversations`, agora a lista curta, até a U2 levá-los para a barra (as duas unidades saem no mesmo pull request) | · |
 | `hub/copies/data-tree.tsx` e o teste | apaga | `hub/copies/public.ts`, `route.tsx` |
 | `hub/copies/data-page.tsx` e o teste | muda | a rota de Dados |
 | `packages/hub-api/src/pages.ts` | muda: entram `/companies/$companyId/conversations` e `/companies/$companyId/knowledge`; sai `/companies/$companyId/settings/company-memory` | `apps/server/src/platform/screens.ts`, `routes/__root.test.tsx` |
 | `routes/_app/companies/$companyId/knowledge.tsx` | cria | o roteador; `routeTree.gen.ts` (gerado) |
 | `routes/_app/companies/$companyId_/settings/company-memory.tsx` | apaga | o índice das Configurações, que lê o `staticData.section` de cada rota |
 | `agents/assistant/company-memory.tsx` e o teste | muda: a rota de `getRouteApi` (linha 17) e o alto da página | a rota nova |
-| `routes/_app/companies/$companyId_/settings/settings.test.tsx` | muda: as listas das linhas 75 e 141 perdem "Memória da empresa" | `test:unit` |
+| `routes/_app/companies/$companyId_/settings/settings.test.tsx` | muda: as listas das linhas 75 e 141 perdem "Memória da empresa", e as contagens das linhas 77, 111 e 195 passam de 10 a 9 | `test:unit` |
 | `docs/reference/screens.md` | muda: entra a linha de Conversas no andar Empresa (W29); a do Início (linha 18) perde "the recent conversations" como lista; a de Dados (linha 24) troca "a tree beside the rail" pelas abas; a da Memória da empresa (linha 35) vira Conhecimento, no endereço novo | · |
 | `docs/reference/telas.md` | muda: a ficha TD11 troca o caminho e perde "O lugar no trilho" de "Hoje falta" | · |
-| `apps/web/phone-list.layout.test.ts`, `sweep-house-states.ts`, `home.layout.test.ts`, `company-memory.layout.test.ts` | muda: a lista está na página; o endereço da memória (`sweep-house-states.ts:110,116`, `company-memory.layout.test.ts:21`) | `test:browser`, `test:sweep` |
+| `apps/web/phone-list.layout.test.ts`, `sweep-house-states.ts`, `home.layout.test.ts`, `company-memory.layout.test.ts` | muda: a lista inteira está na página; o endereço da memória (`sweep-house-states.ts:110,116`, `company-memory.layout.test.ts:21`) | `test:browser`, `test:sweep` |
+| `apps/web/frame.layout.test.ts:53`, `frame-inset.layout.test.ts:52-54` | muda: o rótulo do grupo que os dois esperam passa de "Conversas" a "Recentes" | `test:browser` |
+| `apps/web/axis.layout.test.ts:73-84` | muda: o caso dos rótulos espera só o rótulo de grupo da barra; os rótulos de dia (`sidebar-day-label`) saem da barra, e a mesma conferência (V61) passa para a página Conversas | `test:browser` |
+| `apps/web/motion-screen.layout.test.ts:215-237` | muda: "a letra na busca da barra" e "a aba da barra" passam a abrir `/conversations` e a usar a busca e a aba da página | `test:browser` |
+| `routes/_app/companies/$companyId/route.test.tsx:67-109`, `hub/projects/project-bar.test.tsx:93-111` | muda: onde o caso lê o grupo "Conversas" ou a busca na coluna, passa a ler "Recentes"; "Nova conversa" segue | `test:unit` |
 
 ### Os contratos que a unidade cria
 
@@ -469,9 +498,13 @@ desenha `ConversationsPage`. O esquema só garante a forma; quem recusa um valor
 `HOME`, `AUTOMATIONS` nem um `ProjectId`. O estado da lista é `ListView` (a aba é
 `tab: 'PROJECTS' | undefined`, C21); os ids são `CompanyId`, `ProjectId` e `ConversationId` do `hub-api`
 (C23). A lista segue em páginas de 30 com o paginador (C44). O dono das frases é `text.ts`; entra
-`ALL_CONVERSATIONS = 'Ver todas as conversas'`, e o vazio usa `NO_CONVERSATIONS_BLOCK`, que já existe
-(C26). `NewConversation` (`sidebar-conversations.tsx:41-53`) muda para `conversations-page.tsx` sem
-mudar: a página o mostra no alto. O arquivo modelo é o próprio `sidebar-conversations.tsx`: cumpre C21,
+`RECENT_CONVERSATIONS = 'Recentes'`, e o vazio usa `NO_CONVERSATIONS_BLOCK`, que já existe
+(C26). `NewConversation` (`sidebar-conversations.tsx:41-53`) fica onde está, sem mudar, e a página não
+o repete (decisão 16 do firstmate). `SidebarConversations` mantém a assinatura
+(`props: { companyId: CompanyId }`) e passa a ler só a primeira página sem filtro,
+`assistantConversationsQuery(companyId, undefined, 1, {})`, a mesma chave que a página usa sem busca
+(um dono, C26); desenha as oito primeiras com `ConversationRow`, sob o rótulo `RECENT_CONVERSATIONS`, e
+devolve `null` sem conversa ou se a leitura falha. O arquivo modelo é o próprio `sidebar-conversations.tsx`: cumpre C21,
 C23 e C26.
 
 Em `hub/copies/data-page.tsx`, `DataPage` ganha as abas das camadas no alto, com `Tabs` de `ui/tabs.tsx`
@@ -498,22 +531,28 @@ As linhas de `docs/reference/stack.md` de `@tanstack/react-router` (as skills `r
 ### A ordem do trabalho
 
 1. **A página Conversas.** Critérios: 1.
-   - **Arquivos:** cria `conversations-page.tsx`, o teste e a rota; apaga `sidebar-conversations.tsx`;
-     muda `packages/hub-api/src/pages.ts` (a linha do endereço novo).
-   - **O que sai:** `SidebarConversations` e os dois testes dela, cujos casos passam para o teste novo.
+   - **Arquivos:** cria `conversations-page.tsx`, o teste e a rota; muda `sidebar-conversations.tsx`,
+     `projects-tab.tsx` e `packages/hub-api/src/pages.ts` (a linha do endereço novo).
+   - **O que sai da coluna:** a busca, o filtro por lugar, as abas, os dias e o paginador, com os casos
+     de teste deles, que passam para o teste novo.
    - **O que entra:** a mesma lista, na largura do eixo do Início (V59), sem as peças `Sidebar*`: o
-     título "Conversas", "Nova conversa", a busca sempre à vista, o filtro por lugar, as abas e os dias,
-     com as linhas de `ui/block.tsx`. Sem nenhuma conversa a página diz "Nenhuma conversa ainda." (a
-     coluna de hoje some inteira nesse caso, `sidebar-conversations.tsx:197`). Regras: W18, V58, V59.
+     título "Conversas", a busca sempre à vista, o filtro por lugar, as abas e os dias, com as linhas de
+     `ui/block.tsx` e o mesmo menu de linha que `conversation-row.tsx` tem hoje. Sem nenhuma conversa a
+     página diz "Nenhuma conversa ainda.". Regras: W18, V58, V59.
    - **Testes:** `conversations-page.test.tsx`, pela porta da rota (`createConexus` com histórico em
      memória e o Hub dublado, como `old-copy-addresses.test.tsx`).
    - **Mutações à mão:** em `list-view.ts`, fazer `placeOf` devolver o valor sem conferir: "um lugar
      inválido abre a lista inteira" fica vermelho.
    - **Pronto quando:** `/companies/<e>/conversations?q=pão` abre com a busca preenchida.
-2. **Continuar leva à lista.** Critérios: 2.
-   - **Arquivos:** muda `day.tsx` (a `action` do bloco "Continuar", como a do bloco Ligações em
-     `day.tsx:133-143`), `text.ts`, `index.tsx` do Início.
-   - **Testes:** `day.test.tsx`, "Continuar leva à lista inteira".
+2. **A lista curta.** Critérios: 2.
+   - **Arquivos:** muda `sidebar-conversations.tsx` e os dois testes, `text.ts`, `index.tsx` do Início
+     (o `validateSearch`) e os testes de moldura do raio.
+   - **Referência a seguir:** SH `blocks/sidebar-07/components/nav-projects.tsx:32-46`.
+   - **O que entra:** o grupo com o rótulo "Recentes" e até oito linhas de `ConversationRow`; a
+     conversa aberta fica marcada, como hoje. Regras: W30, V61.
+   - **Testes:** `sidebar-conversations.test.tsx`, os três casos do critério 2.
+   - **Mutações à mão:** tirar o corte em oito: "as oito mais recentes" fica vermelho.
+   - **Pronto quando:** a coluna mostra "Nova conversa" e "Recentes", sem lupa, filtro nem abas.
 3. **As camadas em abas.** Critérios: 3.
    - **Arquivos:** muda `data-page.tsx`; apaga `data-tree.tsx` e o teste; muda `route.tsx:132-143`.
    - **O que sai:** `DataTree` e o ramo `inData` da moldura.
@@ -543,14 +582,16 @@ As linhas de `docs/reference/stack.md` de `@tanstack/react-router` (as skills `r
 
 `npm run test:unit -w @conexus/web`, `npm run test:browser -w @conexus/web` e `npm run lint:design -w
 @conexus/web` (critério 21). Hoje os critérios 1 a 3 e o 22 falham: os endereços `/conversations`
-sem id e `/knowledge` não existem, e Dados não tem abas.
+sem id e `/knowledge` não existem, a coluna traz a lista inteira com a busca, e Dados não tem abas.
 
 ### Parar se
 
 Uma unidade das trilhas Dados ou Agentes e Apps estiver aberta em `hub/copies/` ou em
 `agents/assistant/`: espere por ela (delivery L1); a tela Conhecimento é da trilha Dados (ficha TD11),
-e a U1 só a muda de endereço. O fundador responder C-b ou C-c: a unidade muda de forma; volte ao
-cartão. Uma tela, notificação ou ferramenta apontar para o endereço antigo da memória: pare e diga
+e a U1 só a muda de endereço. O fundador responder C-b, C-c ou C-d: a unidade muda de forma; volte ao
+cartão. O menu da linha não sair de `conversation-row.tsx` para a página sem ser copiado: pare e
+descreva (seria uma segunda implementação). Um caso dos testes de moldura do raio não couber no destino
+que a tabela dá: pare e diga qual. Uma tela, notificação ou ferramenta apontar para o endereço antigo da memória: pare e diga
 qual (a decisão 9 do firstmate supõe que nenhuma aponta).
 
 ## U2 A barra com grupos e a barra do objeto
@@ -560,17 +601,18 @@ desenham, o assunto Projetos e a conta.
 
 ### As linhas da tabela
 
-1 a 9, 18 a 20, 23 (a linha da barra) e 25. Ler `ui/sidebar.tsx`, `ui/frame.tsx`,
+1 a 9, 18 a 20, 23 (a linha da barra), 25 e 28 a 30. Ler `ui/sidebar.tsx`, `ui/frame.tsx`,
 `ui/sidebar-rail-button.tsx`, `ui/sidebar-selector.tsx` e `ui/settings-index.tsx` inteiros; as três
 rotas de moldura (`routes/_app/companies/$companyId/route.tsx`, `.../$companyId_/settings/route.tsx`,
 `routes/_app/operations/route.tsx`); `hub/projects/project-rail.tsx` e `project-state.ts`;
 `hub/identity/account-menu.tsx` e `company-switcher.tsx` inteiros;
-`hub/notifications/bell.tsx`; `main.tsx:27-40` (o `staticData`); `brand/tokens.css:111-118`;
+`agents/assistant/sidebar-conversations.tsx` (como a U1 o deixou); `hub/notifications/bell.tsx`; `main.tsx:27-40` (o `staticData`); `brand/tokens.css:111-118`;
 `DESIGN.md:160-162,272-277,332-334,493-499,527-528`; `platform/theme.ts`. Seguir MA
 `lib/nav/nav-items.tsx:24-39`, `components/ui/app-sidebar.tsx:64-125,143-159`,
 `domains/agent-builder/layouts/agent-builder-sidebar.tsx:68-99`; SH
-`ui/sidebar.tsx:152-163,254-285,389-425,508-560`, `blocks/sidebar-07/components/nav-user.tsx:41-52,68-79`
-e `team-switcher.tsx:43-56`. As capturas `fase4-v2` da barra (`j2-01-inicio`, `j4-02-pj-construir`).
+`ui/sidebar.tsx:152-163,254-285,389-425,508-560`, `blocks/sidebar-07/components/nav-user.tsx:41-52,68-79`,
+`team-switcher.tsx:43-56` e `nav-projects.tsx:32-46`. As capturas `fase4-v2` da barra (`j2-01-inicio`,
+`j4-02-pj-construir`) e, para "Nova conversa", Conversas e Recentes, as capturas `c2-*` do quadro.
 
 ### O raio da mudança
 
@@ -584,6 +626,7 @@ e `team-switcher.tsx:43-56`. As capturas `fase4-v2` da barra (`j2-01-inicio`, `j
 | `ui/sidebar-rail-button.tsx` | apaga | `route.tsx`, a vitrine |
 | `ui/settings-index.tsx` | muda: desenha por `SidebarNav` | a rota das Configurações |
 | `hub/projects/project-rail.tsx`, `public.ts` | muda: ficam `ProjectRailHead` e o seletor, com o estado do app sob o nome; saem `RAIL`, `ProjectRailNav` e `BUILD_ROUTE` | `route.tsx` |
+| `agents/assistant/sidebar-conversations.tsx` | muda: o grupo "Recentes" some com a barra recolhida, e `NewConversation` vira ícone com a dica | `route.tsx` |
 | `ui/sidebar-selector.tsx` | muda: a cabeça ganha a segunda linha opcional (`note`) | `ProjectRailHead`, `hub/operations/central-header.tsx` (sem `note`) |
 | `hub/identity/account-menu.tsx` e o teste | muda: sai a variante `compact`; entra `companyId`, a empresa na segunda linha e o grupo "Suas empresas" no menu | as rotas de moldura |
 | `hub/identity/company-switcher.tsx` e o teste, `public.ts` | apaga: o grupo "Suas empresas" (`company-switcher.tsx:28-38`) muda para o menu da conta | `route.tsx` |
@@ -617,15 +660,16 @@ export function SidebarNav(props: { sections: readonly NavSection[]; params?: Li
 Em `routes/_app/-navigation.ts`, o dono de cada nome, ordem, ícone e permissão da barra (C26):
 
 ```ts
-export const HUB_NAV: readonly NavSection[]      // Início; Dados e contexto; Agentes e apps
+export const HUB_NAV: readonly NavSection[]      // Início; Dados e contexto; Agentes; Apps
 export const PROJECT_NAV: readonly NavSection[]  // O app; Agentes; Dados; O Projeto (o RAIL de hoje)
 export const CENTRAL_NAV: readonly NavSection[]  // Clientes, Estado do Hub
 ```
 
-`HUB_NAV`: Início (`exact`, `places: ['Início', 'Conversas']`); "Dados e contexto": Integrações, Dados,
+`HUB_NAV`: Início (`exact`) e Conversas (`/companies/$companyId/conversations`, o ícone
+`MessageSquareIcon`, `places: ['Conversas']`, sem `needs`), numa seção sem título; "Dados e contexto": Integrações, Dados,
 Conhecimento (`/companies/$companyId/knowledge`, o ícone `BookOpenIcon`, sem `needs`: todo papel lê);
-"Agentes e apps": Agentes (`needs: 'manageAgents'`), Automações (`needs: 'manageAutomations'`),
-Projetos. Os títulos e a divisão são os da decisão B; `PROJECT_NAV` copia `project-rail.tsx:81-145`
+"Agentes": Agentes (`needs: 'manageAgents'`), Automações (`needs: 'manageAutomations'`); "Apps":
+Projetos. Os títulos e a divisão são os da decisão B (B-b, 2026-11-26); `PROJECT_NAV` copia `project-rail.tsx:81-145`
 sem mudar item, grupo nem permissão (decisão F). O `holdsConversations` de Construir vira `exact` com
 `places: ['Projeto']`: só a rota de Construir e a das conversas dele têm esse `staticData.place`
 (`$projectId.index.tsx:8` e `$projectId.conversations.$conversationId.tsx:10`, em
@@ -668,8 +712,10 @@ Em `hub/identity/account-menu.tsx`:
 export function AccountMenu(props: { person: Person; companyId?: CompanyId }): ReactNode
 ```
 
-Com `companyId`, a segunda linha é o nome da empresa, de `companyQuery` (esqueleto enquanto chega; o
-e-mail se a leitura falha), e o nome acessível do botão é "Conta de <pessoa>, em <empresa>". O menu
+Com `companyId`, a segunda linha é o nome da empresa, lido com `useSuspenseQuery(companyQuery(companyId))`
+como `CompanySwitcher` lê hoje (`company-switcher.tsx:18`): `enterHouse` já leu a empresa antes de a
+moldura montar, então a linha não tem estado de carregando nem de erro. O nome acessível do botão é
+"Conta de <pessoa>, em <empresa>". O menu
 ganha, depois do nome e do e-mail e antes do Tema, o grupo "Suas empresas" quando `useCompanies` traz
 mais de uma: é o `DropdownMenuGroup` de `company-switcher.tsx:28-38`, com os mesmos links. Sem
 `companyId` (a Central), a segunda linha é o e-mail, como hoje. O id é `CompanyId` (C23); o dono da
@@ -709,21 +755,22 @@ o pull request de método da decisão D os deixou.
      Regras: V26, V30, V31, V32.
    - **Mutações à mão:** tirar a dica do `SidebarMenuButton` recolhido: "cada ícone diz o nome pelo
      teclado" fica vermelho.
-4. **As três molduras e o pé.** Critérios: 4, 10, 12, 19.
+4. **As três molduras e o pé.** Critérios: 4, 10, 12, 19, 23.
    - **Arquivos:** muda as três rotas, `project-rail.tsx`, `ui/sidebar-selector.tsx`,
      `settings-index.tsx`, `bell.tsx`, `account-menu.tsx`; apaga `company-switcher.tsx`.
    - **Referência a seguir:** MA `agent-builder-sidebar.tsx:68-99`; SH `nav-user.tsx:41-52,68-79` e
      `team-switcher.tsx:43-56`.
    - **O que sai:** `CompanySwitcher` e o nome da empresa no alto da barra.
-   - **O que entra:** a empresa passa `SidebarNav` com `seen(HUB_NAV, may)`, sem `header`; com
-     `projectId`, `back` "Todos os projetos", `ProjectRailHead` com o estado e `seen(PROJECT_NAV, may)`;
+   - **O que entra:** a empresa passa `NewConversation` como `header` e, em `nav`, `SidebarNav` com
+     `seen(HUB_NAV, may)` seguido de `SidebarConversations`; com `projectId`, `back` "Todos os
+     projetos", `ProjectRailHead` com o estado e só `seen(PROJECT_NAV, may)`, sem conversas;
      o pé dela é `NotificationBell` ("Avisos"), o link Configurações e `AccountMenu` com `companyId`. As
      Configurações: `back` "Voltar", o índice de hoje, e no pé `NotificationBell` e `AccountMenu` com
      `companyId`, sem link para si mesmas. A Central, que não tem empresa: a marca no alto,
      `CentralHeader`, `SidebarNav` com `CENTRAL_NAV` e só `AccountMenu`, sem `companyId`, no pé, como
      hoje. Regras: W30, W31, W32.
-   - **Testes:** `route.test.tsx`, os casos dos critérios 4, 5 e 10; `account-menu.test.tsx`, os três
-     casos do critério 19 (os casos de `company-switcher.test.tsx` passam para cá); `settings.test.tsx`
+   - **Testes:** `route.test.tsx`, os casos dos critérios 4, 5, 10 e 23; `account-menu.test.tsx`, os
+     quatro casos do critério 19 (os casos de `company-switcher.test.tsx` passam para cá); `settings.test.tsx`
      e `shell.layout.test.ts`, "a mesma linha do alto em toda barra" (critério 12).
    - **Mutações à mão:** tirar a condição de mais de uma empresa do grupo "Suas empresas": com uma
      empresa o grupo aparece e "uma e duas empresas" fica vermelho.
@@ -743,8 +790,11 @@ recolher não está no Tab.
 
 ### Parar se
 
-- O fundador responder A-b, A-c, B-b ou F-b: `HUB_NAV`, `PROJECT_NAV` e os critérios 4 e 10 mudam;
-  volte ao cartão.
+- Um item da barra pedir um grupo ou um título fora dos três de B-b, ou uma seção do projeto fora das
+  oito de F-a: pare e descreva.
+- O fundador responder C-b, C-c ou C-d: a barra do Hub muda; volte ao cartão.
+- "Recentes" empurrar um lugar para fora da barra aberta a 768 px de altura: os lugares ficam, e as
+  recentes é que rolam ou somem; se não der sem código de medida, pare e descreva.
 - Um título de grupo ou um ícone não passar o contraste do critério 13: mande o par ao fundador; nunca
   ajuste a cor.
 - Uma peça de outra trilha depender de `FrameLink` ou de `SidebarRailButton`: liste e pare (delivery

@@ -15,6 +15,15 @@ voce trouxe tudo com tabelas como é atulamente ao invés de redesign ai vocêm 
 verifique" (como escrito). A navegação aprovada é a da versão 2 dos protótipos das jornadas: o conteúdo
 no centro da folha, galerias no lugar das tabelas, o agente como colega.
 
+Ainda em 2026-11-26, ao quadro das decisões do cartão da `R2`: "A a B b C Será que nã ovale para início
+deixar essa segunda coluna, por exemplo? Para facilitar ou alguma coisa como new chat e etc, aqui
+preciso que estude o mobbin, redesign e impeccable e as referencias que vimos. F a G a D a" (como
+escrito). Ficam decididas, no cartão da `R2`: A-a (o agente abre com a barra do projeto dele; a barra
+própria nasce na `R5`), B-b (três títulos na barra: "Dados e contexto", "Agentes" e "Apps"), D-a (os
+guias mudam antes de construir), F-a (a barra do projeto na forma da versão 2, com as oito seções de
+hoje) e G-a (o Início não muda por dentro na `R2`). A decisão C, de como se chega nas conversas e se
+começa uma nova, volta a ele com o estudo que pediu.
+
 Esta página não é um cartão de etapa (delivery L5). O estudo, os protótipos e as capturas ficam fora do
 repositório (delivery L21). A trilha usa a vaga `desenho` que o código já conhece (`scripts/cli.ts`);
 o fundador a aceitou como terceira trilha em 2026-11-26 ("D. Sim", à decisão D do cartão da R1).
@@ -48,20 +57,19 @@ as capturas do Hub ao lado do protótipo.
 | Etapa | A frase de uso | Fase |
 | --- | --- | --- |
 | `R1`. A base visual e o movimento | O fundador abre o Hub nos dois temas e vê a direção escolhida, menus e dicas que abrem com um movimento curto, e nada que se estica | 6 |
-| `R2`. A casca nova | O fundador acha qualquer área pelo nome, entra num agente ou projeto e vê as seções dele, volta, e chega em qualquer página pelo Ctrl+K | 8 |
+| `R2`. A casca nova | O fundador acha qualquer área pelo nome, entra num projeto e vê as seções dele, volta, e chega em qualquer página pelo Ctrl+K | 8 |
 | `R3`. As peças das telas | O fundador abre a vitrine e vê cada peça nova nos estados dela, nos dois temas | 6 |
 | `R4`. Dados e Integrações | O fundador abre uma tabela, vê a amostra, quando atualizou e de onde veio, filtra, e liga um sistema vendo o progresso | 8 |
 | `R5`. A conversa e os agentes | O fundador pergunta, vê os passos e as fontes, aprova uma ação sabendo o efeito, abre um agente e testa com as ações desligadas | 8 |
-| `R6`. Automações, Projetos, Configurações, Central e Início | Uma etapa por área, na ordem em que as outras trilhas precisarem; a casa do pedido (Início) vai com `R2` | 8 |
+| `R6`. Automações, Projetos, Configurações, Central e Início | Uma etapa por área, na ordem em que as outras trilhas precisarem | 8 |
 
 `R5` pede antes a gravação dos streams reais da conversa.
 
 ## As decisões abertas, de outras etapas
 
-Do protótipo das jornadas, ainda sem a palavra do fundador: o agente na barra lateral ou numa galeria
-(a versão 2 o põe numa galeria; a barra própria dele é a decisão A do cartão da `R2`); o agente da
-empresa ou dentro de um projeto, que decide as seções da barra do projeto (decisão F do cartão da `R2`;
-`R5`); o rascunho do agente testado conversando, com as ações desligadas (`R5`); uma caixa de
+Do protótipo das jornadas, ainda sem a palavra do fundador: a barra própria do agente (a versão 2 põe
+os agentes numa galeria; em 2026-11-26 ele deixou a barra do agente para a `R5`); o agente da empresa
+ou dentro de um projeto, que decide as seções da barra do projeto (`R5`); o rascunho do agente testado conversando, com as ações desligadas (`R5`); uma caixa de
 Avisos única para agentes, automações e projetos (`R6`); e as oito regras que só ele pode dar (onde a
 empresa vê falhas e aprovações; a execução em página ou em painéis; o agente dentro de um projeto;
 enviar ou gravar sempre pede aprovação; o que é seguro rodar de novo; "Suas ligações" como faixa
@@ -73,5 +81,5 @@ separada; o que a prévia de um app pode gravar; dado pessoal na amostra).
 fundador em 2026-11-26.
 
 O cartão da [R2, a casca nova](../redesenho-r2-a-casca-nova.md) está escrito pela versão 2 dos
-protótipos e espera a vez dele num pull request de rascunho (delivery L5), com seis decisões à espera
-da palavra do fundador.
+protótipos e espera a vez dele num pull request de rascunho (delivery L5), com cinco decisões
+respondidas e uma, a C, à espera da palavra do fundador.
