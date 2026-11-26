@@ -159,3 +159,11 @@ Em 2026-11-26, às quatro decisões da página do cartão R1 do redesenho, o fun
 
 Para caber no teto de palavras (L24), a frase da L1 sobre as unidades da etapa irmã fica mais curta, sem mudar a regra.
 
+Depois, no mesmo dia: "Isso é SV23B55, são decisões antigas, né? A gente tem que trabalhar com agora, porque a gente está fazendo todo o redesign baseado no mobbing, baseado nas nossas skills, baseado nas referências, em todo o nosso estudo e planejamento. A gente não precisa ficar preso a essas decisões antigas se não fizerem sentido, entendeu?" Lido pelo firstmate: regra antiga que contradiz o que o redesenho decidiu é reescrita, sem perguntar uma por uma. Entram no mesmo pull request:
+
+- No guia de design, o lugar atual da barra sem o tique (V5), o título de 30 px (V13), a gaveta do celular com a barra inteira (V56) e o movimento (V26).
+- A [folha de movimento](../reference/movimento.md) com a escala curta e as duas molas (decisões "2. Recomendado" do estudo e "A A-b" do cartão).
+- O [Impeccable](../reference/impeccable.md) com a fase visual aberta (decisão "3. Sim" do estudo).
+- O [PRODUCT.md](../../PRODUCT.md) com os dois perfis por igual, os nomes em português, o alvo e o anti-alvo (decisão 7 do estudo).
+
+O `docs/guides/web.md` fica para a R2 e o `DESIGN.md` para a U3 da R1.

@@ -32,12 +32,13 @@ Founder, 2026-11-01: "Aprovo"; on direction B, 2026-11-26: "Fecha", and on this 
   [oxlint `shadcn/no-raw-colors` in warning under the ratchet, review]
 - **V5.** Ipê **should** light, as a fill with dark ink on it, only the primary button, a switch
   and a checkbox that are on, progress, send and the "Novo" badge. Beyond that fill it marks only
-  the current place (the tick of the rail and of the list, the active tab), the focus (V28), the
-  caret and the mark, not any other resting action, hover or heading. Two exceptions: the mark of
-  the item the person chose (V57's toggle icon, the chosen Projeto's check) and the busy
-  composer's arc (V28). Founder, 2026-11-26: "B. B-a". Failure: making everything gold hides the
-  difference between what is on and decoration. The one other hue is violet, `memory`: it colors
-  only the Memória budget beside Ipê's Mensagens. [review]
+  the current place (the icon of the sidebar's current item, which takes a lighter fill and no
+  tick, and the active tab), the focus (V28), the caret and the mark, not any other resting
+  action, hover or heading. Two exceptions: the mark of the item the person chose (V57's toggle
+  icon, the chosen Projeto's check) and the busy composer's arc (V28). Founder, 2026-11-26: "B.
+  B-a"; on the current item, as direction B draws it: "Fecha". Failure: making everything gold
+  hides the difference between what is on and decoration. The one other hue is violet, `memory`:
+  it colors only the Memória budget beside Ipê's Mensagens. [review]
 - **V8.** Text **should** remain readable in both themes, with 4.5:1 as its contrast reference.
   Failure: a pale subtitle disappears on the light background. Syntax lint does not measure
   rendered contrast. [review]
@@ -51,9 +52,9 @@ Founder, 2026-11-01: "Aprovo"; on direction B, 2026-11-26: "Fecha", and on this 
   Failure: an internal error code becomes the only explanation, leaving no understandable next
   step. [review]
 - **V13.** Text **should** stay legible on narrow screens, retaining the reference minimum of 12px
-  for prose and for stamps and group labels; the display title adapts from 28/36 to 24/32 below
-  640px. Founder, 2026-11-01: "Aprovo". Failure:
-  shrinking body copy to fit a list makes the reader zoom to understand it. [review]
+  for prose and for stamps and group labels; the display title adapts from 30/36 to 24/32 below
+  640px. Founder, 2026-11-01: "Aprovo"; on the 30px title of direction B, 2026-11-26: "Fecha".
+  Failure: shrinking body copy to fit a list makes the reader zoom to understand it. [review]
 
 ## Layout
 
@@ -72,8 +73,9 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
   does not zoom the page into it, and the page stays zoomable. Founder, 2026-10-20: "é coisa
   básica". [`layout.test.ts`, `fields.layout.test.ts`, review]
 - **V56.** Narrow navigation **should** retain every destination and the account, with the approved
-  top-bar drawer ("Abrir navegação"), mark and current place; the drawer holds the rail and the
-  list together. Founder, 2026-11-01: "Aprovo". Failure: a frame overflows at 320px
+  top-bar drawer ("Abrir navegação"), mark and current place; the drawer holds the whole sidebar,
+  its places and groups. Founder, 2026-11-01: "Aprovo"; reworded for the redesign's grouped
+  sidebar on 2026-11-26 (method approvals). Failure: a frame overflows at 320px
   and puts "Sair" outside the screen. A future layout need not copy the drawer's DOM to retain
   access. [review]
 - **V58.** Every list row **should** be 32px on a pointer and 44px on touch; lists side by side
@@ -148,10 +150,13 @@ churn, not runtime style enforcement; do not extend this check to vendor-generat
 
 The brand piece retains Encaixe, the mark's pieces separating and fitting while work runs.
 
-- **V26.** Motion **should** respect `prefers-reduced-motion`, including copied library pieces,
-  with a comprehensible final state. Motion follows the sheet in `DESIGN.md` ("Motion",
-  [movimento](../reference/movimento.md)). Failure: the drawer still animates under reduced-motion
-  preference. Finding a `motion-reduce` class cannot prove transitive library behavior. [review]
+- **V26.** Motion **should** follow the [motion sheet](../reference/movimento.md): a short scale,
+  two springs (the press and the change of a switch or checkbox), and no animated width or height.
+  Under `prefers-reduced-motion` nothing animates, not even a fade, copied library pieces
+  included, and the final state stays comprehensible. Founder, 2026-11-26: "2. Recomendado" (the
+  short scale measured on G4 OS) and "A A-b" (the springs). Failure: the drawer still animates
+  under reduced-motion preference. Finding a `motion-reduce` class cannot prove transitive library
+  behavior. [review]
 
 ## Interaction and accessibility
 
