@@ -73,7 +73,8 @@ export function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            'popup-motion relative isolate max-h-(--available-height) w-(--anchor-width) overflow-x-hidden overflow-y-auto rounded-object border border-line bg-surface text-text outline-none',
+            // Over its trigger (`data-side="none"`) the popup is there at once (design V26).
+            'popup-motion data-[side=none]:data-starting-style:scale-none data-[side=none]:data-starting-style:opacity-100 relative isolate max-h-(--available-height) w-(--anchor-width) overflow-x-hidden overflow-y-auto rounded-object border border-line bg-surface text-text outline-none',
             className,
           )}
           {...props}

@@ -524,13 +524,15 @@ What moves, and how:
 - **The mouse** changes colour and shadow only. **A press** gives to 96% and comes back. **A switch
   or a checkbox** moves its colour and its thumb. **Focus** never moves: the ring shows at once.
 - **Menu, popover, select, combobox** enter by opacity and scale from 96% to 100%, from their
-  trigger, and leave faster. **Tooltip** the same, and passing from one tooltip to the next opens the
-  second with no transition.
+  trigger, and leave faster. A select that opens over its trigger, as it does under a mouse or the
+  keyboard, is there at once. **Tooltip** the same entry, and passing from one tooltip to the next
+  opens the second with no transition.
 - **Dialog**: opacity only, of the window and its veil. **Drawer and side panel**: a short slide in
   and out; no transition while a finger drags.
-- **A change of screen**, when the address changes its path, fades only the sheet; the sidebar does
-  not blink. A page's load, a change of the address's search alone (the sidebar's search and tab)
-  and a change that arrives during a fade apply at once.
+- **A change of screen**, every change of the address's path, from the sidebar or after an action,
+  fades only the sheet; the sidebar does not blink. With a drawer or a window open the screen changes
+  at once, and they leave in their own time. A page's load, a change of the address's search alone
+  (the sidebar's search and tab) and a change that arrives during a fade apply at once too.
 - **Toast** (none exists yet), only for what went well: one line, inverted; it enters, leaves and
   goes away by itself.
 - **AI pieces and tables** move only under the mouse. **Skeleton** keeps its pulse.

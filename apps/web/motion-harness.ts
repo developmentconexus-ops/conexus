@@ -1,6 +1,6 @@
 import type { Locator, Page } from 'playwright-core'
 import { atRest } from './at-rest.ts'
-import type { Replies } from './layout-harness.ts'
+import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
@@ -36,12 +36,38 @@ export async function slowed(page: Page) {
   await session.send('Animation.setPlaybackRate', { playbackRate: 0.05 })
 }
 
-/** The owner's Início, with Integrações one click away on the rail. */
-export async function atHome(more: Replies = {}) {
+type Run = { ms: number; easing: string; from: string }
+
+/** The transitions running on the element now, each with its time, its curve and where it left. */
+export function runsOf(locator: Locator): Promise<Record<string, Run>> {
+  return locator.evaluate((element) => {
+    const runs: Record<string, Run> = {}
+    for (const one of element.getAnimations()) {
+      if (!(one instanceof CSSTransition) || !(one.effect instanceof KeyframeEffect)) continue
+      const [first] = one.effect.getKeyframes()
+      const timing = one.effect.getTiming()
+      runs[one.transitionProperty] = {
+        ms: Number(timing.duration),
+        easing: timing.easing ?? '',
+        from: String(first?.[one.transitionProperty] ?? ''),
+      }
+    }
+    return runs
+  })
+}
+
+export function timesOf(runs: Record<string, Run>) {
+  return Object.fromEntries(
+    Object.entries(runs).map(([property, run]) => [property, [run.ms, run.easing]]),
+  )
+}
+
+/** The owner's Início, with Integrações one click away on the rail, or in the phone's drawer. */
+export async function atHome(more: Replies = {}, viewport: Viewport = DESKTOP) {
   const state = INTEGRATIONS_STATES.find((one) => one.name === 'Integrações vazia do dono')
   if (state === undefined) throw new Error('the empty Integrações state is gone')
   const page = await harness.open(`/companies/${COMPANY.id}`, {
-    viewport: DESKTOP,
+    viewport,
     replies: {
       ...OWNER,
       ...projectsPage(COMPANY.id),
@@ -54,6 +80,6 @@ export async function atHome(more: Replies = {}) {
   const integrations = page
     .getByRole('navigation', { name: 'Navegação' })
     .getByRole('link', { name: 'Integrações' })
-  await integrations.waitFor()
+  if (viewport === DESKTOP) await integrations.waitFor()
   return { page, integrations }
 }
