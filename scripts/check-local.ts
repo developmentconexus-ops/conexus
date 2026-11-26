@@ -2,13 +2,17 @@
 // passes: Biome's and wrangler's launchers answer 0 when the program they start dies by a signal.
 // `npm run check:local -- [--unit U<k>] [--card <card.md>] [<test file>...]` runs, one step at a
 // time and on the committed work only, the light checks whole, Biome on the files changed since
-// origin/main, the typecheck of the projects those files are in and the test files named (delivery
-// L29). The full typecheck and the suites are CI's. The typecheck and test commands are read from the
-// package.json files, which stay their one owner. A step that fails, dies by a signal or outlives its
-// deadline leaves the run red. check-local.test.ts plants each refusal, a failed step and a killed one.
+// origin/main, the typecheck of the projects those files are in and of the workspaces that declare
+// one of them, and the test files named (delivery L29). The full typecheck and the suites are CI's.
+// The typecheck and test commands are read from the package.json files, which stay their one owner.
+// A step that fails, dies by a signal or outlives its deadline leaves the run red; one killed by the
+// signals the machine's memory guard sends runs once more. Each step has a process group of its own,
+// ended with the step. check-local.test.ts plants what runs and each refusal;
+// check-local-steps.test.ts plants a failed, a killed and a hung step.
 // Revalidate by 2027-05-26, or when Biome or wrangler change how their launcher starts the program,
 // or when test-run.ts or a `typecheck` script changes its shape.
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
+import { once } from 'node:events'
 import { existsSync, globSync, readFileSync } from 'node:fs'
 import { constants } from 'node:os'
 import { dirname, join, relative, resolve } from 'node:path'
@@ -17,7 +21,8 @@ import { z } from 'zod'
 import { runCommand } from './command.ts'
 
 const BASE = 'origin/main'
-const STEP_DEADLINE_MS = 20 * 60_000
+const MEMORY_GUARD_SIGNALS = ['SIGTERM', 'SIGKILL']
+const INTERRUPTS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const
 const TYPECHECKERS: Record<string, string> = {
   tsc: 'node_modules/typescript/bin/tsc',
   wrangler: 'node_modules/wrangler/wrangler-dist/cli.js',
@@ -37,13 +42,26 @@ const Manifest = z.looseObject({
   name: z.string(),
   workspaces: z.array(z.string()).default([]),
   scripts: z.record(z.string(), z.string()).default({}),
+  dependencies: z.record(z.string(), z.string()).default({}),
+  devDependencies: z.record(z.string(), z.string()).default({}),
 })
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
-  options: { unit: { type: 'string' }, card: { type: 'string' }, root: { type: 'string' } },
+  options: {
+    unit: { type: 'string' },
+    card: { type: 'string' },
+    root: { type: 'string' },
+    'step-deadline': { type: 'string' },
+  },
 })
 const root = resolve(values.root ?? '.')
+const stepDeadline = z.coerce
+  .number()
+  .int()
+  .positive()
+  .default(20 * 60_000)
+  .parse(values['step-deadline'])
 
 function refuse(detail: string): never {
   console.error(`check-local: ${detail}`)
@@ -111,10 +129,18 @@ function typecheckSteps(changed: string[]): Step[] {
   function touched(dir: string): boolean {
     return changed.some((file) => file.startsWith(`${dir}/`))
   }
+  const edited = workspaces()
+    .filter(touched)
+    .map((dir) => manifest(dir).name)
+  function touchedOrDeclaresTouched(dir: string): boolean {
+    const { dependencies, devDependencies } = manifest(dir)
+    const declared = { ...dependencies, ...devDependencies }
+    return touched(dir) || edited.some((name) => Object.hasOwn(declared, name))
+  }
   return (manifest('.').scripts.typecheck ?? '').split(' && ').flatMap((segment) => {
     if (segment === 'npm run typecheck --workspaces --if-present') {
       return workspaces()
-        .filter(touched)
+        .filter(touchedOrDeclaresTouched)
         .flatMap((dir) => {
           const own = manifest(dir).scripts.typecheck?.split(' && ') ?? []
           return own.map((each) => typecheckStep(dir, dir, each))
@@ -176,19 +202,60 @@ function signalOf(status: number | null): string | undefined {
   return Object.entries(constants.signals).find(([, number]) => status === 128 + number)?.[0]
 }
 
-function redBecause(step: Step): string | undefined {
+function endGroup(leader: number | undefined): void {
+  if (leader === undefined) return
+  try {
+    process.kill(-leader, 'SIGKILL')
+  } catch (error) {
+    if (!(error instanceof Error && Reflect.get(error, 'code') === 'ESRCH')) throw error
+  }
+}
+
+type Red = { why: string; byMemoryGuard: boolean }
+
+async function attempt(step: Step): Promise<Red | undefined> {
   console.log(`\ncheck-local: ${step.name}`)
-  const run = spawnSync(step.command, step.args, {
+  const child = spawn(step.command, step.args, {
     cwd: step.cwd ?? root,
     env: { ...process.env, ...step.env },
-    stdio: 'inherit',
-    timeout: STEP_DEADLINE_MS,
-    killSignal: 'SIGKILL',
+    stdio: ['ignore', 'inherit', 'inherit'],
+    detached: true,
   })
-  if (run.error !== undefined) return run.error.message
-  const signal = run.signal ?? signalOf(run.status)
-  if (signal !== undefined) return `killed by ${signal}`
-  return run.status === 0 ? undefined : `exit ${run.status}`
+  // A group of its own does not get the terminal's signals, so an interrupted check ends it.
+  function interrupt(signal: NodeJS.Signals): void {
+    endGroup(child.pid)
+    process.kill(process.pid, signal)
+  }
+  for (const signal of INTERRUPTS) process.once(signal, interrupt)
+  let expired = false
+  const timer = setTimeout(() => {
+    expired = true
+    endGroup(child.pid)
+  }, stepDeadline)
+  try {
+    const [status, killedBy] = await once(child, 'exit')
+    if (expired) return { why: `no end within ${stepDeadline} ms`, byMemoryGuard: false }
+    const signal: string | undefined = killedBy ?? signalOf(status)
+    if (signal !== undefined) {
+      return { why: `killed by ${signal}`, byMemoryGuard: MEMORY_GUARD_SIGNALS.includes(signal) }
+    }
+    return status === 0 ? undefined : { why: `exit ${status}`, byMemoryGuard: false }
+  } catch (error) {
+    return { why: String(error), byMemoryGuard: false }
+  } finally {
+    clearTimeout(timer)
+    for (const signal of INTERRUPTS) process.off(signal, interrupt)
+    endGroup(child.pid)
+  }
+}
+
+async function redBecause(step: Step): Promise<string | undefined> {
+  const first = await attempt(step)
+  if (first?.byMemoryGuard !== true) return first?.why
+  console.error(`check-local: ${step.name}: ${first.why}; running it again, alone`)
+  const second = await attempt(step)
+  if (second?.byMemoryGuard !== true) return second?.why
+  return `${second.why}, twice; name this step in the pull request (delivery L29)`
 }
 
 const named = positionals.map((file) => relative(root, resolve(root, file)))
@@ -204,10 +271,11 @@ const changed = git('diff', '--name-only', '--no-renames', '-z', `${BASE}...HEAD
   .split('\0')
   .filter(Boolean)
 const steps = [...lightSteps(changed), ...typecheckSteps(changed), ...testSteps(named)]
-const red = steps.flatMap((step) => {
-  const why = redBecause(step)
-  return why === undefined ? [] : [`${step.name}: ${why}`]
-})
+const red: string[] = []
+for (const step of steps) {
+  const why = await redBecause(step)
+  if (why !== undefined) red.push(`${step.name}: ${why}`)
+}
 console.log(`\ncheck-local: ${steps.length} steps over ${changed.length} changed files`)
 for (const line of red) console.error(`check-local: RED ${line}`)
 if (red.length > 0) process.exit(1)

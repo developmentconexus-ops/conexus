@@ -46,9 +46,9 @@ connectors, [brief](references/brief.md) for the session's brief.
    [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop` and `no-comments`,
    hand-mutate key lines
    ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.
-7. One commit per unit, kept on merge. `npm run check:local -- --unit U<k> <test files>` and the
-   section's proofs are green on it before its push
-   ([delivery L29](../../../docs/guides/delivery.md)).
+7. One commit per unit, kept on merge. Before its push, `npm run check:local -- --unit U<k>
+   <test files>` passes ([delivery L29](../../../docs/guides/delivery.md)) and the section's proofs
+   are green.
 
 ## What it produces
 

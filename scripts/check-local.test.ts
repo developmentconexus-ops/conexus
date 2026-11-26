@@ -1,163 +1,6 @@
 import assert from 'node:assert/strict'
-import { execFileSync, spawnSync } from 'node:child_process'
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
-import { after, test } from 'node:test'
-
-const SCRIPT = resolve(import.meta.dirname, 'check-local.ts')
-const dirs: string[] = []
-after(() => {
-  for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
-})
-
-const BIOME = `node_modules/@biomejs/cli-${process.platform}-${process.arch}/biome`
-const TOOL = `const { appendFileSync } = require('node:fs')
-const { relative, join } = require('node:path')
-const [name, ...args] = process.argv.slice(2)
-const at = relative(__dirname, process.cwd()) || '.'
-appendFileSync(join(__dirname, 'calls.log'), [name, at, ...args].join(' ') + '\\n')
-if (process.env.FAILED_TOOL === name) process.exit(2)
-if (process.env.KILLED_TOOL === name) process.kill(process.pid, process.env.KILL_SIGNAL)
-`
-const DECOY_LAUNCHER = '#!/bin/sh\nexit 0\n'
-
-function tool(name: string, depth = 0): string {
-  return `node ${'../'.repeat(depth)}tool.cjs ${name}`
-}
-
-function program(root: string, name: string): string {
-  const recorder = JSON.stringify(join(root, 'tool.cjs'))
-  return `process.argv.splice(2, 0, '${name}')\nrequire(${recorder})\n`
-}
-
-const ROOT_SCRIPTS = Object.fromEntries(
-  [
-    'docs',
-    'suppressions',
-    'second-card',
-    'approval',
-    'migrations',
-    'rerun-list',
-    'radius',
-    'deps',
-    'knip',
-    'quality',
-  ].map((name) => [name, tool(name)]),
-)
-
-const PACKAGES: Record<string, Record<string, string>> = {
-  'apps/web': {
-    typecheck: 'tsc -p tsconfig.json',
-    'lint:design': tool('lint:design', 2),
-    'test:unit': tool('vitest', 2),
-    'test:browser': 'node ../../scripts/test-run.ts --test-concurrency=2 a.test.ts',
-  },
-  'apps/server': {
-    pretest: 'npm run build',
-    build: tool('build', 2),
-    typecheck: 'tsc -p tsconfig.json',
-    test: 'LEASE=3000 node ../../scripts/test-run.ts --test-concurrency=1 $(node shards.ts)',
-  },
-  'apps/edge': { typecheck: 'wrangler types --check && tsc -p tsconfig.json' },
-}
-
-function plant(root: string, files: Record<string, string>): void {
-  for (const [path, content] of Object.entries(files)) {
-    mkdirSync(dirname(join(root, path)), { recursive: true })
-    writeFileSync(join(root, path), content)
-    if (content.startsWith('#!')) chmodSync(join(root, path), 0o755)
-  }
-}
-
-function git(cwd: string, ...args: string[]): void {
-  const identity = ['-c', 'user.name=t', '-c', 'user.email=t@t.invalid']
-  execFileSync('git', [...identity, ...args], { cwd, stdio: 'ignore', timeout: 30_000 })
-}
-
-function repository(changed: string[], rewritten: Record<string, string> = {}): string {
-  const scratch = mkdtempSync(join(tmpdir(), 'conexus-check-local-'))
-  dirs.push(scratch)
-  const root = join(scratch, 'repo')
-  const manifest = {
-    name: 'planted',
-    workspaces: ['apps/*'],
-    scripts: {
-      ...ROOT_SCRIPTS,
-      typecheck: 'tsc -p scripts/tsconfig.json && npm run typecheck --workspaces --if-present',
-      'test:scripts': 'node scripts/test-run.ts --test-timeout=1000 scripts/*.test.ts',
-      pree2e: tool('pree2e'),
-      e2e: 'node scripts/test-run.ts --test-concurrency=1 tests/e2e/*.test.ts',
-    },
-  }
-  plant(root, {
-    '.gitignore': 'calls.log\n',
-    'package.json': JSON.stringify(manifest),
-    ...Object.fromEntries(
-      Object.entries(PACKAGES).map(([dir, scripts]) => [
-        `${dir}/package.json`,
-        JSON.stringify({ name: `@planted/${dir.split('/')[1]}`, scripts }),
-      ]),
-    ),
-    'tool.cjs': TOOL,
-    'scripts/package.json': '{ "type": "module" }',
-    'scripts/test-run.ts': `import { appendFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
-const root = join(import.meta.dirname, '..')
-const call = ['test-run', relative(root, process.cwd()) || '.', process.env.LEASE ?? '-', ...process.argv.slice(2)]
-appendFileSync(join(root, 'calls.log'), call.join(' ') + '\\n')
-`,
-    'node_modules/typescript/bin/tsc': program(root, 'tsc'),
-    'node_modules/wrangler/wrangler-dist/cli.js': program(root, 'wrangler'),
-    'node_modules/.bin/wrangler': DECOY_LAUNCHER,
-    'node_modules/.bin/biome': DECOY_LAUNCHER,
-    'node_modules/@biomejs/biome/bin/biome': DECOY_LAUNCHER,
-    [BIOME]: `#!/bin/sh\necho "biome . $*" >> calls.log\nif [ "$KILLED_TOOL" = biome ]; then kill -s "\${KILL_SIGNAL#SIG}" $$; fi\n`,
-  })
-  git(scratch, 'init', '-q', '--bare', '-b', 'main', 'origin.git')
-  git(root, 'init', '-q', '-b', 'main')
-  git(root, 'add', '-A')
-  git(root, 'commit', '-q', '-m', 'base')
-  git(root, 'remote', 'add', 'origin', join(scratch, 'origin.git'))
-  git(root, 'push', '-q', 'origin', 'main')
-  plant(root, Object.fromEntries(changed.map((file) => [file, 'export const changed = 1\n'])))
-  plant(root, rewritten)
-  git(root, 'add', '-A')
-  git(root, 'commit', '-q', '--allow-empty', '-m', 'work')
-  return root
-}
-
-function check(root: string, args: string[] = [], env: Record<string, string> = {}) {
-  const run = spawnSync('node', [SCRIPT, '--root', root, ...args], {
-    encoding: 'utf8',
-    timeout: 120_000,
-    env: { ...process.env, npm_config_update_notifier: 'false', ...env },
-  })
-  const log = join(root, 'calls.log')
-  const calls = existsSync(log) ? readFileSync(log, 'utf8').trim().split('\n') : []
-  return { status: run.status, stderr: run.stderr, calls }
-}
-
-const LIGHT = [
-  'docs .',
-  'suppressions .',
-  'second-card .',
-  'approval . --base origin/main',
-  'migrations . --base origin/main',
-  'rerun-list .',
-  'deps .',
-  'knip .',
-  'quality . origin/main --fast',
-  'biome . check --changed --since=origin/main --no-errors-on-unmatched',
-]
+import { test } from 'node:test'
+import { check, LIGHT, plant, repository } from './check-local-harness.ts'
 
 test('os passos leves rodam inteiros e o typecheck só nos projetos do que mudou', () => {
   const run = check(repository(['apps/web/src/a.ts', 'scripts/a.ts']))
@@ -175,6 +18,31 @@ test('uma mudança só de documentos não roda typecheck', () => {
   assert.equal(run.status, 0, run.stderr)
   assert.deepEqual(run.calls, LIGHT)
 })
+
+const DEPENDENTS: [field: string, changed: string, typechecked: string[]][] = [
+  [
+    'dependencies',
+    'apps/edge/src/a.ts',
+    [
+      'tsc apps/edge -p tsconfig.json',
+      'tsc apps/server -p tsconfig.json',
+      'wrangler apps/edge types --check',
+    ],
+  ],
+  [
+    'devDependencies',
+    'apps/server/src/a.ts',
+    ['tsc apps/server -p tsconfig.json', 'tsc apps/web -p tsconfig.json'],
+  ],
+]
+for (const [field, changed, typechecked] of DEPENDENTS) {
+  test(`o typecheck inclui quem declara o que mudou em ${field}, só os diretos`, () => {
+    const run = check(repository([changed]))
+    assert.equal(run.status, 0, run.stderr)
+    const ran = run.calls.filter((call) => /^(tsc|wrangler) /.test(call))
+    assert.deepEqual(ran.toSorted(), typechecked)
+  })
+}
 
 test('a unidade nomeada leva o raio do commit', () => {
   const run = check(repository([]), ['--unit', 'U3', '--card', 'a.md'])
@@ -202,29 +70,6 @@ test('cada teste nomeado roda com o comando e as opções do seu pacote', () => 
     'pree2e .',
     'test-run . - --test-concurrency=1 tests/e2e/f.test.ts',
   ])
-})
-
-const KILLED: [tool: string, signal: string, changed: string, step: string][] = [
-  ['knip', 'SIGKILL', 'docs/a.md', 'knip'],
-  ['biome', 'SIGTERM', 'docs/a.md', 'biome'],
-  ['biome', 'SIGKILL', 'docs/a.md', 'biome'],
-  ['tsc', 'SIGTERM', 'apps/web/src/a.ts', 'typecheck apps/web (tsc)'],
-  ['wrangler', 'SIGKILL', 'apps/edge/src/a.ts', 'typecheck apps/edge (wrangler)'],
-]
-for (const [killed, signal, changed, step] of KILLED) {
-  test(`um passo morto por sinal é vermelho: ${killed}, ${signal}`, () => {
-    const env = { KILLED_TOOL: killed, KILL_SIGNAL: signal }
-    const run = check(repository([changed]), [], env)
-    assert.equal(run.status, 1, run.stderr)
-    assert.ok(run.stderr.includes(`check-local: RED ${step}: killed by ${signal}`), run.stderr)
-  })
-}
-
-test('um passo que sai com erro é vermelho, e os outros ainda rodam', () => {
-  const run = check(repository(['docs/a.md']), [], { FAILED_TOOL: 'docs' })
-  assert.equal(run.status, 1)
-  assert.ok(run.stderr.includes('check-local: RED docs: exit 2'), run.stderr)
-  assert.deepEqual(run.calls, LIGHT)
 })
 
 test('trabalho sem commit é recusado antes de qualquer passo', () => {

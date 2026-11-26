@@ -11,7 +11,7 @@ from the instruction.
 
 1. **At the top, in at most 120 words, the goal and the done line.** The goal: the unit or group,
    the base commit and the branch. Done: each of the unit's criteria green by its test, `npm run
-   check:local` green, the group's checkpoint run. The card's "Pronto quando" block is the done line
+   check:local` passed (step 7), the group's checkpoint run. The card's "Pronto quando" block is the done line
    when the card has one; the brief points to it and writes none of its own.
 2. **The state file.** The builder creates `criteria.json` first, beside the task's notes and
    outside the repository ([delivery L21](../../../../docs/guides/delivery.md)): one item per

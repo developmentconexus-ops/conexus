@@ -49,7 +49,7 @@ product decision, security boundary or operational prohibition.
   [review]
 - **L28.** A piece departing from the references **must** go to the founder as a decision,
   researched in them first; what they leave open names the platform test that would close it.
-  Founder, 2026-11-15. [review]
+  [review]
 
 ## 3. Build and review
 
@@ -66,7 +66,7 @@ product decision, security boundary or operational prohibition.
   form one fix round, split into fronts that share no file, built at once, one commit each, as one
   pull request into `main`; a Bloqueia that needs a contract the card lacks follows L7, then is one
   more front with its own delta. One reader checks each front's delta for closed Bloqueia and new
-  defects, while QA reruns the screens it touched. Founder, 2026-10-25: "2. A", "3. A"; 2026-11-15.
+  defects, while QA reruns the screens it touched.
   Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
   deltas. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
@@ -83,8 +83,9 @@ product decision, security boundary or operational prohibition.
   unless the step proves it does not happen. With neither broken rule nor shown defect, start with
   `Nit:`, as Fechamento. On the border, a loss in the use script or operation is Bloqueia; a loss only after a later code change is Fechamento unless two owners
   can diverge. [review]
-- **L29.** Before a push, `npm run check:local` **must** be green on the commit; the full typecheck
-  and the suites are CI's (L15). [review]
+- **L29.** A pushed commit **must** pass `npm run check:local`, which reruns alone a step the memory
+  guard kills; killed twice, it **may** go to CI, named in the pull request. The full typecheck
+  and suites are CI's (L15). [review]
 
 ## 4. Merge and use
 
@@ -110,7 +111,7 @@ product decision, security boundary or operational prohibition.
   names the version; Publish then creates the tag and the Release with the note on the merge commit
   and puts it live, in one run. It **may** leave at once when the green run of the merged head, its suites run, tested
   `main`'s tip at the merge as the base of its test merge; if `main` moved, it waits for green CI on `main`.
-  Founder, 2026-11-15. Its names: `v0.N.0` for step N, `v0.N.P` for a fix of
+  Its names: `v0.N.0` for step N, `v0.N.P` for a fix of
   it, `v1.0.0` with the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
   releases its proof creates. Failed use leaves the step open for a fix. [CI for the names and the note alone,
   firstmate's publish step for the wait]
@@ -130,14 +131,14 @@ product decision, security boundary or operational prohibition.
   it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
   when none serves. A finding that asks for a change waits in the method queue, an issue with the
   method label. A pull request answers for the tracks it touches (the track of a card it changes, or of a product file), and for all of them when it touches only the method. The exception is an emergency label only the founder applies, counted on the step's
-  line. Founder, 2026-10-16: "Concordo". [CI for skills and guides, review for checks]
+  line. [CI for skills and guides, review for checks]
 
 ## 6. What the repository keeps
 
 - **L21.** The repository **must** keep only what changes what the next agent does: the use line in
   the card's approval file, a proof's criterion and result in its decision record, a learned rule in its
   guide, the study's reference table in the card and its line in `docs/conhecimento/`. Study reports and proofs stay in `conexus-estudos`, at `estudos/<folder>/`; what
-  only proves a stage was done stays in the pull request. Founder, 2026-10-12. [check-docs]
+  only proves a stage was done stays in the pull request. [check-docs]
 - **L23.** What a person uses or decides **should** be in Portuguese: README, roadmap, cards,
   founder's page, operational how-tos and all visible text, accessible names and placeholders,
   with Brazilian presentation of dates/numbers. AGENTS.md, guides, architecture, decisions, skills
