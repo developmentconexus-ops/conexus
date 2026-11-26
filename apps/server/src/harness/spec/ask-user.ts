@@ -2,6 +2,7 @@ import { Answer, QUESTION_LIMITS } from '@conexus/hub-api'
 import { askUserTool } from '@mastra/core/agent-controller'
 import { createTool, formatQuestionAnswer } from '@mastra/core/tools'
 import { z } from 'zod'
+import { personsAnswer } from './persons-answer.ts'
 
 export const ASK_USER_TOOL = askUserTool.id
 
@@ -47,7 +48,7 @@ export function createAskUserTool() {
     suspendSchema: Questions,
     resumeSchema: z.array(Answer),
     execute: async ({ questions }, context) => {
-      const answers = context?.agent?.resumeData
+      const answers = personsAnswer(context?.agent)
       if (answers !== undefined) {
         const lines = questions.map(
           (each, index) => `${each.question}: ${formatQuestionAnswer(answers[index] ?? '')}`,
