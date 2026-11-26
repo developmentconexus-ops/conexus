@@ -148,3 +148,22 @@ Em 2026-11-24, à lista dos passos da parte 1 do Lago 2, que inclui a mudança d
 - A T26 ganha uma frase para as formas do Singer e do Meltano.
 
 Nada sai: o `main` ainda não tinha Python.
+
+## Mudança de método: a direção B no guia de design e a trilha Redesenho
+
+Em 2026-11-26, às quatro decisões da página do cartão R1 do redesenho, o fundador respondeu: "A A-b / B. B-a / C. Recomendado / D. Sim". No mesmo dia, depois de aprovar a página do cartão ("Aprovo"), foi perguntado: opção 1, autorizar mudar também a V23 (o botão principal em tinta, que trava o botão em ipê), a V55 ("no lugar da tinta") e a introdução do guia ("regiões planas separadas por filete") no mesmo pull request, e ele aplicar o rótulo `emergência`; opção 2, abrir o pull request como está, com a V23 para depois; opção 3, esperar as trilhas ficarem livres. Respondeu: "1". Entram, só de documentos (L20):
+
+- **B-a.** A V5, a V19, a V22 e a V28 do guia de design passam a dizer a direção B em grafite: o ipê aceso no botão principal, na chave e na caixa ligadas, no progresso, no enviar e no selo "Novo"; a borda como sombra e a folha encaixada com canto de 16 px; os raios 10, 14, 16 e 22; o foco em tinta no claro e em ipê no escuro. Os valores no `DESIGN.md` e no código são de uma unidade da R1.
+- **1.** A V23 passa a dizer o botão principal em ipê com a tinta escura; a V55, a confirmação em vermelho no lugar desse botão; a introdução do guia troca a Pauta pela direção B em grafite. No aro de foco da V28, a tinta e o ipê valem para botões, abas e links; o campo de texto segue com a borda e o halo em ipê, como no protótipo.
+- **D.** A L1 do guia de entrega nomeia a terceira trilha, Redesenho, só do Hub (casca e peças), com uma etapa em construção por vez.
+
+Para caber no teto de palavras (L24), a frase da L1 sobre as unidades da etapa irmã fica mais curta, sem mudar a regra.
+
+Depois, no mesmo dia: "Isso é SV23B55, são decisões antigas, né? A gente tem que trabalhar com agora, porque a gente está fazendo todo o redesign baseado no mobbing, baseado nas nossas skills, baseado nas referências, em todo o nosso estudo e planejamento. A gente não precisa ficar preso a essas decisões antigas se não fizerem sentido, entendeu?" Lido pelo firstmate: regra antiga que contradiz o que o redesenho decidiu é reescrita, sem perguntar uma por uma. Entram no mesmo pull request:
+
+- No guia de design, o lugar atual da barra sem o tique (V5), o título de 30 px (V13), a gaveta do celular com a barra inteira (V56) e o movimento (V26).
+- A [folha de movimento](../reference/movimento.md) com a escala curta e as duas molas (decisões "2. Recomendado" do estudo e "A A-b" do cartão).
+- O [Impeccable](../reference/impeccable.md) com a fase visual aberta (decisão "3. Sim" do estudo).
+- O [PRODUCT.md](../../PRODUCT.md) com os dois perfis por igual, os nomes em português, o alvo e o anti-alvo (decisão 7 do estudo).
+
+O `docs/guides/web.md` fica para a R2 e o `DESIGN.md` para a U3 da R1.
