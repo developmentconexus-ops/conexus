@@ -1,5 +1,10 @@
 import type { CompanyId, ConnectionId, LakeTablesOfConnection } from '@conexus/hub-api'
-import { getLakeTablesOfConnection, runLakeCopy, setLakeCopy } from '@conexus/hub-api'
+import {
+  getLakeTablesOfConnection,
+  runLakeCopy,
+  setLakeCopy,
+  stopLakeCopyRun,
+} from '@conexus/hub-api'
 import { queryOptions, useMutationState, useQuery } from '@tanstack/react-query'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
 
@@ -43,3 +48,4 @@ export function lakeTablesPrefix(companyId: CompanyId, connectionId: ConnectionI
 
 export const sendLakeCopy = hubMutation(setLakeCopy)
 export const sendLakeRun = hubMutation(runLakeCopy)
+export const sendLakeStop = hubMutation(stopLakeCopyRun)

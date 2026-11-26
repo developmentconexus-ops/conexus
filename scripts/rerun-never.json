@@ -1378,6 +1378,10 @@
     {
       "file": "apps/web/src/hub/connectors/lake-tabs.test.tsx",
       "name": "uma ligação de outro sistema não tem abas nem a seção"
+    },
+    {
+      "file": "apps/server/src/hub/copies/lake-stop.test.ts",
+      "name": "parar é de quem gerencia cópias: membro, desenvolvedor, estranho e ligação desconhecida recebem 404 sem tocar a rodada; o administrador para"
     }
   ]
 }

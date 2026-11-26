@@ -1,14 +1,19 @@
 import type { LakeInterval, LakeTablesOfConnection } from '@conexus/hub-api'
-import { dayAndHour } from '../../platform/dates.ts'
+import { useState } from 'react'
+import { clockOf, dayAndHour } from '../../platform/dates.ts'
 import { Button } from '../../ui/button.tsx'
 import { IntervalField } from './interval-field.tsx'
-import { isFuture } from './lake-pick.ts'
+import { isFuture, isMarked } from './lake-pick.ts'
+import { StopDialog } from './lake-read-again.tsx'
 import {
   lastRunText,
   READ_AGAIN,
   RUN_NOW,
   SAVE,
+  STOP_COPY,
+  STOPPING,
   sinceOfTableText,
+  stoppedByText,
   WHOLE_HISTORY,
 } from './lake-text.ts'
 import { intervalText } from './lake-words.ts'
@@ -55,22 +60,41 @@ export function Controls(props: {
   )
 }
 
-/** "Rodar agora", "Ler de novo desde a data" and the last round, under the controls. */
+type Ended = Exclude<NonNullable<LakeTablesOfConnection['lastRun']>, { outcome: 'RUNNING' }>
+
+function endedText(round: Ended) {
+  if (round.outcome === 'INTERRUPTED' && round.stoppedBy !== null)
+    return stoppedByText(round.stoppedBy.name, clockOf(round.endedAt))
+  return lastRunText(dayAndHour(round.endedAt))
+}
+
+/** "Rodar agora", "Parar cópia" while a round is open, "Ler de novo desde a data" and the last round, under the controls. */
 export function RunBar(props: {
   lake: LakeTablesOfConnection
   editable: boolean
   running: boolean
   stale: boolean
   again: number
+  stop: { stopping: boolean; pending: boolean; send: () => Promise<void> }
   onRun: () => void
   onReadAgain: () => void
 }) {
-  const { lake } = props
+  const { lake, stop } = props
+  const [asking, setAsking] = useState(false)
   return (
     <div className="flex flex-wrap items-center gap-md border-t border-line pt-md">
       <Button disabled={!props.editable || props.running} onClick={props.onRun}>
         {RUN_NOW}
       </Button>
+      {lake.lastRun?.outcome === 'RUNNING' && (
+        <Button
+          disabled={!props.editable || stop.stopping}
+          focusableWhenDisabled={stop.stopping}
+          onClick={() => setAsking(true)}
+        >
+          {stop.stopping ? STOPPING : STOP_COPY}
+        </Button>
+      )}
       {props.again > 0 && (
         <Button
           disabled={!props.editable || props.stale || props.running}
@@ -80,8 +104,18 @@ export function RunBar(props: {
         </Button>
       )}
       {lake.lastRun !== null && lake.lastRun.outcome !== 'RUNNING' && (
-        <p className="text-text-2 tabular-nums">{lastRunText(dayAndHour(lake.lastRun.endedAt))}</p>
+        <p className="text-text-2 tabular-nums">{endedText(lake.lastRun)}</p>
       )}
+      <StopDialog
+        open={asking}
+        tables={lake.tables.filter(isMarked)}
+        pending={stop.pending}
+        onConfirm={async () => {
+          await stop.send()
+          setAsking(false)
+        }}
+        onCancel={() => setAsking(false)}
+      />
     </div>
   )
 }
