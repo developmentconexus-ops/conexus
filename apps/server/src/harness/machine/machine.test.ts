@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { truncateSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { RunId } from '@conexus/hub-api'
+import { DEVELOPMENT_HOSTS, RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { until } from '../../platform/test-until.ts'
 import {
@@ -24,10 +24,11 @@ import { fileTools } from './test-machine-files.ts'
 
 const OWN = `conexus-${INSTALLATION}-${CONVERSATION}`
 
-test('máquina: a do Builder recebe só o registro do npm na lista de endereços, ao ligar e ao religar (17)', async (t) => {
+test('máquina: a do Builder nasce na lista pronta e a aplica ao ligar (17)', async (t) => {
   const { open, control } = await world(t)
   await fileTools(await open()).writeFile('a.ts', 'um\n')
-  assert.deepEqual(control.allowOut, [['registry.npmjs.org']])
+  assert.deepEqual(control.allowOut, [DEVELOPMENT_HOSTS])
+  assert.deepEqual(control.networkApplied, [{ name: OWN, hosts: DEVELOPMENT_HOSTS }])
 })
 
 test('máquina: o fim do turno do Builder não para a máquina; depois que o E2B a pausa, a ferramenta seguinte a retoma e o main entra de novo pelo início nativo', async (t) => {
@@ -35,7 +36,7 @@ test('máquina: o fim do turno do Builder não para a máquina; depois que o E2B
   await fileTools(await open()).writeFile('a.ts', 'um\n')
   await machines.release(CONVERSATION)
   assert.equal(control.stops, 0, 'the turn’s end does not stop the machine')
-  assert.equal(control.networkClosed, 0)
+  assert.equal(control.networkApplied.length, 1)
   const second = await open()
   assert.equal(await fileTools(second).exists('a.ts'), true)
   assert.equal(control.names.length, 1, 'the next turn used the machine the first left on')
@@ -51,11 +52,11 @@ test('máquina: o fim do turno do Builder não para a máquina; depois que o E2B
   const third = await open()
   assert.equal(await fileTools(third).readFile('b.ts', { encoding: 'utf-8' }), 'outra\n')
   assert.equal(await fileTools(third).exists('a.ts'), true, 'and the work not saved stays')
-  assert.equal(control.networkClosed, 1)
+  assert.equal(control.networkApplied.length, 2)
   assert.deepEqual(phases, ['copying'])
 })
 
-test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome traz o main com a rede fechada e guarda o que o turno anterior não salvou; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
+test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome toma a lista antes de trazer o main e guarda o que o turno anterior não salvou; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
   const { open, phases, control, machines, restartHub } = await world(t)
   const first = await open()
   assert.deepEqual(phases, [], 'building the workspace touches no machine')
@@ -73,7 +74,7 @@ test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome 
   )
   assert.deepEqual(phases, ['starting', 'copying'])
   assert.deepEqual(control.attached, [OWN])
-  assert.equal(control.networkClosed, 1)
+  assert.equal(control.networkApplied.length, 2)
   await hub.machines.release(CONVERSATION)
   phases.length = 0
   control.discoverable = []

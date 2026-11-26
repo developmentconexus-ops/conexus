@@ -25,7 +25,7 @@ import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 import { FOREGROUND, foregroundMaintenanceIn, GIT_FOREGROUND_ENV } from './test-git.ts'
 import type { NetworkControl } from './test-machine-network.ts'
-import { networkOf } from './test-machine-network.ts'
+import { listsDouble, networkOf } from './test-machine-network.ts'
 import { slowly } from './test-machine-slow.ts'
 
 /** A seed the Git refuses to make, because its copy holds a version the disk lost. */
@@ -95,8 +95,6 @@ export function newControl(): Control {
     templates: {},
     replaced: [],
     attached: [],
-    networkClosed: 0,
-    closeFails: 0,
     openFails: 0,
     networkApplied: [],
     upMs: 0,
@@ -280,6 +278,7 @@ export async function world(
   const control = newControl()
   /** What the machines logged as errors, by message. */
   const errors: string[] = []
+  const lists = listsDouble()
   function machinesWith(more: Readonly<{ commandMs?: number }> = {}) {
     return createMachines({
       kit: localKit(folder, control),
@@ -290,7 +289,7 @@ export async function world(
       },
       seedOf: seedOf ?? (() => repository.bundleOfMain()),
       mark: { conexus_origin: installation },
-      installation,
+      ...{ installation, opened: lists.opened },
       template: TEMPLATE,
       log: { info: () => undefined, error: (_fields, message) => errors.push(message) },
       workdir: join(folder, 'app'),
@@ -324,7 +323,7 @@ export async function world(
   }
   return {
     ...{ machines, repository, base, control, phases, errors, open, openWithCommandMs },
-    ...{ restartHub, folder },
+    ...{ restartHub, folder, lists },
   }
 }
 

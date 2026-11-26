@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { INSTALLATION } from '../../harness/machine/test-machine.ts'
 import {
   endOf,
@@ -22,7 +23,6 @@ import { agentsOn, drafted, madeAgent, publishedAgent, talkedTo } from './test-a
 const COMMAND = 'mastra_workspace_execute_command'
 const WRITE = 'mastra_workspace_write_file'
 const SHOW = 'show_file'
-const HOSTS = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
 
 function idOf(url: string) {
   return url.slice(url.lastIndexOf('/') + 1)
@@ -68,8 +68,10 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
   )
   assert.ok(control.names.every((name) => name === `conexus-${INSTALLATION}-${idOf(url)}`))
   assert.ok(control.names.length > 0)
-  assert.deepEqual(control.allowOut.at(0), HOSTS)
-  assert.ok(control.allowOut.every((each) => JSON.stringify(each) === JSON.stringify(HOSTS)))
+  assert.deepEqual(control.allowOut.at(0), DEVELOPMENT_HOSTS)
+  assert.ok(
+    control.allowOut.every((each) => JSON.stringify(each) === JSON.stringify(DEVELOPMENT_HOSTS)),
+  )
   const marks = control.marks[0]
   assert.equal(marks?.conexus_company, on.companyId)
   assert.equal(marks?.conexus_project, on.projectId)
@@ -106,12 +108,12 @@ test('a rede: a máquina do agente salvo parte com os domínios da empresa, e re
   function sent() {
     return control.networkApplied.map((each) => each.hosts)
   }
-  assert.deepEqual(sent(), [[...HOSTS, 'api.example.com']])
+  assert.deepEqual(sent(), [[...DEVELOPMENT_HOSTS, 'api.example.com']])
   const one = Object(added.json()).id
   const removed = await call(on.hub, on.ana, 'DELETE', `${domains}/${one}`)
   assert.equal(removed.statusCode, 204, removed.body)
   await until(() => sent().length === 2, 'the running machine took the shorter list')
-  assert.deepEqual(sent().at(-1), HOSTS)
+  assert.deepEqual(sent().at(-1), DEVELOPMENT_HOSTS)
 })
 
 test('o Computador: um agente sem a chave não recebe ferramenta de máquina nem show_file, e nenhuma máquina liga; listar os agentes não liga nada (15)', async (t) => {

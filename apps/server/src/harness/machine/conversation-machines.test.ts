@@ -5,9 +5,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId, ConversationId } from '@conexus/hub-api'
+import { CompanyId, ConversationId, DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
-import { createConversationMachines, MARK, PACKAGE_HOSTS } from './public.ts'
+import { createConversationMachines, MARK } from './public.ts'
 import { testConversationMachines } from './test-conversation-machines.ts'
 import { INSTALLATION, OLD_TEMPLATE } from './test-machine.ts'
 
@@ -25,7 +25,7 @@ function oldMachine(t: TestContext, otherTemplate: 'resume' | 'replace') {
   doubles.control.templates[name] = OLD_TEMPLATE
   const machines = createConversationMachines(
     {
-      network: { kind: 'FIXED', hosts: PACKAGE_HOSTS },
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: async () => [] },
       otherTemplate,
       marks: async () => ({ [MARK.company]: COMPANY }),
     },

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { CompanyData, CompanyId, ConversationId, Person } from '@conexus/hub-api'
-import { ASSISTANT_TOOL } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
@@ -13,7 +13,6 @@ import type {
 import {
   createConversationMachines,
   machinePart,
-  PACKAGE_HOSTS,
   showFileTool,
 } from '../../harness/machine/public.ts'
 import type { HubPart } from '../../harness/mastra/public.ts'
@@ -292,7 +291,7 @@ export function createAssistant(deps: Deps) {
   const scopeOf = assistantRuns({ memory, chosenOf: chosen.of })
   const machines = createConversationMachines(
     {
-      network: { kind: 'ON_REQUEST', hosts: PACKAGE_HOSTS, opened: deps.network.opened },
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: deps.network.opened },
       otherTemplate: 'resume',
       readMedia: READ_MEDIA,
       marks: machineMarks(chosen.of),

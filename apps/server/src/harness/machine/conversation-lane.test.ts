@@ -5,12 +5,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId, ConversationId } from '@conexus/hub-api'
+import { CompanyId, ConversationId, DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { NEVER_ASKS } from '../spec/public.ts'
 import type { ConversationMachineApi, KitFactory } from './public.ts'
-import { createConversationMachines, MARK, MAX_BYTES, PACKAGE_HOSTS } from './public.ts'
+import { createConversationMachines, MARK, MAX_BYTES } from './public.ts'
 import { testConversationMachines } from './test-conversation-machines.ts'
 import { INSTALLATION, OLD_TEMPLATE } from './test-machine.ts'
 
@@ -46,7 +46,7 @@ function machinesOf(
   doubles.control.discoverable.push(`conexus-${INSTALLATION}-${id}`)
   const machines = createConversationMachines(
     {
-      network: { kind: 'ON_REQUEST', hosts: PACKAGE_HOSTS, opened: async () => [] },
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: async () => [] },
       otherTemplate: 'replace',
       marks: async () => ({ [MARK.company]: COMPANY }),
       ...(replace.readMedia === undefined ? {} : { readMedia: replace.readMedia }),

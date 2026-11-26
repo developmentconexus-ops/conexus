@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { AutomationId, ProjectId } from '@conexus/hub-api'
-import { CONSTRUTOR_TOOL, CONVERSATION_TOOL, TASK_TOOLS } from '@conexus/hub-api'
+import { CONSTRUTOR_TOOL, CONVERSATION_TOOL, DEVELOPMENT_HOSTS, TASK_TOOLS } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { Memory } from '@mastra/memory'
@@ -9,9 +9,9 @@ import type {
   ConversationMachine,
   ConversationMachines,
   MachineTuning,
+  NetworkLists,
 } from '../../harness/machine/public.ts'
 import {
-  ALLOWED_HOSTS,
   createConversationMachines,
   machineMarksOf,
   machinePart,
@@ -109,6 +109,7 @@ type Deps = {
   /** The machine's provider (the Assistant's kit and API) and the tests' folder and toolchain; E2B's when absent. */
   machine: ConversationMachine
   machineTuning?: MachineTuning
+  network: NetworkLists
   log: FailureLog
 }
 
@@ -306,14 +307,14 @@ export function createConstrutor(deps: Deps) {
   const scopeOf = construtorRuns(deps, memory)
   const machines = createConversationMachines(
     {
-      network: { kind: 'FIXED', hosts: ALLOWED_HOSTS },
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: deps.network.opened },
       otherTemplate: 'replace',
       marks: machineMarks(scopeOf),
     },
     { ...deps.machine, log },
     deps.machineTuning,
   )
-  const { each, ...wired } = machinePart(machines)
+  const { each, ...wired } = machinePart(machines, deps.network)
   const { controller } = mountAgent(construtorSpec(deps, { memory, scopeOf, machines }), {
     queue,
     storage,

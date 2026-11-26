@@ -11,6 +11,7 @@ import { locate } from './conversation-file.ts'
 import { MAX_BYTES } from './git-facts.ts'
 import type { ConversationMachine, Kit } from './kit.ts'
 import { MARK, readCapped } from './kit.ts'
+import { createLanes } from './lanes.ts'
 import type { Line, NetworkedSession } from './network.ts'
 import { isNetworkNotApplied, machineNetwork, networkNotApplied } from './network.ts'
 import type { Phase } from './port.ts'
@@ -125,7 +126,7 @@ class Machines implements ConversationMachines {
    * machine's list also waits in the machine's `network:` line, apart, because a download holds
    * the conversation's line while its machine's start applies the list.
    */
-  private readonly lanes = new Map<Line, Promise<unknown>>()
+  private readonly inLane = createLanes<Line>()
   private readonly phases = new Map<ConversationId, (phase: Phase) => void>()
   private readonly network: ReturnType<typeof machineNetwork>
 
@@ -143,29 +144,16 @@ class Machines implements ConversationMachines {
     this.toolchain = tuning.toolchain
     this.startMs = tuning.startMs
     this.told = `The conversation's own Linux machine. Commands start in ${this.folder}.`
+    const { opened } = spec.network
     this.network = machineNetwork({
-      network: spec.network,
-      log: deps.log,
-      sessions: this.sessions,
-      inLane: (line, work) => this.inLane(line, work),
+      ...{ opened, log: deps.log, sessions: this.sessions, inLane: this.inLane },
     })
-  }
-
-  private inLane<T>(line: Line, work: () => Promise<T>): Promise<T> {
-    const run = Promise.allSettled([this.lanes.get(line)]).then(work)
-    const settled = Promise.allSettled([run])
-    this.lanes.set(line, settled)
-    void settled.then(() => {
-      if (this.lanes.get(line) === settled) this.lanes.delete(line)
-    })
-    return run
   }
 
   /**
    * Wakes or creates the machine, once per session; with `replace`, a machine from another
    * template is killed first. A change of its list that failed is made again before each use; a
-   * retry that fails holds no tool back, and the machine keeps the list it had (reference table
-   * row 8: as the Builder's `closeAgain`).
+   * retry that fails holds no tool back, and the machine keeps the list it had.
    */
   private async ensure(session: Session): Promise<Kit> {
     session.ready ??= this.boot(session)

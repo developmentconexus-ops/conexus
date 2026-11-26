@@ -161,11 +161,12 @@ type SubjectDeps = {
 export function subjectsOf(deps: SubjectDeps) {
   const { database, config, log, neon, repository, copy } = deps
   const identity = deps.identity.ports
-  const appsDomain = config.appsDomain
+  const { appsDomain, sealKeys } = config
   const appRemoval = createAppRemoval(deps)
-  const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
-  const machines = deps.machinesOf()
+  const network = createNetwork({ database, identity, log })
+  const machines = deps.machinesOf(network.store.opened)
+  network.store.onRemoved((companyId) => void machines.narrow(companyId))
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
     repositories: () => repositoriesIn(config.gitRoot),
@@ -177,7 +178,6 @@ export function subjectsOf(deps: SubjectDeps) {
     },
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const network = createNetwork({ database, identity, log })
   const { conversations, assistant, automations, agents, lakeClock } = conversationsOf({
     ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool, network },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },

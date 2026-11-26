@@ -98,7 +98,7 @@
       {
         "type": "text",
         "text": [
-          "The conversation's own Linux machine, with Node 24, npm and git. Commands start in /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, the app folder: work there and nowhere else. Its network reaches only registry.npmjs.org. Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.",
+          "The conversation's own Linux machine, with Node 24, npm and git. Commands start in /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, the app folder: work there and nowhere else. Its network reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation allowed. Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.",
           "",
           "Files are stored in a remote sandbox at /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app. File tools take paths relative to /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, or absolute paths under it. Any other absolute path is placed inside /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app (/tmp/x becomes /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app/tmp/x), while commands see the real path: keep every file a tool and a command share under /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app."
         ]
@@ -1335,7 +1335,7 @@
       {
         "type": "text",
         "text": [
-          "The conversation's own Linux machine, with Node 24, npm and git. Commands start in /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, the app folder: work there and nowhere else. Its network reaches only registry.npmjs.org. Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.",
+          "The conversation's own Linux machine, with Node 24, npm and git. Commands start in /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, the app folder: work there and nowhere else. Its network reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation allowed. Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.",
           "",
           "Files are stored in a remote sandbox at /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app. File tools take paths relative to /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app, or absolute paths under it. Any other absolute path is placed inside /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app (/tmp/x becomes /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app/tmp/x), while commands see the real path: keep every file a tool and a command share under /tmp/conexus-git-conexus_test_<id-1>/conexus-machine-<id-2>/app."
         ]

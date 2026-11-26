@@ -19,7 +19,7 @@ const CALL_MS = 30_000
 type Credentials = Pick<Config, 'e2bApiKey' | 'machineTemplate'>
 
 /**
- * The machine's outbound rules, at its creation and in `closeNetwork`. `allowPublicTraffic: false`
+ * The machine's outbound rules, at its creation and in `openNetwork`. `allowPublicTraffic: false`
  * (creation only: `updateNetwork` does not take it, e2b `SandboxNetworkUpdate`) makes every
  * `<port>-<id>.e2b.app` url answer 403 without the traffic token; omitted, the machine is public.
  */
@@ -56,7 +56,6 @@ export function createE2bKit(config: Credentials): KitFactory {
           }),
       },
       openNetwork: (extra) => sandbox.e2b.updateNetwork(egress([...options.allowOut, ...extra])),
-      closeNetwork: () => sandbox.e2b.updateNetwork(egress(options.allowOut)),
     }
   }
 }

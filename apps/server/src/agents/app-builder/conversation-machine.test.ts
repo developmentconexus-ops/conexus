@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { test } from 'node:test'
+import { DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { APP_FOLDER } from '../../harness/machine/public.ts'
 import {
   asked,
@@ -10,7 +11,9 @@ import {
   streamOf,
   title,
 } from '../../harness/routes/test-conversation.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 
 const PWD = {
   type: 'tool_use',
@@ -40,6 +43,10 @@ test('a máquina como o modelo a ouve: a pasta do app e o que ela tem, nenhum ou
     system.includes(`Files are stored in a remote sandbox at ${app}`),
     'the file tools name their folder',
   )
+  assert.ok(
+    system.includes('the npm and PyPI registries, GitHub and the Debian mirrors for apt'),
+    'the machine names the whole development list',
+  )
   assert.equal(system.includes('Cloud sandbox'), false)
   assert.equal(system.includes('Local command execution'), false)
   const named = new Set(pathsIn(system).map((path) => path.replace(/[.]$/, '')))
@@ -57,6 +64,28 @@ test('a máquina como o modelo a ouve: a pasta do app e o que ela tem, nenhum ou
     success: true,
   })
   assert.equal(output.at(-1)?.trim(), realpathSync(app), 'each event says the whole tail')
+})
+
+test('a rede do Construtor de apps: a máquina parte com os domínios da empresa, e remover um pela rota a fecha na hora (8, 10)', async (t) => {
+  let turns = 0
+  const { hub, ana, companyId, conversations } = await conversing(t, (sent): Reply => {
+    if (title(sent) !== undefined) return { kind: 'text', text: 'Título' }
+    turns += 1
+    return turns === 1 ? { kind: 'blocks', blocks: [PWD] } : { kind: 'text', text: 'Pronto.' }
+  })
+  const domains = `/api/companies/${companyId}/network/domains`
+  const wanted = { domain: 'api.example.com', reason: 'Ler o catálogo de preços' }
+  const added = await post(hub, ana, domains, wanted)
+  assert.equal(added.statusCode, 200, added.body)
+  await asked(t, { hub, person: ana, conversations }, 'Onde você trabalha?')
+  function applied() {
+    return hub.builder.control.networkApplied.map((each) => each.hosts)
+  }
+  assert.deepEqual(applied(), [[...DEVELOPMENT_HOSTS, 'api.example.com']])
+  const removed = await call(hub, ana, 'DELETE', `${domains}/${Object(added.json()).id}`)
+  assert.equal(removed.statusCode, 204, removed.body)
+  await until(() => applied().length === 2, 'the running machine took the shorter list')
+  assert.deepEqual(applied().at(-1), DEVELOPMENT_HOSTS)
 })
 
 function write(path: string, content: string) {

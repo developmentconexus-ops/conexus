@@ -5,13 +5,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId, ConversationId, NetworkDomain } from '@conexus/hub-api'
+import { CompanyId, ConversationId, DEVELOPMENT_HOSTS, NetworkDomain } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { until } from '../../platform/test-until.ts'
-import { ALLOWED_HOSTS, createConversationMachines, MARK, PACKAGE_HOSTS } from './public.ts'
+import type { Opened } from './network.ts'
+import { createConversationMachines, MARK } from './public.ts'
+import { confer, conferring, stubBrowser, TOKEN } from './test-confer.ts'
 import { testConversationMachines } from './test-conversation-machines.ts'
-import { INSTALLATION, pausedByE2b } from './test-machine.ts'
+import { COMPANY as BUILDERS, INSTALLATION, pausedByE2b } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const OTHER_COMPANY = CompanyId.parse('companyBBBBBBBBBBBBBBBBBBBBBBBBB')
@@ -41,11 +43,10 @@ function world(t: TestContext) {
       ...(conversation.get(where.conversationId) ?? []),
     ]
   }
-  const onRequest = { kind: 'ON_REQUEST', hosts: PACKAGE_HOSTS, opened } as const
-  function hub(network: Parameters<typeof createConversationMachines>[0]['network'] = onRequest) {
+  function hub(lists: Opened = opened) {
     return createConversationMachines(
       {
-        network,
+        network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: lists },
         otherTemplate: 'resume',
         marks: async (context) => ({ [MARK.company]: String(context.get('company')) }),
       },
@@ -58,7 +59,7 @@ function world(t: TestContext) {
       .filter((each) => each.name === nameOf(id))
       .map((each) => each.hosts)
   }
-  return { ...doubles, company, conversation, lines, opened, onRequest, hub, appliedTo }
+  return { ...doubles, company, conversation, lines, opened, hub, appliedTo }
 }
 
 async function turn(machines: ReturnType<ReturnType<typeof world>['hub']>, companyId = COMPANY) {
@@ -85,7 +86,7 @@ async function turn(machines: ReturnType<ReturnType<typeof world>['hub']>, compa
   return { id, context, write, command }
 }
 
-test('a rede na partida: a máquina criada leva os registros de pacote, a lista da empresa e a da conversa, e nada mais (8)', async (t) => {
+test('a rede na partida: a máquina criada leva a lista pronta, a lista da empresa e a da conversa, e nada mais (8)', async (t) => {
   const on = world(t)
   const asked = await turn(on.hub())
   on.company.set(COMPANY, domains('api.example.com'))
@@ -93,7 +94,7 @@ test('a rede na partida: a máquina criada leva os registros de pacote, a lista 
   on.conversation.set(asked.id, domains('*.docs.example.org'))
   await asked.write()
   assert.deepEqual(on.appliedTo(asked.id), [
-    [...PACKAGE_HOSTS, 'api.example.com', '*.docs.example.org'],
+    [...DEVELOPMENT_HOSTS, 'api.example.com', '*.docs.example.org'],
   ])
 })
 
@@ -105,7 +106,7 @@ test('a rede na partida: a máquina que volta de uma pausa leva as listas de ago
   on.company.set(COMPANY, domains('depois.example.com'))
   pausedByE2b(on.control)
   await asked.command()
-  assert.deepEqual(on.appliedTo(asked.id).at(-1), [...PACKAGE_HOSTS, 'depois.example.com'])
+  assert.deepEqual(on.appliedTo(asked.id).at(-1), [...DEVELOPMENT_HOSTS, 'depois.example.com'])
 })
 
 test('a rede na partida: depois que o Hub reinicia, a máquina achada leva as listas de agora (8)', async (t) => {
@@ -118,31 +119,20 @@ test('a rede na partida: depois que o Hub reinicia, a máquina achada leva as li
   const files = (await on.hub().workspace(before.context))?.filesystem
   await files?.writeFile('b.txt', 'dois')
   assert.deepEqual(on.control.attached, [nameOf(before.id)])
-  assert.deepEqual(on.appliedTo(before.id).at(-1), [...PACKAGE_HOSTS, 'depois.example.com'])
+  assert.deepEqual(on.appliedTo(before.id).at(-1), [...DEVELOPMENT_HOSTS, 'depois.example.com'])
 })
 
-test('a rede na partida: o download, sem conversa em curso, liga a máquina achada só com os registros de pacote (8)', async (t) => {
+test('a rede na partida: o download, sem conversa em curso, liga a máquina achada só com a lista pronta (8)', async (t) => {
   const on = world(t)
   on.company.set(COMPANY, domains('api.example.com'))
   const id = ConversationId.parse(randomUUID())
   on.control.discoverable.push(nameOf(id))
   mkdirSync(on.tuning.workFolder, { recursive: true })
   writeFileSync(join(on.tuning.workFolder, 'a.txt'), 'um')
-  const machines = on.hub({
-    ...on.onRequest,
-    opened: async () => assert.fail('a download has no company whose lists to read'),
-  })
+  const machines = on.hub(async () => assert.fail('a download has no company whose lists to read'))
   const read = await machines.read(id, 'a.txt', new AbortController().signal)
   assert.equal(read.kind, 'OK')
-  assert.deepEqual(on.appliedTo(id), [PACKAGE_HOSTS])
-})
-
-test('os construtores não seguem a lista: a máquina de lista fixa leva os próprios endereços, com a empresa tendo domínios (9)', async (t) => {
-  const on = world(t)
-  on.company.set(COMPANY, domains('api.example.com'))
-  const built = await turn(on.hub({ kind: 'FIXED', hosts: ALLOWED_HOSTS }))
-  await built.write()
-  assert.deepEqual(on.appliedTo(built.id), [['registry.npmjs.org']])
+  assert.deepEqual(on.appliedTo(id), [DEVELOPMENT_HOSTS])
 })
 
 test('a remoção fecha as máquinas ligadas da empresa, e só elas (10)', async (t) => {
@@ -158,9 +148,9 @@ test('a remoção fecha as máquinas ligadas da empresa, e só elas (10)', async
   on.conversation.set(second.id, domains('da-conversa.example.com'))
   on.company.set(COMPANY, [])
   await machines.narrow(COMPANY)
-  assert.deepEqual(on.appliedTo(first.id).slice(1), [PACKAGE_HOSTS])
+  assert.deepEqual(on.appliedTo(first.id).slice(1), [DEVELOPMENT_HOSTS])
   assert.deepEqual(on.appliedTo(second.id).slice(1), [
-    [...PACKAGE_HOSTS, 'da-conversa.example.com'],
+    [...DEVELOPMENT_HOSTS, 'da-conversa.example.com'],
   ])
   assert.equal(on.appliedTo(other.id).length, 1, 'another company keeps its list')
   assert.deepEqual(on.appliedTo(unused.id), [], 'a machine never started takes no change')
@@ -182,10 +172,10 @@ test('a troca que falha refaz na próxima ferramenta, antes de o comando rodar, 
   const during: unknown[] = []
   on.control.afterCommand = () => during.push(on.appliedTo(asked.id).at(-1))
   assert.match(await asked.command(), /feito/, 'a retry that fails holds no tool back')
-  assert.deepEqual(during.at(-1), [...PACKAGE_HOSTS, 'api.example.com'])
+  assert.deepEqual(during.at(-1), [...DEVELOPMENT_HOSTS, 'api.example.com'])
   on.control.openFails = 0
   await asked.command()
-  assert.deepEqual(during.at(-1), PACKAGE_HOSTS)
+  assert.deepEqual(during.at(-1), DEVELOPMENT_HOSTS)
   const sent = on.appliedTo(asked.id).length
   await asked.command()
   assert.equal(on.appliedTo(asked.id).length, sent, 'a change that took effect is not made again')
@@ -201,7 +191,7 @@ test('a liberação chega à máquina ligada, e reopen diz false quando a troca 
   assert.equal(await machines.reopen(asked.id), false)
   assert.equal(on.lines.at(-1)?.fields.reason, 'GRANT')
   assert.equal(await machines.reopen(asked.id), true)
-  assert.deepEqual(on.appliedTo(asked.id).at(-1), [...PACKAGE_HOSTS, 'api.example.com'])
+  assert.deepEqual(on.appliedTo(asked.id).at(-1), [...DEVELOPMENT_HOSTS, 'api.example.com'])
   assert.equal(await machines.reopen(ConversationId.parse(randomUUID())), true)
 })
 
@@ -209,14 +199,11 @@ test('a remoção que chega durante a partida entra depois dela, e a máquina fi
   const on = world(t)
   const gate = Promise.withResolvers<void>()
   let reads = 0
-  const machines = on.hub({
-    ...on.onRequest,
-    opened: async (where) => {
-      const read = await on.opened(where)
-      reads += 1
-      if (reads === 1) await gate.promise
-      return read
-    },
+  const machines = on.hub(async (where) => {
+    const read = await on.opened(where)
+    reads += 1
+    if (reads === 1) await gate.promise
+    return read
   })
   on.company.set(COMPANY, domains('api.example.com'))
   const asked = await turn(machines)
@@ -227,7 +214,7 @@ test('a remoção que chega durante a partida entra depois dela, e a máquina fi
   await new Promise((later) => setTimeout(later, 50))
   gate.resolve()
   await Promise.all([writing, narrowing])
-  assert.deepEqual(on.appliedTo(asked.id).at(-1), PACKAGE_HOSTS)
+  assert.deepEqual(on.appliedTo(asked.id).at(-1), DEVELOPMENT_HOSTS)
 })
 
 test('a partida sem a rede certa falha: a máquina não é entregue, o turno vê MACHINE_UNAVAILABLE, e a seguinte parte (11)', async (t) => {
@@ -250,20 +237,58 @@ test('a partida sem a rede certa falha: a máquina não é entregue, o turno vê
   )
   assert.equal(JSON.stringify(on.lines).includes('example.com'), false)
   await asked.write()
-  assert.deepEqual(on.appliedTo(asked.id), [[...PACKAGE_HOSTS, 'api.example.com']])
+  assert.deepEqual(on.appliedTo(asked.id), [[...DEVELOPMENT_HOSTS, 'api.example.com']])
 })
 
 test('a partida sem a rede certa falha também quando as listas não são lidas (11)', async (t) => {
   const on = world(t)
   const asked = await turn(
-    on.hub({
-      ...on.onRequest,
-      opened: async () => {
-        throw new Error('connection refused')
-      },
+    on.hub(async () => {
+      throw new Error('connection refused')
     }),
   )
   await assert.rejects(asked.write(), { code: 'MACHINE_UNAVAILABLE' })
   assert.deepEqual(on.appliedTo(asked.id), [])
   assert.equal(on.lines.at(-1)?.fields.reason, 'NETWORK')
+})
+
+async function checking(
+  t: TestContext,
+  domain: string,
+  options: Parameters<typeof stubBrowser>[1] = {},
+) {
+  const machine = await conferring(t, stubBrowser(t, options).program)
+  machine.lists.listed.push(...domains(domain))
+  const at = { url: new URL('https://localhost:4433'), session: TOKEN }
+  function applied() {
+    return machine.control.networkApplied.map((each) => each.hosts)
+  }
+  return { ...machine, applied, check: () => confer(machine, at) }
+}
+
+test('a conferência volta às listas: o Construtor de apps termina com a lista pronta e a da conversa, também quando falha (9)', async (t) => {
+  for (const options of [{}, { failOn: 'wait' }]) {
+    const on = await checking(t, 'api.example.com', options)
+    await on.check()
+    assert.deepEqual(on.applied().at(-1), [...DEVELOPMENT_HOSTS, 'api.example.com'])
+  }
+})
+
+test('a conferência é uma entrada da lista: durante ela a máquina alcança o domínio liberado e o endereço do app, depois só o domínio, e a liberação feita no meio continua valendo (33)', async (t) => {
+  const on = await checking(t, 'api.example.com')
+  let told = false
+  on.control.afterCommand = () => {
+    if (told || on.applied().at(-1)?.includes('localhost') !== true) return
+    told = true
+    on.lists.listed.push(...domains('docs.example.org'))
+    void on.machines.narrow(BUILDERS)
+  }
+  assert.ok((await on.check()).ok)
+  const before = [...DEVELOPMENT_HOSTS, 'api.example.com']
+  assert.deepEqual(on.applied(), [
+    before,
+    [...before, 'localhost'],
+    [...before, 'docs.example.org', 'localhost'],
+    [...before, 'docs.example.org'],
+  ])
 })

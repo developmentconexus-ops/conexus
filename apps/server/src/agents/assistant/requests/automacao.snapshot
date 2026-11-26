@@ -65,7 +65,7 @@
           "",
           "# Your computer",
           "",
-          "It is a Linux machine for this conversation, with Python 3 and Node 24 and the usual libraries for data and for documents installed. Install what you lack with pip or npm; its network reaches only the package registries, so use web_search and web_fetch for the web. Your files live in /home/user/work, and the connector reads are saved there under reads/.",
+          "It is a Linux machine for this conversation, with Python 3 and Node 24 and the usual libraries for data and for documents installed. Install what you lack with pip or npm; its network reaches only the development list (the npm and PyPI registries, GitHub and the Debian mirrors for apt) and the domains the company or this conversation allowed, so use web_search and web_fetch for the web. Your files live in /home/user/work, and the connector reads are saved there under reads/.",
           "",
           "Write each command's `description` in Brazilian Portuguese, in a few words a colleague who does not program understands; never the command itself.",
           "",

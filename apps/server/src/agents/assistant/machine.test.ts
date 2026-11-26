@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { ConversationId } from '@conexus/hub-api'
+import { ConversationId, DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
-import { createConversationMachines, PACKAGE_HOSTS } from '../../harness/machine/public.ts'
+import { createConversationMachines } from '../../harness/machine/public.ts'
 import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../../harness/machine/test-machine.ts'
 import {
   asked,
@@ -77,8 +77,9 @@ test('a máquina da conversa: a primeira ferramenta de arquivo liga uma com o no
   )
   assert.equal(existsSync(join(work, '.git')), false)
 
-  const hosts = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
-  assert.ok(control.allowOut.every((each) => JSON.stringify(each) === JSON.stringify(hosts)))
+  assert.ok(
+    control.allowOut.every((each) => JSON.stringify(each) === JSON.stringify(DEVELOPMENT_HOSTS)),
+  )
   const [homeMarks, projectMarks] = [control.marks[0], control.marks.at(-1)]
   assert.equal(homeMarks?.conexus_origin, INSTALLATION)
   assert.equal(homeMarks?.conexus_company, on.companyId)
@@ -138,12 +139,12 @@ test('a rede: a máquina do Assistente parte com os domínios da empresa, e remo
   function hostsSent() {
     return control.networkApplied.map((each) => each.hosts)
   }
-  assert.deepEqual(hostsSent(), [[...PACKAGE_HOSTS, 'api.example.com']])
+  assert.deepEqual(hostsSent(), [[...DEVELOPMENT_HOSTS, 'api.example.com']])
   const one = Object(added.json()).id
   const removed = await call(on.hub, on.ana, 'DELETE', `${domains}/${one}`)
   assert.equal(removed.statusCode, 204, removed.body)
   await until(() => hostsSent().length === 2, 'the running machine took the shorter list')
-  assert.deepEqual(hostsSent().at(-1), PACKAGE_HOSTS)
+  assert.deepEqual(hostsSent().at(-1), DEVELOPMENT_HOSTS)
 })
 
 test('o fim do turno não para a máquina: o turno seguinte a reusa e o provedor a pausa pelo prazo dele (21)', async (t) => {
@@ -251,7 +252,7 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   control.discoverable.push(nameOf(url))
   const machines = createConversationMachines(
     {
-      network: { kind: 'FIXED', hosts: PACKAGE_HOSTS },
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: async () => [] },
       otherTemplate: 'resume',
       marks: async () => undefined,
     },

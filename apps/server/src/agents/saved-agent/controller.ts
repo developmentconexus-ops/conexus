@@ -1,5 +1,5 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { AgentId as AgentIdSchema, ProjectId } from '@conexus/hub-api'
+import { AgentId as AgentIdSchema, DEVELOPMENT_HOSTS, ProjectId } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -15,7 +15,6 @@ import {
   createConversationMachines,
   machineMarksOf,
   machinePart,
-  PACKAGE_HOSTS,
 } from '../../harness/machine/public.ts'
 import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
@@ -243,7 +242,7 @@ export function createAgentConversations(deps: Deps) {
   })
   const machines = createConversationMachines(
     {
-      network: { kind: 'ON_REQUEST', hosts: PACKAGE_HOSTS, opened: deps.network.opened },
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: deps.network.opened },
       otherTemplate: 'replace',
       marks: machineMarks(runOf, resolvedOf),
     },

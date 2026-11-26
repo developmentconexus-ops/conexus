@@ -1,5 +1,5 @@
-import type { CompanyId, ConversationId, NetworkDomain } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
+import type { Opened } from './network.ts'
 
 /**
  * What differs between the agents' conversation machines: the one parameter of
@@ -7,20 +7,10 @@ import type { RequestContext } from '@mastra/core/request-context'
  */
 export type MachineSpec = {
   /**
-   * What the machine may reach, and nothing else: `FIXED` is `hosts` (decision 0051);
-   * `ON_REQUEST` is `hosts` and what `opened` returns, read each time the list is applied. A
-   * session with no company gets `hosts` alone.
+   * What the machine may reach, and nothing else: `hosts` and what `opened` returns, read each time
+   * the list is applied. A session with no company gets `hosts` alone.
    */
-  network:
-    | { kind: 'FIXED'; hosts: readonly string[] }
-    | {
-        kind: 'ON_REQUEST'
-        hosts: readonly string[]
-        opened(where: {
-          companyId: CompanyId
-          conversationId: ConversationId
-        }): Promise<readonly NetworkDomain[]>
-      }
+  network: { kind: 'ON_REQUEST'; hosts: readonly string[]; opened: Opened }
   /**
    * What a machine made from another template meets: `'replace'` kills it and makes a new one (the
    * Builder's, whose tools the template carries); `'resume'` wakes it by its id with its files.

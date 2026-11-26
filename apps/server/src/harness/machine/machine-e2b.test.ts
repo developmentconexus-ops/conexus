@@ -3,25 +3,23 @@ import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { CompanyId, ConversationId, NetworkDomain } from '@conexus/hub-api'
+import { CompanyId, ConversationId, DEVELOPMENT_HOSTS, NetworkDomain } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { testConfig, unreachableDatabaseUrl } from '../../platform/test-database.ts'
 import {
-  ALLOWED_HOSTS,
   APP_FOLDER,
   createConversationMachines,
   createE2bApi,
   createE2bCodeMode,
   createE2bKit,
   MARK,
-  PACKAGE_HOSTS,
 } from './public.ts'
 import { INSTALLATION, realE2b } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000a')
 const IN_APP = {
-  allowOut: ALLOWED_HOSTS,
+  allowOut: DEVELOPMENT_HOSTS,
   workingDirectory: APP_FOLDER,
 }
 
@@ -51,7 +49,7 @@ test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, a
   assert.equal('sandboxId' in options, false)
   assert.equal('reattach' in options, false)
   assert.deepEqual(options.network, {
-    allowOut: ['registry.npmjs.org'],
+    allowOut: DEVELOPMENT_HOSTS,
     denyOut: ['0.0.0.0/0'],
     allowPublicTraffic: false,
   })
@@ -61,21 +59,19 @@ test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, a
   assert.equal(options.workingDirectory, APP_FOLDER)
 })
 
-test('máquina: a lista de endereços que quem monta passa é a que o E2B recebe, a do Builder só o npm e a do Assistente também o PyPI (17)', async () => {
-  const config = testConfig(await unreachableDatabaseUrl())
-  function networkOf(allowOut: readonly string[]) {
-    const kit = createE2bKit(config)({
-      id: `conexus-hub-${CONVERSATION}`,
-      metadata: {},
-      onStart: () => undefined,
-      allowOut,
-      workingDirectory: APP_FOLDER,
-    })
-    return Reflect.get(kit.sandbox, '_constructorOptions').network
-  }
-  assert.deepEqual(networkOf(ALLOWED_HOSTS).allowOut, ['registry.npmjs.org'])
-  assert.deepEqual(networkOf(PACKAGE_HOSTS), {
-    allowOut: ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'],
+test('máquina: o E2B recebe a lista pronta na criação, os registros de pacote, o GitHub e os espelhos do Debian, e mais nada (17)', async () => {
+  const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
+    id: `conexus-hub-${CONVERSATION}`,
+    metadata: {},
+    onStart: () => undefined,
+    ...IN_APP,
+  })
+  assert.deepEqual(Reflect.get(kit.sandbox, '_constructorOptions').network, {
+    allowOut: [
+      ...['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'],
+      ...['github.com', 'codeload.github.com', 'objects.githubusercontent.com'],
+      ...['deb.debian.org', 'security.debian.org'],
+    ],
     denyOut: ['0.0.0.0/0'],
     allowPublicTraffic: false,
   })
@@ -138,7 +134,7 @@ test('opt-in: no E2B de verdade, a máquina do Assistente instala com pip e npm,
   t.after(() => api.kill(conversation))
   const kit = createE2bKit(config)({
     id: `conexus-e241-u3-real-${conversation}`,
-    allowOut: PACKAGE_HOSTS,
+    allowOut: DEVELOPMENT_HOSTS,
     metadata: { ...mark, [MARK.conversation]: conversation },
     onStart: () => undefined,
     workingDirectory: '/home/user',
@@ -187,7 +183,7 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   t.after(() => api.kill(conversation))
   const machines = createConversationMachines(
     {
-      network: { kind: 'FIXED', hosts: PACKAGE_HOSTS },
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: async () => [] },
       otherTemplate: 'replace',
       marks: async () => ({ [MARK.company]: COMPANY }),
     },
@@ -212,7 +208,7 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   assert.equal(read.kind === 'OK' ? read.bytes.toString() : '', 'L1')
 })
 
-test('opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina ligada', {
+test('opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina ligada, e a lista pronta traz o GitHub e o apt com sudo (12)', {
   timeout: 300_000,
 }, async (t) => {
   const config = realE2b()
@@ -227,17 +223,23 @@ test('opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina 
   t.after(() => api.kill(conversation))
   const kit = createE2bKit(config)({
     id: `conexus-rede-u2-real-${conversation}`,
-    allowOut: PACKAGE_HOSTS,
+    allowOut: DEVELOPMENT_HOSTS,
     metadata: { ...mark, [MARK.conversation]: conversation },
     onStart: () => undefined,
     workingDirectory: '/home/user',
   })
   await kit.sandbox.start?.()
   async function run(script: string) {
-    const result = await kit.sandbox.executeCommand?.('sh', ['-c', script], { timeout: 60_000 })
+    const result = await kit.sandbox.executeCommand?.('sh', ['-c', script], { timeout: 120_000 })
     assert.ok(result !== undefined)
     return result
   }
+  const github = await run(
+    'cd /tmp && npm install --silent --no-audit --no-fund github:left-pad/left-pad#v1.3.0',
+  )
+  assert.equal(github.exitCode, 0, github.stderr)
+  const apt = await run('sudo -n true && sudo apt-get update')
+  assert.equal(apt.exitCode, 0, apt.stderr)
   async function answers() {
     return (await run('curl -sS -f -m 20 https://example.com/ -o /dev/null')).exitCode === 0
   }
@@ -251,6 +253,6 @@ test('opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina 
   )
   assert.match(pointed.stdout, /^192\.0\.2\.1 /m, `the machine kept its address: ${pointed.stderr}`)
   assert.equal(await answers(), true, 'the proxy dialed the address the machine chose')
-  await kit.closeNetwork()
+  await kit.openNetwork([])
   assert.equal(await answers(), false, 'the removed host still answered')
 })

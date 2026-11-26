@@ -6,6 +6,16 @@ import { defineOperation } from './operation.ts'
 
 export const NETWORK_LIMITS = { domains: 10, reason: 200 } as const
 
+/**
+ * The development list: what every conversation's machine reaches beyond its company's and its own
+ * domains. Exact names: a name joins only with the failure that asked for it (decision 0051).
+ */
+export const DEVELOPMENT_HOSTS = [
+  ...['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'],
+  ...['github.com', 'codeload.github.com', 'objects.githubusercontent.com'],
+  ...['deb.debian.org', 'security.debian.org'],
+] as const
+
 // The URL parser drops a default port, an empty query and a line break without a trace, so they are
 // refused in the text as typed.
 const MORE_THAN_A_HOST = /[\s/\\?#@:%]/

@@ -1,10 +1,19 @@
-import type { CompanyId, ConversationId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, NetworkDomain } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { causeChain, Failure } from '../../platform/failure.ts'
 import type { Kit } from './kit.ts'
-import type { MachineSpec } from './spec.ts'
 
-type NetworkChange = 'START' | 'GRANT' | 'REMOVE'
+export type Opened = (where: {
+  companyId: CompanyId
+  conversationId: ConversationId
+}) => Promise<readonly NetworkDomain[]>
+
+export type NetworkLists = {
+  opened: Opened
+  onRemoved(listener: (companyId: CompanyId) => void): unknown
+}
+
+type NetworkChange = 'START' | 'GRANT' | 'REMOVE' | 'CONFER'
 
 export type NetworkedSession = {
   conversationId: ConversationId
@@ -13,12 +22,14 @@ export type NetworkedSession = {
   kit: Kit
   /** The change that did not take effect: the next use of the machine makes it again. */
   networkStale: NetworkChange | undefined
+  /** The app's host, an entry of the list while the browser check of its screen runs. */
+  conferring?: string | undefined
 }
 
 export type Line = ConversationId | `network:${ConversationId}`
 
 type Deps = {
-  network: MachineSpec['network']
+  opened: Opened
   log: FailureLog
   sessions: ReadonlyMap<ConversationId, NetworkedSession>
   inLane<T>(line: Line, work: () => Promise<T>): Promise<T>
@@ -35,13 +46,13 @@ export function isNetworkNotApplied(cause: unknown): boolean {
   )
 }
 
-async function replaceList(session: NetworkedSession, network: MachineSpec['network']) {
-  const { companyId, conversationId, kit } = session
-  if (network.kind === 'FIXED' || companyId === undefined) return kit.closeNetwork()
-  return kit.openNetwork(await network.opened({ companyId, conversationId }))
+async function replaceList(session: NetworkedSession, opened: Opened) {
+  const { companyId, conversationId, kit, conferring } = session
+  const listed = companyId === undefined ? [] : await opened({ companyId, conversationId })
+  return kit.openNetwork(conferring === undefined ? listed : [...listed, conferring])
 }
 
-export function machineNetwork({ network, log, sessions, inLane }: Deps) {
+export function machineNetwork({ opened, log, sessions, inLane }: Deps) {
   /**
    * The changes of one machine's list run in turn, each reading the lists when it runs, so the last
    * one wins. The cause of a failure is not logged: it may name a domain (security S41).
@@ -50,7 +61,7 @@ export function machineNetwork({ network, log, sessions, inLane }: Deps) {
     const { conversationId } = session
     return inLane(`network:${conversationId}`, async () => {
       try {
-        await replaceList(session, network)
+        await replaceList(session, opened)
         session.networkStale = undefined
         return true
       } catch {
@@ -71,9 +82,22 @@ export function machineNetwork({ network, log, sessions, inLane }: Deps) {
     return inLane(conversationId, () => changeRunning(sessions.get(conversationId), reason))
   }
 
+  function confer(session: NetworkedSession, host: string | undefined) {
+    session.conferring = host
+    return change(session, 'CONFER')
+  }
+
   return {
     change,
     changeRunning,
+    conference: (session: NetworkedSession) => ({
+      async open(host: string): Promise<void> {
+        if (!(await confer(session, host))) throw networkNotApplied()
+      },
+      async close(): Promise<void> {
+        await confer(session, undefined)
+      },
+    }),
     reopen: (conversationId: ConversationId) => changeHeld(conversationId, 'GRANT'),
     async narrow(companyId: CompanyId): Promise<void> {
       const held = [...sessions.values()].filter((each) => each.companyId === companyId)
