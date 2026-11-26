@@ -9,7 +9,7 @@ import { CompanyId, ConversationId, DEVELOPMENT_HOSTS, NetworkDomain } from '@co
 import { RequestContext } from '@mastra/core/request-context'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { until } from '../../platform/test-until.ts'
-import type { Opened } from './network.ts'
+import type { NetworkStore } from '../network/public.ts'
 import { createConversationMachines, MARK } from './public.ts'
 import { confer, conferring, stubBrowser, TOKEN } from './test-confer.ts'
 import { testConversationMachines } from './test-conversation-machines.ts'
@@ -37,13 +37,13 @@ function world(t: TestContext) {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ message, fields }),
     error: (fields: Record<string, unknown>, message: string) => lines.push({ message, fields }),
   }
-  async function opened(where: { companyId: CompanyId; conversationId: ConversationId }) {
-    return [
-      ...(company.get(where.companyId) ?? []),
-      ...(conversation.get(where.conversationId) ?? []),
-    ]
+  const internet = new Set<CompanyId>()
+  const opened: NetworkStore['opened'] = async ({ companyId, conversationId }) => {
+    if (internet.has(companyId)) return { kind: 'ALL' }
+    const hosts = [...(company.get(companyId) ?? []), ...(conversation.get(conversationId) ?? [])]
+    return { kind: 'LIST', hosts }
   }
-  function hub(lists: Opened = opened) {
+  function hub(lists = opened) {
     return createConversationMachines(
       {
         network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: lists },
@@ -59,7 +59,7 @@ function world(t: TestContext) {
       .filter((each) => each.name === nameOf(id))
       .map((each) => each.hosts)
   }
-  return { ...doubles, company, conversation, lines, opened, hub, appliedTo }
+  return { ...doubles, company, conversation, internet, lines, opened, hub, appliedTo }
 }
 
 async function turn(machines: ReturnType<ReturnType<typeof world>['hub']>, companyId = COMPANY) {
@@ -133,6 +133,29 @@ test('a rede na partida: o download, sem conversa em curso, liga a máquina acha
   const read = await machines.read(id, 'a.txt', new AbortController().signal)
   assert.equal(read.kind, 'OK')
   assert.deepEqual(on.appliedTo(id), [DEVELOPMENT_HOSTS])
+})
+
+test('a partida com a internet toda: a máquina criada, e a que volta de uma pausa, alcançam qualquer endereço (8)', async (t) => {
+  const on = world(t)
+  on.company.set(COMPANY, domains('api.example.com'))
+  on.internet.add(COMPANY)
+  const asked = await turn(on.hub())
+  await asked.write()
+  pausedByE2b(on.control)
+  await asked.command()
+  assert.deepEqual(on.appliedTo(asked.id), ['ALL', 'ALL'])
+})
+
+test('desligar a internet toda volta a máquina ligada às listas (10)', async (t) => {
+  const on = world(t)
+  const machines = on.hub()
+  on.company.set(COMPANY, domains('api.example.com'))
+  on.internet.add(COMPANY)
+  const asked = await turn(machines)
+  await asked.write()
+  on.internet.delete(COMPANY)
+  await machines.narrow(COMPANY)
+  assert.deepEqual(on.appliedTo(asked.id), ['ALL', [...DEVELOPMENT_HOSTS, 'api.example.com']])
 })
 
 test('a remoção fecha as máquinas ligadas da empresa, e só elas (10)', async (t) => {

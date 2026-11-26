@@ -83,6 +83,8 @@ export type Kit = {
   transport: Transport
   /** Replaces a running machine's list with the hosts of its creation and `extra`, and nothing else. */
   openNetwork(extra: readonly string[]): Promise<void>
+  /** Lets a running machine reach any address, until the next `openNetwork`. */
+  openAll(): Promise<void>
 }
 
 type KitOptions = {

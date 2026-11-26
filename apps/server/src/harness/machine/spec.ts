@@ -1,5 +1,5 @@
 import type { RequestContext } from '@mastra/core/request-context'
-import type { Opened } from './network.ts'
+import type { NetworkStore } from '../network/public.ts'
 
 /**
  * What differs between the agents' conversation machines: the one parameter of
@@ -7,10 +7,11 @@ import type { Opened } from './network.ts'
  */
 export type MachineSpec = {
   /**
-   * What the machine may reach, and nothing else: `hosts` and what `opened` returns, read each time
-   * the list is applied. A session with no company gets `hosts` alone.
+   * What the machine may reach, read from `opened` each time it is applied: `hosts` and the list it
+   * returns, or any address while the company has the whole internet on. A session with no company
+   * gets `hosts` alone.
    */
-  network: { kind: 'ON_REQUEST'; hosts: readonly string[]; opened: Opened }
+  network: { kind: 'ON_REQUEST'; hosts: readonly string[]; opened: NetworkStore['opened'] }
   /**
    * What a machine made from another template meets: `'replace'` kills it and makes a new one (the
    * Builder's, whose tools the template carries); `'resume'` wakes it by its id with its files.

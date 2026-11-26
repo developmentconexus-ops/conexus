@@ -25,7 +25,11 @@ function oldMachine(t: TestContext, otherTemplate: 'resume' | 'replace') {
   doubles.control.templates[name] = OLD_TEMPLATE
   const machines = createConversationMachines(
     {
-      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: async () => [] },
+      network: {
+        kind: 'ON_REQUEST',
+        hosts: DEVELOPMENT_HOSTS,
+        opened: async () => ({ kind: 'LIST', hosts: [] }),
+      },
       otherTemplate,
       marks: async () => ({ [MARK.company]: COMPANY }),
     },

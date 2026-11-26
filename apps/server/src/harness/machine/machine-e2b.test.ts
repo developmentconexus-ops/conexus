@@ -183,7 +183,11 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   t.after(() => api.kill(conversation))
   const machines = createConversationMachines(
     {
-      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: async () => [] },
+      network: {
+        kind: 'ON_REQUEST',
+        hosts: DEVELOPMENT_HOSTS,
+        opened: async () => ({ kind: 'LIST', hosts: [] }),
+      },
       otherTemplate: 'replace',
       marks: async () => ({ [MARK.company]: COMPANY }),
     },
@@ -208,7 +212,7 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   assert.equal(read.kind === 'OK' ? read.bytes.toString() : '', 'L1')
 })
 
-test('opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina ligada, e a lista pronta traz o GitHub e o apt com sudo (12)', {
+test('opt-in: no E2B de verdade, a rede abre e fecha um domínio e a internet toda com a máquina ligada, e a lista pronta traz o GitHub e o apt com sudo (12)', {
   timeout: 300_000,
 }, async (t) => {
   const config = realE2b()
@@ -240,8 +244,8 @@ test('opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina 
   assert.equal(github.exitCode, 0, github.stderr)
   const apt = await run('sudo -n true && sudo apt-get update')
   assert.equal(apt.exitCode, 0, apt.stderr)
-  async function answers() {
-    return (await run('curl -sS -f -m 20 https://example.com/ -o /dev/null')).exitCode === 0
+  async function answers(host = 'example.com') {
+    return (await run(`curl -sS -f -m 20 https://${host}/ -o /dev/null`)).exitCode === 0
   }
   assert.equal(await answers(), false, 'a host outside the list answered')
   await kit.openNetwork([NetworkDomain.parse('example.com')])
@@ -255,4 +259,9 @@ test('opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina 
   assert.equal(await answers(), true, 'the proxy dialed the address the machine chose')
   await kit.openNetwork([])
   assert.equal(await answers(), false, 'the removed host still answered')
+  // A name the machine never pointed elsewhere: with no list, it resolves and dials on its own.
+  await kit.openAll()
+  assert.equal(await answers('example.org'), true, 'the whole internet did not open')
+  await kit.openNetwork([])
+  assert.equal(await answers('example.org'), false, 'the whole internet stayed open')
 })

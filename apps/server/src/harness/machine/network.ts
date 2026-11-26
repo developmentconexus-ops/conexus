@@ -1,15 +1,11 @@
-import type { CompanyId, ConversationId, NetworkDomain } from '@conexus/hub-api'
+import type { CompanyId, ConversationId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { causeChain, Failure } from '../../platform/failure.ts'
+import type { NetworkStore } from '../network/public.ts'
 import type { Kit } from './kit.ts'
 
-export type Opened = (where: {
-  companyId: CompanyId
-  conversationId: ConversationId
-}) => Promise<readonly NetworkDomain[]>
-
 export type NetworkLists = {
-  opened: Opened
+  opened: NetworkStore['opened']
   onRemoved(listener: (companyId: CompanyId) => void): unknown
 }
 
@@ -29,7 +25,7 @@ export type NetworkedSession = {
 export type Line = ConversationId | `network:${ConversationId}`
 
 type Deps = {
-  opened: Opened
+  opened: NetworkStore['opened']
   log: FailureLog
   sessions: ReadonlyMap<ConversationId, NetworkedSession>
   inLane<T>(line: Line, work: () => Promise<T>): Promise<T>
@@ -46,10 +42,20 @@ export function isNetworkNotApplied(cause: unknown): boolean {
   )
 }
 
-async function replaceList(session: NetworkedSession, opened: Opened) {
+async function replaceList(session: NetworkedSession, opened: NetworkStore['opened']) {
   const { companyId, conversationId, kit, conferring } = session
-  const listed = companyId === undefined ? [] : await opened({ companyId, conversationId })
-  return kit.openNetwork(conferring === undefined ? listed : [...listed, conferring])
+  if (companyId === undefined) return kit.openNetwork([])
+  const listed = await opened({ companyId, conversationId })
+  switch (listed.kind) {
+    case 'ALL':
+      return kit.openAll()
+    case 'LIST':
+      return kit.openNetwork(
+        conferring === undefined ? listed.hosts : [...listed.hosts, conferring],
+      )
+    default:
+      return listed satisfies never
+  }
 }
 
 export function machineNetwork({ opened, log, sessions, inLane }: Deps) {

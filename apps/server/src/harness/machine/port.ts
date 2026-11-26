@@ -4,11 +4,11 @@ import type { Workspace } from '@mastra/core/workspace'
 import type { InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
+import type { NetworkStore } from '../network/public.ts'
 import type { CheckPlatformFailed } from './check.ts'
 import type { BrowserReport, ConferAt, ConferPlatformFailed } from './confer.ts'
 import type { Sha } from './git-facts.ts'
 import type { KitFactory, MachineApi } from './kit.ts'
-import type { Opened } from './network.ts'
 import type { PackRefused, VersionFolder } from './pack.ts'
 
 /** What Ana is told while the machine gets ready or saves (card, the stream's `machine` part). */
@@ -78,7 +78,7 @@ export type MachinesDeps = {
   kit: KitFactory
   api: MachineApi
   /** What the machines reach beyond the development list, read each time a machine's list is applied. */
-  opened: Opened
+  opened: NetworkStore['opened']
   /** The Git's `main` as a bundle, for the seed. */
   seedOf(input: { companyId: CompanyId; projectId: ProjectId }): Promise<Buffer>
   /** The mark every machine of this installation carries. */

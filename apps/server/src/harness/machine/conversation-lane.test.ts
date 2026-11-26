@@ -46,7 +46,11 @@ function machinesOf(
   doubles.control.discoverable.push(`conexus-${INSTALLATION}-${id}`)
   const machines = createConversationMachines(
     {
-      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: async () => [] },
+      network: {
+        kind: 'ON_REQUEST',
+        hosts: DEVELOPMENT_HOSTS,
+        opened: async () => ({ kind: 'LIST', hosts: [] }),
+      },
       otherTemplate: 'replace',
       marks: async () => ({ [MARK.company]: COMPANY }),
       ...(replace.readMedia === undefined ? {} : { readMedia: replace.readMedia }),
