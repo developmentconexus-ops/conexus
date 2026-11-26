@@ -14,6 +14,7 @@ import {
   refusal,
 } from '../../hub/identity/test-hub.ts'
 import { ATENDENTE } from '../../hub/identity/test-roles.ts'
+import { queued, withOwnerLock } from '../../platform/test-database.ts'
 import { EDU, networkCompany } from './test-network.ts'
 
 const API = { domain: 'api.exemplo.com', reason: 'Ler o catálogo de preços' }
@@ -183,4 +184,121 @@ test('só dono e administrador removem', async (t) => {
     removals.map(({ fields }) => fields),
     [{ companyId }, { companyId }],
   )
+})
+
+const OPEN_ALL_NOT_IN_ROLE = {
+  ...refusal(
+    'NOT_IN_ROLE',
+    409,
+    'Seu papel não pode usar a ferramenta a internet toda da empresa.',
+  ),
+  operation: 'a internet toda da empresa',
+}
+
+test('só o dono liga a internet toda', async (t) => {
+  const { hub, ana, bruno, carla, davi, companyId, openAllPath } = await networkCompany(t)
+  function switched() {
+    return hub.test.asOwner('select company_id, opened_by from builder.company_network_open')
+  }
+  for (const person of [ana, bruno, carla, davi]) {
+    const read = await call(hub, person, 'GET', openAllPath)
+    assert.equal(read.statusCode, 200, read.body)
+    assert.deepEqual(read.json(), { open: null })
+  }
+  for (const person of [bruno, carla, davi]) {
+    const refused = await call(hub, person, 'PUT', openAllPath)
+    assert.equal(refused.statusCode, 409, refused.body)
+    assert.deepEqual(problem(refused), OPEN_ALL_NOT_IN_ROLE)
+  }
+  const outsider = await personOn(hub, EDU)
+  await plantCompany(hub.test, outsider.id, 'Outra Empresa')
+  for (const method of ['GET', 'PUT', 'DELETE'] as const) {
+    const refused = await call(hub, outsider, method, openAllPath)
+    assert.equal(refused.statusCode, 404, refused.body)
+    assert.equal(codeOf(refused), 'NOT_FOUND')
+  }
+  assert.deepEqual(await switched(), [])
+
+  const together = await Promise.all(
+    Array.from({ length: 4 }, () => call(hub, ana, 'PUT', openAllPath)),
+  )
+  const [first] = together.map((each) => each.json())
+  for (const each of together) {
+    assert.equal(each.statusCode, 200, each.body)
+    assert.deepEqual(each.json(), first)
+  }
+  const { openedBy, openedAt } = Object(first)
+  assert.equal(openedBy, ANA_OWNER.name)
+  assert.ok(Math.abs(Date.now() - Date.parse(String(openedAt))) < 60_000, String(openedAt))
+  assert.deepEqual((await call(hub, ana, 'PUT', openAllPath)).json(), first)
+  assert.deepEqual(await switched(), [{ company_id: companyId, opened_by: ana.id }])
+  for (const person of [bruno, carla, davi])
+    assert.deepEqual((await call(hub, person, 'GET', openAllPath)).json(), { open: first })
+
+  const opened = hub.lines.filter(({ message }) => message === 'NETWORK_ALL_OPENED')
+  assert.deepEqual(
+    opened.map(({ fields }) => fields),
+    Array.from({ length: 5 }, () => ({ companyId })),
+  )
+})
+
+test('só o dono desliga', async (t) => {
+  const { hub, ana, bruno, carla, davi, companyId, openAllPath } = await networkCompany(t)
+  const on = await call(hub, ana, 'PUT', openAllPath)
+  assert.equal(on.statusCode, 200, on.body)
+  for (const person of [bruno, carla, davi]) {
+    const refused = await call(hub, person, 'DELETE', openAllPath)
+    assert.equal(refused.statusCode, 409, refused.body)
+    assert.deepEqual(problem(refused), OPEN_ALL_NOT_IN_ROLE)
+  }
+  assert.deepEqual((await call(hub, davi, 'GET', openAllPath)).json(), { open: on.json() })
+
+  for (const _ of ['ligada', 'desligada']) {
+    const off = await call(hub, ana, 'DELETE', openAllPath)
+    assert.equal(off.statusCode, 204, off.body)
+    assert.deepEqual((await call(hub, davi, 'GET', openAllPath)).json(), { open: null })
+  }
+  const closed = hub.lines.filter(({ message }) => message === 'NETWORK_ALL_CLOSED')
+  assert.deepEqual(
+    closed.map(({ fields }) => fields),
+    [{ companyId }, { companyId }],
+  )
+})
+
+test('o dono rebaixado durante o pedido não liga a internet toda', async (t) => {
+  const { hub, ana, openAllPath } = await networkCompany(t)
+  await withOwnerLock(
+    hub.test,
+    `update auth.member set role = 'admin' where user_id = $1`,
+    [ana.id],
+    async (release) => {
+      const opening = call(hub, ana, 'PUT', openAllPath)
+      await queued(hub.test, 1, opening)
+      await release()
+      const refused = await opening
+      assert.equal(refused.statusCode, 409, refused.body)
+      assert.deepEqual(problem(refused), OPEN_ALL_NOT_IN_ROLE)
+    },
+  )
+  assert.deepEqual(
+    await hub.test.asOwner('select company_id from builder.company_network_open'),
+    [],
+  )
+})
+
+test('a internet toda desligada entre o insert e a leitura é ligada de novo', async (t) => {
+  const { hub, ana, openAllPath } = await networkCompany(t)
+  const first = Object((await call(hub, ana, 'PUT', openAllPath)).json())
+  await hub.test.asOwner(
+    `create function builder.close_between() returns trigger language plpgsql as
+      $$ begin delete from builder.company_network_open where opened_at < now(); return null; end $$`,
+  )
+  await hub.test.asOwner(
+    `create trigger close_between after insert on builder.company_network_open
+      for each statement execute function builder.close_between()`,
+  )
+  const again = await call(hub, ana, 'PUT', openAllPath)
+  assert.equal(again.statusCode, 200, again.body)
+  assert.notEqual(Object(again.json()).openedAt, first.openedAt)
+  assert.deepEqual((await call(hub, ana, 'GET', openAllPath)).json(), { open: again.json() })
 })

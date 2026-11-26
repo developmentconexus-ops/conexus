@@ -69,6 +69,7 @@ ALTER TABLE builder.company_account_kind OWNER TO test_owner;
 ALTER TABLE builder.company_model OWNER TO test_owner;
 ALTER TABLE builder.company_model_fallback OWNER TO test_owner;
 ALTER TABLE builder.company_network_domain OWNER TO test_owner;
+ALTER TABLE builder.company_network_open OWNER TO test_owner;
 ALTER TABLE builder.conversation OWNER TO test_owner;
 ALTER TABLE builder.conversation_network_domain OWNER TO test_owner;
 ALTER TABLE builder.model_account OWNER TO test_owner;
@@ -282,6 +283,8 @@ GRANT SELECT,INSERT,DELETE ON TABLE auth.verification TO hub_invitation;
 -- The network step, G1 (data D11; founder, 2026-11-25, the card's decision B: "B.a"): the company's
 -- routes and a conversation's tool keep the company's list; the tool and the conversation's
 -- deletion keep the conversation's.
+-- The network step, G1b (data D11; founder, 2026-11-26, the card's decision E: "A"): the
+-- company's routes keep the row that turns the whole internet on, and the machines' lists read it.
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE builder.agent TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.agent TO hub_agent_companies;
 GRANT SELECT(active_version) ON TABLE builder.agent TO hub_agent_companies;
@@ -305,6 +308,7 @@ GRANT UPDATE(enabled) ON TABLE builder.company_model_fallback TO hub_company;
 GRANT UPDATE(chain) ON TABLE builder.company_model_fallback TO hub_company;
 GRANT UPDATE(revision) ON TABLE builder.company_model_fallback TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.company_network_domain TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.company_network_open TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.conversation TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.conversation_network_domain TO hub_company;
 GRANT INSERT,DELETE ON TABLE builder.model_account TO hub_company;
