@@ -694,7 +694,7 @@ velha, que passa ao índice do kit.
 | 23 | U5 | A entrada lê o parâmetro da rodada, grava o segredo num arquivo `0600` e só o caminho vai à configuração do Meltano; nenhuma variável de ambiente do leitor e do gravador, nem linha do registro da tarefa, tem um campo do segredo | `apps/extraction/tests/test_entry.py`, "o segredo fica no arquivo" | must |
 | 24 | U5 | A entrada manda à fila um resultado só por rodada, na forma `CopyTaskResult`, com as contagens de cada tabela e o código; nunca o conteúdo de uma linha. Uma falha do leitor dá o código dele; do gravador, `COPY_LAKE_WRITE_FAILED` | `apps/extraction/tests/test_entry.py`, "um resultado por rodada", contra a gravação da fila | must |
 | 116 | U5 | O resultado leva `machine`: o tamanho, de `/task`, e os picos de CPU e de memória, das leituras de `/task/stats` a cada 5 s, com a memória sem o cache de arquivos e a CPU pelo tempo gasto; sem o endpoint, ou com ele falhando, `machine` é nulo e a rodada termina igual | `apps/extraction/tests/test_machine.py`, "o pico da rodada" e "medir não derruba a rodada" | must |
-| 25 | U5 | Com o parâmetro da rodada apagado no meio, a tarefa para no lote seguinte, sem gravar mais e sem mandar resultado | `apps/extraction/tests/test_entry.py`, "a rodada fechada para a tarefa" | must |
+| 25 | U5 | Com o parâmetro da rodada apagado no meio, a tarefa para no lote seguinte, sem gravar mais, e manda o resultado `INTERRUPTED` com o que leu e gravou em cada tabela; o Hub mostra essas contagens na rodada e não a conta como carga das tabelas | `apps/extraction/tests/test_entry.py`, "a rodada fechada para a tarefa"; `apps/server/src/hub/copies/lake-stop.test.ts`, "a rodada parada conta o que gravou" | must |
 | 26 | U5, U6 | A imagem (Node 24, Python 3.13, Meltano, o adaptador e o gravador, x86) responde a `tap --about` e a `meltano --version` antes de ser publicada; no Fargate (L.1), contra o dublê do Sankhya, as linhas chegam à bruta do `S3 Tables` e a soma bate, com 1 vCPU e com 2 vCPU | `scripts/aws-platform.test.ts`, "a imagem responde antes de sair"; Lab, no pull request do G2 | must |
 | 27 | U5 | Na AWS (L.3), o fim normal, a falha do leitor, a falha do gravador e um `StopTask` chegam à fila com o motivo certo nos quatro | Lab, no pull request do G2 | must |
 | 28 | U5 | Na AWS (L.5), a soma de `decimal(38,9)` lida pelo Athena bate com a da fonte, e um texto de 1 MiB lido pelo Athena chega inteiro | Lab, no pull request do G2 | must |
@@ -929,7 +929,7 @@ Impeccable roda na QA da parte 1 ([Impeccable](../reference/impeccable.md)).
 | A tarefa manda o resultado à fila (`SendMessage`) | Um resultado por rodada; uma entrega repetida acha a rodada fechada e não muda nada | O resultado não sai: a tarefa termina, e a parada do ECS fecha a rodada como `COPY_TASK_LOST` | A fila fora: o mesmo | `RESULT_NOT_SENT` no registro da tarefa | 24, 42 |
 | A poda das rodadas além das 100 mais novas (no fim) | Duas pelas mesmas linhas: a segunda acha nada | Na transação do fim: desfaz com ele | O banco fora: o fim não grava, e a mensagem volta à fila | — (dentro de `COPY_RUN_ENDED`) | 41 |
 | As colunas do dicionário em `lake_table.columns` (ao marcar e no disparo) | O último a gravar vence; as duas leram o mesmo dicionário | Gravadas e rodada não aberta: a próxima rodada regrava | O dicionário fora: as colunas guardadas ficam, e a rodada segue | `COPY_COLUMNS_KEPT` | 37, 39 |
-| A tarefa confere a rodada a cada lote | — | Parâmetro apagado: para sem mandar resultado; a parada do ECS fecha o que sobrou | A AWS fora na conferência: conta como fechada e para | `RUN_CLOSED` no registro da tarefa | 25 |
+| A tarefa confere a rodada a cada lote | — | Parâmetro apagado: para e manda o resultado `INTERRUPTED` com as contagens; sem ele, a parada do ECS fecha o que sobrou | A AWS fora na conferência: conta como fechada e para | `RUN_CLOSED` no registro da tarefa | 25 |
 | Parar a tarefa aberta ao desligar (`StopTask`) | A segunda acha a tarefa parada e conta como parada | Recusada: a parada do ECS fecha a rodada `INTERRUPTED` pelo fim de sempre | A AWS fora: desligar responde 503 e nada muda | `COPY_TASK_STOPPED` | 47 |
 | Desmarcar uma tabela e desligar a ligação (as tabelas das duas áreas e o prefixo do estado no `S3`) | A segunda acha a linha apagada e responde o conjunto de agora; desligar com a rodada aberta para a tarefa primeiro | Tabelas do lago ou estado apagados e linha não: a tabela que a AWS não tem conta como apagada; repetir termina. A linha da ligação sai só depois das tabelas, e a cópia dela vai em cascata | A AWS fora: 503, nada muda, e a tela diz a frase de hoje de tentar de novo | `COPY_LAKE_TABLE_LEFT` | 47, 61 |
 | A fila de partidas, uma por vez (`iniciarRodada`) | Dois disparos da mesma ligação: o índice da rodada aberta recusa o segundo; de ligações diferentes: esperam a vez, em ordem | O Hub cai com partidas na fila: elas se perdem, e o próximo disparo do relógio de cada ligação parte; **Rodar agora** responde 202 só depois de a partida entrar na fila | O banco ou a AWS fora: a partida fecha a rodada como `COPY_LAKE_UNAVAILABLE`, e a próxima segue | `COPY_RUN_QUEUED` com a espera | 39, 95 |
@@ -2272,13 +2272,15 @@ export const CopyTaskResult = z.object({
   outcome: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('COMPLETE') }),
     z.object({ kind: z.literal('ERROR'), code: LakeRunFailureCode, table: LakeTableName.nullable(), system: SystemMessage.nullable() }),
+    z.object({ kind: z.literal('INTERRUPTED') }),
   ]),
   tables: z.array(z.object({ name: LakeTableName, read: z.int().min(0), written: z.int().min(0), rows: z.int().min(0).nullable(), whole: z.boolean() })),
 })
 ```
 
 - **Cada estado** como união: `outcome` por `kind` (C21). Uma rodada parada porque o parâmetro sumiu
-  não manda resultado.
+  manda o resultado `INTERRUPTED`, com as contagens de cada tabela e `rows` nulo; o Hub grava as
+  contagens sem marcar a tabela como carregada, e a primeira carga parada recomeça do zero.
 - **Cada id** com a sua marca: `LakeRunId`, `CompanyId`, `SourceTableId`, `LakeTableName` (C23), que
   a U7 cria em `packages/hub-api/src/lake-copies.ts`, conferidos pela U8.
 - **O dono do fato**: `lake-task.ts`; o Python valida contra o esquema gerado (C26);

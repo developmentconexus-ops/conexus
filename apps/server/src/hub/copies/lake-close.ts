@@ -137,16 +137,15 @@ async function counted(
     at: CompanyScope
     connectionId: ConnectionId
     run: LakeRunId
+    end: RunEnd
     tables: readonly RunTableCounts[]
   }>,
 ) {
+  const lastRunId = a.end.kind === 'INTERRUPTED' ? sql`${lakeTable.lastRunId}` : a.run
   for (const counts of a.tables) {
     const [table] = await tx
       .update(lakeTable)
-      .set({
-        rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`,
-        lastRunId: a.run,
-      })
+      .set({ rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`, lastRunId })
       .where(and(eq(lakeTable.connectionId, a.connectionId), eq(lakeTable.name, counts.name)))
       .returning({ id: lakeTable.id, rows: lakeTable.rows })
     if (table === undefined) continue
@@ -234,7 +233,7 @@ export async function closeLakeRun(
       })
       .where(eq(lakeRun.id, close.run))
     const connectionId = ConnectionIdSchema.parse(row.connectionId)
-    await counted(tx, { at, connectionId, run: close.run, tables: close.tables })
+    await counted(tx, { at, connectionId, run: close.run, end, tables: close.tables })
     return { won: { connectionId, end, by }, lake: await lakeOf(tx, at.companyId) }
   })
   const of = { companyId: at.companyId, runId: close.run }
