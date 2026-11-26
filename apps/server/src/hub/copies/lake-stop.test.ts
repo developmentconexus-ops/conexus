@@ -133,7 +133,7 @@ test('parar é de quem gerencia cópias: membro, desenvolvedor, estranho e liga�
   ]
   for (const who of refused) {
     const answered = await stop(on, connection, who)
-    assert.deepEqual([answered.statusCode, codeOf(answered)], [404, 'NOT_FOUND'], who.name)
+    assert.deepEqual([answered.statusCode, codeOf(answered)], [404, 'NOT_FOUND'], who.id)
   }
   const unknown = await stop(on, '00000000-0000-4000-8000-000000000001')
   assert.deepEqual([unknown.statusCode, codeOf(unknown)], [404, 'NOT_FOUND'])
