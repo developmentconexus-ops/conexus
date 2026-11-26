@@ -5,10 +5,12 @@ import { z } from 'zod'
 import type { ApprovalCardItem, Seen } from './approval-item.ts'
 import { approvalItem } from './approval-item.ts'
 import type { Message, Suspended } from './messages.ts'
+import type { NetworkCardItem } from './network-parse.ts'
+import { networkAskedOf, networkItemOf } from './network-parse.ts'
 import type { NoteCardItem } from './note-parse.ts'
 import { noteItemOf } from './note-parse.ts'
 import { parsePlan, SubmittedPlan } from './plan-parse.ts'
-import { parseQuestions } from './question-parse.ts'
+import { parseQuestions, questionsAsked } from './question-parse.ts'
 import type { Running } from './session-state.ts'
 import type { CitedRow } from './sources.ts'
 import { sourcesOf } from './sources.ts'
@@ -66,7 +68,7 @@ export type PlanCardItem = {
   plan: string
   path?: string
 }
-type CardItem = QuestionCardItem | PlanCardItem | ApprovalCardItem | NoteCardItem
+type CardItem = QuestionCardItem | PlanCardItem | ApprovalCardItem | NoteCardItem | NetworkCardItem
 type ConexusItem = {
   kind: 'conexus'
   id: string
@@ -178,11 +180,16 @@ export function invocationToItem(
     }
   }
 
-  const waiting = suspension !== undefined
-  const note = noteItemOf(inv, suspension, cardState(inv, waiting), stoppedBy(inv))
-  if (note !== undefined) return note
+  return suspendingCardOrRow(inv, suspension)
+}
 
-  return toolRowOf(inv)
+function suspendingCardOrRow(inv: Invocation, suspension: Suspended | undefined): TranscriptItem {
+  const at = cardState(inv, suspension !== undefined)
+  return (
+    noteItemOf(inv, suspension, at, stoppedBy(inv)) ??
+    networkItemOf(inv, suspension, at) ??
+    toolRowOf(inv)
+  )
 }
 
 function toolRowOf(inv: Invocation): ToolItem {
@@ -303,28 +310,16 @@ function withClosed(item: TranscriptItem, closed: ReadonlySet<string> | undefine
  * what it asked stays as the call said it, since the result does not carry it again.
  */
 function joined(first: TranscriptItem | undefined, later: TranscriptItem): TranscriptItem {
-  if (first?.kind !== 'card' || later.kind !== 'card') return later
+  if (later.kind !== 'card') return later
+  if (later.cardKind === 'network' && first?.kind === 'tool')
+    return { ...later, asked: networkAskedOf(first.args) }
+  if (first?.kind !== 'card') return later
   if (first.cardKind === 'question' && later.cardKind === 'question')
     return later.questions.length > 0 ? later : { ...later, questions: first.questions }
   if (first.cardKind === 'note' && later.cardKind === 'note')
     return { ...later, asked: later.asked ?? first.asked }
   if (first.cardKind !== 'plan' || later.cardKind !== 'plan') return later
   return { ...later, title: later.title || first.title, plan: later.plan || first.plan }
-}
-
-/**
- * What each question call asked, from the arguments of its call in any message: the resumed run
- * tells the result alone, so the card must not wait for the call to be drawn to know its questions.
- */
-function questionsAsked(messages: readonly Message[]): Map<string, Question[]> {
-  const asked = new Map<string, Question[]>()
-  for (const part of messages.flatMap((message) => message.parts)) {
-    if (part.type !== 'tool-invocation' || part.toolInvocation.toolName !== CARD_TOOLS.question)
-      continue
-    const questions = parseQuestions(part.toolInvocation.args)
-    if (questions.length > 0) asked.set(part.toolInvocation.toolCallId, questions)
-  }
-  return asked
 }
 
 /**

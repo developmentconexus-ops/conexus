@@ -5,7 +5,10 @@ import { Card } from '../card.tsx'
 import { Notice } from '../notice.tsx'
 import { ReadFailure } from '../states.tsx'
 
-export type ApprovalField = { label: string; lines: readonly string[] }
+export type ApprovalField = { label: string } & (
+  | { lines: readonly string[] }
+  | { content: ReactNode }
+)
 
 /** What the write did, as the piece shows it: a note, or the refusal with its alert. */
 export type ApprovalOutcome =
@@ -18,7 +21,7 @@ export type ApprovalState =
       waiting: ReactNode | undefined
       /** The buttons answer only while the session holds the call and the read of the open writes answered. */
       lit: boolean
-      sending: 'APPROVE' | 'DECLINE' | undefined
+      sending: 'APPROVE' | 'WIDER' | 'DECLINE' | undefined
       error: string | undefined
       /** The read of the open writes failed: its sentence and the retry. */
       readFailure: { text: string; onRetry: () => void } | undefined
@@ -28,6 +31,12 @@ export type ApprovalState =
       locked: string | undefined
       onApprove: () => void
       onDecline: () => void
+      /**
+       * A yes of larger reach beside the yes. Given at all, the answers are scopes of one request:
+       * they start the line, the wider one first, and on a phone they stack with the yes on top.
+       * `'NOT_OFFERED'` keeps that order for a person who may not give the wider one.
+       */
+      wider?: { label: string; onClick: () => void } | 'NOT_OFFERED'
     }
   /** `byYou`: the record keeps the person's approval, and the card says so. */
   | { kind: 'APPROVED'; byYou: boolean; outcome: ApprovalOutcome | undefined }
@@ -57,11 +66,13 @@ function Fields({ fields }: { fields: readonly ApprovalField[] }) {
         <div key={field.label} className="contents max-md:flex max-md:flex-col">
           <dt className="text-text-2">{field.label}</dt>
           <dd className="min-w-0 wrap-anywhere">
-            {field.lines.map((line) => (
-              <span key={line} className="block">
-                {line}
-              </span>
-            ))}
+            {'content' in field
+              ? field.content
+              : field.lines.map((line) => (
+                  <span key={line} className="block">
+                    {line}
+                  </span>
+                ))}
           </dd>
         </div>
       ))}
@@ -115,16 +126,40 @@ function Decided({ state, text }: { state: Ended; text: ApprovalText }) {
 function Answer({ open, text }: { open: Open; text: ApprovalText }) {
   if (open.locked !== undefined) return <p className="text-text-2">{open.locked}</p>
   const off = open.sending !== undefined || !open.lit
+  const { wider } = open
+  const decline = (
+    <Button disabled={off} onClick={open.onDecline}>
+      {open.sending === 'DECLINE' ? text.declining : text.decline}
+    </Button>
+  )
+  const approve = (
+    <Button
+      variant="primary"
+      className={wider === undefined ? undefined : 'max-md:order-first'}
+      disabled={off}
+      onClick={open.onApprove}
+    >
+      {open.sending === 'APPROVE' ? text.approving : text.approve}
+    </Button>
+  )
   return (
     <div className="flex flex-col gap-sm">
-      <div className="flex flex-wrap justify-end gap-sm">
-        <Button disabled={off} onClick={open.onDecline}>
-          {open.sending === 'DECLINE' ? text.declining : text.decline}
-        </Button>
-        <Button variant="primary" disabled={off} onClick={open.onApprove}>
-          {open.sending === 'APPROVE' ? text.approving : text.approve}
-        </Button>
-      </div>
+      {wider === undefined ? (
+        <div className="flex flex-wrap justify-end gap-sm">
+          {decline}
+          {approve}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-sm max-md:flex-col">
+          {wider !== 'NOT_OFFERED' && (
+            <Button disabled={off} onClick={wider.onClick}>
+              {open.sending === 'WIDER' ? text.approving : wider.label}
+            </Button>
+          )}
+          {approve}
+          {decline}
+        </div>
+      )}
       {open.error !== undefined && <Alert tone="danger">{open.error}</Alert>}
     </div>
   )

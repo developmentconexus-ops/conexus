@@ -17,7 +17,7 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
-import { PageTitle } from '../../ui/list.tsx'
+import { SettingsPageTitle } from '../../ui/list.tsx'
 import { changeCompanyRole, createCompanyRole } from './queries.ts'
 import { DeleteRole } from './role-delete.tsx'
 import { ConnectorPicker } from './role-picker.tsx'
@@ -83,7 +83,7 @@ export function NewRole({ companyId, kit, logo, onDone }: Common) {
   return (
     <div className="flex flex-col gap-lg">
       <Back companyId={companyId} />
-      <PageTitle className="text-display-narrow">Novo papel</PageTitle>
+      <SettingsPageTitle>Novo papel</SettingsPageTitle>
       <Form
         form={form}
         onSubmit={async (values) => {
@@ -126,7 +126,7 @@ export function OpenRole({ companyId, kit, logo, role, onDone }: Common & { role
   return (
     <div className="flex flex-col gap-lg">
       <Back companyId={companyId} />
-      <PageTitle className="text-display-narrow">{role.label}</PageTitle>
+      <SettingsPageTitle>{role.label}</SettingsPageTitle>
       {fixed && (
         <p className="text-text-2">
           Dono e Administrador usam tudo de todos os conectores, sempre. Este papel não muda.

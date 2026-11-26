@@ -49,3 +49,23 @@ export const NOTE_TEXT = {
   gone: 'Esta ligação não existe mais. Nada foi gravado.',
   ask: 'Peça a quem gerencia a ligação.',
 } as const
+
+export const NETWORK_TEXT = {
+  title: 'O Conexus quer acessar a internet',
+  domains: 'Domínios',
+  reason: 'Motivo',
+  conversation: 'Liberar nesta conversa',
+  company: 'Liberar para a empresa',
+  releasing: 'Liberando…',
+  openedConversation: 'Liberado nesta conversa.',
+  openedCompany: 'Liberado para a empresa.',
+  refused: 'Recusado.',
+  steer: 'Uma mensagem nova espera a sua resposta neste cartão.',
+  notOpen: {
+    ROLE: 'Só quem constrói ou administra libera um domínio. Peça ao dono ou a um administrador que libere em Configurações, Internet.',
+    AUTOMATION:
+      'Numa automação ninguém libera na hora. O dono ou um administrador libera em Configurações, Internet.',
+    MACHINE_UNAVAILABLE: 'Liberado, mas a máquina não respondeu; a próxima tentativa aplica.',
+    DATABASE: 'Não foi possível conferir a lista agora. Peça de novo daqui a pouco.',
+  },
+} as const

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { MACHINE_TOOL } from '@conexus/hub-api'
+import { invocationToItem } from './rows.ts'
 import { recordedPart, SubagentPart } from './test-recorded.ts'
 import { ASSISTANT_ROOM, BUILDER_ROOM } from './test-rooms.ts'
 import { presentTool, toolStatus } from './tool-registry.ts'
@@ -50,4 +52,23 @@ test('o ajudante', () => {
     assert.equal(toolStatus({ ...call, result: found }, room), 'done')
     assert.equal(toolStatus({ ...call, result: lost }, room), 'error')
   }
+})
+
+test('um pedido de internet que o esquema recusa desenha a linha comum e a conversa segue (22)', () => {
+  const args = { domains: ['10.0.0.1'], reason: '' }
+  const call = { toolCallId: 'toolu_net', toolName: MACHINE_TOOL.requestNetwork, args }
+  const parked = { ...call, suspendPayload: { ...args, scopes: ['CONVERSATION'] } }
+  const refused = { error: true, message: 'Tool input validation failed' }
+  const told = [
+    invocationToItem({ ...call, state: 'call' }, parked),
+    invocationToItem({ ...call, state: 'result', result: refused }, undefined),
+    invocationToItem({ ...call, state: 'output-error', errorText: 'refused' }, undefined),
+    invocationToItem({ ...call, state: 'output-denied' }, undefined),
+  ]
+  assert.deepEqual(
+    told.map((item) => item?.kind),
+    ['tool', 'tool', 'tool', 'tool'],
+  )
+  const failed = presentTool({ toolName: call.toolName, args }, 'error', ASSISTANT_ROOM)
+  assert.equal(failed.sentence, 'Não conseguiu pedir acesso à internet')
 })
