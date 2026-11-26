@@ -8,6 +8,7 @@ import { fixedSystem } from '../prompt/public.ts'
 import { agentDefaults, controllerOf } from './factories.ts'
 import { CONTROLLER_KINDS } from './kinds.ts'
 import { sessionModel } from './model.ts'
+import { refuseUnaskedResume } from './resume.ts'
 import type {
   AgentSpec,
   Approval,
@@ -136,9 +137,10 @@ export function initialStateOf(approval: Approval): Readonly<{ yolo: boolean }> 
 
 /**
  * The one place that calls Mastra's agent constructor for the agents on a ficha, with the turn's
- * processor made from `spec.turn`, the tools under the ficha's regime, the judge as the default
- * `isTaskComplete`, and only the optional fields the ficha fills. `watch` comes with a `SESSION`
- * turn (`sessionTurns`): `mountAgent` calls it with the controller; a `RUN` turn has none.
+ * processor made from `spec.turn`, the tools under the ficha's regime, `refuseUnaskedResume` before
+ * each tool call, the judge as the default `isTaskComplete`, and only the optional fields the ficha
+ * fills. `watch` comes with a `SESSION` turn (`sessionTurns`): `mountAgent` calls it with the
+ * controller; a `RUN` turn has none.
  */
 export function agentOfSpec(
   spec: AgentSpec,
@@ -153,6 +155,7 @@ export function agentOfSpec(
     model: modelOf(model),
     tools: ({ requestContext }) => toolsOfSpec({ tools, approval }, requestContext),
     ...defaults,
+    hooks: { beforeToolCall: refuseUnaskedResume },
     ...(judge === undefined
       ? {}
       : { defaultOptions: { ...defaults.defaultOptions, isTaskComplete: judge } }),

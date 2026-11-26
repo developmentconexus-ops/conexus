@@ -8,6 +8,7 @@ import {
   listProjects,
   RunLakeCopyAnswer,
   SetLakeCopy,
+  StopLakeCopyRunAnswer,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -21,7 +22,7 @@ import type { hubServer } from '../../platform/test-hub.tsx'
 import { companyRead, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { connectionOf, SANKHYA, workingOf } from './fixtures.ts'
 import type { LakeView } from './lake-fixtures.ts'
-import { applied, NO_LAKE, RUNNING_ROUND } from './lake-fixtures.ts'
+import { applied, NO_LAKE, RUNNING_ROUND, stopOpenRound } from './lake-fixtures.ts'
 
 const LinkBody = z.object({ name: z.string() })
 const BASE = `*/api/companies/${COMPANY.id}`
@@ -130,9 +131,11 @@ function lakeOf(view: View): LakeView & { lake: NonNullable<View['lake']> } {
   }
 }
 
-type LakeAnswers = Partial<Record<'lake' | 'copy' | 'run' | 'link', () => Response | undefined>>
+type LakeAnswers = Partial<
+  Record<'lake' | 'copy' | 'run' | 'stop' | 'link', () => Response | undefined>
+>
 
-/** The Hub's lake routes of one connection: the read, the one `PUT` that sets the copy, the run and the link. */
+/** The Hub's lake routes of one connection: the read, the one `PUT` that sets the copy, the run, its stop and the link. */
 function lakeHandlers(
   view: LakeView,
   note: (request: Request) => Promise<unknown>,
@@ -158,6 +161,14 @@ function lakeHandlers(
       }
       view.lake = LakeTablesOfConnection.parse({ ...view.lake, lastRun: RUNNING_ROUND })
       return HttpResponse.json(RunLakeCopyAnswer.parse({ already: false }), { status: 202 })
+    }),
+    http.post(`${BASE}/connections/:connectionId/lake-copy/run/stop`, async ({ request }) => {
+      await note(request)
+      const replaced = answers.stop?.()
+      if (replaced) return replaced
+      const stopping = stopOpenRound(view)
+      const answer = StopLakeCopyRunAnswer.parse({ stopping })
+      return HttpResponse.json(answer, { status: stopping ? 202 : 200 })
     }),
     http.post(`${BASE}/connection-links`, async ({ request }) => {
       const body = LinkBody.parse(await note(request))

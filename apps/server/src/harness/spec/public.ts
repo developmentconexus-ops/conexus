@@ -11,6 +11,7 @@ export type { Kept } from './open.ts'
 export { attemptIdOf, openSession } from './open.ts'
 export type { ReleaseScope } from './release.ts'
 export { releaseByMarks, releaseThreads, threadsByMarks } from './release.ts'
+export { refuseUnaskedResume } from './resume.ts'
 export type { DataBinding, RunMark, RunScope, Stored } from './run.ts'
 export {
   dataContextOf,

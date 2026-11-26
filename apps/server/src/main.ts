@@ -17,6 +17,7 @@ import {
   openGoogleCalls,
   signInFlows,
 } from './harness/model-accounts/public.ts'
+import { createNetwork } from './harness/network/public.ts'
 import { createAccess } from './hub/access/public.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
@@ -93,7 +94,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies],
+    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies, deps.network],
   ]) {
     part.routes(app)
   }
@@ -158,13 +159,12 @@ type SubjectDeps = {
  * conversations reach Mastra's database only through the pool of Mastra's own login (0010).
  */
 export function subjectsOf(deps: SubjectDeps) {
-  const { database, config, log, neon } = deps
+  const { database, config, log, neon, repository, copy } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
   const appRemoval = createAppRemoval(deps)
   const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
-  const { repository, copy } = deps
   const machines = deps.machinesOf()
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
@@ -228,7 +228,7 @@ export function subjectsOf(deps: SubjectDeps) {
   return {
     ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, data },
-    ...{ lakeRuns, lakeClock, lakeCopies },
+    ...{ lakeRuns, lakeClock, lakeCopies, network: createNetwork({ database, identity, log }) },
   }
 }
 
