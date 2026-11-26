@@ -33,6 +33,10 @@ fundador. Ele vem em três partes: a parte 0, em que o legado sai do banco da em
 conector no padrão novo; e a parte 1, em que a pessoa liga um sistema numa janela só e a cópia chega.
 O aviso de cópia parada vem num cartão próprio, logo depois.
 
+Depois da 2 vem A passada inteira agendada: o cartão, aprovado pelo fundador em 2026-11-26
+([aprovação](../../approvals/a-passada-inteira-agendada.md)), espera num pull request em rascunho
+até a 2 fechar (delivery L5).
+
 As etapas anteriores fecharam: a pergunta respondida com a origem, em 2026-11-16
 ([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md)); cada papel lê só o seu, com
 a porta única, em 2026-11-17 ([aprovação](../../approvals/cada-papel-le-so-o-seu.md)); e o Registro
@@ -78,6 +82,7 @@ para a etapa que a pedir.
 | --- | --- | --- |
 | 1. O lago da empresa nasce e some | O Conexus cria e apaga sozinho o lago isolado de uma empresa, sem ninguém abrir o console da AWS? | Nenhum conector |
 | 2. A primeira cópia chega ao lago | Eu ligo o Sankhya numa janela só, escolho as tabelas e quando copiar, elas chegam inteiras ao lago, a mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados? | O Sankhya completo, núcleo, fiscal e contábil, e o XML da NF-e; o dublê do HubSpot na mesma bateria, para o adaptador não aprender um sistema só |
+| A passada inteira agendada, depois da 2 | A NF-e lê só as notas novas em cada rodada, e uma passada inteira, quando eu a ligo, tira do lago o que sumiu do Sankhya? | A NF-e (`TGFNFE`) e as tabelas marcadas do Sankhya |
 | O conector no padrão novo, entre a parte 0 e a parte 1 da etapa 2 | O Assistente continua lendo o Sankhya e o Mercado Livre enquanto cada conector é refeito, e cada um nasce de uma definição só, com a sua skill e a classe da credencial? | O Sankhya e o Mercado Livre, um pull request por conector |
 | 3. O agente responde pelo lago | Pergunto ao Assistente e ele responde do lago, diz de quando é, e recusa o que o meu papel não lê? É o `D2` | Qualquer tabela copiada |
 | 3a. O arquivo chega ao lago, ligado à sua linha | Pergunto ao Assistente por uma linha e abro o arquivo ligado a ela, e quem não lê a tabela não abre o arquivo? | Uma leitura de API que baixa o arquivo (um documento ou anexo do Mercado Livre, se a prova PM1 confirmar; senão, o dublê do HubSpot) e uma coluna binária grande de banco (um anexo do Sankhya, se a sonda PS1 achar) |
