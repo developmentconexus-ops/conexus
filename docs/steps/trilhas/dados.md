@@ -20,8 +20,8 @@ Depois de `D1`, a trilha segue o método leve da fila do molde (delivery L27).
 
 ## O cartão de hoje
 
-A primeira cópia chega ao lago, a etapa 2 do lago, fechou em 2026-11-26, na v0.24.133, e a linha de
-fechamento está no [arquivo de aprovação](../../approvals/a-primeira-copia-chega-ao-lago.md). A
+A primeira cópia chega ao lago, a etapa 2 do lago, fechou em 2026-11-26, com as provas na v0.24.133 e a
+v0.24.134 no ar, e a linha de fechamento está no [arquivo de aprovação](../../approvals/a-primeira-copia-chega-ao-lago.md). A
 pessoa liga um sistema numa janela só, escolhe as tabelas e quando copiar, a cópia chega ao lago da
 empresa, e a página Dados a mostra. O cartão está no histórico do `main`, no commit `50aae548`, o
 último que o mudou. A trilha está sem cartão em `docs/steps/` até o cartão seguinte entrar: o do
