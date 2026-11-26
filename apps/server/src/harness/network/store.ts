@@ -155,9 +155,8 @@ async function openAllOf(tx: ReadTx, companyId: CompanyId): Promise<CompanyNetwo
     })
     .from(companyNetworkOpen)
     .where(eq(companyNetworkOpen.companyId, companyId))
-  return row === undefined
-    ? null
-    : CompanyNetworkOpen.parse({ ...row, openedAt: row.openedAt.toISOString() })
+  if (row === undefined) return null
+  return CompanyNetworkOpen.parse({ ...row, openedAt: row.openedAt.toISOString() })
 }
 
 function logGranted(
@@ -270,7 +269,11 @@ function machineSide({ database, identity, log }: Deps, removals: Removals): Net
   return {
     opened({ companyId, conversationId }) {
       return database.read(hubScopeOf(companyId), async (tx): Promise<NetworkOpened> => {
-        if ((await openAllOf(tx, companyId)) !== null) return { kind: 'ALL' }
+        const [openToAll] = await tx
+          .select({ companyId: companyNetworkOpen.companyId })
+          .from(companyNetworkOpen)
+          .where(eq(companyNetworkOpen.companyId, companyId))
+        if (openToAll !== undefined) return { kind: 'ALL' }
         const rows = await domainsIn(tx, companyId, conversationId)
         return { kind: 'LIST', hosts: rows.map((row) => NetworkDomain.parse(row.domain)) }
       })

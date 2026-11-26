@@ -56,8 +56,9 @@ const BUILD = {
  * accounts (step 11, D4), gives and takes a person's access to an app (step 18, B), and links,
  * tests and removes the company's connections (step 19, D), and writes the company's memory and
  * instructions (alignment of the Assistant, U9), and reads the Registro de dados (founder,
- * 2026-11-21, D1 (a)), and opens and closes the domains of the company's internet list (the
- * network step). Only the owner chooses the company's nickname (step 8, N1).
+ * 2026-11-21, D1 (a)), and opens and closes the domains of the company's internet list; a developer
+ * opens a domain for a conversation only, and only the owner turns the whole internet on or off
+ * (the network step). Only the owner chooses the company's nickname (step 8, N1).
  * `allows` in admission reads these, so who may do what lives here alone (code C26).
  */
 export function rolesFor(kit: RoleKit) {
