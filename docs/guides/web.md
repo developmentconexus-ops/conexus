@@ -133,11 +133,11 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   sees only "Seus apps" at `/` and never enters them. [review]
 - **W30.** The frame **should** be one sidebar: Nova conversa on top; Início and Conversas; then
   titled groups: Dados e contexto (Integrações, Dados, Conhecimento), Agentes (Agentes, Automações)
-  and Apps (Projetos), Agentes and Dados for an owner, administrator or developer; then Recentes,
+  and Apps (Projetos), Agentes and Automações for whoever manages them (W34); then Recentes,
   the person's last conversations; Avisos, Configurações and the account at the foot, the company
   under the person's name. Nova conversa, Conversas and Recentes are for every role. No list sits
   beside it: Conversas is a page, and Dados and Conhecimento show their layers and pages inside the
-  page. It collapses to icons, the choice kept in the browser. A Projeto, Configurações and the
+  page. A visible button or Ctrl+B collapses it to icons, the choice kept in the browser. A Projeto, Configurações and the
   Central swap it for their own (W31, W32), without Nova conversa and Recentes. The account menu
   holds the name, theme, Central for whoever operates it, Sair and "Suas empresas" for a person with
   two companies, who opens the last one used. On a phone it goes into a drawer (design V56).
@@ -147,12 +147,12 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   Abrir app and Publicar on the right; its sidebar opens with "← Todos os projetos" and the Projeto's name with the switcher, the app's state below, in groups: Construir; Conversas, Agentes, Automações; Integrações, Dados; Quem usa o app, Sobre (founder, 2026-10-30, R2). A control appears
   only when its step exists, never as "em breve". Sobre lists its parts, each added by its step:
   Sobre, Versões, Publicação (founder, 2026-10-30, A1). [review]
-- **W36.** The Hub's places **must** be declared in one file, read by the sidebar, the drawer and
+- **W36.** The Hub's places, Configurações' sections apart (W32), **must** be declared in one file, read by the sidebar, the drawer and
   the command palette through one permission filter (W34). Failure: a place enters the sidebar and
   the search forgets it. [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
   groups by owner, the company's by task: Você (Minha conta, Suas contas de modelo, Meus padrões) and, under the company's name, Geral, Pessoas e acesso, Modelos (Contas da empresa, Padrões da empresa, a collapsed Avançado with Memória observacional) and Avisos. Integrações is not
-  there (founder, 2026-10-28: "O1"). Owner and administrator change the company's group; a developer or a member
+  there. Owner and administrator change the company's group; a developer or a member
   reads Pessoas (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). Registro de dados: owner and administrator only, after Papéis.
   Atividade and Uso are reserved there and appear only when a card asks. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
@@ -167,8 +167,7 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   forms, as references do (Mastra 1.82 Studio's `filterItem`,
   `packages/playground/src/components/ui/app-sidebar.tsx:64-77`; GitHub's organization roles). An
   administration area the person's role never uses is hidden from the navigation and its address
-  answers not found (S10): Automações, Agentes and Cópias for the member (founder, 2026-11-01: "1 A";
-  2026-11-02: "3.A"), Papéis for the developer and the member; the developer sees Automações,
+  answers not found (S10): Automações, Agentes and Cópias for the member, Papéis for the developer and the member; the developer sees Automações,
   Agentes and Cópias (step 24.3.4, founder, 2026-11-04: "2. Aprovo"). On a page the person uses, an action
   outside the role says who can (design V29), as Conectores and Contas de modelo do.
   Failure: a used page hiding an action leaves them guessing. [review]

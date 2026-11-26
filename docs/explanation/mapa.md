@@ -73,9 +73,9 @@ em 2026-11-01 e ficou até a `R2`; o que as referências acrescentavam era o gru
 
 Em 2026-11-26, com a casca da `R2`: o trilho vira uma barra com o nome de cada lugar, e a linha fina
 entre os grupos vira o título escrito de cada um, "Dados e contexto", "Agentes" e "Apps" (o fundador:
-"B b"). Os grupos, os itens e a ordem da tabela ficam. Conversas entra como lugar, depois de Início; no
+"B b"). Os grupos e os itens da tabela ficam. Conversas entra como lugar, depois de Início; no
 alto da barra fica "Nova conversa", e no fim, "Recentes", com as últimas conversas da pessoa ("Ca"). No
-pé, o sino se chama Avisos, e a empresa aparece sob o nome da pessoa, na linha da conta. A barra recolhe
+pé, a ordem passa a Avisos (o sino), Configurações e a conta, com a empresa sob o nome da pessoa. A barra recolhe
 para uma faixa de ícones.
 
 ### 3.1 Onde mora o contexto
@@ -273,15 +273,17 @@ dois donos.
 ## 7. No celular
 
 A gaveta leva a barra do lugar inteira: a do Hub, a do Projeto ou o índice das Configurações (design
-V56). Até 2026-11-26 ela levava o trilho e a coluna juntos. Dois defeitos contra a regra, que a gaveta
-da `R2` conserta:
+V56). Até 2026-11-26 ela levava o trilho e a coluna juntos. O mapa de 2026-11-17 apontava dois
+defeitos contra a regra:
 
-- Dentro de um Projeto, a gaveta não traz o menu do Projeto.
-- Nas configurações a 390 px não há índice à vista.
+- Dentro de um Projeto, a gaveta não trazia o menu do Projeto. Já foi consertado: a gaveta tem as
+  mesmas entradas da barra do Projeto.
+- Nas configurações a 390 px não havia índice à vista. A gaveta da `R2` traz o índice.
 
 ## 8. O que este mapa não decide
 
 - O desenho de nenhuma tela. Isso é a camada de área, A1 a A3.
 - Se o trilho ganha o nome embaixo de cada ícone. É decisão visual, do protótipo da primeira área.
+  Em 2026-11-26 a pergunta deixou de valer: a barra da `R2` mostra o nome ao lado do ícone.
 - As telas de marcos que ainda não existem (`D1` a `D6`, `A1` a `A6`). Cada uma entra no mapa pelo
   estudo do seu marco.
