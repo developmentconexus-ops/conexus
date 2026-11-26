@@ -56,8 +56,7 @@ As trilhas andam juntas, cada uma na ordem dos seus marcos, com a página em
 
 `D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b"), mais a 3a, dos
 arquivos, e o XML lido em linhas; depois vêm os conectores por classe e a porta
-de fora. Segue a 2, com a etapa O conector no padrão novo entre a parte 0 e a parte
-1 dela. As etapas, os onze de `D3` e o
+de fora. A 1 e a 2 fecharam; seguem o aviso de cópia parada e a 3. As etapas, os onze de `D3` e o
 Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**
@@ -86,7 +85,7 @@ bonitos e quebrados.
 
 **O que não se faz agora.** O que nunca se faz está na [VISION.md](../VISION.md). Mais de um estudo
 aberto por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
-agente. Tratamento e qualidade dos dados antes do lago implementado (2026-11-20).
+agente.
 
 ### O que você fornece, e quando
 

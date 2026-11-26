@@ -9,7 +9,7 @@ export function Attachment({ className, ...props }: ComponentProps<'div'>) {
     <div
       data-slot="attachment"
       className={cn(
-        'group/attachment relative flex w-fit max-w-full min-w-0 shrink-0 items-center gap-sm rounded-object border border-line bg-surface text-fact text-text p-xs pe-sm transition-colors has-data-[slot=attachment-action]:pe-xs',
+        'group/attachment relative flex w-fit max-w-full min-w-0 shrink-0 items-center gap-sm rounded-object border border-transparent bg-raised shadow-1 text-fact text-text p-xs pe-sm transition-colors duration-control has-data-[slot=attachment-action]:pe-xs',
         className,
       )}
       {...props}

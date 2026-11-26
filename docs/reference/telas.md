@@ -391,7 +391,7 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 - **Faixa de dados.** Conceito até 120 e mapeamento até 500 (`connectors.ts`). Anotações e cópias por ligação, hipótese.
 - **Hoje falta.** O que a ligação entrega, quais cópias e Projetos a usam, quando cada cópia rodou, histórico de testes (só o último fica).
 - **Referência.** Referências mostram abas de execuções e atividade e os registros por ligação.
-- **Princípios.** E1 F. E4 P (Desligar diz o que some, `unlink-dialog.tsx`). E5 P. E6 em parte. E7 P.
+- **Princípios.** E1 F. E4 P (Desligar diz que apaga as chaves, não que apaga as tabelas do lago, `unlink-dialog.tsx`). E5 P. E6 em parte. E7 P.
 
 #### TD3. Ligar um sistema e Conectar de novo (janela)
 
@@ -419,19 +419,19 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 
 #### TD5. Dados, o índice com a árvore (`data.index.tsx`)
 
-- **Para que serve.** Ver o dado da empresa num catálogo. Desde a U14 do lago (cartão `a-primeira-copia-chega-ao-lago`) as cópias do banco da empresa saíram, e as tabelas do lago chegam na U9. `C2`, e o lugar de `C3` pela pasta Negócio.
-- **Conteúdo obrigatório.** "Dados" e a frase do que é (`hub/copies/text.ts`); Bruto: quem gerencia vê cada sistema que as ligações da empresa ligam, com "Nenhuma tabela copiada. Escolha o que copiar na página da ligação." (`data-page.tsx`); quem não gerencia vê que o papel não lê tabela (`text.ts`). Negócio: "Nenhum conceito aprovado ainda" (`text.ts`). Apps: por Projeto, só leitura (`apps-layer.tsx`). Árvore com as três camadas (`data-tree.tsx`).
+- **Para que serve.** Ver o dado da empresa num catálogo. As tabelas são as do lago: as cópias do banco da empresa saíram na etapa 2 do lago. `C2`, e o lugar de `C3` pela pasta Negócio.
+- **Conteúdo obrigatório.** "Dados" e a frase do que é (`hub/copies/text.ts`); Bruto: quem gerencia as cópias vê cada ligação com as tabelas do lago que ela copia (`lake-list.tsx`), ou "Nenhuma tabela copiada. Escolha o que copiar na página da ligação." (`data-page.tsx`); quem não gerencia vê que o papel não lê tabela (`text.ts`). Negócio: "Nenhum conceito aprovado ainda" (`text.ts`). Apps: por Projeto, só leitura (`apps-layer.tsx`). Árvore com as três camadas (`data-tree.tsx`).
 - **Ações.** Abrir cada camada, todo membro, no limite do papel.
-- **Ação principal.** Nenhuma até a U9.
+- **Ação principal.** Abrir uma tabela do lago (TD6).
 - **Estados.** "Nenhum sistema ligado ainda", com o caminho para Integrações; papel sem tabela (`text.ts`); esqueleto; erro de leitura com tentar de novo (`data-page.tsx`).
 - **Faixa de dados.** Sistemas até 10 (hipótese).
-- **Hoje falta.** As tabelas do lago e a busca sobre elas (U9); "Negócio 0" sem uso (`data-tree.tsx`).
+- **Hoje falta.** A busca sobre as tabelas; "Negócio 0" sem uso (`data-tree.tsx`).
 - **Referência.** Plataformas de dados mostram fixados e recentes, caminho completo e abas.
 - **Princípios.** E3 P. E4 P. E5 P.
 
 #### TD6. A tabela (`data.$copyId.tsx`)
 
-- **Para que serve.** Nenhum desde a U14 do lago: o endereço antigo de uma cópia leva à página Dados (TD5). A página de uma tabela do lago mora em `/data/lake/<id>` (U9).
+- **Para que serve.** Nenhum desde a etapa 2 do lago: o endereço antigo de uma cópia leva à página Dados (TD5). A página de uma tabela do lago mora em `/data/lake/<id>`.
 
 #### TD8. Cópias, o endereço antigo (`copies.index.tsx`, `copies.$copyId.tsx`)
 
@@ -459,13 +459,13 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 
 #### TD10. Dados do Projeto (`projects/$projectId_.data*.tsx`)
 
-- **Para que serve.** Ver o que o app guarda e as cópias liberadas, só para ler. `C2`, A5.
-- **Conteúdo obrigatório.** "Dados"; "Tabelas do app" e "Cópias liberadas" com contagem; ao abrir, colunas e linhas por página, "…" no texto cortado e "sem valor" no vazio (`hub/apps/data-rows.tsx`); contagem exata, "mais de 10.000" ou "indisponível" (`hub/apps/data.tsx`).
-- **Ações.** Abrir e paginar, quem o Hub deixa ler (`projects/$projectId_.data.tsx`; `.data.copies.$table.tsx`). Nenhuma escreve.
+- **Para que serve.** Ver o que o app guarda, só para ler. `C2`, A5.
+- **Conteúdo obrigatório.** "Dados"; "Tabelas do app" com contagem; ao abrir, colunas e linhas por página, "…" no texto cortado e "sem valor" no vazio (`hub/apps/data-rows.tsx`); contagem exata, "mais de 10.000" ou "indisponível" (`hub/apps/data.tsx`).
+- **Ações.** Abrir e paginar, quem o Hub deixa ler (`projects/$projectId_.data.tsx`). Nenhuma escreve.
 - **Ação principal.** Abrir uma tabela.
 - **Estados.** Sem app (`data.tsx`); app sem tabela (`data.tsx`); tabela vazia (`data-rows.tsx`); erro, e tabela larga demais; no celular, uma coisa por vez (`data-rows.tsx`).
 - **Faixa de dados.** Linhas de 0 a "mais de 10.000". Tabelas do app de 0 a dezenas (hipótese).
-- **Hoje falta.** De quando e de que sistema são as linhas da cópia (`data-rows.tsx`). Busca, filtro, ordem. A grade rola de lado. Título sem o nome do Projeto. Contagem "0" sem rótulo.
+- **Hoje falta.** Busca, filtro, ordem. A grade rola de lado. Título sem o nome do Projeto. Contagem "0" sem rótulo.
 - **Referência.** Uma plataforma de dados mostra busca, filtro e tipo na coluna. Um explorador de banco fica fora do escopo (não é console de banco).
 - **Princípios.** E1 F. E5 P. E6 em parte (404 sem explicação para quem monta). E7 F.
 

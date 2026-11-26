@@ -2,13 +2,13 @@ import type { ComponentProps } from 'react'
 import { cn } from './cn.ts'
 
 // Copied from shadcn's base-nova `card` (the shape: a surface, its content and its footer),
-// painted with brand tokens: a hairline instead of a ring and a shadow.
+// painted with brand tokens: white, its edge a shadow (design V19).
 export function Card({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       data-slot="card"
       className={cn(
-        'flex min-w-0 flex-col items-start gap-sm rounded-card border border-line bg-surface p-md text-text',
+        'flex min-w-0 flex-col items-start gap-sm rounded-card border border-transparent bg-raised shadow-1 p-md text-text',
         className,
       )}
       {...props}

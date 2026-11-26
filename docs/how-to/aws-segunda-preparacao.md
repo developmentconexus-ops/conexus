@@ -5,7 +5,7 @@ Release publicar a plataforma da cópia (decisão E). Roda o firstmate, com a pa
 Nunca na conta oficial.
 
 Uma vez, depois que a Release já publica a plataforma e antes da primeira que traz a cópia
-([o cartão](../steps/a-primeira-copia-chega-ao-lago.md), U6). Os comandos rodam no commit que traz
+([a primeira cópia chega ao lago](../approvals/a-primeira-copia-chega-ao-lago.md), U6). Os comandos rodam no commit que traz
 a U6, na região de `AWS_REGION`, a mesma da pilha `conexus-preparacao`.
 
 1. O papel vinculado do ECS, que a política de execução do CDK não cria:

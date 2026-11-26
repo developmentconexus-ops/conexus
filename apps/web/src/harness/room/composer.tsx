@@ -48,9 +48,8 @@ function isTouch(): boolean {
   return globalThis.matchMedia('(pointer: coarse)').matches
 }
 
-/** The round button at the end of the field: ink at rest, the soft grey under the pointer (design V5). */
-const ROUND =
-  'shrink-0 rounded-pill hover:bg-surface-3 hover:text-text disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
+/** The round button at the end of the field: the lit ipê, as every primary action (design V5). */
+const ROUND = 'shrink-0 rounded-pill'
 
 type Attachments = ReturnType<typeof useAttachments>
 /** Takes the files and says why any was left out. */
@@ -311,7 +310,7 @@ export function Composer(props: {
       <Refused phrase={phrase} />
       <InputGroup
         data-busy={props.answering || undefined}
-        className="rounded-composer data-busy:working-ring"
+        className="rounded-composer shadow-composer data-busy:working-ring"
       >
         <Label htmlFor="message" className="sr-only">
           <Subject agent={props.words.agent} />

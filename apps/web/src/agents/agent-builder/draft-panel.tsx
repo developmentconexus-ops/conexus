@@ -134,7 +134,7 @@ function Filled({ scope, agent, inSheet }: { scope: Scope; agent: AgentDetail; i
       </div>
       <div className="flex flex-col gap-sm border-t border-line p-md">
         {(error ?? test.error) !== undefined && (
-          <p role="alert" className="text-danger">
+          <p role="alert" className="text-danger-text">
             {error ?? test.error}
           </p>
         )}

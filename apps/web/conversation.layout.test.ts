@@ -244,13 +244,13 @@ test('o compositor vazio não esmaece; o foco do compositor e do título é a bo
   await field.focus()
   assert.deepEqual(
     { ...(await frame(field)), focus: await focusDrawn(page) },
-    { opacity: '1', radius: '16px', focus: 'Mensagem para o Conexus halo' },
+    { opacity: '1', radius: '22px', focus: 'Mensagem para o Conexus halo' },
   )
   const title = page.getByRole('combobox', { name: 'Conversas' })
   await title.focus()
   assert.deepEqual(
     { ...(await frame(title)), focus: (await focusDrawn(page)).replace(/^.* (\S+)$/, '$1') },
-    { opacity: '1', radius: '8px', focus: 'halo' },
+    { opacity: '1', radius: '10px', focus: 'halo' },
   )
   assert.deepEqual(page.problems, [])
   await page.close()

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import { createHarness, DESKTOP, PHONE, reachOf, touching } from './layout-harness.ts'
 import { STATES } from './sweep-states.ts'
 
@@ -66,6 +67,64 @@ test('as peças sob a política do Hub: nenhum erro nem violação, arrastar o d
   await piece(page, 'tooltip.tsx').getByRole('button', { name: 'Enviar' }).hover()
   await page.locator('[data-slot=tooltip-content]').waitFor()
   assert.deepEqual(page.problems, [])
+  await page.close()
+})
+
+// The lit ipê and the one ink on it (design V5).
+const LIT = {
+  light: 'linear-gradient(135deg, rgb(245, 171, 14), rgb(255, 212, 69))',
+  dark: 'linear-gradient(135deg, rgb(240, 173, 39), rgb(255, 215, 102))',
+}
+const ON_LIT = 'rgb(31, 22, 0)'
+
+function within(page: Page, file: string, band: 'light' | 'dark'): Locator {
+  return page.locator(`[data-file="${file}"] [data-band=${band}]`)
+}
+
+function fillOf(locator: Locator): Promise<string[]> {
+  return locator.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return [style.backgroundImage, style.color]
+  })
+}
+
+test('o ipê acende só o que está ligado', async () => {
+  const page = await open('/pieces')
+  for (const band of ['light', 'dark'] as const) {
+    const lit = [LIT[band], ON_LIT]
+    const buttons = within(page, 'button.tsx', band).locator('[data-slot=button]')
+    assert.deepEqual(await fillOf(buttons.first()), lit, `${band}: the primary button`)
+    const switches = within(page, 'switch.tsx', band).getByRole('switch')
+    assert.deepEqual(await fillOf(switches.first()), lit, `${band}: the switch that is on`)
+    const boxes = within(page, 'checkbox.tsx', band).getByRole('checkbox')
+    assert.deepEqual(await fillOf(boxes.first()), lit, `${band}: the checkbox that is on`)
+    assert.equal(
+      await boxes
+        .first()
+        .locator('svg')
+        .evaluate((icon) => getComputedStyle(icon).color),
+      ON_LIT,
+      `${band}: the check`,
+    )
+    // What is off, a resting action and every pinned state of one (hover, focus, active) stay unlit.
+    for (const rest of [switches, boxes, buttons]) {
+      assert.ok((await rest.count()) > 1, `${band}: the showcase has no piece at rest`)
+      const fills = await rest.evaluateAll((all) =>
+        all.slice(1).map((element) => getComputedStyle(element).backgroundImage),
+      )
+      assert.deepEqual([...new Set(fills)], ['none'], `${band}: a piece at rest is lit`)
+    }
+  }
+  // A title is ink or secondary ink, never a hue: each of its channels is the same.
+  const titles = await page.locator('h1, h2, h3').evaluateAll((all) =>
+    all
+      .map((title) => {
+        const style = getComputedStyle(title)
+        return `${style.color} ${style.backgroundImage}`
+      })
+      .filter((painted) => !/^rgb\((\d+), \1, \1\) none$/.test(painted)),
+  )
+  assert.deepEqual(titles, [], 'a title takes the ipê')
   await page.close()
 })
 
@@ -176,6 +235,7 @@ test('a medida: itens de menu e linhas da barra de 32 px, campos de 36 px, a 136
   assert.ok(rows.includes(32), 'no sidebar row is 32 px')
   assert.ok(!rows.includes(34), 'a sidebar row is still 34 px')
   await page.getByRole('button', { name: /^Conta de / }).click()
+  await atRest(page)
   const item = await page.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
   assert.equal(item?.height, 32, 'a menu item is not 32 px')
   await page.close()
@@ -213,6 +273,7 @@ test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)',
   const page = await harness.open(home.path, { viewport: DESKTOP, replies: home.replies })
   await home.settle(page)
   await page.getByRole('button', { name: /^Conta de / }).click()
+  await atRest(page)
   await touching(page)
   const rows = await page
     .locator('[data-slot=sidebar-menu-item] > a')
@@ -232,6 +293,7 @@ test('num toque as linhas e os itens têm 44 px; com o mouse ficam em 32 (V58)',
   assert.ok(fine.includes(32), 'no sidebar row is 32 px with a mouse')
   assert.ok(!fine.includes(44), 'a sidebar row is 44 px with a mouse')
   await mouse.getByRole('button', { name: /^Conta de / }).click()
+  await atRest(mouse)
   const fineItem = await mouse.getByRole('menuitem', { name: 'Sair do Conexus' }).boundingBox()
   assert.equal(fineItem?.height, 32, 'a menu item is not 32 px with a mouse')
   await mouse.close()

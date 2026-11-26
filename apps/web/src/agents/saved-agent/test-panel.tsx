@@ -98,7 +98,7 @@ export function TestPanel(props: {
           </Button>
         </div>
         {opener.error !== undefined && (
-          <p role="alert" className="text-danger">
+          <p role="alert" className="text-danger-text">
             {opener.error}
           </p>
         )}

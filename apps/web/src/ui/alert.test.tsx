@@ -7,7 +7,7 @@ test('Alert is read as an alert, in the label size and red', () => {
   const alert = screen.getByRole('alert')
   expect(alert.textContent).toBe('Não foi possível salvar.')
   expect(alert.className).toContain('text-label')
-  expect(alert.className).toContain('text-danger')
+  expect(alert.className).toContain('text-danger-text')
 })
 
 test('Alert has only the danger tone', () => {

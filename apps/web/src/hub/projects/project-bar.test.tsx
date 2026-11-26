@@ -128,7 +128,7 @@ test('o endereço antigo: cada ?lens=project leva à página nova, trocando a hi
     const { router } = open(`${PROJECT}${old}`)
     await waitFor(() => expect(router.state.location.href).toBe(now))
     expect(router.history.length).toBe(1)
-    document.body.innerHTML = ''
+    cleanup()
   }
 })
 
@@ -150,6 +150,6 @@ test('um Projeto que o Hub não acha, nos endereços novos: não encontrado', as
     expect(
       await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
     ).toBeTruthy()
-    document.body.innerHTML = ''
+    cleanup()
   }
 })

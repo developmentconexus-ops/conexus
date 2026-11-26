@@ -5,6 +5,7 @@ import type { RefObject } from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
+import { useNotice } from '../../ui/notice.tsx'
 import { ModelPicker } from './model-picker.tsx'
 import { sendDefaultModel, sendMyDefault, sendMyDefaultCleared } from './queries.ts'
 import { choiceText, defaultRefusalText, runningDefault } from './text.ts'
@@ -39,11 +40,12 @@ export function DefaultChoice(props: Props) {
   return <Editor key={key} refocus={refocus} {...props} />
 }
 
-type Callbacks = { onError: () => void; onSettled: () => void }
+type Callbacks = { onSuccess: () => void; onError: () => void; onSettled: () => void }
 
 /**
  * One write per action, whatever the clicks in between. Focus returns to the model button once the
- * Hub saved it, in the form that replaces this one (`refocus`).
+ * Hub saved it, in the form that replaces this one (`refocus`); `done` runs only then, never after
+ * a refusal.
  */
 function useOneWrite(refocus: RefObject<boolean>, pickerId: string) {
   const writing = useRef(false)
@@ -52,11 +54,12 @@ function useOneWrite(refocus: RefObject<boolean>, pickerId: string) {
     refocus.current = false
     document.getElementById(pickerId)?.focus()
   }, [refocus, pickerId])
-  return function write(send: (callbacks: Callbacks) => void) {
+  return function write(send: (callbacks: Callbacks) => void, done?: () => void) {
     if (writing.current) return
     writing.current = true
     refocus.current = true
     send({
+      onSuccess: () => done?.(),
       onError: () => {
         refocus.current = false
       },
@@ -81,14 +84,17 @@ function Editor(props: Props & { refocus: RefObject<boolean> }) {
   const unchanged = saved !== null && saved.model === model && saved.effort === level
   const params = { companyId: props.companyId }
   const write = useOneWrite(props.refocus, pickerId)
+  const notice = useNotice()
 
   function save() {
     if (model === null) return
     const body = { model, effort: level }
-    write((callbacks) =>
-      props.scope === 'mine'
-        ? mineSend.mutate({ params, body }, callbacks)
-        : companySend.mutate({ params, body }, callbacks),
+    write(
+      (callbacks) =>
+        props.scope === 'mine'
+          ? mineSend.mutate({ params, body }, callbacks)
+          : companySend.mutate({ params, body }, callbacks),
+      () => notice({ title: 'Padrão salvo' }),
     )
   }
 

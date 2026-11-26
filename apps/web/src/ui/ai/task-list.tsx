@@ -40,7 +40,7 @@ export function TaskList(props: { tasks: readonly TaskView[]; text: TaskListText
       render={<section aria-label={text.region} />}
       open={open}
       onOpenChange={setOpen}
-      className="flex min-w-0 flex-col gap-xs rounded-control border border-line bg-surface p-sm text-fact"
+      className="flex min-w-0 flex-col gap-xs rounded-control border border-transparent bg-raised shadow-1 p-sm text-fact"
     >
       <CollapsibleTrigger className="flex w-fit cursor-pointer items-center gap-xs font-medium text-text-2">
         <ChevronRightIcon

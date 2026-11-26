@@ -13,6 +13,7 @@ import { createCache } from './platform/cache.ts'
 import { HubFailure } from './platform/hub.ts'
 import { applyChosenTheme } from './platform/theme.ts'
 import { routeTree } from './routeTree.gen.ts'
+import { NoticeProvider } from './ui/notice.tsx'
 import type { SectionMeta } from './ui/settings-index.tsx'
 import { Failure, Loading, NotFound } from './ui/states.tsx'
 
@@ -91,6 +92,22 @@ export function createConexus(history?: RouterHistory) {
     defaultPendingMs: 150,
     defaultPendingMinMs: 400,
     defaultPreload: 'intent',
+    // The sheet fades when the path changes: never on the page's load, nor when only the search of
+    // the address changes, nor under a drawer or a window, which then leaves in its own time
+    // (design V26); their veil is what tells them. A change that arrives during a fade applies at
+    // once, since the router leaves a skipped transition's rejection unhandled. A browser that
+    // cannot tell the cases apart changes at once.
+    defaultViewTransition: globalThis.CSS?.supports?.('selector(:active-view-transition-type(a))')
+      ? {
+          types: ({ fromLocation, pathChanged }) =>
+            fromLocation &&
+            pathChanged &&
+            !document.documentElement.matches(':active-view-transition') &&
+            !document.querySelector('[data-slot$="-overlay"]')
+              ? []
+              : false,
+        }
+      : false,
   })
   return { router, queryClient }
 }
@@ -100,7 +117,9 @@ export function Conexus({ conexus }: { conexus: ReturnType<typeof createConexus>
     <StrictMode>
       <CSPProvider disableStyleElements>
         <QueryClientProvider client={conexus.queryClient}>
-          <RouterProvider router={conexus.router} />
+          <NoticeProvider>
+            <RouterProvider router={conexus.router} />
+          </NoticeProvider>
         </QueryClientProvider>
       </CSPProvider>
     </StrictMode>

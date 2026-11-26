@@ -71,7 +71,7 @@ function RefusalBody(props: { answer: Refusal; name: string }) {
   const sentence = refusalText(answer, name)
   return (
     <>
-      {sentence !== null && <p className="text-danger">{sentence}</p>}
+      {sentence !== null && <p className="text-danger-text">{sentence}</p>}
       {answer.native !== null && <Said native={answer.native} name={name} />}
     </>
   )
@@ -91,7 +91,7 @@ export function Refused(props: { answer: Refusal; name: string }) {
   return (
     <div role="alert" className="flex flex-col gap-xs">
       {props.answer.result === 'AUTH_REFUSED' && (
-        <p className="text-danger">{refusedKeysText(props.name)}</p>
+        <p className="text-danger-text">{refusedKeysText(props.name)}</p>
       )}
       <RefusalBody answer={props.answer} name={props.name} />
     </div>

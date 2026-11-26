@@ -14,6 +14,9 @@ cada sistema: Sankhya, Mercado Livre e HubSpot. A cópia em massa está em
   de cópia e a descoberta.
 - [0062](../decisions/0062-a-write-declares-its-provider-facts.md), aceito em 2026-11-08: uma escrita declara o que só o fornecedor sabe.
 - [0058](../decisions/0058-provider-limits-and-queues.md): os limites do fornecedor, a espera do 429 e uma chamada por ligação.
+- Na consulta livre do Sankhya, a escrita é recusada pelo gateway do Sankhya, e o filtro só de leitura
+  do conector (`read-only-sql.ts`) é a outra camada (fundador, 2026-11-26). Nenhuma escrita foi tentada
+  nesta etapa para provar a recusa.
 - [0056](../decisions/0056-connectors-kit-and-one-executor.md), proposto em 2026-10-29: o kit de definições e um executor no Hub. Substituiu a [0031](../decisions/0031-connectors-single-executor.md).
 - Os conectores do marco `D3`. O fundador, 2026-11-23: "Conector eu quero: - Sankhya - Mercado Livre - Hubspot - TOTVS - Gmail com Agenda - Outlook email - Outlook Calendar - google drive - Sharepoint - NF-e - Sicoob".
   São onze, e a lista substitui a recomendada na seção 1.5 de `conexus-ao-vivo-estudo` (a decisão D
@@ -82,10 +85,7 @@ cada sistema: Sankhya, Mercado Livre e HubSpot. A cópia em massa está em
 
 ## Aberto
 
-- **O novo cartão do Lago 2** (PR https://github.com/developmentconexus-ops/conexus/pull/1260), com a
-  etapa O conector no padrão novo entre a parte 0 e a parte 1, a janela Ligar no fluxo da Nekt e o
-  link de 30 minutos, à espera da aprovação.
-- **O aviso de cópia parada, por ligação**: um cartão próprio, logo depois do Lago 2.
+- **O aviso de cópia parada, por ligação**: um cartão próprio, o seguinte à primeira cópia.
 
 A Nango e o Composio já foram lidos (as linhas de 2026-11-14 a 2026-11-20 abaixo). O firstmate parou
 uma pesquisa nova deles no estudo do ao vivo, que reusou o decidido.

@@ -51,7 +51,7 @@ test('as ações no menu: Renomear, Pausar, Dar a pessoas… e, separado, Remove
     'Dar a pessoas…',
     'Remover…',
   ])
-  expect(items[3]?.className).toContain('text-danger')
+  expect(items[3]?.className).toContain('text-danger-text')
   expect(screen.getAllByRole('separator')).toHaveLength(1)
 })
 
