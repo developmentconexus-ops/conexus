@@ -8,6 +8,7 @@ import type {
   RepositoryOf,
 } from './agents/app-builder/public.ts'
 import { builderPortsOf, createRuns, repositoriesIn } from './agents/app-builder/public.ts'
+import { centralOf } from './central-of.ts'
 import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
 import type { ConversationMachine, MachineTuning } from './harness/machine/public.ts'
@@ -29,14 +30,12 @@ import type { DataDeps } from './hub/data/public.ts'
 import { createCompanyData, createDataReads, recordRead } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity } from './hub/identity/public.ts'
-import { createLakes } from './hub/lake/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
-import { createOperations } from './hub/operations/public.ts'
 import { createProjects } from './hub/projects/public.ts'
 import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
-import { createTreatment, deleteCompanyTreatments } from './hub/treatment/public.ts'
+import { createTreatment } from './hub/treatment/public.ts'
 import type { CopyQueue, CopyTasks, LakeStacks, LakeTables } from './platform/aws.ts'
 import { createAws, subjectPortsOf } from './platform/aws.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
@@ -198,8 +197,7 @@ export function subjectsOf(deps: SubjectDeps) {
   })
   const { lakes, operations } = centralOf({
     ...{ database, identity, config, log, aws: deps.lakeStacks, projects: projects.ports },
-    ...{ appRemoval, releaseConversations: conversations.release, deleteCompanyTreatments },
-    tables: deps.lakeTables,
+    ...{ appRemoval, releaseConversations: conversations.release, tables: deps.lakeTables },
     eraseCopies: (company) => lakeCopies.erase(company),
   })
   // The connectors come below, after the apps whose door they read; a publish comes long after.
@@ -222,10 +220,7 @@ export function subjectsOf(deps: SubjectDeps) {
   })
   const lake = { ...deps, identity, source: connectors.copies, clock: lakeClock }
   const { lakeRuns, lakeCopies } = lakeCopiesOf(lake)
-  const treatment = createTreatment({
-    ...{ database, identity, source: connectors.copies },
-    templateVersion: config.aws.templateVersion,
-  })
+  const treatment = createTreatment({ ...lake, templateVersion: config.aws.templateVersion })
   const access = createAccess({ database, identity, sources: connectors.access })
   const { data, dataReads } = dataOf({
     ...{ database, identity, log, access, projects: projects.ports },
@@ -236,15 +231,6 @@ export function subjectsOf(deps: SubjectDeps) {
     ...{ conversations, assistant, automations, agents, notifications, connectors, data },
     ...{ lakeRuns, lakeClock, lakeCopies, network, treatment },
   }
-}
-
-/** The Operations Central, and the lakes it frees with a client's database (card L.13). */
-function centralOf(
-  deps: Omit<Parameters<typeof createOperations>[0], 'outside'> & Parameters<typeof createLakes>[0],
-) {
-  const lakes = createLakes(deps)
-  const outside = [deps.projects.companyDatabase, lakes.outside]
-  return { lakes, operations: createOperations({ ...deps, outside }) }
 }
 
 /** The access contract the agents read through, and the Registro de dados its reads leave. */
