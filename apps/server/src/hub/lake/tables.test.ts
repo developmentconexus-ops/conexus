@@ -194,7 +194,7 @@ test('a empresa lê a sua linha', async (t) => {
       async (tx) =>
         (
           await tx.execute(
-            sql`select company_id, lake_id, state, account, region from lake.company_lake`,
+            sql`select company_id, lake_id, state, account, region, template from lake.company_lake`,
           )
         ).rows,
     ),
@@ -205,11 +205,11 @@ test('a empresa lê a sua linha', async (t) => {
         state: 'ready',
         account: ACCOUNT,
         region: 'us-east-2',
+        template: SHA,
       },
     ],
   )
   for (const read of [
-    sql`select template from lake.company_lake`,
     sql`select stack_id from lake.company_lake`,
     sql`select since from lake.company_lake`,
     sql`select failure from lake.company_lake`,
