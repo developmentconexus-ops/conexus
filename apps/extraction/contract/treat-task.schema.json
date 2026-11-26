@@ -1,0 +1,228 @@
+{
+  "spec": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "version": {
+        "type": "number",
+        "const": 1
+      },
+      "runId": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      },
+      "attempt": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9007199254740991
+      },
+      "companyId": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9]{32}$"
+      },
+      "lake": {
+        "type": "object",
+        "properties": {
+          "bucketArn": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string",
+            "pattern": "^[a-z]{2}-[a-z]+-[0-9]$"
+          }
+        },
+        "required": ["bucketArn", "region"],
+        "additionalProperties": false
+      },
+      "queueUrl": {
+        "type": "string",
+        "format": "uri"
+      },
+      "models": {
+        "minItems": 1,
+        "maxItems": 200,
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^(tratado|negocio)__[a-z][a-z0-9_]{0,59}$"
+            },
+            "layer": {
+              "type": "string",
+              "enum": ["tratado", "negocio"]
+            },
+            "table": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]{0,59}$"
+            },
+            "sql": {
+              "type": "string",
+              "maxLength": 20000,
+              "pattern": "^(?![\\s\\S]*\\{[{%#])[\\s\\S]+$"
+            },
+            "after": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^(tratado|negocio)__[a-z][a-z0-9_]{0,59}$"
+              }
+            }
+          },
+          "required": ["name", "layer", "table", "sql", "after"],
+          "additionalProperties": false
+        }
+      },
+      "select": {
+        "minItems": 1,
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^(tratado|negocio)__[a-z][a-z0-9_]{0,59}$"
+        }
+      }
+    },
+    "required": [
+      "version",
+      "runId",
+      "attempt",
+      "companyId",
+      "lake",
+      "queueUrl",
+      "models",
+      "select"
+    ],
+    "additionalProperties": false
+  },
+  "result": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+      "type": {
+        "type": "string",
+        "const": "TREAT_RESULT"
+      },
+      "version": {
+        "type": "number",
+        "const": 1
+      },
+      "runId": {
+        "type": "string",
+        "format": "uuid",
+        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+      },
+      "attempt": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 9007199254740991
+      },
+      "outcome": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "COMPLETE"
+              }
+            },
+            "required": ["kind"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "ERROR"
+              },
+              "code": {
+                "type": "string",
+                "enum": ["TREAT_SPEC_INVALID", "TREAT_ENGINE_FAILED"]
+              }
+            },
+            "required": ["kind", "code"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "models": {
+        "type": "array",
+        "items": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^(tratado|negocio)__[a-z][a-z0-9_]{0,59}$"
+                },
+                "status": {
+                  "type": "string",
+                  "const": "BUILT"
+                },
+                "rows": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": ["name", "status", "rows"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^(tratado|negocio)__[a-z][a-z0-9_]{0,59}$"
+                },
+                "status": {
+                  "type": "string",
+                  "const": "FAILED"
+                },
+                "failure": {
+                  "type": "string",
+                  "pattern": "^[A-Z][A-Z_]{2,63}$"
+                },
+                "line": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": ["name", "status", "failure", "line"],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^(tratado|negocio)__[a-z][a-z0-9_]{0,59}$"
+                },
+                "status": {
+                  "type": "string",
+                  "const": "SKIPPED"
+                }
+              },
+              "required": ["name", "status"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      }
+    },
+    "required": ["type", "version", "runId", "attempt", "outcome", "models"],
+    "additionalProperties": false
+  }
+}

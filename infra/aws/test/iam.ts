@@ -8,6 +8,8 @@ export type Call = {
   principalArn: string
   principalTags: Record<string, string>
   requestTags: Record<string, string>
+  /** The service's own condition keys, such as the area an S3 Tables call names. */
+  context?: Record<string, string> | undefined
 }
 
 /**
@@ -34,32 +36,32 @@ export function allows(identity: Statement[], call: Call): boolean {
 
 /**
  * Glue asks for the action on the table and on each of its ancestors (AWS Glue guide, "Specifying
- * AWS Glue resource ARNs").
+ * AWS Glue resource ARNs"). Answers the resources of that chain the policy refuses `action` on.
  */
-export function refusedUpdateResources(
+export function refusedGlueResources(
   identity: Statement[],
-  bucket: string,
-  area: string,
+  of: Readonly<{ action: string; bucket: string; area: string }>,
 ): string[] {
-  const child = `s3tablescatalog/${bucket}`
+  const child = `s3tablescatalog/${of.bucket}`
   return [
     'catalog',
     'catalog/s3tablescatalog',
     `catalog/${child}`,
-    `database/${child}/${area}`,
-    `table/${child}/${area}/notas`,
+    `database/${child}/${of.area}`,
+    `table/${child}/${of.area}/notas`,
   ]
     .map((resource) => `arn:aws:glue:${REGION}:${ACCOUNT}:${resource}`)
-    .filter(
-      (resource) =>
-        !allows(identity, {
-          action: 'glue:UpdateTable',
-          resource,
-          principalArn: `arn:aws:iam::${ACCOUNT}:role/conexus-lagodeaaaaaa-escritor`,
-          principalTags: {},
-          requestTags: {},
-        }),
-    )
+    .filter((resource) => !allows(identity, asked(of.action, resource)))
+}
+
+/** A call of a role's own, with no session tag: what its policies and its boundary decide. */
+export function asked(action: string, resource: string, principalArn = ''): Call {
+  return { action, resource, principalArn, principalTags: {}, requestTags: {} }
+}
+
+/** A role holds a call only where its own policy and its boundary both allow it. */
+export function allowsWithin(identity: Statement[], boundary: Statement[], call: Call): boolean {
+  return allows(identity, call) && allows(boundary, call)
 }
 
 function matching(statements: Statement[], call: Call, effect: 'Allow' | 'Deny'): Statement[] {
@@ -84,6 +86,8 @@ function namesThe(statement: Statement, principalArn: string): boolean {
 
 function valuesOf(key: string, call: Call): string[] | undefined {
   if (key === 'aws:PrincipalArn') return [call.principalArn]
+  const own = call.context?.[key]
+  if (own !== undefined) return [own]
   if (key === 'aws:TagKeys') {
     const keys = Object.keys(call.requestTags)
     return keys.length > 0 ? keys : undefined
@@ -109,13 +113,15 @@ function holds(
   if (operator === 'ForAllValues:StringEquals') {
     return (actual ?? []).every((value) => wanted.includes(value))
   }
-  if (actual === undefined) return operator.startsWith('StringNot')
+  // A negated operator holds when its key is absent, and with several values only when none matches.
+  if (actual === undefined) return operator.includes('Not')
   if (operator === 'StringEquals' || operator === 'ArnEquals') {
     return actual.some((value) => wanted.includes(value))
   }
   const like = actual.some((value) => wanted.some((pattern) => glob(pattern, value)))
   if (operator === 'StringLike' || operator === 'ArnLike') return like
-  if (operator === 'StringNotLike') return !like
+  if (operator === 'StringNotLike' || operator === 'ArnNotLike') return !like
+  if (operator === 'ArnNotEquals') return !actual.some((value) => wanted.includes(value))
   throw new Error(`the model does not read ${operator}`)
 }
 

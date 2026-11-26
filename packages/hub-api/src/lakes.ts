@@ -11,7 +11,14 @@ const At = z.iso.datetime({ offset: true })
 export const ClientLake = z.discriminatedUnion('state', [
   z.object({ state: z.literal('NONE') }),
   z.object({ state: z.literal('CREATING'), since: At }),
-  z.object({ state: z.literal('READY'), bucket: z.string(), region: z.string(), readyAt: At }),
+  z.object({
+    state: z.literal('READY'),
+    bucket: z.string(),
+    region: z.string(),
+    readyAt: At,
+    /** The lake was made by a recipe other than the one this image publishes. */
+    outdated: z.boolean(),
+  }),
   z.object({ state: z.literal('FAILED'), code: z.literal('LAKE_CREATE_FAILED'), at: At }),
   z.object({ state: z.literal('DELETING'), since: At }),
   z.object({ state: z.literal('DELETE_FAILED'), at: At }),

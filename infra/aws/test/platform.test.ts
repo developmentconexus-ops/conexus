@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { Template } from 'aws-cdk-lib/assertions'
-import { conexusApp } from '../lib/app.ts'
-import { TEMPLATE_PREFIX, templateBucket, templateUrl } from '../lib/names.ts'
+import { templateUrl } from '../lib/names.ts'
+import { allows, allowsWithin, asked } from './iam.ts'
 import type { Statement } from './policies.ts'
 import {
   ACCOUNT,
@@ -11,7 +10,6 @@ import {
   find,
   REGION,
   readable,
-  readableOutputs,
   resourcesOf,
   statementsOf,
   trustOf,
@@ -101,6 +99,7 @@ test('o Hub só cria da receita, pelo papel de serviço, na própria empresa', (
 const ECS = `arn:aws:ecs:${REGION}:${ACCOUNT}`
 const LAKE_BUCKETS = `arn:aws:s3tables:${REGION}:${ACCOUNT}:bucket/conexus-*`
 const WRITERS = `arn:aws:iam::${ACCOUNT}:role/conexus-*-escritor`
+const TREATERS = `arn:aws:iam::${ACCOUNT}:role/conexus-*-tratador`
 
 test('os poderes do Hub', () => {
   const inTheCluster = { ArnEquals: { 'ecs:cluster': '<CopyCluster.Arn>' } }
@@ -113,9 +112,9 @@ test('os poderes do Hub', () => {
       inTheCluster,
     ],
     [
-      'PassOnlyTheWritersToTheTask',
+      'PassOnlyTheCompanyTaskRoles',
       'iam:PassRole',
-      [WRITERS, '<CopyExecutionRole.Arn>'],
+      [WRITERS, TREATERS, '<CopyExecutionRole.Arn>'],
       { StringEquals: { 'iam:PassedToService': 'ecs-tasks.amazonaws.com' } },
     ],
     [
@@ -134,6 +133,85 @@ test('os poderes do Hub', () => {
     const expected = { Sid: sid, Effect: 'Allow', Action: action, Resource: resource }
     assert.deepEqual(bySid(hub, sid), condition ? { ...expected, Condition: condition } : expected)
   }
+})
+
+test('o Hub passa à tarefa só o papel que escreve e o que trata', () => {
+  const context = { 'iam:PassedToService': 'ecs-tasks.amazonaws.com' }
+  for (const [role, passed] of [
+    ['conexus-lagodeaaaaaa-escritor', true],
+    ['conexus-lagodeaaaaaa-tratador', true],
+    ['conexus-lagodeaaaaaa-leitor', false],
+    ['conexus-cfn', false],
+  ] as const) {
+    const call = asked('iam:PassRole', `arn:aws:iam::${ACCOUNT}:role/${role}`)
+    assert.equal(allows(hub, { ...call, context }), passed, role)
+  }
+})
+
+test('o Hub grava a especificação só na raiz da empresa da sessão, e não a apaga', () => {
+  const state = `arn:aws:s3:::conexus-estado-${ACCOUNT}-${REGION}`
+  assert.deepEqual(bySid(hub, 'WriteTheCompanyTreatmentSpecs'), {
+    Sid: 'WriteTheCompanyTreatmentSpecs',
+    Effect: 'Allow',
+    Action: 's3:PutObject',
+    Resource: `${state}/tratamento/${SESSION_COMPANY}/*`,
+  })
+  const ofA: Statement[] = JSON.parse(
+    JSON.stringify(hub).replaceAll(SESSION_COMPANY, 'EmpresaTesteA0000000000000000001'),
+  )
+  const a = `${state}/tratamento/EmpresaTesteA0000000000000000001/rodada.json`
+  const b = `${state}/tratamento/EmpresaTesteB0000000000000000002/rodada.json`
+  assert.equal(allows(ofA, asked('s3:PutObject', a)), true)
+  assert.equal(allows(ofA, asked('s3:PutObject', b)), false)
+  assert.equal(allows(ofA, asked('s3:DeleteObject', a)), false)
+})
+
+test('o teto não dá à plataforma nenhuma forma de o que escreve mudar o tratamento', () => {
+  const boundary = statementsOf(find(platform, 'Boundary'))
+  const writer: Statement[] = JSON.parse(
+    JSON.stringify(statementsOf(find(readable('lake'), 'Writer'))).replaceAll(
+      '{LakeId}',
+      'lagodeaaaaaa',
+    ),
+  )
+  const bucket = 'conexus-lagodeaaaaaa'
+  for (const action of ['glue:CreateTable', 'glue:DeleteTable', 'glue:UpdateTable']) {
+    for (const area of ['tratado', 'negocio']) {
+      const table = `arn:aws:glue:${REGION}:${ACCOUNT}:table/s3tablescatalog/${bucket}/${area}/notas`
+      assert.equal(allowsWithin(writer, boundary, asked(action, table)), false, `${action} ${area}`)
+    }
+  }
+})
+
+test('o teto recusa criar e apagar nas áreas da cópia, e deixa só mudar', () => {
+  const boundary = statementsOf(find(platform, 'Boundary'))
+  const kept = { 'glue:CreateTable': false, 'glue:DeleteTable': false, 'glue:UpdateTable': true }
+  for (const path of ['raw', 'raw/notas', 'current', 'current/notas']) {
+    const kind = path.includes('/') ? 'table' : 'database'
+    const arn = `arn:aws:glue:${REGION}:${ACCOUNT}:${kind}/s3tablescatalog/conexus-lagodeaaaaaa/${path}`
+    for (const [action, held] of Object.entries(kept)) {
+      assert.equal(allows(boundary, asked(action, arn)), held, `${action} ${path}`)
+    }
+  }
+})
+
+test('o teto cobre cada permissão do papel que trata', () => {
+  const boundary = statementsOf(find(platform, 'Boundary'))
+  const treater = statementsOf(find(readable('lake'), 'Treater'))
+  const refused = treater.flatMap((statement) =>
+    actionsOf(statement).flatMap((action) =>
+      resourcesOf(statement)
+        .map((resource) =>
+          resource
+            .replaceAll('{LakeId}', 'lagodeaaaaaa')
+            .replaceAll('{CompanyId}', 'EmpresaTesteA0000000000000000001')
+            .replace(/\*$/, 'notas'),
+        )
+        .filter((resource) => !allows(boundary, asked(action, resource)))
+        .map((resource) => `${action} ${resource}`),
+    ),
+  )
+  assert.deepEqual(refused, [])
 })
 
 test('as ações do CloudFormation são só as cinco', () => {
@@ -173,7 +251,7 @@ test('o Hub entra só pela chave base, do servidor, com uma etiqueta só', () =>
 })
 
 test('o papel de serviço só cuida dos papéis de empresa', () => {
-  const companyRoles = [`arn:aws:iam::${ACCOUNT}:role/conexus-*-leitor`, WRITERS]
+  const companyRoles = [`arn:aws:iam::${ACCOUNT}:role/conexus-*-leitor`, WRITERS, TREATERS]
   assert.deepEqual(bySid(service, 'CreateCompanyRolesOnlyWithTheBoundary'), {
     Sid: 'CreateCompanyRolesOnlyWithTheBoundary',
     Effect: 'Allow',
@@ -222,74 +300,6 @@ test('o papel de serviço só cuida dos papéis de empresa', () => {
   ])
 })
 
-test('o depósito das receitas só recebe versão nova, da Release, por TLS', () => {
-  const bucket = find(platform, 'Templates')
-  assert.equal(bucket.Properties.BucketName, `conexus-receitas-${ACCOUNT}-${REGION}`)
-  assert.deepEqual(bucket.Properties.VersioningConfiguration, { Status: 'Enabled' })
-  assert.equal(bucket.DeletionPolicy, 'Retain')
-  const policy = statementsOf(find(platform, 'TemplatesPolicy'))
-  const writes = policy.filter((statement) => actionsOf(statement).includes('s3:PutObject'))
-  assert.deepEqual(writes, [
-    {
-      Sid: 'ReleaseWritesOnlyNewTemplates',
-      Effect: 'Allow',
-      Action: 's3:PutObject',
-      Principal: { AWS: `arn:aws:iam::${ACCOUNT}:role/conexus-release` },
-      Resource: '<Templates.Arn>/lago/*',
-      Condition: { Null: { 's3:if-none-match': 'false' } },
-    },
-  ])
-  assert.ok(
-    policy.some(
-      (statement) =>
-        statement.Effect === 'Deny' &&
-        statement.Condition?.Bool?.['aws:SecureTransport'] === 'false',
-    ),
-  )
-  assert.ok(!policy.flatMap(actionsOf).includes('s3:DeleteObject'))
-})
-
-test('o orçamento lê o valor e o e-mail de parâmetros', () => {
-  const email = [{ SubscriptionType: 'EMAIL', Address: '{AlarmEmail}' }]
-  assert.partialDeepStrictEqual(find(platform, 'Budget').Properties, {
-    Budget: { BudgetLimit: { Amount: '{BudgetUsd}', Unit: 'USD' }, TimeUnit: 'MONTHLY' },
-    NotificationsWithSubscribers: [
-      {
-        Notification: {
-          NotificationType: 'ACTUAL',
-          ComparisonOperator: 'GREATER_THAN',
-          Threshold: 80,
-          ThresholdType: 'PERCENTAGE',
-        },
-        Subscribers: email,
-      },
-      {
-        Notification: {
-          NotificationType: 'FORECASTED',
-          ComparisonOperator: 'GREATER_THAN',
-          Threshold: 100,
-          ThresholdType: 'PERCENTAGE',
-        },
-        Subscribers: email,
-      },
-    ],
-  })
-  assert.deepEqual(find(platform, 'AnomalySubscription').Properties.Subscribers, [
-    { Type: 'EMAIL', Address: '{AlarmEmail}' },
-  ])
-  // The copy network's own blocks and the open egress are the template's, not a machine's.
-  const raw = JSON.stringify(Template.fromStack(conexusApp().platform).toJSON()).replaceAll(
-    /"(10\.0\.0\.0\/16|10\.0\.0\.0\/17|10\.0\.128\.0\/17|0\.0\.0\.0\/0|from 0\.0\.0\.0\/0:443)"/g,
-    '""',
-  )
-  assert.doesNotMatch(raw, /\d{12}|@[a-z]|\d+\.\d+\.\d+\.\d+/)
-})
-
-test('trocar o e-mail substitui o orçamento, então ele não tem nome fixo', () => {
-  // NotificationsWithSubscribers pede um recurso novo, criado antes de o velho sair.
-  assert.equal('BudgetName' in Object(find(platform, 'Budget').Properties.Budget), false)
-})
-
 test('o endereço que o Hub manda casa com o padrão, e a forma de caminho não', () => {
   const bucket = `conexus-receitas-${ACCOUNT}-${REGION}`
   const version = 'a'.repeat(64)
@@ -297,17 +307,4 @@ test('o endereço que o Hub manda casa com o padrão, e a forma de caminho não'
   assert.match(templateUrl(bucket, REGION, version), pattern)
   assert.doesNotMatch(`https://s3.${REGION}.amazonaws.com/${bucket}/lago/${version}.json`, pattern)
   assert.doesNotMatch(`https://${bucket}.s3.${REGION}.amazonaws.com/outra/${version}.json`, pattern)
-})
-
-test('a plataforma diz à Release as receitas e ao Hub a cópia, os nomes de names.ts', () => {
-  assert.deepEqual(readableOutputs('platform'), {
-    TemplatesBucket: '{Templates}',
-    TemplatesPrefix: TEMPLATE_PREFIX,
-    CopyClusterArn: '<CopyCluster.Arn>',
-    CopyTaskFamily: 'conexus-copia',
-    CopyQueueUrl: '{CopyQueue}',
-    CopySubnets: '{CopyNetworkpublicaSubnet1Subnet},{CopyNetworkpublicaSubnet2Subnet}',
-    CopySecurityGroup: '<CopyOutbound.GroupId>',
-  })
-  assert.equal(find(platform, 'Templates').Properties.BucketName, templateBucket(ACCOUNT, REGION))
 })

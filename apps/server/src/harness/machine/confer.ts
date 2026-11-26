@@ -1,5 +1,5 @@
 import { CHECK_LIMITS, firstProblems, WORK_FOLDER } from '@conexus/app/check'
-import type { AppSessionToken, ConversationId } from '@conexus/hub-api'
+import type { AppSessionToken } from '@conexus/hub-api'
 import { APP_SESSION_COOKIE } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -120,8 +120,8 @@ class Unrunnable extends Error {
 type Conference = Readonly<{
   exec: TimedExec
   files: Readonly<{ write(path: string, text: string): Promise<void> }>
-  // `close` never throws: its owner logs a failure, and the machine's next use closes again.
-  network: Readonly<{ open(extra: readonly string[]): Promise<void>; close(): Promise<void> }>
+  // `close` never throws: its owner logs a failure, and the machine's next use applies the list.
+  network: Readonly<{ open(host: string): Promise<void>; close(): Promise<void> }>
   workdir: string
   tmp: string
   program: string
@@ -167,7 +167,7 @@ async function looked(input: Conference, cookieFile: string): Promise<BrowserRep
   const { files, network, workdir, at, readyMs } = input
   const { cli, ran, read } = commandsOf(input)
   const origin = at.url.origin
-  await attempted('network', () => network.open([at.url.hostname]))
+  await attempted('network', () => network.open(at.url.hostname))
   await attempted('cookie-file', () =>
     files.write(cookieFile, JSON.stringify([{ name: APP_SESSION_COOKIE, value: at.session }])),
   )
@@ -236,7 +236,7 @@ export function conferOn(
   input: Readonly<{
     kit: Kit
     exec: TimedExec
-    conversationId: ConversationId
+    network: Conference['network']
     workdir: string
     tmp: string
     program: string
@@ -244,25 +244,12 @@ export function conferOn(
     log: FailureLog
     /** The longest the screen may keep loading, since the page opened, before the capture (code C57). */
     readyMs?: number
-    /** The close failed: the machine's network may still be open to the app's host. */
-    onCloseFailed: () => void
   }>,
 ): Promise<Result<BrowserReport, ConferPlatformFailed>> {
-  const { kit, conversationId, log, onCloseFailed } = input
+  const { kit } = input
   return conferIn({
     ...input,
     readyMs: input.readyMs ?? CHECK_LIMITS.stepMs,
     files: { write: (path, text) => kit.transport.write(path, Buffer.from(text)) },
-    network: {
-      open: (extra) => kit.openNetwork(extra),
-      close: () =>
-        kit.closeNetwork().catch((cause) => {
-          onCloseFailed()
-          log.error(
-            { conversationId, cause: String(cause).slice(0, 500) },
-            'MACHINE_NETWORK_CLOSE_FAILED',
-          )
-        }),
-    },
   })
 }

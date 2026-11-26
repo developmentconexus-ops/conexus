@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import type { TestContext } from 'node:test'
 import { parseEnv } from 'node:util'
 import { AppVersionId, appCheckWorkerOf, appWorkerOf, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { MachinesDeps } from '../../harness/machine/public.ts'
 import { createE2bApi, createE2bKit, createMachines, MARK } from '../../harness/machine/public.ts'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { ANA_OWNER, hubWithLog, personOn, plantCompany } from '../../hub/identity/test-hub.ts'
@@ -73,9 +74,10 @@ function outsideOf(config: Config, log: FailureLog) {
       appLoginKey: config.appLoginKey,
     }),
     cloudflare: createCloudflareApps({ config, log }),
-    machinesOf: () =>
+    machinesOf: (opened: MachinesDeps['opened']) =>
       createMachines({
         ...{ log, mark, installation: config.installationId, template: config.machineTemplate },
+        opened,
         kit: createE2bKit(config),
         api: createE2bApi(config, mark),
         seedOf: async (ids) => {

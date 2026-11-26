@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import { MACHINE_TOOL } from '@conexus/hub-api'
 import {
   answeredOf,
   endOf,
@@ -17,7 +18,7 @@ import { bellOf } from '../../../hub/notifications/test-notifications.ts'
 import type { Reply } from '../../../platform/test-anthropic.ts'
 import { until } from '../../../platform/test-until.ts'
 import { AUTOMATION_WORKFLOW } from '../public.ts'
-import { reading, talking } from '../test-assistant.ts'
+import { reading, said, talking } from '../test-assistant.ts'
 import {
   answering,
   automating,
@@ -81,6 +82,25 @@ test('o horário: a agenda dispara quando está devida; uma conversa do dono com
   assert.deepEqual(
     bell.notifications.map((each) => [each.kind, each.conversationId]),
     [['AUTOMATION_DONE', run.state.conversationId]],
+  )
+})
+
+test('a automação fora da lista termina dizendo o domínio: sem cartão, o modelo lê o domínio que ficou fechado e onde se libera, e a execução termina DONE (16)', async (t) => {
+  const request = tool(MACHINE_TOOL.requestNetwork, {
+    domains: ['loja.example.com'],
+    reason: 'ler os preços',
+  })
+  const on = await automating(t, [[request], [said('Libere loja.example.com em Configurações.')]])
+  const automation = await created(on.hub, on.ana, on.automations, salesSummary([on.matriz]))
+  const url = `${on.automations}/${automation.id}`
+  const run = await ended(on.hub, on.ana, url, await ranNow(on.hub, on.ana, url))
+  assert.equal(run.state.kind, 'DONE')
+  const read = on.calls.at(-1)?.toolResults.at(-1)?.text ?? ''
+  assert.match(read, /Not open: loja\.example\.com\. This is the run of an automation/)
+  assert.match(read, /Configurações, Internet/)
+  assert.deepEqual(
+    await on.hub.test.asOwner('select domain from builder.conversation_network_domain'),
+    [],
   )
 })
 

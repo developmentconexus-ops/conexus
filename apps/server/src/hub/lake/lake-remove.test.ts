@@ -118,6 +118,7 @@ test('o lago com tabela: apaga as tabelas, depois a pilha, e na mesma passada as
     'current/sankhya_notas',
     'raw/sankhya_parceiros',
     'current/sankhya_parceiros',
+    'tratado/sankhya_notas',
   )
   const clockId = `schedule_${connection}`
   assert.notEqual(await on.hub.mastra.schedules.get(clockId), null)
@@ -126,7 +127,7 @@ test('o lago com tabela: apaga as tabelas, depois a pilha, e na mesma passada as
   const refused = await call(on.hub, operator, 'DELETE', url, asked)
   assert.equal(refused.statusCode, 202, refused.body)
   assert.equal(Object(refused.json()).lake.state, 'DELETING')
-  assert.equal(on.aws.tables().length, 4, 'AWS out: no table dropped')
+  assert.equal(on.aws.tables().length, 5, 'AWS out: no table dropped')
   assert.deepEqual(await copiesLeft(on), { copies: 1, tables: 2 }, 'AWS out: the copies stay')
   assert.notEqual(await on.hub.mastra.schedules.get(clockId), null, 'AWS out: the clock stays')
   assert.equal(on.aws.stacks()[0]?.status, 'CREATE_COMPLETE', 'AWS out: the stack is not deleted')

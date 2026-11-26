@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type { Operation, OperationId } from './operation.ts'
 import { OperationId as OperationIdSchema } from './operation.ts'
+import type { TreatedTable } from './tables-treated.ts'
+import { LakeTableName } from './tables-treated.ts'
 
 /** The suggested lake name after the connector prefix: Portuguese, snake_case (NT2; a suggestion, founder 2026-11-23). */
 export const TableName = z
@@ -94,6 +96,7 @@ export type TableDeclaration = Readonly<{
   history: boolean // true keeps every version in raw; default false (decision A)
   meanings?: Readonly<Record<string, 'NFE_XML'>> // metadata only, for the step that reads the XML in rows
   columns: TableColumns
+  treated?: TreatedTable
 }>
 
 export const DiscoveredTable = z.object({
@@ -196,7 +199,6 @@ export function sourceOf(table: TableDeclaration): string {
   return table.source.kind === 'TABLE' ? table.source.table : table.source.operation
 }
 
-const LAKE_NAME_MAX = 60
 /** The longest connector prefix a lake name takes: `mercado_livre_` has 14. */
 export const PREFIX_MAX = 20
 
@@ -205,12 +207,9 @@ export function tablePrefixOf(connector: string): string {
   return `${connector.replaceAll('-', '_')}_`
 }
 
-/** The one owner of the lake name rule: the prefix plus the name, at most 60 (T.16). */
-export function lakeNameOf(prefix: string, name: string): string {
-  const joined = `${prefix}${name}`
-  if (joined.length > LAKE_NAME_MAX)
-    throw new RangeError(`A lake name has at most ${LAKE_NAME_MAX}`)
-  return joined
+/** The prefix plus the name; throws when the two are no lake name (LAKE_NAME_PATTERN, T.16). */
+export function lakeNameOf(prefix: string, name: string): LakeTableName {
+  return LakeTableName.parse(`${prefix}${name}`)
 }
 
 /** A connection's name as a part of a lake name: lower case, no accent, `_` between words. */
@@ -223,10 +222,21 @@ function slugOf(text: string): string {
     .replace(/^_+|_+$/g, '')
 }
 
+function longestLakeName(
+  text: string,
+  nameOn: (start: string) => string,
+): LakeTableName | undefined {
+  for (let end = text.length; end > 0; end--) {
+    const named = LakeTableName.safeParse(nameOn(text.slice(0, end)))
+    if (named.success) return named.data
+  }
+  return undefined
+}
+
 /**
  * The kit's name with the connector prefix; when another table of the company has it, the
- * connection's name goes between them, cut so the whole fits in 60 (T.16); when that one is taken
- * too, or the connection's name has no letter to give, a number ends it.
+ * connection's name goes between them, cut so the whole is still a lake name (T.16); when that one
+ * is taken too, or the connection's name has no letter or digit to give, a number ends it.
  */
 export function suggestedLakeName(
   input: Readonly<{
@@ -239,14 +249,15 @@ export function suggestedLakeName(
   const prefix = tablePrefixOf(input.connector)
   const plain = lakeNameOf(prefix, input.table)
   if (!input.taken(plain)) return plain
-  const room = LAKE_NAME_MAX - prefix.length - input.table.length - 1
-  const part = slugOf(input.connectionName).slice(0, Math.max(room, 0)).replace(/_+$/, '')
-  const named = part === '' ? plain : lakeNameOf(prefix, `${part}_${input.table}`)
+  const named =
+    longestLakeName(
+      slugOf(input.connectionName),
+      (part) => `${prefix}${part.replace(/_+$/, '')}_${input.table}`,
+    ) ?? plain
   if (!input.taken(named)) return named
   for (let count = 2; ; count++) {
-    const suffix = `_${count}`
-    const free = `${named.slice(0, LAKE_NAME_MAX - suffix.length)}${suffix}`
-    if (!input.taken(free)) return free
+    const free = longestLakeName(named, (start) => `${start}_${count}`)
+    if (free !== undefined && !input.taken(free)) return free
   }
 }
 

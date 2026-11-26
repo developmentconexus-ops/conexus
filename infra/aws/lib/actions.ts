@@ -33,20 +33,34 @@ export const WRITER_TABLE_ACTIONS = [
 
 export const WRITER_GRANTS = ['SELECT', 'INSERT', 'DELETE', 'DESCRIBE', 'ALTER']
 
-const AREAS = ['raw', 'current'] as const
+/** The writer's table actions with no `s3tables:namespace` condition key, as the authorization reference lists them. */
+export const WRITER_BUCKET_ACTIONS = ['s3tables:GetTableBucket', 's3tables:ListNamespaces']
 
 /**
- * What `glue:UpdateTable` on a table of either area names, which an Athena `INSERT`, `UPDATE` or
- * `DELETE` needs to commit: the table and each of its ancestors, since Glue asks for the action on
- * all of them (AWS Glue guide, "Specifying AWS Glue resource ARNs").
+ * The lake's areas by role. The server's list is `apps/server/src/platform/lake-areas.ts`, and
+ * `apps/server/src/platform/lake-areas.test.ts` checks the two agree.
  */
-export function updatedTableResources(bucket: string): string[] {
+export const COPY_AREAS = ['raw', 'current'] as const
+export const TREAT_AREAS = ['tratado', 'negocio'] as const
+export const TREAT_READS = ['current'] as const
+
+/** What the treatment changes in Glue: dbt drops a table and writes it again with an Athena `CREATE TABLE AS`. */
+export const TREAT_CHANGE_ACTIONS = ['glue:CreateTable', 'glue:DeleteTable', 'glue:UpdateTable']
+
+export function catalogChain(bucket: string): string[] {
+  return ['catalog', 'catalog/s3tablescatalog', `catalog/s3tablescatalog/${bucket}`]
+}
+
+/**
+ * What a Glue action that changes a table of these areas names: the table and each of its
+ * ancestors, since Glue asks for the action on all of them (AWS Glue guide, "Specifying AWS Glue
+ * resource ARNs").
+ */
+export function changedTableResources(bucket: string, areas: readonly string[]): string[] {
   const child = `s3tablescatalog/${bucket}`
   return [
-    'catalog',
-    'catalog/s3tablescatalog',
-    `catalog/${child}`,
-    ...AREAS.flatMap((area) => [`database/${child}/${area}`, `table/${child}/${area}/*`]),
+    ...catalogChain(bucket),
+    ...areas.flatMap((area) => [`database/${child}/${area}`, `table/${child}/${area}/*`]),
   ]
 }
 

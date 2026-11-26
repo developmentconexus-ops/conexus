@@ -223,7 +223,6 @@ test('cada ferramenta do conjunto fechado e do Assistente tem frase e abre no co
     CONSTRUTOR_TOOL.agentSet,
     CONSTRUTOR_TOOL.agentTest,
     MACHINE_TOOL.codeMode,
-    MACHINE_TOOL.requestNetwork,
     SUBAGENT_TOOL,
   ]
   expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())

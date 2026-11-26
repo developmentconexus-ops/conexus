@@ -73,13 +73,32 @@ test('lago: a leitura acerta a linha e para de perguntar', async (t) => {
   const row = await rowOf(hub, a)
   assert.deepEqual(
     { ...ready, readyAt: undefined },
-    { state: 'READY', bucket: `conexus-${row?.lake_id}`, region: 'us-east-2', readyAt: undefined },
+    {
+      state: 'READY',
+      bucket: `conexus-${row?.lake_id}`,
+      region: 'us-east-2',
+      readyAt: undefined,
+      outdated: false,
+    },
   )
   assert.ok(!Number.isNaN(Date.parse(ready.readyAt)))
   const asked = hub.aws.calls.length
   assert.deepEqual(lakeIn(await readLake(hub, ana, a)), ready)
   assert.equal(hub.aws.calls.length, asked)
   assert.deepEqual(lakeLines(hub, 'LAKE_READY'), [{ companyId: a.companyId, lakeId: row?.lake_id }])
+})
+
+test('lago: o de uma receita anterior à desta imagem diz que está antigo', async (t) => {
+  const { hub, ana, a } = await lakeWorld(t)
+  await readyLake(hub, ana, a)
+  await hub.test.asOwner('update lake.company_lake set template = $1 where company_id = $2', [
+    '0'.repeat(64),
+    a.companyId,
+  ])
+  assert.partialDeepStrictEqual(lakeIn(await readLake(hub, ana, a)), {
+    state: 'READY',
+    outdated: true,
+  })
 })
 
 test('lago: a resposta cortada não cria duas pilhas', async (t) => {

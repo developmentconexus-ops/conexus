@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readdirSync } from 'node:fs'
 import { test } from 'node:test'
-import { AgentId, CompanyId, ProjectId } from '@conexus/hub-api'
+import { AgentId, CompanyId, DEVELOPMENT_HOSTS, ProjectId } from '@conexus/hub-api'
 import { endOf } from '../../harness/routes/test-conversation.ts'
 import { tool } from '../../harness/routes/test-questions.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
@@ -49,6 +49,19 @@ test('o teste passa: a versão 1 é gravada com o código, o módulo empacotado,
   assert.equal(control.names.length, 1, 'the turn started the machine')
   await new Promise((done) => setTimeout(done, 200))
   assert.equal(control.stops, 0, 'the turn’s end does not stop the machine (21)')
+})
+
+test('a rede do Construtor de agentes: a máquina dele parte com a lista pronta e os domínios da empresa (8, 9)', async (t) => {
+  const known = { matriz: '' }
+  const on = await building(t, [...searching(known), keeping([])])
+  const asked = { domain: 'api.example.com', reason: 'Ler o catálogo de preços' }
+  const added = await post(on.hub, on.ana, `${on.company}/network/domains`, asked)
+  assert.equal(added.statusCode, 200, added.body)
+  assert.equal(endOf(await on.conversation.say('Crie uma ferramenta de vendas')), 'complete')
+  assert.deepEqual(
+    on.hub.conversationMachines.control.networkApplied.map((each) => each.hosts),
+    [[...DEVELOPMENT_HOSTS, 'api.example.com']],
+  )
 })
 
 test('um esquema de mais de 2.000 caracteres é gravado inteiro: o corte do comando é só do que o modelo lê', async (t) => {

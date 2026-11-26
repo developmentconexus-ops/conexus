@@ -11,7 +11,7 @@ import {
   signIn,
   verifierAndChallenge,
 } from './conformance-session.ts'
-import { assertListsWalk } from './conformance-tables.ts'
+import { assertListsWalk, assertTreatedColumns } from './conformance-tables.ts'
 import type { Connector } from './definition.ts'
 import { inProbeOrder } from './definition.ts'
 import { logoProblems } from './logo.ts'
@@ -212,6 +212,10 @@ export function runConformance(connector: Connector, fake: Fake): void {
 
     it('walks every page of each list read of the double through readTablePage, each row once', async () => {
       await assertListsWalk(connector, fake)
+    })
+
+    it('reads each column of a treated table from its source, under a name of its own', async () => {
+      await assertTreatedColumns(connector, fake)
     })
 
     it('refuses a wrong key at the login', async () => {

@@ -10,6 +10,18 @@ PROJECT = Path(__file__).parents[2]
 _SCHEMA = json.loads((PROJECT / "contract" / "copy-task.schema.json").read_text())
 _SPEC = Draft202012Validator(_SCHEMA["spec"], format_checker=FormatChecker())
 _RESULT = Draft202012Validator(_SCHEMA["result"], format_checker=FormatChecker())
+_TREAT = json.loads((PROJECT / "contract" / "treat-task.schema.json").read_text())
+_TREAT_SPEC = Draft202012Validator(_TREAT["spec"], format_checker=FormatChecker())
+_TREAT_RESULT = Draft202012Validator(_TREAT["result"], format_checker=FormatChecker())
+_ADDRESS = ("runId", "attempt", "queueUrl")
+_REPLY_ADDRESS = Draft202012Validator(
+    {
+        "type": "object",
+        "required": list(_ADDRESS),
+        "properties": {name: _TREAT["spec"]["properties"][name] for name in _ADDRESS},
+    },
+    format_checker=FormatChecker(),
+)
 
 
 class SpecTable(t.TypedDict):
@@ -95,21 +107,108 @@ class Result(t.TypedDict):
     machine: t.NotRequired[Machine | None]
 
 
+class TreatModel(t.TypedDict):
+    name: str
+    layer: t.Literal["tratado", "negocio"]
+    table: str
+    sql: str
+    after: list[str]
+
+
+class TreatSpec(t.TypedDict):
+    version: t.Literal[1]
+    runId: str
+    attempt: int
+    companyId: str
+    lake: Lake
+    queueUrl: str
+    models: list[TreatModel]
+    select: list[str]
+
+
+class ReplyAddress(t.TypedDict):
+    runId: str
+    attempt: int
+    queueUrl: str
+
+
+class TreatError(t.TypedDict):
+    kind: t.Literal["ERROR"]
+    code: t.Literal["TREAT_SPEC_INVALID", "TREAT_ENGINE_FAILED"]
+
+
+class Built(t.TypedDict):
+    name: str
+    status: t.Literal["BUILT"]
+    rows: int
+
+
+class ModelFailed(t.TypedDict):
+    name: str
+    status: t.Literal["FAILED"]
+    failure: str
+    line: int | None
+
+
+class Skipped(t.TypedDict):
+    name: str
+    status: t.Literal["SKIPPED"]
+
+
+ModelEnd = Built | ModelFailed | Skipped
+
+
+class TreatResult(t.TypedDict):
+    type: t.Literal["TREAT_RESULT"]
+    version: t.Literal[1]
+    runId: str
+    attempt: int
+    outcome: Complete | TreatError
+    models: list[ModelEnd]
+
+
 class SpecInvalid(Exception):
     pass
 
 
-def parse_spec(text: str) -> Spec:
+def _parsed(text: str, schema: Draft202012Validator) -> object:
     try:
         value = json.loads(text)
     except json.JSONDecodeError:
         raise SpecInvalid("not JSON") from None
-    wrong = next(iter(_SPEC.iter_errors(value)), None)
+    wrong = next(iter(schema.iter_errors(value)), None)
     if wrong is not None:
         raise SpecInvalid(str(wrong.absolute_path[0]) if wrong.absolute_path else "(root)")
-    return t.cast("Spec", value)
+    return value
+
+
+def parse_spec(text: str) -> Spec:
+    return t.cast("Spec", _parsed(text, _SPEC))
+
+
+def parse_treat_spec(text: str) -> TreatSpec:
+    spec = t.cast("TreatSpec", _parsed(text, _TREAT_SPEC))
+    names = {model["name"] for model in spec["models"]}
+    read = {name for model in spec["models"] for name in model["after"]}
+    if len(names) < len(spec["models"]) or not read <= names:
+        raise SpecInvalid("models")
+    if not names.issuperset(spec["select"]):
+        raise SpecInvalid("select")
+    return spec
+
+
+def reply_address(text: str) -> ReplyAddress | None:
+    try:
+        return t.cast("ReplyAddress", _parsed(text, _REPLY_ADDRESS))
+    except SpecInvalid:
+        return None
 
 
 def checked(result: Result) -> Result:
     _RESULT.validate(result)
+    return result
+
+
+def checked_treat(result: TreatResult) -> TreatResult:
+    _TREAT_RESULT.validate(result)
     return result

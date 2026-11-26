@@ -19,7 +19,7 @@ import type {
 } from './tables.ts'
 import { defineTables } from './tables.ts'
 import type { TableReach } from './tables-call.ts'
-import { readTablePage } from './tables-read.ts'
+import { discoverTables, readTablePage } from './tables-read.ts'
 
 /** The double's sender: the kit's request to its `handle`, the answer read as the connector declares its numbers. */
 export function sendTo(connector: Connector, fake: Fake): ProviderSend<TableSendFailure> {
@@ -147,6 +147,25 @@ async function walkList(
   const later = all.filter((_, at) => (instants[at] ?? 0) >= Date.parse(since)).map(textOfRow)
   const asked = await walkTable(reach, table, { kind: 'SINCE', column: 'changed', after: since })
   assert.deepEqual(asked.map(textOfRow).sort(), later.sort(), `${operation.id} since`)
+}
+
+const TREATED_NAME = /^[a-z][a-z0-9_]*$/
+
+export async function assertTreatedColumns(connector: Connector, fake: Fake): Promise<void> {
+  if (!connector.tables?.declared.some(({ treated }) => treated !== undefined)) return
+  for (const { declaration, columns } of await discoverTables(
+    await tableReachOf(connector, fake),
+  )) {
+    const { name, treated } = declaration
+    const source = new Set(columns?.map((column) => column.name.toLowerCase()))
+    const names = new Set<string>()
+    for (const { column, as } of treated?.columns ?? []) {
+      assert.ok(source.has(column), `${name} treats ${column}, no column of its source`)
+      assert.match(as, TREATED_NAME, `${name} treats ${column} as ${as}, no name of a column`)
+      assert.ok(!names.has(as), `${name} treats two columns as ${as}`)
+      names.add(as)
+    }
+  }
 }
 
 /** Each list read of the connector, every page of its double walked through `readTablePage`: a wrong paging declaration fails here. */

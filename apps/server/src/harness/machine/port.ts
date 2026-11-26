@@ -4,6 +4,7 @@ import type { Workspace } from '@mastra/core/workspace'
 import type { InstallationId, MachineTemplate } from '../../platform/config-machine.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
+import type { NetworkStore } from '../network/public.ts'
 import type { CheckPlatformFailed } from './check.ts'
 import type { BrowserReport, ConferAt, ConferPlatformFailed } from './confer.ts'
 import type { Sha } from './git-facts.ts'
@@ -41,8 +42,8 @@ export type Machines = {
     conversationId: ConversationId
   }): Promise<Result<CheckReport, CheckPlatformFailed>>
   /**
-   * The app's entry screen opened in a browser inside the machine, whose network reaches the app's
-   * host alone while it runs; what the page said comes back. A machine that could not open it is
+   * The app's entry screen opened in a browser inside the machine, whose list holds the app's host
+   * too while it runs; what the page said comes back. A machine that could not open it is
    * `CONFER_PLATFORM_FAILED`.
    */
   confer(input: {
@@ -64,6 +65,10 @@ export type Machines = {
   release(conversationId: ConversationId): Promise<void>
   /** The conversation is deleted: the Hub's session of its machine goes, and every machine it marked is killed. */
   kill: MachineApi['kill']
+  /** Applies the conversation's lists to its running machine now; true when none runs, false when the change failed. */
+  reopen(conversationId: ConversationId): Promise<boolean>
+  /** A company's list lost a domain: each running machine of it that the Hub holds takes its list again. Never rejects. */
+  narrow(companyId: CompanyId): Promise<void>
 }
 
 /** A turn's tree as one bundle, with how many files the version holds and how many the turn changed. */
@@ -72,6 +77,8 @@ type Bundled = { bundle: Buffer; base: Sha; files: number; changedFiles: number 
 export type MachinesDeps = {
   kit: KitFactory
   api: MachineApi
+  /** What the machines reach beyond the development list, read each time a machine's list is applied. */
+  opened: NetworkStore['opened']
   /** The Git's `main` as a bundle, for the seed. */
   seedOf(input: { companyId: CompanyId; projectId: ProjectId }): Promise<Buffer>
   /** The mark every machine of this installation carries. */

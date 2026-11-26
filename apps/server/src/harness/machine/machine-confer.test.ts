@@ -44,7 +44,7 @@ test('Machines.confer: a tela que chama uma operação que dá 500 é DIRTY, com
   assert.equal(seen[0]?.cookie, `${APP_SESSION_COOKIE}=${TOKEN}`)
   assert.ok(!machine.lines.join('\n').includes(MARK))
   assert.ok(!machine.lines.join('\n').includes(TOKEN))
-  assert.equal(machine.control.networkOpenTo, undefined)
+  assert.deepEqual(machine.control.networkOpenTo, [])
 })
 
 /** The app mounts and calls its operation 1.5 s after it opened, longer than the browser's 500 ms of quiet. */
@@ -148,7 +148,7 @@ test('Machines.confer: a página que sai do host do app é CONFER_PLATFORM_FAILE
   })
   const machine = await conferring(t, realBrowser(t))
   assert.deepEqual(await confer(machine, at), FAILED)
-  assert.equal(machine.control.networkClosed, 1)
+  assert.deepEqual(machine.control.networkOpenTo, [])
 })
 
 test('Machines.confer: no fim o navegador está fechado, e o seguinte abre sem a sessão', async (t) => {

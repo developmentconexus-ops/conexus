@@ -37,9 +37,9 @@ export type CopyPlatform = {
 /**
  * The copy task's platform (decision 0076, card T.6, T.14): public subnets with no NAT, the cluster,
  * the one task definition of 1 vCPU and 2 GB on x86 with no task role (the Hub passes the company's
- * writer on each `RunTask`) and one environment value, the stopping points' bucket, pointing by
- * digest at the image the Release published to the preparation's repository, and the queue where
- * the task's result and the rule's `STOPPED` event meet.
+ * writer or treatment role on each `RunTask`) and one environment value, the stopping points'
+ * bucket, pointing by digest at the image the Release published to the preparation's repository, and
+ * the queue where the task's result and the rule's `STOPPED` event meet.
  */
 export function copyPlatform(stack: Stack, place: Place): CopyPlatform {
   const digest = new CfnParameter(stack, 'CopyImageDigest', {
@@ -136,7 +136,8 @@ function copyNetwork(stack: Stack): { network: ec2.Vpc; outbound: ec2.SecurityGr
 
 /**
  * Where the task's result and its `STOPPED` event meet: the rule sends the cluster's stops, the
- * writers send the result, and a message the Hub fails three times goes to the dead letters (T.14).
+ * companies' task roles send the result, and a message the Hub fails three times goes to the dead
+ * letters (T.14).
  */
 function copyQueue(stack: Stack, place: Place, cluster: ecs.Cluster): sqs.Queue {
   const deadLetters = new sqs.Queue(stack, 'CopyDeadLetters', {
@@ -160,24 +161,26 @@ function copyQueue(stack: Stack, place: Place, cluster: ecs.Cluster): sqs.Queue 
     },
     targets: [new targets.SqsQueue(queue, { deadLetterQueue: deadLetters })],
   })
+  const senders = [place.writers, place.treaters]
   queue.addToResourcePolicy(
     new iam.PolicyStatement({
-      sid: 'TheWritersSendTheResult',
+      sid: 'TheTaskRolesSendTheResult',
       principals: [new iam.AccountRootPrincipal()],
       actions: ['sqs:SendMessage'],
       resources: [queue.queueArn],
-      conditions: { ArnLike: { 'aws:PrincipalArn': place.writers } },
+      conditions: { ArnLike: { 'aws:PrincipalArn': senders } },
     }),
   )
   queue.addToResourcePolicy(
     new iam.PolicyStatement({
-      sid: 'OnlyTheRuleAndTheWriters',
+      sid: 'OnlyTheRuleAndTheTaskRoles',
       effect: iam.Effect.DENY,
       principals: [new iam.AnyPrincipal()],
       actions: ['sqs:SendMessage'],
       resources: [queue.queueArn],
+      // A negated operator with two values holds only when the principal matches neither.
       conditions: {
-        ArnNotLike: { 'aws:PrincipalArn': place.writers },
+        ArnNotLike: { 'aws:PrincipalArn': senders },
         ArnNotEquals: { 'aws:SourceArn': stopped.ruleArn },
       },
     }),

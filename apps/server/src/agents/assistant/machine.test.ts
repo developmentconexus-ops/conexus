@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { ConversationId } from '@conexus/hub-api'
+import { ConversationId, DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
-import { createConversationMachines, PACKAGE_HOSTS } from '../../harness/machine/public.ts'
+import { createConversationMachines } from '../../harness/machine/public.ts'
 import { INSTALLATION, OLD_TEMPLATE, TEMPLATE } from '../../harness/machine/test-machine.ts'
 import {
   asked,
@@ -75,8 +75,9 @@ test('a máquina da conversa: a primeira ferramenta de arquivo liga uma com o no
   )
   assert.equal(existsSync(join(work, '.git')), false)
 
-  const hosts = ['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org']
-  assert.ok(control.allowOut.every((each) => JSON.stringify(each) === JSON.stringify(hosts)))
+  assert.ok(
+    control.allowOut.every((each) => JSON.stringify(each) === JSON.stringify(DEVELOPMENT_HOSTS)),
+  )
   const [homeMarks, projectMarks] = [control.marks[0], control.marks.at(-1)]
   assert.equal(homeMarks?.conexus_origin, INSTALLATION)
   assert.equal(homeMarks?.conexus_company, on.companyId)
@@ -227,7 +228,15 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   const { control, deps } = on.hub.conversationMachines
   control.discoverable.push(nameOf(url))
   const machines = createConversationMachines(
-    { hosts: PACKAGE_HOSTS, otherTemplate: 'resume', marks: async () => undefined },
+    {
+      network: {
+        kind: 'ON_REQUEST',
+        hosts: DEVELOPMENT_HOSTS,
+        opened: async () => ({ kind: 'LIST', hosts: [] }),
+      },
+      otherTemplate: 'resume',
+      marks: async () => undefined,
+    },
     { ...deps, log: { info: () => undefined, error: () => undefined } },
     on.hub.conversationMachines.tuning,
   )

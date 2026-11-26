@@ -20,6 +20,7 @@ import { COPY_WORKFLOW, createHubMastra } from './harness/mastra/public.ts'
 import { createMastraStorage } from './harness/memory/public.ts'
 import type { openGoogleCalls } from './harness/model-accounts/public.ts'
 import { isChoosable } from './harness/model-accounts/public.ts'
+import type { NetworkStore } from './harness/network/public.ts'
 import type { AppDataPort } from './harness/tools/public.ts'
 import type { Access, Principal } from './hub/access/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
@@ -81,6 +82,11 @@ function toolCallsOf(connectors: () => Connectors): Connectors['tools'] {
   return { open: (call) => connectors().tools.open(call) }
 }
 
+function speakersIn({ database, identity }: Pick<ConversationsDeps, 'database' | 'identity'>) {
+  return (scope: Parameters<typeof speakersOf>[1]) =>
+    speakersOf({ database, identity, projects: { liveProjectOf } }, scope)
+}
+
 /** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
 function appDataOf(
   apps: () => Pick<Apps, 'hasAppData' | 'readAppData' | 'appTables'>,
@@ -102,10 +108,14 @@ function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
   }
 }
 
-function builderDoorsOf(deps: Pick<ConversationsDeps, 'connectors' | 'apps'>) {
+function builderDoorsOf(
+  deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'network' | 'database' | 'identity'>,
+) {
   return {
     connectors: builderDoorOf(deps.connectors),
     data: builderDataOf(deps.apps),
+    network: deps.network.store,
+    speakersOf: speakersIn(deps),
   }
 }
 
@@ -138,9 +148,9 @@ async function lakeStart(lakeRuns: LakeRuns, clock: LakeClock) {
   await lakeRuns.queue.start()
 }
 
-/** The provider's machines and the tests' tuning of them, which the Assistant and the Construtor open. */
-function machineOf(deps: { machine: ConversationMachine; machineTuning?: MachineTuning }) {
-  return { machine: deps.machine, machineTuning: deps.machineTuning }
+/** The provider's machines, the tests' tuning of them and the domains they reach, which every agent with machines takes. */
+function machineOf(deps: Pick<ConversationsDeps, 'machine' | 'machineTuning' | 'network'>) {
+  return { machine: deps.machine, machineTuning: deps.machineTuning, network: deps.network.store }
 }
 
 type ConversationsDeps = {
@@ -153,6 +163,7 @@ type ConversationsDeps = {
   machine: ConversationMachine
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
+  network: { store: NetworkStore }
   connectors: () => Connectors
   /** The saved tools' namespace and their host on the edge (step 24.4, U3). */
   tools: { cloudflare: CloudflareApps; edge: EdgeTools }
@@ -203,14 +214,14 @@ export function conversationsOf(deps: ConversationsDeps) {
   const agents = agentsAlive({
     ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
     ...{ ...machineOf(deps), ...deps.tools, connectors: door, calls: toolCallsOf(deps.connectors) },
-    speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
+    speakersOf: speakersIn(deps),
     ...{ appData, companyData: deps.companyData, access: deps.access },
     mastra: () => hub.mastra,
   })
   const construtor = createConstrutor({
     ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
     ...{ access: deps.access, appTables: tablesWithColumnNamesOf(appData) },
-    speakersOf: (scope) => speakersOf({ database, identity, projects: { liveProjectOf } }, scope),
+    speakersOf: speakersIn(deps),
     ...{ automations: () => automations, ...machineOf(deps) },
   })
   const clock = deps.automationClock

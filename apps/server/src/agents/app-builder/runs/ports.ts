@@ -1,5 +1,5 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import type { Machines } from '../../../harness/machine/public.ts'
+import type { Machines, MachinesDeps } from '../../../harness/machine/public.ts'
 import {
   createE2bApi,
   createE2bKit,
@@ -16,7 +16,7 @@ import { openRepository } from '../git/repository.ts'
 
 export type RepositoryOf = (ids: { companyId: CompanyId; projectId: ProjectId }) => Repository
 /** The machines of the conversations, found at the provider by their names. */
-export type MachinesOf = () => Machines
+export type MachinesOf = (opened: MachinesDeps['opened']) => Machines
 
 /** The Builder's Git on the server's volume and the machines of its Projeto on E2B (decision 0051). */
 export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
@@ -30,9 +30,9 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
     return restoreGuarded(openRepository({ root: config.gitRoot, ...ids, log }), copy, ids)
   }
   const mark = markOf(config)
-  function machinesOf() {
+  function machinesOf(opened: MachinesDeps['opened']) {
     return createMachines({
-      ...{ log, mark, installation: config.installationId },
+      ...{ log, mark, opened, installation: config.installationId },
       template: config.machineTemplate,
       kit: createE2bKit(config),
       api: createE2bApi(config, mark),
