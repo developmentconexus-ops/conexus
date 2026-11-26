@@ -34,8 +34,13 @@ async function choosing(answer: Reply) {
   return page
 }
 
+/** The notices' live region, which is what announces one (Base UI's viewport). */
+function notices(page: Page) {
+  return page.getByRole('region', { name: 'Avisos' })
+}
+
 function said(page: Page) {
-  return page.getByRole('status').filter({ hasText: 'Padrão salvo' })
+  return notices(page).getByText('Padrão salvo')
 }
 
 test('salvar o padrão avisa', async () => {
@@ -51,6 +56,12 @@ test('salvar o padrão avisa', async () => {
   assert.equal(await said(page).count(), 0, 'the notice came before the Hub answered')
   release()
   await said(page).waitFor()
+  assert.equal(await notices(page).getAttribute('aria-live'), 'polite')
+  assert.equal(
+    await notices(page).getByRole('status').count(),
+    0,
+    'a live region inside the live region: a screen reader may say the notice twice',
+  )
   assert.deepEqual(page.problems, [])
   await page.close()
 })

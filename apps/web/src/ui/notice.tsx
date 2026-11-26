@@ -16,9 +16,10 @@ export type NoticeText = { title: string; description?: string }
 
 // Base UI's toast, for what went well only: an error stays beside what failed (design V26). The
 // stack is in the page's flow: a notice enters by a short rise and leaves by opacity, and its
-// height never animates. It is inverted against the theme, so the disc resolves its colours in the
-// other scheme (the state's colour there, and `on-notice`, which there is this notice's ground),
-// and the close button's focus ring takes the notice's ink.
+// height never animates. The viewport is the live region that announces it, so the notice carries
+// no `role="status"` of its own. It is inverted against the theme, so the disc resolves its colours
+// in the other scheme (the state's colour there, and `on-notice`, which there is this notice's
+// ground), and the close button's focus ring takes the notice's ink.
 function Notices() {
   const { toasts } = Toast.useToastManager()
   return toasts.map((toast) => (
@@ -33,7 +34,7 @@ function Notices() {
           aria-hidden="true"
           className="size-5 shrink-0 fill-success text-on-notice scheme-dark dark:scheme-light"
         />
-        <div role="status" className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <Toast.Title className="text-label font-semibold" />
           <Toast.Description className="text-label text-on-notice/75" />
         </div>

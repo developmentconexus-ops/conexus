@@ -717,7 +717,7 @@ which shadcn file it was copied from; the front matter holds their values. Their
   skeletons with a pulse (none under reduced motion) and `role="status"`; an error is `danger-text`
   with `role="alert"` and an action.
 - **Notice.** A `role="status"` line in the body colour, in the page's flow; the toast is its form
-  for what was done away from the eye.
+  for what was done away from the eye, announced by its own live region.
 - **Separator.** A 1px `line` rule between two blocks of a column; a region's own edge stays a
   border of that region.
 - **Spinner.** The turning `Loader2` icon, 16px, a `status` with a name; it stops under reduced
