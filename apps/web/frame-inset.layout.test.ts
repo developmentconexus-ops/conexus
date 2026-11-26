@@ -50,7 +50,7 @@ for (const scheme of ['light', 'dark'] as const) {
       scheme,
     })
     const nav = page.getByRole('navigation', { name: 'Navegação' })
-    const label = nav.getByRole('heading', { name: 'Conversas' })
+    const label = nav.getByRole('heading', { name: 'Recentes' })
     await label.waitFor()
     await atRest(page)
     const frame = page.locator('[data-slot=sidebar-wrapper]')

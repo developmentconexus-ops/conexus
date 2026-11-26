@@ -21,25 +21,23 @@ const NO_COPY_PHRASE = 'Nenhuma tabela copiada. Escolha o que copiar na página 
 
 async function open(held: Parameters<typeof openData>[1]) {
   openData(server, held, LIST)
-  const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
-  return { nav, main: within(screen.getByRole('main')) }
+  await screen.findByRole('heading', { name: 'Dados' })
+  return { main: within(screen.getByRole('main')) }
 }
 
 test('Dados: o Mercado Livre e o HubSpot, que o servidor diz que não copiam, ficam fora; o Sankhya fica', async () => {
-  const { nav, main } = await open({ connections: [SANKHYA, LOJA, CRM] })
+  const { main } = await open({ connections: [SANKHYA, LOJA, CRM] })
   expect(await main.findByText('Matriz · Lago')).toBeTruthy()
   expect(main.queryByText(/Loja A/)).toBeNull()
   expect(main.queryByText(/Comercial/)).toBeNull()
   expect(main.getAllByText(NO_COPY_PHRASE)).toHaveLength(1)
-  expect(await nav.findByText(NO_COPY_PHRASE)).toBeTruthy()
 })
 
-test('Dados: só ligações que não copiam dizem que não há sistema, na página e na árvore', async () => {
-  const { nav, main } = await open({ connections: [LOJA, CRM] })
+test('Dados: só ligações que não copiam dizem que não há sistema, uma vez, na página', async () => {
+  const { main } = await open({ connections: [LOJA, CRM] })
   expect(await main.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
   expect(main.queryByText(NO_COPY_PHRASE)).toBeNull()
-  expect(await nav.findByText('Nenhum sistema ligado ainda')).toBeTruthy()
-  expect(nav.queryByText(NO_COPY_PHRASE)).toBeNull()
+  expect(main.getAllByText('Nenhum sistema ligado ainda')).toHaveLength(1)
 })
 
 test('Dados: uma ligação parada que ainda tem tabela no lago segue em Dados', async () => {

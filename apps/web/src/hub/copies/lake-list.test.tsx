@@ -19,7 +19,7 @@ const NFE = lakeTable({
 })
 
 async function list() {
-  await screen.findByRole('navigation', { name: 'Dados' })
+  await screen.findByRole('heading', { name: 'Dados' })
   return within(screen.getByRole('main'))
 }
 
@@ -130,11 +130,11 @@ test('um sistema sem tabela no lago diz a frase da matriz ao lado do que tem', a
   ).toHaveLength(1)
 })
 
-test('a árvore conta as tabelas do lago em Bruto e diz quantas são', async () => {
+test('a aba Bruto conta as tabelas do lago e a nota sob as abas diz quantas são', async () => {
   openData(server, { tables: [lakeTable(), NFE] }, LIST)
-  const nav = within(await screen.findByRole('navigation', { name: 'Dados' }))
-  expect(await nav.findByRole('link', { name: 'Bruto 2' })).toBeTruthy()
-  expect(nav.getByText('2 tabelas no lago')).toBeTruthy()
+  const tabs = within(await screen.findByRole('tablist', { name: 'Camadas de Dados' }))
+  expect(await tabs.findByRole('tab', { name: 'Bruto 2' })).toBeTruthy()
+  expect(await screen.findByText('2 tabelas no lago')).toBeTruthy()
 })
 
 test('a falha de ler as tabelas do lago diz a frase de hoje e Tentar de novo lê outra vez', async () => {

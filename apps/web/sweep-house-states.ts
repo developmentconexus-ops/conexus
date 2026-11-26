@@ -1,12 +1,22 @@
 import type { Provider } from '@conexus/hub-api'
-import { getStatus, listModelAccounts, listModelProviders, ModelAccount } from '@conexus/hub-api'
+import {
+  ASSISTANT_CONTROLLER,
+  getStatus,
+  listAssistantConversations,
+  listModelAccounts,
+  listModelProviders,
+  ModelAccount,
+  readAssistantConversation,
+} from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import type { z } from 'zod'
+import type { Replies } from './layout-harness.ts'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { central, MEMBER, OWNER, startsOn } from './sweep-replies.ts'
+import { sessionReplies } from './sweep-session.ts'
 
 const HOME = `/companies/${COMPANY.id}`
 const SETTINGS = `${HOME}/settings`
@@ -56,6 +66,53 @@ const OWNER_WITH_ACCOUNTS = {
   'GET /api/model-providers': ok(listModelProviders, { providers: PROVIDERS }),
 }
 
+const HOUR = 60 * 60 * 1000
+
+/** An instant `hours` ago, so each conversation lands in its day group whenever the sweep runs. */
+function hoursAgo(hours: number) {
+  return new Date(Date.now() - hours * HOUR).toISOString()
+}
+
+function conversationOf(n: number, title: string, hours: number) {
+  const digit = String(n)
+  return {
+    id: `${digit.repeat(8)}-${digit.repeat(4)}-4${digit.repeat(3)}-8${digit.repeat(3)}-${digit.repeat(12)}`,
+    title,
+    createdAt: hoursAgo(hours),
+    updatedAt: hoursAgo(hours),
+    automation: null,
+  }
+}
+
+/** What a row's link preloads when focus rests on it: the conversation and its session. */
+function conversationReplies(one: ReturnType<typeof conversationOf>): Replies {
+  return {
+    [`GET /api/companies/${COMPANY.id}/assistant/conversations/${one.id}`]: ok(
+      readAssistantConversation,
+      { conversation: { ...one, projectId: null, connections: [] } },
+    ),
+    ...sessionReplies(one.id, { messages: [], controller: ASSISTANT_CONTROLLER }),
+  }
+}
+
+/** The owner's conversations, one in each day group, the first with a title that must wrap on a phone. */
+function conversationsPage(): Replies {
+  const listed = [
+    conversationOf(1, 'Comparação das vendas por filial e por vendedor no trimestre inteiro', 0.01),
+    conversationOf(2, 'Pedidos do mês', 26),
+    conversationOf(3, 'Metas da Matriz', 24 * 4),
+    conversationOf(4, 'Estoque parado', 24 * 40),
+  ]
+  return {
+    ...OWNER,
+    ...Object.assign({}, ...listed.map(conversationReplies)),
+    [`GET /api/companies/${COMPANY.id}/assistant/conversations`]: ok(listAssistantConversations, {
+      conversations: listed.map((row) => ({ ...row, project: null })),
+      next: { kind: 'END' },
+    }),
+  }
+}
+
 /** Opens what sits in the sidebar, which on a phone is the drawer, closed until asked. */
 async function inSidebar(page: Page, name: string | RegExp) {
   if ((page.viewportSize()?.width ?? 0) < 768) {
@@ -88,6 +145,21 @@ export const HOUSE_STATES: State[] = [
     },
   },
   {
+    name: 'Conversas, a lista por dia',
+    path: `${HOME}/conversations`,
+    replies: conversationsPage(),
+    settle: async (page) => {
+      await page.getByRole('region', { name: 'Antes' }).waitFor()
+      await waitFor(page, 'Pedidos do mês')
+    },
+  },
+  {
+    name: 'Conversas, nenhuma conversa',
+    path: `${HOME}/conversations`,
+    replies: OWNER,
+    settle: (p) => waitFor(p, 'Nenhuma conversa ainda.'),
+  },
+  {
     name: 'Configurações, minha conta',
     path: `${SETTINGS}/account`,
     replies: OWNER,
@@ -106,14 +178,14 @@ export const HOUSE_STATES: State[] = [
     },
   },
   {
-    name: 'Configurações, memória da empresa',
-    path: `${SETTINGS}/company-memory`,
+    name: 'Conhecimento, a memória da empresa',
+    path: `${HOME}/knowledge`,
     replies: OWNER,
     settle: (p) => waitFor(p, 'Nenhuma página guardada ainda.'),
   },
   {
-    name: 'Configurações, memória da empresa sem permissão',
-    path: `${SETTINGS}/company-memory`,
+    name: 'Conhecimento, a memória da empresa sem permissão',
+    path: `${HOME}/knowledge`,
     replies: MEMBER,
     settle: (p) => waitFor(p, 'Só o dono ou um administrador muda a memória da empresa.'),
   },

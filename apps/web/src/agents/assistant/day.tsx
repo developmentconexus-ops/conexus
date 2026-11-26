@@ -1,15 +1,13 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { titleOf } from '../../harness/room/public.ts'
 import { connectionsQuery, stateBadge } from '../../hub/connectors/public.ts'
 import { ProjectsBlock } from '../../hub/projects/public.ts'
-import { ageOf } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { BLOCK_ROWS, Block, BlockSentence, blockRow, Stamp } from '../../ui/block.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { AutomationBadge } from './automations/badge.tsx'
+import { ConversationLine } from './conversation-row.tsx'
 import { assistantConversationsQuery } from './queries.ts'
 import {
   CONNECTIONS_BLOCK,
@@ -30,49 +28,14 @@ function ContinueRows({ companyId }: { companyId: CompanyId }) {
   const now = new Date()
   return (
     <ul>
-      {conversations.slice(0, BLOCK_ROWS).map((conversation) => {
-        const content = (
-          <>
-            <span className="min-w-0 flex-auto truncate">{titleOf(conversation)}</span>
-            {conversation.project !== null && (
-              <span className="min-w-0 shrink truncate text-fact text-text-2">
-                {conversation.project.name}
-              </span>
-            )}
-            {conversation.automation !== null && (
-              <AutomationBadge name={conversation.automation.name} />
-            )}
-            <span className="shrink-0 text-fact tabular-nums text-text-2">
-              {ageOf(conversation.updatedAt, now)}
-            </span>
-          </>
-        )
-        return (
-          <li key={conversation.id}>
-            {conversation.project === null ? (
-              <Link
-                to="/companies/$companyId/conversations/$conversationId"
-                params={{ companyId, conversationId: conversation.id }}
-                className={`${blockRow} hover:bg-surface-3`}
-              >
-                {content}
-              </Link>
-            ) : (
-              <Link
-                to="/companies/$companyId/projects/$projectId/assistant/$conversationId"
-                params={{
-                  companyId,
-                  projectId: conversation.project.id,
-                  conversationId: conversation.id,
-                }}
-                className={`${blockRow} hover:bg-surface-3`}
-              >
-                {content}
-              </Link>
-            )}
-          </li>
-        )
-      })}
+      {conversations.slice(0, BLOCK_ROWS).map((conversation) => (
+        <ConversationLine
+          key={conversation.id}
+          companyId={companyId}
+          conversation={conversation}
+          now={now}
+        />
+      ))}
     </ul>
   )
 }

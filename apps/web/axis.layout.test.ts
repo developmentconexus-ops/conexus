@@ -70,20 +70,58 @@ test('a conversa e a caixa ficam no eixo de 720 a 1366 (V59)', async () => {
   await page.close()
 })
 
-test('os rótulos de grupo da barra lateral não saem em caixa alta (V61)', async () => {
+test('o rótulo de grupo da barra lateral não sai em caixa alta (V61)', async () => {
   const page = await harness.open(`/companies/${COMPANY.id}`, {
     viewport: DESKTOP,
     replies: assistantReplies(),
   })
-  await page.locator('[data-slot=sidebar-day-label]').first().waitFor()
+  await page.locator('[data-slot=sidebar-group-label]').first().waitFor()
   const transforms = await page
-    .locator('[data-slot=sidebar-group-label], [data-slot=sidebar-day-label]')
+    .locator('[data-slot=sidebar-group-label]')
     .evaluateAll((all) => all.map((one) => getComputedStyle(one).textTransform))
   assert.ok(transforms.length > 0, 'the sidebar has no group label')
   assert.ok(
     transforms.every((value) => value === 'none'),
     `a label is ${transforms}`,
   )
+  await page.close()
+})
+
+test('os rótulos de dia da página Conversas não saem em caixa alta (V61)', async () => {
+  const page = await harness.open(`/companies/${COMPANY.id}/conversations`, {
+    viewport: DESKTOP,
+    replies: assistantReplies(),
+  })
+  await page.locator('[data-slot=day-label]').first().waitFor()
+  const transforms = await page
+    .locator('[data-slot=day-label]')
+    .evaluateAll((all) => all.map((one) => getComputedStyle(one).textTransform))
+  assert.ok(transforms.length > 0, 'the page has no day label')
+  assert.ok(
+    transforms.every((value) => value === 'none'),
+    `a label is ${transforms}`,
+  )
+  await page.close()
+})
+
+test('a página Conversas fica no eixo de 720 a 1366 (V59)', async () => {
+  const page = await harness.open(`/companies/${COMPANY.id}/conversations`, {
+    viewport: DESKTOP,
+    replies: assistantReplies(),
+  })
+  await page
+    .getByRole('region', { name: 'Antes' })
+    .getByRole('link', { name: /Pedidos do mês/ })
+    .waitFor()
+  for (const [name, element] of [
+    ['title', page.getByRole('heading', { name: 'Conversas', level: 1 })],
+    ['search', page.getByRole('searchbox', { name: 'Buscar pelo título' })],
+    ['list', page.getByRole('region', { name: 'Antes' })],
+  ] as const) {
+    const box = await element.boundingBox()
+    assert.ok(box, `the ${name} is not laid out`)
+    assert.ok(box.width <= 720, `the ${name} is ${box.width} wide, past the 720 axis`)
+  }
   await page.close()
 })
 

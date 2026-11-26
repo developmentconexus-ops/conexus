@@ -33,7 +33,7 @@ Em `apps/web/src`, fora dos testes.
 
 | O quê | Hoje | Onde |
 | --- | --- | --- |
-| Arquivos com alguma classe de movimento | 19 | `ui/` (13), `agents/app-builder/` (3), `brand/mark.tsx`, `harness/model-accounts/sign-in-form.tsx`, `hub/copies/data-tree.tsx` |
+| Arquivos com alguma classe de movimento | 18 | `ui/` (13), `agents/app-builder/` (3), `brand/mark.tsx`, `harness/model-accounts/sign-in-form.tsx` |
 | Durações usadas | 150 ms, 200 ms, 300 ms (uma vez), 0 | `ui/dialog.tsx`, `ui/sheet.tsx`, `ui/drawer.tsx`, `ui/sidebar.tsx`, `harness/room/memory-status.tsx` |
 | Curvas nas peças | três diferentes: `ease-out` (gaveta), `ease-in-out` (painel), `ease-linear` (largura da barra); o resto usa a curva padrão do navegador | `ui/drawer.tsx`, `ui/sheet.tsx`, `ui/sidebar.tsx` |
 | Curvas como token | duas, só para o trabalho em andamento: `--ease-fit` e `--ease-arrive` | `apps/web/src/brand/tokens.css` |

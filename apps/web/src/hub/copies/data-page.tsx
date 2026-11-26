@@ -1,9 +1,10 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
+import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { ConnectorLogo, connectionsQuery, connectorName, stateBadge } from '../connectors/public.ts'
 import { AppsLayer } from './apps-layer.tsx'
 import { connectionsOfData } from './data-systems.ts'
@@ -15,9 +16,12 @@ import {
   CATALOG_FAILED,
   CONCEPT_HINT,
   DATA_INTRO,
+  DATA_LAYERS,
   DATA_TITLE,
+  LAYERS_LABEL,
   LINK_SYSTEM,
   lakeGroupText,
+  lakeTablesNoteText,
   NO_CONCEPT,
   NO_SYSTEM,
   NO_SYSTEM_HINT,
@@ -98,16 +102,57 @@ function SystemsLayer({ companyId }: { companyId: CompanyId }) {
   )
 }
 
+/** A layer's count beside its name, in the tab. */
+function Count({ of }: { of: number | undefined }) {
+  if (of === undefined) return null
+  return <span className="text-eyebrow tabular-nums text-text-2">{of}</span>
+}
+
+/**
+ * The layers of Dados as tabs (web W30): Negócio, Bruto and, for whoever sees the apps' data, Apps.
+ * Bruto is the page without `layer`, the layer the address means when it says none.
+ */
+function LayerTabs(props: { layer: DataLayer; tables: number | undefined; apps: boolean }) {
+  const navigate = useNavigate()
+  return (
+    <Tabs
+      value={props.layer}
+      onValueChange={(value) => {
+        const layer = DataLayer.parse(value)
+        void navigate({ to: '.', search: layer === DataLayer.enum.raw ? {} : { layer } })
+      }}
+    >
+      <TabsList aria-label={LAYERS_LABEL}>
+        <TabsTrigger value={DataLayer.enum.business}>
+          {DATA_LAYERS.business} <Count of={0} />
+        </TabsTrigger>
+        <TabsTrigger value={DataLayer.enum.raw}>
+          {DATA_LAYERS.raw} <Count of={props.tables} />
+        </TabsTrigger>
+        {props.apps && <TabsTrigger value={DataLayer.enum.apps}>{DATA_LAYERS.apps}</TabsTrigger>}
+      </TabsList>
+    </Tabs>
+  )
+}
+
 export function DataPage(props: { companyId: CompanyId; layer: DataLayer }) {
   const { companyId } = props
   const may = useMay()
+  const lake = useQuery({ ...lakeTablesListQuery(companyId), enabled: may.manageCopies })
   const layer =
     props.layer === DataLayer.enum.apps && !may.viewAppData ? DataLayer.enum.raw : props.layer
+  const tables = may.manageCopies ? lake.data?.length : 0
   return (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">
       <div className="flex min-w-0 flex-col gap-xs">
         <PageTitle>{DATA_TITLE}</PageTitle>
         <p className="max-w-message text-text-2">{DATA_INTRO}</p>
+      </div>
+      <div className="flex flex-col gap-sm">
+        <LayerTabs layer={layer} tables={tables} apps={may.viewAppData} />
+        {layer === DataLayer.enum.raw && tables !== undefined && tables > 0 && (
+          <p className="px-md text-fact text-text-2">{lakeTablesNoteText(tables)}</p>
+        )}
       </div>
       {layer === DataLayer.enum.raw &&
         (may.manageCopies ? (

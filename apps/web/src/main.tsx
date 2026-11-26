@@ -51,8 +51,6 @@ declare module '@tanstack/history' {
     assistantHandOff?: AssistantHandOff
     /** The Projeto was created and the Hub refused the model of its conversation. */
     refused?: ModelRefusal
-    /** The list's own controls (search, filter, tabs) change the address and leave the phone's drawer open (design V56). */
-    keepDrawer?: true
   }
 }
 

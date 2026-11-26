@@ -94,7 +94,7 @@ test('o desenvolvedor: o trilho tem Automações, Agentes e Dados depois de Inte
   expect(developer.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
 })
 
-test('o trilho da dona tem Automações, Agentes e Dados logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações nem Agentes, e vê Dados', async () => {
+test('o trilho da dona tem Automações, Agentes e Dados logo depois de Integrações; a lista é Nova conversa; o membro não vê Automações nem Agentes, e vê Dados', async () => {
   open(HOME, PROJECTS, 'owner')
   const owner = await sidebar()
   expect(linkNames(owner.rail)).toEqual([

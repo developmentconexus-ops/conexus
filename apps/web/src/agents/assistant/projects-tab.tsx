@@ -4,10 +4,11 @@ import { Link } from '@tanstack/react-router'
 import { ChevronDownIcon } from 'lucide-react'
 import { projectsQuery } from '../../hub/projects/public.ts'
 import { sentenceOf } from '../../platform/hub.ts'
+import { BlockSentence } from '../../ui/block.tsx'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible.tsx'
-import { SidebarMenu, SidebarMenuSkeleton } from '../../ui/sidebar.tsx'
+import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
-import { ConversationRow } from './conversation-row.tsx'
+import { ConversationLine } from './conversation-row.tsx'
 import { narrowedBy } from './list-view.ts'
 import { assistantConversationsQuery } from './queries.ts'
 import { NO_CONVERSATION_FOUND, NO_PROJECT_CONVERSATION, SEE_ALL, WITHOUT_PROJECT } from './text.ts'
@@ -39,35 +40,35 @@ function Group(props: {
         {props.name}
       </CollapsibleTrigger>
       <CollapsibleContent>
-        {read.isPending && <SidebarMenuSkeleton />}
+        {read.isPending && <Skeleton className="h-row w-full" />}
         {read.isError && (
           <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
         )}
         {read.data !== undefined && read.data.conversations.length === 0 && (
-          <p className="px-sm text-fact text-text-2">
+          <BlockSentence>
             {props.q === undefined ? NO_PROJECT_CONVERSATION : NO_CONVERSATION_FOUND}
-          </p>
+          </BlockSentence>
         )}
         {read.data !== undefined && read.data.conversations.length > 0 && (
-          <SidebarMenu>
+          <ul>
             {read.data.conversations.slice(0, SHOWN).map((conversation) => (
-              <ConversationRow
+              <ConversationLine
                 key={conversation.id}
                 companyId={props.companyId}
                 conversation={conversation}
                 now={now}
+                menu
                 inProject
               />
             ))}
-          </SidebarMenu>
+          </ul>
         )}
         {(read.data?.conversations.length ?? 0) > SHOWN && (
           <Link
             to="."
             search={(old) => ({ ...old, place: props.project ?? 'HOME', tab: undefined })}
             replace
-            state={{ keepDrawer: true }}
-            className="px-sm text-fact text-text-2"
+            className="flex h-row items-center px-sm text-fact text-text-2 hover:text-text"
           >
             {SEE_ALL}
           </Link>
@@ -80,12 +81,12 @@ function Group(props: {
 /** The Projetos tab: a group for each live Projeto with its newest conversations, and "Sem Projeto" last. */
 export function ProjectsTab({ companyId, q }: { companyId: CompanyId; q: string | undefined }) {
   const projects = useQuery(projectsQuery(companyId, undefined))
-  if (projects.isPending) return <SidebarMenuSkeleton />
+  if (projects.isPending) return <Skeleton className="h-row w-full" />
   if (projects.isError) {
     return <ReadFailure text={sentenceOf(projects.error)} onRetry={() => void projects.refetch()} />
   }
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-md">
       {projects.data.projects.map((project) => (
         <Group
           key={project.id}

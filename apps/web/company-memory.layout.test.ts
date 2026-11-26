@@ -18,7 +18,7 @@ after(async () => {
 
 /** Where the captures are kept: outside the repository, for the person who reviews them. */
 const CAPTURES = join(tmpdir(), 'conexus-u9-capturas')
-const PAGE = `/companies/${COMPANY.id}/settings/company-memory`
+const PAGE = `/companies/${COMPANY.id}/knowledge`
 const MEMORY = `/api/companies/${COMPANY.id}/assistant/company-memory`
 const DAY = '2026-11-11T15:00:00.000Z'
 const INSTRUCTIONS = {
@@ -57,7 +57,7 @@ function repliesOf(role: 'owner' | 'member', pages: boolean): Replies {
   }
 }
 
-// Configurações › Memória da empresa (card of the alignment, U9), at 1366 and 390 px in both themes:
+// Conhecimento, the company's memory (card of the alignment, U9; moved to its own address by card R2, U1), at 1366 and 390 px in both themes:
 // the instructions take the column, a long page name wraps beside Ver, and nothing scrolls sideways.
 // The test saves what it saw in CAPTURES, outside the repository (testing T23).
 for (const viewport of [DESKTOP, PHONE])
@@ -67,7 +67,7 @@ for (const viewport of [DESKTOP, PHONE])
       ['vazio', 'owner', false],
       ['sem permissão', 'member', true],
     ] as const)
-      test(`a memória da empresa ${state}: ${viewport.width} px, tema ${scheme}`, async () => {
+      test(`Conhecimento ${state}: ${viewport.width} px, tema ${scheme}`, async () => {
         const page = await harness.open(PAGE, { viewport, replies: repliesOf(role, pages), scheme })
         const section = page.locator('body')
         const box = section.getByRole('textbox', { name: INSTRUCTIONS.name })

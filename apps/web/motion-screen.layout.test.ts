@@ -149,7 +149,7 @@ test('com a janela aberta a troca é de uma vez', async () => {
   await page.close()
 })
 
-/** One conversation, so that the sidebar draws its list with the search and the tabs. */
+/** One conversation, so that the page of Conversas draws its list with the search and the tabs. */
 const ONE_CONVERSATION: Replies = {
   [`GET /api/companies/${COMPANY.id}/assistant/conversations`]: ok(listAssistantConversations, {
     conversations: [
@@ -184,10 +184,9 @@ async function counting(page: Page) {
 }
 
 /** Início again from a fresh load, counting the view transitions the page starts. */
-async function counted(viewport: Viewport = DESKTOP) {
-  const home = await atHome(ONE_CONVERSATION, viewport)
+async function counted(viewport: Viewport = DESKTOP, at = '') {
+  const home = await atHome(ONE_CONVERSATION, viewport, at)
   const transitions = await counting(home.page)
-  const nav = home.page.getByRole('navigation', { name: 'Navegação' })
   /** The control: after what must not fade, a change of area starts the first transition. */
   async function onlyTheAreaChangeFades() {
     const before = await transitions()
@@ -200,7 +199,6 @@ async function counted(viewport: Viewport = DESKTOP) {
   return {
     page: home.page,
     integrations: home.integrations,
-    nav,
     transitions,
     onlyTheAreaChangeFades,
   }
@@ -212,25 +210,27 @@ test('a carga da página não esmaece a folha', async () => {
   await home.onlyTheAreaChangeFades()
 })
 
-test('a letra na busca da barra não esmaece a folha', async () => {
-  const home = await counted()
+test('a letra na busca da página não esmaece a folha', async () => {
+  const home = await counted(DESKTOP, '/conversations')
+  const sheet = home.page.getByRole('main')
+  await sheet.getByRole('link', { name: /Vendas da semana/ }).waitFor()
   const loaded = await home.transitions()
-  await home.nav.getByRole('button', { name: /Buscar/ }).click()
-  await home.nav.getByRole('searchbox').pressSequentially('ven')
+  await sheet.getByRole('searchbox', { name: 'Buscar pelo título' }).pressSequentially('ven')
   await home.page.waitForURL(/q=ven/)
   await atRest(home.page)
   assert.equal(await home.transitions(), loaded, 'a letter of the search fades the sheet')
   await home.onlyTheAreaChangeFades()
 })
 
-test('a aba da barra não esmaece a folha', async () => {
-  const home = await counted()
+test('a aba da página não esmaece a folha', async () => {
+  const home = await counted(DESKTOP, '/conversations')
+  const sheet = home.page.getByRole('main')
+  await sheet.getByRole('link', { name: /Vendas da semana/ }).waitFor()
   const loaded = await home.transitions()
-  const tab = home.nav.getByRole('tab', { name: 'Projetos' })
-  await tab.click()
+  await sheet.getByRole('tab', { name: 'Projetos' }).click()
   await home.page.waitForURL(/tab=projects/)
-  await home.nav.getByRole('tab', { name: 'Projetos', selected: true }).waitFor()
+  await sheet.getByRole('tab', { name: 'Projetos', selected: true }).waitFor()
   await atRest(home.page)
-  assert.equal(await home.transitions(), loaded, "the sidebar's tab fades the sheet")
+  assert.equal(await home.transitions(), loaded, "the page's tab fades the sheet")
   await home.onlyTheAreaChangeFades()
 })

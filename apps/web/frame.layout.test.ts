@@ -50,7 +50,7 @@ test('a moldura: a 1366 px o trilho tem 56, a lista 272, as linhas 32, e o lugar
   const column = await list.boundingBox()
   assert.deepEqual([rail?.width, column?.width], [56, 272])
   await list.getByRole('link', { name: 'Nova conversa' }).waitFor()
-  await list.getByRole('heading', { name: 'Conversas' }).waitFor()
+  await list.getByRole('heading', { name: 'Recentes' }).waitFor()
   const rows = await list
     .locator('[data-slot=sidebar-menu-item] > a')
     .evaluateAll((all) => all.map((one) => one.getBoundingClientRect().height))

@@ -63,10 +63,10 @@ export function timesOf(runs: Record<string, Run>) {
 }
 
 /** The owner's Início, with Integrações one click away on the rail, or in the phone's drawer. */
-export async function atHome(more: Replies = {}, viewport: Viewport = DESKTOP) {
+export async function atHome(more: Replies = {}, viewport: Viewport = DESKTOP, at = '') {
   const state = INTEGRATIONS_STATES.find((one) => one.name === 'Integrações vazia do dono')
   if (state === undefined) throw new Error('the empty Integrações state is gone')
-  const page = await harness.open(`/companies/${COMPANY.id}`, {
+  const page = await harness.open(`/companies/${COMPANY.id}${at}`, {
     viewport,
     replies: {
       ...OWNER,

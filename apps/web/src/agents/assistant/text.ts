@@ -71,7 +71,8 @@ export const ASSISTANT_EXAMPLES = [
 ] as const
 export const EMPTY_ASSISTANT = 'Pergunte, peça uma análise ou um documento.'
 
-export const SEARCH_CONVERSATIONS = 'Buscar conversa'
+/** The page of the whole list, its title and its landmark. */
+export const CONVERSATIONS_TITLE = 'Conversas'
 export const SEARCH_LABEL = 'Buscar pelo título'
 export const FILTER_CONVERSATIONS = 'Filtrar conversas'
 export const NO_CONVERSATION_FOUND = 'Nenhuma conversa com esse nome.'
@@ -82,7 +83,8 @@ export const HOME_PLACE = 'Início'
 export const AUTOMATIONS_PLACE = 'Automações'
 export const WITHOUT_PROJECT = 'Sem Projeto'
 export const SEE_ALL = 'Ver todas'
-export const RECENT_TAB = 'Recentes'
+/** The page's first tab and the sidebar's group of last conversations. */
+export const RECENT = 'Recentes'
 export const PROJECTS_TAB = 'Projetos'
 export const CLEAR_FILTER = 'Tirar o filtro'
 

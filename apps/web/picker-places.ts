@@ -95,10 +95,10 @@ export const PLACES: readonly Place[] = [
   },
   {
     name: 'o filtro de conversas',
-    path: `/companies/${COMPANY_ID}?place=HOME`,
+    path: `/companies/${COMPANY_ID}/conversations?place=HOME`,
     label: 'Filtrar conversas',
     fixed: 'Todas',
-    drawer: true,
+    drawer: false,
     pick: { option: PROJECT_NAME, address: /place=r{32}/ },
     replies: (projects) => ({ ...COMPANY, ...startsOn(COMPANY_ID), ...projects }),
   },

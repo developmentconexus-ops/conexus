@@ -7,7 +7,13 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
-import { companyRead, hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import {
+  companyRead,
+  hubServer,
+  projectsRead,
+  refusal,
+  sessionRead,
+} from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const PATH = `*/api/companies/${COMPANY.id}/assistant/company-memory`
@@ -105,9 +111,13 @@ function memoryHandlers(held: Held, mayManage: boolean, answers: Answers) {
   ]
 }
 
-/** Memória da empresa as a person of `role` opens it; an owner or an administrator may change it. */
+/** Conhecimento as a person of `role` opens it; an owner or an administrator may change it. */
 function openMemory(
-  options: { role?: string; pages?: CompanyMemoryPage[]; body?: string } & Answers = {},
+  options: {
+    role?: string
+    pages?: CompanyMemoryPage[]
+    body?: string
+  } & Answers = {},
 ) {
   const role = options.role ?? 'owner'
   const held: Held = {
@@ -119,15 +129,17 @@ function openMemory(
   server.use(
     sessionRead(() => ANA),
     ...companyRead({ role }),
+    ...projectsRead({ projects: [], databaseReady: true, mayDelete: false, role }),
     ...memoryHandlers(held, role === 'owner' || role === 'admin', options),
   )
-  const entries = [`/companies/${COMPANY.id}/settings/company-memory`]
+  const entries = [`/companies/${COMPANY.id}/knowledge`]
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: entries }))} />)
   return held
 }
 
 /** The page, once its first section is drawn: the frame around it holds nothing these tests look for. */
 async function memorySection() {
+  await screen.findByRole('heading', { name: 'Conhecimento', level: 1 })
   await screen.findByRole('region', { name: 'Instruções da empresa' })
   return screen
 }
@@ -149,10 +161,10 @@ async function opened(name = OPERATION.name) {
   return shown
 }
 
-test('primeira vez e vazio: a frase da página, as instruções vazias com a contagem e "Nenhuma página guardada ainda."', async () => {
+test('primeira vez e vazio: o título Conhecimento, a frase da página, as instruções vazias com a contagem e "Nenhuma página guardada ainda."', async () => {
   openMemory()
   const shown = await memorySection()
-  expect(shown.getAllByText(SUMMARY).length).toBeGreaterThan(0)
+  expect(shown.getByText(SUMMARY)).toBeTruthy()
   expect((await box()).value).toBe('')
   expect(shown.getByText('0 / 2.000')).toBeTruthy()
   expect(await shown.findByText(NO_PAGES)).toBeTruthy()

@@ -11,9 +11,8 @@ import {
   THIRD,
 } from './test-hub.tsx'
 
-// The company's list: Nova conversa and the person's conversations by day (step 13.3, criterion 6).
-// The clock is 2 Nov 2026, 15:00 in São Paulo (the tests' TZ), and each instant is placed against
-// that day in that zone: 22:00 of the 1st is yesterday here though it is already the 2nd in UTC.
+// "Recentes" in the column: the person's eight newest conversations, the short list (card R2, U1, criterion 2).
+// The clock is 2 Nov 2026, 15:00 in São Paulo (the tests' TZ).
 const server = hubServer()
 const { at } = assistantScreens(server)
 
@@ -47,103 +46,113 @@ const BY_DAY = [
   }),
 ]
 
-test('a lista agrupa por dia no fuso do navegador: Hoje, Ontem, Esta semana, Antes, cada linha com a idade', async () => {
-  at(COMPANY_ROOT, { conversations: BY_DAY })
+/** Ten conversations, newest first as the Hub lists them. */
+const TEN = Array.from({ length: 10 }, (_, index) =>
+  assistantConversation({
+    id: ConversationId.parse(`aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaa0${index}`),
+    title: `Recente ${index}`,
+    updatedAt: `2026-11-02T17:${String(59 - index)}:00Z`,
+  }),
+)
+
+test('as oito mais recentes', async () => {
+  at(COMPANY_ROOT, { conversations: TEN })
   const nav = await list()
-  expect(await nav.findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
-  expect(nav.getByRole('heading', { name: 'Conversas' })).toBeTruthy()
-  const groups = nav.getAllByRole('region').map((group) => group.getAttribute('aria-label'))
-  expect(groups).toEqual(['Hoje', 'Ontem', 'Esta semana', 'Antes'])
-  const rows = {
-    Hoje: ['De hoje', '2 h'],
-    Ontem: ['De ontem à noite', 'ontem'],
-    'Esta semana': ['Do começo da semana', '3 d'],
-    Antes: ['Antiga', '20/10'],
-  } as const
-  for (const [group, [title, age]] of Object.entries(rows)) {
-    const section = within(nav.getByRole('region', { name: group }))
-    const link = section.getByRole('link', { name: new RegExp(title) })
-    expect(within(link).getByText(age)).toBeTruthy()
-  }
+  expect(await nav.findByText('Recentes')).toBeTruthy()
+  expect(await nav.findByRole('link', { name: /Recente 0/ })).toBeTruthy()
+  const shown = nav.getAllByRole('link', { name: /Recente \d/ })
+  expect(shown.map((link) => link.textContent)).toEqual(
+    Array.from({ length: 8 }, (_, index) => expect.stringContaining(`Recente ${index}`)),
+  )
+  expect(nav.queryByRole('link', { name: /Recente 8/ })).toBeNull()
+  expect(nav.queryByRole('link', { name: /Recente 9/ })).toBeNull()
+  // The search, the filter, the tabs, the days and the pager are the page's (criterion 1).
+  expect(nav.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+  expect(nav.queryByRole('searchbox')).toBeNull()
+  expect(nav.queryByRole('combobox', { name: 'Filtrar conversas' })).toBeNull()
+  expect(nav.queryByRole('tab')).toBeNull()
+  expect(nav.queryByRole('region')).toBeNull()
+  expect(nav.queryByRole('link', { name: /^Ver mais/ })).toBeNull()
 })
 
-test('uma conversa de Projeto leva o nome dele e abre pelo endereço do Projeto', async () => {
+test('sem conversa o grupo não aparece', async () => {
+  at(COMPANY_ROOT)
+  const nav = await list()
+  expect(await nav.findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+  await waitFor(() =>
+    expect(document.querySelector('[data-slot="sidebar-menu-skeleton"]')).toBeNull(),
+  )
+  expect(nav.queryByText('Recentes')).toBeNull()
+})
+
+test('a leitura que falha não derruba a lista: o grupo some e Nova conversa segue', async () => {
+  at(COMPANY_ROOT, {
+    conversations: BY_DAY,
+    answers: { list: () => refusal('DATABASE_UNAVAILABLE') },
+  })
+  const nav = await list()
+  expect(await nav.findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+  await waitFor(() =>
+    expect(document.querySelector('[data-slot="sidebar-menu-skeleton"]')).toBeNull(),
+  )
+  expect(nav.queryByText('Recentes')).toBeNull()
+  expect(nav.queryByRole('link', { name: /De hoje/ })).toBeNull()
+  expect(nav.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+  expect(nav.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+})
+
+test('enquanto a lista não chega, o rótulo e três linhas de esqueleto', async () => {
+  const arrival = Promise.withResolvers<undefined>()
+  at(COMPANY_ROOT, { conversations: BY_DAY, answers: { list: () => arrival.promise } })
+  const nav = await list()
+  expect(await nav.findByText('Recentes')).toBeTruthy()
+  expect(
+    document.querySelectorAll('[data-sidebar="sidebar"] [data-slot="sidebar-menu-skeleton"]'),
+  ).toHaveLength(3)
+  arrival.resolve(undefined)
+  expect(await nav.findByRole('link', { name: /De hoje/ })).toBeTruthy()
+})
+
+test('a conversa aberta fica marcada e as outras não', async () => {
+  at(`${COMPANY_ROOT}/conversations/${BY_DAY[0]?.conversation.id}`, { conversations: BY_DAY })
+  const nav = await list()
+  expect((await nav.findByRole('link', { name: /De hoje/ })).getAttribute('aria-current')).toBe(
+    'page',
+  )
+  expect(
+    nav.getByRole('link', { name: /De ontem à noite/ }).getAttribute('aria-current'),
+  ).toBeNull()
+})
+
+test('cada linha leva a idade, e uma conversa de Projeto o nome dele e abre pelo endereço do Projeto', async () => {
   const { conexus } = at(COMPANY_ROOT, { conversations: BY_DAY })
   const nav = await list()
-  const link = await nav.findByRole('link', { name: /Do começo da semana/ })
+  expect(within(await nav.findByRole('link', { name: /De hoje/ })).getByText('2 h')).toBeTruthy()
+  const link = nav.getByRole('link', { name: /Do começo da semana/ })
   expect(within(link).getByText('Pedidos')).toBeTruthy()
   fireEvent.click(link)
   await waitFor(() =>
     expect(conexus.router.state.location.pathname).toContain(`/projects/${PEDIDOS_ID}/assistant/`),
   )
-  // Inside the Projeto the list is the Projeto's own.
+  // Inside the Projeto the bar is the Projeto's own: no "Recentes" of the company.
   expect(await (await list()).findByRole('link', { name: 'Construir' })).toBeTruthy()
+  expect((await list()).queryByText('Recentes')).toBeNull()
 })
 
-test('sem conversas, a lista tem só Nova conversa', async () => {
-  at(COMPANY_ROOT)
+test('em Dados a coluna é a de toda área da empresa: Nova conversa e Recentes, sem uma árvore de Dados', async () => {
+  at(`${COMPANY_ROOT}/data`, { conversations: BY_DAY })
   const nav = await list()
   expect(await nav.findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
-  await waitFor(() => expect(document.querySelector('[data-slot="skeleton"]')).toBeNull())
-  expect(nav.queryByRole('heading', { name: 'Conversas' })).toBeNull()
-  expect(nav.queryAllByRole('region')).toHaveLength(0)
+  expect(await nav.findByText('Recentes')).toBeTruthy()
+  expect(await nav.findByRole('link', { name: /De hoje/ })).toBeTruthy()
+  expect(screen.queryByRole('navigation', { name: 'Dados' })).toBeNull()
 })
 
-test('a lista mostra a primeira página e o Pager leva à seguinte no endereço', async () => {
-  const { conexus } = at(COMPANY_ROOT, {
-    pageSize: 2,
-    conversations: [
-      assistantConversation({
-        id: ELSEWHERE,
-        title: 'Gama',
-        updatedAt: '2026-11-02T17:00:00Z',
-      }),
-      assistantConversation({ title: 'Beta', updatedAt: '2026-11-02T16:00:00Z' }),
-      assistantConversation({ id: THIRD, title: 'Alfa', updatedAt: '2026-11-02T15:00:00Z' }),
-    ],
-  })
-  const nav = await list()
-  expect(await nav.findByRole('link', { name: /Gama/ })).toBeTruthy()
-  expect(nav.queryByRole('link', { name: /Alfa/ })).toBeNull()
-  fireEvent.click(nav.getByRole('link', { name: 'Ver mais: Conversas' }))
-  expect(await nav.findByRole('link', { name: /Alfa/ })).toBeTruthy()
-  expect(conexus.router.state.location.search).toMatchObject({ conversations: '2' })
-  fireEvent.click(nav.getByRole('link', { name: 'Primeira página: Conversas' }))
-  expect(await nav.findByRole('link', { name: /Gama/ })).toBeTruthy()
-})
-
-test('enquanto a lista não chega, linhas de esqueleto; se falha, a frase com Tentar de novo', async () => {
-  let failing = true
-  let arrive: () => void = () => undefined
-  const held = new Promise<void>((resolve) => {
-    arrive = resolve
-  })
-  at(COMPANY_ROOT, {
-    conversations: [assistantConversation({ updatedAt: '2026-11-02T17:00:00Z' })],
-    answers: {
-      list: async () => {
-        await held
-        return failing ? refusal('DATABASE_UNAVAILABLE') : undefined
-      },
-    },
-  })
-  const nav = await list()
-  expect(nav.queryByRole('link', { name: /Vendas da semana/ })).toBeNull()
-  expect(document.querySelector('[data-sidebar="sidebar"] [data-slot="skeleton"]')).not.toBeNull()
-  arrive()
-  const retry = await nav.findByRole('button', { name: 'Tentar de novo' })
-  expect(nav.getByRole('alert')).toBeTruthy()
-  failing = false
-  fireEvent.click(retry)
-  expect(await nav.findByRole('link', { name: /Vendas da semana/ })).toBeTruthy()
-})
-
-test('o membro vê na lista Nova conversa e as suas conversas, como a dona, sem Projetos recentes', async () => {
+test('o membro vê em Recentes as suas conversas, como a dona', async () => {
   at(COMPANY_ROOT, { role: 'member', conversations: BY_DAY })
   const nav = await list()
   expect(await nav.findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
   expect(await nav.findByRole('link', { name: /De hoje/ })).toBeTruthy()
-  expect(nav.queryByText('Projetos recentes')).toBeNull()
 })
 
 function fresh() {

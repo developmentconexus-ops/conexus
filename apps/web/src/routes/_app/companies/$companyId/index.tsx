@@ -1,7 +1,5 @@
-import { listAssistantConversations } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
 import { AssistantDay, AssistantHome } from '../../../../agents/assistant/public.ts'
 import { accountsQuery } from '../../../../harness/model-accounts/public.ts'
 import { readStart } from '../../../../harness/room/public.ts'
@@ -32,14 +30,6 @@ function HomePage() {
 
 export const Route = createFileRoute('/_app/companies/$companyId/')({
   staticData: { place: 'Início' },
-  validateSearch: z
-    .object({
-      conversations: listAssistantConversations.input.query.shape.page,
-      q: z.string().optional(),
-      place: z.string().optional(),
-      tab: z.literal('projects').optional(),
-    })
-    .catch({}),
   loader: ({ context, params }) => readStart(context.queryClient, params.companyId),
   component: HomePage,
 })

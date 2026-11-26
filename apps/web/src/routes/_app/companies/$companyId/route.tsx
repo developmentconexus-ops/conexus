@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { useEffect } from 'react'
 import { NewConversation, SidebarConversations } from '../../../../agents/assistant/public.ts'
-import { DataTree } from '../../../../hub/copies/public.ts'
 import {
   AccountMenu,
   CompanySwitcher,
@@ -103,7 +102,6 @@ function HouseFrame() {
   useEffect(() => {
     if (projectId !== undefined) rememberProject({ personId: person.id, companyId, projectId })
   }, [person.id, companyId, projectId])
-  const inData = useMatches({ select: (matches) => matches.at(-1)?.staticData.place === 'Dados' })
   const bounded = useMatches({ select: (matches) => matches.at(-1)?.staticData.bounded === true })
   const menuNote = unreadNote(useUnread(companyId))
   const foot = (
@@ -132,8 +130,6 @@ function HouseFrame() {
       nav={
         projectId !== undefined ? (
           <ProjectRailNav companyId={companyId} projectId={projectId} />
-        ) : inData ? (
-          <DataTree companyId={companyId} />
         ) : (
           <SidebarGroup>
             <NewConversation companyId={companyId} />

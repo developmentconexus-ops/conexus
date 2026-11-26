@@ -9,6 +9,7 @@ export {
 export { AutomationRuns } from './automations/runs.tsx'
 export { CompanyMemory } from './company-memory.tsx'
 export { AssistantChat } from './conversation.tsx'
+export { ConversationsPage, ConversationsSearch } from './conversations-page.tsx'
 export { AssistantDay } from './day.tsx'
 export { AssistantHome } from './home.tsx'
 export { loadAssistantConversation } from './loader.ts'

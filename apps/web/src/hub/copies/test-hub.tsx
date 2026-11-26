@@ -112,5 +112,7 @@ export function openData(
     ),
     ...projectsRead({ projects, databaseReady: true, mayDelete: false, role }),
   )
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [path] }))} />)
+  const conexus = createConexus(createMemoryHistory({ initialEntries: [path] }))
+  render(<Conexus conexus={conexus} />)
+  return conexus.router
 }

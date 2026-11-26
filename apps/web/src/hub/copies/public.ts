@@ -1,5 +1,4 @@
 export { DataPage } from './data-page.tsx'
-export { DataTree } from './data-tree.tsx'
 export { LakeDetail } from './lake-detail.tsx'
 export { QueryBlock } from './query-block.tsx'
 export { DataLayer, DataSearch } from './search.ts'

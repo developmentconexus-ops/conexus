@@ -24,7 +24,6 @@ function usePlace() {
       to: '.',
       search: (old) => ({ ...old, place, conversations: undefined }),
       replace: true,
-      state: { keepDrawer: true },
     })
 }
 

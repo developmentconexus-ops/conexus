@@ -469,7 +469,7 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 - **Referência.** Uma plataforma de dados mostra busca, filtro e tipo na coluna. Um explorador de banco fica fora do escopo (não é console de banco).
 - **Princípios.** E1 F. E5 P. E6 em parte (404 sem explicação para quem monta). E7 F.
 
-#### TD11. Conhecimento, hoje a Memória da empresa (`settings/company-memory.tsx`)
+#### TD11. Conhecimento, a memória da empresa (`routes/_app/companies/$companyId/knowledge.tsx`)
 
 - **Para que serve.** Guardar como a empresa opera, em instruções e páginas que o Conexus segue. `C4` e G8. O mapa 3.1 a põe no trilho como Conhecimento.
 - **Conteúdo obrigatório.** "Instruções da empresa" com contador e Salvar; "Páginas" com nome e "autor · dia" (`agents/assistant/company-memory-page.tsx`); a página aberta com texto, notas, "Editar", "Apagar a página", "Corrigir" e "Apagar" por nota; a frase de quem pode (`agents/assistant/text.ts`).
@@ -477,7 +477,7 @@ Papéis: só quem gerencia tem `manageConnections`, `manageCopies`, `manageRoles
 - **Ação principal.** Salvar as instruções.
 - **Estados.** "Nenhuma página guardada ainda." (`company-memory.tsx`); três esqueletos; erro com Tentar de novo; só leitura (`company-memory.tsx`); "A página mudou enquanto você salvava" (`company-memory-page.tsx`).
 - **Faixa de dados.** Instruções de 0 a 2.000 (`packages/hub-api/src/company-memory.ts`); nome da página 1 a 200 e nota 1 a 1.000. Páginas, hipótese (uma referência cria 5 a 6 na primeira conversa).
-- **Hoje falta.** O lugar no trilho; busca ou pasta; criar de mão; o estado "proposta" na lista; que agente seguiu a página.
+- **Hoje falta.** Busca ou pasta; criar de mão; o estado "proposta" na lista; que agente seguiu a página.
 - **Referência.** Plataformas de dados têm pastas, modelos, "+ New" e permissões, e uma conversa que semeia a memória. O Mastra mostra atividade por página.
 - **Princípios.** E2 em parte (autor e dia, não quem aprovou). E3 F. E4 P. E6 em parte. E7 F (duas "Memórias"; lugar nas Configurações).
 

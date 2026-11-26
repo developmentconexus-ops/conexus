@@ -7,6 +7,8 @@ import { z } from 'zod'
 import { unconfirmedText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Form, FormAlert, SubmitButton, setWriteError, useSchemaForm } from '../../ui/form.tsx'
+import { Page } from '../../ui/page.tsx'
+import { PageHeader } from '../../ui/page-header.tsx'
 import { SettingsSection } from '../../ui/settings-section.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
@@ -14,8 +16,10 @@ import { bylineOf, PageDetail, READ_FAILED, TextBox } from './company-memory-pag
 import { companyMemoryQuery, sendCompanyInstructions } from './queries.ts'
 import { ONLY_MANAGERS_MEMORY } from './text.ts'
 
-const route = getRouteApi('/_app/companies/$companyId_/settings/company-memory')
+const route = getRouteApi('/_app/companies/$companyId/knowledge')
 
+const TITLE = 'Conhecimento'
+const INTRO = 'As instruções e as páginas que o Conexus segue em toda conversa da empresa.'
 const INSTRUCTIONS_ID = 'company-instructions'
 const NO_PAGES = 'Nenhuma página guardada ainda.'
 const TOO_LONG = `Escreva até ${COMPANY_INSTRUCTIONS_MAX.toLocaleString('pt-BR')} caracteres.`
@@ -123,30 +127,36 @@ function Loaded({ companyId, memory }: { companyId: CompanyId; memory: Memory })
 }
 
 /**
- * Configurações › Memória da empresa (U9): every member reads the instructions and the pages; an
- * owner or an administrator changes them. The frame says what the page is, from its section.
+ * Conhecimento (web W30; U9): every member reads the instructions and the pages; an owner or an
+ * administrator changes them.
  */
 export function CompanyMemory() {
   const { companyId } = route.useParams()
   const read = useQuery(companyMemoryQuery(companyId))
-  if (read.isSuccess) {
-    return (
-      <div className="flex flex-col gap-2xl">
-        <Loaded companyId={companyId} memory={read.data} />
-      </div>
-    )
-  }
   return (
-    <SettingsSection id={INSTRUCTIONS_ID} title="Instruções da empresa">
-      {read.isError ? (
-        <ReadFailure text={READ_FAILED} onRetry={() => void read.refetch()} />
-      ) : (
-        <div role="status" aria-label="Carregando" className="flex flex-col gap-sm">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="w-24" />
-          <Skeleton className="h-10 w-full" />
+    <Page scrolls={false} gap="xl">
+      <PageHeader
+        title={TITLE}
+        actions={null}
+        intro={<p className="max-w-message text-text-2">{INTRO}</p>}
+      />
+      {read.isSuccess ? (
+        <div className="flex flex-col gap-2xl">
+          <Loaded companyId={companyId} memory={read.data} />
         </div>
+      ) : (
+        <SettingsSection id={INSTRUCTIONS_ID} title="Instruções da empresa">
+          {read.isError ? (
+            <ReadFailure text={READ_FAILED} onRetry={() => void read.refetch()} />
+          ) : (
+            <div role="status" aria-label="Carregando" className="flex flex-col gap-sm">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          )}
+        </SettingsSection>
       )}
-    </SettingsSection>
+    </Page>
   )
 }
