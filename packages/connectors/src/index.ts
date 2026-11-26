@@ -119,6 +119,14 @@ export {
   tableCeiling,
   tableMonths,
 } from './kernel/tables-read.ts'
+export {
+  LAKE_NAME_PATTERN,
+  LakeTableName,
+  type TreatedCast,
+  type TreatedColumn,
+  type TreatedTable,
+  treatedSelect,
+} from './kernel/tables-treated.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'
 export { MERCADO_LIVRE_FACTS } from './mercado-livre/fake-facts.ts'
 export { sankhyaFake } from './sankhya/fake.ts'

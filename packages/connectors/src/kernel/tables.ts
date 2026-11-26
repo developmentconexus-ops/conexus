@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type { Operation, OperationId } from './operation.ts'
 import { OperationId as OperationIdSchema } from './operation.ts'
+import type { TreatedTable } from './tables-treated.ts'
+import { LakeTableName } from './tables-treated.ts'
 
 /** The suggested lake name after the connector prefix: Portuguese, snake_case (NT2; a suggestion, founder 2026-11-23). */
 export const TableName = z
@@ -94,6 +96,7 @@ export type TableDeclaration = Readonly<{
   history: boolean // true keeps every version in raw; default false (decision A)
   meanings?: Readonly<Record<string, 'NFE_XML'>> // metadata only, for the step that reads the XML in rows
   columns: TableColumns
+  treated?: TreatedTable
 }>
 
 export const DiscoveredTable = z.object({
@@ -206,11 +209,11 @@ export function tablePrefixOf(connector: string): string {
 }
 
 /** The one owner of the lake name rule: the prefix plus the name, at most 60 (T.16). */
-export function lakeNameOf(prefix: string, name: string): string {
+export function lakeNameOf(prefix: string, name: string): LakeTableName {
   const joined = `${prefix}${name}`
   if (joined.length > LAKE_NAME_MAX)
     throw new RangeError(`A lake name has at most ${LAKE_NAME_MAX}`)
-  return joined
+  return LakeTableName.parse(joined)
 }
 
 /** A connection's name as a part of a lake name: lower case, no accent, `_` between words. */

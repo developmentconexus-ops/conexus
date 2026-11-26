@@ -1,3 +1,5 @@
+import type { TreatedTable } from '../kernel/tables-treated.ts'
+
 export function changed(column: string, registry: boolean) {
   return { kind: 'CHANGED', column, registry } as const
 }
@@ -18,6 +20,7 @@ export type Row = Readonly<{
   mode: ReturnType<typeof changed> | ReturnType<typeof window> | typeof FULL
   exclude?: readonly string[]
   meanings?: Readonly<Record<string, 'NFE_XML'>>
+  treated?: TreatedTable
 }>
 
 const EFD_KEY = ['CODEMP', 'DTREF', 'REGNIV1'] as const

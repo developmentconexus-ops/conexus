@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
+import { sankhya } from '../sankhya/definition.ts'
+import { sankhyaFake } from '../sankhya/fake.ts'
 import { clientCredentials } from './auth.ts'
 import type { CredentialFake } from './conformance-session.ts'
-import { assertListsWalk } from './conformance-tables.ts'
+import { assertListsWalk, assertTreatedColumns } from './conformance-tables.ts'
 import { defineConnector } from './definition.ts'
 import type { ListRead } from './operation.ts'
 import { defineOperation, get } from './operation.ts'
 import { Rows } from './rows.ts'
+import type { TreatedColumn } from './tables-treated.ts'
 
 const FIXTURE_ROWS = 137
 const FIRST_AT = Date.parse('2026-01-01T00:00:00.000Z')
@@ -176,4 +179,32 @@ test('a conformidade anda pelo readTablePage todas as páginas do dublê de uma 
     /carry/,
     'o campo de alteração que as linhas não trazem',
   )
+})
+
+function sankhyaTreating(table: string, columns: readonly TreatedColumn[]) {
+  const tables = sankhya.tables ?? assert.fail()
+  const declared = tables.declared.map((each) =>
+    each.name === table ? { ...each, treated: { description: 'Um molde.', columns } } : each,
+  )
+  return defineConnector({ ...sankhya, tables: { ...tables, declared } })
+}
+
+test('a conformidade recusa o molde que lê uma coluna que a gravação não tem, e o nome repetido ou fora do formato', async () => {
+  const nota: TreatedColumn = { column: 'nunota', as: 'nunota', cast: 'KEEP' }
+  function checked(columns: readonly TreatedColumn[], table = 'notas') {
+    return assertTreatedColumns(sankhyaTreating(table, columns), sankhyaFake())
+  }
+  await checked([nota])
+  await assert.rejects(
+    checked([nota, { column: 'statusnfe', as: 'statusnfe', cast: 'KEEP' }]),
+    /notas treats statusnfe, no column of its source/,
+  )
+  await assert.rejects(checked([{ ...nota, column: 'NUNOTA' }]), /NUNOTA, no column of its source/)
+  await assert.rejects(checked([nota], 'financeiro'), /financeiro treats nunota, no column/)
+  await assert.rejects(
+    checked([nota, { column: 'codemp', as: 'nunota', cast: 'KEEP' }]),
+    /two columns as nunota/,
+  )
+  for (const as of ['Nota', '1nota', 'nota"', ''])
+    await assert.rejects(checked([{ ...nota, as }]), /no name of a column/, as)
 })
