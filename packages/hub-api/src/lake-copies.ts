@@ -68,7 +68,12 @@ const LakeRunCounts = {
   machine: LakeRunMachine.nullable(),
 }
 export const LakeRun = z.discriminatedUnion('outcome', [
-  z.object({ ...LakeRunBase, outcome: z.literal('RUNNING') }),
+  z.object({
+    ...LakeRunBase,
+    outcome: z.literal('RUNNING'),
+    /** A person asked it to stop and it has not ended yet. */
+    stopping: z.boolean(),
+  }),
   z.object({ ...LakeRunBase, ...LakeRunCounts, outcome: z.literal('COMPLETE') }),
   z.object({
     ...LakeRunBase,
@@ -78,7 +83,13 @@ export const LakeRun = z.discriminatedUnion('outcome', [
     failedTable: LakeTableName.nullable(),
     system: SystemMessage.nullable(),
   }),
-  z.object({ ...LakeRunBase, ...LakeRunCounts, outcome: z.literal('INTERRUPTED') }),
+  z.object({
+    ...LakeRunBase,
+    ...LakeRunCounts,
+    outcome: z.literal('INTERRUPTED'),
+    /** Who asked it to stop; null when no person did, or the one who did left the company. */
+    stoppedBy: z.object({ name: z.string() }).nullable(),
+  }),
 ])
 export type LakeRun = z.infer<typeof LakeRun>
 
@@ -114,7 +125,13 @@ export const LakeTablesOfConnection = z.object({
         // The kit's name, or with the connection's name when taken (T.16).
         z.object({ kind: z.literal('UNMARKED'), suggested: LakeTableName }),
         // The name is fixed once marked.
-        z.object({ kind: z.literal('MARKED'), name: LakeTableName, lastRun: LakeRun.nullable() }),
+        z.object({
+          kind: z.literal('MARKED'),
+          name: LakeTableName,
+          lastRun: LakeRun.nullable(),
+          /** No round has given a result for it yet, so the next copy reads it whole. */
+          firstLoad: z.boolean(),
+        }),
       ]),
     }),
   ),
@@ -149,6 +166,10 @@ export type RunLakeCopy = z.infer<typeof RunLakeCopy>
 /** `already`: a run was open, so the call wrote nothing (200); otherwise the run was queued (202). */
 export const RunLakeCopyAnswer = z.object({ already: z.boolean() })
 export type RunLakeCopyAnswer = z.infer<typeof RunLakeCopyAnswer>
+
+/** `stopping: false`: no run was open, so the call wrote nothing (200); otherwise the stop was asked (202). */
+export const StopLakeCopyRunAnswer = z.object({ stopping: z.boolean() })
+export type StopLakeCopyRunAnswer = z.infer<typeof StopLakeCopyRunAnswer>
 
 export const LakeTableSummary = z.object({
   id: LakeTableId,
@@ -224,6 +245,20 @@ export const runLakeCopy = defineOperation({
   success: { status: 202, body: RunLakeCopyAnswer },
   alsoAnswers: [{ status: 200, body: RunLakeCopyAnswer }],
   failures: READ,
+})
+
+export const stopLakeCopyRun = defineOperation({
+  id: 'stopLakeCopyRun',
+  summary:
+    "Asks the open run of a connection's lake copy to stop and answers before it ends; with no run open it writes nothing.",
+  access: 'session',
+  method: 'POST',
+  path: '/api/companies/{companyId}/connections/{connectionId}/lake-copy/run/stop',
+  bodyLimit: 1024,
+  input: { params: OfConnection },
+  success: { status: 202, body: StopLakeCopyRunAnswer },
+  alsoAnswers: [{ status: 200, body: StopLakeCopyRunAnswer }],
+  failures: [...READ, 'COPY_AWS_UNAVAILABLE'],
 })
 
 export const listLakeTables = defineOperation({

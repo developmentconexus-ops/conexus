@@ -55,8 +55,11 @@ export type RunTableCounts = Readonly<{
   whole: boolean
 }>
 
-/** Who closes, for the log: the task's result, the ECS stop, the sweep, the start, or the connection leaving. */
-export type CloseCause = 'RESULT' | 'ECS_STOPPED' | 'SWEEP' | 'START' | 'LEAVE'
+/**
+ * Who closes, for the log: the task's result, the ECS stop, the sweep, the start or the connection
+ * leaving; `PERSON` whichever of them ends `INTERRUPTED` a round a person asked to stop.
+ */
+export type CloseCause = 'RESULT' | 'ECS_STOPPED' | 'SWEEP' | 'START' | 'LEAVE' | 'PERSON'
 
 const LakeRow = z.object({
   lake_id: LakeId,
@@ -75,6 +78,15 @@ export async function lakeOf(tx: ReadTx, companyId: CompanyId) {
   const lake = LakeRow.parse(row)
   const where: Where = { company: companyId, account: lake.account, region: lake.region }
   return { where, lakeId: lake.lake_id, ready: lake.state === 'ready' }
+}
+
+/** The connection's open round, which a person's stop and the leave end. */
+export async function openRoundOf(tx: ReadTx, connection: ConnectionId) {
+  const [open] = await tx
+    .select({ id: lakeRun.id, taskArn: lakeRun.taskArn })
+    .from(lakeRun)
+    .where(and(eq(lakeRun.connectionId, connection), isNull(lakeRun.endedAt)))
+  return open
 }
 
 /** The connection's round closed last, whose parameter the sweep and the leave delete again. */
@@ -178,10 +190,19 @@ type ParameterDeps = Readonly<{ tasks: Pick<CopyTasks, 'deleteRun'>; log: Failur
 export type RunFields = Record<string, Scalar> & { companyId: CompanyId; runId: LakeRunId }
 
 /**
- * The one close of a round, for the queue, the sweep, the start and the leave: the `UPDATE ...
- * WHERE ended_at IS NULL RETURNING` decides who closes, and only who gets the row writes the
- * counts, keeps the 100 newest rounds and logs `COPY_RUN_ENDED`. Every close, the second too,
- * deletes the round's parameter, so a repeat ends a delete AWS did not answer.
+ * A stop takes the round's parameter, so its task may leave by itself before ECS stops it: the task
+ * without a result is then the stop's doing, not a lost task.
+ */
+function endOfAsked(asked: boolean, end: RunEnd): RunEnd {
+  const lost = end.kind === 'ERROR' && end.code === 'COPY_TASK_LOST'
+  return asked && lost ? { kind: 'INTERRUPTED' } : end
+}
+
+/**
+ * The one close of a round, for the queue, the sweep, the start, the stop and the leave: who locks
+ * the row while it is still open closes it, and only they write the counts, keep the 100 newest
+ * rounds and log `COPY_RUN_ENDED`. Every close, the second too, deletes the round's parameter, so a
+ * repeat ends a delete AWS did not answer.
  */
 export async function closeLakeRun(
   deps: CloseDeps,
@@ -197,18 +218,25 @@ export async function closeLakeRun(
 ): Promise<CloseAnswer> {
   const closed = await deps.database.command(at, async (tx) => {
     const [row] = await tx
+      .select({ connectionId: lakeRun.connectionId, stoppedBy: lakeRun.stoppedBy })
+      .from(lakeRun)
+      .where(and(eq(lakeRun.id, close.run), isNull(lakeRun.endedAt)))
+      .for('update')
+    if (row === undefined) return { won: null, lake: await lakeOf(tx, at.companyId) }
+    const asked = row.stoppedBy !== null
+    const end = endOfAsked(asked, close.end)
+    await tx
       .update(lakeRun)
       .set({
         endedAt: sql`statement_timestamp()`,
-        ...columnsOf(close.end),
+        ...columnsOf(end),
         ...machineColumns(close.machine ?? null),
       })
-      .where(and(eq(lakeRun.id, close.run), isNull(lakeRun.endedAt)))
-      .returning({ connectionId: lakeRun.connectionId })
-    if (row === undefined) return { won: null, lake: await lakeOf(tx, at.companyId) }
+      .where(eq(lakeRun.id, close.run))
     const connectionId = ConnectionIdSchema.parse(row.connectionId)
     await counted(tx, { at, connectionId, run: close.run, tables: close.tables })
-    return { won: { connectionId }, lake: await lakeOf(tx, at.companyId) }
+    const cause: CloseCause = asked && end.kind === 'INTERRUPTED' ? 'PERSON' : close.cause
+    return { won: { connectionId, end, cause }, lake: await lakeOf(tx, at.companyId) }
   })
   const of = { companyId: at.companyId, runId: close.run }
   if (closed.won === null) {
@@ -216,13 +244,14 @@ export async function closeLakeRun(
     return { kind: 'ALREADY_CLOSED', parameter }
   }
   deps.watch?.ended(close.run)
-  const fields = { ...of, connectionId: closed.won.connectionId, cause: close.cause }
+  const { connectionId, end, cause } = closed.won
+  const fields = { ...of, connectionId, cause }
   const parameter = await parameterGone(deps, closed.lake, fields)
   deps.log.info(
     {
       ...fields,
-      outcome: close.end.kind,
-      ...(close.end.kind === 'ERROR' ? { code: close.end.code } : {}),
+      outcome: end.kind,
+      ...(end.kind === 'ERROR' ? { code: end.code } : {}),
       tables: close.tables.length,
       read: close.tables.reduce((sum, table) => sum + table.read, 0),
       written: close.tables.reduce((sum, table) => sum + table.written, 0),

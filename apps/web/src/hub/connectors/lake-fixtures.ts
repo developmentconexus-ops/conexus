@@ -52,6 +52,7 @@ export const RUNNING_ROUND = LakeRun.parse({
   startedAt: '2026-11-24T10:00:00.000Z',
   whole: false,
   outcome: 'RUNNING',
+  stopping: false,
 })
 
 const COMPLETE_ROUND = LakeRun.parse({
@@ -89,7 +90,12 @@ export function copiedLake(
       sources.includes(table.source) && table.copy.kind === 'UNMARKED'
         ? {
             ...table,
-            copy: { kind: 'MARKED', name: table.copy.suggested, lastRun: COMPLETE_ROUND },
+            copy: {
+              kind: 'MARKED',
+              name: table.copy.suggested,
+              lastRun: COMPLETE_ROUND,
+              firstLoad: false,
+            },
           }
         : table,
     ),
@@ -121,7 +127,7 @@ export function applied(view: LakeView, body: SetLakeCopy): void {
       }
       return one.copy.kind === 'MARKED'
         ? one
-        : { ...one, copy: { kind: 'MARKED', name, lastRun: null } }
+        : { ...one, copy: { kind: 'MARKED', name, lastRun: null, firstLoad: true } }
     }),
   })
 }
