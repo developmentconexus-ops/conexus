@@ -59,20 +59,23 @@ Tratado e Negócio, e em cada tabela de onde ela veio e quem a lê.
    Sankhya, cada uma com "Esperando a próxima cópia".
 3. Quando a cópia termina, as quatro tabelas de Tratado mostram quantas linhas têm e a hora. Ao abrir
    Notas, a aba **De onde vem** mostra Copiado › `sankhya_notas`, e a aba Colunas mostra os nomes e os
-   tipos de negócio.
+   tipos de negócio, cada coluna com a descrição da coluna copiada de que ela sai.
 4. Em Negócio, você clica **Novo tratamento**, dá o nome `venda`, escreve em uma frase o que conta como
    venda, cola o `SELECT` da sua regra (o firstmate o escreve com você a partir das suas palavras) e
    salva. Aparece "Proposta, à espera do sim", com as tabelas que o SQL lê. Um nome de tabela errado é
    recusado na hora, com o nome que faltou.
 5. Você clica **Ligar**. O cartão mostra o SQL, as tabelas que ele lê e o que acontece depois. Você
    liga, clica **Tratar agora**, e a tabela `negocio.venda` aparece com as linhas e a hora. Na aba De
-   onde vem: Tratado › Notas. Em Notas, a aba Quem lê mostra Venda.
+   onde vem: Tratado › Notas. Em Notas, a aba Quem lê mostra Venda. Enquanto uma rodada roda,
+   **Parar** fica ao lado de Tratar agora; se você para, o botão vira "Parando…" e depois o topo de
+   Tratado diz "Parada por <você> às <HH:MM>".
 6. Em Venda, você clica **Propor mudança**, muda a regra (por exemplo, tirar a nota cancelada) e salva.
    Venda continua com a versão ligada até você ligar a nova, e a aba **Versões** mostra as duas, quem
    propôs e quem ligou.
 
 **O que você faz, e quando.** Antes: escreve com o firstmate a sua regra de venda. A página já tem o
-seu sim, com as decisões do quadro (2026-11-26). Depois da U1: confirma a lista de permissões que ela mediu (decisão 4.2). Depois que o G1 publicar:
+seu sim, com as decisões do quadro (2026-11-26); a emenda de 2026-11-26 (abaixo) espera o seu sim antes
+do G2. Depois da U1: confirma a lista de permissões que ela mediu (decisão 4.2). Depois que o G1 publicar:
 apaga e cria o lago de novo (passo 1). No fim: faz o roteiro na nuvem, diz o que viu e aprova os
 textos das telas.
 
@@ -107,6 +110,12 @@ Nada cruza a visão.
   app ler essas tabelas (Lago 3 e Lago 4).
 - **O molde de outro sistema.** Só o Sankhya ganha o seu, nas quatro tabelas de venda. O Mercado
   Livre e o HubSpot ficam com Copiado até a Fábrica escrever o deles.
+- **Sugerir descrições**, a etapa própria depois desta que você pediu ("2 Okay também quero",
+  2026-11-26): um botão que pede ao modelo de IA uma descrição para a tabela e as colunas, que a
+  pessoa revisa antes de gravar, só metadado. É como a Databricks faz: "After Databricks generates a
+  suggested comment, you can review it and either accept it as-is or edit it before saving"
+  (docs.databricks.com/aws/en/comments/ai-comments, lida em 2026-11-26). Nesta etapa a coluna tratada
+  só herda a descrição da coluna copiada.
 - **Mudar a limpeza do molde pela tela**, e **apagar um tratamento**. O molde é código revisado. Uma
   regra da empresa vai no Negócio. Um tratamento que não serve mais fica com a versão ligada até a
   etapa que trouxer o apagar.
@@ -169,7 +178,29 @@ duas áreas e ainda não sabe se atualizar. As referências fazem igual:
 - **A estrutura: (a).** Um cartão por etapa, e este cobre só a `T1`.
 - **O cartão: aprovado** com as decisões do quadro (2026-11-26).
 - **Decisão 4.2, com que credencial da AWS o SQL roda: (a)** (2026-11-26), com a lista das permissões
-  confirmada por você depois da U1. A pergunta, a prova e o porquê estão abaixo.
+  confirmada por você depois da U1 ("Sim", 2026-11-26). A pergunta, a prova e o porquê estão abaixo.
+- **A descrição da coluna tratada** ("1 okay", 2026-11-26): ela herda a descrição da coluna copiada de
+  que sai, e o molde não escreve descrição de coluna. A herança vai pela coluna de origem, e não pelo
+  nome novo: um molde que renomeie uma coluna leva junto a descrição dela.
+- **Parar a rodada de tratamento** ("4. Okay", Q4 do estudo do Parar cópia, 2026-11-26): entra nesta
+  etapa, na U5b e na U6, na mesma forma do Parar cópia. Quem pode Tratar agora pode Parar, e a rodada
+  parada diz "Parada por Fulano às HH:MM".
+
+**O que mudou nesta emenda** (2026-11-26, depois da revisão do G1 e do estudo do Parar cópia):
+
+1. A coluna tratada herda a descrição da coluna copiada (critérios 15 e 25, U4 e U5a), e a etapa
+   Sugerir descrições entra em "Fica de fora".
+2. O Parar da rodada de tratamento (critérios 38 e 39, U5b e U6, linha 33 da tabela de referência e
+   a decisão F14). O Parar cópia, a U0 desta etapa ("1. Agora", Q1 do mesmo estudo), é entregue no seu
+   pull request próprio, https://github.com/developmentconexus-ops/conexus/pull/1433, fora do G1 e do
+   G2.
+3. Duas decisões técnicas do firstmate que o G1 já seguiu (F12 e F13): o tipo do erro do Athena e a
+   linha do seu SQL, lidos como a prova U1 os gravou; e o nome de tabela do lago declarado no kit, preso
+   por teste ao do Hub.
+4. Uma pergunta aberta para o G2 (a issue https://github.com/developmentconexus-ops/conexus/issues/1431):
+   como está, a próxima mudança da receita do lago faria todo lago parar de tratar até ser apagado e
+   criado de novo.
+5. O orçamento do G2 sobe 110 linhas pelo Parar.
 
 **4.2. Com que credencial da AWS o SQL roda.** (a), a escolhida: um papel próprio do tratamento, um por lago, no
 molde do escritor de hoje. Ele lê `current`, cria e refaz tabelas só em `tratado` e `negocio`, não lê
@@ -280,8 +311,8 @@ precisam de nível.
 | G1 | U4 O molde do Sankhya no kit | A declaração `treated` no kit, o `SELECT` que ela gera, e as quatro tabelas de venda do Sankhya | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/` | data | — |
 | G1 | U3 A tarefa que trata | O contrato da rodada de tratamento, o projeto dbt que a tarefa escreve e roda, e o resultado na fila | `apps/extraction/`, `apps/server/src/hub/treatment/treat-task.ts`, `docs/reference/stack.md` | testing | U1 |
 | G2 | U5a Os tratamentos no Hub | As tabelas dos modelos, das versões e das rodadas; a permissão `treatment` (decisão 4.1); propor, ligar e listar; o SQL lido ao salvar | `apps/server/src/hub/treatment/`, `apps/server/src/hub/identity/roles.ts`, `admission.ts`, `packages/hub-api/src/treatment.ts`, `apps/server/database-grants.sql`, uma migração, `docs/reference/stack.md` | data | G1 |
-| G2 | U5b A rodada de tratamento | O Hub dispara uma rodada por empresa no fim de cada cópia, junta as que chegam durante ela, fecha pelo resultado, pelo fim da tarefa e pelo varredor | `apps/server/src/hub/treatment/`, `apps/server/src/hub/copies/lake-close.ts`, `lake-queue.ts`, `apps/server/src/platform/aws-copy.ts`, `aws-copy-queue.ts` | data | U5a |
-| G2 | U6 As camadas em Dados | Copiado, Tratado e Negócio; a tabela tratada com De onde vem, Quem lê e Versões; Novo tratamento, Propor mudança, Ligar e Tratar agora | `apps/web/src/hub/copies/`, `apps/web/src/hub/treatment/`, `apps/web/src/routes/_app/companies/$companyId/` | web | U5a, U5b |
+| G2 | U5b A rodada de tratamento | O Hub dispara uma rodada por empresa no fim de cada cópia, junta as que chegam durante ela, fecha pelo resultado, pelo fim da tarefa e pelo varredor; Tratar agora e Parar | `apps/server/src/hub/treatment/`, `apps/server/src/hub/copies/lake-close.ts`, `lake-queue.ts`, `apps/server/src/platform/aws-copy.ts`, `aws-copy-queue.ts` | data | U5a |
+| G2 | U6 As camadas em Dados | Copiado, Tratado e Negócio; a tabela tratada com De onde vem, Quem lê e Versões; Novo tratamento, Propor mudança, Ligar, Tratar agora e Parar | `apps/web/src/hub/copies/`, `apps/web/src/hub/treatment/`, `apps/web/src/routes/_app/companies/$companyId/` | web | U5a, U5b |
 
 São dois pull requests (delivery L9: os menos que a L2 permite), um commit por unidade. O G1 junta as
 três unidades que não dependem de nada do Hub novo; o G2, as três que usam as tabelas da U5a. Uma
@@ -292,9 +323,13 @@ depois da U1. A delivery L9 não divide um grupo para construir ao mesmo tempo, 
 G1 as faz em ordem, mas nenhuma espera a outra; se o firstmate preferir três pull requests, o G1 se
 divide em U2 sozinha e U4 com U3 sem mudar nenhuma seção abaixo. No G2 a ordem é U5a, U5b e U6.
 
-**Orçamento de código alterado** (estimado, sem testes nem gerados). U1: 0 de produto. U2: 300. U4: 250. U3: 450. U5a: 880. U5b: 800. U6: 950. Total da
-etapa: 3.630, dentro da delivery L2. Se a soma medida no fim do G1 passar de 1.150, ou a do G2 passar
-de 2.650, o firstmate tira Propor mudança e Versões da U6 para a `T2` antes do G2, e a página volta ao
+**O Parar cópia** é a U0 desta etapa (Q1 do estudo do Parar cópia, "1. Agora"), entregue antes do G1
+no seu pull request próprio, https://github.com/developmentconexus-ops/conexus/pull/1433. Nenhuma
+seção abaixo a constrói; a U5b usa a mesma forma.
+
+**Orçamento de código alterado** (estimado, sem testes nem gerados). U1: 0 de produto. U2: 300. U4: 250. U3: 450. U5a: 880. U5b: 880, com 80 do Parar. U6: 980, com 30 do Parar. Total da
+etapa: 3.740, dentro da delivery L2. Se a soma medida no fim do G1 passar de 1.150, ou a do G2 passar
+de 2.850 (os dois tetos somam os 4.000 da L2), o firstmate tira Propor mudança e Versões da U6 para a `T2` antes do G2, e a página volta ao
 fundador com o passo 6 do roteiro fora. A troca pelo `RenameTable` não entra: a decisão 5 (a) a
 deixa para a `T2`.
 
@@ -316,7 +351,7 @@ deixa para a `T2`.
 | 12 | U2 | Com uma tabela em `tratado` no depósito, a lista das tabelas do lago e o apagar do lago seguem funcionando, e tirar uma tabela da cópia apaga também a sua tabela em `tratado` | `apps/server/src/hub/lake/lake-remove.test.ts`; `apps/server/src/hub/copies/lake-copy.test.ts` | must |
 | 13 | U4 | O `SELECT` gerado pelo kit para uma tabela tratada lê `"current"."<nome no lago>"`, dá a cada coluna o nome em minúsculas e o tipo declarado, e não tem filtro nem junção | `packages/connectors/src/kernel/tables-treated.test.ts` | must |
 | 14 | U4 | A conformidade recusa um molde com uma coluna que a tabela não tem nas gravações, um nome repetido ou um nome fora de `[a-z][a-z0-9_]*` | `packages/connectors/src/kernel/conformance-tables.test.ts` | must |
-| 15 | U4 | O Sankhya declara `treated` em `notas`, `notas_itens`, `parceiros` e `produtos`, cada coluna com a descrição do dicionário | `packages/connectors/src/sankhya/copy-tables.test.ts` | must |
+| 15 | U4 | O Sankhya declara `treated` em `notas`, `notas_itens`, `parceiros` e `produtos`, cada uma com a descrição da tabela não vazia e cada coluna do molde (`column`) existente na tabela copiada; a coluna do molde não tem descrição própria, porque herda a da coluna copiada pela coluna de origem (`column`), nunca pelo nome novo (`as`) | `packages/connectors/src/sankhya/copy-tables.test.ts` | must |
 | 16 | U3 | Com a especificação de uma rodada, a tarefa escreve um projeto dbt, roda `dbt build` pelos modelos pedidos, conta as linhas de cada tabela gravada e manda à fila um `TREAT_RESULT` com cada modelo `BUILT`, `FAILED` ou `SKIPPED` | `apps/extraction/tests/test_treat.py`, pela entrada `conexus-copy` com `CONEXUS_TREAT_OBJECT`, caso "duas camadas" | must |
 | 17 | U3 | Um modelo que falha no Athena volta `FAILED` com o tipo do erro (por exemplo `COLUMN_NOT_FOUND`) e a linha, nunca o texto do erro; os que dependem dele voltam `SKIPPED`; os outros rodam | `test_treat.py`, caso "falha no meio" | must |
 | 18 | U3 | Uma especificação com `{{`, `{%` ou `{#` no SQL de um modelo, ou fora do esquema, termina a rodada em `ERROR` com `TREAT_SPEC_INVALID`, sem rodar modelo nenhum; o esquema JSON gerado leva a recusa como `pattern` | `test_treat.py`, caso "recusa a especificação"; `treat-task.test.ts` | must |
@@ -326,10 +361,10 @@ deixa para a `T2`.
 | 22 | U5a | Ligar uma versão com o hash que a tela leu a torna a versão ligada, com quem ligou e quando; ligar com um hash diferente, ou uma versão que não é a última proposta, responde `TREATMENT_VERSION_CHANGED`; duas propostas ao mesmo tempo no mesmo modelo dão os números 2 e 3, ou a segunda responde `TREATMENT_VERSION_CHANGED` | `treatment-routes.test.ts` | must |
 | 23 | U5a | A versão ligada é a de maior número com o sim; uma versão nova não troca a ligada até ser ligada; a lista mostra a ligada e a proposta, e o modelo traz todas as versões com quem propôs e quem ligou | `treatment-routes.test.ts` | must |
 | 24 | U5a | Toda rota do tratamento recusa quem não tem a permissão `treatment` (`FORBIDDEN`): as de leitura e propor pedem `propose`, ligar e Tratar agora pedem `approve`; só Dono e Administrador têm as duas, e um papel próprio da empresa não tem nenhuma; e uma empresa não lê nem liga o modelo de outra (`NOT_FOUND`); a política de linha recusa a outra empresa nas quatro tabelas | `treatment-routes.test.ts`; `apps/server/src/hub/treatment/tables.test.ts` | must |
-| 25 | U5a | A lista de Tratado traz uma tabela por tabela copiada cujo conector declara molde, com o nome no lago e as colunas do molde, nada para uma tabela sem molde, e diz se o lago tem a receita nova | `treatment-routes.test.ts` | must |
+| 25 | U5a | A lista de Tratado traz uma tabela por tabela copiada cujo conector declara molde, com o nome no lago e as colunas do molde, cada coluna com a descrição da coluna copiada de mesma `column` (nula quando a copiada não tem), também quando o molde a renomeia, nada para uma tabela sem molde, e diz se o lago tem a receita nova | `treatment-routes.test.ts` | must |
 | 26 | U5b | O fim de uma rodada de cópia `COMPLETE` de uma tabela com molde, ou lida por um modelo ligado, abre uma rodada de tratamento da empresa que pede só os modelos abaixo das tabelas copiadas, mais os nunca gravados e os que falharam por último; sem nada a tratar, nenhuma rodada abre | `apps/server/src/hub/treatment/treatment-run.test.ts` | must |
 | 27 | U5b | Com uma rodada de tratamento aberta, o fim de outra cópia da empresa não abre uma segunda: guarda as tabelas, e quando a aberta fecha, uma nova roda só por elas | `treatment-run.test.ts`, caso "duas ligações" | must |
-| 28 | U5b | O `TREAT_RESULT` fecha a rodada e grava o estado, as linhas e o motivo de cada modelo; um fim de tarefa sem resultado fecha com `TREAT_TASK_STOPPED`; um resultado repetido não muda nada; o varredor fecha uma rodada aberta sem tarefa viva com `TREAT_TASK_STOPPED` | `treatment-run.test.ts`; `apps/server/src/hub/copies/lake-queue.test.ts`; `treatment-sweep.test.ts` | must |
+| 28 | U5b | O `TREAT_RESULT` fecha a rodada e grava o estado, as linhas e o motivo de cada modelo; um fim de tarefa sem resultado e sem pedido de Parar fecha com `TREAT_TASK_STOPPED` (com o pedido, o critério 38); um resultado repetido não muda nada; o varredor fecha uma rodada aberta sem tarefa viva com `TREAT_TASK_STOPPED` | `treatment-run.test.ts`; `apps/server/src/hub/copies/lake-queue.test.ts`; `treatment-sweep.test.ts` | must |
 | 29 | U5b | Tratar agora abre uma rodada com todos os modelos da empresa; responde `ALREADY_RUNNING` com uma aberta, `LAKE_NOT_READY` com o lago sem a receita nova e `NOTHING_TO_TREAT` sem modelo | `treatment-routes.test.ts` | must |
 | 30 | U5b | A especificação vai num objeto em `tratamento/<empresa>/` do depósito de estado, e a tarefa a acha pela variável `CONEXUS_TREAT_OBJECT`; o `RunTask` é o da cópia, com o papel do tratamento; uma partida que falha depois das tentativas fecha com `TREAT_START_FAILED` | `apps/server/src/platform/aws-copy.test.ts`; `treatment-run.test.ts` | must |
 | 31 | U6 | Em Dados, Dono e Administrador veem Copiado, Tratado e Negócio; outro papel vê em Tratado e em Negócio "Seu papel ainda não lê nenhuma tabela."; com o lago numa receita anterior, Tratado diz "Apague e crie o lago de novo na Central para tratar" | `apps/web/src/hub/copies/data-page.test.tsx` | must |
@@ -339,13 +374,15 @@ deixa para a `T2`.
 | 35 | U6 | Ligar abre o cartão com o SQL, as tabelas lidas e a frase do que acontece; com a versão mudada por outra pessoa, o cartão diz que a proposta mudou e mostra a nova | `apps/web/src/hub/treatment/approve.test.tsx` | must |
 | 36 | U6 | A 390 px, a lista, a tabela tratada, Novo tratamento e o cartão cabem sem rolagem lateral, nos dois temas | a QA (testing T25) | should |
 | 37 | todas | O roteiro de uso, feito na nuvem pelo fundador, sem terminal | o uso | must |
+| 38 | U5b | Parar, com uma rodada de tratamento aberta, grava quem pediu em `stopped_by` (quem pede primeiro fica), pede o `StopTask` e responde 202 sem esperar; sem rodada aberta responde 200 e não grava nada; sem tarefa para parar, a rodada fecha na hora. O fim pedido fecha `STOPPED`, com quem parou, e não `TREAT_TASK_STOPPED`; um `TREAT_RESULT` que chega depois do pedido vale; as tabelas em `pending` não abrem a próxima rodada, e os modelos do `select` da rodada parada entram na próxima seleção como os que falharam. A rota pede `approveTreatment`, a mesma do Tratar agora (`FORBIDDEN` sem ela) | `apps/server/src/hub/treatment/treatment-stop.test.ts` | must |
+| 39 | U6 | Com uma rodada aberta, **Parar** fica ao lado de Tratar agora; o clique pede confirmação, e depois o botão vira "Parando…" com o foco do teclado até a rodada fechar; a rodada parada mostra no topo de Tratado "Parada por <nome> às <HH:MM>"; um pedido recusado mostra a frase e o botão volta | `apps/web/src/hub/treatment/treatment-stop.test.tsx` | must |
 
 ## A matriz de estados
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Central, bloco Lago de dados | os seis estados de hoje; em Pronto, com uma receita anterior, "Este lago é de uma receita anterior. Para tratar o dado, apague e crie o lago de novo." | o de hoje | o de hoje | o de hoje | o de hoje | o de hoje | o de hoje |
-| Dados, Tratado | "Esperando a próxima cópia" em cada tabela | "Nenhuma tabela tratada. As tabelas de um sistema com molde aparecem aqui quando ele copia." | o esqueleto da lista de hoje | `CATALOG_FAILED`, como hoje; uma rodada que não terminou, com o motivo | — | `NO_TABLE_OF_ROLE` | a receita anterior: "Apague e crie o lago de novo na Central para tratar" |
+| Dados, Tratado | "Esperando a próxima cópia" em cada tabela | "Nenhuma tabela tratada. As tabelas de um sistema com molde aparecem aqui quando ele copia." | o esqueleto da lista de hoje | `CATALOG_FAILED`, como hoje; uma rodada que não terminou, com o motivo; uma rodada parada, "Parada por <nome> às <HH:MM>"; com o pedido feito, Parar vira "Parando…" | — | `NO_TABLE_OF_ROLE` | a receita anterior: "Apague e crie o lago de novo na Central para tratar" |
 | Dados, Negócio | — | "Nenhum tratamento ainda" e Novo tratamento | o esqueleto | `CATALOG_FAILED` | — | `NO_TABLE_OF_ROLE` | — |
 | Tabela tratada (as abas) | sem linhas: "Esperando a próxima cópia" | — | o esqueleto das abas | a última rodada falhou, com o motivo e a linha | a tabela do molde cuja cópia saiu: "Esta tabela não existe mais" e o caminho para Dados | `NO_TABLE_OF_ROLE` | — |
 | Novo tratamento e Propor mudança | o formulário vazio, ou com a versão ligada | — | Salvar ocupado | cada código do critério 21 no campo; `LAKE_NOT_READY` e `DATABASE_UNAVAILABLE` acima do botão | o modelo de outro endereço: `NOT_FOUND` | o formulário não abre | `TREATMENT_VERSION_CHANGED` numa proposta ao mesmo tempo |
@@ -362,6 +399,8 @@ deixa para a `T2`.
 | `treatment.version.hash` | U5a | U6 (manda ao ligar), U5a (confere) |
 | `treatment.run.pending` | U5b, numa cópia durante uma rodada aberta | U5b, ao fechar |
 | `treatment.run.failure` | U5b | U6 (o topo de Tratado) |
+| `treatment.run.stopped_by` | U5b, o Parar (quem pede primeiro fica) | U5b (o fim `STOPPED`), U6 ("Parada por" e "Parando…") |
+| `TreatedTable.columns[].description` | U5a, da coluna copiada de mesma `column` (`copies.lake_table.columns`) | U6 (a aba Colunas) |
 | `treatment.model_run.failure`, `line` | U5b, do resultado | U6 (o motivo pelo código e a linha) |
 | `TreatedTables.lake` | U5a (a receita do lago) | U6 (a célula Vencido de Tratado) |
 
@@ -410,12 +449,13 @@ código só de leitura (`EST:234`).
 | `PutObject` da especificação (U5b) | a chave é a rodada e a tentativa | sobrescrito na tentativa seguinte | a AWS fora: tenta como a cópia tenta (`lake-run.ts:115-121`), depois fecha com `TREAT_START_FAILED` | `TREATMENT_SPEC_WRITTEN` com a chave, nunca o SQL | 30 |
 | `RunTask` (U5b) | o `clientToken` é a rodada e a tentativa, como na cópia | uma tarefa que não partiu: o `findTask` por `startedBy` decide, como na cópia | `TREAT_START_FAILED` depois das tentativas | o de hoje, com o tipo da rodada | 28, 30 |
 | As instruções do dbt no Athena e no Glue: apagar a tabela e o `CREATE TABLE AS` (U3, da biblioteca) | uma rodada aberta por empresa: nunca duas tarefas na mesma tabela | o `CREATE TABLE AS` que falha depois de apagar deixa a tabela fora (`table.sql:106-107`; decisão 5); a próxima rodada boa a recria | o Athena fora: o modelo volta `FAILED` com o tipo do erro; a rodada termina `COMPLETE` com os modelos | o log do dbt vai ao log da tarefa da empresa, o mesmo da cópia; o resultado leva só o tipo do erro e a linha | 16, 17 |
+| O Parar: `UPDATE` de `stopped_by` e o `StopTask` (U5b) | `coalesce`: quem pede primeiro fica, e o segundo pedido só pede o `StopTask` de novo | o `UPDATE` vem antes do `StopTask`; o `StopTask` que falha deixa a rodada aberta com o pedido, e o fim da tarefa ou o varredor a fecha `STOPPED`, porque houve pedido | a AWS fora: a resposta diz a frase, e o botão volta a pedir | `TREATMENT_STOP_ASKED` com quem pediu | 38, 39 |
 | `SendMessage` do resultado (U3) | o Hub ignora um resultado repetido pela rodada e a tentativa | a tarefa caída antes de mandar: o fim da tarefa, ou o varredor, fecha com `TREAT_TASK_STOPPED` | a fila fora: o fim da tarefa fecha a rodada | `TREAT_RESULT_SENT` | 28 |
 
 ## A tabela de referência
 
 Veredito pelo código C75: **nativo**, **embrulhado** ou **remendo**. As 23 linhas do estudo
-(`EST:627-651`) vêm primeiro, com a unidade; as linhas 24 a 32 são as que o cartão acrescenta.
+(`EST:627-651`) vêm primeiro, com a unidade; as linhas 24 a 32 são as que o cartão acrescentou, e as 33 e 34 as da emenda de 2026-11-26.
 **Nenhuma linha fica sem referência.** A linha 26 (a conferência do SQL ao salvar) é a mais nova: a
 referência é a do produto (Nekt) e a da ferramenta (SQLMesh), e a biblioteca escolhida foi lida só na
 declaração de tipos (abaixo).
@@ -450,10 +490,12 @@ declaração de tipos (abaixo).
 | 26 | O SQL lido ao salvar | Q7 (a): a versão no Hub | o Hub só lê SQL do PostgreSQL (`libpg-query`, `apps/server/package.json:49`) | Nekt: "Entradas e saídas deduzidas do SQL" (`EST:1151`); SQLMesh tira as tabelas do SQL simples (`sqlmesh@0.236.4 sqlmesh/core/model/definition.py:1309-1322`, `sqlmesh/core/dialect.py:1579-1597`, com as CTE de fora); `dt-sql-parser@4.6.1` traz o leitor do Trino com `validate`, `splitSQLByStatement` e `getAllEntities` (`dist/parser/common/basicSQL.d.ts:111`, `:141`, `:194`; `dist/parser/trino/trinoEntityCollector.js`) | embrulhado | `dt-sql-parser` 4.6.1 lido só na declaração de tipos; a U5a prova `validate` e `getAllEntities` no Trino antes de usá-los (o "Parar se" dela) | U5a: `apps/server/src/hub/treatment/sql.ts`. Lido só na declaração de tipos: a U5a prova o comportamento antes de usá-lo (o "Parar se" dela) |
 | 27 | O SQL da pessoa sem Jinja, com a ordem pelo `depends_on` | Q2 (a) | nenhum | "use a SQL comment instead of a Jinja comment" e "dbt still evaluates Jinja inside SQL comments" (docs.getdbt.com/reference/dbt-jinja-functions/ref, "Forcing dependencies") | embrulhado | a prova U1, critério 2, com `dbt-core` 1.12.7 e `dbt-athena` 1.11.2: o SQL sem Jinja roda na ordem do `depends_on` | U3: `treat.py`; a U1 prova (critério 2) |
 | 28 | A especificação da rodada num objeto | 0076 | a cópia põe a especificação num parâmetro do SSM (`aws-copy.ts:153-160`), de até 8 KB | o dlt passa as credenciais ao dbt pelo ambiente e o projeto pelo disco (`dlt@8fa90a97 dlt/helpers/dbt/runner.py:173-175`, `:380-418`) | embrulhado | o dlt da estante (`dlt@8fa90a97`); o parâmetro do SSM tem teto de 8 KB (`aws-copy.ts:153-160`), e um objeto do `S3` não | U5b escreve; U3 lê. O Hub grava e lê na pasta da empresa do depósito de estado (`infra/aws/lib/hub.ts:173-185`), mas o escritor também grava e apaga nela (`writer.ts:94-98`): a especificação vai numa raiz própria, `tratamento/<empresa>/*`, que o Hub grava preso pela etiqueta da empresa e o papel do tratamento só lê (decisão 4.2, conserto 4) |
-| 29 | O resultado de cada modelo | — | `CopyTaskResult` (`apps/server/src/hub/copies/lake-task.ts:37-64`) | `dbtRunner().invoke` e o resultado por nó (`dlt@8fa90a97 dlt/helpers/dbt/dbt_utils.py:73-87`, `:128-131`); os campos por nó em `dbt-core@1.12.7 artifacts/schemas/results.py:97-104`; a mensagem do nó é "Database Error in model <nome> (<caminho>)" e o texto do Athena (`dbt-common@1.39.0 exceptions/base.py:135-150`, `:236-246`) | nativo | — | U3: `treat.py`; o contrato em `apps/server/src/hub/treatment/treat-task.ts` |
+| 29 | O resultado de cada modelo | — | `CopyTaskResult` (`apps/server/src/hub/copies/lake-task.ts:37-64`) | `dbtRunner().invoke` e o resultado por nó (`dlt@8fa90a97 dlt/helpers/dbt/dbt_utils.py:73-87`, `:128-131`); os campos por nó em `dbt-core@1.12.7 artifacts/schemas/results.py:97-104`; a mensagem do nó tem o nome do modelo na primeira linha e o texto do Athena na segunda (`dbt-common@1.39.0 exceptions/base.py:135-150`, `:236-246`); a U1 gravou a primeira como "Runtime Error in model <nome> (<caminho>)", e a segunda começa pelo tipo do erro, com ou sem `line N:M` (`TABLE_NOT_FOUND: line 10:20: …`, `DIVISION_BY_ZERO: Division by zero. …`); uma recusa que o Athena dá antes de rodar tem uma linha só, sem tipo (registro da U1, seção 7.1) | nativo | — | U3: `treat.py`, o tipo e a linha pela decisão F12; o contrato em `apps/server/src/hub/treatment/treat-task.ts` |
 | 30 | Juntar as cópias que chegam durante uma rodada | — | a cópia pula a segunda com `ALREADY_RUNNING` (`lake-run.ts:278-279`) | Databricks, "the run is queued" quando o máximo de rodadas simultâneas é atingido (docs.databricks.com/aws/en/jobs/settings); "Wait after last change", com as mudanças durante a espera reiniciando o tempo (…/jobs/trigger-table-update) | embrulhado | a coluna `pending` (U5b): uma segunda cópia durante a rodada marca a próxima, provada nos testes da U5b | U5b: a coluna `pending` em `treatment.run` |
 | 31 | O varredor das rodadas de tratamento | 0076 | o varredor da cópia, `apps/server/src/hub/copies/lake-sweep.ts` | o de hoje, que fecha a rodada de cópia sem tarefa viva | nativo (a mesma forma) | — | U5b: `apps/server/src/hub/treatment/treatment-sweep.ts` |
 | 32 | Refazer a tabela tratada quando o SQL muda ou falha | decisão 5 | nenhum | construir ao lado e trocar: `dbt-adapters@1.24.6 macros/materializations/models/table.sql:30-32`, `:42`, `:46`, `:59`; o dbt-athena no Iceberg do Glue (`dbt-athena@1.11.2 table.sql:124-169`); "there is never a time when the table doesn't exist" (docs.databricks.com/aws/en/delta/drop-table); o SQLMesh, "reduced to reference swapping" (sqlmesh.readthedocs.io/en/stable/concepts/plans/). No `S3 Tables` o dbt-athena apaga e cria (`table.sql:102-112`, o porquê em `:103-105`); o Athena não renomeia nem cria visão ali (docs.aws.amazon.com/athena/latest/ug/gdc-register-s3-table-bucket-cat.html); a API do `S3 Tables` renomeia (`RenameTable`, docs.aws.amazon.com/AmazonS3/latest/API/API_s3Buckets_RenameTable.html) | remendo nesta etapa (a janela aceita, com a entrada em `docs/reference/boundaries.md`); a troca pelo `RenameTable` na `T2` | `dbt-athena` 1.11.2, `table.sql:102-112`: no `S3 Tables` apaga e cria, e a tabela fica fora quando o SQL falha (`:106-107`); a U1 mede a janela, a tabela pela metade e o `RenameTable`; a entrada em `docs/reference/boundaries.md` | U3: o `materialized='table'` e a entrada de `boundaries.md`; a U1 mede a janela, a tabela pela metade e o `RenameTable` |
+| 33 | Parar a rodada de tratamento | Q4 do estudo do Parar cópia, "4. Okay": na U5b e na U6, na mesma forma do Parar cópia | o Parar cópia, https://github.com/developmentconexus-ops/conexus/pull/1433 (`apps/server/src/hub/copies/lake-stop.ts`: `stopped_by` com `coalesce`, o `StopTask`, 202 sem esperar, fechar na hora sem tarefa); antes dele, nenhuma parada de rodada | a Nekt pede a parada e não espera: `POST /api/v1/runs/{id}/cancel/`, com `cancel_requested_at` e `cancel_requested_by` e os estados `cancelling` e `canceled` (a OpenAPI da Nekt lida em 2026-11-14); a Databricks, `runs/cancel`, "canceled asynchronously"; o Airbyte dá "Start/cancel syncs" ao mesmo papel que dispara (`airbyte@82db089b docs/platform/access-management/rbac.md:30`); o `StopTask` do ECS (`@aws-sdk/client-ecs@3.1175.0 models_1.d.ts:3447-3474`). Os três lidos no estudo do Parar cópia, de 2026-11-26 (fora do repositório, delivery L21) | embrulhado | a forma do PR do Parar cópia, com os testes dele; a U5b prova os seus pelos critérios 38 e 39 | U5b: `apps/server/src/hub/treatment/treatment-stop.ts`; U6: o botão em `treated-layer.tsx` |
+| 34 | A descrição da coluna tratada | "1 okay" (2026-11-26): herda a da coluna copiada; "2 Okay também quero": Sugerir descrições numa etapa própria | a descrição da coluna copiada, gravada pela cópia em `copies.lake_table.columns` (`apps/server/src/hub/copies/tables.ts:144`) e mostrada em `LakeTableSummary.columns` (`packages/hub-api/src/lake-copies.ts:164-166`); o G1 já tirou `description` de `TreatedColumn` (https://github.com/developmentconexus-ops/conexus/pull/1430, `packages/connectors/src/kernel/tables-treated.ts:10-14`) | a descrição tem um dono só, a coluna copiada (code C26); na Databricks o comentário mora na coluna, e o sugerido pela IA é revisto antes de gravar ("you can review it and either accept it as-is or edit it before saving", docs.databricks.com/aws/en/comments/ai-comments) | nativo | — | U4: nenhuma descrição de coluna no molde; U5a: a coluna da lista de Tratado lê a da coluna copiada pela `column` |
 
 **O que o G5 mudou nas linhas do estudo.** O estudo citou `main` em `99b5eceb`. Conferidas em
 `def26dd9`: a linha 2 já existe (`update.py`, que o estudo dava como "a construir"); "Atualizar a
@@ -493,6 +535,9 @@ o texto "one PostgreSQL SELECT" das ferramentas de dados está em `harness/tools
 | F9 | Tirar uma tabela da cópia apaga também a sua tabela em `tratado` | O molde só existe sobre a tabela copiada; uma tabela tratada sem fonte confunde Dados | deixar a tabela tratada até o apagar do lago |
 | F10 | O tratamento roda num workgroup próprio do lago, `<nome do depósito>-tratamento` | O workgroup de hoje tem teto de 1 GiB por consulta e é dividido pelo leitor e pelo escritor (`infra/aws/lib/lake.ts:24-25`, `:61-71`); o `CREATE TABLE AS` lê a tabela inteira, e o teto próprio sai da medida da U1. Cabe no padrão `workgroup/conexus-*` que a plataforma já aceita | o workgroup de hoje, com o teto subido |
 | F11 | Cada rodada guarda o `lake_id` do lago em que gravou, e a seleção e Tratado só leem as rodadas do lago de agora | Apagar e criar o lago (decisão 2, (b)) leva as tabelas, mas o Hub guarda as rodadas; ler uma rodada `BUILT` do lago apagado pularia o modelo no lago novo. Guardar o lago na rodada não pede que o módulo do lago apague linhas do tratamento | apagar as rodadas da empresa junto com o lago, no `remove` de `lake.ts` |
+| F12 | O tipo do erro do Athena é o `^([A-Z][A-Z_]{2,63}):` no começo da segunda linha da mensagem do nó; a linha é a do primeiro `line N:M` dessa linha, menos as linhas que o dbt-athena põe antes do SQL da pessoa (9, mais uma por `-- depends_on`), e só vale dentro do tamanho do SQL; sem tipo, o modelo volta `TREAT_ENGINE_FAILED`; o texto do Athena nunca sai | A U1 gravou a primeira linha como "Runtime Error in model", e não "Database Error"; o regex que pedia `: line` perde `DIVISION_BY_ZERO` e `INVALID_CAST_ARGUMENT`, que não têm linha (registro da U1, seção 7.1). O G1 aplicou assim (https://github.com/developmentconexus-ops/conexus/pull/1430, `apps/extraction/src/conexus_extraction/treat.py:29-33`, `:109-121`), com teste sobre as sete gravações da U1, com e sem `depends_on`; o 9 é uma peça à mão, registrada em `docs/reference/boundaries.md` com a hora de rever (uma versão nova do dbt-athena) | o regex do cartão anterior, com `TREAT_ENGINE_FAILED` nos tipos sem linha |
+| F13 | O kit declara o seu próprio `LakeTableName` (`packages/connectors/src/kernel/tables-treated.ts:3-6`), com a mesma regex e a mesma marca do contrato do Hub (`packages/hub-api/src/lake-copies.ts:13-14`), e um teste prende as duas (`apps/server/src/hub/connectors/copy-source.test.ts`, "o nome no lago que o kit faz é o do contrato do Hub") | O kit não importa `hub-api`, que já importa o kit: importar faria um ciclo (code C6). O padrão `LAKE_NAME_PATTERN` é o único dono do teto de 60 no kit (o G1, `d8aabb03`) | o kit importar o tipo de um pacote de contratos que nenhum dos dois importe |
+| F14 | Uma rodada de tratamento parada fecha `STOPPED`, com quem parou; o seu `pending` não abre a próxima rodada sozinho, e os modelos do seu `select` entram na próxima seleção como os que falharam por último | Parar e logo reabrir seria o contrário do que a pessoa pediu (estudo do Parar cópia, seção 3). Um modelo parado no meio do seu `CREATE TABLE AS` pode ter a tabela fora (decisão 5), e sem resultado a seleção o daria por gravado na rodada anterior; contá-lo como falho faz a próxima cópia ou o Tratar agora o refazer. `STOPPED` separado de `FAILED` segue a Nekt (`canceled` distinto de `failed`) e o Parar cópia (`INTERRUPTED` com `stoppedBy`) | o `pending` abrir a próxima, e o modelo parado esperar a próxima cópia da sua entrada |
 
 ## U1 A prova do motor no lago
 
@@ -700,13 +745,13 @@ as duas receitas.
 
 ```ts
 // packages/connectors/src/kernel/tables-treated.ts
+export const LakeTableName = z.string().regex(LAKE_NAME_PATTERN).brand('LakeTableName') // F13
 export type TreatedCast = 'KEEP' | 'TEXT' | 'INTEGER' | 'DATE' | 'TIMESTAMP'
 export type TreatedColumn = Readonly<{
   column: string      // a coluna da fonte, em minúsculas, como a cópia a grava
   as: string          // o nome na tabela tratada, [a-z][a-z0-9_]*
   cast: TreatedCast   // KEEP deixa o tipo da cópia; dinheiro fica decimal(38, 9) (0083)
-  description: string // a do dicionário
-}>
+}>  // sem descrição: a coluna tratada herda a da coluna copiada pela `column` ("1 okay")
 export type TreatedTable = Readonly<{ description: string; columns: readonly TreatedColumn[] }>
 /** O único dono do SELECT de um molde: lê "current"."<nome no lago>", sem filtro nem junção. */
 export function treatedSelect(lakeName: LakeTableName, treated: TreatedTable): string
@@ -716,6 +761,10 @@ export function treatedSelect(lakeName: LakeTableName, treated: TreatedTable): s
 (`tratado.sankhya_notas`): uma tabela por ligação, como a cópia. Nenhum filtro de empresa, nenhum
 `tipmov` fixo: a regra de venda é do Negócio. O modelo de arquivo é `kernel/tables.ts`, que cumpre C21
 (as uniões `TableSource`, `TableMode`) e C26; o nome no lago entra já conferido (`LakeTableName`, C23).
+A tabela tratada guarda a descrição da tabela; a coluna, não: a descrição de uma coluna tem um dono, a
+coluna copiada com o dicionário, e a U5a a lê pela `column`, nunca pelo `as` (C26; o fundador, "1 okay",
+2026-11-26). O G1 já é assim (https://github.com/developmentconexus-ops/conexus/pull/1430,
+`tables-treated.ts:10-14`).
 
 ### As skills e a leitura
 
@@ -731,8 +780,8 @@ export function treatedSelect(lakeName: LakeTableName, treated: TreatedTable): s
    recusa.
 3. **O Sankhya.** Critério: 15. **Arquivos:** `copy-tables.ts`. **O que entra:** `treated` nas quatro
    tabelas, com as colunas de negócio que as gravações do dicionário trazem: em `notas` as do exemplo do
-   estudo (`EST:486-498`), com `dtneg` em `DATE` e o dinheiro em `KEEP`. **Pronto quando:** a
-   conformidade passa nas quatro.
+   estudo (`EST:486-498`), com `dtneg` em `DATE` e o dinheiro em `KEEP`, e a descrição de cada tabela;
+   nenhuma descrição de coluna. **Pronto quando:** a conformidade passa nas quatro.
 
 ### Como se prova
 
@@ -828,11 +877,15 @@ As linhas do `docs/reference/stack.md` de `apps/extraction`: `boto3` (`aws-sdk-p
    linha `-- depends_on: {{ ref('<after>') }}` por entrada, e o SQL.
 3. **Rodar e ler.** Critérios: 16, 17. **Referência a seguir:** `dbt_utils.py:128-131`. **O que
    entra:** `dbtRunner().invoke(['build', '--select', *select, ...])`; cada nó vira `BUILT`, `FAILED` ou
-   `SKIPPED`; numa falha, o tipo é o primeiro `\b([A-Z][A-Z_]{2,63}): line (\d+)` da mensagem do nó,
-   depois do prefixo "Database Error in model" que o dbt põe (`exceptions/base.py:236-246`); sem esse
-   trecho, `TREAT_ENGINE_FAILED` no modelo; o resto da mensagem só no log; as linhas de cada tabela
-   gravada por `count(*)`, com a classe `Athena` de `update.py:41-63`. **Mutações à mão:** mandar a
-   mensagem inteira em `failure`, e o caso "falha no meio" fica vermelho pela forma.
+   `SKIPPED`; numa falha, pela decisão F12, o tipo é o `^([A-Z][A-Z_]{2,63}):` no começo da segunda
+   linha da mensagem do nó (a primeira é "Runtime Error in model <nome> (<caminho>)", como a U1
+   gravou; `exceptions/base.py:236-246`), e a linha é o primeiro `line N:M` da segunda linha menos as
+   linhas que o dbt-athena põe antes do SQL da pessoa (9, mais uma por `-- depends_on`), só quando cai
+   dentro do SQL; sem tipo, `TREAT_ENGINE_FAILED` no modelo; o resto da mensagem só no log; as linhas de cada tabela
+   gravada por `count(*)`, com a classe `Athena` de `update.py:41-63`. **Testes:** a leitura sobre as
+   sete mensagens gravadas pela U1, com e sem `depends_on`. **Mutações à mão:** mandar a mensagem
+   inteira em `failure`, e o caso "falha no meio" fica vermelho pela forma; tirar o desconto das linhas,
+   e o caso da linha fica vermelho.
 4. **A imagem e a entrada.** Critério: 19. **Arquivos:** `entry.py`, `pyproject.toml`, `uv.lock`,
    `Dockerfile`, `docs/reference/stack.md`. **O que entra:** `dbt-core==1.12.7` e `dbt-athena==1.11.2`; a
    escolha do caminho pela variável. **Testes:** os de `test_entry.py` sem mudança.
@@ -872,7 +925,9 @@ linha de remoção de cada proteção tocada.
   referência de comportamento é `sqlmesh@0.236.4 sqlmesh/core/dialect.py:1579-1597` (as tabelas do SQL,
   sem as CTE).
 - **15 e 25.** A lista de Tratado lê `TableDeclaration.treated` pelo índice do kit e as tabelas
-  copiadas de `copies.lake_table` (`apps/server/src/hub/copies/tables.ts:135`).
+  copiadas de `copies.lake_table` (`apps/server/src/hub/copies/tables.ts:135`), com as colunas e as
+  descrições que a cópia gravou (`:144`).
+- **34.** A descrição de cada coluna tratada é a da coluna copiada de mesma `column`.
 - **19.** O sim pela rota, com o hash, como a 0064 ("the approval is a route").
 
 ### O raio da mudança
@@ -911,10 +966,11 @@ linha de remoção de cada proteção tocada.
 | | `company_id` | `text not null`; índice único `where ended_at is null` | — |
 | | `lake_id` | `text not null`, o `LakeId` do lago em que a rodada gravou | — |
 | | `cause` | `'COPY' \| 'NOW'` | — |
-| | `state` | `'STARTING' \| 'RUNNING' \| 'DONE' \| 'FAILED'` | — |
+| | `state` | `'STARTING' \| 'RUNNING' \| 'DONE' \| 'FAILED' \| 'STOPPED'` | — |
 | | `select` | `jsonb not null`, os `ModelName` | — |
 | | `pending` | `jsonb not null default '[]'`, as tabelas copiadas durante a rodada | — |
 | | `failure` | `TreatmentRunFailure`, não nulo só em `FAILED` | — |
+| | `stopped_by` | `text`, nulo; quem pediu o Parar primeiro, escrito pela U5b, como `copies.lake_run.stopped_by` do Parar cópia | — |
 | | `attempt`, `task`, `started_at`, `ended_at` | como `copies.lake_run` | — |
 | `model_run` | `run_id` | `text not null references run(id)` | `on delete cascade` |
 | | `company_id` | `text not null` | — |
@@ -948,10 +1004,10 @@ export const TreatmentModelId = z.uuid().brand('TreatmentModelId')
 export const TreatmentRunFailure = z.enum(['TREAT_START_FAILED', 'TREAT_TASK_STOPPED', 'TREAT_SPEC_INVALID', 'TREAT_ENGINE_FAILED'])
 export const TableRef = z.object({ layer: z.enum(['current', 'tratado', 'negocio']), table: LakeTableName })
 export const ModelRunView = z.discriminatedUnion('status', [/* BUILT com rows e at; FAILED com failure, line e at; SKIPPED com at */])
-export const RunView = z.discriminatedUnion('state', [/* STARTING e RUNNING com since; DONE com at; FAILED com failure e at */])
+export const RunView = z.discriminatedUnion('state', [/* STARTING e RUNNING com since e stopping; DONE com at; FAILED com failure e at; STOPPED com stoppedBy ({ name } ou nulo) e at */])
 export const TreatedTable = z.discriminatedUnion('layer', [
   z.object({ layer: z.literal('tratado'), name: LakeTableName, connectionId: ConnectionId, description: z.string(),
-    columns: z.array(z.object({ name: z.string(), description: z.string() })), readBy: z.array(TableRef), lastRun: ModelRunView.nullable() }),
+    columns: z.array(z.object({ name: z.string(), description: z.string().nullable() })), readBy: z.array(TableRef), lastRun: ModelRunView.nullable() }),
   z.object({ layer: z.literal('negocio'), id: TreatmentModelId, name: LakeTableName, description: z.string(),
     active: VersionView.nullable(), proposal: VersionView.nullable(), readBy: z.array(TableRef), lastRun: ModelRunView.nullable() }),
 ])
@@ -962,6 +1018,11 @@ export const TreatedTables = z.object({ lake: z.enum(['CURRENT', 'OUTDATED', 'NO
 - **Os ids**: `TreatmentModelId` e `TreatmentRunId` com marca, conferidos no parse da rota (C23).
 - **O dono de "o que um modelo lê"**: `treatment/sql.ts` (C26). Ele devolve
   `{ kind: 'QUERY', inputs } | { kind: 'REFUSED', code, detail }`, e nada mais lê SQL.
+- **A descrição da coluna tratada**: `name` é o `as` do molde, e `description` é a da coluna copiada
+  cuja `name` é a `column` do molde, lida em `copies.lake_table.columns`; nula quando a copiada não tem
+  descrição, como `LakeTableSummary.columns` (`packages/hub-api/src/lake-copies.ts:164-166`). Nunca
+  pelo `as`: no Sankhya os dois são iguais, mas um molde que renomeie perderia a descrição (a revisão do
+  G1, achado 3).
 - **O dono do modelo de um molde**: `treatment/models.ts` monta, para cada tabela copiada com
   `treated`, o `TreatModel` `tratado__<nome>` com `treatedSelect` (U4); para cada modelo de Negócio
   ligado, o da versão ligada.
@@ -998,7 +1059,9 @@ Drizzle, Zod, Neon (`neon-postgres`), Better Auth (`better-auth-best-practices`,
    condicional ao hash e a ser a última proposta. Regras: D22. **Mutações à mão:** ligar sem conferir o
    hash, e o critério 22 fica vermelho.
 5. **A lista de Tratado e de Negócio.** Critério: 25. **Arquivos:** `models.ts`, `routes.ts`.
-   **Testes:** pela rota, com o Sankhya do dublê e uma tabela do HubSpot sem molde.
+   **Testes:** pela rota, com o Sankhya do dublê e uma tabela do HubSpot sem molde; um molde de teste
+   que renomeia uma coluna (`column` diferente de `as`) e mostra a descrição da copiada.
+   **Mutações à mão:** procurar a descrição pelo `as`, e o caso do molde que renomeia fica vermelho.
 
 ### Como se prova
 
@@ -1025,16 +1088,21 @@ e a rodada tem de juntar, nunca dobrar nem perder.
 - **28.** `apps/server/src/platform/aws-copy.ts:62-88` (`runTaskInput`), com a variável nova no lugar do
   parâmetro e o papel do tratamento no lugar do escritor.
 - **31.** `apps/server/src/hub/copies/lake-sweep.ts`, a forma do varredor.
+- **33.** O Parar cópia (https://github.com/developmentconexus-ops/conexus/pull/1433):
+  `apps/server/src/hub/copies/lake-stop.ts` (`createLakeStop`, `requestTaskStop`), `lake-routes.ts`
+  (`stopLakeCopyRun`, 202 e 200), `lake-close.ts` (o fim sem resultado depois do pedido fecha
+  `INTERRUPTED` com a causa `PERSON`) e `packages/hub-api/src/lake-copies.ts` (`stopping`, `stoppedBy`).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/treatment/` | Cria `treatment-run.ts`, `treatment-sweep.ts`, `select.ts`; muda `routes.ts` | `lake-close.ts`, `lake-queue.ts`, o início do Hub |
+| `apps/server/src/hub/treatment/` | Cria `treatment-run.ts`, `treatment-sweep.ts`, `treatment-stop.ts`, `select.ts`; muda `routes.ts` | `lake-close.ts`, `lake-queue.ts`, o início do Hub |
 | `apps/server/src/hub/copies/lake-close.ts` | Muda: avisa o tratamento no fim `COMPLETE` | — |
 | `apps/server/src/hub/copies/lake-queue.ts` | Muda: lê também `TreatTaskResult`; o `EcsStopped` acha a rodada pelo id na cópia ou no tratamento | `aws-copy-queue.ts` |
 | `apps/server/src/platform/aws-copy.ts`, `aws-copy-queue.ts` | Muda: `treatTaskInput`, `putTreatObject`; a mensagem da fila aceita os dois tipos | `treatment-run.ts` |
-| `packages/hub-api/src/treatment.ts` | Cria `runTreatmentNow` | U6 |
+| `packages/hub-api/src/treatment.ts` | Cria `runTreatmentNow` e `stopTreatmentRun` | U6 |
+| `apps/server/src/hub/copies/lake-stop.ts` | Muda, se preciso: `requestTaskStop` recebe só os campos do log, para o tratamento chamá-lo sem `connectionId` | `lake-stop.ts`, `treatment-stop.ts` |
 
 ### Os contratos que a unidade cria
 
@@ -1045,6 +1113,13 @@ export const runTreatmentNow = defineOperation({
   path: '/api/companies/{companyId}/data/treated/run',
   success: { status: 202, body: z.object({ run: TreatmentRunId }) },
   failures: ['FORBIDDEN', 'ALREADY_RUNNING', 'LAKE_NOT_READY', 'NOTHING_TO_TREAT', 'DATABASE_UNAVAILABLE'],
+})
+// a forma de stopLakeCopyRun: sem corpo; 202 { stopping: true } com o pedido feito, 200 { stopping: false } sem rodada aberta
+export const stopTreatmentRun = defineOperation({
+  id: 'stopTreatmentRun', access: 'session', method: 'POST',
+  path: '/api/companies/{companyId}/data/treated/run/stop',
+  success: { status: 202, body: z.object({ stopping: z.boolean() }) },
+  failures: ['FORBIDDEN', 'DATABASE_UNAVAILABLE'],
 })
 
 // apps/server/src/hub/treatment/select.ts, puro
@@ -1066,6 +1141,12 @@ export type AfterCopy = (companyId: CompanyId, copied: readonly LakeTableName[])
   idempotent).
 - **`pending`**: o perdedor do índice único acrescenta as suas tabelas à aberta numa transação; ao
   fechar, se `pending` não está vazio, a mesma transação abre a próxima com `selection(pending)`.
+- **O Parar** (decisão F14): a mesma forma do Parar cópia. Grava `stopped_by` com `coalesce` numa
+  rodada aberta, pede o `StopTask` pela mesma chamada da cópia (`requestTaskStop`, sem segunda
+  implementação) e responde sem esperar; sem tarefa, fecha `STOPPED` na hora, e a partida em curso
+  desfaz a própria tarefa. O `EcsStopped` ou o varredor de uma rodada com `stopped_by` fecha `STOPPED`,
+  e não `FAILED` com `TREAT_TASK_STOPPED`; um `TREAT_RESULT` que chega antes do fim vale, como no Parar
+  cópia. O fecho `STOPPED` não abre a próxima pelo `pending`.
 - **A especificação**: `s3://<estado>/tratamento/<companyId>/<runId>-<tentativa>.json`, fora da pasta `<companyId>/*` que o escritor grava e apaga (decisão 4.2, conserto 4), escrita antes do
   `RunTask`, nunca no log.
 - **O modelo de arquivo**: `lake-run.ts`, que cumpre C21 (o `ALREADY_RUNNING` como variante) e C23.
@@ -1099,7 +1180,23 @@ As linhas do `docs/reference/stack.md` de `@aws-sdk/client-ecs`, `client-sqs`, `
    aberta cuja tarefa não está viva fecha com `TREAT_TASK_STOPPED`. **Testes:** `treatment-sweep.test.ts`.
 6. **Tratar agora.** Critério: 29. **Arquivos:** `routes.ts`. **O que entra:** a guarda do lago com a
    receita nova (`outdated` falso), da rodada aberta e de haver modelo; a rota pede `approveTreatment`
-   (decisão 4.1).
+   (decisão 4.1). **Pergunta aberta do G2**, a responder antes desta ordem do trabalho começar
+   (https://github.com/developmentconexus-ops/conexus/issues/1431): `outdated` compara o sha256 inteiro
+   da receita (`apps/server/src/hub/lake/lake.ts:84` contra `config-aws.ts:88-90`), então a primeira
+   mudança de `lake.template.json` depois do G1 faria todo lago que já tem `tratado` e `negocio`
+   recusar Tratar agora e a proposta com `LAKE_NOT_READY`. As saídas a decidir: guardar pelo que o
+   tratamento precisa (a receita ter as duas áreas), ou gravar na linha a receita nova depois de um
+   `UpdateStack` (https://github.com/developmentconexus-ops/conexus/issues/1424). É reversível (decisão F8), então é do firstmate, com a resposta escrita
+   aqui antes da U5b.
+7. **Parar.** Critério: 38. **Arquivos:** cria `treatment-stop.ts`; muda `routes.ts`,
+   `treatment-run.ts`, `treatment-sweep.ts`, `select.ts`. **Referência a seguir:** `lake-stop.ts` e o
+   fecho de `lake-close.ts` do Parar cópia. **O que entra:** a rota com `approveTreatment`; o fim
+   `STOPPED` com quem parou; o `pending` que não reabre; os modelos do `select` da rodada parada na
+   próxima seleção. **Testes:** `treatment-stop.test.ts`: com e sem rodada, sem tarefa, dois pedidos, o
+   fim pela fila e pelo varredor depois do pedido, o resultado que chega depois do pedido, e um papel
+   sem `approve`. **Mutações à mão:** gravar `stopped_by` sem `coalesce`; fechar `FAILED` no fim depois
+   do pedido; abrir a próxima pelo `pending`; tirar da seleção os modelos parados. Cada uma deixa um
+   caso vermelho.
 
 ### Como se prova
 
@@ -1128,7 +1225,7 @@ gravada; a corrida das duas cópias com duas transações abertas ao mesmo tempo
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/hub/copies/` | Muda `text.ts`, `search.ts`, `data-page.tsx`, `data-tree.tsx` | a rota de Dados |
-| `apps/web/src/hub/treatment/` | Cria `treated-layer.tsx`, `treated-table.tsx`, `business-layer.tsx`, `new-treatment.tsx`, `approve.tsx`, `queries.ts`, `text.ts` | `data-page.tsx`; as rotas |
+| `apps/web/src/hub/treatment/` | Cria `treated-layer.tsx`, `treated-table.tsx`, `business-layer.tsx`, `new-treatment.tsx`, `approve.tsx`, `treatment-stop.tsx`, `queries.ts`, `text.ts` | `data-page.tsx`; as rotas |
 | `apps/web/src/routes/_app/companies/$companyId/` | Cria `data.treated.$name.tsx`, `data.business.$modelId.tsx` | o roteador |
 
 ### Os contratos que a unidade cria
@@ -1161,6 +1258,13 @@ As linhas do `docs/reference/stack.md` de `apps/web/src`: TanStack Router e Quer
    ligada; a aba Versões em `ui/list`; o cartão em `ui/alert-dialog` com `ui/code-block`; o hash lido
    vai no corpo de `approveTreatmentVersion`.
 4. **Tratar agora.** Critério: 29 pela tela. **Arquivos:** `treated-layer.tsx`.
+5. **Parar.** Critério: 39. **Arquivos:** cria `treatment-stop.tsx`; muda `treated-layer.tsx`.
+   **Referência a seguir:** o botão do Parar cópia
+   (https://github.com/developmentconexus-ops/conexus/pull/1433,
+   `apps/web/src/hub/connectors/lake-copied-controls.tsx`): a confirmação em `ui/alert-dialog`,
+   "Parando…" com `focusableWhenDisabled` (`@base-ui/react@1.9.0 button/Button.d.ts:21`), a releitura
+   pelo `MutationCache.onSettled` (web W12) e "Parada por <nome> às <HH:MM>". **Testes:**
+   `treatment-stop.test.tsx`. **Mutações à mão:** tirar o foco de "Parando…", e o caso fica vermelho.
 
 ### Como se prova
 
@@ -1176,7 +1280,7 @@ Os testes de tela com o `msw` respondendo as operações da U5a e da U5b (testin
 
 Depois da U6, antes do pull request: a migração do `treatment` pelo `migrate` e o `catalog.test.ts` com
 o banco de teste (o superusuário `postgres` e o dono `conexus_owner`, como a CI); o Hub local com os
-dublês, o roteiro inteiro do passo 2 ao 6 numa empresa de teste (o dublê da AWS responde o `RunTask` e
+dublês, o roteiro inteiro do passo 2 ao 6 numa empresa de teste, com um Parar no passo 5 (o dublê da AWS responde o `RunTask` e
 a fila com o `TREAT_RESULT` gravado), a 1280 e a 390 px nos dois temas; `npm run check`,
 `npm run migrations`, os testes de `apps/server/src/hub/treatment`, `apps/server/src/hub/copies` e
 `apps/web/src/hub`; a linha de remoção de cada proteção tocada.
