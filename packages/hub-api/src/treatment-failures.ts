@@ -23,13 +23,17 @@ export const TREATMENT_FAILURES = {
   },
   TREATMENT_INPUT_CYCLE: {
     ...USER_422,
-    phrase: 'Esta regra leria o próprio resultado, direto ou por outra regra.',
+    phrase: 'Este tratamento leria a própria tabela, direto ou por outro tratamento.',
   },
   TREATMENT_NAME_TAKEN: { ...USER_409, phrase: 'Outro tratamento da empresa já tem este nome.' },
-  TREATMENT_VERSION_CHANGED: { ...USER_409, phrase: 'A proposta mudou. Veja a versão nova.' },
+  TREATMENT_VERSION_CHANGED: {
+    ...USER_409,
+    phrase: 'Esta versão já não é a proposta de agora. Veja as versões.',
+  },
   LAKE_NOT_READY: {
     ...USER_409,
-    phrase: 'O lago desta empresa não está pronto para tratar. Peça ao operador do Conexus.',
+    phrase:
+      'O lago desta empresa ainda não está pronto para os tratamentos. Peça ao operador do Conexus.',
   },
   ALREADY_RUNNING: { ...USER_409, phrase: 'Uma rodada de tratamento já está em curso.' },
   NOTHING_TO_TREAT: { ...USER_409, phrase: 'A empresa ainda não tem tratamento para rodar.' },
