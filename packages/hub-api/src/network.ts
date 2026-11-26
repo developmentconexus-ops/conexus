@@ -19,7 +19,7 @@ function domainOf(typed: string): string | null {
   const listed = parse(name, { allowPrivateDomains: true })
   // `tldts` names no suffix for an IP address or for a text that is no hostname.
   if (listed.publicSuffix === null || !name.includes('.') || name.endsWith('.')) return null
-  if (/(^|\.)e2b\.(app|dev)$/.test(name)) return null
+  if (/(^|\.)(e2b\.(app|dev)|localhost)$/.test(name)) return null
   const starOverPublicSuffix = starred && listed.domain === null
   if (starOverPublicSuffix) return null
   return host

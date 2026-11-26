@@ -42,6 +42,7 @@ const REFUSED: Readonly<Record<string, readonly string[]>> = {
     '*.cloudfront.net',
   ],
   'nome sob e2b': ['e2b.app', '49999-abc.e2b.app', 'api.e2b.dev', '*.e2b.dev', '*.x.e2b.app'],
+  'nome sob localhost': ['foo.localhost', '*.foo.localhost', 'Foo.LOCALHOST'],
   'texto que não é nome de máquina': ['exemplo.com.', 'a..exemplo.com', '-a.com', "a'b.com"],
 }
 
