@@ -68,7 +68,7 @@ product decision, security boundary or operational prohibition.
   more front with its own delta. One reader checks each front's delta for closed Bloqueia and new
   defects, while QA reruns the screens it touched. Founder, 2026-10-25: "2. A", "3. A"; 2026-11-15.
   Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
-  deltas. Founder, 2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". [review]
+  deltas. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
   and sweep its class through the whole diff. A third delta check blocking on the same premise
   returns to the card and founder. [review]
@@ -83,6 +83,8 @@ product decision, security boundary or operational prohibition.
   unless the step proves it does not happen. With neither broken rule nor shown defect, start with
   `Nit:`, as Fechamento. On the border, a loss in the use script or operation is Bloqueia; a loss only after a later code change is Fechamento unless two owners
   can diverge. [review]
+- **L29.** Before a push, `npm run check:local` **must** be green on the commit; the full typecheck
+  and the suites are CI's (L15). [review]
 
 ## 4. Merge and use
 
@@ -90,7 +92,6 @@ product decision, security boundary or operational prohibition.
   pass and its review approves the same commit. The card's pull request and a proof's decision record carry
   documents only. One founder merge word
   covers a step's units; review and CI still gate each.
-  Founder, 2026-10-25: "3. A"; 2026-10-27: "2. Sim".
   The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
   `main`, always through firstmate's merge script, and only after the `ci` and `processo` checks reported green on that
@@ -177,7 +178,7 @@ product decision, security boundary or operational prohibition.
   that template (2,000 words at most, no separate card reader), one Opus unit review, one delta at most, one step review with QA for screens. Dados owns
   `packages/connectors/src/<provider>/` and its fakes, and a change to a shared contract
   (`packages/hub-api`, migrations, `docs/index.md`, guides) **must** be read by the Agentes e Apps track.
-  Founder, 2026-10-30: "3. Sim", "4. Sim". [review]
+  [review]
 
 ## 8. Git
 

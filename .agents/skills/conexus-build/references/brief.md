@@ -11,14 +11,14 @@ from the instruction.
 
 1. **At the top, in at most 120 words, the goal and the done line.** The goal: the unit or group,
    the base commit and the branch. Done: each of the unit's criteria green by its test, `npm run
-   check` green, the group's checkpoint run. The card's "Pronto quando" block is the done line
+   check:local` green, the group's checkpoint run. The card's "Pronto quando" block is the done line
    when the card has one; the brief points to it and writes none of its own.
 2. **The state file.** The builder creates `criteria.json` first, beside the task's notes and
    outside the repository ([delivery L21](../../../../docs/guides/delivery.md)): one item per
    criterion, with its number, test, state (`nao_iniciado`, `verde` or `vermelho`) and proof, and
    the reference rows opened. It keeps the file current, with short progress notes beside it.
-3. **The verification it may run.** `npm run check` before each commit (step 7) and the
-   checkpoint's batch, one heavy process at a time.
+3. **The verification it may run.** `npm run check:local` on each commit before its push
+   (step 7) and the checkpoint's batch, one heavy process at a time.
 4. **The named stops.** Criterion against criterion, criterion against the code, a shape outside
    the contract, and a reference the builder could not open are each a `needs-decision` with the
    evidence ("Stop and ask"), never a choice made in the code. The stops to avoid: announcing the

@@ -167,3 +167,11 @@ Depois, no mesmo dia: "Isso é SV23B55, são decisões antigas, né? A gente tem
 - O [PRODUCT.md](../../PRODUCT.md) com os dois perfis por igual, os nomes em português, o alvo e o anti-alvo (decisão 7 do estudo).
 
 O `docs/guides/web.md` fica para a R2 e o `DESIGN.md` para a U3 da R1.
+
+## Mudança de método: a checagem local cabe na máquina
+
+Em 2026-11-26, como mudança de método (L20), à pergunta Q2 do estudo do ciclo das features (`conexus-ciclo-features-analise`), sobre a checagem local que o earlyoom matava, o fundador respondeu: "Q2 Okay". A opção que ele aprovou: "Uma checagem nova: as leves inteiras (documentos, dependências, knip, supressões, cartão), o Biome e os tipos só no que mudou, e os testes da unidade. O resto fica na CI." Entram o comando `npm run check:local` (`scripts/check-local.ts`), a L29 no guia de entrega, o passo 7 da skill `conexus-build` com a referência `brief.md`, as menções da skill `conexus-connector` e do how-to `add-a-subject`, e a entrada em `docs/reference/boundaries.md`. O `npm run check` fica no `package.json` porque documentos já aprovados o citam, entre eles o cartão em construção `rede-e-navegador-sob-pedido` e as tarefas da trilha de Dados (L20).
+
+O firstmate decidiu, sem palavra do fundador: um passo morto por sinal deixa a checagem vermelha (proposta 3 do estudo). Decidido na construção, também sem a palavra dele: a checagem roda sobre o commit, com a árvore limpa, antes de empurrar, porque o `biome check --changed` não lê o que está sem commit; o `npm run quality` sai do passo 6, porque a checagem nova o roda; a lista dos testes sem segunda rodada (`npm run rerun-list`, proposta 4) entra nas checagens leves.
+
+Palavras do fundador movidas das regras do guia de entrega para este registro (L21), no mesmo pull request, para a L29 caber no teto (L24): delivery L9, "Concordo" (2026-10-16) e "nao podemos adicionar gargalo" (2026-10-21); delivery L13, "3. A" (2026-10-25) e "2. Sim" (2026-10-27); delivery L27, "3. Sim" e "4. Sim" (2026-10-30).

@@ -43,11 +43,12 @@ connectors, [brief](references/brief.md) for the session's brief.
    changed screen looked at per [T23](../../../docs/guides/testing.md), through a
    verification skill when one exists ([screen](references/screen.md)). A state fix reruns
    A→B→A, a layout fix the card's failure states. A remendo row keeps the card's proof beside its
-   [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop`, `no-comments` and
-   `npm run quality`, hand-mutate key lines
+   [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop` and `no-comments`,
+   hand-mutate key lines
    ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.
-7. One commit for the unit, kept on merge; `npm run check`, the tests and proofs its section names are green
-   locally before it ([delivery L9](../../../docs/guides/delivery.md)).
+7. One commit per unit, kept on merge. `npm run check:local -- --unit U<k> <test files>` and the
+   section's proofs are green on it before its push
+   ([delivery L29](../../../docs/guides/delivery.md)).
 
 ## What it produces
 
