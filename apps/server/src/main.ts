@@ -17,6 +17,7 @@ import {
   openGoogleCalls,
   signInFlows,
 } from './harness/model-accounts/public.ts'
+import { createNetwork } from './harness/network/public.ts'
 import { createAccess } from './hub/access/public.ts'
 import type { Apps, CloseRequests, Ungranted } from './hub/apps/public.ts'
 import { appAccessOf, createAppRemoval, createApps, versionNumbersOf } from './hub/apps/public.ts'
@@ -93,7 +94,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies],
+    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies, deps.network],
   ]) {
     part.routes(app)
   }
@@ -214,6 +215,7 @@ export function subjectsOf(deps: SubjectDeps) {
   const modelAccounts = createModelAccounts({
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
+  const network = createNetwork({ database, identity, log })
   const connectors = createConnectors({
     ...{ ...deps, identity, door: apps.connectorCall, recordRead: recordRead(deps) },
     leaveCopy: (at) => lakeCopies.leave(at),
@@ -228,7 +230,7 @@ export function subjectsOf(deps: SubjectDeps) {
   return {
     ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, data },
-    ...{ lakeRuns, lakeClock, lakeCopies },
+    ...{ lakeRuns, lakeClock, lakeCopies, network },
   }
 }
 
