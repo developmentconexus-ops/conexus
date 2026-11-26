@@ -68,6 +68,23 @@ test('o erro fica no campo', async () => {
   await page.close()
 })
 
+test('a pilha mostra até três avisos', async () => {
+  const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {} })
+  const save = page
+    .locator('[data-file="notice.tsx"] [data-band=light]')
+    .getByRole('button', { name: 'Salvar padrão' })
+  for (let asked = 1; asked <= 4; asked++) {
+    await save.click()
+    await page
+      .locator('[data-slot=notice]')
+      .nth(asked - 1)
+      .waitFor({ state: 'attached' })
+  }
+  assert.equal(await page.locator('[data-slot=notice]:visible').count(), 3)
+  assert.deepEqual(page.problems, [])
+  await page.close()
+})
+
 test('o aviso some e não rouba o foco', async () => {
   const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {} })
   const save = page

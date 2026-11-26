@@ -182,6 +182,24 @@ test('o foco é visível em toda peça da vitrine: contorno de tinta no claro e 
   await page.close()
 })
 
+// The slider's handle wraps the input that takes the focus, so the showcase cannot pin its state.
+test('o deslizante focado pelo teclado desenha o contorno do tema na alça', async () => {
+  const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {} })
+  for (const band of ['light', 'dark'] as const) {
+    const handle = page
+      .locator(`[data-file="slider.tsx"] [data-band=${band}] [data-slot=slider-thumb]`)
+      .first()
+    await handle.locator('input').focus()
+    await page.keyboard.press('ArrowRight')
+    const style = await handle.evaluate((one) => {
+      const drawn = getComputedStyle(one)
+      return `${drawn.outlineStyle} ${drawn.outlineWidth} ${drawn.outlineColor}`
+    })
+    assert.equal(style, `solid 2px ${FOCUS[band].outline}`, band)
+  }
+  await page.close()
+})
+
 // Step 13.3, U9 (criterion 28): the free answer of a question is the `Textarea` of `ui/`: focus on its own edge (V28), and it grows with its lines (#272).
 test('a resposta livre: o foco na própria borda e a caixa cresce em várias linhas, em 1366 e 390', async () => {
   const [state] = CARD_STATES

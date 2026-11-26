@@ -70,7 +70,13 @@ function SettingsFrame() {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Voltar"
-              render={<Link to="/companies/$companyId" params={{ companyId }} />}
+              render={
+                <Link
+                  to="/companies/$companyId"
+                  params={{ companyId }}
+                  activeOptions={{ exact: true }}
+                />
+              }
             >
               <ArrowLeftIcon aria-hidden="true" />
               <span>Voltar</span>

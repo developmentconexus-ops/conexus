@@ -12,7 +12,7 @@ export function Notice({ children }: { children: ReactNode }) {
 }
 
 /** What a notice says once something is done: one line, and at most a second under it. */
-export type Notice = { title: string; description?: string }
+export type NoticeText = { title: string; description?: string }
 
 // Base UI's toast, for what went well only: an error stays beside what failed (design V26). The
 // stack is in the page's flow: a notice enters by a short rise and leaves by opacity, and its
@@ -67,6 +67,6 @@ export function NoticeProvider({ children }: { children: ReactNode }) {
 }
 
 /** Says that something is done, after the Hub confirmed it. */
-export function useNotice(): (notice: Notice) => void {
+export function useNotice(): (notice: NoticeText) => void {
   return Toast.useToastManager().add
 }

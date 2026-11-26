@@ -6,6 +6,7 @@ import { CONVERSATIONS, OPENED, onlyList, owner } from './frame-replies.ts'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
+import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 
 // The frame in a real browser (design V5, V19): the graphite round the sheet, the sheet
 // inset in it, and the current place of the sidebar.
@@ -171,3 +172,22 @@ for (const scheme of ['light', 'dark'] as const) {
     await opened.close()
   })
 }
+
+// A place in a list with an icon, such as a section of Configurações; "Voltar" leads out and is
+// never the current place.
+test('em Configurações a seção aberta acende o ícone e "Voltar" não é o lugar atual', async () => {
+  const state = DEFAULT_STATES.find((one) => one.name.endsWith('padrões da empresa do dono'))
+  assert.ok(state, 'the sweep lacks the owner at Padrões da empresa')
+  const page = await harness.open(state.path, { viewport: DESKTOP, replies: state.replies })
+  await state.settle(page)
+  await atRest(page)
+  const bar = page.locator('[data-slot=sidebar]')
+  const current = bar.locator('a[aria-current=page]')
+  assert.equal(await current.count(), 1, 'the sidebar marks more than one current place')
+  assert.deepEqual(await channelsOf(current, 'backgroundColor'), GRAPHITE.light.current)
+  assert.deepEqual(await channelsOf(current.locator('svg'), 'color'), IPE)
+  const back = bar.getByRole('link', { name: 'Voltar' })
+  assert.equal(await back.getAttribute('aria-current'), null)
+  assert.deepEqual(await channelsOf(back.locator('svg'), 'color'), FRAME_TEXT_2)
+  await page.close()
+})

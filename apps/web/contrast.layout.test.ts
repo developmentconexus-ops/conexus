@@ -33,6 +33,14 @@ const PAIRS: Pair[] = [
   { text: 'on-notice', ground: 'notice', least: TEXT },
   { text: 'on-ink', ground: 'ink', least: TEXT },
   { text: 'on-ink', ground: 'danger', least: TEXT },
+  // The colours of code, on the white piece the code block is.
+  ...on(
+    ['raised'],
+    ['keyword', 'string', 'comment', 'function', 'constant', 'parameter', 'expression'].map(
+      (name) => `code-${name}`,
+    ),
+    TEXT,
+  ),
   // A state's dot and icon, where they are drawn: on the sheet and on what floats.
   ...on(['surface', 'raised'], ['success', 'warning', 'danger'], GRAPHIC),
 ]
