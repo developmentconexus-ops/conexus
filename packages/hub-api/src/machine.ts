@@ -9,6 +9,7 @@ export const MACHINE_TOOL = {
   showFile: 'show_file',
   /** The program an agent with its Computador writes over its tools (step 24.4, U5): Mastra's own id. */
   codeMode: 'execute_typescript',
+  requestNetwork: 'request_network_access',
 } as const
 
 /** The most a text file shown beside the chat carries in its output: a larger one is a file to download. */

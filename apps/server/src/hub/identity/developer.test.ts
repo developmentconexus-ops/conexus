@@ -109,6 +109,7 @@ test('o que a pessoa pode: a empresa diz, para cada um dos quatro papéis, o que
         manageAgents: mayBuild,
         manageAutomations: mayBuild,
         manageCopies: mayGovern,
+        manageNetwork: mayGovern,
         manageRoles: mayGovern,
         readDataReads: mayGovern,
         viewAppData: mayBuild,

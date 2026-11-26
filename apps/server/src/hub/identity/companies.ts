@@ -99,6 +99,7 @@ export async function readCompany(
         manageAgents: allows(admitted.role, 'manageAgents'),
         manageAutomations: allows(admitted.role, 'manageAutomations'),
         manageCopies: allows(admitted.role, 'manageCopies'),
+        manageNetwork: allows(admitted.role, 'manageNetwork'),
         manageRoles: allows(admitted.role, 'manageRoles'),
         readDataReads: allows(admitted.role, 'readDataReads'),
         viewAppData: allows(admitted.role, 'viewAppData'),

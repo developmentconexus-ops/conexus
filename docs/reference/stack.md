@@ -96,6 +96,7 @@ change.
 | `recharts` | `packages/app/starter`, `packages/app/skills` | README | none | — | — | shadcn's `ChartStyle` writes a `<style>` element, which the app's policy blocks |
 | `react-resizable-panels` | `apps/web/src/ui`, `apps/web/src/agents` | README | none | OS `apps/web` | — | — |
 | `@brazilian-utils/brazilian-utils` | `packages/hub-api`, `apps/web/src/hub` | README | none | — | — | — |
+| `tldts` | `packages/hub-api` | README | none | — | C75 | `parse` without `allowPrivateDomains: true` takes `github.io` for a domain a star may open |
 | `vite` | `apps/web` | `vite.dev/llms.txt` | none | — | 0002 | — |
 | `@vitejs/plugin-react` | `apps/web` | `vite.dev/llms.txt` | none | — | 0002 | — |
 | `vitest` | `apps/web` | `vitest.dev/llms.txt` | none | Mastra 1.83 (`mastra-1.83`) `mastracode/factory-ui/vitest.config.ts` | 0034 | — |

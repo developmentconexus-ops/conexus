@@ -123,6 +123,7 @@ export const NO_MAY = {
   manageAgents: false,
   manageAutomations: false,
   manageCopies: false,
+  manageNetwork: false,
   manageRoles: false,
   readDataReads: false,
   viewAppData: false,

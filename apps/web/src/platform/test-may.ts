@@ -6,6 +6,7 @@ export function mayOf(role: string) {
     manageAgents: builds,
     manageAutomations: builds,
     manageCopies: governs,
+    manageNetwork: governs,
     manageRoles: governs,
     readDataReads: governs,
     viewAppData: builds,

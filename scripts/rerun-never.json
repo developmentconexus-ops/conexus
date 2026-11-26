@@ -1382,6 +1382,10 @@
     {
       "file": "apps/server/src/hub/copies/lake-stop.test.ts",
       "name": "parar é de quem gerencia cópias: membro, desenvolvedor, estranho e ligação desconhecida recebem 404 sem tocar a rodada; o administrador para"
+    },
+    {
+      "file": "apps/server/src/harness/network/network-store.test.ts",
+      "name": "as políticas de linha: outra empresa não lê, outra pessoa não lê a conversa"
     }
   ]
 }
