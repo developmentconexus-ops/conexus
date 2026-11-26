@@ -1,6 +1,6 @@
 import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -128,7 +128,7 @@ test('o desenvolvedor e outro membro leem a linha sem botões e quem decide', as
     expect(screen.queryByRole('button', { name: 'Cancelar pedido' })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Publicar a versão/ })).toBeNull()
     expect(view.publishRequest?.number).toBe(5)
-    document.body.innerHTML = ''
+    cleanup()
   }
 })
 
