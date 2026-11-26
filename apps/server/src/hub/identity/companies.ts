@@ -100,6 +100,8 @@ export async function readCompany(
         manageAutomations: allows(admitted.role, 'manageAutomations'),
         manageCopies: allows(admitted.role, 'manageCopies'),
         manageNetwork: allows(admitted.role, 'manageNetwork'),
+        openAllNetwork: allows(admitted.role, 'openAllNetwork'),
+        openConversationNetwork: allows(admitted.role, 'openConversationNetwork'),
         manageRoles: allows(admitted.role, 'manageRoles'),
         readDataReads: allows(admitted.role, 'readDataReads'),
         viewAppData: allows(admitted.role, 'viewAppData'),

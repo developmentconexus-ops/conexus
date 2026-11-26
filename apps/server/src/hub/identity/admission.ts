@@ -31,6 +31,8 @@ const PROFILE_OF_ANOTHER = 'o cargo e a área de outra pessoa'
 const MANAGE_ROLES = { ac: ['create', 'update', 'delete'] } as const
 const READ_DATA_READS = { dataRead: ['read'] } as const
 const MANAGE_NETWORK = { network: ['manage'] } as const
+const OPEN_CONVERSATION_NETWORK = { network: ['open'] } as const
+const OPEN_ALL_NETWORK = { network: ['openAll'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -107,6 +109,8 @@ const ACTIONS = {
   readDataReads: { by: 'MEMBER', statement: READ_DATA_READS, locks: false },
   readNetwork: { by: 'MEMBER', statement: undefined, locks: false },
   manageNetwork: { by: 'MEMBER', statement: MANAGE_NETWORK, locks: true },
+  openConversationNetwork: { by: 'MEMBER', statement: OPEN_CONVERSATION_NETWORK, locks: true },
+  openAllNetwork: { by: 'MEMBER', statement: OPEN_ALL_NETWORK, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },

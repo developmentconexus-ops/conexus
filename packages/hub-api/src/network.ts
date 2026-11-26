@@ -6,6 +6,16 @@ import { defineOperation } from './operation.ts'
 
 export const NETWORK_LIMITS = { domains: 10, reason: 200 } as const
 
+/**
+ * The development list (founder, 2026-11-26, "Escolha C: a"). Exact names: a name joins only with
+ * the failure that asked for it (the criterion of decision 0051).
+ */
+export const DEVELOPMENT_HOSTS = [
+  ...['registry.npmjs.org', 'pypi.org', 'files.pythonhosted.org'],
+  ...['github.com', 'codeload.github.com', 'objects.githubusercontent.com'],
+  ...['deb.debian.org', 'security.debian.org'],
+] as const
+
 // The URL parser drops a default port, an empty query and a line break without a trace, so they are
 // refused in the text as typed.
 const MORE_THAN_A_HOST = /[\s/\\?#@:%]/
@@ -58,6 +68,12 @@ export type NetworkResult =
       reason: 'ROLE' | 'AUTOMATION' | 'MACHINE_UNAVAILABLE' | 'DATABASE'
     }
 
+/**
+ * `LIST` holds the company's and the conversation's domains; `ALL` answers while the company has the
+ * whole internet on.
+ */
+export type NetworkOpened = { kind: 'LIST'; hosts: readonly NetworkDomain[] } | { kind: 'ALL' }
+
 export const NetworkDomainId = z.uuid().brand<'NetworkDomainId'>()
 export type NetworkDomainId = z.infer<typeof NetworkDomainId>
 
@@ -74,7 +90,18 @@ export const CompanyNetworkDomain = z.object({
 })
 export type CompanyNetworkDomain = z.infer<typeof CompanyNetworkDomain>
 
+/**
+ * The company's whole internet, turned on. `openedBy` is `null` when the company can no longer read
+ * that person's name.
+ */
+export const CompanyNetworkOpen = z.object({
+  openedBy: z.string().nullable(),
+  openedAt: z.iso.datetime(),
+})
+export type CompanyNetworkOpen = z.infer<typeof CompanyNetworkOpen>
+
 const DOMAINS = '/api/companies/{companyId}/network/domains'
+const OPEN_ALL = '/api/companies/{companyId}/network/open-all'
 
 const READS = [
   'NOT_FOUND',
@@ -117,6 +144,45 @@ export const removeNetworkDomain = defineOperation({
   path: `${DOMAINS}/{domainId}`,
   bodyLimit: 1024,
   input: { params: InCompany.extend({ domainId: NetworkDomainId }) },
+  success: { status: 204 },
+  failures: WRITES,
+})
+
+export const readOpenAllNetwork = defineOperation({
+  id: 'readOpenAllNetwork',
+  summary:
+    'Reads whether every machine of the company may reach any domain: who turned the whole internet on and when, or nothing while it is off.',
+  access: 'session',
+  method: 'GET',
+  path: OPEN_ALL,
+  bodyLimit: 1024,
+  input: { params: InCompany },
+  success: { status: 200, body: z.object({ open: CompanyNetworkOpen.nullable() }) },
+  failures: READS,
+})
+
+export const openAllNetwork = defineOperation({
+  id: 'openAllNetwork',
+  summary:
+    'Lets every machine of the company reach any domain; already on answers who turned it on, unchanged.',
+  access: 'session',
+  method: 'PUT',
+  path: OPEN_ALL,
+  bodyLimit: 1024,
+  input: { params: InCompany },
+  success: { status: 200, body: CompanyNetworkOpen },
+  failures: WRITES,
+})
+
+export const closeAllNetwork = defineOperation({
+  id: 'closeAllNetwork',
+  summary:
+    'Sends every machine of the company back to its lists, whether the whole internet was on or not.',
+  access: 'session',
+  method: 'DELETE',
+  path: OPEN_ALL,
+  bodyLimit: 1024,
+  input: { params: InCompany },
   success: { status: 204 },
   failures: WRITES,
 })

@@ -124,6 +124,8 @@ export const NO_MAY = {
   manageAutomations: false,
   manageCopies: false,
   manageNetwork: false,
+  openAllNetwork: false,
+  openConversationNetwork: false,
   manageRoles: false,
   readDataReads: false,
   viewAppData: false,
