@@ -58,6 +58,8 @@ const GOOD_IMPORTS: Record<string, string> = {
   'infra/e2b/template.ts': 'e2b',
   'apps/server/src/agents/app-builder/git/copy/bucket.ts': '@aws-sdk/client-s3',
   'apps/web/src/harness/a/conversation.ts': '@mastra/client-js',
+  'apps/web/src/agents/agent-builder/ok.ts': '../saved-agent/public.ts',
+  'apps/web/src/agents/saved-agent/ok.test.ts': '../assistant/public.ts',
   'apps/server/src/hub/connectors/executor.ts': '@conexus/connectors',
   'tests/e2e/live-hub.ts': '@conexus/connectors',
   'apps/extraction/tap/src/ok.ts': '@conexus/connectors',
@@ -93,6 +95,7 @@ before(() => {
     'apps/server/src/platform/test-database.ts',
     'apps/server/src/hub/a/public.ts',
     'apps/web/src/hub/b/public.ts',
+    'apps/web/src/agents/saved-agent/public.ts',
   ]) {
     files[file] ??= PUBLIC
   }
