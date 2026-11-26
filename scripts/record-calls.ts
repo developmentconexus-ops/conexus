@@ -1,3 +1,4 @@
+import { MACHINE_TOOL } from '@conexus/hub-api'
 import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts'
 
 // What the model does in the `tasks`, `reads` and `handoff` scenarios of `scripts/record.ts`: invented prompts and calls (security S40).
@@ -106,6 +107,19 @@ export const APPROVAL_CALLS = {
 } satisfies Record<string, Block[][]>
 
 const PLAN_FILE = '.conexus/plans/encomendas.md'
+export const NETWORK_PROMPT = 'Leia os preços na loja de uma padaria inventada.'
+/** What the model does in the `network` scenario: ask for a domain, and answer once it is open. */
+export const NETWORK_CALLS: Block[][] = [
+  [
+    {
+      type: 'tool_use',
+      name: MACHINE_TOOL.requestNetwork,
+      input: { domains: ['loja.example.com'], reason: 'ler os preços' },
+    },
+  ],
+  [{ type: 'text', text: 'A loja abriu para esta conversa.' }],
+]
+
 export const PLAN_PROMPT = 'Planeje um app de encomendas para uma padaria inventada.'
 export const STEER = 'Só eu cadastro.'
 /** What the model does in the `plan` scenario: submit the plan, use a tool, and answer once the person's steer is in. */

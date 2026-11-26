@@ -55,18 +55,23 @@ export type NetworkAsked = z.infer<typeof NetworkAsked>
 export const NetworkAnswer = z.object({ scope: z.enum(['CONVERSATION', 'COMPANY', 'REFUSED']) })
 export type NetworkAnswer = z.infer<typeof NetworkAnswer>
 
-export type NetworkResult =
-  | {
-      kind: 'OPEN'
-      domains: readonly NetworkDomain[]
-      scope: 'ALREADY' | 'CONVERSATION' | 'COMPANY'
-    }
-  | { kind: 'REFUSED'; domains: readonly NetworkDomain[] }
-  | {
-      kind: 'NOT_OPEN'
-      domains: readonly NetworkDomain[]
-      reason: 'ROLE' | 'AUTOMATION' | 'MACHINE_UNAVAILABLE' | 'DATABASE'
-    }
+const Domains = z.array(NetworkDomain)
+
+/** What `request_network_access` answers: the model's line and the closed card read it. */
+export const NetworkResult = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('OPEN'),
+    domains: Domains,
+    scope: z.enum(['ALREADY', 'CONVERSATION', 'COMPANY']),
+  }),
+  z.object({ kind: z.literal('REFUSED'), domains: Domains }),
+  z.object({
+    kind: z.literal('NOT_OPEN'),
+    domains: Domains,
+    reason: z.enum(['ROLE', 'AUTOMATION', 'MACHINE_UNAVAILABLE', 'DATABASE']),
+  }),
+])
+export type NetworkResult = z.infer<typeof NetworkResult>
 
 /**
  * `LIST` holds the company's and the conversation's domains; `ALL` answers while the company has the

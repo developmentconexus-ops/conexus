@@ -95,9 +95,8 @@ test('cada gravação da AWS tem serviço, API, SDK e data; só a conta inventad
   }
 })
 
-// The native flow's scenarios, as `scripts/record.ts` names them: one per provider recording it replays,
-// and `plan`, `files`, `tasks`, `reads`, `research`, `research-failed`, `title` and `title-observer`, whose model calls are streamed by the test double's Messages API stream;
-// `data-query` is a frozen capture that no script makes.
+// The native flow's scenarios, as `scripts/record.ts` names them; `data-query` is a frozen capture
+// that no script makes.
 const NATIVE = [
   'abort',
   'approval',
@@ -109,6 +108,7 @@ const NATIVE = [
   'data-query',
   'files',
   'handoff',
+  'network',
   'plan',
   'reads',
   'research',
@@ -120,6 +120,7 @@ const NATIVE = [
 ]
 const STREAMED = new Set([
   'plan',
+  'network',
   'files',
   'tasks',
   'reads',

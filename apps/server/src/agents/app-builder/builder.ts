@@ -1,12 +1,14 @@
 import type { CompanyData, CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
-import { CLOSED_TOOLS, CONVERSATION_TOOL } from '@conexus/hub-api'
+import { CLOSED_TOOLS, CONVERSATION_TOOL, MACHINE_TOOL } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import { webFetchTool } from '@mastra/core/tools'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import type { NetworkStore } from '../../harness/network/public.ts'
+import { askingByRole, requestNetworkTool } from '../../harness/network/public.ts'
 import { TITLE } from '../../harness/prompt/public.ts'
-import type { DataBinding, RunScope } from '../../harness/spec/public.ts'
+import type { DataBinding, RunScope, Speakers } from '../../harness/spec/public.ts'
 import {
   ASK_USER_TOOL,
   CONVERSATION_MODE,
@@ -24,6 +26,7 @@ import type { CompanyToolDeps, ConnectorPort } from '../../harness/tools/public.
 import { companyConnections, companyToolScope, companyTools } from '../../harness/tools/public.ts'
 import type { Access, Principal } from '../../hub/access/public.ts'
 import type { BuilderData } from '../../hub/apps/public.ts'
+import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { builderAccess } from './connector-access.ts'
@@ -116,6 +119,10 @@ export function createBuilder(deps: {
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
   /** What the turn's processor records of a refused run, for the end of the turn (`builderEnds`). */
   refusals: Refusals
+  /** The domains the machine reaches beyond the development list, which a run asks for. */
+  network: Pick<NetworkStore, 'opened' | 'grant'>
+  identity: Pick<IdentityPorts, 'allows'>
+  speakersOf: (run: RunScope) => Promise<Speakers>
 }) {
   const { storage } = deps
   const check = checkTool(deps.runs)
@@ -125,6 +132,11 @@ export function createBuilder(deps: {
   const projectOf = projectOfRun(runOf)
   const scopeOf = toolScopes(deps, runOf)
   const tools = companyDeps(deps)
+  const requestNetwork = requestNetworkTool({
+    store: deps.network,
+    machines: deps.runs,
+    asking: async (requestContext) => askingByRole(deps, await runOf(requestContext)),
+  })
   async function granted(requestContext: RequestContext) {
     const scope = await scopeOf(requestContext)
     return scope === undefined ? [] : companyConnections(scope)
@@ -153,10 +165,11 @@ export function createBuilder(deps: {
       model: MODEL,
       tools: async (requestContext) => {
         const scope = await scopeOf(requestContext)
-        // The order of step 20 (criterion 13a): the model's request stays byte for byte the same.
+        // The order of step 20 (criterion 13a): fixed, so the request keeps its bytes turn after turn.
         return {
           web_fetch: webFetchTool,
           [CONVERSATION_TOOL.check]: check,
+          [MACHINE_TOOL.requestNetwork]: requestNetwork,
           ...toolsOf(sessionModel(requestContext)),
           ...(scope === undefined ? {} : await companyTools(scope, 'builder', tools)),
         }

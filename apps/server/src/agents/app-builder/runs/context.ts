@@ -17,6 +17,7 @@ import type {
   Machines,
   VersionFolder,
 } from '../../../harness/machine/public.ts'
+import type { NetworkStore } from '../../../harness/network/public.ts'
 import type { Conference } from '../../../hub/apps/public.ts'
 import type { Database } from '../../../platform/database.ts'
 import type { FailureLog } from '../../../platform/failure.ts'
@@ -76,6 +77,7 @@ export type RunsDeps = {
   log: FailureLog
   send: BuilderSend
   confer: BuilderConfer
+  network: Pick<NetworkStore, 'forget'>
 }
 
 /** What the runs share: the ports and the copies' retry. */

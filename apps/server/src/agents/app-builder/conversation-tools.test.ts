@@ -21,7 +21,7 @@ import { plantGemini } from './test-gemini.ts'
 
 const OFFERED = [
   ...['app_data_check', 'app_data_read', 'conexus_check', 'data_describe', 'data_query'],
-  ...['recall', 'web_fetch'],
+  ...['recall', 'request_network_access', 'web_fetch'],
 ]
 
 test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fetch`; nos três, também `web_search`', async (t) => {

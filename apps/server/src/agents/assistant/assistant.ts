@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import type { CompanyData, CompanyId, ConversationId, Person } from '@conexus/hub-api'
-import { ASSISTANT_TOOL } from '@conexus/hub-api'
+import { ASSISTANT_TOOL, DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import { TaskSignalProvider } from '@mastra/core/signals'
 import type { MastraCompositeStore } from '@mastra/core/storage'
@@ -11,14 +11,14 @@ import type {
   MachineTuning,
 } from '../../harness/machine/public.ts'
 import {
+  conversationMachineTools,
   createConversationMachines,
   machinePart,
-  PACKAGE_HOSTS,
-  showFileTool,
 } from '../../harness/machine/public.ts'
 import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { subagentModel } from '../../harness/model-accounts/public.ts'
+import type { NetworkStore } from '../../harness/network/public.ts'
 import type {
   ConversationSpec,
   DataBinding,
@@ -66,7 +66,7 @@ import { chosenConnections } from './chosen.ts'
 import { companyMemory, companyScopes } from './company-memory.ts'
 import { readsFiles } from './connector-access.ts'
 import type { RunOf } from './context.ts'
-import { assistantRuns, machineMarks } from './context.ts'
+import { assistantRuns, machineMarks, speakersOf } from './context.ts'
 import { machineUploads, READ_MEDIA } from './files.ts'
 import type { HandOffDoors } from './handoff.ts'
 import { registerHandOff } from './handoff.ts'
@@ -113,6 +113,7 @@ type Deps = {
    */
   machine: ConversationMachine
   machineTuning?: MachineTuning
+  network: NetworkStore
   /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
   handOffs: () => HandOffDoors
   log: FailureLog
@@ -164,9 +165,10 @@ function chosenIn({ toolScopeOf }: Parts) {
 }
 
 /** The tools of a run, in the order the request lists them: the model's provider's, the company's first, the Assistant's own, the hand-offs, the rest. */
-function assistantTools(parts: Parts) {
+function assistantTools(deps: Deps, parts: Parts) {
   const { scopeOf, toolScopeOf, maysFor, machines } = parts
-  const showFile = showFileTool(machines)
+  const roles = { ...deps, speakersOf: speakersOf.bind(null, deps) }
+  const ofMachine = conversationMachineTools(machines, roles, scopeOf)
   const proposeMemory = proposeCompanyMemoryTool({ memory: parts.company, scopeOf })
   const proposals = proposeTools(machines)
   const chosenOf = chosenIn(parts)
@@ -177,7 +179,7 @@ function assistantTools(parts: Parts) {
     return {
       ...toolsOf(sessionModel(requestContext)),
       ...first,
-      [ASSISTANT_TOOL.showFile]: showFile,
+      ...ofMachine,
       [ASSISTANT_TOOL.proposeCompanyMemory]: proposeMemory,
       ...(automate
         ? {
@@ -234,7 +236,7 @@ function assistantSpec(deps: Deps, parts: Parts): ConversationSpec {
       ],
     },
     model: MODEL,
-    tools: assistantTools(parts),
+    tools: assistantTools(deps, parts),
     // Decision 0053: nothing waits to be approved; the systems get no write.
     approval: { kind: 'NOTHING_ASKS' },
     turn: assistantTurn({ queue, scopeOf }),
@@ -290,7 +292,7 @@ export function createAssistant(deps: Deps) {
   const scopeOf = assistantRuns({ memory, chosenOf: chosen.of })
   const machines = createConversationMachines(
     {
-      hosts: PACKAGE_HOSTS,
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: deps.network.opened },
       otherTemplate: 'resume',
       readMedia: READ_MEDIA,
       marks: machineMarks(chosen.of),
@@ -298,7 +300,7 @@ export function createAssistant(deps: Deps) {
     { ...deps.machine, log: deps.log },
     deps.machineTuning,
   )
-  const { each, ...wired } = machinePart(machines)
+  const { each, ...wired } = machinePart(machines, deps.network)
   const tools = companyDeps(deps)
   const { speakersFor, maysFor, toolScopeOf } = runReads(deps, scopeOf)
   const { controller } = mountAgent(

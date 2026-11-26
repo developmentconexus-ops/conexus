@@ -1,3 +1,4 @@
+import { CompanyId, ConversationId, MACHINE_TOOL, PersonId } from '@conexus/hub-api'
 import {
   createTool,
   taskCompleteTool,
@@ -6,6 +7,7 @@ import {
   webSearchTool,
 } from '@mastra/core/tools'
 import { z } from 'zod'
+import { requestNetworkTool } from '../apps/server/src/harness/network/public.ts'
 import { recordedData } from '../apps/server/src/harness/tools/data/test-data.ts'
 import { dataTools } from '../apps/server/src/harness/tools/public.ts'
 import { PADARIA_SOL_MATRIZ, salesDatabase } from '../apps/server/src/hub/connectors/test-sales.ts'
@@ -17,12 +19,25 @@ const matriz = salesDatabase(PADARIA_SOL_MATRIZ)
 const orders = orderBook()
 const TASK_TOOLS = { task_write: taskWriteTool, task_complete: taskCompleteTool }
 
-/** The tools the recorded agent has: the Builder's task and web tools, and two invented ones. */
+const requestNetwork = requestNetworkTool({
+  store: { opened: async () => ({ kind: 'LIST', hosts: [] }), grant: async () => undefined },
+  machines: { reopen: async () => true },
+  asking: async () => ({
+    kind: 'ASKS',
+    companyId: CompanyId.parse('0'.repeat(32)),
+    conversationId: ConversationId.parse('00000000-0000-4000-8000-000000000001'),
+    personId: PersonId.parse('00000000-0000-4000-8000-000000000002'),
+    scopes: ['CONVERSATION', 'COMPANY'],
+  }),
+})
+
+/** The tools the recorded agent has. */
 export const RECORDED_TOOLS = {
   ...TASK_TOOLS,
   web_fetch: webFetchTool,
   web_search: webSearchTool,
   ...dataTools({ data: recordedData() }),
+  [MACHINE_TOOL.requestNetwork]: requestNetwork,
   connector_read: createTool({
     id: 'connector_read',
     description: 'Reads a connection the conversation chose.',

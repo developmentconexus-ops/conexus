@@ -128,6 +128,7 @@ export async function conferring(t: TestContext, program: string, readyMs = 4_00
     seedOf: () => machine.repository.bundleOfMain(),
     mark: { conexus_origin: INSTALLATION },
     ...{ installation: INSTALLATION, template: TEMPLATE, log, startMs: 5_000 },
+    opened: machine.lists.opened,
     ...{
       workdir: join(machine.folder, 'app'),
       tmp: machine.folder,

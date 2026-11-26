@@ -8,6 +8,7 @@ import {
   streamOf,
 } from '../../harness/routes/test-conversation.ts'
 import { tool } from '../../harness/routes/test-questions.ts'
+import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { said } from '../assistant/test-assistant.ts'
 import {
@@ -42,6 +43,7 @@ const EVERY_OTHER: Extract<Reply, { kind: 'blocks' }>['blocks'] = [
   tool('web_fetch', { url: 'http://127.0.0.1:9/' }),
   { type: 'search', query: 'pedidos', results: [{ url: 'https://example.com', title: 'x' }] },
   tool('show_file', { path: 'nada.md' }),
+  tool('request_network_access', { domains: ['loja.example.com'], reason: 'ler os preços' }),
   tool('execute_typescript', { code: 'return 1' }),
   tool('mastra_workspace_write_file', { path: 'a.md', content: 'x' }),
   tool('mastra_workspace_read_file', { path: 'a.md' }),
@@ -64,6 +66,10 @@ test('a escrita espera, o resto não: com yolo desligado, cada ferramenta do age
     orders.latest.id,
     code.latest.id,
   ])
+  // A domain already allowed, so the network tool answers without its own card.
+  const allowed = { domain: 'loja.example.com', reason: 'Ler os preços' }
+  const domains = `/api/companies/${on.companyId}/network/domains`
+  assert.equal((await post(on.hub, on.ana, domains, allowed)).statusCode, 200)
   const { url, stream } = await on.opened(agent.id)
   assert.equal((await sent(on.hub, on.ana, url, 'Lance o pedido do cliente 1')).statusCode, 200)
   const events = await untilAsked(stream)

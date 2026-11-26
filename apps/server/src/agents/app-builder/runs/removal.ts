@@ -25,10 +25,11 @@ async function removeProject(
 }
 
 /**
- * Lets go of, then kills by name, the machine of each released conversation, also one no run of
- * this process holds, paused or running. A conversation with no machine passes. Each failure is logged and kept.
+ * Forgets the domains of each released conversation, then lets go of and kills by name its machine,
+ * also one no run of this process holds, paused or running. A conversation with no machine passes.
+ * Each failure is logged and kept.
  */
-async function killMachines(
+async function dropConversations(
   context: RunsContext,
   companyId: CompanyId,
   conversations: ConversationId[],
@@ -36,7 +37,11 @@ async function killMachines(
   const { machines } = context
   const failures: unknown[] = []
   for (const conversationId of conversations) {
-    const steps = [() => machines.release(conversationId), () => machines.kill(conversationId)]
+    const steps = [
+      () => context.network.forget({ companyId, conversationId }),
+      () => machines.release(conversationId),
+      () => machines.kill(conversationId),
+    ]
     for (const step of steps) {
       await step().catch((error: unknown) => {
         failures.push(error)
@@ -59,7 +64,8 @@ async function releasedProjects(context: RunsContext, scope: ReleaseScope): Prom
 }
 
 /**
- * Kills by name the released conversations' machines, once their runs are stopped and aborted. A
+ * Forgets the released conversations' domains and kills their machines by name, once their runs are
+ * stopped and aborted. A
  * Projeto's or a company's removal takes copy and repository too, each Projeto on its own; a
  * failure is thrown after all were tried, and the release can be repeated.
  */
@@ -69,7 +75,7 @@ export async function releaseRuns(
   conversations: ConversationId[],
 ): Promise<void> {
   const { companyId } = scope
-  const failures = await killMachines(context, companyId, conversations)
+  const failures = await dropConversations(context, companyId, conversations)
   const projects = await releasedProjects(context, scope)
   for (const each of projects) {
     await removeProject(context, { companyId, projectId: each }).catch((error: unknown) =>
