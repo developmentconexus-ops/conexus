@@ -183,11 +183,11 @@ type Plan = Readonly<
 async function planOf(
   reach: TableReach,
   run: RunTable,
-  a: Readonly<{ bookmark: Bookmark | undefined; startDate: string | null; deps: PassDeps }>,
+  a: Readonly<{ bookmark: Bookmark | undefined; date: string | null; deps: PassDeps }>,
 ): Promise<Plan> {
   const { mode } = run.table
+  const { date } = a
   const point = run.whole ? undefined : a.bookmark?.replication_key_value
-  const date = startDateLimits(mode) ? a.startDate : null
   const whole = point === undefined
   if (mode.kind === 'FULL') return { filters: [{ kind: 'ALL' }], point: null, whole }
   if (mode.kind === 'CHANGED') {
@@ -244,6 +244,10 @@ function advanced(
   return { pass: { ...pass, point }, done: true }
 }
 
+function wouldDropUnreadRows(pass: Pass, date: string | null): boolean {
+  return pass.whole && pass.plannedSince !== null && (date === null || date < pass.plannedSince)
+}
+
 export async function readTable(
   reach: TableReach,
   run: RunTable,
@@ -265,9 +269,13 @@ export async function readTable(
     schema: schemaOf(run.columns),
     key_properties: key,
   })
-  let pass = run.whole ? undefined : before?.pass
+  const date = startDateLimits(run.table.mode) ? a.startDate : null
+  const saved = run.whole ? undefined : before?.pass
+  const outdated = saved !== undefined && wouldDropUnreadRows(saved, date)
+  let pass = outdated ? undefined : saved
   if (pass === undefined) {
-    const plan = await planOf(reach, run, { bookmark: before, startDate: a.startDate, deps })
+    const asked = outdated ? { ...run, whole: true } : run
+    const plan = await planOf(reach, asked, { bookmark: before, date, deps })
     if ('code' in plan) return plan
     pass = {
       version: deps.now(),
@@ -276,6 +284,7 @@ export async function readTable(
       after: null,
       point: plan.point,
       whole: plan.whole,
+      plannedSince: date,
     }
   }
   let done = pass.filters.length === 0

@@ -211,3 +211,51 @@ test('o ponto de parada sai: desmarcar tira o fluxo da tabela do arquivo da liga
     'the same set writes nothing',
   )
 })
+
+test('ler de novo desde a data tira o ponto das tabelas que a data limita antes de iniciar a tarefa; Rodar agora não tira', async (t) => {
+  const on = await lakeCopyOn(t)
+  const connection = await on.linked()
+  assert.equal((await on.put(connection, { tables: [NOTAS, PARCEIROS], ...DAILY })).statusCode, 200)
+  const names = ['sankhya_notas', 'sankhya_parceiros']
+  await finished(on, connection, names)
+  const key = [
+    `conexus-estado-${on.config.aws.account}-${on.config.aws.region}`,
+    `${on.companyId}/${connection}/copia:tap-conexus-to-target-conexus/state.json`,
+  ].join('/')
+  const kept = { sankhya_notas: point('2026-11-20'), sankhya_parceiros: point('2026-11-21') }
+  on.aws.putObject(key, JSON.stringify({ completed: { singer_state: { bookmarks: kept } } }))
+  function bookmarks() {
+    return Object(JSON.parse(on.aws.objects().get(key) ?? '')).completed.singer_state.bookmarks
+  }
+
+  assert.equal((await on.run(connection)).statusCode, 202)
+  await on.hub.lakeRuns.idle()
+  assert.deepEqual(bookmarks(), kept)
+  await finished(on, connection, names)
+  const calls = on.aws.calls().length
+
+  assert.equal((await on.run(connection, { whole: true })).statusCode, 202)
+  await on.hub.lakeRuns.idle()
+  assert.deepEqual(bookmarks(), { sankhya_parceiros: point('2026-11-21') })
+  const started = on.aws
+    .calls()
+    .slice(calls)
+    .filter((call) => call === 'PutObject' || call === 'RunTask')
+  assert.deepEqual(started, ['PutObject', 'RunTask'])
+})
+
+test('ler de novo desde a data sem a AWS tirar o ponto: a rodada fecha COPY_LAKE_UNAVAILABLE e a tarefa não inicia', async (t) => {
+  const on = await lakeCopyOn(t, {
+    tables: (real) => ({ ...real, forget: async () => ({ kind: 'NO_ANSWER' }) }),
+  })
+  const connection = await on.linked()
+  assert.equal((await on.put(connection, { tables: [NOTAS], ...DAILY })).statusCode, 200)
+  await finished(on, connection, ['sankhya_notas'])
+  const calls = on.aws.calls().length
+
+  assert.equal((await on.run(connection, { whole: true })).statusCode, 202)
+  await on.hub.lakeRuns.idle()
+  const last = on.viewOf(await on.get(connection)).lastRun
+  assert.equal(last?.outcome === 'ERROR' && last.code, 'COPY_LAKE_UNAVAILABLE')
+  assert.equal(on.aws.calls().slice(calls).includes('RunTask'), false)
+})
