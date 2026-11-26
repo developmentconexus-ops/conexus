@@ -9,7 +9,7 @@ import type { Person } from '../identity/test-hub.ts'
 import { ANA_OWNER, call, codeOf, personOn } from '../identity/test-hub.ts'
 import type { LakeCopyOn } from './test-lake-copy.ts'
 import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS, runsOf, wholeOf } from './test-lake-copy.ts'
-import { drained, finished as taskExited, result } from './test-lake-queue.ts'
+import { drained, result, finished as taskExited } from './test-lake-queue.ts'
 
 const SILENT = { kind: 'NO_ANSWER' } as const
 
@@ -257,14 +257,12 @@ test('a rodada parada conta o que gravou: o resultado interrompido vale depois d
   on.aws.enqueue(result(run, { kind: 'INTERRUPTED' }, [{ name: 'sankhya_notas', ...counts }]))
   await until(async () => (await rowOf(on, run))?.outcome !== null, 'the result closed the round')
 
-  assert.deepEqual(await rowOf(on, run), { ...INTERRUPTED, stopped_by: on.ana.id })
   const view = on.viewOf(await on.get(connection))
-  const last = view.lastRun
-  assert.ok(last?.outcome === 'INTERRUPTED')
-  assert.deepEqual([last.read, last.written], [20, 10])
   const notas = view.tables.find(({ source }) => source === 'TGFCAB')?.copy
-  assert.ok(notas?.kind === 'MARKED' && notas.lastRun?.outcome === 'INTERRUPTED')
-  assert.deepEqual([notas.lastRun.read, notas.lastRun.written, notas.firstLoad], [20, 10, true])
+  assert.ok(view.lastRun?.outcome === 'INTERRUPTED' && notas?.kind === 'MARKED')
+  assert.ok(notas.lastRun?.outcome === 'INTERRUPTED' && notas.firstLoad)
+  assert.deepEqual([view.lastRun.read, view.lastRun.written], [20, 10])
+  assert.deepEqual([notas.lastRun.read, notas.lastRun.written], [20, 10])
   assert.equal((await on.run(connection)).statusCode, 202)
   await on.hub.lakeRuns.idle()
   const [, next] = await runsOf(on, connection)

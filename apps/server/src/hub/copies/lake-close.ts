@@ -130,10 +130,7 @@ export type CloseDeps = {
   watch?: Readonly<{ ended(run: LakeRunId): void }>
 }
 
-/**
- * The winning close's counts on each table, and the connection's 100 newest rounds kept. An
- * interrupted round loads no table: a first load stays one.
- */
+/** The winning close's counts on each table, and the connection's 100 newest rounds kept. */
 async function counted(
   tx: CommandTx,
   a: Readonly<{
@@ -144,20 +141,13 @@ async function counted(
     tables: readonly RunTableCounts[]
   }>,
 ) {
-  const columns = { id: lakeTable.id, rows: lakeTable.rows }
+  const lastRunId = a.end.kind === 'INTERRUPTED' ? sql`${lakeTable.lastRunId}` : a.run
   for (const counts of a.tables) {
-    const own = and(eq(lakeTable.connectionId, a.connectionId), eq(lakeTable.name, counts.name))
-    const [table] =
-      a.end.kind === 'INTERRUPTED'
-        ? await tx.select(columns).from(lakeTable).where(own)
-        : await tx
-            .update(lakeTable)
-            .set({
-              rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`,
-              lastRunId: a.run,
-            })
-            .where(own)
-            .returning(columns)
+    const [table] = await tx
+      .update(lakeTable)
+      .set({ rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`, lastRunId })
+      .where(and(eq(lakeTable.connectionId, a.connectionId), eq(lakeTable.name, counts.name)))
+      .returning({ id: lakeTable.id, rows: lakeTable.rows })
     if (table === undefined) continue
     await tx.insert(lakeTableRun).values({
       runId: a.run,

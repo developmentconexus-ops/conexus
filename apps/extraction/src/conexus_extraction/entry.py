@@ -219,8 +219,9 @@ def _measured(result: Result, machine: Machine | None) -> Result:
         return t.cast("Result", {**result, "machine": None})
 
 
-def _interrupted(spec: Spec, report: Mapping[str, t.Any], still_open: StillOpen) -> Result | None:
-    """The counts of a round whose parameter left; None while it stays: the stop came from ECS."""
+def _interrupted_if_closed(
+    spec: Spec, report: Mapping[str, t.Any], still_open: StillOpen
+) -> Result | None:
     if still_open():
         return None
     log("RUN_CLOSED", runId=spec["runId"])
@@ -292,7 +293,7 @@ def copied(
     if discovered is None:
         failure = round_.tap_failure()
         if failure is None:
-            return _interrupted(spec, round_.target_report(), still_open)
+            return _interrupted_if_closed(spec, round_.target_report(), still_open)
         return _result(spec, failure, round_.target_report())
     tables, plans, missing = _chosen(discovered, spec)
     if missing is not None:
@@ -313,7 +314,7 @@ def copied(
     code = round_.run(discovered, target)
     report = round_.target_report()
     if stopping.asked or report["closed"]:
-        return _interrupted(spec, report, still_open)
+        return _interrupted_if_closed(spec, report, still_open)
     failure = round_.tap_failure()
     if failure is None and report["failed"] is not None:
         failure = {
@@ -329,7 +330,7 @@ def copied(
     updater = Updater(load_catalog("lake", **catalog), athena)
     updated = _update_unless_interrupted(spec, updater, plans, guard, safe)
     if updated is None:
-        return _interrupted(spec, report, still_open)
+        return _interrupted_if_closed(spec, report, still_open)
     counts, failed = updated
     outcome: Complete | Failed = failure or failed or {"kind": "COMPLETE"}
     return _result(spec, outcome, report, counts)

@@ -25,7 +25,8 @@ type StopCode = 'EssentialContainerExited' | 'UserInitiated'
 
 /**
  * ECS's stop of a task whose container exited 0, after its result: the recorded stop of an exit 1
- * said of this task and round, with the exit code and the stop code changed (values only, T29).
+ * said of this task and round, with the exit code changed, and the stop code when asked (values
+ * only, T29).
  */
 export function finished(
   on: Pick<LakeRunOn, 'aws'>,
@@ -75,7 +76,7 @@ export async function roundOf(on: LakeRunOn, run: string) {
 }
 
 /** Every message the consumer read left the queue. */
-export async function drained(on: LakeRunOn) {
+export async function drained(on: Pick<LakeRunOn, 'aws'>) {
   await until(() => on.aws.queued() === 0, 'the queue emptied')
 }
 

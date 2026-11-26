@@ -189,7 +189,7 @@ def test_a_rodada_fechada_antes_da_atualizacao_nao_toca_a_atual(
 def test_a_parada_com_o_parametro_no_lugar_nao_manda_resultado(
     task: Task, capfd: pytest.CaptureFixture[str]
 ) -> None:
-    stopped = _stop_while_copying(task, before=lambda: None)
+    stopped = _stop_a_sleeping_writer(task, before=lambda: None)
     assert task.run(task.spec(NOTAS)) == 1
     assert task.aws.sent == []
     assert stopped.exists()
@@ -201,14 +201,13 @@ def test_a_parada_com_o_parametro_no_lugar_nao_manda_resultado(
 def test_o_stoptask_depois_do_parametro_apagado_manda_o_resultado_interrompido(
     task: Task,
 ) -> None:
-    stopped = _stop_while_copying(task, before=task.aws.parameters.clear)
+    stopped = _stop_a_sleeping_writer(task, before=task.aws.parameters.clear)
     assert task.run(task.spec(NOTAS)) == 0
     assert stopped.exists()
     assert _interrupted_counts(task)["written"] == 0
 
 
-def _stop_while_copying(task: Task, before: Callable[[], None]) -> Path:
-    """A writer that waits for the SIGTERM the thread sends once it started."""
+def _stop_a_sleeping_writer(task: Task, before: Callable[[], None]) -> Path:
     started, stopped = task.dumps / "target.started", task.dumps / "target.stopped"
     (task.plugins / "target-conexus").write_text(
         "\n".join(
