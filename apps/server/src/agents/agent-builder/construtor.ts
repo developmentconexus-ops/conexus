@@ -305,7 +305,11 @@ export function createConstrutor(deps: Deps) {
   })
   const scopeOf = construtorRuns(deps, memory)
   const machines = createConversationMachines(
-    { hosts: ALLOWED_HOSTS, otherTemplate: 'replace', marks: machineMarks(scopeOf) },
+    {
+      network: { kind: 'FIXED', hosts: ALLOWED_HOSTS },
+      otherTemplate: 'replace',
+      marks: machineMarks(scopeOf),
+    },
     { ...deps.machine, log },
     deps.machineTuning,
   )

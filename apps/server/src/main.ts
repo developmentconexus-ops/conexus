@@ -177,8 +177,9 @@ export function subjectsOf(deps: SubjectDeps) {
     },
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
+  const network = createNetwork({ database, identity, log })
   const { conversations, assistant, automations, agents, lakeClock } = conversationsOf({
-    ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
+    ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool, network },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
@@ -188,16 +189,15 @@ export function subjectsOf(deps: SubjectDeps) {
     ...{ notify: notifications.notify, automationClock: config.automationClock },
     lakeRuns: () => lakeRuns,
   })
-  const releaseConversations = conversations.release
   const projects = createProjects({
     ...{ database, identity, neon, log, appsDomain, appRemoval, appVersionsOf: versionNumbersOf },
-    ...{ releaseConversations, ...appAccessOf(database) },
+    ...{ releaseConversations: conversations.release, ...appAccessOf(database) },
     // The requests come below, after the apps they publish through; a Projeto's read comes long after.
     publishRequestOf: (tx, input) => requests.publishRequestOf(tx, input),
   })
   const { lakes, operations } = centralOf({
     ...{ database, identity, config, log, aws: deps.lakeStacks, projects: projects.ports },
-    ...{ appRemoval, releaseConversations, tables: deps.lakeTables },
+    ...{ appRemoval, releaseConversations: conversations.release, tables: deps.lakeTables },
     eraseCopies: (company) => lakeCopies.erase(company),
   })
   // The connectors come below, after the apps whose door they read; a publish comes long after.
@@ -228,7 +228,7 @@ export function subjectsOf(deps: SubjectDeps) {
   return {
     ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, data },
-    ...{ lakeRuns, lakeClock, lakeCopies, network: createNetwork({ database, identity, log }) },
+    ...{ lakeRuns, lakeClock, lakeCopies, network },
   }
 }
 

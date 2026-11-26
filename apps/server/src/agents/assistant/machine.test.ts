@@ -20,6 +20,8 @@ import { tool } from '../../harness/routes/test-questions.ts'
 import { CONTROLLER_KINDS } from '../../harness/spec/public.ts'
 import { servedSankhya } from '../../hub/connectors/test-connections.ts'
 import { PLANTED, withRows } from '../../hub/connectors/test-rows.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { assisting, COUNT, created, reading, said, searching, talking } from './test-assistant.ts'
 import { READ_MEDIA } from './test-files.ts'
 
@@ -121,6 +123,27 @@ test('a leitura na máquina: a máquina que não liga deixa a leitura responder 
   const answered = on.calls[2]?.texts.findLast((text) => text.includes('"kind":"OK"'))
   assert.match(String(answered), /"saved":false/)
   assert.match(String(answered), /MACHINE_UNAVAILABLE/)
+})
+
+test('a rede: a máquina do Assistente parte com os domínios da empresa, e remover um pela rota a fecha na hora (8, 10)', async (t) => {
+  const on = await assisting(t, [[write('a.txt', 'um')], [said('Escrevi.')]])
+  const domains = `/api/companies/${on.companyId}/network/domains`
+  const asked = { domain: 'api.example.com', reason: 'Ler o catálogo de preços' }
+  const added = await post(on.hub, on.ana, domains, asked)
+  assert.equal(added.statusCode, 200, added.body)
+  const url = await created(on.hub, on.ana, on.assistant, { connections: [] })
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Escreva a.txt')), 'complete')
+  const { control } = on.hub.conversationMachines
+  function hostsSent() {
+    return control.networkApplied.map((each) => each.hosts)
+  }
+  assert.deepEqual(hostsSent(), [[...PACKAGE_HOSTS, 'api.example.com']])
+  const one = Object(added.json()).id
+  const removed = await call(on.hub, on.ana, 'DELETE', `${domains}/${one}`)
+  assert.equal(removed.statusCode, 204, removed.body)
+  await until(() => hostsSent().length === 2, 'the running machine took the shorter list')
+  assert.deepEqual(hostsSent().at(-1), PACKAGE_HOSTS)
 })
 
 test('o fim do turno não para a máquina: o turno seguinte a reusa e o provedor a pausa pelo prazo dele (21)', async (t) => {
@@ -227,7 +250,11 @@ test('o download cancelado: o navegador que sai faz a leitura da máquina parar,
   const { control, deps } = on.hub.conversationMachines
   control.discoverable.push(nameOf(url))
   const machines = createConversationMachines(
-    { hosts: PACKAGE_HOSTS, otherTemplate: 'resume', marks: async () => undefined },
+    {
+      network: { kind: 'FIXED', hosts: PACKAGE_HOSTS },
+      otherTemplate: 'resume',
+      marks: async () => undefined,
+    },
     { ...deps, log: { info: () => undefined, error: () => undefined } },
     on.hub.conversationMachines.tuning,
   )

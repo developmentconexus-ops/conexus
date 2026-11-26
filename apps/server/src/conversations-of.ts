@@ -20,6 +20,7 @@ import { COPY_WORKFLOW, createHubMastra } from './harness/mastra/public.ts'
 import { createMastraStorage } from './harness/memory/public.ts'
 import type { openGoogleCalls } from './harness/model-accounts/public.ts'
 import { isChoosable } from './harness/model-accounts/public.ts'
+import type { NetworkStore } from './harness/network/public.ts'
 import type { AppDataPort } from './harness/tools/public.ts'
 import type { Access, Principal } from './hub/access/public.ts'
 import type { Apps, BuilderData } from './hub/apps/public.ts'
@@ -138,9 +139,9 @@ async function lakeStart(lakeRuns: LakeRuns, clock: LakeClock) {
   await lakeRuns.queue.start()
 }
 
-/** The provider's machines and the tests' tuning of them, which the Assistant and the Construtor open. */
-function machineOf(deps: { machine: ConversationMachine; machineTuning?: MachineTuning }) {
-  return { machine: deps.machine, machineTuning: deps.machineTuning }
+/** The provider's machines, the tests' tuning of them and the domains they reach, which every agent with machines takes. */
+function machineOf(deps: Pick<ConversationsDeps, 'machine' | 'machineTuning' | 'network'>) {
+  return { machine: deps.machine, machineTuning: deps.machineTuning, network: deps.network.store }
 }
 
 type ConversationsDeps = {
@@ -153,6 +154,7 @@ type ConversationsDeps = {
   machine: ConversationMachine
   /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
   machineTuning?: MachineTuning
+  network: { store: Pick<NetworkStore, 'opened' | 'onRemoved'> }
   connectors: () => Connectors
   /** The saved tools' namespace and their host on the edge (step 24.4, U3). */
   tools: { cloudflare: CloudflareApps; edge: EdgeTools }

@@ -97,6 +97,8 @@ export function newControl(): Control {
     attached: [],
     networkClosed: 0,
     closeFails: 0,
+    openFails: 0,
+    networkApplied: [],
     upMs: 0,
     restart: async () => undefined,
     restartBeforeNextCommand: false,
@@ -191,7 +193,7 @@ export function localKit(folder: string, control: Control): KitFactory {
           return control.chunkMs === 0 ? createReadStream(path) : slowly(control, path, signal)
         },
       },
-      ...networkOf(control),
+      ...networkOf(control, options),
     }
   }
 }

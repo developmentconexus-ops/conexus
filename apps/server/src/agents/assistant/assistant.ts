@@ -19,6 +19,7 @@ import {
 import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import { subagentModel } from '../../harness/model-accounts/public.ts'
+import type { NetworkStore } from '../../harness/network/public.ts'
 import type {
   ConversationSpec,
   DataBinding,
@@ -113,6 +114,7 @@ type Deps = {
    */
   machine: ConversationMachine
   machineTuning?: MachineTuning
+  network: Pick<NetworkStore, 'opened' | 'onRemoved'>
   /** The Projects, the grants and the Builder a hand-off reaches, made after the Assistant (step 24.3.2). */
   handOffs: () => HandOffDoors
   log: FailureLog
@@ -290,7 +292,7 @@ export function createAssistant(deps: Deps) {
   const scopeOf = assistantRuns({ memory, chosenOf: chosen.of })
   const machines = createConversationMachines(
     {
-      hosts: PACKAGE_HOSTS,
+      network: { kind: 'ON_REQUEST', hosts: PACKAGE_HOSTS, opened: deps.network.opened },
       otherTemplate: 'resume',
       readMedia: READ_MEDIA,
       marks: machineMarks(chosen.of),
@@ -298,7 +300,7 @@ export function createAssistant(deps: Deps) {
     { ...deps.machine, log: deps.log },
     deps.machineTuning,
   )
-  const { each, ...wired } = machinePart(machines)
+  const { each, ...wired } = machinePart(machines, deps.network)
   const tools = companyDeps(deps)
   const { speakersFor, maysFor, toolScopeOf } = runReads(deps, scopeOf)
   const { controller } = mountAgent(

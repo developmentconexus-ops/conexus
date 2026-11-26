@@ -19,6 +19,7 @@ import {
 } from '../../harness/machine/public.ts'
 import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import type { NetworkStore } from '../../harness/network/public.ts'
 import { TITLE } from '../../harness/prompt/public.ts'
 import type { ConversationSpec, Owner, ReleaseScope } from '../../harness/spec/public.ts'
 import {
@@ -207,6 +208,7 @@ type Deps = {
   /** The conversations' machines at the provider; an agent with its Computador gets one (step 24.4, U4). */
   machine: ConversationMachine
   machineTuning?: MachineTuning
+  network: Pick<NetworkStore, 'opened' | 'onRemoved'>
   /** The one `Mastra` the registry adds the agents to, made after the parts. */
   mastra: () => Mastra
   /** The saved tools' calls at the edge (step 24.4, U3). */
@@ -241,14 +243,14 @@ export function createAgentConversations(deps: Deps) {
   })
   const machines = createConversationMachines(
     {
-      hosts: PACKAGE_HOSTS,
+      network: { kind: 'ON_REQUEST', hosts: PACKAGE_HOSTS, opened: deps.network.opened },
       otherTemplate: 'replace',
       marks: machineMarks(runOf, resolvedOf),
     },
     { ...deps.machine, log },
     deps.machineTuning,
   )
-  const { each, ...wired } = machinePart(machines)
+  const { each, ...wired } = machinePart(machines, deps.network)
   const spec = agentsSpec(
     { queue, own: { database, log } },
     { ...{ runOf, resolvedOf, activationOfRun }, threads: memory, machines },

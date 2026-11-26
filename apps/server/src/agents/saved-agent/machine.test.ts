@@ -14,7 +14,8 @@ import {
   title,
 } from '../../harness/routes/test-conversation.ts'
 import { tool } from '../../harness/routes/test-questions.ts'
-import { BRUNO, CARLA, call, codeOf, memberOn } from '../../hub/identity/test-hub.ts'
+import { BRUNO, CARLA, call, codeOf, memberOn, post } from '../../hub/identity/test-hub.ts'
+import { until } from '../../platform/test-until.ts'
 import { said, talking } from '../assistant/test-assistant.ts'
 import { agentsOn, drafted, madeAgent, publishedAgent, talkedTo } from './test-agents.ts'
 
@@ -86,6 +87,31 @@ test('o Computador: o agente roda um comando, escreve um arquivo e o mostra; a m
     media: 'text/markdown',
     content: '# Vendas',
   })
+})
+
+test('a rede: a máquina do agente salvo parte com os domínios da empresa, e remover um pela rota a fecha na hora (8, 10)', async (t) => {
+  const on = await agentsOn(t, [[tool(COMMAND, { command: 'echo oi' })], [said('Pronto.')]])
+  const domains = `/api/companies/${on.companyId}/network/domains`
+  const asked = { domain: 'api.example.com', reason: 'Ler o catálogo de preços' }
+  const added = await post(on.hub, on.ana, domains, asked)
+  assert.equal(added.statusCode, 200, added.body)
+  const agent = await publishedAgent(on.hub, on.ana, on.agents, {
+    instructions: 'Responda.',
+    machine: true,
+  })
+  const url = await talkedTo(on.hub, on.ana, on.agents, agent.id)
+  const { say } = await talking(t, on.hub, on.ana, url)
+  assert.equal(endOf(await say('Rode')), 'complete')
+  const { control } = on.hub.conversationMachines
+  function sent() {
+    return control.networkApplied.map((each) => each.hosts)
+  }
+  assert.deepEqual(sent(), [[...HOSTS, 'api.example.com']])
+  const one = Object(added.json()).id
+  const removed = await call(on.hub, on.ana, 'DELETE', `${domains}/${one}`)
+  assert.equal(removed.statusCode, 204, removed.body)
+  await until(() => sent().length === 2, 'the running machine took the shorter list')
+  assert.deepEqual(sent().at(-1), HOSTS)
 })
 
 test('o Computador: um agente sem a chave não recebe ferramenta de máquina nem show_file, e nenhuma máquina liga; listar os agentes não liga nada (15)', async (t) => {

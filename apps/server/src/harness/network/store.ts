@@ -12,7 +12,7 @@ import { companyNetworkDomain, conversationNetworkDomain } from './tables.ts'
 
 const OPERATION = 'a lista de internet da empresa'
 
-type NetworkStore = {
+export type NetworkStore = {
   /** The domains the conversation's machine reaches beyond the package registries: the company's and the conversation's. */
   opened(where: {
     companyId: CompanyId

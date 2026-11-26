@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { CompanyId, ConversationId } from '@conexus/hub-api'
+import { CompanyId, ConversationId, NetworkDomain } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { testConfig, unreachableDatabaseUrl } from '../../platform/test-database.ts'
 import {
@@ -187,7 +187,7 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   t.after(() => api.kill(conversation))
   const machines = createConversationMachines(
     {
-      hosts: PACKAGE_HOSTS,
+      network: { kind: 'FIXED', hosts: PACKAGE_HOSTS },
       otherTemplate: 'replace',
       marks: async () => ({ [MARK.company]: COMPANY }),
     },
@@ -210,4 +210,47 @@ test('opt-in: no E2B de verdade, a máquina do Assistente liga pelo início do H
   const read = await machines.read(conversation, 'probe.txt', new AbortController().signal)
   assert.equal(read.kind, 'OK')
   assert.equal(read.kind === 'OK' ? read.bytes.toString() : '', 'L1')
+})
+
+test('opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina ligada', {
+  timeout: 300_000,
+}, async (t) => {
+  const config = realE2b()
+  if (config === undefined) {
+    return t.skip(
+      'opt-in: set CONEXUS_E2B_KEY_FILE and CONEXUS_E2B_TEMPLATE (the published template); firstmate runs it at closing, on the founder’s E2B account',
+    )
+  }
+  const mark = { [MARK.origin]: 'rede-u2-real-test' }
+  const api = createE2bApi(config, mark)
+  const conversation = ConversationId.parse(randomUUID())
+  t.after(() => api.kill(conversation))
+  const kit = createE2bKit(config)({
+    id: `conexus-rede-u2-real-${conversation}`,
+    allowOut: PACKAGE_HOSTS,
+    metadata: { ...mark, [MARK.conversation]: conversation },
+    onStart: () => undefined,
+    workingDirectory: '/home/user',
+  })
+  await kit.sandbox.start?.()
+  async function run(script: string) {
+    const result = await kit.sandbox.executeCommand?.('sh', ['-c', script], { timeout: 60_000 })
+    assert.ok(result !== undefined)
+    return result
+  }
+  async function answers() {
+    return (await run('curl -sS -f -m 20 https://example.com/ -o /dev/null')).exitCode === 0
+  }
+  assert.equal(await answers(), false, 'a host outside the list answered')
+  await kit.openNetwork([NetworkDomain.parse('example.com')])
+  assert.equal(await answers(), true, 'the opened host did not answer on the running machine')
+  // E2B's proxy dials the allowed name itself, not the address the machine resolved
+  // (`e2b-dev/infra@86cb5033` `packages/orchestrator/pkg/tcpfirewall/handlers.go:79-87`).
+  const pointed = await run(
+    "echo '192.0.2.1 example.com' | sudo tee -a /etc/hosts && getent hosts example.com",
+  )
+  assert.match(pointed.stdout, /^192\.0\.2\.1 /m, `the machine kept its address: ${pointed.stderr}`)
+  assert.equal(await answers(), true, 'the proxy dialed the address the machine chose')
+  await kit.closeNetwork()
+  assert.equal(await answers(), false, 'the removed host still answered')
 })

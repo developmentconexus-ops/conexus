@@ -46,7 +46,7 @@ function machinesOf(
   doubles.control.discoverable.push(`conexus-${INSTALLATION}-${id}`)
   const machines = createConversationMachines(
     {
-      hosts: PACKAGE_HOSTS,
+      network: { kind: 'ON_REQUEST', hosts: PACKAGE_HOSTS, opened: async () => [] },
       otherTemplate: 'replace',
       marks: async () => ({ [MARK.company]: COMPANY }),
       ...(replace.readMedia === undefined ? {} : { readMedia: replace.readMedia }),
@@ -190,14 +190,7 @@ test('a fila da conversa: o turno que abre a máquina logo depois de uma pausa l
   assert.deepEqual(on.startedAfter, [0, 1], 'the next turn started after the pause ended')
 })
 
-test('a rede só fecha na máquina achada; a pasta que o mkdir não fez derruba a partida; o link para fora da pasta não é entregue (S)', async (t) => {
-  const connected = machinesOf(t)
-  await turnOf(connected)
-  assert.equal(connected.control.networkClosed, 1)
-  const created = machinesOf(t)
-  created.control.discoverable.length = 0
-  await turnOf(created)
-  assert.equal(created.control.networkClosed, 0)
+test('a pasta que o mkdir não fez derruba a partida; o link para fora da pasta não é entregue (S)', async (t) => {
   for (const executeCommand of [
     undefined,
     async () => ({ exitCode: 1, stdout: '', stderr: '', success: false, executionTimeMs: 0 }),

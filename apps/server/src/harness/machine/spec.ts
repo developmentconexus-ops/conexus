@@ -1,3 +1,4 @@
+import type { CompanyId, ConversationId, NetworkDomain } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 
 /**
@@ -5,8 +6,21 @@ import type { RequestContext } from '@mastra/core/request-context'
  * `createConversationMachines`, which each agent states beside the kit's own deps.
  */
 export type MachineSpec = {
-  /** The hosts the machine may reach, the user's decision (the Assistant's: 0059). */
-  hosts: readonly string[]
+  /**
+   * What the machine may reach, and nothing else: `FIXED` is `hosts` (decision 0051);
+   * `ON_REQUEST` is `hosts` and what `opened` returns, read each time the list is applied. A
+   * session with no company gets `hosts` alone.
+   */
+  network:
+    | { kind: 'FIXED'; hosts: readonly string[] }
+    | {
+        kind: 'ON_REQUEST'
+        hosts: readonly string[]
+        opened(where: {
+          companyId: CompanyId
+          conversationId: ConversationId
+        }): Promise<readonly NetworkDomain[]>
+      }
   /**
    * What a machine made from another template meets: `'replace'` kills it and makes a new one (the
    * Builder's, whose tools the template carries); `'resume'` wakes it by its id with its files.
