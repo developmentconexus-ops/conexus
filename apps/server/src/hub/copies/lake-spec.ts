@@ -34,6 +34,10 @@ export type Started = Readonly<{
   copy: CopyRead
 }>
 
+export function isFirstLoad(table: Pick<typeof lakeTable.$inferSelect, 'lastRunId'>): boolean {
+  return table.lastRunId === null
+}
+
 export async function readCopy(database: Database, at: CompanyScope, connection: ConnectionId) {
   return database.read(at, async (tx): Promise<CopyRead | null> => {
     const [copy] = await tx
@@ -42,13 +46,17 @@ export async function readCopy(database: Database, at: CompanyScope, connection:
       .where(eq(lakeCopy.connectionId, connection))
     if (copy === undefined) return null
     const rows = await tx
-      .select({ source: lakeTable.sourceTable, name: lakeTable.name, last: lakeTable.lastRunId })
+      .select({
+        source: lakeTable.sourceTable,
+        name: lakeTable.name,
+        lastRunId: lakeTable.lastRunId,
+      })
       .from(lakeTable)
       .where(eq(lakeTable.connectionId, connection))
     const tables = rows.map((row) => ({
       source: SourceTableId.parse(row.source),
       name: LakeTableName.parse(row.name),
-      firstLoad: row.last === null,
+      firstLoad: isFirstLoad(row),
     }))
     return { startDate: copy.startDate, tables, lake: await lakeOf(tx, at.companyId) }
   })

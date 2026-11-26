@@ -6,6 +6,7 @@ import type { CopyConnection, CopySource } from '../connectors/public.ts'
 import type { CompanyScope } from './lake-close.ts'
 import { lakeOf } from './lake-close.ts'
 import { RUN_COLUMNS, runViewOf } from './lake-run-view.ts'
+import { isFirstLoad } from './lake-spec.ts'
 import { lakeCopy, lakeRun, lakeTable, lakeTableRun } from './tables.ts'
 
 export type ViewDeps = { database: Database; source: CopySource }
@@ -126,7 +127,7 @@ export async function lakeTablesOf(
               kind: 'MARKED' as const,
               name: LakeTableName.parse(own.name),
               lastRun: lastRunOf(own),
-              firstLoad: own.lastRunId === null,
+              firstLoad: isFirstLoad(own),
             },
     }
   })

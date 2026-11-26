@@ -8,7 +8,7 @@ import { until } from '../../platform/test-until.ts'
 import type { Person } from '../identity/test-hub.ts'
 import { ANA_OWNER, call, codeOf, personOn } from '../identity/test-hub.ts'
 import type { LakeCopyOn } from './test-lake-copy.ts'
-import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS, runsOf } from './test-lake-copy.ts'
+import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS, runsOf, wholeOf } from './test-lake-copy.ts'
 import { result } from './test-lake-queue.ts'
 
 const SILENT = { kind: 'NO_ANSWER' } as const
@@ -295,9 +295,9 @@ test('dois fechamentos da mesma rodada ao mesmo tempo: um vence, e o fim sai uma
   assert.equal(linesOf(on, 'COPY_RUN_ENDED').length, 1)
 })
 
-test('a tabela marcada diz se ainda não teve a primeira carga', async (t) => {
+test('a primeira carga: a tela avisa das mesmas tabelas que a rodada seguinte lê inteiras', async (t) => {
   const on = await lakeCopyOn(t)
-  const { connection } = await openRound(on)
+  const { connection, run } = await openRound(on)
   async function firstLoads() {
     const view = on.viewOf(await on.get(connection))
     return Object.fromEntries(
@@ -307,8 +307,13 @@ test('a tabela marcada diz se ainda não teve a primeira carga', async (t) => {
     )
   }
   assert.deepEqual(await firstLoads(), { TGFCAB: true, TGFPAR: true })
+  assert.deepEqual(wholeOf(on, run), { sankhya_notas: true, sankhya_parceiros: true })
 
   await finished(on, connection, ['sankhya_notas'])
+  assert.equal((await on.run(connection)).statusCode, 202)
+  await on.hub.lakeRuns.idle()
+  const [, next] = await runsOf(on, connection)
 
   assert.deepEqual(await firstLoads(), { TGFCAB: false, TGFPAR: true })
+  assert.deepEqual(wholeOf(on, next?.id), { sankhya_notas: false, sankhya_parceiros: true })
 })
