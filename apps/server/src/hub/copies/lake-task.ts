@@ -12,6 +12,7 @@ import {
 } from '@conexus/hub-api'
 import { z } from 'zod'
 import { AwsRegion } from '../../platform/config-aws.ts'
+import { taskOutcome } from '../../platform/task-outcome.ts'
 import { AccountRef } from '../connectors/public.ts'
 
 export const CopyTaskSpec = z.object({
@@ -39,15 +40,11 @@ export const CopyTaskResult = z.object({
   version: z.literal(1),
   runId: LakeRunId,
   attempt: z.int().min(1),
-  outcome: z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('COMPLETE') }),
-    z.object({
-      kind: z.literal('ERROR'),
-      code: LakeRunFailureCode,
-      table: LakeTableName.nullable(),
-      system: SystemMessage.nullable(),
-    }),
-  ]),
+  outcome: taskOutcome({
+    code: LakeRunFailureCode,
+    table: LakeTableName.nullable(),
+    system: SystemMessage.nullable(),
+  }),
   tables: z.array(
     z.object({
       name: LakeTableName,

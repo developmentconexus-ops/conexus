@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import typing as t
+import urllib.parse
 import urllib.request
 import uuid
 from collections.abc import Iterator
@@ -24,7 +25,7 @@ from pyiceberg.catalog import Catalog, load_catalog
 
 from conexus_extraction import entry
 from conexus_extraction.contract import Lake, Spec
-from tests.athena_double import AthenaDouble
+from tests.athena_double import AthenaDouble, recorded_answer
 
 REPO = Path(__file__).parents[3]
 RECORDINGS = REPO / "apps/server/src/platform/recordings/aws"
@@ -132,11 +133,22 @@ class Aws:
     refuse_after_gets: int | None = None
     refusal: str = "get-parameter-apagado"
     athena: AthenaDouble | None = None
+    objects: dict[str, str] = field(default_factory=dict)
+
+    def object(self, path: str) -> tuple[dict[str, t.Any], str]:
+        found = self.objects.get(path)
+        if found is None:
+            absent = recording("get-object-ausente")
+            return absent, absent["body"]
+        return recording("get-object"), found
 
     def answer(self, target: str, request: dict[str, t.Any]) -> tuple[dict[str, t.Any], str]:
         if target.startswith("AmazonAthena."):
             assert self.athena is not None
             return self.athena.answer(target, request)
+        if target.startswith("AWSGlue."):
+            assert self.athena is not None
+            return self.athena.glue(target, request)
         if target == "AmazonSSM.GetParameter":
             self.gets += 1
             if self.refuse_after_gets is not None and self.gets > self.refuse_after_gets:
@@ -162,10 +174,21 @@ def aws(monkeypatch: pytest.MonkeyPatch) -> Iterator[Aws]:
     state = Aws()
 
     class Handler(BaseHTTPRequestHandler):
+        def do_GET(self) -> None:
+            path = urllib.parse.unquote(urllib.parse.urlsplit(self.path).path).lstrip("/")
+            self._send(*state.object(path))
+
         def do_POST(self) -> None:
-            length = int(self.headers["Content-Length"])
-            request = json.loads(self.rfile.read(length))
-            recorded, body = state.answer(self.headers["X-Amz-Target"], request)
+            sent = self.rfile.read(int(self.headers["Content-Length"]))
+            target = self.headers["X-Amz-Target"]
+            if target is None:
+                assert urllib.parse.parse_qs(sent.decode())["Action"] == ["GetCallerIdentity"]
+                caller = recorded_answer("treat-first-build", "GetCallerIdentity")
+                self._send(caller, caller["body"])
+            else:
+                self._send(*state.answer(target, json.loads(sent)))
+
+        def _send(self, recorded: dict[str, t.Any], body: str) -> None:
             self.send_response(recorded["status"])
             self.send_header("Content-Type", recorded["contentType"])
             self.end_headers()
@@ -181,6 +204,9 @@ def aws(monkeypatch: pytest.MonkeyPatch) -> Iterator[Aws]:
         "AWS_ENDPOINT_URL_SSM": origin,
         "AWS_ENDPOINT_URL_SQS": origin,
         "AWS_ENDPOINT_URL_ATHENA": origin,
+        "AWS_ENDPOINT_URL_GLUE": origin,
+        "AWS_ENDPOINT_URL_STS": origin,
+        "AWS_ENDPOINT_URL_S3": origin,
         "AWS_ACCESS_KEY_ID": "AKIAINVENTED00000001",
         "AWS_SECRET_ACCESS_KEY": "invented",
         "AWS_REGION": REGION,

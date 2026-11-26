@@ -22,13 +22,20 @@ RUN npm ci --omit=dev --omit=optional --no-audit --no-fund -w @conexus/tap && np
 COPY packages/connectors packages/connectors
 COPY apps/extraction/tap apps/extraction/tap
 
+# dbt-athena holds mmh3 below 4.2, which has no wheel for Python 3.13: only this stage has a compiler.
+FROM ${PYTHON_IMAGE} AS python-deps
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev && rm -rf /var/lib/apt/lists/*
+WORKDIR /app/apps/extraction
+COPY apps/extraction/pyproject.toml apps/extraction/uv.lock ./
+RUN --mount=from=uv,source=/uv,target=/usr/local/bin/uv \
+  UV_PYTHON_DOWNLOADS=never uv sync --frozen --no-dev --no-install-project
+
 FROM ${PYTHON_IMAGE}
 COPY --from=adapter /usr/local/bin/node /usr/local/bin/node
 COPY --from=adapter /app /app
 WORKDIR /app/apps/extraction
 COPY apps/extraction/pyproject.toml apps/extraction/uv.lock ./
-RUN --mount=from=uv,source=/uv,target=/usr/local/bin/uv \
-  UV_PYTHON_DOWNLOADS=never uv sync --frozen --no-dev --no-install-project
+COPY --from=python-deps /app/apps/extraction/.venv .venv
 COPY apps/extraction/meltano.yml ./
 COPY apps/extraction/contract contract
 COPY apps/extraction/src src
