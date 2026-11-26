@@ -84,7 +84,10 @@ test('parar com a rodada aberta: 202 sem esperar a parada, o parâmetro sai ante
 
   assert.deepEqual(await rowOf(on, run), { ...INTERRUPTED, stopped_by: on.ana.id })
   const [ended] = linesOf(on, 'COPY_RUN_ENDED')
-  assert.deepEqual([ended?.outcome, ended?.cause], ['INTERRUPTED', 'PERSON'])
+  assert.deepEqual(
+    [ended?.outcome, ended?.cause, ended?.asked, ended?.by],
+    ['INTERRUPTED', 'ECS_STOPPED', true, on.ana.id],
+  )
   const by = { name: ANA_OWNER.name }
   const closed = await lastRunOf(on, connection)
   assert.deepEqual(closed?.outcome === 'INTERRUPTED' && closed.stoppedBy, by)
@@ -179,7 +182,8 @@ test('parar durante a partida: sem tarefa, a rodada fecha na hora, e a partida d
   assert.deepEqual(await answerOf(stop(on, connection)), [202, { stopping: true }])
   assert.deepEqual(on.aws.tasks(), [], 'there was no task to stop')
   assert.deepEqual(await rowOf(on, String(round?.id)), { ...INTERRUPTED, stopped_by: on.ana.id })
-  assert.equal(linesOf(on, 'COPY_RUN_ENDED')[0]?.cause, 'PERSON')
+  const [ended] = linesOf(on, 'COPY_RUN_ENDED')
+  assert.deepEqual([ended?.cause, ended?.asked, ended?.by], ['PERSON', true, on.ana.id])
 
   await on.hub.lakeRuns.idle()
   assert.deepEqual(
@@ -233,8 +237,8 @@ test('a tarefa que sai sozinha depois do pedido de parar fecha INTERRUPTED, não
   assert.deepEqual(await rowOf(on, run), { ...INTERRUPTED, stopped_by: on.ana.id })
   const [ended] = linesOf(on, 'COPY_RUN_ENDED')
   assert.deepEqual(
-    [ended?.outcome, ended?.cause, ended?.code],
-    ['INTERRUPTED', 'PERSON', undefined],
+    [ended?.outcome, ended?.cause, ended?.asked, ended?.code],
+    ['INTERRUPTED', 'ECS_STOPPED', true, undefined],
   )
 })
 
@@ -250,7 +254,8 @@ test('o resultado que chega depois do pedido de parar vale: o erro da tarefa con
 
   const row = await rowOf(on, run)
   assert.deepEqual([row?.outcome, row?.code], ['ERROR', 'COPY_LAKE_WRITE_FAILED'])
-  assert.equal(linesOf(on, 'COPY_RUN_ENDED')[0]?.cause, 'RESULT')
+  const [ended] = linesOf(on, 'COPY_RUN_ENDED')
+  assert.deepEqual([ended?.cause, ended?.asked, ended?.by], ['RESULT', true, on.ana.id])
 })
 
 test('a rodada que fecha enquanto o Parar apaga o parâmetro: 200, sem quem parou e sem StopTask', async (t) => {

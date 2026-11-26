@@ -223,8 +223,8 @@ export async function closeLakeRun(
       .where(and(eq(lakeRun.id, close.run), isNull(lakeRun.endedAt)))
       .for('update')
     if (row === undefined) return { won: null, lake: await lakeOf(tx, at.companyId) }
-    const asked = row.stoppedBy !== null
-    const end = endOfAsked(asked, close.end)
+    const by = row.stoppedBy
+    const end = endOfAsked(by !== null, close.end)
     await tx
       .update(lakeRun)
       .set({
@@ -235,8 +235,7 @@ export async function closeLakeRun(
       .where(eq(lakeRun.id, close.run))
     const connectionId = ConnectionIdSchema.parse(row.connectionId)
     await counted(tx, { at, connectionId, run: close.run, tables: close.tables })
-    const cause: CloseCause = asked && end.kind === 'INTERRUPTED' ? 'PERSON' : close.cause
-    return { won: { connectionId, end, cause }, lake: await lakeOf(tx, at.companyId) }
+    return { won: { connectionId, end, by }, lake: await lakeOf(tx, at.companyId) }
   })
   const of = { companyId: at.companyId, runId: close.run }
   if (closed.won === null) {
@@ -244,12 +243,13 @@ export async function closeLakeRun(
     return { kind: 'ALREADY_CLOSED', parameter }
   }
   deps.watch?.ended(close.run)
-  const { connectionId, end, cause } = closed.won
-  const fields = { ...of, connectionId, cause }
+  const { connectionId, end, by } = closed.won
+  const fields = { ...of, connectionId, cause: close.cause }
   const parameter = await parameterGone(deps, closed.lake, fields)
   deps.log.info(
     {
       ...fields,
+      ...(by === null ? {} : { asked: true, by }),
       outcome: end.kind,
       ...(end.kind === 'ERROR' ? { code: end.code } : {}),
       tables: close.tables.length,
