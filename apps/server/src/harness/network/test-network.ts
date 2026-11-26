@@ -20,6 +20,7 @@ export async function networkCompany(t: TestContext) {
   const carla = await memberOn(hub, companyId, CARLA, 'developer')
   const davi = await memberOn(hub, companyId, DAVI, 'member')
   const path = `/api/companies/${companyId}/network/domains`
+  const openAllPath = `/api/companies/${companyId}/network/open-all`
   function rows() {
     return hub.test.asOwner(
       `select domain, reason, granted_by from builder.company_network_domain
@@ -27,5 +28,5 @@ export async function networkCompany(t: TestContext) {
       [companyId],
     )
   }
-  return { hub, ana, bruno, carla, davi, companyId, path, rows }
+  return { hub, ana, bruno, carla, davi, companyId, path, openAllPath, rows }
 }

@@ -1,7 +1,10 @@
 import {
   addNetworkDomain,
+  closeAllNetwork,
   listNetworkDomains,
   NetworkDomain,
+  openAllNetwork,
+  readOpenAllNetwork,
   removeNetworkDomain,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
@@ -24,6 +27,19 @@ export function registerNetworkRoutes(app: FastifyInstance, store: CompanyList):
   serve(app, removeNetworkDomain, async ({ person, params }) => {
     const who = { companyId: params.companyId, personId: person.id }
     await store.remove(who, params.domainId)
+    return answer(undefined)
+  })
+
+  serve(app, readOpenAllNetwork, async ({ person, params }) =>
+    answer({ open: await store.readOpenAll({ ...params, personId: person.id }) }),
+  )
+
+  serve(app, openAllNetwork, async ({ person, params }) =>
+    answer(await store.openAll({ ...params, personId: person.id })),
+  )
+
+  serve(app, closeAllNetwork, async ({ person, params }) => {
+    await store.closeAll({ ...params, personId: person.id })
     return answer(undefined)
   })
 }

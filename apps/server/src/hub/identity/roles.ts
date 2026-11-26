@@ -47,6 +47,7 @@ const BUILD = {
   agent: ['manage', 'publish'],
   automation: ['manage'],
   assistant: ['ask'],
+  network: ['open'],
 } as const
 
 /**
@@ -86,7 +87,7 @@ export function rolesFor(kit: RoleKit) {
     request: ['create', 'decide'],
     companyMemory: ['manage'],
     dataRead: ['read'],
-    network: ['manage'],
+    network: ['manage', 'open', 'openAll'],
   })
   const roles = {
     // The owner and the administrator use every operation of every connector, always.
@@ -96,6 +97,7 @@ export function rolesFor(kit: RoleKit) {
       ...BUILD,
       copy: ['manage'],
       agent: [...BUILD.agent, ...UNATTENDED],
+      network: [...BUILD.network, 'manage', 'openAll'],
       ...allOperations,
       company: ['nickname'],
     }),
@@ -105,6 +107,7 @@ export function rolesFor(kit: RoleKit) {
       ...BUILD,
       copy: ['manage'],
       agent: [...BUILD.agent, ...UNATTENDED],
+      network: [...BUILD.network, 'manage'],
       ...allOperations,
     }),
     developer: ac.newRole({
