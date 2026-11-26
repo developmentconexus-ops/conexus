@@ -86,19 +86,55 @@ test('o tema', async () => {
   }
 })
 
-// Base UI marks a disabled button with `data-disabled` too, whose fade must not reach the primary one.
-test('o botão principal desabilitado é cinza, não desbotado', async () => {
+// A disabled button is painted by `:disabled`, which a disabled fieldset around it also sets, and by
+// `data-disabled`, the only mark of one that keeps its focus.
+test('o botão desabilitado se pinta igual pelos dois caminhos, o principal cinza', async () => {
   const page = await harness.open('/pieces', { viewport: DESKTOP, replies: {} })
   for (const [band, theme] of [
     ['light', 0],
     ['dark', 1],
   ] as const) {
-    const off = page.locator(`[data-file="button.tsx"] [data-band=${band}] button.lit:disabled`)
-    const painted = await off.evaluate((element) => {
-      const style = getComputedStyle(element)
-      return [style.backgroundImage, style.backgroundColor, style.opacity]
-    })
-    assert.deepEqual(painted, ['none', rgb(PALETTE['surface-4'][theme]), '1'], band)
+    const buttons = page.locator(`[data-file="button.tsx"] [data-band=${band}] [data-slot=button]`)
+    // The showcase's resting primary and small buttons, put inside a disabled fieldset.
+    for (const resting of [buttons.nth(0), buttons.nth(1)])
+      await resting.evaluate((button) => {
+        const fieldset = document.createElement('fieldset')
+        fieldset.disabled = true
+        button.replaceWith(fieldset)
+        fieldset.append(button)
+      })
+    const painted = await buttons.evaluateAll((all) =>
+      all
+        .filter((button) => button.matches(':disabled, [data-disabled]'))
+        .map((button) => {
+          const style = getComputedStyle(button)
+          const mark = button.hasAttribute('data-disabled') ? 'data' : 'native'
+          const how = `${mark}${button.matches(':disabled') ? ' :disabled' : ''}`
+          const off = [style.opacity, style.pointerEvents]
+          if (!button.classList.contains('lit')) return [how, ...off]
+          const lit = style.boxShadow.includes('inset') ? 'lit shadow' : 'no shadow'
+          return [how, ...off, style.backgroundImage, style.backgroundColor, style.color, lit]
+        }),
+    )
+    const grey = ['none', rgb(PALETTE['surface-4'][theme]), rgb(PALETTE['text-2'][theme])]
+    function primary(how: string) {
+      return [how, '1', 'none', ...grey, 'no shadow']
+    }
+    function plain(how: string) {
+      return [how, '0.5', 'none']
+    }
+    assert.deepEqual(
+      painted,
+      [
+        primary('native :disabled'),
+        plain('native :disabled'),
+        plain('data :disabled'),
+        primary('data :disabled'),
+        plain('data'),
+        primary('data'),
+      ],
+      band,
+    )
   }
   await page.close()
 })

@@ -10,6 +10,8 @@ import { cn } from './cn.ts'
 export const touchArea =
   'relative pointer-coarse:after:absolute pointer-coarse:after:top-1/2 pointer-coarse:after:left-1/2 pointer-coarse:after:h-full pointer-coarse:after:min-h-11 pointer-coarse:after:w-full pointer-coarse:after:min-w-11 pointer-coarse:after:-translate-1/2'
 
+// Disabled is painted twice on purpose: a button inside a disabled fieldset gets no `data-disabled`,
+// and one that keeps its focus gets no `disabled` attribute.
 const buttonClasses = cva(
   `${touchArea} inline-flex shrink-0 items-center justify-center gap-sm whitespace-nowrap rounded-control border border-transparent font-body text-label select-none button-motion active:scale-96 disabled:pointer-events-none disabled:opacity-50 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0`,
   {

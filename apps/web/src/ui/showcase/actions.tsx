@@ -25,10 +25,16 @@ export const ACTIONS: readonly ShowcaseEntry[] = [
       [
         'disabled',
         () => (
-          <div className="flex gap-lg">
+          <div className="flex flex-wrap gap-lg">
             <Button disabled>Salvar</Button>
             <Button variant="primary" disabled>
               Salvar
+            </Button>
+            <Button disabled focusableWhenDisabled>
+              Salvando
+            </Button>
+            <Button variant="primary" disabled focusableWhenDisabled>
+              Salvando
             </Button>
           </div>
         ),
