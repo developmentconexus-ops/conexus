@@ -279,8 +279,9 @@ GRANT SELECT,INSERT,DELETE ON TABLE auth.verification TO hub_invitation;
 -- Step 24.1, U2, founder 2026-11-01 ("Aprovo as permissoes do b1"): the Assistant's routes keep a
 -- conversation's chosen connections and its turn reads them; the row leaves by cascade, never by
 -- the Hub.
--- The network step, G1 (data D11; founder, 2026-11-25, the card's decision B: "B.a"): a company's
--- routes keep its list, and a conversation's tool and deletion keep the conversation's.
+-- The network step, G1 (data D11; founder, 2026-11-25, the card's decision B: "B.a"): the company's
+-- routes and a conversation's tool keep the company's list; the tool and the conversation's
+-- deletion keep the conversation's.
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE builder.agent TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.agent TO hub_agent_companies;
 GRANT SELECT(active_version) ON TABLE builder.agent TO hub_agent_companies;
