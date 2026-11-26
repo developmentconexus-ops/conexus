@@ -2,6 +2,7 @@ import { LAKE_TABLE_NAME_PATTERN, TREATMENT_RUN_FAILURES } from '@conexus/hub-ap
 import { sql } from 'drizzle-orm'
 import {
   check,
+  foreignKey,
   integer,
   jsonb,
   pgSchema,
@@ -40,6 +41,7 @@ export const treatmentModel = treatment.table(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
   },
   (table) => [
+    unique('treatment_model_company_id_id_key').on(table.companyId, table.id),
     unique('treatment_model_name_key').on(table.companyId, table.name),
     check(
       'treatment_model_name',
@@ -56,9 +58,7 @@ export const treatmentVersion = treatment.table(
   'version',
   {
     id: text('id').primaryKey(),
-    modelId: text('model_id')
-      .notNull()
-      .references(() => treatmentModel.id, { onDelete: 'cascade' }),
+    modelId: text('model_id').notNull(),
     companyId: text('company_id').notNull(),
     number: integer('number').notNull(),
     sql: text('sql').notNull(),
@@ -70,6 +70,12 @@ export const treatmentVersion = treatment.table(
     approvedAt: timestamp('approved_at', { withTimezone: true }),
   },
   (table) => [
+    foreignKey({
+      name: 'treatment_version_model_fkey',
+      columns: [table.companyId, table.modelId],
+      foreignColumns: [treatmentModel.companyId, treatmentModel.id],
+    }).onDelete('cascade'),
+    unique('treatment_version_company_id_id_key').on(table.companyId, table.id),
     unique('treatment_version_number_key').on(table.modelId, table.number),
     check('treatment_version_number', sql`${table.number} >= 1`),
     check('treatment_version_sql', sql`char_length(${table.sql}) <= 20000`),
@@ -101,6 +107,7 @@ export const treatmentRun = treatment.table(
     endedAt: timestamp('ended_at', { withTimezone: true }),
   },
   (table) => [
+    unique('treatment_run_company_id_id_key').on(table.companyId, table.id),
     uniqueIndex('treatment_run_open_key').on(table.companyId).where(sql`${table.endedAt} IS NULL`),
     check('treatment_run_cause', sql`${table.cause} IN (${listed(CAUSES)})`),
     check('treatment_run_state', sql`${table.state} IN (${listed(STATES)})`),
@@ -128,18 +135,27 @@ export const treatmentRun = treatment.table(
 export const treatmentModelRun = treatment.table(
   'model_run',
   {
-    runId: text('run_id')
-      .notNull()
-      .references(() => treatmentRun.id, { onDelete: 'cascade' }),
+    runId: text('run_id').notNull(),
     companyId: text('company_id').notNull(),
     name: text('name').notNull(),
-    versionId: text('version_id').references(() => treatmentVersion.id, { onDelete: 'set null' }),
+    versionId: text('version_id'),
     status: text('status', { enum: MODEL_STATUSES }).notNull(),
     rows: integer('rows'),
     failure: text('failure'),
     line: integer('line'),
   },
   (table) => [
+    foreignKey({
+      name: 'treatment_model_run_run_fkey',
+      columns: [table.companyId, table.runId],
+      foreignColumns: [treatmentRun.companyId, treatmentRun.id],
+    }).onDelete('cascade'),
+    // The migration sets only version_id to null; Drizzle cannot say which columns (data D5).
+    foreignKey({
+      name: 'treatment_model_run_version_fkey',
+      columns: [table.companyId, table.versionId],
+      foreignColumns: [treatmentVersion.companyId, treatmentVersion.id],
+    }).onDelete('set null'),
     primaryKey({ columns: [table.runId, table.name] }),
     check('treatment_model_run_status', sql`${table.status} IN (${listed(MODEL_STATUSES)})`),
     check(
