@@ -197,9 +197,9 @@ duas áreas e ainda não sabe se atualizar. As referências fazem igual:
 3. Duas decisões técnicas do firstmate que o G1 já seguiu (F12 e F13): o tipo do erro do Athena e a
    linha do seu SQL, lidos como a prova U1 os gravou; e o nome de tabela do lago declarado no kit, preso
    por teste ao do Hub.
-4. Uma pergunta aberta para o G2 (a issue https://github.com/developmentconexus-ops/conexus/issues/1431):
-   como está, a próxima mudança da receita do lago faria todo lago parar de tratar até ser apagado e
-   criado de novo.
+4. Uma pergunta do G2, já respondida pelo firstmate (decisão F15, a issue
+   https://github.com/developmentconexus-ops/conexus/issues/1431): a próxima mudança da receita do
+   lago não faz um lago que já tem as áreas do tratamento parar de tratar.
 5. O orçamento do G2 sobe 110 linhas pelo Parar.
 
 **4.2. Com que credencial da AWS o SQL roda.** (a), a escolhida: um papel próprio do tratamento, um por lago, no
@@ -538,6 +538,7 @@ o texto "one PostgreSQL SELECT" das ferramentas de dados está em `harness/tools
 | F12 | O tipo do erro do Athena é o `^([A-Z][A-Z_]{2,63}):` no começo da segunda linha da mensagem do nó; a linha é a do primeiro `line N:M` dessa linha, menos as linhas que o dbt-athena põe antes do SQL da pessoa (9, mais uma por `-- depends_on`), e só vale dentro do tamanho do SQL; sem tipo, o modelo volta `TREAT_ENGINE_FAILED`; o texto do Athena nunca sai | A U1 gravou a primeira linha como "Runtime Error in model", e não "Database Error"; o regex que pedia `: line` perde `DIVISION_BY_ZERO` e `INVALID_CAST_ARGUMENT`, que não têm linha (registro da U1, seção 7.1). O G1 aplicou assim (https://github.com/developmentconexus-ops/conexus/pull/1430, `apps/extraction/src/conexus_extraction/treat.py:29-33`, `:109-121`), com teste sobre as sete gravações da U1, com e sem `depends_on`; o 9 é uma peça à mão, registrada em `docs/reference/boundaries.md` com a hora de rever (uma versão nova do dbt-athena) | o regex do cartão anterior, com `TREAT_ENGINE_FAILED` nos tipos sem linha |
 | F13 | O kit declara o seu próprio `LakeTableName` (`packages/connectors/src/kernel/tables-treated.ts:3-6`), com a mesma regex e a mesma marca do contrato do Hub (`packages/hub-api/src/lake-copies.ts:13-14`), e um teste prende as duas (`apps/server/src/hub/connectors/copy-source.test.ts`, "o nome no lago que o kit faz é o do contrato do Hub") | O kit não importa `hub-api`, que já importa o kit: importar faria um ciclo (code C6). O padrão `LAKE_NAME_PATTERN` é o único dono do teto de 60 no kit (o G1, `d8aabb03`) | o kit importar o tipo de um pacote de contratos que nenhum dos dois importe |
 | F14 | Uma rodada de tratamento parada fecha `STOPPED`, com quem parou; o seu `pending` não abre a próxima rodada sozinho, e os modelos do seu `select` entram na próxima seleção como os que falharam por último | Parar e logo reabrir seria o contrário do que a pessoa pediu (estudo do Parar cópia, seção 3). Um modelo parado no meio do seu `CREATE TABLE AS` pode ter a tabela fora (decisão 5), e sem resultado a seleção o daria por gravado na rodada anterior; contá-lo como falho faz a próxima cópia ou o Tratar agora o refazer. `STOPPED` separado de `FAILED` segue a Nekt (`canceled` distinto de `failed`) e o Parar cópia (`INTERRUPTED` com `stoppedBy`) | o `pending` abrir a próxima, e o modelo parado esperar a próxima cópia da sua entrada |
+| F15 | Um lago trata quando a receita com que nasceu está na lista das receitas que têm `tratado` e `negocio`: a receita da imagem e as anteriores que já as tinham, uma lista no config do Hub (`apps/server/src/platform/config-aws.ts`), sem migração. A mesma lista decide a frase da receita anterior na Central (`apps/server/src/hub/lake/lake.ts`), que fala de tratar | O tratamento guarda pelo que precisa, as duas áreas, e não pela receita inteira: comparar o sha256 inteiro (`lake.ts:84` contra `config-aws.ts:88-90`) faria a primeira edição de `lake.template.json` depois do G1 recusar Tratar agora e a proposta em todo lago, com `LAKE_NOT_READY`, até apagar e criar de novo (a issue 1431, a raiz do achado 5 da revisão do https://github.com/developmentconexus-ops/conexus/pull/1430). Quem muda a receita põe a anterior na lista; um teste prende que a receita da imagem tem as duas áreas. `lake.ts` e `config-aws.ts` ficam fora do raio da U5b e entram declarados (delivery L7) | gravar na linha a receita nova depois de um `UpdateStack` (https://github.com/developmentconexus-ops/conexus/issues/1424) |
 
 ## U1 A prova do motor no lago
 
@@ -1180,14 +1181,9 @@ As linhas do `docs/reference/stack.md` de `@aws-sdk/client-ecs`, `client-sqs`, `
    aberta cuja tarefa não está viva fecha com `TREAT_TASK_STOPPED`. **Testes:** `treatment-sweep.test.ts`.
 6. **Tratar agora.** Critério: 29. **Arquivos:** `routes.ts`. **O que entra:** a guarda do lago com a
    receita nova (`outdated` falso), da rodada aberta e de haver modelo; a rota pede `approveTreatment`
-   (decisão 4.1). **Pergunta aberta do G2**, a responder antes desta ordem do trabalho começar
-   (https://github.com/developmentconexus-ops/conexus/issues/1431): `outdated` compara o sha256 inteiro
-   da receita (`apps/server/src/hub/lake/lake.ts:84` contra `config-aws.ts:88-90`), então a primeira
-   mudança de `lake.template.json` depois do G1 faria todo lago que já tem `tratado` e `negocio`
-   recusar Tratar agora e a proposta com `LAKE_NOT_READY`. As saídas a decidir: guardar pelo que o
-   tratamento precisa (a receita ter as duas áreas), ou gravar na linha a receita nova depois de um
-   `UpdateStack` (https://github.com/developmentconexus-ops/conexus/issues/1424). É reversível (decisão F8), então é do firstmate, com a resposta escrita
-   aqui antes da U5b.
+   (decisão 4.1). A guarda do lago é a da decisão F15 (a resposta à
+   https://github.com/developmentconexus-ops/conexus/issues/1431): o lago trata quando a sua receita
+   está na lista das receitas que têm `tratado` e `negocio`, e não só quando é a receita da imagem.
 7. **Parar.** Critério: 38. **Arquivos:** cria `treatment-stop.ts`; muda `routes.ts`,
    `treatment-run.ts`, `treatment-sweep.ts`, `select.ts`. **Referência a seguir:** `lake-stop.ts` e o
    fecho de `lake-close.ts` do Parar cópia. **O que entra:** a rota com `approveTreatment`; o fim
