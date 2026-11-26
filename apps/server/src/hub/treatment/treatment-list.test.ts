@@ -10,7 +10,6 @@ import { treatModelsOf } from './public.ts'
 import type { TreatmentOn } from './test-treatment.ts'
 import { OF_NOTAS, tableOf, treatmentOn } from './test-treatment.ts'
 
-/** The kit's Sankhya with a template over the partners that renames a column. */
 function renamedPartners(): readonly Connector[] {
   return CONNECTORS.map((connector) => {
     const { tables } = connector
@@ -30,7 +29,6 @@ function renamedPartners(): readonly Connector[] {
   })
 }
 
-/** A HubSpot table marked for the copy, whose connector declares no template. */
 async function plantHubSpot(on: TreatmentOn) {
   const connection = randomUUID()
   await on.rows(
@@ -77,7 +75,6 @@ test('os modelos da rodada: um por molde, com o SELECT do conector, e cada trata
   assert.equal(models[2]?.sql, OF_NOTAS)
 })
 
-/** The description the copy kept of a partners' column, by the column's name in the lake. */
 async function partnerDescription(on: TreatmentOn, name: string) {
   const [copied] = await on.rows(
     `select columns from copies.lake_table where name = 'sankhya_parceiros'`,
@@ -133,7 +130,6 @@ test('lista: a receita anterior e o lago ausente se dizem', async (t) => {
   assert.equal((await on.listed()).lake, 'NONE')
 })
 
-/** One treatment run of a lake that ended, with how one model ended in it. */
 async function plantRun(
   on: TreatmentOn,
   run: Readonly<{ lake: string; state: string; hours: number; rows: number }>,
@@ -173,7 +169,6 @@ test('rodadas: a lista e o modelo mostram só as do lago de agora, a mais nova p
   assert.equal(tableOf(view, 'tratado', 'sankhya_notas').lastRun, null)
 })
 
-/** A treatment with its version and a run that built it, as the company's rows. */
 async function plantTreatment(hub: Hub, company: string, person: string) {
   const [model, version, run] = [randomUUID(), randomUUID(), randomUUID()]
   await hub.test.asOwner(

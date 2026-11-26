@@ -179,7 +179,6 @@ test('ciclo: duas propostas ao mesmo tempo não fecham um ciclo entre si', async
   const b = await on.proposed(OF_NOTAS, 'b')
   await withOwnerLock(
     on.hub.test,
-    // Holds both before either writes its version, after each could have read the other's model.
     'lock table treatment.version in share mode',
     [],
     async (release) => {

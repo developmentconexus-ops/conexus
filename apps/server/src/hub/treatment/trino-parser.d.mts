@@ -1,5 +1,3 @@
-// What the Hub uses of `dt-sql-parser` 4.6.1, bundled by `npm run build` from `trino-entry.js`.
-
 export declare const EntityContextType: { readonly TABLE: 'table' }
 export declare const TableDeclareType: { readonly EXPRESSION: 1 }
 

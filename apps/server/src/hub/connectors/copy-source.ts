@@ -75,7 +75,7 @@ export type CopyConnection =
 
 type TreatedTemplate = Readonly<{
   description: string
-  columns: readonly Readonly<{ column: string; as: string }>[]
+  columns: readonly Readonly<{ copied: string; name: string }>[]
   select(lakeName: string): string
 }>
 
@@ -164,7 +164,7 @@ async function treatedLookupIn(
     if (treated === undefined) return null
     return {
       description: treated.description,
-      columns: treated.columns.map(({ column, as }) => ({ column, as })),
+      columns: treated.columns.map(({ column, as }) => ({ copied: column, name: as })),
       select: (lakeName) => treatedSelect(KitLakeTableName.parse(lakeName), treated),
     }
   }

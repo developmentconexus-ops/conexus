@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { readModelSql } from './sql.ts'
+import { readModelSql } from './public.ts'
 
 function inputsOf(sql: string) {
   const read = readModelSql(sql)
@@ -118,7 +118,7 @@ for (const [sql, table] of [
   ['select * from (with y as (select 1) select * from y) s, y', 'y'],
   ['with recursive r(n) as (select 1 union all select n + 1 from r) select * from r', 'r'],
 ] as const) {
-  test(`leitor de SQL recusa a tabela sem área ou de outra área: ${sql}`, () => {
+  test(`leitor de SQL recusa a tabela sem área ou fora das três áreas: ${sql}`, () => {
     assert.deepEqual(readModelSql(sql), {
       kind: 'REFUSED',
       code: 'TREATMENT_INPUT_UNQUALIFIED',

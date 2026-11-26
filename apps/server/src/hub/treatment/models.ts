@@ -136,7 +136,6 @@ export async function checkInputs(
     ...marked.map((table) => refOf('current', table.name)),
     ...templates.map((table) => refOf('tratado', table.name)),
     ...business.map((model) => refOf('negocio', model.name)),
-    // A model that reads itself is a circle, not an unknown table.
     refOf('negocio', name),
   ])
   const unknown = inputs.find(({ layer, table }) => !known.has(refOf(layer, table)))
@@ -237,12 +236,9 @@ export async function treatedTablesOf(
         name,
         connectionId,
         description: treated.description,
-        columns: treated.columns.map(({ column, as }) => ({
-          name: as,
-          // The copy keeps the system's spelling of a name (NOMEPARC); the lake's columns, which a
-          // template names, are lower case.
-          description:
-            columns.find((copied) => copied.name.toLowerCase() === column)?.description ?? null,
+        columns: treated.columns.map(({ copied, name }) => ({
+          name,
+          description: columns.find((column) => column.name === copied)?.description ?? null,
         })),
         ...standing('tratado', name),
       })),
@@ -270,7 +266,6 @@ export async function treatmentModelViewOf(
 }
 
 export async function deleteCompanyTreatments(tx: CommandTx, companyId: CompanyId): Promise<void> {
-  // Versions and model runs leave by cascade.
   await tx.delete(treatmentRun).where(eq(treatmentRun.companyId, companyId))
   await tx.delete(treatmentModel).where(eq(treatmentModel.companyId, companyId))
 }

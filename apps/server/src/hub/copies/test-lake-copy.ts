@@ -44,7 +44,6 @@ type Options = {
   noLake?: boolean
   /** The clock a disconnection waits for its task's stop on. */
   stopWait?: StartClock
-  /** The connectors the Hub serves, for a test's own declarations. */
   catalog?: readonly Connector[]
 }
 

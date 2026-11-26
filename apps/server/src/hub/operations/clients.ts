@@ -31,7 +31,6 @@ export type OutsideResource = {
 /** What deleting a client asks of the Builder (code C4): every conversation's thread and memory. */
 export type CompanyConversationRelease = (scope: { companyId: CompanyId }) => Promise<void>
 
-/** What deleting a client asks of the treatments: their rows leave with the company's, in its transaction. */
 export type CompanyTreatmentRemoval = (tx: CommandTx, companyId: CompanyId) => Promise<void>
 
 type Deps = {

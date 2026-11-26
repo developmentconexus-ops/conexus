@@ -17,7 +17,6 @@ import { ATENDENTE } from '../identity/test-roles.ts'
 import type { TreatmentOn } from './test-treatment.ts'
 import { OF_NOTAS, treatmentOn } from './test-treatment.ts'
 
-/** The five routes of a treatment, as one person calls them on one model of a company. */
 function routesOf(base: string, id: string, version: { number: number; hash: string }) {
   const model = `${base}/models/${id}`
   return [

@@ -113,8 +113,7 @@ const ACTIONS = {
   manageNetwork: { by: 'MEMBER', statement: MANAGE_NETWORK, locks: true },
   openConversationNetwork: { by: 'MEMBER', statement: OPEN_CONVERSATION_NETWORK, locks: true },
   openAllNetwork: { by: 'MEMBER', statement: OPEN_ALL_NETWORK, locks: true },
-  // An owner or an administrator proposes and approves the lake's treatments (T1, decision 4.1).
-  // Reading them needs the same permission as proposing.
+  readTreatment: { by: 'MEMBER', statement: PROPOSE_TREATMENT, locks: false },
   proposeTreatment: { by: 'MEMBER', statement: PROPOSE_TREATMENT, locks: true },
   approveTreatment: { by: 'MEMBER', statement: APPROVE_TREATMENT, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },

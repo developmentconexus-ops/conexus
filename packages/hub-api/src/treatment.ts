@@ -133,10 +133,10 @@ export type ProposeTreatmentVersion = z.infer<typeof ProposeTreatmentVersion>
 const InCompany = z.object({ companyId: CompanyId })
 const OfModel = InCompany.extend({ modelId: TreatmentModelId })
 
-/** A SQL of 20,000 characters, each up to six bytes as JSON writes it, beside the other fields. */
-const PROPOSAL_BODY = 128 * 1024
+const JSON_BYTES_PER_CHARACTER = 6
+// The SQL at its longest, and room for the other fields.
+const PROPOSAL_BODY = (TREATMENT_SQL_MAX + 1_000) * JSON_BYTES_PER_CHARACTER
 
-// A role without the permission and a company the person is not in answer the same `NOT_FOUND` (S10).
 const READ = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
 const PROPOSE = [
   ...READ,

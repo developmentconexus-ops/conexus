@@ -10,6 +10,10 @@ const Marked = z.object({
   columns: LakeTableSummary.shape.columns,
 })
 
+function inLakeSpelling({ name, description }: z.infer<typeof Marked>['columns'][number]) {
+  return { name: name.toLowerCase(), description }
+}
+
 export async function markedTablesOf(tx: ReadTx) {
   const rows = await tx
     .select({
@@ -19,5 +23,8 @@ export async function markedTablesOf(tx: ReadTx) {
       columns: lakeTable.columns,
     })
     .from(lakeTable)
-  return rows.map((row) => Marked.parse(row))
+  return rows.map((row) => {
+    const marked = Marked.parse(row)
+    return { ...marked, columns: marked.columns.map(inLakeSpelling) }
+  })
 }

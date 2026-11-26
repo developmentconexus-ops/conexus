@@ -37,31 +37,27 @@ export type TreatmentRouteDeps = TreatmentReads &
 
 type Asked = Readonly<{ person: PersonId; companyId: CompanyId }>
 type OfModel = Asked & Readonly<{ modelId: TreatmentModelId }>
-type Action = 'proposeTreatment' | 'approveTreatment'
+type Action = 'readTreatment' | 'proposeTreatment' | 'approveTreatment'
 
 function scopeOf(at: Asked) {
   return { kind: 'COMPANY', companyId: at.companyId, personId: at.person } as const
 }
 
-function admit(deps: TreatmentRouteDeps, tx: CommandTx, at: Asked, action: Action) {
+function admit(deps: TreatmentRouteDeps, tx: ReadTx, at: Asked, action: Action) {
   return deps.identity.admitMember({ tx, personId: at.person, companyId: at.companyId, action })
 }
 
-/** A read of one snapshot, after the admission, which takes a write transaction. */
-async function readAs<T>(deps: TreatmentRouteDeps, at: Asked, work: (tx: ReadTx) => Promise<T>) {
-  await deps.database.command(scopeOf(at), async (tx) => {
-    await admit(deps, tx, at, 'proposeTreatment')
+function readAs<T>(deps: TreatmentRouteDeps, at: Asked, work: (tx: ReadTx) => Promise<T>) {
+  return deps.database.read(scopeOf(at), async (tx) => {
+    await admit(deps, tx, at, 'readTreatment')
+    return work(tx)
   })
-  return deps.database.read(scopeOf(at), work)
 }
 
-/** One proposal of a company at a time: two at once could each pass the cycle check and close one. */
-async function admitProposal(deps: TreatmentRouteDeps, tx: CommandTx, at: Asked) {
-  await admit(deps, tx, at, 'proposeTreatment')
-  await transactionLock(tx, `conexus.treatment-proposal:${at.companyId}`)
+function lockCompanyProposals(tx: CommandTx, companyId: CompanyId) {
+  return transactionLock(tx, `conexus.treatment-proposal:${companyId}`)
 }
 
-/** A name or a version number another write took is the unique index's refusal, also between two at once. */
 async function refusedIfTaken<T>(work: () => Promise<T>): Promise<T> {
   try {
     return await work()
@@ -75,7 +71,7 @@ async function refusedIfTaken<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
-async function readProposal(deps: TreatmentRouteDeps, tx: ReadTx, at: Asked, text: string) {
+async function checkedProposal(deps: TreatmentRouteDeps, tx: ReadTx, at: Asked, text: string) {
   const lake = await treatmentLakeOf(deps, tx, at.companyId)
   if (lake.state !== 'CURRENT') throw new Failure('LAKE_NOT_READY')
   const read = readModelSql(text)
@@ -97,7 +93,7 @@ async function insertVersion(
   tx: CommandTx,
   at: OfModel,
   number: number,
-  read: Awaited<ReturnType<typeof readProposal>>,
+  read: Awaited<ReturnType<typeof checkedProposal>>,
 ) {
   await tx.insert(treatmentVersion).values({
     ...{ id: randomUUID(), modelId: at.modelId, companyId: at.companyId, number, ...read },
@@ -110,8 +106,9 @@ async function insertVersion(
 function create(deps: TreatmentRouteDeps, at: Asked, body: ProposeTreatment) {
   return refusedIfTaken(() =>
     deps.database.command(scopeOf(at), async (tx) => {
-      await admitProposal(deps, tx, at)
-      const read = await readProposal(deps, tx, at, body.sql)
+      await admit(deps, tx, at, 'proposeTreatment')
+      await lockCompanyProposals(tx, at.companyId)
+      const read = await checkedProposal(deps, tx, at, body.sql)
       const { name, description } = body
       const id = TreatmentModelId.parse(randomUUID())
       await tx.insert(treatmentModel).values({
@@ -130,9 +127,10 @@ function create(deps: TreatmentRouteDeps, at: Asked, body: ProposeTreatment) {
 function addVersion(deps: TreatmentRouteDeps, at: OfModel, body: ProposeTreatmentVersion) {
   return refusedIfTaken(() =>
     deps.database.command(scopeOf(at), async (tx) => {
-      await admitProposal(deps, tx, at)
+      await admit(deps, tx, at, 'proposeTreatment')
+      await lockCompanyProposals(tx, at.companyId)
       const model = await modelOf(tx, at.modelId)
-      const read = await readProposal(deps, tx, at, body.sql)
+      const read = await checkedProposal(deps, tx, at, body.sql)
       await checkInputs(deps, tx, at.companyId, { name: model.name, inputs: read.inputs })
       const number = Math.max(0, ...model.versions.map((version) => version.number)) + 1
       await tx
