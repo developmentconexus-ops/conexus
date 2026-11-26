@@ -159,13 +159,12 @@ type SubjectDeps = {
  * conversations reach Mastra's database only through the pool of Mastra's own login (0010).
  */
 export function subjectsOf(deps: SubjectDeps) {
-  const { database, config, log, neon } = deps
+  const { database, config, log, neon, repository, copy } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
   const appRemoval = createAppRemoval(deps)
   const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
-  const { repository, copy } = deps
   const machines = deps.machinesOf()
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
@@ -215,7 +214,6 @@ export function subjectsOf(deps: SubjectDeps) {
   const modelAccounts = createModelAccounts({
     ...{ database, identity, sealKeys, flows, log, googleCalls: google.googleCalls },
   })
-  const network = createNetwork({ database, identity, log })
   const connectors = createConnectors({
     ...{ ...deps, identity, door: apps.connectorCall, recordRead: recordRead(deps) },
     leaveCopy: (at) => lakeCopies.leave(at),
@@ -230,7 +228,7 @@ export function subjectsOf(deps: SubjectDeps) {
   return {
     ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, data },
-    ...{ lakeRuns, lakeClock, lakeCopies, network },
+    ...{ lakeRuns, lakeClock, lakeCopies, network: createNetwork({ database, identity, log }) },
   }
 }
 

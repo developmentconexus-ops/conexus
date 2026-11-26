@@ -39,19 +39,24 @@ async function storeOn(t: TestContext) {
       reason: 'Baixar as fotos',
     })
   }
-  const opened = (conversationId: ConversationId, company = companyId) =>
-    store.opened({ companyId: company, conversationId })
-  const stored = async () => ({
-    company: await on.rows(),
-    conversation: await on.hub.test.asOwner(
-      `select conversation_id, person_id, domain from builder.conversation_network_domain
-        order by domain, conversation_id`,
-    ),
-  })
+  function opened(conversationId: ConversationId, company = companyId) {
+    return store.opened({ companyId: company, conversationId })
+  }
+  async function stored() {
+    return {
+      company: await on.rows(),
+      conversation: await on.hub.test.asOwner(
+        `select conversation_id, person_id, domain from builder.conversation_network_domain
+          order by domain, conversation_id`,
+      ),
+    }
+  }
   return { ...on, store, lines, companyId, grant, opened, stored }
 }
 
-const conversation = () => ConversationId.parse(randomUUID())
+function conversation() {
+  return ConversationId.parse(randomUUID())
+}
 
 test('a máquina abre a lista da empresa e a da conversa, sem as das outras', async (t) => {
   const on = await storeOn(t)
