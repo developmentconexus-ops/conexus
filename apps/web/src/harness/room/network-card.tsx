@@ -1,11 +1,11 @@
 import type { NetworkAnswer, NetworkAsked } from '@conexus/hub-api'
 import { ToolCallId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { companyQuery } from '../../hub/identity/public.ts'
 import type { ApprovalField, ApprovalState, ApprovalText } from '../../ui/ai/approval.tsx'
 import { Approval } from '../../ui/ai/approval.tsx'
+import { Fact, StarCoverage } from '../network/public.ts'
 import { APPROVAL_TEXT, NETWORK_TEXT } from './approval-text.ts'
 import type { NetworkCardItem } from './network-parse.ts'
 import { useAnswer } from './question-card.tsx'
@@ -15,28 +15,11 @@ import { WaitingOnPhone } from './working-line.tsx'
 type OpenItem = Extract<NetworkCardItem, { state: 'open' }>
 type Tapped = 'APPROVE' | 'WIDER' | 'DECLINE'
 
-function Fact({ children }: { children: ReactNode }) {
-  return <span className="font-mono text-fact">{children}</span>
-}
-
-function Domain({ domain }: { domain: string }) {
-  if (!domain.startsWith('*.')) return <Fact>{domain}</Fact>
-  const base = domain.slice(2)
-  return (
-    <>
-      {NETWORK_TEXT.endingIn}
-      <Fact>.{base}</Fact>
-      {NETWORK_TEXT.butNot}
-      <Fact>{base}</Fact>
-    </>
-  )
-}
-
 function fieldsOf(asked: NetworkAsked | undefined): ApprovalField[] {
   if (asked === undefined) return []
   const domains = [...new Set(asked.domains)].map((domain) => (
     <span key={domain} className="block">
-      <Domain domain={domain} />
+      {domain.startsWith('*.') ? <StarCoverage base={domain.slice(2)} /> : <Fact>{domain}</Fact>}
     </span>
   ))
   return [

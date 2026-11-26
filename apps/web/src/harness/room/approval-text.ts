@@ -54,8 +54,6 @@ export const NETWORK_TEXT = {
   title: 'O Conexus quer acessar a internet',
   domains: 'Domínios',
   reason: 'Motivo',
-  endingIn: 'qualquer endereço que termina em ',
-  butNot: ', menos o próprio ',
   conversation: 'Liberar nesta conversa',
   company: 'Liberar para a empresa',
   releasing: 'Liberando…',
