@@ -33,6 +33,8 @@ const READ_DATA_READS = { dataRead: ['read'] } as const
 const MANAGE_NETWORK = { network: ['manage'] } as const
 const OPEN_CONVERSATION_NETWORK = { network: ['open'] } as const
 const OPEN_ALL_NETWORK = { network: ['openAll'] } as const
+const PROPOSE_TREATMENT = { treatment: ['propose'] } as const
+const APPROVE_TREATMENT = { treatment: ['approve'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -111,6 +113,10 @@ const ACTIONS = {
   manageNetwork: { by: 'MEMBER', statement: MANAGE_NETWORK, locks: true },
   openConversationNetwork: { by: 'MEMBER', statement: OPEN_CONVERSATION_NETWORK, locks: true },
   openAllNetwork: { by: 'MEMBER', statement: OPEN_ALL_NETWORK, locks: true },
+  // An owner or an administrator proposes and approves the lake's treatments (T1, decision 4.1).
+  // Reading them needs the same permission as proposing.
+  proposeTreatment: { by: 'MEMBER', statement: PROPOSE_TREATMENT, locks: true },
+  approveTreatment: { by: 'MEMBER', statement: APPROVE_TREATMENT, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },

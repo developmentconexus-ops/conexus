@@ -36,6 +36,7 @@ import { createProjects } from './hub/projects/public.ts'
 import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
+import { createTreatment, deleteCompanyTreatments } from './hub/treatment/public.ts'
 import type { CopyQueue, CopyTasks, LakeStacks, LakeTables } from './platform/aws.ts'
 import { createAws, subjectPortsOf } from './platform/aws.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
@@ -94,7 +95,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies, deps.network],
+    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies, deps.network, deps.treatment],
   ]) {
     part.routes(app)
   }
@@ -197,7 +198,7 @@ export function subjectsOf(deps: SubjectDeps) {
   })
   const { lakes, operations } = centralOf({
     ...{ database, identity, config, log, aws: deps.lakeStacks, projects: projects.ports },
-    ...{ appRemoval, releaseConversations, tables: deps.lakeTables },
+    ...{ appRemoval, releaseConversations, tables: deps.lakeTables, deleteCompanyTreatments },
     eraseCopies: (company) => lakeCopies.erase(company),
   })
   // The connectors come below, after the apps whose door they read; a publish comes long after.
@@ -220,6 +221,10 @@ export function subjectsOf(deps: SubjectDeps) {
   })
   const lake = { ...deps, identity, source: connectors.copies, clock: lakeClock }
   const { lakeRuns, lakeCopies } = lakeCopiesOf(lake)
+  const treatment = createTreatment({
+    ...{ database, identity, source: connectors.copies },
+    templateVersion: config.aws.templateVersion,
+  })
   const access = createAccess({ database, identity, sources: connectors.access })
   const { data, dataReads } = dataOf({
     ...{ database, identity, log, access, projects: projects.ports },
@@ -229,6 +234,7 @@ export function subjectsOf(deps: SubjectDeps) {
     ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, data },
     ...{ lakeRuns, lakeClock, lakeCopies, network: createNetwork({ database, identity, log }) },
+    treatment,
   }
 }
 

@@ -31,12 +31,16 @@ export type OutsideResource = {
 /** What deleting a client asks of the Builder (code C4): every conversation's thread and memory. */
 export type CompanyConversationRelease = (scope: { companyId: CompanyId }) => Promise<void>
 
+/** What deleting a client asks of the treatments: their rows leave with the company's, in its transaction. */
+export type CompanyTreatmentRemoval = (tx: CommandTx, companyId: CompanyId) => Promise<void>
+
 type Deps = {
   database: Database
   identity: IdentityPorts
   projects: ProjectPorts
   appRemoval: CompanyAppRemoval
   releaseConversations: CompanyConversationRelease
+  deleteCompanyTreatments: CompanyTreatmentRemoval
   outside: readonly OutsideResource[]
 }
 type ClientData = { cnpj: Cnpj; legalName: string; name: string }
@@ -206,6 +210,7 @@ async function confirmed(deps: Deps, tx: CommandTx, admitted: OperatorProof, inp
 }
 
 async function removeRows(deps: Deps, tx: CommandTx, admitted: OperatorProof, input: Deletion) {
+  await deps.deleteCompanyTreatments(tx, input.companyId)
   await tx.delete(client).where(eq(client.companyId, input.companyId))
   await deps.identity.deleteCompany(tx, { admitted, companyId: input.companyId })
 }

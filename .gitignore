@@ -10,6 +10,7 @@ coverage/
 secrets/
 /apps/server/src/hub/identity/invitation-render.mjs
 /apps/server/src/hub/notifications/notification-render.mjs
+/apps/server/src/hub/treatment/trino-parser.mjs
 .wrangler/
 .stryker-tmp/
 .stryker-report/
