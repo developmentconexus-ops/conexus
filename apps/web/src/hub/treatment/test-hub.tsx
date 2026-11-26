@@ -56,11 +56,12 @@ export function notas(fields: Record<string, unknown> = {}): TreatedTable {
   return TreatedTable.parse({
     layer: 'tratado',
     name: 'sankhya_notas',
+    label: 'Notas',
     connectionId: connection().id,
     description: 'Notas fiscais do Sankhya',
     columns: [
-      { name: 'nunota', description: 'Chave da nota' },
-      { name: 'dtalter', description: null },
+      { name: 'nunota', type: 'bigint', description: 'Chave da nota' },
+      { name: 'dtalter', type: 'timestamp(6)', description: null },
     ],
     readBy: [],
     lastRun: null,

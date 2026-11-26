@@ -74,9 +74,18 @@ export const TreatedTable = z.discriminatedUnion('layer', [
   z.object({
     layer: z.literal('tratado'),
     name: LakeTableName,
+    /** The kit's label of the copied table this one belongs to. */
+    label: z.string(),
     connectionId: ConnectionId,
     description: z.string(),
-    columns: z.array(z.object({ name: z.string(), description: z.string().nullable() })),
+    columns: z.array(
+      z.object({
+        name: z.string(),
+        /** The column's type in the treated table; null while a kept column's copied type is not known. */
+        type: z.string().nullable(),
+        description: z.string().nullable(),
+      }),
+    ),
     readBy: z.array(TableRef),
     lastRun: ModelRunView.nullable(),
   }),

@@ -33,7 +33,7 @@ test('a tabela tratada mostra as linhas e a hora da última rodada boa', async (
   expect(await page.findByText('128.402 linhas · tratada às 14:05')).toBeTruthy()
   expect(page.queryByText('Esperando a próxima cópia')).toBeNull()
   expect(page.getByText('Notas fiscais do Sankhya')).toBeTruthy()
-  expect(page.getByRole('heading', { name: 'Matriz' })).toBeTruthy()
+  expect(page.getByRole('heading', { name: 'Sankhya · Matriz' })).toBeTruthy()
 })
 
 test('antes da primeira rodada a tabela diz Esperando a próxima cópia', async () => {
@@ -111,6 +111,72 @@ test('a aba Quem lê lista os modelos que leem a tabela, com o link para cada um
   fireEvent.click(await page.findByRole('tab', { name: 'Quem lê' }))
   const link = await page.findByRole('link', { name: 'Negócio › venda' })
   expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/data/business/${MODEL_ID}`)
+})
+
+test('a página da tabela tem o rótulo por título e o nome no lago embaixo', async () => {
+  openTreatment(server, { path: NOTAS, view: { list: listOf({ tables: [notas()] }) } })
+  const page = await main()
+  const title = await page.findByRole('heading', { level: 1, name: 'Notas' })
+  expect(title.nextElementSibling?.textContent).toBe('sankhya_notas')
+})
+
+test('a aba De onde vem de um tratamento mostra Tratado › com o rótulo da tabela, e Copiado › com o nome', async () => {
+  openTreatment(server, {
+    path: VENDA,
+    view: {
+      list: listOf({ tables: [notas(), venda({ active: bound() })] }),
+      models: {
+        [MODEL_ID]: modelOf({
+          versions: [
+            bound({
+              inputs: [
+                { layer: 'tratado', table: 'sankhya_notas' },
+                { layer: 'current', table: 'sankhya_notas' },
+                { layer: 'negocio', table: 'venda' },
+              ],
+            }),
+          ],
+        }),
+      },
+    },
+  })
+  const page = await main()
+  fireEvent.click(await page.findByRole('tab', { name: 'De onde vem' }))
+  const treated = await page.findByRole('link', { name: 'Tratado › Notas' })
+  expect(treated.getAttribute('href')).toBe(`/companies/${COMPANY.id}/data/treated/sankhya_notas`)
+  expect(await page.findByRole('link', { name: 'Copiado › sankhya_notas' })).toBeTruthy()
+  expect(await page.findByRole('link', { name: 'Negócio › venda' })).toBeTruthy()
+})
+
+test('a aba Colunas traz o nome, o tipo e a descrição da coluna copiada, e o tipo que falta fica vazio', async () => {
+  openTreatment(server, {
+    path: NOTAS,
+    view: {
+      list: listOf({
+        tables: [
+          notas({
+            columns: [
+              { name: 'nunota', type: 'bigint', description: 'Chave da nota' },
+              { name: 'dtalter', type: null, description: null },
+            ],
+          }),
+        ],
+      }),
+    },
+  })
+  const page = await main()
+  fireEvent.click(await page.findByRole('tab', { name: 'Colunas' }))
+  const table = await page.findByRole('table', { name: 'Colunas da tabela' })
+  expect(
+    within(table)
+      .getAllByRole('columnheader')
+      .map((header) => header.textContent),
+  ).toEqual(['Coluna', 'Tipo', 'Descrição'])
+  const types = within(table)
+    .getAllByRole('row')
+    .slice(1)
+    .map((row) => within(row).getAllByRole('cell')[1]?.textContent)
+  expect(types).toEqual(['bigint', ''])
 })
 
 test('a aba Colunas traz o nome e a descrição da coluna copiada', async () => {

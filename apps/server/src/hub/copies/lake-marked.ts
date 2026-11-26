@@ -10,8 +10,8 @@ const Marked = z.object({
   columns: LakeTableSummary.shape.columns,
 })
 
-function inLakeSpelling({ name, description }: z.infer<typeof Marked>['columns'][number]) {
-  return { name: name.toLowerCase(), description }
+function inLakeSpelling({ name, type, description }: z.infer<typeof Marked>['columns'][number]) {
+  return { name: name.toLowerCase(), type, description }
 }
 
 export async function markedTablesOf(tx: ReadTx) {

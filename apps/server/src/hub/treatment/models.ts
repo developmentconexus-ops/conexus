@@ -12,6 +12,7 @@ import type { LakeId } from '../../platform/aws.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CopySource } from '../connectors/public.ts'
+import { treatedColumnType } from '../connectors/public.ts'
 import { lakeOf, markedTablesOf } from '../copies/public.ts'
 import { personNameColumn } from '../identity/public.ts'
 import { treatmentModel, treatmentModelRun, treatmentRun, treatmentVersion } from './tables.ts'
@@ -267,11 +268,16 @@ export async function treatedTablesOf(
         layer: 'tratado' as const,
         name,
         connectionId,
+        label: treated.label,
         description: treated.description,
-        columns: treated.columns.map(({ column, as }) => ({
-          name: as,
-          description: columns.find((each) => each.name === column)?.description ?? null,
-        })),
+        columns: treated.columns.map(({ column, as, cast }) => {
+          const copied = columns.find((each) => each.name === column)
+          return {
+            name: as,
+            type: treatedColumnType(cast, copied?.type ?? null),
+            description: copied?.description ?? null,
+          }
+        }),
         ...standing('tratado', name),
       })),
       ...business.map(({ id, name, description, active, proposal }) => ({

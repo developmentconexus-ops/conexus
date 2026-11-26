@@ -7,7 +7,7 @@ import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
 import { CodeBlock, CodeBlockContent, CodeBlockLine } from '../../ui/code-block.tsx'
 import { useMay } from './may.ts'
-import { sendApproval } from './queries.ts'
+import { sendApproval, useTreatedTables } from './queries.ts'
 import {
   APPROVE,
   APPROVE_EFFECT,
@@ -32,13 +32,20 @@ export function Sql({ sql }: { sql: string }) {
   )
 }
 
-export function Reads({ inputs }: { inputs: VersionView['inputs'] }) {
+/** The tables a version reads, a treated one by its label, as De onde vem names it. */
+export function Reads(props: { companyId: CompanyId; inputs: VersionView['inputs'] }) {
+  const { inputs } = props
+  const treated = useTreatedTables(props.companyId)
+  function labelOf(table: string): string | null {
+    const found = treated.data?.tables.find((one) => one.layer === 'tratado' && one.name === table)
+    return found?.layer === 'tratado' ? found.label : null
+  }
   if (inputs.length === 0) return <p className="text-text-2">{NOTHING_READ}</p>
   return (
     <ul className="flex flex-col gap-xs">
       {inputs.map((input) => (
         <li key={`${input.layer}.${input.table}`} className="font-mono text-fact">
-          {refText(input)}
+          {refText(input, input.layer === 'tratado' ? labelOf(input.table) : null)}
         </li>
       ))}
     </ul>
@@ -108,7 +115,7 @@ export function Approve(props: {
               <Sql sql={shown.sql} />
               <div className="flex flex-col gap-sm">
                 <h3 className="font-medium">{READS}</h3>
-                <Reads inputs={shown.inputs} />
+                <Reads companyId={companyId} inputs={shown.inputs} />
               </div>
             </>
           )}

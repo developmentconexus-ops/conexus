@@ -125,6 +125,7 @@ export {
   type TreatedCast,
   type TreatedColumn,
   type TreatedTable,
+  treatedColumnType,
   treatedSelect,
 } from './kernel/tables-treated.ts'
 export { mercadoLivreFake } from './mercado-livre/fake.ts'

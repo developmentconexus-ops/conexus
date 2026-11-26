@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { built, failed, listOf, notas, openTreatment, venda } from './test-hub.tsx'
 
@@ -84,6 +85,15 @@ test('só as tabelas tratadas aparecem em Tratado, e as de Negócio ficam em Neg
     view: { list: listOf({ tables: [notas({ lastRun: failed('COLUMN_NOT_FOUND') }), venda()] }) },
   })
   const main = await layer()
-  expect(await main.findByRole('link', { name: 'sankhya_notas' })).toBeTruthy()
+  expect(await main.findByRole('link', { name: 'Notas' })).toBeTruthy()
   expect(main.queryByText('venda')).toBeNull()
+})
+
+test('cada tabela mostra o rótulo como o link e o nome no lago embaixo, sob o sistema e a conexão', async () => {
+  openTreatment(server, { view: { list: listOf({ tables: [notas({ lastRun: built() })] }) } })
+  const main = await layer()
+  expect(await main.findByRole('heading', { name: 'Sankhya · Matriz' })).toBeTruthy()
+  const link = await main.findByRole('link', { name: 'Notas' })
+  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/data/treated/sankhya_notas`)
+  expect(link.nextElementSibling?.textContent).toBe('sankhya_notas')
 })

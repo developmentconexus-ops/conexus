@@ -15,18 +15,17 @@ import { Badge } from '../../ui/badge.tsx'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
-import { FramedTable, TableBody, TableCell, TableRow } from '../../ui/table.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { Approve, Reads, Sql } from './approve.tsx'
 import { useMay } from './may.ts'
 import { ProposeChange } from './new-treatment.tsx'
 import { copiedTablesQuery, treatmentModelQuery, useTreatedTables } from './queries.ts'
+import type { Treated } from './treated-columns.tsx'
+import { Columns } from './treated-columns.tsx'
 import {
   ACTIVE,
   activeLine,
   BACK_TO_DATA,
-  COLUMN_COLUMNS,
-  COLUMNS_LABEL,
   LAST_RUN,
   NO_ACCESS,
   NO_ACTIVE,
@@ -68,7 +67,10 @@ function RefLink(props: { companyId: CompanyId; to: TableRef }) {
   const { layer, table } = props.to
   const copied = useQuery(copiedTablesQuery(companyId))
   const treated = useTreatedTables(companyId)
-  const text = refText(props.to)
+  const labelled = treated.data?.tables.find(
+    (one): one is Treated => one.layer === 'tratado' && one.name === table,
+  )
+  const text = refText(props.to, labelled?.label ?? null)
   if (layer === 'tratado') {
     return (
       <Link
@@ -112,7 +114,7 @@ function Refs(props: { companyId: CompanyId; refs: readonly TableRef[]; none: st
     <List>
       {props.refs.map((ref) => (
         <Row key={`${ref.layer}.${ref.table}`}>
-          <div className="px-sm py-md font-mono text-fact">
+          <div className={`px-sm py-md text-fact ${ref.layer === 'tratado' ? '' : 'font-mono'}`}>
             <RefLink companyId={props.companyId} to={ref} />
           </div>
         </Row>
@@ -155,34 +157,6 @@ function Tabbed(props: {
   )
 }
 
-type Treated = Extract<TreatedTable, { layer: 'tratado' }>
-
-function Columns({ table }: { table: Treated }) {
-  return (
-    <FramedTable
-      aria-label={COLUMNS_LABEL}
-      columns={[{ name: COLUMN_COLUMNS[0] }, { name: COLUMN_COLUMNS[1], leavesOnPhone: true }]}
-      showHeader
-    >
-      <TableBody>
-        {table.columns.map((column) => (
-          <TableRow key={column.name}>
-            <TableCell className="whitespace-normal">
-              <span className="flex flex-col">
-                <span className="font-mono text-fact">{column.name}</span>
-                <span className="text-text-2 md:hidden">{column.description}</span>
-              </span>
-            </TableCell>
-            <TableCell className="whitespace-normal max-md:hidden">
-              <span className="text-text-2">{column.description}</span>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </FramedTable>
-  )
-}
-
 function Gate(props: { children: ReactNode }) {
   return useMay().proposeTreatment ? (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">{props.children}</div>
@@ -196,9 +170,8 @@ function TreatedBody(props: { companyId: CompanyId; table: Treated }) {
   return (
     <>
       <div className="flex flex-col gap-xs">
-        <PageTitle className="break-words">
-          <span className="font-mono">{table.name}</span>
-        </PageTitle>
+        <PageTitle className="break-words">{table.label}</PageTitle>
+        <span className="wrap-anywhere font-mono text-fact text-text-2">{table.name}</span>
         {table.description !== '' && <p className="text-text-2">{table.description}</p>}
       </div>
       <Tabbed
@@ -311,7 +284,7 @@ function ModelBody(props: {
                   <Badge tone="warning" className="w-fit">
                     {PROPOSAL}
                   </Badge>
-                  <Reads inputs={proposal.inputs} />
+                  <Reads companyId={companyId} inputs={proposal.inputs} />
                 </div>
               )}
             </div>

@@ -23,6 +23,11 @@ const SQL_TYPES: Readonly<Record<Exclude<TreatedCast, 'KEEP'>, string>> = {
   TIMESTAMP: 'TIMESTAMP(6)',
 }
 
+/** The type a treated column has: the Athena type its cast gives, or the copied column's own when the cast keeps it (null while that one is not known). */
+export function treatedColumnType(cast: TreatedCast, copiedType: string | null): string | null {
+  return cast === 'KEEP' ? copiedType : SQL_TYPES[cast].toLowerCase()
+}
+
 /** The one owner of a treated table's SELECT: it reads "current"."<name>", with no filter and no join. */
 export function treatedSelect(lakeName: LakeTableName, treated: TreatedTable): string {
   const columns = treated.columns.map(({ column, as, cast }) => {

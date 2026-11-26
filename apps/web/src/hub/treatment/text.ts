@@ -48,7 +48,7 @@ export const TABS = {
   readBy: 'Quem lê',
   versions: 'Versões',
 } as const
-export const COLUMN_COLUMNS = ['Coluna', 'Descrição'] as const
+export const COLUMN_COLUMNS = ['Coluna', 'Tipo', 'Descrição'] as const
 export const COLUMNS_LABEL = 'Colunas da tabela'
 const LAYER_NAMES = { current: 'Copiado', tratado: 'Tratado', negocio: 'Negócio' } as const
 export const LAST_RUN = 'Última rodada'
@@ -75,7 +75,7 @@ function failedText(code: string, line: number | null): string {
   return `${RUN_FAILED}: ${reasonText(code, line)}`
 }
 
-export function rowsText(rows: number, at: string): string {
+function rowsText(rows: number, at: string): string {
   return `${rows.toLocaleString('pt-BR')} linhas · tratada às ${clockOf(at)}`
 }
 
@@ -111,8 +111,9 @@ export function versionLine(version: {
   return `${proposed}, ligada por ${version.approvedBy} em ${dayAndHour(version.approvedAt)}`
 }
 
-export function refText(ref: TableRef): string {
-  return `${LAYER_NAMES[ref.layer]} › ${ref.table}`
+/** A table the SQL reads by its place: a treated table shows its label when the list gives it. */
+export function refText(ref: TableRef, label: string | null = null): string {
+  return `${LAYER_NAMES[ref.layer]} › ${ref.layer === 'tratado' ? (label ?? ref.table) : ref.table}`
 }
 
 /** The line a table shows under its name: its rows and hour, why the last round did not build it, or that it waits. */

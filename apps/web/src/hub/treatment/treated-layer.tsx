@@ -1,4 +1,10 @@
-import type { CompanyId, TreatedTable, TreatedTables } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  Connection,
+  ConnectorEntry,
+  TreatedTable,
+  TreatedTables,
+} from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { sentenceOf } from '../../platform/hub.ts'
@@ -7,7 +13,7 @@ import { Button } from '../../ui/button.tsx'
 import { List, Row } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
-import { connectionsQuery } from '../connectors/public.ts'
+import { connectionsQuery, connectorName } from '../connectors/public.ts'
 import { useMay } from './may.ts'
 import { isOpen, sendTreatmentRun, useTreatedTables } from './queries.ts'
 import { NO_TREATED, OUTDATED_LAKE, READ_FAILED, RUN_NOW, runText, runTopText } from './text.ts'
@@ -23,10 +29,11 @@ function Line({ companyId, table }: { companyId: CompanyId; table: Treated }) {
         <Link
           to="/companies/$companyId/data/treated/$name"
           params={{ companyId, name: table.name }}
-          className="w-fit break-all font-mono text-fact font-medium underline-offset-2 hover:underline"
+          className="w-fit font-medium underline-offset-2 hover:underline"
         >
-          {table.name}
+          {table.label}
         </Link>
+        <span className="wrap-anywhere font-mono text-fact text-text-2">{table.name}</span>
         {table.description !== '' && (
           <span className="break-words text-text-2">{table.description}</span>
         )}
@@ -36,6 +43,16 @@ function Line({ companyId, table }: { companyId: CompanyId; table: Treated }) {
       </div>
     </Row>
   )
+}
+
+/** The system and the connection a group of tables came from: "Sankhya · Matriz". */
+function groupName(
+  data: Readonly<{ connections: readonly Connection[]; connectors: readonly ConnectorEntry[] }>,
+  id: Treated['connectionId'],
+): string {
+  const connection = data.connections.find((one) => one.id === id)
+  if (connection === undefined) return ''
+  return `${connectorName(data.connectors, connection.connector)} · ${connection.name}`
 }
 
 /** Tratar agora, and Parar beside it while a run is open; a request the Hub refuses says its sentence. */
@@ -88,9 +105,7 @@ export function TreatedLayer({ companyId }: { companyId: CompanyId }) {
       {rows.length === 0 && <Empty>{NO_TREATED}</Empty>}
       {[...new Set(rows.map((table) => table.connectionId))].map((id) => (
         <section key={id} className="flex flex-col gap-sm">
-          <h2 className="font-medium">
-            {connections.data.connections.find((connection) => connection.id === id)?.name}
-          </h2>
+          <h2 className="font-medium">{groupName(connections.data, id)}</h2>
           <List>
             {rows
               .filter((table) => table.connectionId === id)

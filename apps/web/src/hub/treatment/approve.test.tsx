@@ -9,6 +9,7 @@ import {
   listOf,
   MODEL_ID,
   modelOf,
+  notas,
   openTreatment,
   refused,
   venda,
@@ -56,6 +57,17 @@ test('Ligar abre o cartão com o SQL, as tabelas que ele lê e o que acontece de
   expect(
     card.getByText('A rodada seguinte passa a gravar esta tabela com este SQL. Nada roda agora.'),
   ).toBeTruthy()
+})
+
+test('o cartão nomeia a tabela tratada pelo rótulo, como De onde vem', async () => {
+  const held = waiting(version({ ...THREE, number: 2 }))
+  held.view.list = listOf({
+    tables: [notas(), venda({ active: bound(), proposal: version({ ...THREE, number: 2 }) })],
+  })
+  openTreatment(server, held)
+  const card = await openCard()
+  expect(card.getByText('Tratado › Notas')).toBeTruthy()
+  expect(card.queryByText('Tratado › sankhya_notas')).toBeNull()
 })
 
 test('Ligar no cartão manda o hash que a tela leu e a versão, e fecha o cartão', async () => {

@@ -79,7 +79,7 @@ export type CopyConnection =
     }>
   | Readonly<{ kind: 'GONE' }>
 
-type TreatedTemplate = TreatedTable & Readonly<{ select(lakeName: string): string }>
+type TreatedTemplate = TreatedTable & Readonly<{ label: string; select(lakeName: string): string }>
 
 export type CopySource = {
   treatedLookup(
@@ -162,10 +162,12 @@ async function treatedLookupIn(
   return ({ connectionId, source }) => {
     const id = connectors.get(connectionId)
     const declared = id === undefined ? [] : (connectorIn(deps, id)?.tables?.declared ?? [])
-    const treated = declared.find((each) => sourceOf(each) === source)?.treated
-    if (treated === undefined) return null
+    const found = declared.find((each) => sourceOf(each) === source)
+    const treated = found?.treated
+    if (found === undefined || treated === undefined) return null
     return {
       ...treated,
+      label: found.label,
       select: (lakeName) => treatedSelect(KitLakeTableName.parse(lakeName), treated),
     }
   }
