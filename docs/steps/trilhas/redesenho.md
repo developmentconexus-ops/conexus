@@ -59,3 +59,6 @@ separada; o que a prévia de um app pode gravar; dado pessoal na amostra).
 
 [R1, a base visual e o movimento](../redesenho-r1-a-base-visual-e-o-movimento.md), à espera da
 aprovação do fundador.
+
+O cartão da [R2, a casca nova](../redesenho-r2-a-casca-nova.md) está escrito e espera a vez dele num
+pull request de rascunho (delivery L5), sem a palavra do fundador.
