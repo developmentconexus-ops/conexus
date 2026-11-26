@@ -183,6 +183,23 @@ test('o teto não dá à plataforma nenhuma forma de o que escreve mudar o trata
   }
 })
 
+test('o teto recusa criar e apagar nas áreas da cópia, e deixa só mudar', () => {
+  const boundary = statementsOf(find(platform, 'Boundary'))
+  const bucket = 's3tablescatalog/conexus-lagodeaaaaaa'
+  for (const area of ['raw', 'current']) {
+    for (const resource of [`database/${bucket}/${area}`, `table/${bucket}/${area}/notas`]) {
+      const arn = `arn:aws:glue:${REGION}:${ACCOUNT}:${resource}`
+      for (const [action, held] of [
+        ['glue:CreateTable', false],
+        ['glue:DeleteTable', false],
+        ['glue:UpdateTable', true],
+      ] as const) {
+        assert.equal(allows(boundary, asked(action, arn)), held, `${action} ${resource}`)
+      }
+    }
+  }
+})
+
 test('o teto cobre cada permissão do papel que trata', () => {
   const boundary = statementsOf(find(platform, 'Boundary'))
   const treater = statementsOf(find(readable('lake'), 'Treater'))
