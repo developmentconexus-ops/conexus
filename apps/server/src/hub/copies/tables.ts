@@ -15,6 +15,7 @@ import {
   foreignKey,
   integer,
   jsonb,
+  numeric,
   pgSchema,
   primaryKey,
   text,
@@ -83,6 +84,13 @@ export const lakeRun = copies.table(
     systemMessage: text('system_message'),
     taskArn: text('task_arn'),
     attempt: integer('attempt').notNull(),
+    /** The person who first asked this round to stop; it stays however the round ends. */
+    stoppedBy: text('stopped_by'),
+    cpuAllocated: numeric('cpu_allocated', { precision: 5, scale: 2, mode: 'number' }),
+    memoryAllocatedMib: integer('memory_allocated_mib'),
+    cpuPeak: numeric('cpu_peak', { precision: 5, scale: 2, mode: 'number' }),
+    memoryPeakMib: integer('memory_peak_mib'),
+    machineSamples: jsonb('machine_samples'),
   },
   (table) => [
     foreignKey({
@@ -117,6 +125,10 @@ export const lakeRun = copies.table(
       sql`${table.taskArn} IS NULL OR ${table.taskArn} LIKE 'arn:aws:ecs:%'`,
     ),
     check('lake_run_attempt', sql`${table.attempt} >= 1`),
+    check(
+      'lake_run_machine',
+      sql`(${table.cpuAllocated} IS NULL AND ${table.memoryAllocatedMib} IS NULL AND ${table.cpuPeak} IS NULL AND ${table.memoryPeakMib} IS NULL AND ${table.machineSamples} IS NULL) OR (${table.cpuAllocated} IS NOT NULL AND ${table.memoryAllocatedMib} IS NOT NULL AND ${table.cpuPeak} >= 0 AND ${table.memoryPeakMib} >= 0 AND ${table.machineSamples} IS NOT NULL AND ${table.endedAt} IS NOT NULL)`,
+    ),
     uniqueIndex('lake_run_open_key').on(table.connectionId).where(sql`${table.endedAt} IS NULL`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],

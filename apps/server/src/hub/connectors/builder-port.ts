@@ -14,6 +14,7 @@ import type { NotInRole, ReadAnswer } from './read.ts'
 import { readThrough } from './read.ts'
 import type { Deps } from './rows.ts'
 import { usable } from './rows.ts'
+import { skillTablesOf } from './skill-tables.ts'
 import { mayUseNotebook, personSpeaker, visibleTo } from './speaking.ts'
 import { connection, projectConnection } from './tables.ts'
 import { openedIn } from './testing.ts'
@@ -122,6 +123,17 @@ export function offeredIn(
     .orderBy(asc(connection.connectorId), asc(connection.linkedAt))
 }
 
+/** The offered connections with the tables each copies to the lake, for the skill the agents read (criterion 85). */
+export async function offeredWithTables(
+  tx: ReadTx,
+  ids: Readonly<{ companyId: CompanyId; projectId?: ProjectId }>,
+  connectionId?: ConnectionId,
+) {
+  const rows = await offeredIn(tx, ids, connectionId)
+  const tables = await skillTablesOf(tx, ids.companyId, rows)
+  return rows.map((row) => ({ ...row, tables: tables.get(row.id) ?? [] }))
+}
+
 function grantedRows(deps: Deps, ids: OfProject, connectionId?: ConnectionId) {
   const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: null } as const
   return deps.database.read(scope, (tx) => offeredIn(tx, ids, connectionId))
@@ -176,7 +188,9 @@ function readOfKit(operation: Operation<unknown, unknown>) {
   return { ...listedOf(operation), list: shown }
 }
 
-export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedConnection[] {
+export function described(
+  rows: Awaited<ReturnType<typeof offeredWithTables>>,
+): GrantedConnection[] {
   return rows.flatMap((row) => {
     const connector = connectorOf(row.connector)
     if (connector === undefined) return []
@@ -187,7 +201,7 @@ export function described(rows: Awaited<ReturnType<typeof offeredIn>>): GrantedC
         connector: connector.id,
         name: row.name,
         perProject: connector.perProject,
-        skill: { name: `conexus-${connector.id}`, ...connectorSkill(connector, []) },
+        skill: { name: `conexus-${connector.id}`, ...connectorSkill(connector, row.tables) },
         reads: reads.filter((operation) => operation.class === 'read').map(readOfKit),
         writes: (connector.writes ?? []).map(listedOf),
         notes: Object.keys(Notes.parse(row.notes)),
@@ -203,7 +217,9 @@ export function createBuilderConnectors(deps: Deps): BuilderConnectors {
     async granted(ids) {
       const speaker = await personSpeaker(deps, ids.companyId, ids.personId)
       if (speaker === undefined) return []
-      return visibleTo(deps, ids.companyId, speaker, described(await grantedRows(deps, ids)))
+      const scope = { kind: 'COMPANY', companyId: ids.companyId, personId: null } as const
+      const rows = await deps.database.read(scope, (tx) => offeredWithTables(tx, ids))
+      return visibleTo(deps, ids.companyId, speaker, described(rows))
     },
 
     async read(ids, a) {

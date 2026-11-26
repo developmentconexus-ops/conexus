@@ -17,7 +17,7 @@ import {
 } from '../../harness/room/public.ts'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { agentQuery, toolsQuery } from '../saved-agent/public.ts'
-import { construtorConversationsQuery, sendConstrutorModel } from './construtor-queries.ts'
+import { construtorConversationsQuery } from './construtor-queries.ts'
 import { CONSTRUTOR_FIRST, CONSTRUTOR_PLACEHOLDER, DRAFT_PANEL } from './construtor-text.ts'
 import { DraftPanel } from './draft-panel.tsx'
 
@@ -121,14 +121,6 @@ export function ConstrutorChat(props: {
                   <ModelChoice
                     controller={CONSTRUTOR_CONTROLLER}
                     conversationId={conversationId}
-                    write={{
-                      ...sendConstrutorModel,
-                      mutationFn: (body) =>
-                        sendConstrutorModel.mutationFn({
-                          params: { ...scope, conversationId },
-                          body,
-                        }),
-                    }}
                     session={session}
                     providers={providers}
                     onError={onError}

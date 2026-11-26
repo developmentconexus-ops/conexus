@@ -10,8 +10,8 @@ import {
   AgentId,
   AgentListed,
   ATTEMPT_KEY_HEADER,
-  BUILDER_ROUTES,
   CONSTRUTOR_CONTROLLER,
+  CONVERSATION_ROUTES,
   DraftPatch,
   ToolInput,
 } from '@conexus/hub-api'
@@ -20,20 +20,22 @@ import type { setupServer } from 'msw/node'
 import { z } from 'zod'
 import type { View } from '../../harness/room/test-hub.tsx'
 import { screens, view } from '../../harness/room/test-hub.tsx'
+import { renameRoute } from '../../harness/room/test-rename.tsx'
 import { START } from '../../harness/room/test-start.tsx'
 import { displayOf, openLine } from '../../harness/room/test-stream.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import type { ChosenModels } from '../assistant/test-model.tsx'
 import { modelWrite } from '../assistant/test-model.tsx'
-import { BUILDER_CHAT, CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
+import { CHAT, TEST_CHAT, TOOL_V1, toolSummary, version } from './test-agents.ts'
+import { construtorRoutes } from './test-hub-construtor.tsx'
 import type { ToolHeld } from './test-hub-tools.tsx'
 import { catalogRoute, toolRoutes, writesRoute } from './test-hub-tools.tsx'
 
 const PROJECT_API = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
 function SESSION(controller: string) {
-  return `*${BUILDER_ROUTES}/agent-controller/${controller}/sessions/:id`
+  return `*${CONVERSATION_ROUTES}/agent-controller/${controller}/sessions/:id`
 }
 
 type Answers = {
@@ -159,7 +161,7 @@ function versionRoutes(held: Held, note: Note, find: (id: unknown) => AgentDetai
 
 const OpenConversation = z.object({ draft: z.boolean().optional() })
 
-function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
+function conversationRoutes(held: Held, note: Note) {
   return [
     writesRoute(held, PROJECT_API),
     http.get(`${PROJECT_API}/agents/:id/conversations`, () =>
@@ -209,32 +211,26 @@ function conversationRoutes(held: Held, chosen: ChosenModels, note: Note) {
       return HttpResponse.json({ tool: made }, { status: 201 })
     }),
     ...toolRoutes(held, PROJECT_API, note),
-    http.get(`${PROJECT_API}/construtor/conversations`, () =>
-      HttpResponse.json({ conversations: held.construtor ?? [] }),
-    ),
-    http.post(`${PROJECT_API}/construtor/conversations`, async ({ request }) => {
-      await note(request)
-      const replaced = held.answers?.openConstrutor?.()
-      if (replaced) return replaced
-      const made = {
-        id: BUILDER_CHAT,
-        title: null,
-        createdAt: '2026-11-02T12:00:00.000Z',
-        updatedAt: '2026-11-02T12:00:00.000Z',
-      }
-      held.construtor = [made, ...(held.construtor ?? [])]
-      return HttpResponse.json({ conversation: made }, { status: 201 })
+    renameRoute(SESSION(AGENTS_CONTROLLER), () => held.conversations ?? [], note),
+    ...construtorRoutes({
+      held,
+      projectApi: PROJECT_API,
+      session: SESSION(CONSTRUTOR_CONTROLLER),
+      note,
     }),
-    modelWrite(`${PROJECT_API}/construtor`, { chosen, answers: held.answers ?? {} }, note),
   ]
 }
 
 function sessionRoutes(
   chosen: ChosenModels,
+  answers: Pick<Answers, 'model'>,
   note: Note,
   lines: ReturnType<typeof openLine>['line'][],
 ) {
   return [AGENTS_CONTROLLER, CONSTRUTOR_CONTROLLER].flatMap((controller) => [
+    ...(controller === CONSTRUTOR_CONTROLLER
+      ? [modelWrite(SESSION(controller), { chosen, answers }, note)]
+      : []),
     http.get(`${SESSION(controller)}/stream`, ({ request }) => {
       const { line, response } = openLine(displayOf())
       lines.push(line)
@@ -305,8 +301,8 @@ function agentsHub(server: ReturnType<typeof setupServer>, held: Held) {
       : [
           catalogRoute(),
           ...draftRoutes(held, note),
-          ...conversationRoutes(held, chosen, note),
-          ...sessionRoutes(chosen, note, lines),
+          ...conversationRoutes(held, note),
+          ...sessionRoutes(chosen, held.answers ?? {}, note, lines),
         ]),
   )
   return { sent, writes: () => sent.filter((one) => one.method !== 'GET'), lines, held }

@@ -1,7 +1,7 @@
 import type { ClientLake, PersonId } from '@conexus/hub-api'
 import { CompanyId } from '@conexus/hub-api'
 import { and, eq, isNull } from 'drizzle-orm'
-import type { AwsAnswer, LakeStacks, Where } from '../../platform/aws.ts'
+import type { AwsAnswer, LakeStacks, LakeTables, Where } from '../../platform/aws.ts'
 import { bucketName, LakeId, StackId } from '../../platform/aws.ts'
 import type { Config } from '../../platform/config.ts'
 import { AwsAccount, AwsRegion, TemplateVersion } from '../../platform/config-aws.ts'
@@ -10,6 +10,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { IdentityPorts, OperatorProof } from '../identity/public.ts'
 import { newLakeId } from './lake-id.ts'
+import { dropTables } from './lake-tables.ts'
 import type { LakeState, Step } from './settle.ts'
 import { settle } from './settle.ts'
 import { companyLake } from './tables.ts'
@@ -18,6 +19,10 @@ export type LakeDeps = {
   database: Database
   identity: IdentityPorts
   aws: LakeStacks
+  /** The lake's tables, which AWS refuses to drop the stack under. */
+  tables: LakeTables
+  /** The company's copies, their rows and clocks, once the tables are gone (hub/copies, injected: subjects do not import each other). */
+  eraseCopies: (companyId: CompanyId) => Promise<void>
   config: Config
   log: FailureLog
 }
@@ -32,7 +37,14 @@ type Lake = Readonly<{
   since: Date
 }>
 type Scope = { kind: 'OPERATOR'; personId: PersonId; companyId: CompanyId }
-type AwsCall = 'CreateStack' | 'DescribeStacks' | 'DescribeStackEvents' | 'DeleteStack' | 'Leftover'
+type AwsCall =
+  | 'CreateStack'
+  | 'DescribeStacks'
+  | 'DescribeStackEvents'
+  | 'DeleteStack'
+  | 'Leftover'
+  | 'ListTables'
+  | 'DeleteTable'
 
 function scopeOf(personId: PersonId, companyId: CompanyId): Scope {
   return { kind: 'OPERATOR', personId, companyId }
@@ -148,6 +160,9 @@ async function sendCreate(deps: LakeDeps, scope: Scope, lake: Lake): Promise<Lak
  */
 async function sendDelete(deps: LakeDeps, scope: Scope, lake: Lake): Promise<Lake | undefined> {
   if (lake.stackId === null) return lake
+  const stuck = await dropTables(deps, lake, (call, said) => logged(deps, lake, call, said))
+  if (stuck !== null)
+    return stuck.kind === 'REFUSED' ? moved(deps, scope, lake, { state: 'delete_failed' }) : lake
   const answer = await deps.aws.remove(lake.at, lake.stackId)
   logged(deps, lake, 'DeleteStack', answer)
   if (answer.kind !== 'REFUSED') return lake

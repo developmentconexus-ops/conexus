@@ -1,0 +1,10 @@
+{
+  "service": "ssm",
+  "api": "DeleteParameter",
+  "sdk": "@aws-sdk/client-ssm 3.1175.0",
+  "recordedAt": "2026-11-25",
+  "source": "U8 step 1, scripts/record-aws.ts from this machine on the laboratory account, temporary resources deleted at the end; account and ids changed (S40)",
+  "status": 400,
+  "contentType": "application/x-amz-json-1.1",
+  "body": "{\"__type\":\"ParameterNotFound\"}"
+}

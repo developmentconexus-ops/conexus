@@ -6,5 +6,5 @@
   "source": "U4 step 1, from the Hub server with the Hub key (lab run 45076374332), laboratory account, values changed (S40)",
   "status": 200,
   "contentType": "application/json",
-  "body": "{\"namespaces\":[{\"createdAt\":\"2026-11-22T22:10:59.804130948Z\",\"createdBy\":\"111122223333\",\"namespace\":[\"current\"],\"namespaceId\":\"e1d40597-b474-4399-8978-0ac6d75a7d15\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\"},{\"createdAt\":\"2026-11-22T22:10:57.811330729Z\",\"createdBy\":\"111122223333\",\"namespace\":[\"raw\"],\"namespaceId\":\"12ed2ee8-5353-4841-8465-750be2bf5319\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\"}]}"
+  "body": "{\"namespaces\":[{\"createdAt\":\"2026-11-22T22:10:59.804130948Z\",\"createdBy\":\"111122223333\",\"namespace\":[\"current\"],\"namespaceId\":\"00000000-0000-4000-8000-000000c00011\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\"},{\"createdAt\":\"2026-11-22T22:10:57.811330729Z\",\"createdBy\":\"111122223333\",\"namespace\":[\"raw\"],\"namespaceId\":\"00000000-0000-4000-8000-000000c00012\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\"}]}"
 }

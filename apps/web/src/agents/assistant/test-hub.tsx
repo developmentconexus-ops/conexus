@@ -2,7 +2,7 @@ import type { AssistantConversation, SessionConnection } from '@conexus/hub-api'
 import {
   ASSISTANT_CONTROLLER,
   ATTEMPT_KEY_HEADER,
-  BUILDER_ROUTES,
+  CONVERSATION_ROUTES,
   ConnectionId,
   ConversationId,
   ProjectId,
@@ -20,6 +20,7 @@ import type {
 import { say, screens, view } from '../../harness/room/test-hub.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { KIT_SANKHYA } from '../../platform/test-kit.ts'
 
 export { conversationOf as builderConversation } from '../../harness/room/test-hub.tsx'
 export type { BuilderAnswers }
@@ -39,7 +40,7 @@ export const ELSEWHERE = ConversationId.parse('44444444-4444-4444-8444-444444444
 export const THIRD = ConversationId.parse('55555555-5555-4555-8555-555555555555')
 export const PEDIDOS_ID = PEDIDOS.id
 export const COMPANY_ROOT = `/companies/${COMPANY.id}`
-const ASSISTANT_SESSION = `*${BUILDER_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/:id`
+const ASSISTANT_SESSION = `*${CONVERSATION_ROUTES}/agent-controller/${ASSISTANT_CONTROLLER}/sessions/:id`
 
 export const OFFERED: SessionConnection[] = [
   { connectionId: SALES, connector: 'sankhya', name: 'Vendas', chosen: true },
@@ -122,17 +123,7 @@ function chosenOf(body: unknown): ConnectionId[] {
 
 const BASE = `*/api/companies/${COMPANY.id}/assistant`
 
-export const SANKHYA = {
-  id: 'sankhya',
-  name: 'Sankhya',
-  version: '1',
-  category: 'ERP',
-  summary: 'ERP',
-  logo: 'data:image/svg+xml,',
-  auth: 'client_credentials',
-  subjects: [],
-  fields: [],
-}
+export const SANKHYA = { ...KIT_SANKHYA, subjects: [] }
 
 /** The Hub's reads of the Assistant's screens: the connections a place offers and the conversations. */
 function readsOf(held: Held, asked: string[]) {
@@ -181,8 +172,8 @@ function writesOf(held: Held, note: (request: Request) => Promise<unknown>) {
         { status: 201 },
       )
     }),
-    ...changesOf(BASE, held, note),
-    modelWrite(BASE, held, note),
+    ...changesOf(BASE, ASSISTANT_SESSION, held, note),
+    modelWrite(ASSISTANT_SESSION, held, note),
     http.put(`${BASE}/conversations/:id/connections`, async ({ request, params }) => {
       const body = await note(request)
       await held.answers.hold

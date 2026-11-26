@@ -9,7 +9,7 @@ import { chosenIn } from '../access/public.ts'
 import type { Speaker } from '../identity/public.ts'
 import { personOf, withinVersion } from '../identity/public.ts'
 import type { GrantedConnection, ShapedRead, Spent } from './builder-port.ts'
-import { createSpending, described, offeredIn } from './builder-port.ts'
+import { createSpending, described, offeredIn, offeredWithTables } from './builder-port.ts'
 import { shaped } from './cut.ts'
 import { readOf } from './grants.ts'
 import type { KitRead } from './kit-reads.ts'
@@ -149,7 +149,9 @@ function offered(deps: Deps, scope: Principal) {
 function offeredTo(deps: Deps, scope: Principal) {
   return deps.database.read(scopeOf(viewerOf(scope)), async (tx) => {
     const speaker = await mayAsk(deps, tx, scope)
-    return speaker === undefined ? undefined : { speaker, rows: await offeredIn(tx, idsOf(scope)) }
+    return speaker === undefined
+      ? undefined
+      : { speaker, rows: await offeredWithTables(tx, idsOf(scope)) }
   })
 }
 

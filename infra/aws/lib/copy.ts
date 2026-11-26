@@ -9,17 +9,21 @@ import {
   aws_events as events,
   aws_iam as iam,
   aws_logs as logs,
+  RemovalPolicy,
+  aws_s3 as s3,
   aws_sqs as sqs,
   aws_events_targets as targets,
 } from 'aws-cdk-lib'
 import {
   COPY_CLUSTER,
+  COPY_CONTAINER,
   COPY_DEAD_LETTERS,
   COPY_EXECUTION_ROLE,
   COPY_LOGS,
   COPY_QUEUE,
   COPY_REPOSITORY,
   COPY_TASK_FAMILY,
+  stateBucket,
 } from './names.ts'
 import type { Place } from './place.ts'
 
@@ -33,8 +37,9 @@ export type CopyPlatform = {
 /**
  * The copy task's platform (decision 0076, card T.6, T.14): public subnets with no NAT, the cluster,
  * the one task definition of 1 vCPU and 2 GB on x86 with no task role (the Hub passes the company's
- * writer on each `RunTask`), pointing by digest at the image the Release published to the
- * preparation's repository, and the queue where the task's result and the rule's `STOPPED` event meet.
+ * writer on each `RunTask`) and one environment value, the stopping points' bucket, pointing by
+ * digest at the image the Release published to the preparation's repository, and the queue where
+ * the task's result and the rule's `STOPPED` event meet.
  */
 export function copyPlatform(stack: Stack, place: Place): CopyPlatform {
   const digest = new CfnParameter(stack, 'CopyImageDigest', {
@@ -48,6 +53,7 @@ export function copyPlatform(stack: Stack, place: Place): CopyPlatform {
   })
   const repository = ecr.Repository.fromRepositoryName(stack, 'CopyRepository', COPY_REPOSITORY)
   const taskLogs = new logs.LogGroup(stack, 'CopyLogs', { logGroupName: COPY_LOGS })
+  const state = stoppingPoints(stack)
   const executionRole = new iam.Role(stack, 'CopyExecutionRole', {
     roleName: COPY_EXECUTION_ROLE,
     assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com').withConditions({
@@ -66,9 +72,10 @@ export function copyPlatform(stack: Stack, place: Place): CopyPlatform {
     executionRoleArn: executionRole.roleArn,
     containerDefinitions: [
       {
-        name: 'copia',
+        name: COPY_CONTAINER,
         image: repository.repositoryUriForDigest(digest.valueAsString),
         essential: true,
+        environment: [{ name: 'CONEXUS_STATE_URI', value: `s3://${state.bucketName}` }],
         linuxParameters: { initProcessEnabled: true },
         logConfiguration: {
           logDriver: 'awslogs',
@@ -90,6 +97,25 @@ export function copyPlatform(stack: Stack, place: Place): CopyPlatform {
   })
   new CfnOutput(stack, 'CopySecurityGroup', { value: outbound.securityGroupId })
   return { cluster, taskFamily: COPY_TASK_FAMILY, queue, executionRole }
+}
+
+/** Meltano writes the state at every `STATE` line: an older version is kept this long, then goes. */
+const STATE_VERSION_DAYS = 30
+
+/**
+ * Where Meltano keeps each connection's stopping point (card T.1): `<company>/<connection>/`, which
+ * only the company's writer role reads and writes (`writer.ts`). Kept when the stack goes.
+ */
+function stoppingPoints(stack: Stack): s3.Bucket {
+  return new s3.Bucket(stack, 'StoppingPoints', {
+    bucketName: stateBucket(stack.account, stack.region),
+    blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+    encryption: s3.BucketEncryption.S3_MANAGED,
+    enforceSSL: true,
+    versioned: true,
+    lifecycleRules: [{ noncurrentVersionExpiration: Duration.days(STATE_VERSION_DAYS) }],
+    removalPolicy: RemovalPolicy.RETAIN,
+  })
 }
 
 function copyNetwork(stack: Stack): { network: ec2.Vpc; outbound: ec2.SecurityGroup } {

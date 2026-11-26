@@ -35,9 +35,9 @@ function cruise(dir: string): Violation[] {
 }
 
 const MASTRA_EE = {
-  'apps/server/src/builder/a/ee-agent-builder.ts': '@mastra/core/agent-builder/ee',
-  'apps/server/src/builder/a/ee-auth.ts': '@mastra/core/auth/ee',
-  'apps/server/src/builder/a/ee-editor.ts': '@mastra/editor',
+  'apps/server/src/agents/a/ee-agent-builder.ts': '@mastra/core/agent-builder/ee',
+  'apps/server/src/agents/a/ee-auth.ts': '@mastra/core/auth/ee',
+  'apps/server/src/agents/a/ee-editor.ts': '@mastra/editor',
 }
 const GOOD_IMPORTS: Record<string, string> = {
   'apps/server/src/hub/a/ok.ts': '../b/public.ts',
@@ -52,12 +52,14 @@ const GOOD_IMPORTS: Record<string, string> = {
   'apps/web/src/routes/ok.ts': '../hub/b/public.ts',
   'apps/web/src/hub/a/queries.ts': '@conexus/hub-api',
   'apps/web/src/routeTree.gen.ts': './platform/hub.ts',
-  'apps/server/src/builder/a/agent.ts': '@mastra/core/agent',
-  'apps/server/src/builder/machine/sandbox.ts': 'e2b',
-  'apps/server/src/builder/machine/mastra-sandbox.ts': '@mastra/e2b',
+  'apps/server/src/agents/a/agent.ts': '@mastra/core/agent',
+  'apps/server/src/harness/machine/sandbox.ts': 'e2b',
+  'apps/server/src/harness/machine/mastra-sandbox.ts': '@mastra/e2b',
   'infra/e2b/template.ts': 'e2b',
-  'apps/server/src/builder/git/copy/bucket.ts': '@aws-sdk/client-s3',
+  'apps/server/src/agents/app-builder/git/copy/bucket.ts': '@aws-sdk/client-s3',
   'apps/web/src/harness/a/conversation.ts': '@mastra/client-js',
+  'apps/web/src/agents/agent-builder/ok.ts': '../saved-agent/public.ts',
+  'apps/web/src/agents/saved-agent/ok.test.ts': '../assistant/public.ts',
   'apps/server/src/hub/connectors/executor.ts': '@conexus/connectors',
   'tests/e2e/live-hub.ts': '@conexus/connectors',
   'apps/extraction/tap/src/ok.ts': '@conexus/connectors',
@@ -93,6 +95,7 @@ before(() => {
     'apps/server/src/platform/test-database.ts',
     'apps/server/src/hub/a/public.ts',
     'apps/web/src/hub/b/public.ts',
+    'apps/web/src/agents/saved-agent/public.ts',
   ]) {
     files[file] ??= PUBLIC
   }

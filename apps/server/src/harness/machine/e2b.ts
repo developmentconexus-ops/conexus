@@ -1,0 +1,137 @@
+import type { ConversationId } from '@conexus/hub-api'
+import type { CodeModeTransport } from '@mastra/core/tools'
+import { E2BCodeModeTransport, E2BSandbox } from '@mastra/e2b'
+import { ALL_TRAFFIC, Sandbox } from 'e2b'
+import type { Config } from '../../platform/config.ts'
+import type { ConversationMachine, ConversationMachineApi, Kit, KitFactory } from './kit.ts'
+import { MARK, markOf } from './kit.ts'
+
+/**
+ * How long a machine runs before E2B pauses it, for every agent: the Mastra Factory's default
+ * (`idleTimeoutMinutes` 5, `workspaces/e2b/src/factory-sandbox.ts`), which becomes the sandbox's
+ * `timeout`. E2B counts it from the machine's start or its last reconnect, not from the last use,
+ * and the Hub renews nothing, as the Factory does not. A turn's end stops nothing; the next tool
+ * that finds the machine paused resumes it by itself (`retryOnDead`).
+ */
+const IDLE_MS = 5 * 60 * 1000
+const CALL_MS = 30_000
+
+type Credentials = Pick<Config, 'e2bApiKey' | 'machineTemplate'>
+
+/**
+ * The machine's outbound rules, at its creation and in `closeNetwork`. `allowPublicTraffic: false`
+ * (creation only: `updateNetwork` does not take it, e2b `SandboxNetworkUpdate`) makes every
+ * `<port>-<id>.e2b.app` url answer 403 without the traffic token; omitted, the machine is public.
+ */
+function egress(allowOut: readonly string[]) {
+  return { allowOut: [...allowOut], denyOut: [ALL_TRAFFIC] }
+}
+
+/** The one adapter to E2B for a machine (code C56): the SDK, and nothing of ours inside it. */
+export function createE2bKit(config: Credentials): KitFactory {
+  return (options): Kit => {
+    const sandbox = new E2BSandbox({
+      id: options.id,
+      template: config.machineTemplate,
+      apiKey: config.e2bApiKey.reveal(),
+      timeout: IDLE_MS,
+      lifecycle: { onTimeout: 'pause' },
+      // A machine found by its id is reattached or refused, never replaced by a new one.
+      ...(options.foundAs === undefined
+        ? {}
+        : { sandboxId: options.foundAs, reattach: 'required' as const }),
+      network: { ...egress(options.allowOut), allowPublicTraffic: false },
+      metadata: options.metadata,
+      onStart: options.onStart,
+      workingDirectory: options.workingDirectory,
+    })
+    return {
+      sandbox,
+      transport: {
+        write: (path, bytes) => sandbox.writeFiles([{ path, content: Buffer.from(bytes) }]),
+        read: (path, signal) =>
+          sandbox.e2b.files.read(path, {
+            format: 'stream',
+            ...(signal === undefined ? {} : { signal }),
+          }),
+      },
+      openNetwork: (extra) => sandbox.e2b.updateNetwork(egress([...options.allowOut, ...extra])),
+      closeNetwork: () => sandbox.e2b.updateNetwork(egress(options.allowOut)),
+    }
+  }
+}
+
+/** The transport that runs an agent's program in its E2B machine (step 24.4, U5): the `E2BSandbox` is the workspace's. */
+export function createE2bCodeMode(): CodeModeTransport {
+  return new E2BCodeModeTransport()
+}
+
+/** What the conversations of the Assistant, the Construtor, the agents and the Builder open a machine with (code C26). */
+export function conversationMachineOf(config: Config): ConversationMachine {
+  const mark = markOf(config)
+  return {
+    kit: createE2bKit(config),
+    api: createE2bApi(config, mark),
+    template: config.machineTemplate,
+    installation: config.installationId,
+    mark,
+    codeMode: createE2bCodeMode(),
+  }
+}
+
+/**
+ * Kills by the mark this installation puts on every machine and the conversation's id (security
+ * S36): every machine listed, running or paused, for a failed find can have made a second one of
+ * the same name. Never the sandbox's own `destroy()`, which swallows a failed list and kills one.
+ */
+export function createE2bApi(
+  config: Credentials,
+  mark: Record<string, string>,
+  apiUrl?: string,
+): ConversationMachineApi {
+  const apiKey = config.e2bApiKey.reveal()
+  const where = { apiKey, ...(apiUrl === undefined ? {} : { apiUrl }), requestTimeoutMs: CALL_MS }
+  async function killWhere(
+    conversationId: ConversationId,
+    doomed: (metadata: Record<string, string>) => boolean,
+  ) {
+    let killed = 0
+    const pages = Sandbox.list({
+      ...where,
+      query: { metadata: { ...mark, [MARK.conversation]: conversationId } },
+    })
+    while (pages.hasNext) {
+      for (const item of await pages.nextItems()) {
+        if (doomed(item.metadata) && (await Sandbox.kill(item.sandboxId, where))) killed += 1
+      }
+    }
+    return killed
+  }
+  /**
+   * The first machine of the conversation and `template` (any template when undefined), running or
+   * paused; a failed list throws.
+   */
+  async function find(conversationId: ConversationId, template: string | undefined) {
+    const pages = Sandbox.list({
+      ...where,
+      query: {
+        metadata: {
+          ...mark,
+          [MARK.conversation]: conversationId,
+          ...(template === undefined ? {} : { [MARK.template]: template }),
+        },
+      },
+    })
+    while (pages.hasNext) {
+      const [first] = await pages.nextItems()
+      if (first !== undefined) return first.sandboxId
+    }
+    return undefined
+  }
+  return {
+    find,
+    kill: (conversationId) => killWhere(conversationId, () => true),
+    killStale: (conversationId, template) =>
+      killWhere(conversationId, (metadata) => metadata[MARK.template] !== template),
+  }
+}

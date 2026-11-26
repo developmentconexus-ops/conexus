@@ -29,6 +29,7 @@ const MANAGE_COMPANY = {
   request: ['create', 'decide'],
   companyMemory: ['manage'],
   dataRead: ['read'],
+  network: ['manage'],
 } as const
 
 // Every member asks to publish a version; only an owner or an administrator decides (step 24.3.4, "3").
@@ -54,8 +55,8 @@ const BUILD = {
  * accounts (step 11, D4), gives and takes a person's access to an app (step 18, B), and links,
  * tests and removes the company's connections (step 19, D), and writes the company's memory and
  * instructions (alignment of the Assistant, U9), and reads the Registro de dados (founder,
- * 2026-11-21, D1 (a)). Only the
- * owner chooses the company's nickname (step 8, N1).
+ * 2026-11-21, D1 (a)), and opens and closes the domains of the company's internet list (the
+ * network step). Only the owner chooses the company's nickname (step 8, N1).
  * `allows` in admission reads these, so who may do what lives here alone (code C26).
  */
 export function rolesFor(kit: RoleKit) {
@@ -85,6 +86,7 @@ export function rolesFor(kit: RoleKit) {
     request: ['create', 'decide'],
     companyMemory: ['manage'],
     dataRead: ['read'],
+    network: ['manage'],
   })
   const roles = {
     // The owner and the administrator use every operation of every connector, always.

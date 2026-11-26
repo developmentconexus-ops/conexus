@@ -1,0 +1,10 @@
+{
+  "service": "s3tables",
+  "api": "ListTables",
+  "sdk": "@aws-sdk/client-s3tables 3.1175.0",
+  "recordedAt": "2026-11-25",
+  "source": "U8 step 1, scripts/record-aws.ts from this machine on the laboratory account, temporary resources deleted at the end; account and ids changed (S40)",
+  "status": 200,
+  "contentType": "application/json",
+  "body": "{\"continuationToken\":\"AAMA-EFRSURBSGdJeHU1U1NjZkV3RDFWeXd0ai8zWXJ4VW44dDMvekpnM1FtUnBhdDBnV1R3SGJDM2pXV0ZCSlNnZXg4cmVoVmxHYUFBQUFmakI4QmdrcWhraUc5dzBCQndhZ2J6QnRBZ0VBTUdnR0NTcUdTSWIzRFFFSEFUQWVCZ2xnaGtnQlpRTUVBUzR3RVFRTWRUUUlDSlVpSHg2WGQ1TFJBZ0VRZ0R1M05QZmJOb0xYUTVWQ3pudVZicTdPZVRua1QrYlY5bk1QKysxY3kvYlFHMWV1Z2FudllVVzBVM0tDcWJsV2xzNVB3eEVGY2k3YWl6K3FlUT09vQanGwAVB9qGN-GaR0pr4SIMhlIjfGUiSI5SY9nNOH5LH9u7AgZHPR4iJxMVAVEAMdP7wHUCQfNnvUgMCAX-h58qnaAm91dfvma2S1k9ZMX7vLQ6fgVcqRqY8SJ2kCndzj_IzA7C1JK2HiQ8xhObFPsd3f40PX9BgPgQKJ4zpJxXuvFILNbQlLRlLbzzcG4GZdjtzrlfdMkPFHEwnAaTK2W2YHP0f_b78TyaqcDORUq4WjgV86IKkxDMMPvm0yzjxeCY_Fzr6ps4zrevIdnsCEkdfOjzQhSMjWX2DZ5pboqSL-TPgwI05o6B1ck8mwdDEEM9H8bUPvXMmzGR68ShvR5sbFb9VyWXjUCCdsmVntxvhF0jAl8hWQ==\",\"tables\":[{\"createdAt\":\"2026-11-25T00:23:55.448874663Z\",\"modifiedAt\":\"2026-11-25T00:23:55.448874663Z\",\"name\":\"tabela_a\",\"namespace\":[\"raw\"],\"tableARN\":\"arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-k3x9a0b1c2d3/table/00000000-0000-4000-8000-000000000001\",\"type\":\"customer\"}]}"
+}

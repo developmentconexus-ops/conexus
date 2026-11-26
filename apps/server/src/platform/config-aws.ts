@@ -29,6 +29,20 @@ const AwsEndpoint = z.string().refine((value) => {
   return url?.protocol === 'http:' && ['127.0.0.1', 'localhost'].includes(url.hostname)
 })
 
+const SecurityGroupId = z.string().regex(/^sg-[0-9a-f]{8,17}$/)
+const SubnetId = z.string().regex(/^subnet-[0-9a-f]{8,17}$/)
+const ClusterArn = z.string().regex(/^arn:aws:ecs:[a-z0-9-]+:[0-9]{12}:cluster\/[\w-]{1,255}$/)
+const QueueUrl = z.url().refine((value) => URL.parse(value)?.pathname.split('/').length === 3)
+
+/** The platform stack's outputs the Hub starts a copy with: `CopyClusterArn`, `CopyTaskFamily`, `CopySubnets`, `CopySecurityGroup`, `CopyQueueUrl`. */
+type CopyPlatformConfig = Readonly<{
+  clusterArn: string
+  taskFamily: string
+  subnets: readonly [string, ...string[]]
+  securityGroup: string
+  queueUrl: string
+}>
+
 export type AwsConfig = Readonly<{
   account: AwsAccount
   region: AwsRegion
@@ -38,6 +52,7 @@ export type AwsConfig = Readonly<{
   /** The SDK's shared credentials file with the base key: the Hub only checks its mode and that it is not empty, the SDK reads the key (S31). */
   credentialsFile: string
   templateVersion: TemplateVersion
+  copy: CopyPlatformConfig
   endpoint?: string
 }>
 
@@ -47,6 +62,14 @@ export const AwsEnvironment = z.object({
   HUB_AWS_HUB_ROLE_ARN: RoleArn,
   HUB_AWS_SERVICE_ROLE_ARN: RoleArn,
   HUB_AWS_TEMPLATE_BUCKET: BucketName,
+  HUB_AWS_COPY_CLUSTER_ARN: ClusterArn,
+  HUB_AWS_COPY_TASK_FAMILY: z.string().regex(/^[\w-]{1,255}$/),
+  HUB_AWS_COPY_SUBNETS: z
+    .string()
+    .transform((value) => value.split(','))
+    .pipe(z.tuple([SubnetId], SubnetId)),
+  HUB_AWS_COPY_SECURITY_GROUP: SecurityGroupId,
+  HUB_AWS_COPY_QUEUE_URL: QueueUrl,
   AWS_SHARED_CREDENTIALS_FILE: z.string().startsWith('/'),
   HUB_AWS_ENDPOINT: AwsEndpoint.optional(),
 })
@@ -94,6 +117,13 @@ export function awsConfigOf(
     templateBucket: serve.HUB_AWS_TEMPLATE_BUCKET,
     credentialsFile: serve.AWS_SHARED_CREDENTIALS_FILE,
     templateVersion: templateVersionOf(template),
+    copy: {
+      clusterArn: serve.HUB_AWS_COPY_CLUSTER_ARN,
+      taskFamily: serve.HUB_AWS_COPY_TASK_FAMILY,
+      subnets: serve.HUB_AWS_COPY_SUBNETS,
+      securityGroup: serve.HUB_AWS_COPY_SECURITY_GROUP,
+      queueUrl: serve.HUB_AWS_COPY_QUEUE_URL,
+    },
     ...(serve.HUB_AWS_ENDPOINT === undefined ? {} : { endpoint: serve.HUB_AWS_ENDPOINT }),
   }
 }

@@ -57,6 +57,8 @@ export type Deps = {
   catalog: readonly Connector[]
   /** The machine's clock; a test injects its own (T20). */
   now: () => Date
+  /** What the connection's lake copy owes before the connection goes, handed in by `main.ts` (a subject does not import another's inside). */
+  leaveCopy: (at: { companyId: CompanyId; connectionId: ConnectionId }) => Promise<void>
   /** The one writer of the Registro (`hub/data`), handed in by `main.ts`. */
   recordRead: (line: LiveReadLine) => Promise<'RECORDED' | 'UNRECORDED'>
 }

@@ -71,7 +71,7 @@ test('o Hub só cria da receita, pelo papel de serviço, na própria empresa', (
     Resource: '<ServiceRole.Arn>',
     Condition: { StringEquals: { 'iam:PassedToService': 'cloudformation.amazonaws.com' } },
   })
-  assert.deepEqual(allowed(hub).sort(), [
+  assert.deepEqual([...new Set(allowed(hub))].sort(), [
     'cloudformation:CreateStack',
     'cloudformation:DeleteStack',
     'cloudformation:DescribeStackEvents',
@@ -82,8 +82,9 @@ test('o Hub só cria da receita, pelo papel de serviço, na própria empresa', (
     'ecs:RunTask',
     'ecs:StopTask',
     'iam:PassRole',
-    'iam:PassRole',
     's3:GetObject',
+    's3:ListBucket',
+    's3:PutObject',
     's3tables:DeleteNamespace',
     's3tables:DeleteTable',
     's3tables:DeleteTableBucket',

@@ -959,12 +959,12 @@ changes, reread the line it names.
 
 ## The Builder's clocks and its eval gate (step 13)
 
-- **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
-  owner `runs/copy-retry.ts`, and so are `node:timers` and
+- **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/harness/` and `apps/server/src/agents/` except in the
+  owner `agents/app-builder/runs/copy-retry.ts`, and so are `node:timers` and
   `node:timers/promises` (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `subscription-store.ts`. A change
   that touches their timers moves each to a named owner.
-- **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
+- **Eval gate.** `agents/app-builder/builder.eval.test.ts` drives the real Builder through the Hub with
   a scripted model and the test machine, then scores what Mastra saved with `checks.calledTool` and
   `checks.noToolErrors` from `@mastra/evals/checks`, and requires the only tool called to be the
   write tool. It does not use `runEvals`: the Builder's `Agent` is private to its controller, and
@@ -977,8 +977,8 @@ changes, reread the line it names.
 
 ## Mastra 1.83.0: the Builder's end of the turn, open tasks (step 14.2)
 
-- **The end of the turn is Mastra's `isTaskComplete`.** `conversation/builder.ts` gives the Builder's
-  `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`conversation/processors.ts`
+- **The end of the turn is Mastra's `isTaskComplete`.** `agents/app-builder/builder.ts` gives the Builder's
+  `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`agents/app-builder/processors.ts`
   `conexusCheck`), which finds the machine by the conversation in `customContext.controller`. It first
   reads the thread's task list from Mastra's `threadState` store, as `task_check` reads it
   (`tools/builtin/task-tools.ts:385-391` at `6a465f9d`); a turn that ends with tasks open, or with a
@@ -1001,7 +1001,7 @@ changes, reread the line it names.
   message is not touched, so a conversation already broken recovers on its next message. Mastra's
   in-process engine also scores an errored iteration through `isTaskComplete` (the durable engine
   skips it, Mastra issue #21897).
-- **Hand-made piece.** `judge` in `conversation/processors.ts` returns finished once the queue has
+- **Hand-made piece.** `judge` in `agents/app-builder/processors.ts` returns finished once the queue has
   ended the turn (`turnIn(requestContext)?.outcome`), so a failed turn is not called again and no
   false `MODEL_NO_ACCOUNT` is stored. Visible change: the version of a failed turn with open tasks
   has no check verdict, like a turn that stopped on a question; before, it read "unfinished" only
@@ -1015,14 +1015,32 @@ changes, reread the line it names.
 
 ## Mastra 1.83.0 and @mastra/fastify 1.5.27: session routes behind the Hub's guard (step 14.2)
 
-- **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
-  agent-controller routes (a session's state, stream, message, Parar, a card's answer, a write's approval, transcript;
-  `FIXED_LIST`)
+- **A fixed list, one guard.** `harness/routes/guard.ts` registers nine of Mastra's own
+  agent-controller routes (a session's state, stream, message, Parar, a card's answer, a write's approval, transcript,
+  the change of model, a conversation's rename; `FIXED_LIST`)
   through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
   of `SERVER_ROUTES` is not registered, so it is a 404 (decision 0050, S39). Mastra's `server.auth`
   stays off: the guard reads the Hub's session, finds the thread's owner in its `resourceId` and the
   Hub's index (S10), refuses a browser `requestContext` with 400, and sets the message's author.
   Proof: `conversation-routes.test.ts`, criteria 3, 30 and 31 of step 14.2.
+- **The change of model is Mastra's own route.** `POST …/sessions/:sessionId/model`
+  (`@mastra/server` 1.83.0 `agent-controller.js:869-890`, the Factory UI's `switchModel`) behind the
+  same guard, which is stricter than Mastra's body: it asks the effort too, refuses a field more,
+  asks the account (`conversationModel`) and the effort the model offers (`effortsOf`), and writes the
+  agent's log line (from its ficha) only after Mastra's `{ ok: true }`; an agent whose ficha says the
+  model is the version's (a saved agent) is a 404. Proof: `guard.test.ts` ("a troca de modelo…"),
+  `lines.test.ts`.
+- **Renomear is Mastra's own route too.** `PUT …/sessions/:sessionId/threads/:threadId`
+  (`@mastra/server` 1.83.0 `agent-controller.js:1244-1269`, `session.renameThread`), whose body is
+  any `{ title }`: the guard trims and checks it (`RenameBody`, one to `CONVERSATION_TITLE_MAX`
+  characters) and puts the trimmed body in `request.body`, which `@mastra/fastify` 1.5.27 reads
+  (`dist/index.js:198`). A `threadId` that is not the session's is a 404 (Mastra would switch the
+  session's active thread). Mastra's `rename` pins the title (`titlePinned`) against the memory's own
+  and keeps the thread's other metadata, so the marks that say whose a conversation is stay. The
+  line `CONVERSATION_RENAMED` names the conversation and the agent, never the title, and waits for
+  Mastra's `{ ok: true }`. Proof: `rename.test.ts` (four agents, refusals, after a restart),
+  `assistant/rename.test.ts` (the memory's title does not replace it). Issue 655 (the first answer's
+  automatic title can erase a rename made during it) stays open.
 - **The Hub's close closes the open streams.** Mastra's stream route ends only when its request
   leaves (`@mastra/server` `dist/server/handlers/agent-controller.js:577-666` at 1.83.0, `abortSignal` at `:651-655`), so the guard keeps each open stream's
   response and the close destroys them once the runs have said their end, which `@mastra/fastify`
@@ -1038,7 +1056,7 @@ changes, reread the line it names.
   with the square of a turn's length. The stream route's `displayState: false` (`@mastra/server`
   1.80.0, PR #28527) cuts all of it, and the screen reads a part (`isRunning`, `pendingSuspensions`,
   `omProgress`), so there is still no option to send a subset.
-- **Hand-made piece.** `slim` and `paced` in `apps/server/src/builder/conversation/stream.ts`. `slim`
+- **Hand-made piece.** `slim` and `paced` in `apps/server/src/harness/routes/stream.ts`. `slim`
   keeps of a `display_state_changed` event only what the screen reads (`DISPLAY_READ`); every other
   event goes as Mastra sent it. `paced` writes each event once the response can take more and ends
   the stream of a page 8 MiB behind, which reads the transcript and the session again when it opens
@@ -1061,8 +1079,8 @@ changes, reread the line it names.
   line (`mastracode/sdk/src/index.ts:1413-1416`, `resolveTenantSessionModel`); neither it nor the
   Factory has the piece (searched in both).
 - **Hand-made piece.** `turnProcessor` and `sessionTurns` in
-  `apps/server/src/builder/controller-kit/turns.ts`: the one input processor that takes a run's
-  `Turn` for the account queue and puts it on the request context, and the way a session holds that
+  `apps/server/src/harness/spec/turns.ts`: the one input processor that takes a run's
+  `AccountTurn` for the account queue and puts it on the request context, and the way a session holds that
   turn until `agent_end`. Each agent's ficha chooses by its `turn` field: `SESSION` (the Assistant,
   the Construtor, a Project agent's conversation) or `RUN` (the Builder, and the version the
   Construtor tests, which have no session to hold it). Before the step it was three copies.
@@ -1077,7 +1095,7 @@ changes, reread the line it names.
 - **Library line.** `@mastra/core` 1.83.0 locks by conversation only (`threadLock`,
   `@mastra/core/dist/agent-controller/types.d.ts:316-325`): two conversations
   of one Project run at the same time.
-- **Hand-made piece.** `projectTurn` in `apps/server/src/builder/conversation/turn-of.ts`, the
+- **Hand-made piece.** `projectTurn` in `apps/server/src/agents/app-builder/turn-of.ts`, the
   Builder ficha's `take` (`turnOf`): the run takes the Project's lock (`Runs.take`) before any model
   call, or ends `RUN_BUSY` with the name of whose run holds it, and frees it at the run's end
   (`onEnd`).
@@ -1088,6 +1106,24 @@ changes, reread the line it names.
   refusing a lock that is taken.
 - **Revisit when** Mastra can lock by a key other than the conversation.
 
+## Mastra 1.83.0: the Builder's refused turn kept beside the run (Uma sala e os nomes certos)
+
+- **Library line.** A processor's `abort` ends the run with `finishReason: 'tripwire'`. The agent
+  controller folds the processor's id and reason into the text of its `error` event and passes no
+  `processorId` (`@mastra/core` 1.83.0 `dist/agent-controller-BhkzVgCi.js:1186-1197`, emitted at
+  `:738-746`), so nothing typed carries the code or the name of whose run holds the Project.
+- **Hand-made piece.** `createRefusals` in `apps/server/src/agents/app-builder/turn-of.ts`, a map
+  by conversation in the Hub's memory. `projectTurn` clears it, then records `RUN_BUSY` with the
+  holder's name before it refuses; `builderEnds` (`end.ts`) reads it once, and
+  `harness/turn/end.ts` takes it only for an `error` event with `finishReason: 'tripwire'`.
+- **Why.** [Code C52](../guides/code.md): a failure is told by its code, never read from its text.
+  A restart loses the map, and the refusal is only of a live turn.
+- **Proof.** `turn.test.ts`, "o evento error do controlador, na 1.83.0, traz finishReason tripwire
+  e não traz processorId…", which fails when an upgrade passes the field;
+  `conversation-turns.test.ts`, a second conversation of the Project ending `RUN_BUSY` with the
+  name.
+- **Revisit when** Mastra's `error` event carries the processor's id or a typed payload.
+
 ## Mastra 1.83.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
 
 - **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`): the session's native "never ask" is the `allow`
@@ -1095,12 +1131,12 @@ changes, reread the line it names.
   (`packages/core/src/agent-controller/session.ts:4808-4829`, `:5019-5030` and `:6638-6642`). With `@mastra/pg`
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
   at `packages/core/src/agent/agent.ts:8757`).
-- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/builder/controller-kit/mount.ts`)
-  in `agents/tools.ts` (the reads), and in `askingOnlyByOwnRule` (same file), which a ficha with the
-  regime `THE_WRITE_ASKS` runs over its tools: every tool whose rule is not a function (the shared
-  ones, the web's, the code's) goes on a copy with `NEVER_ASKS`, and the given objects stay as they
-  are; and `requireApproval: () => false` in `apps/server/src/builder/machine/conversation.ts` (the
-  Computador). A tool's own rule runs before the session's policy, so the call is never suspended.
+- **Hand-made piece.** `requireApproval: NEVER_ASKS` (`apps/server/src/harness/spec/mount.ts`) in
+  `askingOnlyByOwnRule` (same file), which a ficha with the regime `THE_WRITE_ASKS` runs over its
+  tools: every tool whose rule is not a function (the reads, the shared ones, the web's, the code's)
+  goes on a copy with `NEVER_ASKS`, and the given objects stay as they are; and the same
+  `NEVER_ASKS` on the Computador's workspace in `apps/server/src/harness/machine/conversation.ts`.
+  A tool's own rule runs before the session's policy, so the call is never suspended.
 - **Why.** With `allow`, 12 of 200 reads were lost on Postgres; with the rule on each tool, 0 of 200
   (the study of step 24.5; Papéis P1).
 - **Proof.** Covered, not fails without: `approval.test.ts`, "a escrita espera, o resto não", reads
@@ -1118,7 +1154,7 @@ changes, reread the line it names.
   not reachable here: Mastra's loop reads the provider's `stream.request` itself and takes no
   such option.
 - **Hand-made piece.** `bodylessMiddleware` in
-  `apps/server/src/builder/model-accounts/claude/models.ts`, a `wrapStream` that drops `request`
+  `apps/server/src/harness/model-accounts/claude/models.ts`, a `wrapStream` that drops `request`
   from `doStream()`'s answer.
 - **Why.** The Hub's heap grew with the prompts of the last turn of every open conversation.
 - **Proof.** `prompt-cache.test.ts` "cada passo do modelo da conta volta sem o corpo do pedido…".
@@ -1131,8 +1167,8 @@ changes, reread the line it names.
   `__setLogger` of its own), and each domain logs its own failures. The provider registry says of a model only
   `attachment`, `temperature`, `structuredOutput` and `reasoning` (`dist/capabilities/*.json`),
   nothing of what the model outputs.
-- **Hand-made piece.** `apps/server/src/builder/mastra/mastra.ts` gives each domain the Hub's logger
-  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/builder/model-accounts/providers.ts`
+- **Hand-made piece.** `apps/server/src/harness/mastra/mastra.ts` gives each domain the Hub's logger
+  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/harness/model-accounts/providers.ts`
   leaves out a model whose name says it draws, films, speaks, hears, embeds, ranks, guards, reads
   scans or talks live.
 - **Why.** A domain's failure would log nowhere the Hub reads; the model picker would list models
@@ -1148,7 +1184,7 @@ changes, reread the line it names.
   follows a link: `FilesystemReadOpts` has no `nofollow` (`dist/index.d.ts:5794-5807`). `files.list` (`:5972`)
   shows a link's `symlinkTarget`, but a link swapped in between the list and the read still passes.
   Mastra 1.83.0 `WorkspaceFilesystem.readFile` has the same shape.
-- **Hand-made piece.** `packIn` in `apps/server/src/builder/machine/pack.ts` runs one Node program
+- **Hand-made piece.** `packIn` in `apps/server/src/harness/machine/pack.ts` runs one Node program
   on the machine, while the run still holds it. The program opens every folder and file of
   `node_modules/.conexus/version` with `O_NOFOLLOW` through `/proc/self/fd`, refuses a link or a
   file that is not regular with `NOT_REGULAR`, counts every file against `APP_LIMITS` before reading
@@ -1322,18 +1358,78 @@ reference tool checks a read against its documentation.
   that is earlier, up to the current one, so a copy stopped for months misses none: Airbyte's
   `DatetimeBasedCursor` starts its `lookback_window` from the saved point
   (the `source-shipstation` connector's `manifest.yaml:116`, at `82db089b`), as dlt's `lag` does
-  (`dlt/extract/incremental/__init__.py:142`, at `8fa90a97`).
+  (`dlt/extract/incremental/__init__.py:142`, at `8fa90a97`). The current layer takes the months
+  from the rows themselves: after the `MERGE` statements,
+  `Updater._delete_unwritten_in_brought_months`
+  (`apps/extraction/src/conexus_extraction/update.py`) deletes, in the months the new raw rows
+  brought, the current rows they did not rewrite, so a row the source dropped from a re-read month
+  leaves the lake. A whole pass deletes the current rows of an older version, in a window table
+  only in the months since the start date. The form is dlt's `merge_key`, which limits the deletes
+  to the partitions of the loaded rows (dlt's `merge-loading.md:968-984`, at `8fa90a97`).
 - **Why.** The fiscal tables have no change column, and the A0D measurement read 3,140 rows per
   second by month against 442 without the window (`EST/a0d-sankhya-kit-mes:93-106`). The month
   window is our extension of decision 0080.
 - **Proof.** `sankhya/copy-tables.test.ts`, "os meses da contagem": the double's months come back
   with the two out of the calendar, and each month's page holds that month's rows only.
   `apps/extraction/tap/src/tap-pass.test.ts`, "a janela parada": a point five months back rereads
-  every month since.
+  every month since. `apps/extraction/tests/test_update.py`, "a janela troca o que leu": the month
+  that lost a row in the source loses it in the lake, and the months before the re-read stay.
   `kernel/conformance.test.ts`, "a declaração por tabela", refuses a window on a column that is not
   a date.
-- **Not proved.** The count on the real Oracle: the double runs the same SQL in SQLite.
+- **Not proved.** The count on the real Oracle: the double runs the same SQL in SQLite. The
+  delete by month on Athena (the double runs it in DuckDB): L.7. A month the source emptied whole
+  brings no row, so it stays in the lake until a whole pass, the limit dlt documents for an empty
+  snapshot (`merge-loading.md:999-1003`).
 - **Revisit when** `singer-sdk` or `meltano` gains a partition or window mode.
+
+## Connectors (A primeira cópia chega ao lago): the current layer, one case a statement
+
+- **Library line.** No library updates the current table of a lake from Singer rows.
+  Airbyte's destination writes one `MERGE` with the update, the delete and the insert as cases
+  (`AB JdbcSqlGenerator.kt:219-238`), and dlt's merge job is the other form read
+  (`DLT dlt/destinations/sql_jobs.py:1120-1139`). Athena on `S3 Tables` fails a `MERGE` of two or more
+  cases from about 230 to 337 columns and runs one case with 450 (`EST/achados-auditoria:49`,
+  `:321`).
+- **Hand-made piece.** `Updater._merges` in `apps/extraction/src/conexus_extraction/update.py`:
+  two `MERGE` statements over the rows the pass added to the raw table, one case each. The first
+  updates the rows that match, the second inserts what does not match. No connector marks a row
+  deleted (`_sdc_deleted_at`): Airbyte and dlt have a delete case only when the source brings the
+  mark, so the case comes with the first connector that does. Our writer has no row hash, so the
+  update rewrites every matched row of the slice. The slice is the newest row of each key between the point of the
+  last update (`conexus.atualizado_ate`) and the highest `_sdc_sequence`, so a repeated update
+  finds nothing new. A new column in the raw table reaches the current one before the first
+  statement (`union_by_name`). After a whole pass, one `DELETE` drops the current rows of a
+  version older than the pass (`_sdc_table_version`), the form of singer-sdk 0.54.9
+  `delete_old_versions` (`singer_sdk/sql/connector.py:1883`). In a round where a table fails, only
+  the tables whose pass ended, with their batch written, are updated: Airbyte runs the upsert of
+  every stream and skips only what destroys (`DestinationLifecycle.kt:82-88`,
+  `DirectLoadTableStreamLoader.kt:122-140`, `:263-275`, at `82db089b`).
+- **Why.** Decision 0080: the raw table appends, the current one follows the mode. One case a
+  statement is the form that passed on 450 columns.
+- **Proof.** `apps/extraction/tests/test_update.py`, "a atual segue a fonte" (the source's note,
+  changed and created, and no statement with two cases) and "a coluna nova na atual"; the
+  hand mutation that cleans before the `MERGE` turns "a limpeza" and "a atual segue a fonte" red.
+- **Not proved.** On Athena, with the real 450 columns: L.7. The tests run the statements in DuckDB,
+  whose dialect is not Trino's, over the recorded Athena envelopes.
+- **Revisit when** Athena runs a multi-case `MERGE` on a wide table, or `S3 Tables` maintains
+  the history itself.
+
+## Connectors (A primeira cópia chega ao lago): the raw history is cleaned once it is in the current layer
+
+- **Library line.** No reference cleans a raw layer: Nekt keeps the history as an optional module of
+  each table (`NK:8635`), Databricks keeps a type 2 history per table, Airbyte kept everything, and
+  `S3 Tables` keeps 120 hours of snapshots.
+- **Hand-made piece.** The last step of `Updater._update`: `DELETE FROM raw` of every row up to the
+  update's highest `_sdc_sequence`, after the current table and its properties are written, in every
+  table, the NF-e's XML included. A table declared `history: true` skips it. A crash between the
+  properties and the cleaning repeats the cleaning, and the next update finds no new row.
+- **Why.** The founder, 2026-11-24: the XML has no history either, and the raw layer is a passage,
+  not an archive. Decision 0080.
+- **Proof.** `apps/extraction/tests/test_update.py`, "a limpeza", "o xml sem historico" and "a
+  limpeza pula o historico".
+- **Not proved.** The cleaning on Athena's real `DELETE`: L.7.
+- **Revisit when** the founder asks for history of a table, or the raw tables hold more than the
+  rounds in flight.
 
 ## Connectors (A primeira cópia chega ao lago): the adapter speaks Singer in TypeScript
 
@@ -1375,7 +1471,7 @@ reference tool checks a read against its documentation.
   (`@mastra/memory` `dist/src-MUc-jGgr.js:33712-33728`). That write can put back a value that
   another request changed in between. Reported to Mastra (feedback, 2026-11-01).
 - **Hand-made piece.** The Assistant's chosen connections and its place live in
-  `builder.assistant_conversation`, which only the Hub writes (`apps/server/src/builder/assistant/chosen.ts`,
+  `builder.assistant_conversation`, which only the Hub writes (`apps/server/src/agents/assistant/chosen.ts`,
   `context.ts`; founder's D11 word, 2026-11-01: "Aprovo as permissoes do b1"). The thread's metadata
   keeps only marks set once at `createSession({ tags })`.
 - **Why.** The step's B1: a change of connections made while Mastra saved the title came back on
@@ -1390,7 +1486,7 @@ reference tool checks a read against its documentation.
   `listThreads` filters by `resourceId` and by metadata equality only (`@mastra/core` `dist/storage/types.d.ts:183-209`;
   `@mastra/pg` `dist/index.js:12169-12260`, a `@>` containment). It has no title search, no "the key is
   missing" and no "any value of the key".
-- **Hand-made piece.** `listedPage` in `apps/server/src/builder/assistant/search.ts`. With a text or a
+- **Hand-made piece.** `listedPage` in `apps/server/src/agents/assistant/search.ts`. With a text or a
   place it reads all the person's threads (`perPage: false`) and filters here: the title composed, without
   accent and without case; `HOME` as the missing project mark and `AUTOMATIONS` as the present automation
   mark; then it pages 30 at a time under the same token. Without text or place it is Mastra's own page.
@@ -1407,7 +1503,7 @@ reference tool checks a read against its documentation.
   `internal/util/gemini_schema.go:73-83`, `:941` and `:957-971` drop every `enum` from a tool's
   schema for the Antigravity path and keep a multi-branch `anyOf`; `antigravity_executor_request.go:70-77`
   sends the same cleaned schema to Gemini (commits `7d55d0da` and `5efe9758`).
-- **Hand-made piece.** `forCliProxy` in `apps/server/src/builder/model-accounts/google/flat-unions.ts`,
+- **Hand-made piece.** `forCliProxy` in `apps/server/src/harness/model-accounts/google/flat-unions.ts`,
   called by `accountPick` only when the account is `google_cliproxy`. For that step it declares flat
   any tool whose input has a union of objects told apart by a fixed-value field (`cadence` of
   `propose_automation`); `execute` and the validation stay the tool's own, so the card, the route and
@@ -1430,7 +1526,7 @@ reference tool checks a read against its documentation.
   não respondeu". The local reproduction showed the Observer asking a model the proxy does not list. The
   fix covers that reproduced cause; the real error of production was not read, and a provider 429 is not
   resolved by it. The trace of a failed call is the `MASTRA_ERROR` line, with the error's name and status.
-- **Proof.** `assistant/assistant-memory-cliproxy.test.ts`: the observer's request asks
+- **Proof.** `agents/assistant/assistant-memory-cliproxy.test.ts`: the observer's request asks
   `gemini-3.5-flash-lite`, or the conversation's model when the proxy does not serve it.
 - **Revisit when** the proxy lists `gemini-2.5-flash`, or the `google_cliproxy` path leaves the product.
   Then delete the constant, the `kind` argument, the test and this entry.
@@ -1441,7 +1537,7 @@ reference tool checks a read against its documentation.
   `dist/provider-registry.json`, and Mastra Code's `auth/storage.ts` (`@mastra/code-sdk` 1.18.0)
   keeps one person's credentials. Neither has a switch per company for a kind of sign-in, and the
   Codex CLI has no company at all.
-- **Hand-made piece.** `builder.company_account_kind` (`apps/server/src/builder/model-accounts/tables.ts`)
+- **Hand-made piece.** `builder.company_account_kind` (`apps/server/src/harness/model-accounts/tables.ts`)
   and `openKindsOf` in `kinds.ts`, read by `admitOpen` in `sign-ins.ts` when a sign-in starts, when a
   pasted code completes it and on every device-code poll (`sign-in-poll.ts`). The API key is open to
   every company; `claude_subscription`, `google_cliproxy` and `openai_codex` start off.
@@ -1464,13 +1560,13 @@ reference tool checks a read against its documentation.
   tenant. The library's pinned text still names the write tool
   (`PinnedStateProcessor`, `dist/evented-execution-4C5qBV8d.js:32477`); its `instructions` option changes
   only the usage block.
-- **Hand-made piece.** `apps/server/src/builder/assistant/company-memory.ts` is the only file that
+- **Hand-made piece.** `apps/server/src/agents/assistant/company-memory.ts` is the only file that
   talks to `Knowledge`. Its scopes make a run a viewer of its thread, its resource and its company
   (`org:$orgId`), and the tool set is the closed `COMPANY_MEMORY_TOOLS` (search, read, list: the
   model never writes, it proposes with `propose_company_memory` and a person who may saves from the
   card, decision 0064). The company's instructions are a page declared and pinned by the
   configuration, written by the host through `PUT .../instructions`. The Mastra navigation routes
-  stay off by default and the Hub exposes only its own (`conversation/guard.ts`, S39). The
+  stay off by default and the Hub exposes only its own (`harness/routes/guard.ts`, S39). The
   permission "Memória da empresa" is the Hub's, in `hub/identity/admission.ts`.
 - **Why.** A model that may write to the company's memory by the library's own tools would bypass
   the roles; one file and one test keep an experimental storage from spreading.
@@ -1488,15 +1584,15 @@ reference tool checks a read against its documentation.
   (`@mastra/core@1.83.0` `dist/agent-controller-BhkzVgCi.js:9120`, `resolveSubagentModel`). Mastra's own
   `subagent` tool takes `forked` and `modelId` from the model; `forked: true` runs the main agent
   itself. No tool file is numbered by the library: the name `reads/<turn>-<n>.json` is ours.
-- **Hand-made piece.** `apps/server/src/builder/assistant/research.ts`: the one type `pesquisar`
+- **Hand-made piece.** `apps/server/src/agents/assistant/research.ts`: the one type `pesquisar`
   with the four read tools of the machine and `connector_read`; `researchOnly`, a processor that
   closes the `subagent` tool to `agentType` and `task` and always calls Mastra's `execute` not
   forked; `researchReads`, the helper's `connector_read` built for each run with the conversation of
   whoever asks, through the same door as the main agent (the 50 calls count by the turn);
   `subagentModel` (`model-accounts/side-calls.ts`, handed to `resolveSubagentModel` by
-  `controller-kit/factories.ts`) returns the model of the account the turn is calling, as the
+  `harness/spec/factories.ts`) returns the model of the account the turn is calling, as the
   conversation's title does; and
-  `readsFiles` (`assistant/connector-access.ts`) counts the files by the turn's key, because the
+  `readsFiles` (`agents/assistant/connector-access.ts`) counts the files by the turn's key, because the
   helper's context is another object and its first file would overwrite the turn's first.
 - **Why.** The helper must read with the asker's scope and the turn's account, write nothing and never
   open another helper; a count per context object loses the file of one of them.
@@ -1515,4 +1611,61 @@ reference tool checks a read against its documentation.
   the research helper's reads together, with the tools in parallel.
 - **Why.** It protects the company's system; the door is where every read passes.
 - **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `assistant-port-note.test.ts`; the
-  helper's share in `assistant/research.test.ts` "a porta, as 50 e o arquivo".
+  helper's share in `agents/assistant/research.test.ts` "a porta, as 50 e o arquivo".
+
+## @aws-sdk/client-ecs, client-ssm and client-sqs 3.1175.0, Mastra 1.83.0: the lake copy's start and its end (A primeira cópia chega ao lago)
+
+### The start: one door, `iniciarRodada`, with a start line of its own
+
+- **Library line.** `@aws-sdk/client-ecs` `dist-types/models/models_1.d.ts:3243-3343` (`RunTask`, its `clientToken`
+  and `overrides`) and `:2858`. The library runs a task; it keeps no schedule, no run record and no pace.
+  `@mastra/core` 1.83.0 `mastra.schedules` keeps a cron per workflow id, and runs the workflow's step.
+  The eight systems the study of the clock read keep the schedule in their own control plane, not in
+  a cloud scheduler. SSM `PutParameter` answers at most 3 writes a second by default (the study of
+  the start).
+- **Hand-made piece.** `iniciarRodada` in `apps/server/src/hub/copies/lake-run.ts` is the one door the
+  clock, "Rodar agora" and "Ler de novo desde a data" all call. It sweeps the connection's open
+  rounds (`lake-sweep.ts`), opens the round (the open-round index refuses a second one), then
+  queues the start: one start at a time, at most 3 `PutParameter` a second, then `RunTask` with
+  `clientToken` `<round>-<attempt>` and the machine size by `overrides`. `harness/copy-clock/` says only
+  when: `cronOf(interval, anchor)` in São Paulo time, set into `mastra.schedules` under the
+  connection's id, and a step that calls `iniciarRodada` and ends when it answers. `MANUAL` leaves no
+  row. The start line, the machine sizes and the 48 hours of `RUN_STALE_MS` have one owner each in
+  `lake-run.ts`.
+- **Why.** The library has no per-connection anchor, no start order and no rate keeper; a fixed
+  `*/15` cron drifts from the minute the copy was born, and ten starts in a second would meet the
+  quota. The workflow step must not run the copy inside the step (the task runs outside the Hub).
+- **Proof.** `lake-run.test.ts` "o disparo", "o tamanho da máquina", "uma partida por vez" (the
+  parameter double never receives more than 3 in a second), "dois disparos juntos", "a AWS recusa",
+  "a AWS não responde"; `lake-sweep.test.ts`; `clock.test.ts` "o relógio conta da hora em que a cópia
+  nasceu" and "o relógio só diz quando"; `mastra.test.ts` "o relógio da ligação". On AWS, L.9 ten
+  starts in a second (the laboratory output in the pull request of group G4).
+- **Revisit when** `@aws-sdk/client-ecs` or Mastra's schedules change, or SSM's default rate does.
+
+### The end: the result and the stop in one queue; the first to arrive closes
+
+- **Library line.** `@aws-sdk/client-sqs` `dist-types/models/models_0.d.ts:1373` (a standard queue
+  delivers at least once and keeps no order). The EventBridge rule sends ECS's `STOPPED` to the same
+  queue; ECS keeps no record of why a Conexus task ended.
+- **Hand-made piece.** `lake-queue.ts` reads the queue only while a round is open, and closes a round
+  through `closeLakeRun` in `lake-close.ts`: `UPDATE ... WHERE ended_at IS NULL`, so the first to
+  arrive writes the counts, the table's rows and the last run, and the message leaves the queue after
+  the close is written. A stop with exit 0 does not close at once: it waits `RESULT_GRACE_MS` for the
+  result, which the task sends before it exits (`apps/extraction/src/conexus_extraction/entry.py`), and
+  the sweep honours the same wait from the `stoppedAt` ECS gives. Any other stop closes at once.
+- **Why.** A standard queue may deliver the stop before the result; marking lost a copy that ended
+  is the one error the end must not make. The grace has one owner, `lake-close.ts`.
+- **Proof.** `lake-queue.test.ts` "o resultado e a parada", "as 100 mais novas", "a tarefa que
+  morreu", "o parâmetro sai no fim", "o banco fora", "o banco que dorme";
+  `lake-queue-order.test.ts` "a parada antes do resultado" and "a parada sem resultado depois da
+  graça"; `lake-sweep.test.ts` "a varredura espera a graça". The chain with its lines:
+  `prova-ordem-resultado-parada` in the pull request of group G4. On AWS, L.3 (the four ends).
+- **The grace's base (laboratory, 2026-11-25).** From the `stoppedAt` ECS gives to the stop event in
+  the queue: 0.12 s to 0.16 s, read by `ReceiveMessage` 0.34 s to 0.38 s (5 tasks). ECS keeps the task
+  about 24.5 s between its exit and `STOPPED`, so the result, which the task sends before it exits,
+  arrives about 25 s before the stop on the normal path. The grace does not cover that delay: it covers
+  the result's own redeliveries while the database is down, 3 receptions of 30 s plus the 20 s long
+  poll, about 110 s, with the margin to 300 s. The delay of a result sent late could not be measured:
+  the laboratory has no writer role, and the queue's policy denies the send to anyone else.
+- **Revisit when** the queue or the rule changes, or a measured delay of the result exceeds the
+  grace.

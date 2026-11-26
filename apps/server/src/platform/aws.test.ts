@@ -4,8 +4,13 @@ import { test } from 'node:test'
 import { CompanyId } from '@conexus/hub-api'
 import {
   BUCKET_PREFIX,
+  COPY_QUEUE,
+  COPY_TASK_FAMILY,
+  COPY_CONTAINER as PLATFORM_CONTAINER,
+  RUN_PARAMETER_PREFIX as PLATFORM_PARAMETER_PREFIX,
   templateUrl as platformTemplateUrl,
   STACK_PREFIX,
+  stateBucket,
   TAG_COMPANY,
   TAG_TEMPLATE,
   templateBucket,
@@ -14,15 +19,16 @@ import {
 import {
   BUCKET_TYPE,
   bucketName,
-  createLakeStacks,
+  COPY_CONTAINER,
   LakeId,
+  RUN_PARAMETER_PREFIX,
   StackId,
   stackName,
+  stateBucketName,
   templateUrl,
 } from './aws.ts'
-import { awsRecording, awsServer, TEST_AWS_ACCOUNT, TEST_AWS_REGION, testAws } from './test-aws.ts'
+import { awsRecording, TEST_AWS_ACCOUNT, TEST_AWS_REGION, testAws } from './test-aws.ts'
 import { awsAt, recorded, session } from './test-aws-wire.ts'
-import { silent, testConfig, unreachableDatabaseUrl } from './test-database.ts'
 
 const LAKE_TEMPLATE = new URL('../../../../infra/aws/lake.template.json', import.meta.url)
 const COMPANY = CompanyId.parse('EmpresaTesteA0000000000000000001')
@@ -76,6 +82,10 @@ test('aws: os nomes batem com a receita e com o padrão da política do Hub', ()
   }
   assert.equal(bucketName(LAKE), `${BUCKET_PREFIX}${LAKE}`)
   assert.equal(stackName(LAKE), `${STACK_PREFIX}${LAKE}`)
+  assert.equal(
+    stateBucketName(TEST_AWS_ACCOUNT, TEST_AWS_REGION),
+    stateBucket(TEST_AWS_ACCOUNT, TEST_AWS_REGION),
+  )
   assert.deepEqual([TAG_COMPANY, TAG_TEMPLATE], ['conexus-empresa', 'conexus-modelo'])
   const bucketOfRecipes = templateBucket(TEST_AWS_ACCOUNT, TEST_AWS_REGION)
   const sent = templateUrl(bucketOfRecipes, TEST_AWS_REGION, version)
@@ -87,6 +97,13 @@ test('aws: os nomes batem com a receita e com o padrão da política do Hub', ()
     `https://s3.${TEST_AWS_REGION}.amazonaws.com/${bucketOfRecipes}/lago/${version}.json`,
     glob,
   )
+})
+
+test('aws copia: os nomes batem com os da plataforma', () => {
+  assert.equal(COPY_CONTAINER, PLATFORM_CONTAINER)
+  assert.equal(RUN_PARAMETER_PREFIX, PLATFORM_PARAMETER_PREFIX)
+  assert.equal(COPY_TASK_FAMILY, 'conexus-copia')
+  assert.equal(COPY_QUEUE, 'conexus-copia-fim')
 })
 
 test('aws: a sessão leva a etiqueta da empresa, 900 s, e assina a chamada', async (t) => {
@@ -150,6 +167,24 @@ test('aws: a recusa não repete', async (t) => {
   })
   assert.equal(of('CreateStack').length, 1)
   assert.equal(of('DescribeStacks').length, 1)
+})
+
+test('aws: uma pilha que já existe é recusada; a que se cria lê CREATE_IN_PROGRESS', async (t) => {
+  const { stacks } = await awsAt(
+    t,
+    recorded({
+      CreateStack: ['create-stack-ja-existe'],
+      DescribeStacks: ['describe-stacks-criando'],
+    }),
+  )
+  assert.deepEqual(await stacks.create(AT, { id: LAKE, template: version }), {
+    kind: 'REFUSED',
+    code: 'AlreadyExistsException',
+  })
+  assert.deepEqual(await stacks.status(AT, RECORDED_STACK), {
+    kind: 'DONE',
+    value: 'CREATE_IN_PROGRESS',
+  })
 })
 
 test('aws: a AWS calada responde dentro do prazo da chamada', async (t) => {
@@ -282,17 +317,4 @@ test('aws: o primeiro evento de falha lê as páginas seguintes', async (t) => {
     of('DescribeStackEvents').map((sent) => sent.form.get('NextToken')),
     [null, 'pagina-2'],
   )
-})
-
-test('aws: o dublê da QA não responde pelo diário da pilha nem pelo S3 Tables, como diz', async (t) => {
-  const served = await awsServer(t)
-  const aws = testAws(served.endpoint.origin, served.credentialsFile)
-  const config = { ...testConfig(await unreachableDatabaseUrl()), aws }
-  const stacks = createLakeStacks({ config, log: silent })
-  const created = await stacks.create(AT, { id: LAKE, template: version })
-  assert.equal(created.kind, 'DONE')
-  if (created.kind !== 'DONE') return
-  assert.deepEqual(await stacks.leftover(AT, { id: LAKE, stack: created.value }), {
-    kind: 'NO_ANSWER',
-  })
 })

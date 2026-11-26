@@ -35,6 +35,7 @@ export const PAGES = [
   '/companies/$companyId/copies/$copyId',
   '/companies/$companyId/data',
   '/companies/$companyId/data/$copyId',
+  '/companies/$companyId/data/lake/$tableId',
   '/companies/$companyId/automations',
   '/companies/$companyId/automations/$automationId',
   '/companies/$companyId/integrations',
@@ -61,6 +62,7 @@ export const PAGES = [
   '/operations/clients/new',
   '/operations/clients/$companyId',
   '/invitations/$invitationId',
+  '/connection-links/$secret',
   '/integrations/return',
 ] as const
 

@@ -73,6 +73,7 @@ export const KIT_SANKHYA: ConnectorEntry = {
   summary: 'O sistema de gestão da empresa.',
   logo: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#66CB66"/></svg>',
   auth: 'client_credentials',
+  lakeUnavailable: null,
   subjects: SANKHYA_SUBJECTS,
   fields: [],
 }

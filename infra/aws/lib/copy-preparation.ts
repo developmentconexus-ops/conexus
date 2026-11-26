@@ -8,6 +8,7 @@ import {
   COPY_REPOSITORY,
   COPY_TASK_FAMILY,
   PLATFORM_STACK,
+  stateBucket,
 } from './names.ts'
 
 /**
@@ -94,6 +95,44 @@ const COPY_NETWORK_CHANGES = [
   'ec2:DeleteTags',
 ]
 
+/** The bucket's CloudFormation read handler also reads settings the platform never sets. */
+const COPY_STATE_BUCKET_ACTIONS = [
+  's3:CreateBucket',
+  's3:DeleteBucket',
+  's3:PutEncryptionConfiguration',
+  's3:PutLifecycleConfiguration',
+  's3:PutBucketPublicAccessBlock',
+  's3:PutBucketVersioning',
+  's3:PutBucketPolicy',
+  's3:DeleteBucketPolicy',
+  's3:PutBucketTagging',
+  's3:TagResource',
+  's3:UntagResource',
+  's3:ListBucket',
+  's3:ListTagsForResource',
+  's3:GetAccelerateConfiguration',
+  's3:GetAnalyticsConfiguration',
+  's3:GetBucketAbac',
+  's3:GetBucketAcl',
+  's3:GetBucketCORS',
+  's3:GetBucketLogging',
+  's3:GetBucketMetadataTableConfiguration',
+  's3:GetBucketNotification',
+  's3:GetBucketObjectLockConfiguration',
+  's3:GetBucketOwnershipControls',
+  's3:GetBucketPolicy',
+  's3:GetBucketPublicAccessBlock',
+  's3:GetBucketTagging',
+  's3:GetBucketVersioning',
+  's3:GetBucketWebsite',
+  's3:GetEncryptionConfiguration',
+  's3:GetIntelligentTieringConfiguration',
+  's3:GetInventoryConfiguration',
+  's3:GetLifecycleConfiguration',
+  's3:GetMetricsConfiguration',
+  's3:GetReplicationConfiguration',
+]
+
 /**
  * The copy task's images (card U6, criterion 34): the Release publishes here before the platform,
  * so the repository exists before the first Release, and the Release may push only to it.
@@ -177,6 +216,11 @@ export function copyPlatformStatements(stack: Stack): iam.PolicyStatement[] {
       sid: 'TheCopyLogs',
       actions: LOG_GROUP_ACTIONS,
       resources: [arn('logs', `log-group:${COPY_LOGS}`), arn('logs', `log-group:${COPY_LOGS}:*`)],
+    }),
+    new iam.PolicyStatement({
+      sid: 'TheStoppingPointsBucket',
+      actions: COPY_STATE_BUCKET_ACTIONS,
+      resources: [`arn:${stack.partition}:s3:::${stateBucket(stack.account, stack.region)}`],
     }),
   ]
 }

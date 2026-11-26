@@ -49,7 +49,7 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     './b.ts',
     { 'apps/server/src/platform/b.ts': importing('./a.ts') },
   ],
-  'no-loose-file-in-hub-or-builder': [
+  'no-loose-file-in-a-subject': [
     'apps/server/src/hub/loose.ts',
     '../platform/config.ts',
     { 'apps/server/src/platform/config.ts': PUBLIC },
@@ -59,10 +59,10 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     '../b/inner.ts',
     { 'apps/server/src/hub/b/inner.ts': PUBLIC },
   ],
-  'hub-does-not-import-builder': [
+  'hub-does-not-import-harness-or-agents': [
     'apps/server/src/hub/a/h.ts',
-    '../../builder/c/public.ts',
-    { 'apps/server/src/builder/c/public.ts': PUBLIC },
+    '../../agents/c/public.ts',
+    { 'apps/server/src/agents/c/public.ts': PUBLIC },
   ],
   'platform-does-not-import-subject': [
     'apps/server/src/platform/p.ts',
@@ -96,9 +96,13 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     {},
   ],
   // @mastra/core resolves (rules.test.ts links it), as a real import does: the cruise keeps Mastra's packages as leaves.
-  'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
-  'e2b-only-in-the-machine': ['apps/server/src/builder/runs/sandbox.ts', 'e2b', {}],
-  's3-only-in-the-git-copy': ['apps/server/src/builder/git/bucket.ts', '@aws-sdk/client-s3', {}],
+  'mastra-only-in-harness-and-agents': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
+  'e2b-only-in-the-machine': ['apps/server/src/agents/app-builder/runs/sandbox.ts', 'e2b', {}],
+  's3-only-in-the-git-copy': [
+    'apps/server/src/agents/app-builder/git/bucket.ts',
+    '@aws-sdk/client-s3',
+    {},
+  ],
   'aws-sdk-only-in-the-aws-adapter': [
     'apps/server/src/hub/a/stacks.ts',
     '@aws-sdk/client-cloudformation',
@@ -140,6 +144,21 @@ export const BAD_IMPORTS: Record<string, [string, string, Record<string, string>
     'apps/web/src/ui/field.ts',
     '../hub/a/public.ts',
     { 'apps/web/src/hub/a/public.ts': PUBLIC },
+  ],
+  'web-harness-imports-no-agent': [
+    'apps/web/src/harness/a/room.ts',
+    '../../agents/assistant/public.ts',
+    { 'apps/web/src/agents/assistant/public.ts': PUBLIC },
+  ],
+  'web-agent-imports-no-other-agent': [
+    'apps/web/src/agents/saved-agent/a.ts',
+    '../agent-builder/public.ts',
+    { 'apps/web/src/agents/agent-builder/public.ts': PUBLIC },
+  ],
+  'web-agent-builder-imports-only-the-saved-agent': [
+    'apps/web/src/agents/agent-builder/a.ts',
+    '../app-builder/public.ts',
+    { 'apps/web/src/agents/app-builder/public.ts': PUBLIC },
   ],
   'routes-reach-subject-through-public': [
     'apps/web/src/routes/r.ts',

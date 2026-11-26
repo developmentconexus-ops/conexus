@@ -31,7 +31,7 @@ export function ConversationLine(props: {
     <>
       <span className="min-w-0 flex-1 truncate">{titleOf(conversation)}</span>
       {props.mark}
-      <span className="shrink-0 text-fact text-text-2">
+      <span className="shrink-0 text-fact text-text-2 group-focus-within/menu-item:opacity-0 group-hover/menu-item:opacity-0 pointer-coarse:group-focus-within/menu-item:opacity-100 pointer-coarse:group-hover/menu-item:opacity-100">
         {ageOf(conversation.updatedAt, props.now)}
       </span>
     </>

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { Readable } from 'node:stream'
 import type { LogLine } from '../../../../scripts/log-line.ts'
 import { parseLogLine } from '../../../../scripts/log-line.ts'
-import type { Lifetime } from './test-database.ts'
+import type { Lifetime } from './test-database-admin.ts'
 import { hubPorts } from './test-port.ts'
 
 const MAIN = join(import.meta.dirname, '..', 'main.ts')

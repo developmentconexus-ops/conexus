@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { posix } from 'node:path'
-import type { Named, Ref } from './codemod-web-imports.ts'
-import { isCode, isDoor, isTest, namesOfDoor, parse, refsOf } from './codemod-web-imports.ts'
+import type { Named, Ref } from './codemod-imports.ts'
+import { isCode, isDoor, isTest, namesOfDoor, parse, refsOf } from './codemod-imports.ts'
 
 export const SRC = 'apps/web/src'
 export const OLD = `${SRC}/builder`

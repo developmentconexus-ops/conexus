@@ -1,0 +1,10 @@
+{
+  "service": "sqs",
+  "api": "DeleteMessage",
+  "sdk": "@aws-sdk/client-sqs 3.1175.0",
+  "recordedAt": "2026-11-25",
+  "source": "U8 step 1, scripts/record-aws.ts from this machine on the laboratory account, temporary resources deleted at the end; account and ids changed (S40)",
+  "status": 404,
+  "contentType": "application/x-amz-json-1.0",
+  "body": "{\"__type\":\"com.amazonaws.sqs#ReceiptHandleIsInvalid\",\"message\":\"The input receipt handle \\\"invalido\\\" is not a valid receipt handle.\"}"
+}

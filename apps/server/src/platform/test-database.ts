@@ -10,7 +10,6 @@ import { after } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
 import { Email, PROBLEM_MEDIA_TYPE, Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import pg from 'pg'
 import { z } from 'zod'
 import type { Config } from './config.ts'
 import {
@@ -25,7 +24,7 @@ import type { Database, MastraPool } from './database.ts'
 import { DatabaseUrl, openDatabase, openMastraPool, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
-import { TEST_AWS_ACCOUNT, TEST_AWS_REGION, testAws, testAwsCredentials } from './test-aws.ts'
+import { testAws, testAwsEnvironment } from './test-aws.ts'
 import { testBuilderConfig, testGitRoot } from './test-builder-config.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
 import {
@@ -36,6 +35,8 @@ import {
   testAppsConfig,
   toolsEnvironment,
 } from './test-cloudflare.ts'
+import type { Lifetime } from './test-database-admin.ts'
+import { afterTheRest, asAdmin, connected } from './test-database-admin.ts'
 import { grantCloned, hubTemplate, withDatabase } from './test-database-template.ts'
 import { mastraUrlOf, TEST_IDLE_MS, TEST_POOL_TIMINGS } from './test-mastra-database.ts'
 import type { ModelLists } from './test-model-lists.ts'
@@ -129,8 +130,6 @@ export function testSealKeyLine(id = 'k1'): string {
   return `${id}:${randomBytes(32).toString('base64')}`
 }
 
-export type Lifetime = { after(cleanup: () => Promise<void> | void): void }
-
 export type TestDatabase = {
   passwords: PasswordService
   lists: ModelLists
@@ -141,12 +140,6 @@ export type TestDatabase = {
   mastraPool: MastraPool
   container: string | undefined
   asOwner(text: string, values?: unknown[]): Promise<Record<string, unknown>[]>
-}
-
-async function connected(url: DatabaseUrl): Promise<pg.Client> {
-  const client = new pg.Client({ connectionString: url.reveal() })
-  await client.connect()
-  return client
 }
 
 export async function withRoleLock<T>(work: () => Promise<T>): Promise<T> {
@@ -184,27 +177,31 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
     password: runtimePassword,
   })
   const mastraUrl = mastraUrlOf(runtimeUrl)
-  const admin = await connected(serverUrl)
-  const source = locale
-    ? `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
-    : `template ${await withRoleLock(() => hubTemplate(admin, serverUrl, runtimePassword))}`
-  await admin.query(`create database ${name} ${source}`)
-  const database = openDatabase({ url: runtimeUrl, log: silent, timings: TEST_POOL_TIMINGS })
-  const mastraPool = openMastraPool({ url: mastraUrl, log: silent, timings: TEST_POOL_TIMINGS })
-  t.after(async () => {
+  const pools: { end(): Promise<void> }[] = []
+  afterTheRest(t, async () => {
     try {
-      await Promise.all([database.close(), mastraPool.end()])
-      // Without FORCE: DROP DATABASE ends an autovacuum worker in the database by itself, while
-      // FORCE refuses with 42501 because the owner holds no privileges of that worker (#32-15).
-      await admin.query(`drop database ${name}`)
-      await admin.query(`drop database if exists ${name}_mastra`)
+      await Promise.all(pools.map((pool) => pool.end()))
+      await asAdmin(serverUrl, async (admin) => {
+        // Without FORCE: DROP DATABASE ends an autovacuum worker in the database by itself, while
+        // FORCE refuses with 42501 because the owner holds no privileges of that worker (#32-15).
+        await admin.query(`drop database if exists ${name}`)
+        await admin.query(`drop database if exists ${name}_mastra`)
+      })
     } finally {
       rmSync(testGitRoot(runtimeUrl), { recursive: true, force: true })
-      await admin.end()
     }
   })
+  await asAdmin(serverUrl, async (admin) => {
+    const source = locale
+      ? `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
+      : `template ${await withRoleLock(() => hubTemplate(admin, serverUrl, runtimePassword))}`
+    await admin.query(`create database ${name} ${source}`)
+    if (!locale) await grantCloned(admin, name)
+  })
+  const database = openDatabase({ url: runtimeUrl, log: silent, timings: TEST_POOL_TIMINGS })
+  const mastraPool = openMastraPool({ url: mastraUrl, log: silent, timings: TEST_POOL_TIMINGS })
+  pools.push({ end: () => database.close() }, mastraPool)
   if (locale) await withRoleLock(() => migrate({ ownerUrl, runtimeUrl, mastraUrl }))
-  else await grantCloned(admin, name)
   return {
     passwords: plantPasswordService(t),
     lists: plantModelLists(t),
@@ -349,11 +346,6 @@ export function serveEnvironment(
     HUB_E2B_API_KEY_FILE: keyFile(t, 'hub_e2b_api_key', randomBytes(16).toString('hex')),
     HUB_E2B_TEMPLATE: 'conexus-builder:test',
     HUB_INSTALLATION_ID: 'testinstallation0',
-    HUB_AWS_ACCOUNT: TEST_AWS_ACCOUNT,
-    HUB_AWS_REGION: TEST_AWS_REGION,
-    HUB_AWS_HUB_ROLE_ARN: `arn:aws:iam::${TEST_AWS_ACCOUNT}:role/conexus-hub`,
-    HUB_AWS_SERVICE_ROLE_ARN: `arn:aws:iam::${TEST_AWS_ACCOUNT}:role/conexus-cfn`,
-    HUB_AWS_TEMPLATE_BUCKET: `conexus-receitas-${TEST_AWS_ACCOUNT}-${TEST_AWS_REGION}`,
-    AWS_SHARED_CREDENTIALS_FILE: testAwsCredentials(t),
+    ...testAwsEnvironment(t),
   }
 }

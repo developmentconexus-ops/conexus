@@ -6,5 +6,5 @@
   "source": "U4 step 1, from the Hub server with the Hub key (lab run 45076374332), laboratory account, values changed (S40)",
   "status": 200,
   "contentType": "application/json",
-  "body": "{\"arn\":\"arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-qsernp35vqu6\",\"createdAt\":\"2026-11-22T22:10:55.595243298Z\",\"name\":\"conexus-qsernp35vqu6\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\",\"type\":\"customer\"}"
+  "body": "{\"arn\":\"arn:aws:s3tables:us-east-2:111122223333:bucket/conexus-e5f6a7b8c9d0\",\"createdAt\":\"2026-11-22T22:10:55.595243298Z\",\"name\":\"conexus-e5f6a7b8c9d0\",\"ownerAccountId\":\"111122223333\",\"tableBucketId\":\"00000000-0000-4000-8000-000000000003\",\"type\":\"customer\"}"
 }

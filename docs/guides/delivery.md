@@ -14,15 +14,15 @@ product decision, security boundary or operational prohibition.
 
 ## 1. One step at a time
 
-- **L1.** Product work **must** go to the track owning its folders, **Dados** or **Agentes e
-  Apps**. Each track **should** have one step in construction and at
+- **L1.** Product work **must** go to the track owning its folders, **Dados**, **Agentes e
+  Apps** or **Redesenho** (only the Hub's shell and pieces). Each track **should** have one step in construction and at
   most one open study. The platform is maintenance, not a track: a defect there follows L4 in the
   track that found it. Once the contract file lands, Agentes e Apps reaches company data
-  only through it, changed through an issue labelled `contrato`. A unit touching the other track's file waits for
+  only through it, changed through an issue labelled `contrato`. A unit touching another track's file waits for
   its units on it. Study, scope and a draft method change can run beside it without product code. A sibling step builds
   only after the previous one merges, but once a card is approved (L6), its units touching none of
-  the previous step's fixes' files may start, built from that card's pull request, while the
-  previous step's use, fixes and closing run beside them. A small change that
+  the previous step's fixes' files may start, built from that card's pull request, beside its
+  use, fixes and closing. A small change that
   [AGENTS.md](../../AGENTS.md) exempts from a card is not a step. [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files; split before build past that budget.

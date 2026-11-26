@@ -30,6 +30,7 @@ test('o ponto é o teto lido antes da passada: a alteração de chave baixa e de
   const send = senderOf(connector, {
     credential,
     now: () => NOW,
+    timeoutMs: 60_000,
     fetch: async (input, init) => {
       const request = new Request(input, init)
       const paged = (await request.clone().text()).includes('FETCH NEXT')
@@ -59,11 +60,12 @@ test('o ponto é o teto lido antes da passada: a alteração de chave baixa e de
     write: async (line) => {
       lines.push(line)
     },
+    log: () => undefined,
   }
   const bookmarks: Record<string, Bookmark> = {}
   const run = { table: notas, columns, stream: 'notas', whole: false }
   assert.equal(await readTable(reach, run, { bookmarks, startDate: null, deps }), null)
-  assert.equal(pages, 2, 'duas páginas de 100')
+  assert.equal(pages, 3, 'dez linhas, cem e o resto')
   lines.length = 0
   assert.equal(await readTable(reach, run, { bookmarks, startDate: null, deps }), null)
   const read = lines.flatMap((line) => {

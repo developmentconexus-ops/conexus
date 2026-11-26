@@ -6,18 +6,17 @@ import type {
   Connection,
   ConnectionDetail,
   ConnectionList,
-  ConnectorEntry,
   Revocation,
 } from '@conexus/hub-api'
 import { ConnectionId, ConnectionName } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
-import type { ReadTx } from '../../platform/database.ts'
+import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { transactionLock, violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { Credential, open, seal } from '../../platform/seal.ts'
 import type { OAuthConnector } from './apps.ts'
 import { appKeysOf, isOAuth } from './apps.ts'
-import { subjectsOf } from './catalog-subjects.ts'
+import { connectorEntryOf } from './catalog-subjects.ts'
 import type { OpenedConnection } from './executor.ts'
 import { bearerOf } from './executor.ts'
 import { notesOf } from './notes.ts'
@@ -38,23 +37,6 @@ import { sessionFor, statusOf } from './tokens.ts'
 
 const NAME_KEY = 'connection_name_key'
 
-function entryOf(connector: Connector): ConnectorEntry {
-  return {
-    id: connector.id,
-    name: connector.name,
-    version: connector.version,
-    category: connector.category,
-    summary: connector.summary,
-    logo: connector.logo,
-    subjects: subjectsOf(connector),
-    auth: connector.auth.kind,
-    fields:
-      connector.auth.kind === 'client_credentials'
-        ? Object.entries(connector.auth.fields).map(([name, field]) => ({ name, ...field }))
-        : [],
-  }
-}
-
 /** Every member reads the catalog and the company's connections; nothing of a credential (S41). */
 export function list(deps: Deps, viewer: Viewer): Promise<ConnectionList> {
   return deps.database.read(scopeOf(viewer), async (tx) => {
@@ -65,14 +47,14 @@ export function list(deps: Deps, viewer: Viewer): Promise<ConnectionList> {
       .where(eq(connection.companyId, viewer.companyId))
       .orderBy(asc(connection.connectorId), asc(connection.linkedAt))
     return {
-      connectors: CONNECTORS.map(entryOf),
+      connectors: CONNECTORS.map(connectorEntryOf),
       connections: rows.map(viewOf),
       mayManage: deps.identity.allows(member.role, 'manageConnections'),
     }
   })
 }
 
-type Link = Viewer & {
+export type Link = Viewer & {
   connector: string
   name: string
   credential: Record<string, string>
@@ -95,6 +77,11 @@ function pastedOf(auth: ClientCredentialsAuth, credential: Record<string, string
   return parsed.data
 }
 
+/** The attempt's lock: a second command on the same key waits for the first one's transaction (code C37). */
+export function lockAttempt(tx: CommandTx, companyId: CompanyId, attemptKey: string) {
+  return transactionLock(tx, `conexus.connection:${companyId}:${attemptKey}`)
+}
+
 /**
  * Links the company to a connector (criterion 9): the attempt's lock, the admission, the fields by
  * the connector's own schema, then a replay compared with the sealed values (code C37). Nothing is
@@ -105,53 +92,58 @@ export async function link(deps: Deps, input: Link) {
   const name = ConnectionName.safeParse(input.name)
   if (!name.success) throw new Failure('CONNECTION_NAME_INVALID')
   return deps.database.command(scopeOf(input), async (tx) => {
-    await transactionLock(tx, `conexus.connection:${input.companyId}:${input.attemptKey}`)
-    await admitted(deps, tx, input, 'manageConnections')
-    const { connector, auth } = pastedLogin(input.connector)
-    const pasted = pastedOf(auth, input.credential)
-    const [found] = await tx
-      .select({ id: connection.id, connector: connection.connectorId, name: connection.name })
-      .from(connection)
-      .where(
-        and(eq(connection.companyId, input.companyId), eq(connection.attemptKey, input.attemptKey)),
-      )
-    if (found !== undefined) {
-      const id = ConnectionId.parse(found.id)
-      const same =
-        found.connector === connector.id &&
-        found.name === name.data &&
-        (await sealedText(deps, tx, { id, companyId: input.companyId, connector })) ===
-          JSON.stringify(pasted)
-      if (!same) throw new Failure('IDEMPOTENCY_CONFLICT')
-      return { connection: await viewIn(tx, input, id), created: false }
-    }
-    const id = ConnectionId.parse(randomUUID())
-    const sealed = seal(
-      deps.sealKeys,
-      sealContext({ id, companyId: input.companyId, connector }),
-      Credential.parse(JSON.stringify(pasted)),
-    )
-    try {
-      await tx.insert(connection).values({
-        id,
-        companyId: input.companyId,
-        connectorId: connector.id,
-        name: name.data,
-        connectorVersion: connector.version,
-        state: 'NEW',
-        sealed: Buffer.from(sealed.blob),
-        keyId: sealed.keyId,
-        linkedBy: input.person.id,
-        linkedAt: sql`statement_timestamp()`,
-        attemptKey: input.attemptKey,
-      })
-    } catch (error) {
-      if (violatedConstraint(error) === NAME_KEY)
-        throw new Failure('CONNECTION_NAME_TAKEN', { cause: error })
-      throw error
-    }
-    return { connection: await viewIn(tx, input, id), created: true }
+    await lockAttempt(tx, input.companyId, input.attemptKey)
+    return linkIn(deps, tx, input, name.data)
   })
+}
+
+/** The rest of `link` inside a transaction that holds the attempt's lock, for the one that also holds a link's (U20). */
+export async function linkIn(deps: Deps, tx: CommandTx, input: Link, name: string) {
+  await admitted(deps, tx, input, 'manageConnections')
+  const { connector, auth } = pastedLogin(input.connector)
+  const pasted = pastedOf(auth, input.credential)
+  const [found] = await tx
+    .select({ id: connection.id, connector: connection.connectorId, name: connection.name })
+    .from(connection)
+    .where(
+      and(eq(connection.companyId, input.companyId), eq(connection.attemptKey, input.attemptKey)),
+    )
+  if (found !== undefined) {
+    const id = ConnectionId.parse(found.id)
+    const same =
+      found.connector === connector.id &&
+      found.name === name &&
+      (await sealedText(deps, tx, { id, companyId: input.companyId, connector })) ===
+        JSON.stringify(pasted)
+    if (!same) throw new Failure('IDEMPOTENCY_CONFLICT')
+    return { connection: await viewIn(tx, input, id), created: false }
+  }
+  const id = ConnectionId.parse(randomUUID())
+  const sealed = seal(
+    deps.sealKeys,
+    sealContext({ id, companyId: input.companyId, connector }),
+    Credential.parse(JSON.stringify(pasted)),
+  )
+  try {
+    await tx.insert(connection).values({
+      id,
+      companyId: input.companyId,
+      connectorId: connector.id,
+      name,
+      connectorVersion: connector.version,
+      state: 'NEW',
+      sealed: Buffer.from(sealed.blob),
+      keyId: sealed.keyId,
+      linkedBy: input.person.id,
+      linkedAt: sql`statement_timestamp()`,
+      attemptKey: input.attemptKey,
+    })
+  } catch (error) {
+    if (violatedConstraint(error) === NAME_KEY)
+      throw new Failure('CONNECTION_NAME_TAKEN', { cause: error })
+    throw error
+  }
+  return { connection: await viewIn(tx, input, id), created: true }
 }
 
 /**
@@ -308,24 +300,24 @@ function whereOf(input: OfConnection, connector: Connector) {
 
 /**
  * Removes a connection and its seal; removing one already gone answers the same (criterion 13).
- * A connector that declares a revoke is asked to take the authorization back first; the provider
- * refusing or being down never stops the removal. Then the connection is deleted in one transaction.
+ * The lake copy leaves first (criterion 47; AWS out is a 503), then the provider is asked to take
+ * the authorization back, and its refusal never stops the removal, made in one transaction.
  */
 export async function unlink(deps: Deps, input: Viewer & { connectionId: ConnectionId }) {
   await deps.database.command(scopeOf(input), (tx) =>
     admitted(deps, tx, input, 'manageConnections'),
   )
-  const { connectionId } = input
+  await deps.leaveCopy(input)
   const revocation = await revoked(deps, input)
   const removed = await deps.database.command(scopeOf(input), async (tx) => {
     await admitted(deps, tx, input, 'manageConnections')
     const rows = await tx
       .delete(connection)
-      .where(ofCompany(input, connectionId))
+      .where(ofCompany(input, input.connectionId))
       .returning({ id: connection.id })
     return rows.length > 0
   })
-  await deps.limits.forget(connectionId)
+  await deps.limits.forget(input.connectionId)
   return { removed, revocation: removed ? revocation : ('NONE' as const) }
 }
 

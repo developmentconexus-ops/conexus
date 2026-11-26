@@ -1,16 +1,30 @@
 import type { Connection, ConnectionNote, ConnectorEntry, TestResult } from '@conexus/hub-api'
-import { ATTEMPT_KEY_HEADER, ConnectionDetail, ConnectionList } from '@conexus/hub-api'
+import {
+  ATTEMPT_KEY_HEADER,
+  ConnectionDetail,
+  ConnectionLink,
+  ConnectionList,
+  LakeTablesOfConnection,
+  listProjects,
+  RunLakeCopyAnswer,
+  SetLakeCopy,
+  StopLakeCopyRunAnswer,
+} from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
+import { expect } from 'vitest'
 import { z } from 'zod'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import type { hubServer } from '../../platform/test-hub.tsx'
 import { companyRead, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 import { connectionOf, SANKHYA, workingOf } from './fixtures.ts'
+import type { LakeView } from './lake-fixtures.ts'
+import { applied, NO_LAKE, RUNNING_ROUND, stopOpenRound } from './lake-fixtures.ts'
 
+const LinkBody = z.object({ name: z.string() })
 const BASE = `*/api/companies/${COMPANY.id}`
 /** Where the Hub sends the person to authorize: the provider's address. */
 export const AUTHORIZE_URL = 'https://auth.example.test/authorize?state=x'
@@ -22,14 +36,18 @@ export type View = {
   role?: 'owner' | 'admin' | 'member'
   connectors?: ConnectorEntry[]
   notes?: ConnectionNote[]
+  /** The lake the Hub holds for the company's connections; none copies by default. */
+  lake?: LakeView['lake']
+  linkAddress?: string
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
 
 /** A reply that replaces the Hub's usual answer to a write; nothing is kept when it is a failure. */
-export type Answers = Partial<
-  Record<'link' | 'test' | 'unlink' | 'start' | 'end' | 'reconnect', () => Response | undefined>
->
+export type Answers = LakeAnswers &
+  Partial<
+    Record<'link' | 'test' | 'unlink' | 'start' | 'end' | 'reconnect', () => Response | undefined>
+  >
 
 function reads(view: View): HttpHandler[] {
   return [
@@ -38,6 +56,15 @@ function reads(view: View): HttpHandler[] {
       role: view.role ?? (view.mayManage ? 'owner' : 'member'),
       members: [memberView({ ...ANA, personId: ANA.id, role: 'owner' })],
     }),
+    http.get(`${BASE}/projects`, () =>
+      HttpResponse.json(
+        listProjects.success.body.parse({
+          projects: [],
+          next: { kind: 'END' },
+          databaseReady: true,
+        }),
+      ),
+    ),
     http.get(`${BASE}/connections`, () =>
       HttpResponse.json(
         ConnectionList.parse({
@@ -90,6 +117,78 @@ function signInWrites(
   ]
 }
 
+/** The lake the Hub holds, which a write of the copy changes in the view it came from. */
+function lakeOf(view: View): LakeView & { lake: NonNullable<View['lake']> } {
+  view.lake ??= NO_LAKE
+  return {
+    get lake() {
+      return view.lake ?? NO_LAKE
+    },
+    set lake(next) {
+      view.lake = next
+    },
+    linkAddress: view.linkAddress,
+  }
+}
+
+type LakeAnswers = Partial<
+  Record<'lake' | 'copy' | 'run' | 'stop' | 'link', () => Response | undefined>
+>
+
+/** The Hub's lake routes of one connection: the read, the one `PUT` that sets the copy, the run, its stop and the link. */
+function lakeHandlers(
+  view: LakeView,
+  note: (request: Request) => Promise<unknown>,
+  answers: LakeAnswers,
+): HttpHandler[] {
+  return [
+    http.get(`${BASE}/connections/:connectionId/lake-tables`, () => {
+      return answers.lake?.() ?? HttpResponse.json(view.lake)
+    }),
+    http.put(`${BASE}/connections/:connectionId/lake-copy`, async ({ request }) => {
+      const body = await note(request)
+      const replaced = answers.copy?.()
+      if (replaced) return replaced
+      applied(view, SetLakeCopy.parse(body))
+      return HttpResponse.json(view.lake)
+    }),
+    http.post(`${BASE}/connections/:connectionId/lake-copy/run`, async ({ request }) => {
+      await note(request)
+      const replaced = answers.run?.()
+      if (replaced) return replaced
+      if (view.lake.lastRun?.outcome === 'RUNNING') {
+        return HttpResponse.json(RunLakeCopyAnswer.parse({ already: true }), { status: 200 })
+      }
+      view.lake = LakeTablesOfConnection.parse({ ...view.lake, lastRun: RUNNING_ROUND })
+      return HttpResponse.json(RunLakeCopyAnswer.parse({ already: false }), { status: 202 })
+    }),
+    http.post(`${BASE}/connections/:connectionId/lake-copy/run/stop`, async ({ request }) => {
+      await note(request)
+      const replaced = answers.stop?.()
+      if (replaced) return replaced
+      const stopping = stopOpenRound(view)
+      const answer = StopLakeCopyRunAnswer.parse({ stopping })
+      return HttpResponse.json(answer, { status: stopping ? 202 : 200 })
+    }),
+    http.post(`${BASE}/connection-links`, async ({ request }) => {
+      const body = LinkBody.parse(await note(request))
+      const refused = answers.link?.()
+      if (refused) return refused
+      if (body.name.trim() === '') return refusal('CONNECTION_NAME_INVALID')
+      return (
+        answers.link?.() ??
+        HttpResponse.json(
+          ConnectionLink.parse({
+            url: view.linkAddress ?? 'https://hub.example.test/connection-links/segredo',
+            expiresAt: '2026-11-24T14:32:00.000Z',
+          }),
+          { status: 201 },
+        )
+      )
+    }),
+  ]
+}
+
 function writes(
   view: View,
   sent: Sent[],
@@ -130,6 +229,7 @@ function writes(
       return HttpResponse.json(tested)
     }),
     ...signInWrites(view, note, answers),
+    ...lakeHandlers(lakeOf(view), note, answers),
     http.delete(`${BASE}/connections/:connectionId`, async ({ request, params }) => {
       await note(request)
       const replaced = answers.unlink?.()
@@ -202,4 +302,37 @@ export async function openForm() {
 
 export function confirmUnlink(dialog: HTMLElement) {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Desligar' }))
+}
+
+/** Opens a select and picks the option the person reads. */
+export async function choose(trigger: HTMLElement, name: string) {
+  await waitFor(() => expect(trigger.hasAttribute('disabled')).toBe(false))
+  fireEvent.click(trigger)
+  const option = await screen.findByRole('option', { name })
+  fireEvent.pointerDown(option)
+  fireEvent.mouseDown(option)
+  fireEvent.pointerUp(option)
+  fireEvent.mouseUp(option)
+  fireEvent.click(option)
+}
+
+export const NEEDS_TABLE = 'Marque ao menos uma tabela para continuar.'
+
+/** Links by the keys and waits for "O que copiar", the date typed at the access when given. */
+export async function toChoose(since = '') {
+  const dialog = await openForm()
+  fill('Comercial')
+  if (since !== '')
+    fireEvent.change(within(dialog).getByLabelText('Desde'), { target: { value: since } })
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Continuar' }))
+  await screen.findByText(NEEDS_TABLE)
+  return dialog
+}
+
+export function mark(dialog: HTMLElement, label: string) {
+  fireEvent.click(within(dialog).getByRole('checkbox', { name: label }))
+}
+
+export function next(dialog: HTMLElement) {
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Continuar' }))
 }

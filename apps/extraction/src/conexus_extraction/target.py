@@ -7,7 +7,7 @@ import json
 import threading
 import typing as t
 from collections.abc import Iterator, Mapping, Sequence
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Context, Decimal
 from pathlib import Path
 
 import boto3
@@ -21,10 +21,18 @@ CURRENT = "current"
 COMPLETE_VERSION = "conexus.versao_completa"
 
 DECIMAL = pa.decimal128(38, 9)
+ROUNDING = Context(prec=2 * 38, rounding=ROUND_HALF_UP)
 
 
 class RunClosed(Exception):
     pass
+
+
+def _decimal_type(prop: Mapping[str, t.Any]) -> pa.DataType:
+    precision, scale = prop.get("precision"), prop.get("scale")
+    if precision is None or scale is None:
+        return DECIMAL
+    return pa.decimal128(precision, scale)
 
 
 def _arrow_type(prop: Mapping[str, t.Any]) -> pa.DataType:
@@ -37,7 +45,7 @@ def _arrow_type(prop: Mapping[str, t.Any]) -> pa.DataType:
     if "boolean" in types:
         return pa.bool_()
     if fmt == "x-singer.decimal" or "number" in types:
-        return DECIMAL
+        return _decimal_type(prop)
     if prop.get("contentEncoding") == "base64":
         return pa.binary()
     if fmt == "date":
@@ -54,27 +62,36 @@ def arrow_schema(schema: Mapping[str, t.Any]) -> pa.Schema:
     )
 
 
-def _cell(kind: pa.DataType, value: t.Any) -> t.Any:
+def _cell(kind: pa.DataType, value: t.Any) -> tuple[t.Any, bool]:
+    """The value as Arrow takes it, and whether rounding it to the default scale changed it."""
     if value is None:
-        return None
-    if kind == DECIMAL:
-        return Decimal(value) if isinstance(value, str) else value
+        return None, False
+    if pa.types.is_decimal(kind):
+        number = Decimal(value) if isinstance(value, str) else value
+        if kind != DECIMAL or not isinstance(number, Decimal):
+            return number, False
+        fitted = number.quantize(Decimal(1).scaleb(-DECIMAL.scale), context=ROUNDING)
+        return fitted, fitted != number
     if pa.types.is_binary(kind):
-        return base64.b64decode(value)
+        return base64.b64decode(value), False
     if pa.types.is_string(kind) and not isinstance(value, str):
-        return json.dumps(value, default=str, ensure_ascii=False)
-    return value
+        return json.dumps(value, default=str, ensure_ascii=False), False
+    return value, False
 
 
-def arrow_table(schema: pa.Schema, records: Sequence[Mapping[str, t.Any]]) -> pa.Table:
-    columns = {
-        field.name: pa.array(
-            [_cell(field.type, record.get(field.name)) for record in records],
-            type=field.type,
-        )
-        for field in schema
-    }
-    return pa.Table.from_pydict(columns, schema=schema)
+class Batch(t.NamedTuple):
+    table: pa.Table
+    rounded: int
+
+
+def arrow_table(schema: pa.Schema, records: Sequence[Mapping[str, t.Any]]) -> Batch:
+    columns: dict[str, pa.Array] = {}
+    rounded = 0
+    for field in schema:
+        cells = [_cell(field.type, record.get(field.name)) for record in records]
+        rounded += sum(changed for _, changed in cells)
+        columns[field.name] = pa.array([cell for cell, _ in cells], type=field.type)
+    return Batch(pa.Table.from_pydict(columns, schema=schema), rounded)
 
 
 class LakeSink(BatchSink):
@@ -117,8 +134,8 @@ class LakeSink(BatchSink):
         with self.lake.writing(self.stream_name):
             batch = arrow_table(self._arrow, records)
             self.lake.confirm_run()
-            self._raw.append(batch)
-        self.lake.count(self.stream_name, written=len(records))
+            self._raw.append(batch.table)
+        self.lake.count(self.stream_name, written=len(records), rounded=batch.rounded)
 
     def activate_version(self, new_version: int) -> None:
         # The SDK calls this without draining the sink (target_base.py:448).
@@ -156,7 +173,26 @@ class TargetConexus(Target):
         super().__init__(*args, **kwargs)
         self._ssm = boto3.client("ssm", region_name=self.config["region"])
         self._lock = threading.Lock()
-        self._report: dict[str, t.Any] = {"tables": {}, "closed": False, "failed": None}
+        self._report: dict[str, t.Any] = {
+            "tables": {},
+            "closed": False,
+            "failed": None,
+            "ended": [],
+        }
+
+    def _process_state_message(self, message_dict: dict[str, t.Any]) -> None:
+        super()._process_state_message(message_dict)
+        for stream, bookmark in message_dict["value"].get("bookmarks", {}).items():
+            if self._pass_just_ended(stream, bookmark):
+                self._drain_then_mark_ended(stream)
+
+    def _pass_just_ended(self, stream: str, bookmark: Mapping[str, t.Any]) -> bool:
+        unmarked = stream not in self._report["ended"]
+        return "pass" not in bookmark and unmarked and self.sink_exists(stream)
+
+    def _drain_then_mark_ended(self, stream: str) -> None:
+        self.drain_one(self.get_sink(stream))
+        self.report(ended=[*self._report["ended"], stream])
 
     @functools.cached_property
     def catalog(self) -> Catalog:
@@ -188,11 +224,14 @@ class TargetConexus(Target):
         except self._ssm.exceptions.ParameterNotFound as gone:
             raise RunClosed from gone
 
-    def count(self, stream: str, *, read: int = 0, written: int = 0) -> None:
+    def count(self, stream: str, *, read: int = 0, written: int = 0, rounded: int = 0) -> None:
         with self._lock:
-            counts = self._report["tables"].setdefault(stream, {"read": 0, "written": 0})
+            counts = self._report["tables"].setdefault(
+                stream, {"read": 0, "written": 0, "rounded": 0}
+            )
             counts["read"] += read
             counts["written"] += written
+            counts["rounded"] += rounded
             if written:
                 self._write_report()
 

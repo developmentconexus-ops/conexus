@@ -1,14 +1,18 @@
 import type { CompanyId, Effort, ModelId, ProjectId } from '@conexus/hub-api'
+import { CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import type { Outgoing } from '../../harness/room/public.ts'
 import {
   AGENT_BUILDER_WORDS,
+  ConversationMenu,
   StartBox,
   StartWithoutAccount,
+  titleOf,
   UNCONFIRMED_CREATION,
   useDraft,
   usePicked,
+  useRenameConversation,
   useStartConversation,
 } from '../../harness/room/public.ts'
 import { HubFailure, sentenceOf, writeFailureText } from '../../platform/hub.ts'
@@ -76,6 +80,7 @@ function AskBox(
 
 export function ConstrutorConversations(scope: Scope) {
   const read = useQuery(construtorConversationsQuery(scope))
+  const renameOf = useRenameConversation(CONSTRUTOR_CONTROLLER)
   const now = new Date()
   return (
     <Block title="Conversas sobre agentes">
@@ -88,14 +93,18 @@ export function ConstrutorConversations(scope: Scope) {
       )}
       <ul>
         {read.data?.conversations.map((conversation) => (
-          <li key={conversation.id}>
+          <li key={conversation.id} className="group/menu-item relative">
             <Link
               to="/companies/$companyId/projects/$projectId/agents/agent-builder/$conversationId"
               params={{ ...scope, conversationId: conversation.id }}
-              className={`${blockRow} hover:bg-surface-3`}
+              className={`${blockRow} hover:bg-surface-3 pointer-coarse:pr-9`}
             >
               <ConversationLine conversation={conversation} now={now} />
             </Link>
+            <ConversationMenu
+              title={titleOf(conversation)}
+              actions={{ rename: renameOf(conversation.id) }}
+            />
           </li>
         ))}
       </ul>

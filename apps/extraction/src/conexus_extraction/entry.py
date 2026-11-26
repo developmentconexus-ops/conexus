@@ -7,27 +7,39 @@ import subprocess
 import sys
 import tempfile
 import typing as t
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
+from jsonschema import ValidationError
+from pyiceberg.catalog import load_catalog
 
 from conexus_extraction.contract import (
     PROJECT,
     Complete,
     Failed,
     Lake,
+    Machine,
     Result,
     Spec,
     SpecInvalid,
     checked,
     parse_spec,
 )
+from conexus_extraction.machine import Meter
+from conexus_extraction.update import Athena, Mode, UpdateCounts, UpdateFailed, Updater
 
 MELTANO = str(Path(sys.executable).with_name("meltano"))
 
 CatalogOf = Callable[[Lake], dict[str, str]]
+StillOpen = Callable[[], bool]
+
+
+class Plan(t.TypedDict):
+    key: list[str]
+    mode: Mode
+    history: bool
 
 
 def log(event: str, **fields: str | int | None) -> None:
@@ -100,6 +112,9 @@ class Round:
         self.env = {
             **base,
             "MELTANO_SYS_DIR_ROOT": str(work / "meltano"),
+            "MELTANO_STATE_BACKEND_URI": (
+                f"{base['CONEXUS_STATE_URI']}/{spec['companyId']}/{spec['connectionId']}"
+            ),
             **_settings("TAP_CONEXUS", tap),
         }
 
@@ -131,11 +146,13 @@ class Round:
 
     def target_report(self) -> dict[str, t.Any]:
         if not self.report.exists():
-            return {"tables": {}, "closed": False, "failed": None}
+            return {"tables": {}, "closed": False, "failed": None, "ended": []}
         return t.cast("dict[str, t.Any]", json.loads(self.report.read_text()))
 
 
-def _chosen(catalog: dict[str, t.Any], spec: Spec) -> tuple[dict[str, object], str | None]:
+def _chosen(
+    catalog: dict[str, t.Any], spec: Spec
+) -> tuple[dict[str, object], dict[str, Plan], str | None]:
     asked = {table["source"]: table for table in spec["tables"]}
     found = {stream["table_name"]: stream for stream in catalog["streams"]}
     missing = next(
@@ -143,6 +160,7 @@ def _chosen(catalog: dict[str, t.Any], spec: Spec) -> tuple[dict[str, object], s
         None,
     )
     tables: dict[str, object] = {}
+    plans: dict[str, Plan] = {}
     for source, stream in found.items():
         top = next(entry["metadata"] for entry in stream["metadata"] if entry["breadcrumb"] == [])
         top["selected"] = source in asked
@@ -152,11 +170,22 @@ def _chosen(catalog: dict[str, t.Any], spec: Spec) -> tuple[dict[str, object], s
                 "label": top["conexus-label"],
                 "meanings": top.get("conexus-meanings") or {},
             }
-    return tables, missing
+            plans[asked[source]["name"]] = {
+                "key": stream["key_properties"],
+                "mode": top["conexus-mode"],
+                "history": top["conexus-history"],
+            }
+    return tables, plans, missing
 
 
-def _result(spec: Spec, outcome: Complete | Failed, report: Mapping[str, t.Any]) -> Result:
+def _result(
+    spec: Spec,
+    outcome: Complete | Failed,
+    report: Mapping[str, t.Any],
+    updated: Mapping[str, UpdateCounts] | None = None,
+) -> Result:
     counts = report["tables"]
+    applied = updated or {}
     return checked(
         {
             "type": "RESULT",
@@ -169,8 +198,11 @@ def _result(spec: Spec, outcome: Complete | Failed, report: Mapping[str, t.Any])
                     "name": asked["name"],
                     "read": counts.get(asked["name"], {}).get("read", 0),
                     "written": counts.get(asked["name"], {}).get("written", 0),
-                    "rows": None,
-                    "whole": asked["whole"],
+                    "rounded": counts.get(asked["name"], {}).get("rounded", 0),
+                    "rows": applied[asked["name"]].rows if asked["name"] in applied else None,
+                    "whole": applied[asked["name"]].whole
+                    if asked["name"] in applied
+                    else asked["whole"],
                 }
                 for asked in spec["tables"]
             ],
@@ -178,9 +210,73 @@ def _result(spec: Spec, outcome: Complete | Failed, report: Mapping[str, t.Any])
     )
 
 
+def _measured(result: Result, machine: Machine | None) -> Result:
+    try:
+        return checked(t.cast("Result", {**result, "machine": machine}))
+    except ValidationError:
+        log("MACHINE_INVALID", runId=result["runId"])
+        return t.cast("Result", {**result, "machine": None})
+
+
+def _tables_safe_to_apply(
+    spec: Spec, report: Mapping[str, t.Any], failed: Failed | None
+) -> list[str]:
+    names = [asked["name"] for asked in spec["tables"]]
+    return names if failed is None else [name for name in names if name in report["ended"]]
+
+
+def _update_unless_interrupted(
+    spec: Spec,
+    updater: Updater,
+    plans: Mapping[str, Plan],
+    guard: tuple[Stopping, StillOpen],
+    safe: Sequence[str],
+) -> tuple[dict[str, UpdateCounts], Failed | None] | None:
+    stopping, still_open = guard
+    counts: dict[str, UpdateCounts] = {}
+    for asked in spec["tables"]:
+        if asked["name"] not in safe:
+            continue
+        if stopping.asked:
+            return None
+        if not still_open():
+            log("RUN_CLOSED", runId=spec["runId"])
+            return None
+        plan = plans[asked["name"]]
+        try:
+            counts[asked["name"]] = updater.update(
+                asked["name"],
+                key=plan["key"],
+                mode=plan["mode"],
+                history=plan["history"],
+                since=spec["startDate"],
+            )
+        except UpdateFailed as failed:
+            log(
+                "UPDATE_FAILED",
+                runId=spec["runId"],
+                table=asked["name"],
+                athena=failed.code,
+                cause=failed.cause,
+            )
+            return counts, {
+                "kind": "ERROR",
+                "code": "COPY_LAKE_WRITE_FAILED",
+                "table": asked["name"],
+                "system": None,
+            }
+    return counts, None
+
+
 def copied(
-    spec: Spec, work: Path, base: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
+    spec: Spec,
+    work: Path,
+    base: Mapping[str, str],
+    lake: tuple[CatalogOf, Athena],
+    guard: tuple[Stopping, StillOpen],
 ) -> Result | None:
+    catalog_of, athena = lake
+    stopping = guard[0]
     try:
         round_ = Round(spec, work, base, stopping)
     except OSError:
@@ -190,7 +286,7 @@ def copied(
     if discovered is None:
         failure = round_.tap_failure()
         return None if failure is None else _result(spec, failure, round_.target_report())
-    tables, missing = _chosen(discovered, spec)
+    tables, plans, missing = _chosen(discovered, spec)
     if missing is not None:
         unreadable: Failed = {
             "kind": "ERROR",
@@ -199,8 +295,9 @@ def copied(
             "system": None,
         }
         return _result(spec, unreadable, round_.target_report())
+    catalog = catalog_of(spec["lake"])
     target = {
-        "catalog": catalog_of(spec["lake"]),
+        "catalog": catalog,
         "tables": tables,
         "run_parameter": base["CONEXUS_RUN_PARAMETER"],
         "region": base["AWS_REGION"],
@@ -220,12 +317,17 @@ def copied(
             "table": report["failed"]["table"],
             "system": None,
         }
-    if failure is not None:
-        return _result(spec, failure, report)
-    if code != 0:
+    if failure is None and code != 0:
         log("RUN_UNEXPLAINED", runId=spec["runId"], meltano=code)
         return None
-    return _result(spec, {"kind": "COMPLETE"}, report)
+    safe = _tables_safe_to_apply(spec, report, failure)
+    updater = Updater(load_catalog("lake", **catalog), athena)
+    updated = _update_unless_interrupted(spec, updater, plans, guard, safe)
+    if updated is None:
+        return None
+    counts, failed = updated
+    outcome: Complete | Failed = failure or failed or {"kind": "COMPLETE"}
+    return _result(spec, outcome, report, counts)
 
 
 def run(environ: Mapping[str, str], catalog_of: CatalogOf) -> int:
@@ -235,6 +337,14 @@ def run(environ: Mapping[str, str], catalog_of: CatalogOf) -> int:
         return _round(environ, catalog_of, stopping)
     finally:
         signal.signal(signal.SIGTERM, previous)
+
+
+def _open(ssm: t.Any, parameter: str) -> bool:
+    try:
+        ssm.get_parameter(Name=parameter)
+    except ssm.exceptions.ParameterNotFound:
+        return False
+    return True
 
 
 def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping) -> int:
@@ -251,13 +361,26 @@ def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
     except SpecInvalid as invalid:
         log("SPEC_INVALID", field=str(invalid))
         return 1
-    with tempfile.TemporaryDirectory(prefix="copia-") as work:
-        result = copied(spec, Path(work), environ, catalog_of, stopping)
+    meter = Meter.start(environ, log)
+    try:
+        with tempfile.TemporaryDirectory(prefix="copia-") as work:
+            lake = spec["lake"]["bucketArn"].rsplit("/", 1)[-1]
+            athena = Athena(aws.client("athena"), lake, f"s3tablescatalog/{lake}")
+            result = copied(
+                spec,
+                Path(work),
+                environ,
+                (catalog_of, athena),
+                (stopping, lambda: _open(ssm, parameter)),
+            )
+    finally:
+        machine = meter.stop()
     if stopping.asked:
         log("RUN_STOPPED", runId=spec["runId"])
         return 1
     if result is None:
         return 1
+    result = _measured(result, machine)
     try:
         aws.client("sqs").send_message(QueueUrl=spec["queueUrl"], MessageBody=json.dumps(result))
     except (BotoCoreError, ClientError) as error:

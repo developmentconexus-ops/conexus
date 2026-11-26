@@ -1,6 +1,7 @@
 import type { Connector } from '@conexus/connectors'
 import type { CatalogSystem, ConnectionId, ConnectorEntry } from '@conexus/hub-api'
 import { ConnectorId } from '@conexus/hub-api'
+import { unavailableFor } from './copy-source.ts'
 
 const EFFECT_OF = { read: 'READ', write: 'WRITE', destructive: 'DESTROY' } as const
 
@@ -48,5 +49,24 @@ export function systemOf(
       ...entryOf(operation),
       effect: EFFECT_OF[operation.class],
     })),
+  }
+}
+
+/** A connector as the screen offers it: its fields by their labels, help and visibility. */
+export function connectorEntryOf(connector: Connector): ConnectorEntry {
+  return {
+    id: connector.id,
+    name: connector.name,
+    version: connector.version,
+    category: connector.category,
+    summary: connector.summary,
+    logo: connector.logo,
+    subjects: subjectsOf(connector),
+    auth: connector.auth.kind,
+    lakeUnavailable: unavailableFor(connector),
+    fields:
+      connector.auth.kind === 'client_credentials'
+        ? Object.entries(connector.auth.fields).map(([name, field]) => ({ name, ...field }))
+        : [],
   }
 }

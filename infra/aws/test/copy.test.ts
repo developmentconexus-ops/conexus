@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { refusedUpdateResources } from './iam.ts'
 import {
   ACCOUNT,
   actionsOf,
@@ -30,6 +31,7 @@ test('a plataforma da cópia', () => {
         Name: 'copia',
         Image: `${ACCOUNT}.dkr.ecr.${REGION}.{AWS::URLSuffix}/conexus-copia@{CopyImageDigest}`,
         Essential: true,
+        Environment: [{ Name: 'CONEXUS_STATE_URI', Value: 's3://{StoppingPoints}' }],
         LinuxParameters: { InitProcessEnabled: true },
         LogConfiguration: {
           LogDriver: 'awslogs',
@@ -74,7 +76,45 @@ test('a plataforma da cópia', () => {
     },
   ])
   const raw = JSON.stringify(find(platform, 'CopyTask'))
-  assert.doesNotMatch(raw, /Environment|Secrets|TaskRoleArn/)
+  assert.doesNotMatch(raw, /Secrets|TaskRoleArn/)
+})
+
+test('o Hub lê e grava só o estado da própria empresa', () => {
+  const hub = statementsOf(find(platform, 'HubRole'))
+  assert.deepEqual(bySid(hub, 'ReadAndWriteTheCompanyStoppingPoints'), {
+    Sid: 'ReadAndWriteTheCompanyStoppingPoints',
+    Effect: 'Allow',
+    Action: ['s3:GetObject', 's3:PutObject'],
+    Resource: `arn:aws:s3:::conexus-estado-${ACCOUNT}-${REGION}/\${aws:PrincipalTag/conexus-empresa}/*`,
+  })
+})
+
+test('o Hub lista só o prefixo da própria empresa, para que um arquivo ausente seja 404 e não 403', () => {
+  const hub = statementsOf(find(platform, 'HubRole'))
+  assert.deepEqual(bySid(hub, 'ListTheCompanyStoppingPoints'), {
+    Sid: 'ListTheCompanyStoppingPoints',
+    Effect: 'Allow',
+    Action: 's3:ListBucket',
+    Resource: `arn:aws:s3:::conexus-estado-${ACCOUNT}-${REGION}`,
+    Condition: { StringLike: { 's3:prefix': `\${aws:PrincipalTag/conexus-empresa}/*` } },
+  })
+})
+
+test('o depósito do ponto de parada', () => {
+  const bucket = find(platform, 'StoppingPoints')
+  assert.equal(bucket.Type, 'AWS::S3::Bucket')
+  assert.equal(bucket.Properties.BucketName, `conexus-estado-${ACCOUNT}-${REGION}`)
+  assert.equal(bucket.DeletionPolicy, 'Retain')
+  assert.deepEqual(bucket.Properties.PublicAccessBlockConfiguration, {
+    BlockPublicAcls: true,
+    BlockPublicPolicy: true,
+    IgnorePublicAcls: true,
+    RestrictPublicBuckets: true,
+  })
+  assert.deepEqual(bucket.Properties.VersioningConfiguration, { Status: 'Enabled' })
+  assert.deepEqual(bucket.Properties.LifecycleConfiguration, {
+    Rules: [{ NoncurrentVersionExpiration: { NoncurrentDays: 30 }, Status: 'Enabled' }],
+  })
 })
 
 test('o teto deixa o que escreve e nada de IAM', () => {
@@ -93,7 +133,12 @@ test('o teto deixa o que escreve e nada de IAM', () => {
     [
       [LAKE_BUCKETS, `${LAKE_BUCKETS}/table/*`],
       [
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog/s3tablescatalog`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog/s3tablescatalog/conexus-*`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:database/s3tablescatalog/conexus-*/raw`,
         `arn:aws:glue:${REGION}:${ACCOUNT}:table/s3tablescatalog/conexus-*/raw/*`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:database/s3tablescatalog/conexus-*/current`,
         `arn:aws:glue:${REGION}:${ACCOUNT}:table/s3tablescatalog/conexus-*/current/*`,
       ],
       [`arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/conexus/copia/*`],
@@ -102,6 +147,25 @@ test('o teto deixa o que escreve e nada de IAM', () => {
       [state],
     ],
   )
+})
+
+test('o teto deixa mudar a tabela das duas áreas de um lago do Conexus, e de nenhum outro', () => {
+  const boundary = statementsOf(find(platform, 'Boundary'))
+  for (const area of ['raw', 'current']) {
+    assert.deepEqual(refusedUpdateResources(boundary, 'conexus-lagodeaaaaaa', area), [], area)
+  }
+  const glue = `arn:aws:glue:${REGION}:${ACCOUNT}`
+  const outside = 's3tablescatalog/outro-lago'
+  assert.deepEqual(refusedUpdateResources(boundary, 'outro-lago', 'current'), [
+    `${glue}:catalog/${outside}`,
+    `${glue}:database/${outside}/current`,
+    `${glue}:table/${outside}/current/notas`,
+  ])
+  const own = 's3tablescatalog/conexus-lagodeaaaaaa'
+  assert.deepEqual(refusedUpdateResources(boundary, 'conexus-lagodeaaaaaa', 'outra'), [
+    `${glue}:database/${own}/outra`,
+    `${glue}:table/${own}/outra/notas`,
+  ])
 })
 
 test('a fila da cópia ouve só a regra e os que escrevem, e passa a de mortos na terceira falha', () => {

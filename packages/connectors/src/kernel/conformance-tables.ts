@@ -11,6 +11,7 @@ import type { ProviderSend } from './session.ts'
 import { sessionOf } from './session.ts'
 import type {
   DeclaredColumn,
+  TableColumn,
   TableDeclaration,
   TableFilter,
   TablePosition,
@@ -45,16 +46,17 @@ export async function tableReachOf(
   return { connector, session, send: sendTo(connector, fake), account: signed.account, signal }
 }
 
-/** Every page of a declared table, to its end: the rows in page order, or the failure that stopped it. */
+/** Every page of a table, to its end: the rows in page order, or the failure that stopped it. A table that declares no columns takes the ones its discovery read. */
 export async function walkTable(
   reach: TableReach,
   table: TableDeclaration,
   filter: TableFilter = { kind: 'ALL' },
+  discovered?: readonly TableColumn[],
 ): Promise<readonly Readonly<Record<string, string | null>>[]> {
   const columns =
     table.columns.kind === 'DECLARED'
       ? table.columns.columns.map(({ name, type, description }) => ({ name, type, description }))
-      : assert.fail(`${table.name} declares its columns for the walk`)
+      : (discovered ?? assert.fail(`${table.name} declares its columns for the walk`))
   const rows: Readonly<Record<string, string | null>>[] = []
   let after: TablePosition | null = null
   for (let pages = 0; pages < 1000; pages++) {

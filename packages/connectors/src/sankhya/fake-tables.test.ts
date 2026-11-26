@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
 import { discoverTables, readTablePage } from '../index.ts'
-import { tableReachOf } from '../kernel/conformance-tables.ts'
+import { tableReachOf, walkTable } from '../kernel/conformance-tables.ts'
 import { sankhya } from './definition.ts'
 import { sankhyaFake } from './fake.ts'
 
@@ -19,16 +19,8 @@ test('o registro muda entre duas leituras: a nota alterada, criada e apagada, o 
     { name: 'DTALTER', type: 'timestamp', description: null },
   ] as const
   async function notes() {
-    const page = await readTablePage({
-      ...reach,
-      table: table('notas'),
-      columns,
-      filter: { kind: 'ALL' },
-      after: null,
-    })
-    return page.kind === 'PAGE'
-      ? new Map(page.rows.map((row) => [row.NUNOTA, row]))
-      : assert.fail(page.code)
+    const rows = await walkTable(reach, table('notas'), { kind: 'ALL' }, columns)
+    return new Map(rows.map((row) => [row.NUNOTA, row]))
   }
   function route(path: string, body: unknown = {}) {
     const url = `${sankhya.origin}/__teste/${path}`

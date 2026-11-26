@@ -22,9 +22,9 @@ export {
   conversationQuery,
   conversationsQuery,
   sendAssistantHandOff,
-  sendModel,
   sessionReadQuery,
 } from './queries.ts'
+export { useRenameConversation } from './rename.ts'
 export type { OpenedFile, RoomOf, WriteTool } from './room.ts'
 export {
   AGENT_BUILDER_WORDS,

@@ -1,5 +1,12 @@
-import { AppTableName, listAppTables, listConnections, listProjects } from '@conexus/hub-api'
+import {
+  AppTableName,
+  listAppTables,
+  listConnections,
+  listLakeTables,
+  listProjects,
+} from '@conexus/hub-api'
 import { failure, ok } from './layout-harness.ts'
+import { SANKHYA } from './src/hub/connectors/fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
@@ -27,10 +34,11 @@ function dataPage(connections: (typeof MATRIZ)[]) {
     ...OWNER,
     ...projectsPage(COMPANY.id),
     [`GET ${COMPANY_API}/connections`]: ok(listConnections, {
-      connectors: [],
+      connectors: [SANKHYA],
       connections,
       mayManage: true,
     }),
+    [`GET ${COMPANY_API}/lake-tables`]: ok(listLakeTables, []),
   }
 }
 
@@ -66,7 +74,7 @@ export const LAYER_STATES: State[] = [
     name: 'Dados, a primeira vez: o sistema sem tabela copiada',
     path: PAGE,
     replies: dataPage([MATRIZ]),
-    settle: (p) => waitFor(p, 'Nenhuma tabela copiada'),
+    settle: (p) => waitFor(p, 'Nenhuma tabela copiada. Escolha o que copiar na página da ligação.'),
   },
   {
     name: 'Dados, a leitura que falhou',

@@ -1,4 +1,4 @@
-import { BUILDER_TOOL, ReadCut } from '@conexus/hub-api'
+import { CONVERSATION_TOOL, ReadCut } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/client-js'
 import { z } from 'zod'
 import { clockOf, dayGroupOf, dayOf } from '../../platform/dates.ts'
@@ -65,7 +65,7 @@ function liveRead(
   args: unknown,
 ): { connector: string; operation: string } | undefined {
   const [connector, operation] =
-    toolName === BUILDER_TOOL.connectorRead ? operationOf(args) : toolName.split(/_(.*)/s)
+    toolName === CONVERSATION_TOOL.connectorRead ? operationOf(args) : toolName.split(/_(.*)/s)
   return connector && operation ? { connector, operation } : undefined
 }
 

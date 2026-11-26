@@ -15,6 +15,7 @@ import { Route as AppIntegrationsReturnRouteImport } from './routes/_app/integra
 import { Route as AppOperationsIndexRouteImport } from './routes/_app/operations/index.tsx'
 import { Route as AppOperationsStatusRouteImport } from './routes/_app/operations/status.tsx'
 import { Route as PublicAppsOpenRouteImport } from './routes/_public/apps/open.tsx'
+import { Route as PublicConnectionLinksSecretRouteImport } from './routes/_public/connection-links/$secret.tsx'
 import { Route as PublicInvitationsInvitationIdRouteImport } from './routes/_public/invitations/$invitationId.tsx'
 import { Route as AppCompaniesCompanyIdIndexRouteImport } from './routes/_app/companies/$companyId/index.tsx'
 import { Route as AppCompaniesCompanyIdSettingsRouteRouteImport } from './routes/_app/companies/$companyId_/settings/route.tsx'
@@ -50,6 +51,7 @@ import { Route as AppCompaniesCompanyIdWelcomeBuildRouteImport } from './routes/
 import { Route as AppCompaniesCompanyIdWelcomeCompanyRouteImport } from './routes/_app/companies/$companyId_/welcome/company.tsx'
 import { Route as AppCompaniesCompanyIdWelcomeModelAccountRouteImport } from './routes/_app/companies/$companyId_/welcome/model-account.tsx'
 import { Route as AppCompaniesCompanyIdWelcomeTeamRouteImport } from './routes/_app/companies/$companyId_/welcome/team.tsx'
+import { Route as AppCompaniesCompanyIdDataLakeTableIdRouteImport } from './routes/_app/companies/$companyId/data.lake.$tableId.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdIndexRouteImport } from './routes/_app/companies/$companyId/projects/$projectId.index.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdAboutRouteImport } from './routes/_app/companies/$companyId/projects/$projectId_.about.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdAccessRouteImport } from './routes/_app/companies/$companyId/projects/$projectId_.access.tsx'
@@ -130,6 +132,12 @@ const PublicAppsOpenRoute = PublicAppsOpenRouteImport.update({
   path: '/apps/open',
   getParentRoute: () => PublicRouteRoute,
 } as any)
+const PublicConnectionLinksSecretRoute =
+  PublicConnectionLinksSecretRouteImport.update({
+    id: '/connection-links/$secret',
+    path: '/connection-links/$secret',
+    getParentRoute: () => PublicRouteRoute,
+  } as any)
 const PublicInvitationsInvitationIdRoute =
   PublicInvitationsInvitationIdRouteImport.update({
     id: '/invitations/$invitationId',
@@ -339,6 +347,12 @@ const AppCompaniesCompanyIdWelcomeTeamRoute =
     path: '/team',
     getParentRoute: () => AppCompaniesCompanyIdWelcomeRouteRoute,
   } as any)
+const AppCompaniesCompanyIdDataLakeTableIdRoute =
+  AppCompaniesCompanyIdDataLakeTableIdRouteImport.update({
+    id: '/data/lake/$tableId',
+    path: '/data/lake/$tableId',
+    getParentRoute: () => AppCompaniesCompanyIdRouteRoute,
+  } as any)
 const AppCompaniesCompanyIdProjectsProjectIdIndexRoute =
   AppCompaniesCompanyIdProjectsProjectIdIndexRouteImport.update({
     id: '/',
@@ -483,6 +497,7 @@ export interface FileRoutesByFullPath {
   '/integrations/return': typeof AppIntegrationsReturnRoute
   '/operations/status': typeof AppOperationsStatusRoute
   '/apps/open': typeof PublicAppsOpenRoute
+  '/connection-links/$secret': typeof PublicConnectionLinksSecretRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/operations/': typeof AppOperationsIndexRoute
   '/companies/$companyId/settings': typeof AppCompaniesCompanyIdSettingsRouteRouteWithChildren
@@ -519,6 +534,7 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/projects/': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/companies/$companyId/settings/': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/companies/$companyId/welcome/': typeof AppCompaniesCompanyIdWelcomeIndexRoute
+  '/companies/$companyId/data/lake/$tableId': typeof AppCompaniesCompanyIdDataLakeTableIdRoute
   '/companies/$companyId/projects/$projectId/about': typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
   '/companies/$companyId/projects/$projectId/access': typeof AppCompaniesCompanyIdProjectsProjectIdAccessRoute
   '/companies/$companyId/projects/$projectId/data': typeof AppCompaniesCompanyIdProjectsProjectIdDataRouteWithChildren
@@ -548,6 +564,7 @@ export interface FileRoutesByTo {
   '/integrations/return': typeof AppIntegrationsReturnRoute
   '/operations/status': typeof AppOperationsStatusRoute
   '/apps/open': typeof PublicAppsOpenRoute
+  '/connection-links/$secret': typeof PublicConnectionLinksSecretRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/operations': typeof AppOperationsIndexRoute
   '/operations/clients/$companyId': typeof AppOperationsClientsCompanyIdRoute
@@ -581,6 +598,7 @@ export interface FileRoutesByTo {
   '/companies/$companyId/projects': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/companies/$companyId/settings': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/companies/$companyId/welcome': typeof AppCompaniesCompanyIdWelcomeIndexRoute
+  '/companies/$companyId/data/lake/$tableId': typeof AppCompaniesCompanyIdDataLakeTableIdRoute
   '/companies/$companyId/projects/$projectId/about': typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
   '/companies/$companyId/projects/$projectId/access': typeof AppCompaniesCompanyIdProjectsProjectIdAccessRoute
   '/companies/$companyId/projects/$projectId/integrations': typeof AppCompaniesCompanyIdProjectsProjectIdIntegrationsRoute
@@ -614,6 +632,7 @@ export interface FileRoutesById {
   '/_app/integrations/return': typeof AppIntegrationsReturnRoute
   '/_app/operations/status': typeof AppOperationsStatusRoute
   '/_public/apps/open': typeof PublicAppsOpenRoute
+  '/_public/connection-links/$secret': typeof PublicConnectionLinksSecretRoute
   '/_public/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/_app/operations/': typeof AppOperationsIndexRoute
   '/_app/companies/$companyId_/settings': typeof AppCompaniesCompanyIdSettingsRouteRouteWithChildren
@@ -650,6 +669,7 @@ export interface FileRoutesById {
   '/_app/companies/$companyId/projects/': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/_app/companies/$companyId_/settings/': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/_app/companies/$companyId_/welcome/': typeof AppCompaniesCompanyIdWelcomeIndexRoute
+  '/_app/companies/$companyId/data/lake/$tableId': typeof AppCompaniesCompanyIdDataLakeTableIdRoute
   '/_app/companies/$companyId/projects/$projectId_/about': typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
   '/_app/companies/$companyId/projects/$projectId_/access': typeof AppCompaniesCompanyIdProjectsProjectIdAccessRoute
   '/_app/companies/$companyId/projects/$projectId_/data': typeof AppCompaniesCompanyIdProjectsProjectIdDataRouteWithChildren
@@ -683,6 +703,7 @@ export interface FileRouteTypes {
     | '/integrations/return'
     | '/operations/status'
     | '/apps/open'
+    | '/connection-links/$secret'
     | '/invitations/$invitationId'
     | '/operations/'
     | '/companies/$companyId/settings'
@@ -719,6 +740,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects/'
     | '/companies/$companyId/settings/'
     | '/companies/$companyId/welcome/'
+    | '/companies/$companyId/data/lake/$tableId'
     | '/companies/$companyId/projects/$projectId/about'
     | '/companies/$companyId/projects/$projectId/access'
     | '/companies/$companyId/projects/$projectId/data'
@@ -748,6 +770,7 @@ export interface FileRouteTypes {
     | '/integrations/return'
     | '/operations/status'
     | '/apps/open'
+    | '/connection-links/$secret'
     | '/invitations/$invitationId'
     | '/operations'
     | '/operations/clients/$companyId'
@@ -781,6 +804,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects'
     | '/companies/$companyId/settings'
     | '/companies/$companyId/welcome'
+    | '/companies/$companyId/data/lake/$tableId'
     | '/companies/$companyId/projects/$projectId/about'
     | '/companies/$companyId/projects/$projectId/access'
     | '/companies/$companyId/projects/$projectId/integrations'
@@ -813,6 +837,7 @@ export interface FileRouteTypes {
     | '/_app/integrations/return'
     | '/_app/operations/status'
     | '/_public/apps/open'
+    | '/_public/connection-links/$secret'
     | '/_public/invitations/$invitationId'
     | '/_app/operations/'
     | '/_app/companies/$companyId_/settings'
@@ -849,6 +874,7 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId/projects/'
     | '/_app/companies/$companyId_/settings/'
     | '/_app/companies/$companyId_/welcome/'
+    | '/_app/companies/$companyId/data/lake/$tableId'
     | '/_app/companies/$companyId/projects/$projectId_/about'
     | '/_app/companies/$companyId/projects/$projectId_/access'
     | '/_app/companies/$companyId/projects/$projectId_/data'
@@ -960,6 +986,13 @@ declare module '@tanstack/react-router' {
       path: '/apps/open'
       fullPath: '/apps/open'
       preLoaderRoute: typeof PublicAppsOpenRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/connection-links/$secret': {
+      id: '/_public/connection-links/$secret'
+      path: '/connection-links/$secret'
+      fullPath: '/connection-links/$secret'
+      preLoaderRoute: typeof PublicConnectionLinksSecretRouteImport
       parentRoute: typeof PublicRouteRoute
     }
     '/_public/invitations/$invitationId': {
@@ -1207,6 +1240,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesCompanyIdWelcomeTeamRouteImport
       parentRoute: typeof AppCompaniesCompanyIdWelcomeRouteRoute
     }
+    '/_app/companies/$companyId/data/lake/$tableId': {
+      id: '/_app/companies/$companyId/data/lake/$tableId'
+      path: '/data/lake/$tableId'
+      fullPath: '/companies/$companyId/data/lake/$tableId'
+      preLoaderRoute: typeof AppCompaniesCompanyIdDataLakeTableIdRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdRouteRoute
+    }
     '/_app/companies/$companyId/projects/$projectId/': {
       id: '/_app/companies/$companyId/projects/$projectId/'
       path: '/'
@@ -1437,6 +1477,7 @@ interface AppCompaniesCompanyIdRouteRouteChildren {
   AppCompaniesCompanyIdDataIndexRoute: typeof AppCompaniesCompanyIdDataIndexRoute
   AppCompaniesCompanyIdIntegrationsIndexRoute: typeof AppCompaniesCompanyIdIntegrationsIndexRoute
   AppCompaniesCompanyIdProjectsIndexRoute: typeof AppCompaniesCompanyIdProjectsIndexRoute
+  AppCompaniesCompanyIdDataLakeTableIdRoute: typeof AppCompaniesCompanyIdDataLakeTableIdRoute
   AppCompaniesCompanyIdProjectsProjectIdAboutRoute: typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
   AppCompaniesCompanyIdProjectsProjectIdAccessRoute: typeof AppCompaniesCompanyIdProjectsProjectIdAccessRoute
   AppCompaniesCompanyIdProjectsProjectIdDataRoute: typeof AppCompaniesCompanyIdProjectsProjectIdDataRouteWithChildren
@@ -1478,6 +1519,8 @@ const AppCompaniesCompanyIdRouteRouteChildren: AppCompaniesCompanyIdRouteRouteCh
       AppCompaniesCompanyIdIntegrationsIndexRoute,
     AppCompaniesCompanyIdProjectsIndexRoute:
       AppCompaniesCompanyIdProjectsIndexRoute,
+    AppCompaniesCompanyIdDataLakeTableIdRoute:
+      AppCompaniesCompanyIdDataLakeTableIdRoute,
     AppCompaniesCompanyIdProjectsProjectIdAboutRoute:
       AppCompaniesCompanyIdProjectsProjectIdAboutRoute,
     AppCompaniesCompanyIdProjectsProjectIdAccessRoute:
@@ -1614,6 +1657,7 @@ interface PublicRouteRouteChildren {
   PublicLoginRoute: typeof PublicLoginRoute
   PublicSetPasswordRoute: typeof PublicSetPasswordRoute
   PublicAppsOpenRoute: typeof PublicAppsOpenRoute
+  PublicConnectionLinksSecretRoute: typeof PublicConnectionLinksSecretRoute
   PublicInvitationsInvitationIdRoute: typeof PublicInvitationsInvitationIdRoute
 }
 
@@ -1622,6 +1666,7 @@ const PublicRouteRouteChildren: PublicRouteRouteChildren = {
   PublicLoginRoute: PublicLoginRoute,
   PublicSetPasswordRoute: PublicSetPasswordRoute,
   PublicAppsOpenRoute: PublicAppsOpenRoute,
+  PublicConnectionLinksSecretRoute: PublicConnectionLinksSecretRoute,
   PublicInvitationsInvitationIdRoute: PublicInvitationsInvitationIdRoute,
 }
 

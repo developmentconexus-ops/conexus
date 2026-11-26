@@ -1,5 +1,6 @@
 import type { Server, Socket } from 'node:net'
 import { connect, createServer } from 'node:net'
+import { pipeline } from 'node:stream'
 import pg from 'pg'
 import type { Config } from './config.ts'
 import type { MastraPool } from './database.ts'
@@ -80,9 +81,7 @@ export async function mastraDoor(url: { reveal(): string }, outage: Outage) {
       socket.on('close', () => sockets.delete(socket))
       if (!reaching) return
       const upstream = connect(Number(target.port), target.hostname)
-      socket.pipe(upstream).pipe(socket)
-      upstream.on('error', () => socket.destroy())
-      socket.on('error', () => upstream.destroy())
+      pipeline(socket, upstream, socket, () => undefined)
     })
     return new Promise((resolve) => server.listen(port, '127.0.0.1', () => resolve(server)))
   }

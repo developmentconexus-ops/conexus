@@ -1,0 +1,279 @@
+import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
+import { test } from 'node:test'
+import {
+  conversing,
+  endOf,
+  holding,
+  hubBeside,
+  MODEL,
+  PARTIAL,
+  sent,
+  sessionUrl,
+  started,
+  stopped,
+  streamOf,
+} from '../../harness/routes/test-conversation.ts'
+import { textsOf } from '../../harness/routes/test-parts.ts'
+import { renamed, sessionStateOf, switched } from '../../harness/routes/test-questions.ts'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import {
+  BRUNO,
+  call,
+  codeOf,
+  memberOn,
+  personOn,
+  plantCompany,
+  post,
+  problem,
+} from '../../hub/identity/test-hub.ts'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
+
+const DIEGO = { name: 'Diego Melo', email: 'diego@example.test' }
+
+/** Every route of one conversation, the Hub's and Mastra's, as the person calls it. */
+function routesOf(hub: Hub, person: Person, url: string) {
+  const headers = { origin: TEST_ORIGIN, cookie: person.cookie }
+  const session = sessionUrl(url)
+  const id = url.slice(url.lastIndexOf('/') + 1)
+  return [
+    call(hub, person, 'GET', url),
+    switched(hub, person, url, { model: MODEL, effort: 'off' }),
+    renamed(hub, person, url, 'De outra pessoa'),
+    sent(hub, person, url, 'Olá'),
+    hub.app.inject({ method: 'GET', url: `${session}/stream`, headers }),
+    stopped(hub, person, url),
+    post(hub, person, `${session}/tool-suspension`, { toolCallId: 'x', resumeData: 'Sim' }),
+    call(hub, person, 'GET', `${session}/threads/${id}/messages`),
+  ]
+}
+
+test('a conversa de outra pessoa ou de outra empresa: o mesmo 404 em toda rota; Diego não recebe evento de Ana; nenhuma rota do Mastra', async (t) => {
+  const { hub, ana, companyId, conversations, anthropic } = await conversing(t, (asked) => ({
+    kind: 'text',
+    text: asked.stream ? `Resposta a ${asked.texts.at(-1)}` : 'Título',
+  }))
+  const anas = `${conversations}/${await started(hub, ana, conversations)}`
+  const diego = await memberOn(hub, companyId, DIEGO, 'member')
+  const bruno = await personOn(hub, BRUNO)
+  const companyB = await plantCompany(hub.test, bruno.id, 'Empresa B')
+  const madeB = await post(hub, bruno, `/api/companies/${companyB}/projects`, { name: 'Vendas' })
+  assert.equal(madeB.statusCode, 201)
+  const inB = `/api/companies/${companyB}/projects/${Object(madeB.json()).project.id}/conversations`
+  const anasId = anas.slice(conversations.length + 1)
+  for (const [person, base] of [
+    [diego, conversations],
+    [bruno, inB],
+    [bruno, conversations],
+  ] as const) {
+    const foreign = await Promise.all(routesOf(hub, person, `${base}/${anasId}`))
+    const absent = await Promise.all(routesOf(hub, person, `${base}/${randomUUID()}`))
+    for (const [index, response] of foreign.entries()) {
+      assert.equal(response.statusCode, 404, response.body)
+      assert.deepEqual(problem(response), problem(absent[index] ?? response))
+    }
+  }
+  assert.equal(
+    codeOf(await call(hub, diego, 'GET', `${conversations}/${anasId}`)),
+    'CONVERSATION_NOT_FOUND',
+  )
+  assert.deepEqual(anthropic.sent, [], 'no route of theirs started a turn')
+
+  const diegos = `${conversations}/${await started(hub, diego, conversations)}`
+  const diegoStream = await streamOf(hub, diego, diegos)
+  t.after(() => diegoStream.close())
+  const anaStream = await streamOf(hub, ana, anas)
+  t.after(() => anaStream.close())
+  assert.equal((await sent(hub, ana, anas, 'Pergunta de Ana')).statusCode, 200)
+  assert.equal(endOf(await anaStream.turn()), 'complete')
+  assert.equal((await sent(hub, diego, diegos, 'Pergunta de Diego')).statusCode, 200)
+  const diegoEvents = await diegoStream.turn()
+  assert.equal(textsOf(diegoEvents).join(''), 'Resposta a Pergunta de Diego')
+  assert.equal(endOf(diegoEvents), 'complete')
+  assert.doesNotMatch(diegoStream.seen.raw, /Ana/)
+
+  for (const path of ['/api/agents', '/api/agents/builder', '/api/memory/threads?resourceId=x']) {
+    assert.equal((await call(hub, ana, 'GET', path)).statusCode, 404, path)
+  }
+  assert.deepEqual(anthropic.elsewhere, [], 'nothing left the process but the model calls')
+})
+
+test('toda thread tem sua linha no índice, com a empresa e a pessoa no dono do Mastra', async (t) => {
+  const { hub, ana, companyId, conversations } = await conversing(t, () => ({
+    kind: 'text',
+    text: 'ok',
+  }))
+  const ids = [await started(hub, ana, conversations), await started(hub, ana, conversations)]
+  const threads = await hub.test.mastraPool.query(
+    'select id, "resourceId" from mastra.mastra_threads order by id',
+  )
+  const indexed = await hub.test.asOwner(
+    'select id::text, company_id, person_id from builder.conversation order by id',
+  )
+  const owner = `company:${companyId}:person:${ana.id}`
+  assert.deepEqual(
+    threads.rows,
+    [...ids].sort().map((id) => ({ id, resourceId: owner })),
+  )
+  assert.deepEqual(
+    indexed,
+    [...ids].sort().map((id) => ({ id, company_id: companyId, person_id: ana.id })),
+  )
+})
+
+test('a mesma chave: uma conversa e um modelo, também depois de reiniciar; outro corpo: IDEMPOTENCY_CONFLICT', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, (asked) => ({
+    kind: 'text',
+    text: asked.stream ? 'Resposta' : 'Título',
+  }))
+  const key = randomUUID()
+  const first = await post(hub, ana, conversations, {}, key)
+  const again = await post(hub, ana, conversations, {}, key)
+  assert.equal(first.statusCode, 201)
+  assert.equal(again.statusCode, 201)
+  const id = String(Object(first.json()).conversation.id)
+  assert.equal(Object(again.json()).conversation.id, id)
+  // A late repeat runs nothing again: a default with no account now still answers the thread's model.
+  const company = conversations.slice(0, conversations.indexOf('/projects/'))
+  const openai = { owner: 'company', provider: 'openai', label: 'OpenAI', key: 'sk-openai-0001' }
+  const linked = await post(hub, ana, `${company}/model-accounts`, openai)
+  const unusable = { model: 'openai/gpt-4o-mini', effort: 'off' }
+  assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, unusable)).statusCode, 200)
+  const gone = `${company}/model-accounts/${Object(linked.json()).account.id}`
+  assert.equal((await call(hub, ana, 'DELETE', gone)).statusCode, 204)
+  const late = await post(hub, ana, conversations, {}, key)
+  assert.deepEqual([late.statusCode, Object(late.json()).conversation.model], [201, MODEL])
+  const conflict = await post(hub, ana, conversations, { model: MODEL }, key)
+  assert.equal(conflict.statusCode, 409)
+  assert.equal(codeOf(conflict), 'IDEMPOTENCY_CONFLICT')
+
+  const restarted = await hubBeside(t, hub)
+  const created = await post(restarted, ana, conversations, {}, key)
+  assert.equal(created.statusCode, 201)
+  assert.equal(Object(created.json()).conversation.id, id)
+  const rows = await hub.test.asOwner('select count(*)::int as count from builder.conversation')
+  assert.deepEqual(rows, [{ count: 1 }])
+})
+
+test('o raciocínio pedido vale desde a criação', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const created = await post(hub, ana, conversations, { model: MODEL, effort: 'high' })
+  assert.equal(created.statusCode, 201)
+  const url = `${conversations}/${Object(created.json()).conversation.id}`
+  const state = await sessionStateOf(hub, ana, url)
+  assert.deepEqual([state.model, state.effort], [MODEL, 'high'])
+})
+
+test('um raciocínio que o modelo não tem é recusado', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const refused = await post(hub, ana, conversations, { model: MODEL, effort: 'xhigh' })
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'EFFORT_UNSUPPORTED'])
+  const rows = await hub.test.asOwner('select count(*)::int as count from builder.conversation')
+  assert.deepEqual(rows, [{ count: 0 }])
+})
+
+test('a mesma chave com outro raciocínio é outro pedido', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const key = randomUUID()
+  assert.equal((await post(hub, ana, conversations, { effort: 'off' }, key)).statusCode, 201)
+  const other = await post(hub, ana, conversations, { effort: 'high' }, key)
+  assert.deepEqual([other.statusCode, codeOf(other)], [409, 'IDEMPOTENCY_CONFLICT'])
+})
+
+test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao criar e ao trocar', async (t) => {
+  const { hub, ana, conversations, anthropic } = await conversing(t, () => ({
+    kind: 'text',
+    text: 'ok',
+  }))
+  const created = await post(hub, ana, conversations, { model: 'openai/gpt-5' })
+  assert.equal(created.statusCode, 422)
+  assert.equal(codeOf(created), 'MODEL_NO_ACCOUNT')
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const gpt = { model: 'openai/gpt-5', effort: 'off' }
+  const refused = await switched(hub, ana, url, gpt)
+  assert.equal(refused.statusCode, 422)
+  assert.equal(codeOf(refused), 'MODEL_NO_ACCOUNT')
+  assert.equal((await sessionStateOf(hub, ana, url)).model, MODEL)
+  const rows = await hub.test.asOwner('select count(*)::int as count from builder.conversation')
+  assert.deepEqual(rows, [{ count: 1 }])
+  assert.deepEqual(anthropic.sent, [])
+})
+
+test('a conversa cuja thread o Mastra não tem: 404 CONVERSATION_NOT_FOUND, e a linha sai do índice', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const id = await started(hub, ana, conversations)
+  await hub.test.mastraPool.query('delete from mastra.mastra_threads where id = $1', [id])
+  const read = await call(hub, ana, 'GET', `${conversations}/${id}`)
+  assert.equal(read.statusCode, 404)
+  assert.equal(codeOf(read), 'CONVERSATION_NOT_FOUND')
+  const rows = await hub.test.asOwner(
+    'select count(*)::int as count from builder.conversation where id = $1',
+    [id],
+  )
+  assert.deepEqual(rows, [{ count: 0 }])
+})
+
+test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `disabled`, nível recusado é 422, a troca durante o turno vale para o próximo e o nível fica ao reiniciar', async (t) => {
+  const held = holding(t)
+  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    return asked.texts.at(-1) === 'Segura' ? held.reply : { kind: 'text', text: 'Resposta' }
+  })
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  async function effortOn(on: Hub) {
+    return (await sessionStateOf(on, ana, url)).effort
+  }
+  function thinkings() {
+    return anthropic.sent.filter((each) => each.stream).map((each) => each.thinking)
+  }
+  function model(effort: string) {
+    return switched(hub, ana, url, { model: MODEL, effort })
+  }
+  const HIGH = { type: 'enabled', budget_tokens: 16384 }
+  const OFF = { type: 'disabled' }
+  assert.equal(await effortOn(hub), 'off')
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+
+  const high = await model('high')
+  assert.deepEqual([high.statusCode, high.json()], [200, { ok: true }])
+  assert.equal((await sent(hub, ana, url, 'Pergunta')).statusCode, 200)
+  await stream.turn()
+  assert.deepEqual(thinkings(), [HIGH])
+
+  const refused = await model('xhigh')
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'EFFORT_UNSUPPORTED'])
+  assert.equal(await effortOn(hub), 'high')
+
+  assert.equal((await sent(hub, ana, url, 'Segura')).statusCode, 200)
+  assert.equal(await stream.text(), PARTIAL)
+  assert.equal((await model('off')).statusCode, 200)
+  held.release()
+  await stream.turn()
+  assert.equal((await sent(hub, ana, url, 'Depois')).statusCode, 200)
+  await stream.turn()
+  assert.deepEqual(thinkings(), [HIGH, HIGH, OFF], 'the switch held for the next turn only')
+
+  assert.equal((await model('high')).statusCode, 200)
+  const restarted = await hubBeside(t, hub)
+  assert.equal(await effortOn(restarted), 'high')
+  const again = await streamOf(restarted, ana, url)
+  t.after(() => again.close())
+  assert.equal((await sent(restarted, ana, url, 'Reiniciado')).statusCode, 200)
+  await again.turn()
+  assert.deepEqual(thinkings().at(-1), HIGH)
+})
+
+test('steer e follow-up não estão na lista: 404 até para o dono da conversa, e nada roda', async (t) => {
+  const { hub, ana, conversations, anthropic } = await conversing(t, () => ({
+    kind: 'text',
+    text: 'ok',
+  }))
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const session = sessionUrl(url)
+  for (const route of ['steer', 'follow-up']) {
+    const response = await post(hub, ana, `${session}/${route}`, { message: 'Olá' })
+    assert.equal(response.statusCode, 404, route)
+  }
+  assert.deepEqual(anthropic.sent, [])
+})

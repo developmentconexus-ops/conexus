@@ -1,1 +1,6 @@
+export type { CompanyScope } from './lake-close.ts'
+export { companyScope } from './lake-close.ts'
+export { COPY_TIMEZONE } from './lake-copy.ts'
+export type { LakeRuns, ScheduledCopy, StartAnswer, StartClock } from './lake-run.ts'
 export { COPY_TASK_SCHEMA, CopyTaskResult, CopyTaskSpec, copyTaskSchema } from './lake-task.ts'
+export { lakeCopiesOf } from './lake-wiring.ts'

@@ -62,7 +62,7 @@ export const RESEARCH_FAILED_CALLS: Block[][] = [
   [{ type: 'text', text: 'A pesquisa não deu; sigo sem ela.' }],
 ]
 const HANDOFF_PROMPT = 'Monte um app de encomendas para uma padaria inventada.'
-/** The signal the Assistant's handoff sends (`builder/assistant/handoff.ts`): the person's words, marked as the Assistant's. */
+/** The signal the Assistant's handoff sends (`agents/assistant/handoff.ts`): the person's words, marked as the Assistant's. */
 const HANDOFF_CONTENTS: { type: 'text'; text: string }[] = [
   { type: 'text', text: HANDOFF_PROMPT },
   {

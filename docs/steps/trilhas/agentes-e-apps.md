@@ -51,9 +51,11 @@ montagem só, e o pedido de cada um ao modelo ficou igual, byte a byte. O desenh
 [boundaries](../../reference/boundaries.md). O cartão foi apagado com o fechamento; está no
 histórico do `main`.
 
-O cartão da etapa 2 do harness, "Uma sala e os nomes certos", é
-[uma-sala-e-os-nomes-certos.md](../uma-sala-e-os-nomes-certos.md), no trilho `harness`. A parte da
-tela anda com a aprovação da página, e a do servidor já não espera o `A1`, que fechou.
+A etapa 2 do harness, "Uma sala e os nomes certos", fechou: o uso na nuvem foi em 2026-11-25, na
+v0.24.130, e a linha de fechamento está no
+[arquivo de aprovação](../../approvals/uma-sala-e-os-nomes-certos.md). As quatro conversas usam uma
+sala só, e o desenho está na [explicação do harness](../../explanation/harness.md). O cartão está no
+histórico do `main`, no commit `20c184c0`, o último que o mudou.
 
 `A1`, "O Builder vê o que construiu", fechou em 2026-11-24: o fundador fez o roteiro na nuvem, na
 v0.24.122, e a linha de fechamento está no
@@ -76,14 +78,14 @@ cartão do marco da trilha que a pedir, com a aprovação dele.
 
 ## O que a trilha possui
 
-- `apps/server/src/builder/controller-kit/`, `conversation/`, `assistant/`, `agents/`,
-  `construtor/`, `automations/`, `company-tools/`, `data-tools/`, `connectors/`, `app-data/` e
-  `tools/`, como a regra `AGENTS_AND_APPS` do `dependency-cruiser` já diz (`.dependency-cruiser.cjs`).
+- `apps/server/src/agents/` (menos `app-builder/runs/` e `app-builder/git/`) e, em
+  `apps/server/src/harness/`, `spec/`, `turn/`, `memory/`, `prompt/`, `routes/` e `tools/`, como a
+  regra `AGENTS_AND_APPS` do `dependency-cruiser` já diz (`.dependency-cruiser.cjs`).
 - `packages/app/` e `packages/app-contract/`.
 - As telas de conversa.
 
 A trilha consome o contrato de acesso e não é dona dele. Toda pasta que nenhuma página de trilha
-nomeia é da Plataforma, como `builder/mastra/` e `builder/model-accounts/`. A Plataforma não é trilha: um defeito nela
+nomeia é da Plataforma, como `harness/mastra/`, `harness/model-accounts/` e `harness/machine/`. A Plataforma não é trilha: um defeito nela
 entra na frente da fila de quem o achou (delivery L4).
 
 ## A interface: o contrato de acesso
@@ -103,11 +105,12 @@ contrato.
 
 ## Os passos abertos da auditoria de arquitetura, nos marcos
 
-A auditoria de 2026-11-14 deixou seis passos abertos. Cada um entra num marco desta trilha.
+A auditoria de 2026-11-14 deixou seis passos abertos. Cada um entra num marco desta trilha; os
+passos 3 e 8 fecharam com a etapa 2 do harness.
 
-- **Passo 3.** A casca única de conversa na web, `<ConversationRoom>` com o registro de cartões por ferramenta, é a etapa 2 do harness, depois de `A1` e antes de `A3`, que põe o plano na conversa.
+- **Passo 3, fechado.** A sala única de conversa na web (`apps/web/src/harness/room/`) serve os quatro agentes: cada cartão desenhado pelo resultado de uma ferramenta sai de uma linha do registro por ferramenta, e cada agente diz o que é seu. `A3` põe o plano na conversa.
 - **Passo 4.** As regras de prompt trocadas por mecanismo do Mastra entram em `A3`, onde o juiz de fim de turno roda nos quatro agentes e as frases saem dos prompts.
 - **Passo 5.** O modo de plano nativo é o próprio `A3`, com o teste em que o controlador recusa a escrita antes da aprovação.
 - **Passo 6.** Do dono do conhecimento da empresa, o significado vai para `D4`, na trilha Dados. A memória do Projeto no Knowledge vai com o item 5 da lista do Brain, na página da [trilha Dados](dados.md), e `A3` fica sem ela.
 - **Passo 7.** As correções de stack andam ao lado de `A1`, cada uma num pull request. O convite com senha mexe em segurança e pede cartão.
-- **Passo 8.** Os nomes entram na etapa 2 do harness, depois de `A1` e antes de `A3` (decisões A e B do fundador, 2026-11-22, no [arquivo de aprovação](../../approvals/uma-ficha-por-agente.md)): as pastas com nomes que dizem o que cada uma é, e os nomes que a pessoa vê (a área Estúdio, "Construtor de apps" e "Construtor de agentes"), estes com protótipo antes. Nenhum id guardado muda, porque o id de cada agente e as marcas das conversas estão gravados nas conversas. Desde `A1`, todo arquivo novo nasce na pasta alvo da auditoria, com o que é comum às conversas em `builder/controller-kit/`.
+- **Passo 8, fechado.** As pastas dizem o que cada uma é (`harness/` e `agents/<agente>/`, no servidor e na web). Na tela, quem responde nas conversas da plataforma é o Conexus, o agente da empresa responde com o próprio nome, e o menu do Projeto tem quatro grupos (O app, Agentes, Dados, O Projeto). Nenhum id guardado mudou, porque o id de cada agente e as marcas das conversas estão gravados nas conversas.

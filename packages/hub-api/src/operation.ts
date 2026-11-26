@@ -29,6 +29,8 @@ export type Operation = {
     | { status: 201; body: z.ZodType }
     | { status: 202; body: z.ZodType }
     | { status: 202 | 204 }
+  /** Other success statuses the handler may answer, each with its own body (`runLakeCopy`: 200 `already`). */
+  alsoAnswers?: readonly { status: 200 | 201 | 202; body: z.ZodType }[]
   failures: readonly FailureCode[]
 }
 
@@ -62,4 +64,11 @@ const PLATFORM_FAILURES = [
 /** What an operation can answer besides its success: the platform's failures and its own. */
 export function failuresOf(operation: Operation): FailureCode[] {
   return [...new Set<FailureCode>([...PLATFORM_FAILURES, ...operation.failures])]
+}
+
+/** The body schema of a success status the operation declares; `undefined` when it declares none. */
+export function bodyOfStatus(operation: Operation, status: number): z.ZodType | undefined {
+  const { success } = operation
+  if (success.status === status) return 'body' in success ? success.body : undefined
+  return operation.alsoAnswers?.find((also) => also.status === status)?.body
 }

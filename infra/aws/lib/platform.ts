@@ -11,7 +11,7 @@ import {
   aws_s3 as s3,
 } from 'aws-cdk-lib'
 import type { Construct } from 'constructs'
-import { AREAS, READER_ACTIONS, WRITER_TABLE_ACTIONS } from './actions.ts'
+import { READER_ACTIONS, updatedTableResources, WRITER_TABLE_ACTIONS } from './actions.ts'
 import { copyPlatform } from './copy.ts'
 import { hubRole } from './hub.ts'
 import {
@@ -131,8 +131,8 @@ function boundaryPolicy(stack: Stack, place: Place): iam.ManagedPolicy {
       new iam.PolicyStatement({
         sid: 'ChangeTheTablesOfBothAreas',
         actions: ['glue:UpdateTable'],
-        resources: AREAS.map((area) =>
-          place.arn('glue', `table/s3tablescatalog/${BUCKET_PREFIX}*/${area}/*`),
+        resources: updatedTableResources(`${BUCKET_PREFIX}*`).map((resource) =>
+          place.arn('glue', resource),
         ),
       }),
       new iam.PolicyStatement({

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import {
   BUILDER_CONTROLLER,
-  BUILDER_ROUTES,
+  CONVERSATION_ROUTES,
   createConversation,
   createProject,
   listModelAccounts,
@@ -123,7 +123,7 @@ for (const width of [1366, 1490, 1600, 1862, 1920])
 
 const CONVERSATION_ID = '33333333-3333-4333-8333-333333333333'
 const PROJECT_API = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}`
-const MESSAGES = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${CONVERSATION_ID}/messages`
+const MESSAGES = `${CONVERSATION_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${CONVERSATION_ID}/messages`
 // The Builder's box is the first entry's last step, where the owner starts the first Projeto.
 const BUILD = `/companies/${COMPANY.id}/welcome/build`
 const REQUEST = 'Um app de encomendas com cliente, data de entrega e valor'

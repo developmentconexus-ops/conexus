@@ -231,6 +231,17 @@ test('a lista: o membro lê, nada da credencial sai', async (t) => {
   assert.ok(
     entry.fields.every((field: { help: { url: string } }) => field.help.url.startsWith('https://')),
   )
+  assert.deepEqual(
+    list.connectors.map((one: { id: string; lakeUnavailable: string | null }) => [
+      one.id,
+      one.lakeUnavailable,
+    ]),
+    [
+      ['sankhya', null],
+      ['mercado-livre', 'EXCLUSIVE_CREDENTIAL'],
+      ['hubspot', 'EXCLUSIVE_CREDENTIAL'],
+    ],
+  )
   assert.equal(list.mayManage, false)
   assert.equal(list.connections.length, 1)
   assert.equal(list.connections[0].state, 'ACTIVE')

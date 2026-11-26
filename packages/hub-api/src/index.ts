@@ -100,6 +100,7 @@ export {
   VersionCheck,
   VersionData,
 } from './conexus-parts.ts'
+export * from './connection-links.ts'
 export {
   CALL_DEADLINE_MS,
   CONNECTION_STATES,
@@ -115,6 +116,7 @@ export {
   completeConnectionSignIn,
   GRANT_DEADLINE_MS,
   getConnection,
+  LakeUnavailable,
   linkConnection,
   listConnections,
   Native,
@@ -132,7 +134,7 @@ export {
 export * from './construtor.ts'
 export {
   BUILDER_CONTROLLER,
-  BUILDER_ROUTES,
+  CONVERSATION_ROUTES,
   ConversationId,
   ConversationSummary,
   createConversation,
@@ -143,7 +145,6 @@ export {
   providerOfModel,
   readConversation,
   runningEffort,
-  setConversationModel,
   TurnFailureCode,
 } from './conversations.ts'
 export * from './data-reads.ts'
@@ -210,6 +211,7 @@ export {
   setDefaultModel,
   setMyModelDefault,
 } from './model-defaults.ts'
+export * from './network.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
   ObservationalMemoryModels,
@@ -223,6 +225,7 @@ export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,
   AttemptKey,
+  bodyOfStatus,
   type DeclaredOperation,
   defineOperation,
   failuresOf,

@@ -1,4 +1,4 @@
-import { BUILDER_ROUTES, CONSTRUTOR_CONTROLLER, CONSTRUTOR_TOOL } from '@conexus/hub-api'
+import { CONSTRUTOR_CONTROLLER, CONSTRUTOR_TOOL, CONVERSATION_ROUTES } from '@conexus/hub-api'
 import { fireEvent, screen, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
@@ -37,7 +37,7 @@ function saved(
 function conversation(...messages: ReturnType<typeof toolSaid>[]) {
   server.use(
     http.get(
-      `*${BUILDER_ROUTES}/agent-controller/${CONSTRUTOR_CONTROLLER}/sessions/:id/threads/:t/messages`,
+      `*${CONVERSATION_ROUTES}/agent-controller/${CONSTRUTOR_CONTROLLER}/sessions/:id/threads/:t/messages`,
       () => HttpResponse.json({ messages }),
     ),
   )

@@ -5,9 +5,11 @@ import type {
   BUILDER_CONTROLLER,
   CONSTRUTOR_CONTROLLER,
   ConversationId,
+  Effort,
+  ModelId,
   ProjectId,
 } from '@conexus/hub-api'
-import { BUILDER_ROUTES } from '@conexus/hub-api'
+import { CONVERSATION_ROUTES } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
 import { MastraClient, MastraClientError } from '@mastra/client-js'
 import { failureOfProblem, HubFailure, hubClientFetch } from '../../platform/hub.ts'
@@ -41,7 +43,7 @@ export type Place =
 
 export function sessionOf(conversationId: ConversationId, controller: Controller) {
   const client = new MastraClient({
-    baseUrl: BUILDER_ROUTES,
+    baseUrl: CONVERSATION_ROUTES,
     apiPrefix: '',
     credentials: 'same-origin',
     retries: 0,
@@ -61,6 +63,17 @@ export function sessionOf(conversationId: ConversationId, controller: Controller
      * thread (`useAgentControllerThreadMessages.ts`, `session.listMessages(threadId, limit)`).
      */
     read: (limit: number) => said(session.listMessages(conversationId, limit)),
+    /**
+     * The model and effort the person chose, on Mastra's own route behind the Hub's guard, as the
+     * Factory UI switches them (`useAgentControllerStateMutations.ts`, `session.switchModel`).
+     */
+    switchModel: (choice: { model: ModelId; effort: Effort }) =>
+      said(session.switchModel(choice.model, { thinkingLevel: choice.effort })),
+    /**
+     * The conversation's new title, on Mastra's own route behind the Hub's guard, as the Mastra Code
+     * remote session does (`session.renameThread`): the title stays, the memory no longer replaces it.
+     */
+    rename: (title: string) => said(session.renameThread(conversationId, title)),
     /** The person's answer to the card of a write that asks (step 24.5), on Mastra's own route behind the Hub's guard. */
     approve: (toolCallId: string, approved: boolean) =>
       said(session.approveTool(toolCallId, approved)),

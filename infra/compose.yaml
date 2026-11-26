@@ -34,7 +34,9 @@ services:
       - hub_git:/var/lib/conexus/git
     # HUB_MAIL_API_URL, HUB_MAIL_FROM, HUB_NEON_ORG_ID, HUB_CLOUDFLARE_ACCOUNT_ID and
     # HUB_GIT_COPY_BUCKET and HUB_INSTALLATION_ID, and HUB_AWS_ACCOUNT, HUB_AWS_HUB_ROLE_ARN,
-    # HUB_AWS_SERVICE_ROLE_ARN and HUB_AWS_TEMPLATE_BUCKET: they name accounts, so they stay out of Git.
+    # HUB_AWS_SERVICE_ROLE_ARN, HUB_AWS_TEMPLATE_BUCKET and the platform outputs HUB_AWS_COPY_CLUSTER_ARN,
+    # HUB_AWS_COPY_TASK_FAMILY, HUB_AWS_COPY_SUBNETS, HUB_AWS_COPY_SECURITY_GROUP and HUB_AWS_COPY_QUEUE_URL:
+    # they name accounts, so they stay out of Git.
     env_file: /etc/conexus/hub.env
     environment:
       HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url

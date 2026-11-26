@@ -7,7 +7,7 @@ import {
 import { ok } from './layout-harness.ts'
 import { MERCADO_LIVRE, SANKHYA } from './src/hub/connectors/fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { connectionOf } from './sweep-connections.ts'
+import { connectionOf, lakeTablesPage } from './sweep-connections.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { MEMBER, OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
@@ -98,6 +98,7 @@ function notebook(who: typeof OWNER, mayManage: boolean, notes: (typeof NOTE)[])
       connection: CONNECTION,
       notes,
     }),
+    ...lakeTablesPage(COMPANY.id, CONNECTION),
   }
 }
 
@@ -128,6 +129,7 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
         connection: connectionOf({ id: STOPPED.id, name: STOPPED.name, state: 'NEW' }),
         notes: [],
       }),
+      ...lakeTablesPage(COMPANY.id, STOPPED),
     },
     settle: (p) => waitFor(p, 'liberado, mas não lê até a ligação funcionar'),
   },
@@ -140,6 +142,7 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
         connection: connectionOf({ id: UNTESTED.id, name: UNTESTED.name, state: 'NEW' }),
         notes: [],
       }),
+      ...lakeTablesPage(COMPANY.id, UNTESTED),
     },
     settle: (p) => waitFor(p, 'Teste a ligação antes de liberar'),
   },
@@ -159,6 +162,7 @@ export const PROJECT_INTEGRATIONS_STATES: State[] = [
         connection: connectionOf({ id: BROKEN.id, name: BROKEN.name, state: 'NEEDS_REAUTH' }),
         notes: [],
       }),
+      ...lakeTablesPage(COMPANY.id, BROKEN),
     },
     settle: (p) => waitFor(p, 'Conectar de novo em Integrações da empresa'),
   },

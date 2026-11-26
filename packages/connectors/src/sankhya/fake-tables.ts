@@ -26,6 +26,17 @@ export type CopyTables = Readonly<{
   addColumn(): string
 }>
 
+/** A column Oracle declares with a scale, as the real `TGFCAB.VLRDESCPARCERIA` is `NUMBER(18,4)`; every other number declares none. */
+export const DECLARED_DECIMAL = {
+  table: 'TGFEFDVMRSTDIA',
+  column: 'VLRMEDIA',
+  precision: 18,
+  scale: 4,
+} as const
+
+/** A calculated number in the first note of `TGFCAB`, with ten places and no declared scale, as the real table carries (issue 1380). */
+const CALCULATED = { column: 'CAMPO003', value: '2.1234567895' } as const
+
 const CHANGED_BY_TEST = '2026-11-20 10:00:00'
 
 const DESCRIPTIONS: Readonly<Record<string, string>> = {
@@ -100,6 +111,9 @@ function create(database: DatabaseSync, decimal: string): void {
   database.exec(
     `UPDATE TGFCAB SET ${wide.map(([name, , value]) => `${name} = ${value}`).join(', ')}`,
   )
+  database.exec(
+    `UPDATE TGFCAB SET ${CALCULATED.column} = '${CALCULATED.value}' WHERE NUNOTA = (SELECT MIN(NUNOTA) FROM TGFCAB)`,
+  )
   database.exec(`
     ALTER TABLE TGFITE ADD COLUMN DTALTER DATE;
     UPDATE TGFITE SET DTALTER = (SELECT DTALTER FROM TGFCAB WHERE TGFCAB.NUNOTA = TGFITE.NUNOTA);
@@ -145,12 +159,24 @@ function dictionary(database: DatabaseSync): (table: string) => void {
     CREATE TABLE TDDTAB (NOMETAB TEXT PRIMARY KEY, DESCRTAB TEXT, ADICIONAL TEXT);
     CREATE TABLE TDDCAM (NUCAMPO INTEGER PRIMARY KEY, NOMETAB TEXT, NOMECAMPO TEXT, DESCRCAMPO TEXT,
       TIPCAMPO TEXT, CALCULADO TEXT, ADICIONAL TEXT);
+    CREATE TABLE DECLARED_DECIMAL (table_name TEXT, column_name TEXT, precision INTEGER, scale INTEGER);
     CREATE VIEW ALL_TAB_COLUMNS AS
       SELECT '${OWNER}' AS OWNER, m.name AS TABLE_NAME, p.name AS COLUMN_NAME, p.cid + 1 AS COLUMN_ID,
         CASE p.type WHEN 'INTEGER' THEN 'NUMBER' WHEN 'REAL' THEN 'NUMBER' WHEN 'DECIMAL_TEXT' THEN 'NUMBER'
-          WHEN 'DATE' THEN 'DATE' WHEN 'CLOB' THEN 'CLOB' WHEN 'BLOB' THEN 'BLOB' ELSE 'VARCHAR2' END AS DATA_TYPE
-      FROM sqlite_master m, pragma_table_info(m.name) p WHERE m.type = 'table';
+          WHEN 'DATE' THEN 'DATE' WHEN 'CLOB' THEN 'CLOB' WHEN 'BLOB' THEN 'BLOB' ELSE 'VARCHAR2' END AS DATA_TYPE,
+        d.precision AS DATA_PRECISION, d.scale AS DATA_SCALE
+      FROM sqlite_master m JOIN pragma_table_info(m.name) p
+        LEFT JOIN DECLARED_DECIMAL d ON d.table_name = m.name AND d.column_name = p.name
+      WHERE m.type = 'table';
   `)
+  database
+    .prepare('INSERT INTO DECLARED_DECIMAL VALUES (?, ?, ?, ?)')
+    .run(
+      DECLARED_DECIMAL.table,
+      DECLARED_DECIMAL.column,
+      DECLARED_DECIMAL.precision,
+      DECLARED_DECIMAL.scale,
+    )
   const field = database.prepare(
     'INSERT INTO TDDCAM (NOMETAB, NOMECAMPO, DESCRCAMPO, TIPCAMPO, CALCULADO, ADICIONAL) VALUES (?, ?, ?, ?, ?, ?)',
   )
@@ -187,6 +213,7 @@ export function copyTablesOn(database: DatabaseSync, decimal: string): CopyTable
   let added = 0
   return {
     note(nunota, action, at = CHANGED_BY_TEST) {
+      if (action === 'APAGAR') database.prepare('DELETE FROM TGFNFE WHERE NUNOTA = ?').run(nunota)
       const done =
         action === 'APAGAR'
           ? database.prepare('DELETE FROM TGFCAB WHERE NUNOTA = ?').run(nunota)

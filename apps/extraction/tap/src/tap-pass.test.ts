@@ -143,6 +143,33 @@ test('a inteira: a NF-e lê tudo a cada rodada, com o mesmo estado', async () =>
   assert.deepEqual(lastState(first).bookmarks.nfe, {})
 })
 
+function activated(run: TapRun, stream: string): readonly unknown[] {
+  return run.messages.filter(({ type, stream: of }) => type === 'ACTIVATE_VERSION' && of === stream)
+}
+
+test('a passada inteira, e só ela, termina com ACTIVATE_VERSION: a primeira, a pedida, a sem ponto e a inteira; a que lê só o que mudou, não', async () => {
+  const first = await tap(sankhyaDouble(), { streams: ITENS })
+  assert.equal(activated(first, 'itens').length, 1, 'a primeira passada lê tudo')
+  const state = lastState(first)
+  const changed = await tap(sankhyaDouble(), { streams: ITENS, state })
+  assert.equal(activated(changed, 'itens').length, 0, 'do ponto, só o que mudou')
+  const asked = await tap(sankhyaDouble(), { streams: ITENS, state, whole: ['TGFITE'] })
+  assert.equal(activated(asked, 'itens').length, 1, 'o Hub pediu a tabela inteira')
+  const lost = await tap(sankhyaDouble(), {
+    streams: ITENS,
+    state: { bookmarks: { outra: { replication_key_value: '2026-11-01' } } },
+  })
+  assert.equal(activated(lost, 'itens').length, 1, 'sem ponto no estado, lê tudo')
+  const nfe = [selected('TGFNFE', 'nfe')]
+  const full = await tap(sankhyaDouble(), { streams: nfe })
+  const again = await tap(sankhyaDouble(), { streams: nfe, state: lastState(full) })
+  assert.equal(activated(again, 'nfe').length, 1, 'a tabela inteira lê tudo a cada rodada')
+  const months = [selected('TGFCAB', 'notas')]
+  const window = await tap(sankhyaDouble(), { streams: months })
+  const next = await tap(sankhyaDouble(), { streams: months, state: lastState(window) })
+  assert.deepEqual([activated(window, 'notas').length, activated(next, 'notas').length], [1, 0])
+})
+
 function failing(double: Double, failures: number, fail: () => Response | never) {
   let left = failures
   let pages = 0
@@ -162,7 +189,7 @@ function failing(double: Double, failures: number, fail: () => Response | never)
 
 const VENDEDORES = [selected('TGFVEN', 'vendedores')]
 
-test('a página que cai e volta: 5xx, 429 e a rede repetidos até cinco vezes, com a espera crescendo; um 4xx não', async () => {
+test('a consulta que cai e volta: 5xx, 429 e a rede repetidos até cinco vezes, com a espera crescendo; um 4xx não', async () => {
   const kinds: [string, () => Response][] = [
     ['5xx', () => new Response('{}', { status: 503 })],
     ['429', () => new Response('{}', { status: 429, headers: { 'retry-after-ms': '1500' } })],
@@ -247,4 +274,25 @@ test('o binário: base64 com contentEncoding no esquema, os bytes como vieram; o
     Buffer.from(line.record.imagem, 'base64'),
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 255]),
   )
+})
+
+test('o decimal declarado: a precisão e a escala vão ao esquema ao lado do x-singer.decimal, e o sem escala vai sem elas', () => {
+  const columns = [
+    {
+      name: 'VLRDESCPARCERIA',
+      type: 'numeric',
+      description: null,
+      decimal: { precision: 18, scale: 4 },
+    },
+    { name: 'VLRNOTA', type: 'numeric', description: null },
+  ] as const
+  assert.deepEqual(schemaOf(columns).properties, {
+    vlrdescparceria: {
+      type: ['string', 'null'],
+      format: 'x-singer.decimal',
+      precision: 18,
+      scale: 4,
+    },
+    vlrnota: { type: ['string', 'null'], format: 'x-singer.decimal' },
+  })
 })

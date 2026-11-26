@@ -47,7 +47,7 @@ function topic(dir: string, file: string) {
 }
 
 test('um pull request de outro trilho não responde pelo cartão sem linha da fronteira', () => {
-  for (const file of ['apps/web/src/ui/button.ts', 'apps/server/src/builder/assistant/a.ts']) {
+  for (const file of ['apps/web/src/ui/button.ts', 'apps/server/src/agents/assistant/a.ts']) {
     const dir = repository()
     topic(dir, file)
     assert.equal(run(dir, '--base', 'main').status, 0, file)

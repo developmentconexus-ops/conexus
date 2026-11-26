@@ -20,12 +20,16 @@ function retryAfterMs(headers: Headers, now: number): number | undefined {
   return Number.isNaN(date) || date <= now ? undefined : date - now
 }
 
-/** What fetch documents for a provider out of reach: the network or a refused redirect (TypeError), a deadline or an abort. */
+/** What fetch documents for a provider out of reach: the network or a refused redirect (TypeError), or an abort. */
 function isUnreachable(error: unknown): boolean {
   return (
-    error instanceof TypeError ||
-    (error instanceof DOMException && ['TimeoutError', 'AbortError'].includes(error.name))
+    error instanceof TypeError || (error instanceof DOMException && error.name === 'AbortError')
   )
+}
+
+/** The request's own deadline ended, as `AbortSignal.timeout` documents it. */
+function isTimedOut(error: unknown): boolean {
+  return error instanceof DOMException && error.name === 'TimeoutError'
 }
 
 function redacted(text: string, secrets: readonly string[]): string {
@@ -38,20 +42,28 @@ function redacted(text: string, secrets: readonly string[]): string {
 /**
  * The kit's request sent to the connector's origin, read as the connector declares its numbers. Every
  * answer loses the credential's values before it is read, as the Hub's reads do (`wire.ts`): the
- * Sankhya refuses at HTTP 200, and a refusal's message reaches the result file.
+ * Sankhya refuses at HTTP 200, and a refusal's message reaches the result file. A request that
+ * outlasts `timeoutMs`, the body read included, ends as `DEADLINE`.
  */
 export function senderOf(
   connector: Connector,
-  a: Readonly<{ fetch: typeof fetch; credential: Credential; now: () => number }>,
+  a: Readonly<{
+    fetch: typeof fetch
+    credential: Credential
+    now: () => number
+    timeoutMs: number
+  }>,
 ): ProviderSend<TableSendFailure> {
   const secrets = Object.values(a.credential)
   return async (request, { token, signal }): Promise<ProviderAnswer | TableSendFailure> => {
     let response: Response
     let text: string
     try {
-      response = await a.fetch(toRequest(connector, request, token), { signal })
+      const deadline = AbortSignal.any([signal, AbortSignal.timeout(a.timeoutMs)])
+      response = await a.fetch(toRequest(connector, request, token), { signal: deadline })
       text = await response.text()
     } catch (error) {
+      if (isTimedOut(error)) return { kind: 'DEADLINE' }
       if (isUnreachable(error)) return { kind: 'UNREACHABLE' }
       throw error
     }

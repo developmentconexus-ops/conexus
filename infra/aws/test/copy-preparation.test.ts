@@ -30,6 +30,7 @@ test('a execução da cópia, numa política só dela', () => {
       'TagTheCopyNetworkOnCreate',
       'TheCopyNetwork',
       'TheCopyLogs',
+      'TheStoppingPointsBucket',
     ],
   )
   function copy(sid: string) {
@@ -46,11 +47,14 @@ test('a execução da cópia, numa política só dela', () => {
     at('logs', 'log-group:conexus-plataforma-copia'),
     at('logs', 'log-group:conexus-plataforma-copia:*'),
   ])
+  assert.deepEqual(copy('TheStoppingPointsBucket'), [
+    `arn:aws:s3:::conexus-estado-${ACCOUNT}-${REGION}`,
+  ])
   assert.deepEqual(actionsOf(bySid(statements, 'TaskDefinitionsHaveNoResource')), [
     'ecs:DeregisterTaskDefinition',
     'ecs:DescribeTaskDefinition',
   ])
-  for (const sid of ['TheCopyCluster', 'TheCopyQueues', 'TheCopyRule']) {
+  for (const sid of ['TheCopyCluster', 'TheCopyQueues', 'TheCopyRule', 'TheStoppingPointsBucket']) {
     for (const action of actionsOf(bySid(statements, sid))) assert.doesNotMatch(action, /\*/)
   }
   assert.ok(!statements.flatMap(actionsOf).some((action) => action.startsWith('ecr:')))

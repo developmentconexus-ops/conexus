@@ -1,0 +1,290 @@
+import assert from 'node:assert/strict'
+import { test } from 'node:test'
+import {
+  CLOSED_TOOLS,
+  CompanyId,
+  ModelAccountId,
+  ModelId,
+  PersonId,
+  WORKSPACE_TOOL,
+} from '@conexus/hub-api'
+import { Agent } from '@mastra/core/agent'
+import { MessageList } from '@mastra/core/agent/message-list'
+import { AgentController } from '@mastra/core/agent-controller'
+import { InMemoryStore } from '@mastra/core/storage'
+import { createTool } from '@mastra/core/tools'
+import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
+import { MockLanguageModelV3 } from 'ai/test'
+import { z } from 'zod'
+import {
+  AccountTurn,
+  accountPick,
+  callModel,
+  turnContext,
+} from '../../harness/model-accounts/public.ts'
+import { asked, conversing, endOf, MODEL, title } from '../../harness/routes/test-conversation.ts'
+import { partsOf } from '../../harness/routes/test-parts.ts'
+import { CONTROLLER_KINDS, initialStateOf } from '../../harness/spec/public.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+
+const CARD_TOOLS = [
+  'ask_user',
+  'submit_plan',
+  'task_write',
+  'task_update',
+  'task_complete',
+  'task_check',
+]
+const CONTROLLER_TOOLS = ['subagent']
+const ALLOWED =
+  /^(mastra_workspace_(read_file|list_files|grep|file_stat|write_file|edit_file|mkdir|delete|execute_command|get_process_output|kill_process)|web_search|web_fetch|recall|skill|skill_search|skill_read|conexus_check|app_data_read|app_data_check|data_describe|data_query|ask_user|submit_plan|task_write|task_update|task_complete|task_check)$/
+
+/** A model that calls `tools` in its first step and answers in the second. */
+function calling(...tools: { name: string; input: object }[]) {
+  let step = 0
+  const seen: Sent[] = []
+  function answer(call: Sent): Reply {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    seen.push(call)
+    step += 1
+    if (step > 1) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: tools.map((tool) => ({ type: 'tool_use', ...tool })) }
+  }
+  return { answer, seen }
+}
+
+test('as ferramentas oferecidas são só ler, escrever e rodar: as de cartões, e nenhuma do controller que fica de fora, nenhuma fora das categorias liberadas', async (t) => {
+  const model = calling({ name: 'mastra_workspace_list_files', input: { path: '.' } })
+  const { hub, ana, conversations } = await conversing(t, model.answer)
+  await asked(t, { hub, person: ana, conversations })
+  const offered = model.seen[0]?.tools ?? []
+  assert.ok(offered.includes('mastra_workspace_write_file'))
+  assert.ok(offered.includes('mastra_workspace_execute_command'))
+  for (const name of CARD_TOOLS) assert.ok(offered.includes(name), name)
+  assert.deepEqual(
+    offered.filter((name) => CONTROLLER_TOOLS.includes(name)),
+    [],
+  )
+  assert.deepEqual(
+    offered.filter((name) => !ALLOWED.test(name)),
+    [],
+  )
+  assert.equal(offered.includes('mastra_workspace_ast_edit'), false)
+})
+
+test('escrever e rodar um comando não param à espera de aprovação: nenhuma execução fica guardada como suspensa', async (t) => {
+  const write = { name: 'mastra_workspace_write_file', input: { path: 'a.ts', content: 'x\n' } }
+  const model = calling(write, {
+    name: 'mastra_workspace_execute_command',
+    input: { description: 'Rodando um teste', command: 'echo oi' },
+  })
+  const { hub, ana, conversations } = await conversing(t, model.answer)
+  /** Every run Mastra saves waiting, as an approval leaves it, from the moment its tables exist. */
+  async function recordSuspensions() {
+    await hub.test.mastraPool.query(`
+    create table mastra.suspended_runs (run_id text);
+    create function mastra.record_suspension() returns trigger language plpgsql as $$
+    begin insert into mastra.suspended_runs values (new.run_id); return new; end $$;
+    create trigger record_suspension after insert or update on mastra.mastra_workflow_snapshot
+      for each row when (new.snapshot->>'status' = 'suspended')
+      execute function mastra.record_suspension();
+    `)
+  }
+  const { events } = await asked(t, { hub, person: ana, conversations, between: recordSuspensions })
+  assert.equal(endOf(events), 'complete')
+  // A command's output comes on its tool part, said again while it runs.
+  const states = new Map<string, string[]>()
+  for (const part of partsOf(events)) {
+    if (part.type !== 'tool-invocation') continue
+    const { toolCallId, state } = part.toolInvocation
+    const said = states.get(toolCallId) ?? []
+    if (said.at(-1) !== state) said.push(state)
+    states.set(toolCallId, said)
+  }
+  assert.deepEqual(
+    [...states.values()],
+    [
+      ['call', 'result'],
+      ['call', 'result'],
+    ],
+  )
+  assert.deepEqual(
+    (await hub.test.mastraPool.query('select run_id from mastra.suspended_runs')).rows,
+    [],
+  )
+})
+
+/** A model whose first step calls `tool` and whose next answers. */
+function callingOnce(tool: string) {
+  let step = 0
+  return new MockLanguageModelV3({
+    doStream: async () => {
+      step += 1
+      const parts =
+        step === 1
+          ? [{ type: 'tool-call' as const, toolCallId: 'c1', toolName: tool, input: '{}' }]
+          : [
+              { type: 'text-start' as const, id: 't' },
+              { type: 'text-delta' as const, id: 't', delta: 'ok' },
+              { type: 'text-end' as const, id: 't' },
+            ]
+      return {
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue({ type: 'stream-start', warnings: [] })
+            for (const part of parts) controller.enqueue(part)
+            const usage = {
+              inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+              outputTokens: { total: 1, text: 1, reasoning: 0 },
+            }
+            controller.enqueue({
+              type: 'finish',
+              finishReason: { unified: step === 1 ? 'tool-calls' : 'stop', raw: undefined },
+              usage,
+            })
+            controller.close()
+          },
+        }),
+      }
+    },
+  })
+}
+
+/** A controller closed as the Builder's is, with a tool the closure does not list. */
+async function closedSession(ran: string[]) {
+  const outside = createTool({
+    id: 'github_create_issue',
+    description: 'A tool outside the closed set.',
+    inputSchema: z.object({}),
+    execute: async () => {
+      ran.push('github_create_issue')
+      return 'created'
+    },
+  })
+  const controller = new AgentController({
+    id: 'closed',
+    storage: new InMemoryStore(),
+    agent: new Agent({
+      id: 'closed',
+      name: 'Closed',
+      instructions: 'None.',
+      model: callingOnce('github_create_issue'),
+      tools: { github_create_issue: outside },
+    }),
+    modes: [{ id: 'conversa', availableTools: [...CLOSED_TOOLS] }],
+    initialState: initialStateOf({ kind: 'NOTHING_ASKS' }),
+  })
+  await controller.init()
+  return controller.createSession()
+}
+
+test('a sessão começa em yolo: nenhuma ferramenta da lista pede aprovação', async () => {
+  const session = await closedSession([])
+  for (const name of ['mastra_workspace_write_file', 'mastra_workspace_execute_command', 'recall'])
+    assert.equal(session.resolveToolApproval(name), 'allow', name)
+})
+
+test('em yolo, uma ferramenta fora da lista do modo não é oferecida nem executada: chamada, é recusada', async () => {
+  const ran: string[] = []
+  const session = await closedSession(ran)
+  const events: string[] = []
+  session.subscribe((event) => {
+    events.push(event.type)
+  })
+  await session.sendMessage({ content: 'Abra uma issue.' })
+  assert.deepEqual(ran, [], 'the tool outside the set never ran')
+  assert.equal(events.includes('tool_approval_required'), false)
+  assert.ok(events.includes('tool_end'), events.join(' '))
+})
+
+test('a ficha do Construtor de apps oferece o conjunto fechado da tela, e nenhuma ferramenta a mais (issue 1286)', async (t) => {
+  const { hub } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const modes = hub.mastra.getAgentController(CONTROLLER_KINDS.builder.id)?.listModes()
+  assert.deepEqual(
+    modes?.map((mode) => [mode.id, new Set(mode.availableTools)]),
+    [['conversa', new Set(CLOSED_TOOLS)]],
+  )
+})
+
+function unused(): Promise<never> {
+  return Promise.reject(new Error('the processor calls no model'))
+}
+function secondModel() {
+  return callModel({
+    specificationVersion: 'v2',
+    provider: 'groq',
+    modelId: 'llama-3.3-70b-versatile',
+    supportedUrls: {},
+    doGenerate: unused,
+    doStream: unused,
+  })
+}
+
+/** The turn after the company's automatic switch: its account is given, so no database is asked. */
+class SwitchedTurn extends AccountTurn {
+  override get switched() {
+    return true
+  }
+  override modelId() {
+    return ModelId.parse(MODEL)
+  }
+  override effort() {
+    return 'off' as const
+  }
+  override async account() {
+    const model = await secondModel()
+    return {
+      ...{
+        id: ModelAccountId.parse(crypto.randomUUID()),
+        label: 'Time 1',
+        kind: 'api_key' as const,
+      },
+      ...{ modelId: ModelId.parse(MODEL), models: { conversation: model, system: model } },
+    }
+  }
+}
+
+/** The context as the controller leaves it: the model the conversation chose, which the switch moved the turn off. */
+function withSessionModel(context: ReturnType<typeof turnContext>) {
+  context.set('controller', { session: { modelId: ModelId.parse(MODEL) } })
+  return context
+}
+
+test('a troca automática de modelo estreita o conjunto fechado e não o refaz: a ferramenta que não é da lista não volta', async () => {
+  const closed = [...CLOSED_TOOLS]
+  const tools = Object.fromEntries(
+    [...closed, 'web_search', 'github_create_issue'].map((name) => [name, {}]),
+  )
+  const turn = new SwitchedTurn({
+    companyId: CompanyId.parse('c'.repeat(32)),
+    personId: PersonId.parse('person-switched'),
+  })
+  const processor = accountPick(Object.create(null))
+  const result = await processor.processInputStep?.({
+    ...{ stepNumber: 0, steps: [], systemMessages: [], state: {}, messages: [], retryCount: 0 },
+    ...{
+      model: await secondModel(),
+      tools,
+      activeTools: [...closed, 'web_search'],
+      abort: () => assert.fail('the step is not aborted'),
+    },
+    messageList: new MessageList(),
+    requestContext: withSessionModel(turnContext(turn)),
+  })
+  assert.ok(result !== undefined && !Array.isArray(result) && !(result instanceof MessageList))
+  assert.deepEqual(
+    result.activeTools,
+    closed.filter((name) => name !== 'web_search' && name !== 'web_fetch'),
+  )
+})
+
+test('os nomes que a tela dá às ferramentas da máquina são os do Mastra: uma troca de nome lá falha aqui (code C27)', () => {
+  const { FILESYSTEM, SANDBOX } = WORKSPACE_TOOLS
+  assert.deepEqual(WORKSPACE_TOOL, {
+    ...{ readFile: FILESYSTEM.READ_FILE, writeFile: FILESYSTEM.WRITE_FILE },
+    ...{ editFile: FILESYSTEM.EDIT_FILE, listFiles: FILESYSTEM.LIST_FILES },
+    ...{ delete: FILESYSTEM.DELETE, fileStat: FILESYSTEM.FILE_STAT, mkdir: FILESYSTEM.MKDIR },
+    ...{ grep: FILESYSTEM.GREP, executeCommand: SANDBOX.EXECUTE_COMMAND },
+    ...{ getProcessOutput: SANDBOX.GET_PROCESS_OUTPUT, killProcess: SANDBOX.KILL_PROCESS },
+  })
+})

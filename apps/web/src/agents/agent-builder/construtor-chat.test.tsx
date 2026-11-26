@@ -1,4 +1,4 @@
-import { BUILDER_ROUTES, BUILDER_TOOL, CONSTRUTOR_CONTROLLER } from '@conexus/hub-api'
+import { CONSTRUTOR_CONTROLLER, CONVERSATION_ROUTES, CONVERSATION_TOOL } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test, vi } from 'vitest'
@@ -16,7 +16,7 @@ test('uma conversa com o Construtor de outra pessoa dá não encontrado', async 
   expect(await screen.findByText('Esta conversa não existe mais.')).toBeTruthy()
 })
 
-test('na conversa, trocar o modelo manda o PUT do Construtor e o botão mostra o que o Hub guardou', async () => {
+test('na conversa, trocar o modelo manda a troca da sessão do Construtor e o botão mostra a escolha que o Hub aceitou', async () => {
   const { writes } = at(`${AREA}/agent-builder/${BUILDER_CHAT}`, {
     agents: [],
     construtor: [
@@ -36,9 +36,11 @@ test('na conversa, trocar o modelo manda o PUT do Construtor e o botão mostra o
     ),
   )
   const [put] = writes()
-  expect(put?.method).toBe('PUT')
-  expect(put?.path).toMatch(new RegExp(`/construtor/conversations/${BUILDER_CHAT}/model$`))
-  expect(put?.body).toMatchObject({ model: 'anthropic/claude-opus-4' })
+  expect(put?.method).toBe('POST')
+  expect(put?.path).toBe(
+    `${CONVERSATION_ROUTES}/agent-controller/${CONSTRUTOR_CONTROLLER}/sessions/${BUILDER_CHAT}/model`,
+  )
+  expect(put?.body).toEqual({ modelId: 'anthropic/claude-opus-4', thinkingLevel: 'off' })
 })
 
 test('a conversa com o Construtor sumir do Hub faz a lista ser lida de novo', async () => {
@@ -100,11 +102,15 @@ test('a conversa do Construtor lê "Leu Sankhya · Matriz" (F-A2, step 24.3)', a
       HttpResponse.json({ connectors: [SANKHYA], connections: [], mayManage: false }),
     ),
     http.get(
-      `*${BUILDER_ROUTES}/agent-controller/${CONSTRUTOR_CONTROLLER}/sessions/:id/threads/:t/messages`,
+      `*${CONVERSATION_ROUTES}/agent-controller/${CONSTRUTOR_CONTROLLER}/sessions/:id/threads/:t/messages`,
       () =>
         HttpResponse.json({
           messages: [
-            toolSaid(BUILDER_TOOL.connectorRead, read, { kind: 'OK', value: {}, complete: true }),
+            toolSaid(CONVERSATION_TOOL.connectorRead, read, {
+              kind: 'OK',
+              value: {},
+              complete: true,
+            }),
           ],
         }),
     ),
