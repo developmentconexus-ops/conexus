@@ -82,9 +82,9 @@ Recomendado / D. Sim".
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 | U1 Tokens de movimento e reduzir | a escala curta com nome no `tokens.css`; com reduzir, nada anima; a barra e o rastro sem esticar; hover e toque | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md`, `docs/reference/movimento.md` | design | nada |
+| G1 | U1 Tokens de movimento e reduzir | a escala curta com nome no `tokens.css`; com reduzir, nada anima; a barra e o rastro sem esticar; hover e toque | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md` | design | o pull request de método da decisão B-a ([#1428](https://github.com/developmentconexus-ops/conexus/pull/1428)) em `main` |
 | G1 | U2 Entradas e saídas | menu, popover, seletor, combobox, dica, janela, gaveta e painel pelos tokens; a troca de tela | `apps/web/src/ui/`, `apps/web/src/main.tsx`, `apps/web/src/brand/` | design | U1 |
-| G2 | U3 A direção visual nos tokens | a B em grafite nas cores, sombras, raios, título e foco; a moldura; o ipê aceso; o `DESIGN.md` pelo `document`; o teste de contraste | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md`, `PRODUCT.md`, `docs/reference/impeccable.md` | design | U1, o pull request da decisão B |
+| G2 | U3 A direção visual nos tokens | a B em grafite nas cores, sombras, raios, título e foco; a moldura; o ipê aceso; o item atual da barra sem tique; o `DESIGN.md` pelo `document`; o teste de contraste | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md` | design | U1 |
 | G2 | U4 Aviso e esqueleto | o aviso sobre o Base UI, com o primeiro uso; o esqueleto nos tokens | `apps/web/src/ui/`, `apps/web/src/main.tsx`, `apps/web/src/harness/model-accounts/` | design | U1, U3 |
 
 Dois pull requests (delivery L9): G1 e G2.
@@ -111,6 +111,7 @@ Dois pull requests (delivery L9): G1 e G2.
 | 13 | U4 | Salvar o padrão em Configurações › Modelos mostra "Padrão salvo" num aviso com `role="status"`, só depois da resposta do servidor; um erro do servidor não mostra aviso e continua no campo | `apps/web/notice.layout.test.ts`, "salvar o padrão avisa" e "o erro fica no campo" | must |
 | 14 | U4 | O aviso some sozinho em 5 s, fecha pelo botão e pela tecla Esc, e o foco não sai de onde estava | `notice.layout.test.ts`, "o aviso some e não rouba o foco" | must |
 | 15 | todas | A vitrine abre sem violação de CSP nos dois temas, a 1366 e 390 px; cada peça nova tem entrada na vitrine | `apps/web/showcase.layout.test.ts` e `pieces.layout.test.ts` (existentes) | must |
+| 17 | U3 | O item atual da barra, aberta e recolhida, tem o fundo mais claro que a moldura e o ícone em ipê, com `aria-current="page"`; recusa: nenhum pseudo-elemento `::before` pintado de ipê no item atual | `apps/web/frame.layout.test.ts`, caso novo "o item atual acende o ícone" | must |
 | 16 | todas | A catraca do lint de design desce de 325 para 311, a contagem de hoje, e não sobe | `npm run lint:design -w @conexus/web`, com `--max-warnings 311` | must |
 
 ## A matriz de estados
@@ -173,6 +174,7 @@ grafite; "decisão 2" é a dele do mesmo dia ao movimento.
 | 22 | A vitrine e a CSP | todas | W22, V17 | `pieces.layout.test.ts:72-96`, `showcase.layout.test.ts` | · | o harness já abre a vitrine com a CSP e com a preferência | nativo | · | não precisa | · |
 | 23 | O brilho sincronizado | fica de fora: só o MA, por `style=` (V17) | nada registrado | · | MA-ds `Skeleton/skeleton.tsx:5-20` **lido** | · | nativo (CSS), fora | · | · | · |
 | 24 | Os gestos dos ícones | fica de fora (estudo 6.4) | · | · | G4 OS ao vivo **não oficial** | · | nativo (CSS), fora | · | · | · |
+| 26 | O item atual da barra | U3 | V5 como o #1428 o deixou ("B. B-a"; "Fecha": fundo mais claro e ícone em ipê, sem tique) | `ui/sidebar.tsx:287`, `ui/sidebar-rail-button.tsx:30` (o tique `before:bg-accent`) | protótipo `b-noites.css:44-46` (o fundo do item ativo, a moldura com 14% de branco) **herdado** | troca de classe no estado `data-[status=active]` | nativo | · | B-a | · |
 | 25 | Pílula das abas, número que rola, tique, botão que diz | fica de fora: R3 | "Fecha", linha 5 | `ui/tabs.tsx`, `ui/checkbox.tsx` | protótipo `carater.css:311-313,531` (anima `left` e `width`) **herdado** | · | nativo (`transform`), na R3 | · | · | · |
 
 **A medida do transplante.** Nenhuma parte trazida: a etapa troca valores e acrescenta uma peça.
@@ -197,7 +199,7 @@ entre módulos.
 ### As linhas da tabela
 
 1 a 6. Ler `apps/web/src/brand/tokens.css` (o `@theme`, linhas 47-176, e os `@utility`), `DESIGN.md`
-"Motion" (`:499-506`), `docs/reference/movimento.md` inteiro, `ui/sidebar.tsx:150-160`,
+"Motion" (`:499-506`), `docs/reference/movimento.md` inteiro como o #1428 o deixou (a fonte dos nomes e dos números desta unidade), `ui/sidebar.tsx:150-160`,
 `ui/trace.tsx:85-110`, `ui/button.tsx:10-40`, `ui/table.tsx:37`, `ui/attachment.tsx:12`,
 `ui/switch.tsx:11,18`, `ui/checkbox.tsx:13`. Seguir MA `theme/motion.css:2-10,30-40` e CR
 `tokens.css:123-137,276-287,312`.
@@ -208,7 +210,7 @@ entre módulos.
 | --- | --- | --- |
 | `apps/web/src/brand/tokens.css` | muda | todo `apps/web/src` pelo Tailwind |
 | `apps/web/src/ui/` (`sidebar`, `trace`, `button`, `table`, `attachment`, `switch`, `checkbox`) | muda | as telas |
-| `DESIGN.md` "Motion", `docs/reference/movimento.md` | muda | o Impeccable, a U2 e a U3 |
+| `DESIGN.md` "Motion" | muda | o Impeccable, a U2 e a U3 |
 | `apps/web/motion.layout.test.ts` | cria | `apps/web/package.json` `test:browser` |
 | `apps/web/package.json` | muda: `test:browser` ganha o teste; `lint:design` desce para `--max-warnings 311` | CI |
 
@@ -280,10 +282,11 @@ shadcn, Base UI). Ler primeiro `docs/guides/design.md` V17, V26 e V28.
    - **O que entra:** `transition-colors duration-row` nas linhas da barra; `transition-[color,background-color,box-shadow,scale] duration-control` no botão, com `active:scale-96` em `duration-press ease-spring-press`; a chave e a caixa em `duration-state ease-spring-state`. Regras: V17, V26.
    - **Testes:** "o mouse muda só a cor, no tempo da escala" (o estado `data-preview="hover"` da
      vitrine, `tokens.css:15-25`); "o toque cede e volta" (`data-preview="active"`).
-4. **A folha e o `DESIGN.md`.** Critérios: 1 a 4.
-   - **Arquivos:** reescreve `docs/reference/movimento.md` seções 3, 4 e 6 com os nomes acima e a
-     decisão 2 (o estado diz "aprovado em 2026-11-17, revisto em 2026-11-26"); `DESIGN.md` "Motion"
-     com os mesmos nomes, sem "Instant: hover, press, ... menus, popovers, ... tooltips".
+4. **O `DESIGN.md`.** Critérios: 1 a 4.
+   - **Arquivos:** `DESIGN.md` "Motion" ganha os nomes e os números que `docs/reference/movimento.md`
+     traz desde o #1428 (seções 3 e 4) e perde "Instant: hover, press, ... menus, popovers, ...
+     tooltips". A folha não muda nesta unidade: ela é a fonte; se o código pedir um número que ela
+     não tem, pare.
 
 ### Como se prova
 
@@ -368,7 +371,9 @@ contraste medido) e `fase5-direcoes-v2/b-noites.css`, `carater.css:1-60`, que o 
 `main`, `brand/tokens.css` inteiro, o front matter do `DESIGN.md`, `brand/tokens.test.ts`,
 `ui/frame.tsx`, `ui/sidebar.tsx:140-200`, `ui/button.tsx`, `ui/switch.tsx`, `ui/checkbox.tsx`,
 `ui/meter.tsx`, `ui/badge.tsx`, `ui/input.tsx`, `ui/input-group.tsx`, `ui/card.tsx`,
-`docs/reference/impeccable.md`, `PRODUCT.md`. Seguir SH-ui `sidebar.tsx:154,162,224-235`, CR
+`ui/sidebar.tsx:287` e `ui/sidebar-rail-button.tsx:30` (o tique de hoje, `before:bg-accent`), e o V5 e o V19 do
+guia como o #1428 os deixou; `docs/reference/impeccable.md` e `PRODUCT.md` só para ler, também como o
+#1428 os deixou. Seguir SH-ui `sidebar.tsx:154,162,224-235`, CR
 `tokens.css:120`.
 
 ### O raio da mudança
@@ -377,7 +382,6 @@ contraste medido) e `fase5-direcoes-v2/b-noites.css`, `carater.css:1-60`, que o 
 | --- | --- | --- |
 | `apps/web/src/brand/tokens.css`, `DESIGN.md` front matter e prosa | muda | todo `apps/web/src`; `brand/tokens.test.ts`; o Impeccable |
 | `apps/web/src/ui/` (as peças da linha da matriz) | muda | as telas |
-| `docs/reference/impeccable.md`, `PRODUCT.md` | muda | o Impeccable, as skills |
 | `apps/web/contrast.layout.test.ts` | cria | `test:browser` |
 | `apps/web/package.json` | muda: `test:browser` ganha o teste | CI |
 | `apps/web/src/brand/tokens.test.ts`, `apps/web/tokens.layout.test.ts`, `frame.layout.test.ts`, `pieces.layout.test.ts`, `focus.layout.test.ts` | muda: os valores e os casos dos critérios 8, 10, 11 e 12 | `test:browser`, `test:unit` |
@@ -421,11 +425,9 @@ e um par deles abaixo de 4,5:1 sobre a folha nova para a unidade (Parar se).
 
 ### A ordem do trabalho
 
-1. **Liberar o `document`.** Critérios: nenhum.
-   - **Arquivos:** `docs/reference/impeccable.md`: `document` sai da lista proibida, com a decisão 3
-     do fundador (2026-11-26, "abrir"); `live` e `generate` continuam fora (não servem a uma unidade de
-     código). `PRODUCT.md`: o anti-alvo "parecer feito por IA" e o alvo "premium em UI e UX, como os
-     apps de grandes empresas", com a decisão 7 do estudo.
+1. **Seguir o que o #1428 deixou.** Critérios: nenhum.
+   - **Arquivos:** nenhum. `docs/reference/impeccable.md` já libera o `document` para a unidade que o
+     cartão nomeia (esta), e `PRODUCT.md` já traz o alvo e o anti-alvo; a unidade não os muda.
 2. **Os tokens.** Critérios: 8, 12.
    - **O que entra:** os valores da paleta final em `light-dark()`; raios 10, 14, 16 e 22; título 1,875
      rem, peso 700; o aro de foco de `tokens.css:308` em `outline-focus`.
@@ -433,16 +435,24 @@ e um par deles abaixo de 4,5:1 sobre a folha nova para a unidade (Parar se).
 3. **A moldura e a folha.** Critérios: 10.
    - **Referência a seguir:** SH-ui `sidebar.tsx:224-235` (a variante `inset`: margem e raio na folha).
    - **Testes:** `frame.layout.test.ts`, "a folha encaixada na moldura".
-4. **A sombra no lugar do filete e o ipê aceso.** Critérios: 11.
+4. **O item atual da barra.** Critérios: 17.
+   - **O que sai:** o tique de 2 px (`data-[status=active]:before:*`, com `before:bg-accent`) de
+     `ui/sidebar.tsx:287` e de `ui/sidebar-rail-button.tsx:30`, e a frase do tique no `DESIGN.md`
+     (`:423`, `:466`, `:469`, `:555`, `:640`).
+   - **O que entra:** o item atual com o fundo mais claro (a moldura com 14% de branco, #333333 /
+     #2b2b2b) e o ícone em ipê (`--color-accent-to`); o texto fica `text`. Regras: V5, V35 (o
+     `aria-current="page"` fica: o estado não depende só da cor).
+   - **Testes:** `frame.layout.test.ts`, "o item atual acende o ícone".
+5. **A sombra no lugar do filete e o ipê aceso.** Critérios: 11.
    - **O que sai:** `border border-line` das peças brancas; `bg-ink` do botão principal, da chave e da
      caixa ligadas.
    - **Testes:** `pieces.layout.test.ts`, "o ipê acende só o que está ligado".
-5. **O contraste.** Critérios: 9.
+6. **O contraste.** Critérios: 9.
    - **O que entra:** `contrast.layout.test.ts` lê a cor computada de cada par de token (texto, texto
      de apoio e tinta sobre folha, azulejo, moldura, ipê e aviso) nos dois temas e calcula a razão da
      WCAG 2.2.
    - **Mutações à mão:** trocar `--color-text-2` do claro por `#9a9a9a`: o teste falha nomeando o par.
-6. **O `DESIGN.md`.** Critérios: 8.
+7. **O `DESIGN.md`.** Critérios: 8.
    - **O que entra:** o `document` do Impeccable sobre o código desta unidade; a prosa perde "Pauta" e
      ganha a direção B; o "Motion" da U1 fica.
 
