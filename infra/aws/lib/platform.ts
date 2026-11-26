@@ -11,7 +11,14 @@ import {
   aws_s3 as s3,
 } from 'aws-cdk-lib'
 import type { Construct } from 'constructs'
-import { READER_ACTIONS, updatedTableResources, WRITER_TABLE_ACTIONS } from './actions.ts'
+import {
+  COPY_AREAS,
+  changedTableResources,
+  READER_ACTIONS,
+  TREAT_AREAS,
+  TREAT_CHANGE_ACTIONS,
+  WRITER_TABLE_ACTIONS,
+} from './actions.ts'
 import { copyPlatform } from './copy.ts'
 import { hubRole } from './hub.ts'
 import {
@@ -129,9 +136,16 @@ function boundaryPolicy(stack: Stack, place: Place): iam.ManagedPolicy {
         resources: [place.lakeTableBuckets, `${place.lakeTableBuckets}/table/*`],
       }),
       new iam.PolicyStatement({
-        sid: 'ChangeTheTablesOfBothAreas',
+        sid: 'ChangeTheCopiedTables',
         actions: ['glue:UpdateTable'],
-        resources: updatedTableResources(`${BUCKET_PREFIX}*`).map((resource) =>
+        resources: changedTableResources(`${BUCKET_PREFIX}*`, COPY_AREAS).map((resource) =>
+          place.arn('glue', resource),
+        ),
+      }),
+      new iam.PolicyStatement({
+        sid: 'ChangeTheTreatedTables',
+        actions: TREAT_CHANGE_ACTIONS,
+        resources: changedTableResources(`${BUCKET_PREFIX}*`, TREAT_AREAS).map((resource) =>
           place.arn('glue', resource),
         ),
       }),
@@ -161,7 +175,11 @@ function boundaryPolicy(stack: Stack, place: Place): iam.ManagedPolicy {
 
 /** CloudFormation's role for a company's stack: it tends only the company's roles, boundary held. */
 function serviceRole(stack: Stack, place: Place, boundary: iam.ManagedPolicy): iam.Role {
-  const companyRoles = [place.iam(`role/${BUCKET_PREFIX}*${READER_SUFFIX}`), place.writers]
+  const companyRoles = [
+    place.iam(`role/${BUCKET_PREFIX}*${READER_SUFFIX}`),
+    place.writers,
+    place.treaters,
+  ]
   const statements = [
     new iam.PolicyStatement({
       sid: 'LakeTableBuckets',

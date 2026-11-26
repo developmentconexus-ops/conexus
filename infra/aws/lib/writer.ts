@@ -1,8 +1,10 @@
 import type { Stack, aws_s3tables as s3tables } from 'aws-cdk-lib'
 import { aws_iam as iam, aws_lakeformation as lakeformation, Tags } from 'aws-cdk-lib'
 import {
+  COPY_AREAS,
+  changedTableResources,
   READER_ACTIONS,
-  updatedTableResources,
+  WRITER_BUCKET_ACTIONS,
   WRITER_GRANTS,
   WRITER_TABLE_ACTIONS,
 } from './actions.ts'
@@ -17,9 +19,9 @@ import {
 
 /**
  * The writer the copy task runs as: only ECS tasks of this account assume it, with the boundary.
- * It writes this company's tables through S3 Tables and Lake Formation, reads only this company's
- * run parameters, sends only to the copy queue, keeps this company's stopping points and queries
- * in the company's workgroup (card U6, T.1, T.5).
+ * It writes this company's `raw` and `current` tables through S3 Tables and Lake Formation, reads
+ * only this company's run parameters, sends only to the copy queue, keeps this company's stopping
+ * points and queries in the company's workgroup (card U6, T.1, T.5).
  */
 export function writerRole(
   stack: Stack,
@@ -27,24 +29,41 @@ export function writerRole(
   company: string,
   bucketArn: string,
 ): iam.Role {
-  const writer = new iam.Role(stack, 'Writer', {
+  return companyTaskRole(stack, {
+    id: 'Writer',
     roleName: `${name}${WRITER_SUFFIX}`,
+    company,
+    statements: writerStatements(stack, name, company, bucketArn),
+  })
+}
+
+/**
+ * A company's role for a task of the copy cluster, the writer's or the treatment's: only ECS tasks
+ * of this account assume it, under the boundary, tagged with the company.
+ */
+export function companyTaskRole(
+  stack: Stack,
+  of: Readonly<{
+    id: string
+    roleName: string
+    company: string
+    statements: iam.PolicyStatement[]
+  }>,
+): iam.Role {
+  const role = new iam.Role(stack, of.id, {
+    roleName: of.roleName,
     permissionsBoundary: iam.ManagedPolicy.fromManagedPolicyArn(
       stack,
-      'WriterBoundary',
+      `${of.id}Boundary`,
       `arn:${stack.partition}:iam::${stack.account}:policy/${BOUNDARY}`,
     ),
     assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com').withConditions({
       StringEquals: { 'aws:SourceAccount': stack.account },
     }),
-    inlinePolicies: {
-      conexus: new iam.PolicyDocument({
-        statements: writerStatements(stack, name, company, bucketArn),
-      }),
-    },
+    inlinePolicies: { conexus: new iam.PolicyDocument({ statements: of.statements }) },
   })
-  Tags.of(writer).add(TAG_COMPANY, company)
-  return writer
+  Tags.of(role).add(TAG_COMPANY, of.company)
+  return role
 }
 
 function writerStatements(
@@ -60,9 +79,15 @@ function writerStatements(
   const state = `arn:${stack.partition}:s3:::${stateBucket(stack.account, stack.region)}`
   return [
     new iam.PolicyStatement({
+      sid: 'OpenTheCompanyBucket',
+      actions: WRITER_BUCKET_ACTIONS,
+      resources: [bucketArn],
+    }),
+    new iam.PolicyStatement({
       sid: 'WriteTheCompanyTables',
-      actions: WRITER_TABLE_ACTIONS,
+      actions: WRITER_TABLE_ACTIONS.filter((action) => !WRITER_BUCKET_ACTIONS.includes(action)),
       resources: [bucketArn, `${bucketArn}/table/*`],
+      conditions: { StringEquals: { 's3tables:namespace': [...COPY_AREAS] } },
     }),
     new iam.PolicyStatement({
       sid: 'TheCompanyCatalog',
@@ -78,7 +103,7 @@ function writerStatements(
     new iam.PolicyStatement({
       sid: 'ChangeTheCompanyTables',
       actions: ['glue:UpdateTable'],
-      resources: updatedTableResources(name).map((resource) => arn('glue', resource)),
+      resources: changedTableResources(name, COPY_AREAS).map((resource) => arn('glue', resource)),
     }),
     new iam.PolicyStatement({ actions: ['lakeformation:GetDataAccess'], resources: ['*'] }),
     new iam.PolicyStatement({

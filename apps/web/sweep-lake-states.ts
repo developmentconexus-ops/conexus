@@ -20,6 +20,7 @@ const READY = {
   bucket: 'conexus-k3x9a0b1c2d3',
   region: 'us-east-2',
   readyAt: AT,
+  outdated: false,
 } as const
 
 /** The "Lago de dados" block in each of its states, its read refused, and the confirmation (card criterion 66). */
@@ -41,6 +42,12 @@ export const LAKE_STATES: State[] = [
     path: CLIENT,
     replies: withLake(READY),
     settle: (p) => waitFor(p, /está em us-east-2 desde/),
+  },
+  {
+    name: 'lago, pronto de receita anterior',
+    path: CLIENT,
+    replies: withLake({ ...READY, outdated: true }),
+    settle: (p) => waitFor(p, /Este lago é de uma receita anterior\./),
   },
   {
     name: 'lago, não deu para criar',

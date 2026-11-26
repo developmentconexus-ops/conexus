@@ -171,22 +171,28 @@ test('desmarcar: as tabelas da AWS saem primeiro e a linha depois; com rodada ab
     'current/sankhya_notas',
     'raw/sankhya_parceiros',
     'current/sankhya_parceiros',
+    'tratado/sankhya_notas',
+    'negocio/sankhya_notas',
   )
 
   const open = await on.put(connection, { tables: [PARCEIROS], ...DAILY })
   assert.deepEqual([open.statusCode, codeOf(open)], [409, 'COPY_RUN_OPEN'])
-  assert.equal(on.aws.tables().length, 4, 'nothing dropped under an open round')
+  assert.equal(on.aws.tables().length, 6, 'nothing dropped under an open round')
 
   await finished(on, connection, ['sankhya_notas', 'sankhya_parceiros'])
   assert.equal((await on.put(connection, { tables: [PARCEIROS], ...DAILY })).statusCode, 200)
-  assert.deepEqual(on.aws.tables().sort(), ['current/sankhya_parceiros', 'raw/sankhya_parceiros'])
+  assert.deepEqual(on.aws.tables().sort(), [
+    'current/sankhya_parceiros',
+    'negocio/sankhya_notas',
+    'raw/sankhya_parceiros',
+  ])
   const [left] = await on.rows(`select name from copies.lake_table where connection_id = $1`, [
     connection,
   ])
   assert.equal(left?.name, 'sankhya_parceiros')
 
   assert.equal((await on.put(connection, { tables: [], ...DAILY })).statusCode, 200)
-  assert.deepEqual(on.aws.tables(), [])
+  assert.deepEqual(on.aws.tables(), ['negocio/sankhya_notas'])
   assert.equal((await on.rows(`select 1 from copies.lake_copy`)).length, 0)
   assert.equal(await on.hub.lakeClock.next(connection), null)
 })

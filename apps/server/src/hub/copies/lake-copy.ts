@@ -6,6 +6,7 @@ import type { CommandTx, Database } from '../../platform/database.ts'
 import { transactionLock, violatedConstraint, violatedReference } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import type { LakeArea } from '../../platform/lake-areas.ts'
 import type { CopyColumn, CopySource, CopyTable } from '../connectors/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { CompanyScope } from './lake-close.ts'
@@ -29,7 +30,8 @@ function todayOf(now: Date): string {
 }
 
 const READY_STACK = new Set<string>(['CREATE_COMPLETE', 'UPDATE_COMPLETE'])
-const AREAS = ['raw', 'current'] as const
+/** The areas that hold a table of a copy's name: the copy's two and its treated one. */
+const AREAS_OF_A_COPY = ['raw', 'current', 'tratado'] as const satisfies readonly LakeArea[]
 
 /** What the copy's writing asks of the connection's clock: it only says when. */
 export type CopyClock = {
@@ -178,7 +180,7 @@ async function ensureReady(deps: LakeCopyDeps, at: Marker, lake: State['lake']) 
 }
 
 /**
- * An unmarked table's two areas and its stopping point, the AWS first and the row after: a table
+ * An unmarked table's three areas and its stopping point, the AWS first and the row after: a table
  * or a point AWS does not have counts as gone, so a repeat ends what an interrupted one began.
  * Nothing is dropped under an open round.
  */
@@ -189,7 +191,7 @@ export async function dropTables(
   removed: readonly Pick<Row, 'name'>[],
 ) {
   for (const { name } of removed) {
-    for (const namespace of AREAS) {
+    for (const namespace of AREAS_OF_A_COPY) {
       const answer = await deps.tables.drop(lake.where, lake.lakeId, { namespace, name })
       if (answer.kind !== 'DONE') awsDown(deps.log, at, 'DeleteTable', answer)
     }

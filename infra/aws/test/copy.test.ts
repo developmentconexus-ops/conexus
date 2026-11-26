@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { refusedUpdateResources } from './iam.ts'
+import { allows, asked, refusedGlueResources } from './iam.ts'
 import {
   ACCOUNT,
   actionsOf,
@@ -16,6 +16,7 @@ import {
 const platform = readable('platform')
 const LAKE_BUCKETS = `arn:aws:s3tables:${REGION}:${ACCOUNT}:bucket/conexus-*`
 const WRITERS = `arn:aws:iam::${ACCOUNT}:role/conexus-*-escritor`
+const TREATERS = `arn:aws:iam::${ACCOUNT}:role/conexus-*-tratador`
 
 test('a plataforma da cópia', () => {
   assert.deepEqual(find(platform, 'CopyTask').Properties, {
@@ -124,7 +125,8 @@ test('o teto deixa o que escreve e nada de IAM', () => {
   assert.deepEqual(
     [
       'WriteTheLakeTables',
-      'ChangeTheTablesOfBothAreas',
+      'ChangeTheCopiedTables',
+      'ChangeTheTreatedTables',
       'ReadTheRunParameters',
       'SendTheResult',
       'TheStoppingPoints',
@@ -141,6 +143,15 @@ test('o teto deixa o que escreve e nada de IAM', () => {
         `arn:aws:glue:${REGION}:${ACCOUNT}:database/s3tablescatalog/conexus-*/current`,
         `arn:aws:glue:${REGION}:${ACCOUNT}:table/s3tablescatalog/conexus-*/current/*`,
       ],
+      [
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog/s3tablescatalog`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:catalog/s3tablescatalog/conexus-*`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:database/s3tablescatalog/conexus-*/tratado`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:table/s3tablescatalog/conexus-*/tratado/*`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:database/s3tablescatalog/conexus-*/negocio`,
+        `arn:aws:glue:${REGION}:${ACCOUNT}:table/s3tablescatalog/conexus-*/negocio/*`,
+      ],
       [`arn:aws:ssm:${REGION}:${ACCOUNT}:parameter/conexus/copia/*`],
       [`arn:aws:sqs:${REGION}:${ACCOUNT}:conexus-copia-fim`],
       [`${state}/*`],
@@ -149,26 +160,40 @@ test('o teto deixa o que escreve e nada de IAM', () => {
   )
 })
 
-test('o teto deixa mudar a tabela das duas áreas de um lago do Conexus, e de nenhum outro', () => {
+test('o teto deixa atualizar a tabela das quatro áreas de um lago do Conexus, e criar e apagar só nas do tratamento', () => {
   const boundary = statementsOf(find(platform, 'Boundary'))
-  for (const area of ['raw', 'current']) {
-    assert.deepEqual(refusedUpdateResources(boundary, 'conexus-lagodeaaaaaa', area), [], area)
+  const bucket = 'conexus-lagodeaaaaaa'
+  const update = 'glue:UpdateTable'
+  for (const area of ['raw', 'current', 'tratado', 'negocio']) {
+    assert.deepEqual(refusedGlueResources(boundary, { action: update, bucket, area }), [], area)
   }
   const glue = `arn:aws:glue:${REGION}:${ACCOUNT}`
+  const own = `s3tablescatalog/${bucket}`
+  for (const action of ['glue:CreateTable', 'glue:DeleteTable']) {
+    for (const area of ['tratado', 'negocio']) {
+      assert.deepEqual(refusedGlueResources(boundary, { action, bucket, area }), [], area)
+    }
+    for (const area of ['raw', 'current']) {
+      assert.deepEqual(refusedGlueResources(boundary, { action, bucket, area }), [
+        `${glue}:database/${own}/${area}`,
+        `${glue}:table/${own}/${area}/notas`,
+      ])
+    }
+  }
   const outside = 's3tablescatalog/outro-lago'
-  assert.deepEqual(refusedUpdateResources(boundary, 'outro-lago', 'current'), [
+  const ofAnother = { action: update, bucket: 'outro-lago', area: 'current' }
+  assert.deepEqual(refusedGlueResources(boundary, ofAnother), [
     `${glue}:catalog/${outside}`,
     `${glue}:database/${outside}/current`,
     `${glue}:table/${outside}/current/notas`,
   ])
-  const own = 's3tablescatalog/conexus-lagodeaaaaaa'
-  assert.deepEqual(refusedUpdateResources(boundary, 'conexus-lagodeaaaaaa', 'outra'), [
+  assert.deepEqual(refusedGlueResources(boundary, { action: update, bucket, area: 'outra' }), [
     `${glue}:database/${own}/outra`,
     `${glue}:table/${own}/outra/notas`,
   ])
 })
 
-test('a fila da cópia ouve só a regra e os que escrevem, e passa a de mortos na terceira falha', () => {
+test('a fila da cópia ouve só a regra, os que escrevem e os que tratam, e passa a de mortos na terceira falha', () => {
   assert.partialDeepStrictEqual(find(platform, 'CopyQueue').Properties, {
     QueueName: 'conexus-copia-fim',
     SqsManagedSseEnabled: true,
@@ -197,18 +222,31 @@ test('a fila da cópia ouve só a regra e os que escrevem, e passa a de mortos n
         { Service: 'events.amazonaws.com' },
         { ArnEquals: { 'aws:SourceArn': '<CopyStopped.Arn>' } },
       ],
-      [{ AWS: `arn:aws:iam::${ACCOUNT}:root` }, { ArnLike: { 'aws:PrincipalArn': WRITERS } }],
+      [
+        { AWS: `arn:aws:iam::${ACCOUNT}:root` },
+        { ArnLike: { 'aws:PrincipalArn': [WRITERS, TREATERS] } },
+      ],
     ],
   )
-  assert.deepEqual(bySid(queuePolicy, 'OnlyTheRuleAndTheWriters'), {
-    Sid: 'OnlyTheRuleAndTheWriters',
+  assert.deepEqual(bySid(queuePolicy, 'OnlyTheRuleAndTheTaskRoles'), {
+    Sid: 'OnlyTheRuleAndTheTaskRoles',
     Effect: 'Deny',
     Principal: { AWS: '*' },
     Action: 'sqs:SendMessage',
     Resource: '<CopyQueue.Arn>',
     Condition: {
-      ArnNotLike: { 'aws:PrincipalArn': WRITERS },
+      ArnNotLike: { 'aws:PrincipalArn': [WRITERS, TREATERS] },
       ArnNotEquals: { 'aws:SourceArn': '<CopyStopped.Arn>' },
     },
   })
+  for (const [role, sends] of [
+    ['conexus-lagodeaaaaaa-escritor', true],
+    ['conexus-lagodeaaaaaa-tratador', true],
+    ['conexus-lagodeaaaaaa-leitor', false],
+    ['conexus-hub', false],
+  ] as const) {
+    const principal = `arn:aws:iam::${ACCOUNT}:role/${role}`
+    const call = asked('sqs:SendMessage', '<CopyQueue.Arn>', principal)
+    assert.equal(allows(queuePolicy, call), sends, role)
+  }
 })
