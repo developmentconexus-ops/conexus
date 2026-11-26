@@ -4,13 +4,16 @@ import { hubspotFake } from '@conexus/connectors'
 import { recordLine, schemaOf } from './messages.ts'
 import type { Double, TapRun } from './test-tap.ts'
 import {
+  activated,
   hubspotDouble,
   lastState,
+  monthsOf,
   NOW,
   recordsOf,
   sankhyaDouble,
   selected,
   tap,
+  WINDOW,
 } from './test-tap.ts'
 
 function changedOf(run: TapRun, stream: string): readonly (string | null)[] {
@@ -87,12 +90,6 @@ test('o cadastro inteiro: um cadastro e uma tabela inteira leem tudo, com ou sem
   }
 })
 
-const WINDOW = [selected('TGFEFDVMRSTDIA', 'efd')]
-
-function monthsOf(run: TapRun): readonly string[] {
-  return [...new Set(recordsOf(run, 'efd').map((row) => String(row.dtref).slice(0, 7)))]
-}
-
 test('a janela por mês: a primeira passada lê os meses da contagem, fora do calendário incluídos; a seguinte, o mês e o anterior', async () => {
   const first = await tap(sankhyaDouble(), { streams: WINDOW })
   assert.deepEqual(monthsOf(first), [
@@ -142,10 +139,6 @@ test('a inteira: a NF-e lê tudo a cada rodada, com o mesmo estado', async () =>
   assert.equal(recordsOf(again, 'nfe').length, recordsOf(first, 'nfe').length)
   assert.deepEqual(lastState(first).bookmarks.nfe, {})
 })
-
-function activated(run: TapRun, stream: string): readonly unknown[] {
-  return run.messages.filter(({ type, stream: of }) => type === 'ACTIVATE_VERSION' && of === stream)
-}
 
 test('a passada inteira, e só ela, termina com ACTIVATE_VERSION: a primeira, a pedida, a sem ponto e a inteira; a que lê só o que mudou, não', async () => {
   const first = await tap(sankhyaDouble(), { streams: ITENS })
