@@ -31,6 +31,12 @@ citações mudaram de linha e foram corrigidas. O estudo foi feito sobre `49e6f8
 `apps/web/src/harness/room/`, `API/` = `packages/hub-api/src/`, `MC/` = `mastracode/` na prateleira,
 `NM/` = `node_modules/@mastra/core/dist/`.
 
+Corrigido em 2026-11-26 contra o `main` `dabaf9cef` e o PR
+https://github.com/developmentconexus-ops/conexus/pull/1448 (commit `3dec36947`), depois de uma
+leitura por outro modelo:
+a ordem U7, U2, U3, a base da U2, as regras da U3 e da U7, os critérios 34 a 36 e os raios. Nenhuma
+resposta sua mudou.
+
 O estudo reusado fica fora do repositório (delivery L21): "internet e navegador na máquina de cada
 conversa, com pedido de acesso", sobre `49e6f8aa`, e o achado F1 do trabalhador do `A2` G1.
 
@@ -269,8 +275,9 @@ escolha na E?": "A".
 1. **O Construtor também pede.** Numa conversa do Construtor de apps ou do Construtor de agentes, o
    agente que precisa de um domínio mostra o mesmo cartão "O Conexus quer acessar a internet".
    Exemplo: antes de escrever a tela, ele tenta `curl https://api.exemplo.com/v1/produtos` e pede
-   `api.exemplo.com`. A conferência do app continua igual. Ela abre o endereço do próprio app só
-   enquanto dura, e depois a máquina volta às listas.
+   `api.exemplo.com`. O Construtor de agentes não tem terminal: nele o cartão aparece quando você
+   pede que ele libere um domínio. A conferência do app continua igual. Ela abre o endereço do
+   próprio app só enquanto dura, e depois a máquina volta às listas.
 2. **O desenvolvedor libera nesta conversa.** No cartão, o desenvolvedor vê **Liberar nesta
    conversa** e **Recusar**. **Liberar para a empresa** aparece só para o dono e o administrador. O
    membro continua sem botões.
@@ -279,7 +286,8 @@ escolha na E?": "A".
    Em Configurações, Internet, você vê essa lista como "Vem com o Conexus", sem botão de remover.
    Logo abaixo há o interruptor **Internet toda**, que só o dono liga. Ao ligar, você lê o aviso e
    confirma. Daí em diante, as máquinas da empresa alcançam qualquer domínio, e o cartão não aparece
-   mais. Desligar volta às listas em segundos, nas máquinas ligadas.
+   mais. Numa máquina que já estava ligada, isso vale a partir do primeiro pedido do agente, que abre
+   sem cartão. Desligar volta às listas em segundos, nas máquinas ligadas.
 
 São novos os passos 7 a 9 do roteiro, a decisão E e a unidade U7; as unidades U2 a U6 mudam.
 
@@ -302,22 +310,24 @@ a trava."
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
 | G1 (um PR, data D11) | U1 A lista da empresa e a da conversa | As duas tabelas, a migração e a permissão; a loja; a regra de papel `network: ['manage']`; as rotas de Configurações, Internet; os tipos do contrato (o domínio, o pedido, a resposta, o resultado) em `hub-api`, com a lista pública de sufixos (`tldts`, dependência nova) | `H/network/` (novo), `Hub/identity/` (só `roles.ts`, `admission.ts`, `companies.ts`), `API/`, `apps/server/migrations/`, `apps/server/database-grants.sql` | data | a etapa 2 fechada |
-| G1b (um PR, data D11) | U7 A permissão de liberar na conversa e a internet toda | As operações `open` e `openAll` do papel; a tabela `company_network_open`, a migração e a permissão; a loja e as rotas da internet toda; os tipos | `H/network/`, `Hub/identity/` (só `roles.ts`, `admission.ts`, `companies.ts`), `API/`, `apps/server/migrations/`, `apps/server/database-grants.sql` | data | U1 |
-| G2 | U2 A máquina segue a lista | A rede de toda máquina de agente passa a ser a lista pronta, a lista da empresa e a da conversa, ou a internet toda, aplicada a cada partida e a cada mudança; a conferência vira uma entrada da lista; a remoção fecha as máquinas ligadas; o que o modelo lê da máquina | `H/machine/`, `Ag/assistant/`, `Ag/saved-agent/` e `Ag/agent-builder/` (só a montagem), `apps/server/src/main.ts` (a ligação), `API/network.ts` (a lista pronta), `infra/e2b/template.ts` (o `sudo`, se faltar) | testing | U1; a U7 para a internet toda |
-| G2 | U3 O pedido na conversa | A ferramenta `request_network_access`, que suspende com o cartão e volta com a resposta, também nos dois construtores; o caminho da automação e do membro, sem cartão; os prompts e as linhas do navegador | `H/network/`, `Ag/assistant/` (ferramentas e `prompt/assistant.md`), `Ag/saved-agent/` (ferramentas), `Ag/app-builder/`, `Ag/agent-builder/` | testing | U1, U2, U7 |
+| G1b (um PR, data D11) | U7 A permissão de liberar na conversa e a internet toda | As operações `open` e `openAll` do papel; a loja que libera na conversa pela ação `openConversationNetwork`; a tabela `company_network_open`, a migração e a permissão; a loja e as rotas da internet toda; os tipos | `H/network/`, `Hub/identity/` (`roles.ts`, `admission.ts`, `companies.ts` e os testes do `may`), `API/`, `apps/server/migrations/`, `apps/server/database-grants.sql`, `apps/web/src/platform/test-may.ts` | data | U1 |
+| G2 | U2 A máquina segue a lista | A rede de toda máquina de agente passa a ser a lista pronta, a lista da empresa e a da conversa, ou a internet toda, aplicada a cada partida e a cada mudança; a conferência vira uma entrada da lista; a remoção fecha as máquinas ligadas; o que o modelo lê da máquina | `H/machine/`, `H/network/` (só `public.ts` e `store.ts`), `Ag/assistant/`, `Ag/saved-agent/` e `Ag/agent-builder/` (só a montagem), `Ag/app-builder/runs/ports.ts`, `apps/server/src/main.ts` e `conversations-of.ts` (a ligação), `API/network.ts` (a lista pronta), `infra/e2b/template.ts` (o `sudo`, se faltar) | testing | U1, U7 |
+| G2 | U3 O pedido na conversa | A ferramenta `request_network_access`, que suspende com o cartão e volta com a resposta, também nos dois construtores; o caminho da automação e do membro, sem cartão; os prompts e as linhas do navegador | `H/network/`, `H/spec/`, `H/machine/` (só `part.ts` e `public.ts`), `Ag/assistant/`, `Ag/saved-agent/`, `Ag/app-builder/`, `Ag/agent-builder/`, `apps/server/src/conversations-of.ts`, `API/tools.ts`, `Wr/tool-row.test.tsx`, `scripts/` e `apps/server/src/platform/recordings/` (a gravação) | testing | U1, U2, U7; o PR 1448 no `main` |
 | G3 | U4 O cartão na conversa | O cartão nos quatro agentes, com os botões que o papel permite, sem botões para quem não libera; a linha da ferramenta | `Wr/`, `apps/web/src/ui/ai/approval.tsx`, `apps/web/src/agents/` (só o `Room` de cada agente) | web, design | U1 e U7 (os tipos) |
 | G3 | U5 Configurações, Internet | A seção nova: a lista pronta, o interruptor Internet toda, a lista da empresa, Adicionar e Remover para o dono e o administrador, a leitura para os outros | `apps/web/src/routes/_app/companies/$companyId_/settings/`, `apps/web/src/harness/network/` (novo) | web, design | U1, U7 |
 | G4 | U6 O fechamento | A decisão nova que emenda 0051 inteira e 0059; as issues 1333 e 1335; `boundaries.md`; a explicação do harness; a página da trilha e o roteiro; o cartão apagado | `docs/` | delivery | o uso |
 
 **Em paralelo.** O G1b (a U7) é um pull request próprio, com a migração e a permissão; ele entra antes
-da U3, que lê a permissão nova, e a U2 pode ir antes dele. O G2 (servidor) e o G3 (web) andam ao
-mesmo tempo, por dois construtores: o G3 lê só os tipos que a U1 e a U7 põem em `hub-api` e não toca
-pasta do servidor. Dentro de cada grupo as unidades vão em ordem (U2 antes de U3; U4 e U5 não dividem
-arquivo e podem ir em qualquer ordem). O `A2` G1 pode construir a leitura do site quando o G2 estiver no `main`.
+do G2, que parte do `main` com ele: a U2 usa o retorno novo de `opened` e a U3, a permissão nova. O
+G2 (servidor) e o G3 (web) andam ao mesmo tempo, por dois construtores: o G3 lê só os tipos que a U1
+e a U7 põem em `hub-api` e não toca pasta do servidor; a U3 muda um teste em `Wr/`
+(`tool-row.test.tsx`), que o G3 não muda. Dentro de cada grupo as unidades vão em ordem (U2 antes de
+U3; U4 e U5 não dividem arquivo e podem ir em qualquer ordem). O `A2` G1 pode construir a leitura do
+site quando o G2 estiver no `main`.
 
 **Orçamento de código alterado.** U1: 420. U2: cerca de 280. U3: cerca de 360. U4: 220. U5: cerca de
-400. U6: só documentos. U7: a emenda não estima; segue a forma da U1. Total sem a U7: cerca de 1 680
-linhas, sem testes nem gerados.
+400. U6: só documentos. U7: cerca de 180, pela forma da U1. Total: cerca de 1 860 linhas, sem testes
+nem gerados.
 
 ## Os critérios de aceite
 
@@ -335,11 +345,11 @@ linhas, sem testes nem gerados.
 | 10 | U2 | Remover um domínio da empresa, ou desligar a internet toda, fecha, em segundos, cada máquina ligada da empresa que o Hub segura; uma troca de rede que falha deixa a máquina marcada, e a próxima ferramenta da conversa aplica a lista de novo antes de rodar | `machine-network.test.ts`, "a remoção fecha as máquinas ligadas" e "a troca que falha refaz na próxima ferramenta" | must |
 | 11 | U2 | A partida cuja troca de rede falha não entrega a máquina: o turno vê `MACHINE_UNAVAILABLE`, e a linha de log diz `reason: 'NETWORK'` | `machine-network.test.ts`, "a partida sem a rede certa falha" | must |
 | 12 | U2 | No E2B de verdade: antes da liberação, `curl` do domínio não responde; depois, responde; depois de removido, não responde de novo, com a máquina ligada o tempo todo; com o domínio liberado e o `/etc/hosts` da máquina apontando o nome para `192.0.2.1` (um endereço de documentação, RFC 5737), o `curl` ainda responde, o que prova que a E2B disca o nome ela mesma (linha 16); no mesmo caso, `sudo apt-get update` responde com a lista pronta, e com a internet toda um site fora das listas responde, e depois de desligada não responde | `machine-e2b.test.ts`, "opt-in: no E2B de verdade, a rede abre e fecha um domínio com a máquina ligada" (roda com a chave da instalação; o roteiro, passo 2, é a prova na nuvem) | must |
-| 13 | U3 | Um domínio já na lista da empresa ou da conversa abre sem cartão: a ferramenta devolve `OPEN` e a máquina tem o domínio | `H/network/network-tool.test.ts`, "o que já está liberado abre sem cartão" | must |
+| 13 | U3 | Um domínio já na lista da empresa ou da conversa abre sem cartão: a ferramenta devolve `OPEN` e a máquina tem o domínio; se a troca da máquina falha, devolve `NOT_OPEN` com `MACHINE_UNAVAILABLE` | `H/network/network-tool.test.ts`, "o que já está liberado abre sem cartão" | must |
 | 14 | U3 | Um domínio fora das listas, pedido pelo dono numa conversa, suspende com `{ domains, reason }` (os que faltam, até dez, em um cartão); a resposta "conversa" grava só na conversa, "empresa" grava na empresa, "recusar" não grava e devolve `REFUSED`; o domínio liberado responde na máquina no mesmo turno; o desenvolvedor suspende com `scopes: ['CONVERSATION']`, e a resposta "conversa" grava só na conversa | `network-tool.test.ts`, "o cartão e as três respostas", com o retrato T26 da suspensão e da volta | must |
 | 15 | U3 | Quem perdeu o papel entre o cartão e a resposta recebe `NOT_OPEN` com `ROLE`, e nada se grava; a resposta "empresa" de um desenvolvedor dá `NOT_OPEN` com `ROLE`, e nada se grava | `network-tool.test.ts`, "o papel é lido de novo na resposta" | must |
 | 16 | U3 | Um membro, ou uma execução de automação, nunca vê cartão (o desenvolvedor vê, com a conversa só): a ferramenta devolve `NOT_OPEN` com `ROLE` ou `AUTOMATION` e os domínios que faltam, e o modelo diz em uma frase que se liberam em Configurações, Internet | `network-tool.test.ts`, "sem cartão para membro e automação"; `Ag/assistant/automations/run.test.ts`, "a automação fora da lista termina dizendo o domínio" | must |
-| 17 | U3 | A conversa apagada leva a sua lista: uma conversa nova do mesmo dono pede de novo | `network-tool.test.ts`, "a lista morre com a conversa" | must |
+| 17 | U3 | A conversa apagada leva a sua lista, pelo **Apagar** do Assistente e pela remoção de pessoa, Projeto ou empresa: nenhuma linha dela fica em `conversation_network_domain`, e uma conversa nova pede de novo | `network-tool.test.ts`, "a lista morre com a conversa", apagando pela rota nos dois caminhos | must |
 | 18 | U3 | O Assistente, o agente salvo com Computador, o Construtor de apps e o Construtor de agentes oferecem `request_network_access`; o agente salvo sem Computador não | `Ag/assistant/prompt-tools.test.ts`; `Ag/saved-agent/machine.test.ts`, "a ferramenta vem com o Computador"; `Ag/app-builder/prompt.test.ts` e `Ag/agent-builder/construtor.test.ts`, com os retratos regravados | must |
 | 19 | U3 | Com o modelo dublê, o agente abre um site de teste servido na máquina com `agent-browser`, tira a captura, a lê como imagem por `read_file` e a mostra por `show_file` | `Ag/assistant/browser.test.ts`, o retrato T26 de uma conversa gravada | should |
 | 20 | U4 | O cartão aberto mostra o título, cada domínio pedido (a estrela em palavras), o motivo e os botões que os `scopes` da suspensão e o `may` de quem olha permitem (o dono e o administrador, três; o desenvolvedor, dois: Liberar nesta conversa e Recusar); cada botão manda a sua resposta, e o cartão fecha com o que se fez ("Liberado nesta conversa", "Liberado para a empresa", "Recusado") | `Wr/network-card.test.tsx`, um caso por botão | must |
@@ -352,10 +362,13 @@ linhas, sem testes nem gerados.
 | 27 | U7 | `DELETE …/network/open-all` desliga para o dono (`204`) e chama o `onRemoved` da empresa; desligada, é `204` também | `network-routes.test.ts`, "só o dono desliga" | must |
 | 28 | U7 | `may.openConversationNetwork` é verdadeiro para o dono, o administrador e o desenvolvedor, e falso para o membro; `may.manageNetwork` continua só do dono e do administrador | `Hub/identity/companies.test.ts`, um caso por papel | must |
 | 29 | U7 | As permissões são as aprovadas: `company_network_open` com `SELECT`, `INSERT` e `DELETE` para `hub_company`, nenhum `UPDATE`, nada para `hub_app` | `apps/server/src/platform/catalog.test.ts`, a foto do catálogo | must |
-| 30 | U3 | Com a internet toda ligada, `request_network_access` devolve `OPEN` sem suspender, e nada se grava | `network-tool.test.ts`, "a internet toda abre sem cartão" | must |
+| 30 | U3 | Com a internet toda ligada, `request_network_access` devolve `OPEN` sem suspender, nada se grava, e a máquina ligada passa a alcançar o domínio; se a troca da máquina falha, devolve `NOT_OPEN` com `MACHINE_UNAVAILABLE` | `network-tool.test.ts`, "a internet toda abre sem cartão" | must |
 | 31 | U5 | O dono vê o interruptor; ligar pede confirmação com o aviso e mostra "Ligada por <nome> em <data>"; o administrador, o desenvolvedor e o membro veem o estado sem o interruptor | `network-page.test.tsx`, "a internet toda", um caso por papel | must |
 | 32 | U5 | A lista pronta aparece para todo membro, sem Remover | `network-page.test.tsx`, "a lista pronta" | must |
 | 33 | U2 | Uma conferência numa conversa do Construtor com um domínio liberado nesta conversa: durante a conferência, a máquina alcança o domínio e o endereço do app; depois, só o domínio; uma liberação feita no meio da conferência continua valendo quando ela termina | `machine-network.test.ts`, "a conferência é uma entrada da lista", com o dublê de rede gravando cada troca | must |
+| 34 | U7 | Pela loja, o desenvolvedor libera na conversa e recebe `NOT_IN_ROLE` para a empresa; o membro recebe `NOT_IN_ROLE` nos dois alcances; o dono e o administrador liberam nos dois; uma recusa não grava | `H/network/network-store.test.ts`, "liberar pede o papel de agora: o desenvolvedor só na conversa" | must |
+| 35 | U2 | Uma conferência cuja abertura da rede falha termina como falha da plataforma (`CONFER_PLATFORM_FAILED`), sem laudo do app | `H/machine/machine-network.test.ts`, "a abertura que falha vira falha da plataforma" | must |
+| 36 | U3 | Um `resumeData` escrito pelo modelo não abre domínio, não suspende e não grava | `H/network/network-tool.test.ts`, "o `resumeData` escrito pelo modelo é recusado", pela porta pública com o modelo dublê | must |
 
 ## A matriz de estados
 
@@ -408,7 +421,7 @@ U4 e da U5, aprovado pelo fundador com os textos (delivery L7) antes do código.
 | --- | --- | --- |
 | `NetworkDomain` (o domínio na forma da U1) | o parse de `API/network.ts`, na rota, na ferramenta e no campo da tela | a loja, a máquina (`allowOut`), o cartão, a seção |
 | `NetworkAsked` (`{ domains, reason }`, a suspensão) | `request_network_access` (U3) | o cartão (U4) |
-| `NetworkAnswer` (`{ scope: 'CONVERSATION' \| 'COMPANY' \| 'REFUSED' }`) | o cartão (U4), por `POST …/tool-suspension` | a ferramenta na volta (U3) |
+| `NetworkAnswer` (`{ scope: 'CONVERSATION' \| 'COMPANY' \| 'REFUSED' }`) | o cartão (U4), por `POST …/tool-suspension` | a ferramenta na volta (U3), depois do gancho do PR 1448 |
 | `NetworkResult` (`OPEN`, `REFUSED`, `NOT_OPEN` com `reason`) | a ferramenta (U3) | o modelo (`toModelOutput`) e o cartão fechado (U4) |
 | `CompanyNetworkDomain` (`id`, `domain`, `reason`, `grantedBy`, `grantedAt`) | a loja (U1) | a seção (U5) |
 | `CompanyMay.manageNetwork` | `Hub/identity/companies.ts` (U1) | o cartão (U4), a seção (U5) |
@@ -426,10 +439,10 @@ U4 e da U5, aprovado pelo fundador com os textos (delivery L7) antes do código.
 | `INSERT` em `conversation_network_domain` (ferramenta) | o mesmo `ON CONFLICT (conversation_id, domain)` | uma instrução | como acima | a mesma linha, `scope: 'CONVERSATION'` | 14 |
 | `DELETE` de uma linha da empresa (rota) | o segundo acha nada: `404`, e a tela relê | uma instrução; a troca de rede das máquinas vem depois e não desfaz o `DELETE` | banco fora: `503`, nada tirado | `NETWORK_DOMAIN_REMOVED` | 5, 10 |
 | `DELETE` das linhas da conversa (no apagamento da conversa, junto do `kill` da máquina) | idempotente | o `kill` da máquina e o `DELETE` são dois passos; o `DELETE` primeiro, e uma falha do `kill` deixa a máquina para o `kill` de hoje repetir | banco fora: o apagamento da conversa falha como hoje | a linha de hoje do apagamento | 17 |
-| `sandbox.e2b.updateNetwork` (E2B), na partida, depois de uma liberação, de uma remoção ou de desligar a internet toda, e ao abrir e fechar a conferência; com a internet toda, `{ allowInternetAccess: true }` | duas trocas da mesma máquina: cada uma manda a lista inteira lida na hora, e a fila da conversa (`inLane`, code C65) põe uma depois da outra; a última vence com a lista de agora | não há meio: a E2B troca "atomically" (`e2b@2.63.0` `dist/index.d.ts:9916-9920`) | E2B fora: na partida, `MACHINE_UNAVAILABLE` (11); depois de liberar, `NOT_OPEN` com `MACHINE_UNAVAILABLE` e a liberação gravada; depois de remover, a máquina fica marcada e a próxima ferramenta refaz (10) | `MACHINE_NETWORK_FAILED` com `conversationId` e `reason` (`START`, `GRANT`, `REMOVE`, `CONFER`) | 8, 10, 11, 12, 33 |
+| `sandbox.e2b.updateNetwork` (E2B), na partida, depois de uma liberação, de uma remoção ou de desligar a internet toda, nos atalhos da ferramenta (o domínio já coberto e a internet toda), e ao abrir e fechar a conferência; com a internet toda, `{ allowInternetAccess: true }` | duas trocas da mesma máquina: cada uma manda a lista inteira lida na hora, e a fila da conversa (`inLane`, code C65) põe uma depois da outra; a última vence com a lista de agora | não há meio: a E2B troca "atomically" (`e2b@2.63.0` `dist/index.d.ts:9916-9920`) | E2B fora: na partida, `MACHINE_UNAVAILABLE` (11); depois de liberar, `NOT_OPEN` com `MACHINE_UNAVAILABLE` e a liberação gravada; num atalho, o mesmo resultado, sem gravar (13, 30); depois de remover, a máquina fica marcada e a próxima ferramenta refaz (10); ao abrir a conferência, falha da plataforma (35) | `MACHINE_NETWORK_FAILED` com `conversationId` e `reason` (`START`, `GRANT`, `REMOVE`, `CONFER`) | 8, 10, 11, 12, 13, 30, 33, 35 |
 | `INSERT` em `company_network_open` (rota `PUT`) | duas vezes: uma linha só, `200` | uma instrução: grava ou não | banco fora: `503 DATABASE_UNAVAILABLE` | a emenda não fixa a linha de log; ela segue a forma das `NETWORK_DOMAIN_*`, sem conteúdo (S41) | 26 |
 | `DELETE` em `company_network_open` (rota `DELETE`) | desligada, é `204` também | uma instrução; a troca de rede das máquinas vem depois e não desfaz o `DELETE` | banco fora: `503`, nada desligado | como a linha acima | 27, 10 |
-| `suspend()` e a volta pela rota `tool-suspension` (Mastra) | duas respostas ao mesmo cartão: o Mastra aceita a primeira e a segunda recebe a falha de hoje do cartão do Caderno | a resposta que chega antes de o Mastra gravar a suspensão perde a disputa (medida em 1.82: 4 a 11% com resposta instantânea, 0 de 200 com 1,5 s); vale o que vale para o cartão do Caderno hoje | banco do Mastra fora: a suspensão não se grava, o turno falha como hoje | o que o Mastra imprime hoje | 14 |
+| `suspend()` e a volta pela rota `tool-suspension` (Mastra) | duas respostas ao mesmo cartão: o Mastra aceita a primeira e a segunda recebe a falha de hoje do cartão do Caderno | a resposta que chega antes de o Mastra gravar a suspensão perde a disputa (medida em 1.82: 4 a 11% com resposta instantânea, 0 de 200 com 1,5 s); vale o que vale para o cartão do Caderno hoje | banco do Mastra fora: a suspensão não se grava, o turno falha como hoje | o que o Mastra imprime hoje | 14, 36 |
 
 ## A tabela de referência
 
@@ -441,7 +454,7 @@ Rótulos: **mesma situação**, **outra situação** (com a diferença), **lido*
 | # | Peça | Unidade | O que o fundador já decidiu | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Decisão | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | A rede da máquina: os registros de pacote somados à lista da empresa e à da conversa | U2 | A-a (2026-11-25); 0059 ("the web is the Hub's tools", 2026-10-31), que esta etapa emenda | `H/machine/kit.ts:31-35` (`ALLOWED_HOSTS`, `PACKAGE_HOSTS`); `H/machine/e2b.ts:26-28` (`egress`), `:58-59` (`openNetwork`, `closeNetwork`); `H/machine/spec.ts:8-9` (`hosts`); `H/machine/conversation.ts:194-200` (`started`, que só fecha) | `e2b@2.63.0`, **mesma situação** (a rede trocada com a máquina ligada); a conferência do Construtor de apps, **mesma situação** no próprio `main` (`H/machine/confer.ts:170`, `:231`) | "The update endpoint replaces all egress rules atomically — fields that are omitted are cleared on the server" (`dist/index.d.ts:9916-9920`); `allowOut` aceita "a domain name (e.g. "example.com", "*.example.com")", e com um domínio a lista abre o DNS (`:3141`). **lido**. O `@mastra/e2b@0.17.0` passa a rede só na criação (`src/sandbox/index.ts:423`) e não a refaz ao reconectar nem ao retomar (`:387-401`); o `onStart` recebe `outcome`, `'created'` ou `'connected'`, a retomada conta como `connected`, e "A thrown error is FATAL" (`packages/core/src/workspace/sandbox/mastra-sandbox.ts:50-83` na prateleira). **lido** | embrulhado: o nativo é a `updateNetwork`, chamada pelo `openNetwork` de hoje; o nosso é ler as duas listas a cada partida | — | A-a | `H/machine/network.ts` |
-| 2 | O pedido de um domínio chega à pessoa | U3 | A-a, B-a | nenhum; o cartão do Caderno é a mesma forma (`H/tools/connectors/connector-tools.ts:272-311`, `suspend` e `NoteAnswer`) | Claude Code, **outra situação** (o computador da pessoa; o proxy dele segura a conexão e pergunta): "The first time a command needs a new network domain, Claude Code prompts for approval", e o comando "stays in the sandbox and waits for a decision" (https://code.claude.com/docs/en/sandboxing), **documentado**; Codex, **mesma situação** no pedido do agente: o argumento `require_escalated` com `justification`, "User-facing approval question" (`codex-rs/core/src/tools/handlers/shell_spec.rs:219-237`), e o pedido por domínio `NetworkApprovalContext { host, protocol }` (`codex-rs/protocol/src/approvals.rs:75-78`), **lido**; `@mastra/core@1.83.0`, **mesma situação** | Mastra: "The stream emits a `tool-call-suspended` chunk with a custom payload defined by the tool's `suspendSchema`. You resume by calling `resumeStream()` with data matching the tool's `resumeSchema`" (`NM/docs/references/docs-agents-human-in-the-loop.md:237`), e a aprovação por `suspend()` (`:360-410`); o chunk leva `toolCallId, toolName, suspendPayload, args, resumeSchema` (`packages/core/src/stream/types.ts:873-883` na prateleira). **lido**. A diferença: a E2B só recusa a conexão, sem gancho para perguntar (`e2b@2.63.0` `dist/index.d.ts:9750-9868`); o pedido vem do agente, como a escalada do Codex, e não do proxy | embrulhado: `suspend()` nativo; o nosso, o cartão e quem responde | A memória medida em 1.82 ("suspend() sobrevive a uma mensagem nova"; o `requireApproval` com `yolo:false` perde leituras): `suspend()`, como o Caderno | B-a | `H/network/network-tool.ts` |
+| 2 | O pedido de um domínio chega à pessoa | U3 | A-a, B-a | nenhum; o cartão do Caderno é a mesma forma (`H/tools/connectors/connector-tools.ts:272-311`, `suspend` e `NoteAnswer`) | Claude Code, **outra situação** (o computador da pessoa; o proxy dele segura a conexão e pergunta): "The first time a command needs a new network domain, Claude Code prompts for approval", e o comando "stays in the sandbox and waits for a decision" (https://code.claude.com/docs/en/sandboxing), **documentado**; Codex, **mesma situação** no pedido do agente: o argumento `require_escalated` com `justification`, "User-facing approval question" (`codex-rs/core/src/tools/handlers/shell_spec.rs:219-237`), e o pedido por domínio `NetworkApprovalContext { host, protocol }` (`codex-rs/protocol/src/approvals.rs:75-78`), **lido**; `@mastra/core@1.83.0`, **mesma situação** | Mastra: "The stream emits a `tool-call-suspended` chunk with a custom payload defined by the tool's `suspendSchema`. You resume by calling `resumeStream()` with data matching the tool's `resumeSchema`" (`NM/docs/references/docs-agents-human-in-the-loop.md:237`), e a aprovação por `suspend()` (`:360-410`); o chunk leva `toolCallId, toolName, suspendPayload, args, resumeSchema` (`packages/core/src/stream/types.ts:873-883` na prateleira). **lido**. A diferença: a E2B só recusa a conexão, sem gancho para perguntar (`e2b@2.63.0` `dist/index.d.ts:9750-9868`); o pedido vem do agente, como a escalada do Codex, e não do proxy | embrulhado: `suspend()` nativo; o nosso, o cartão e quem responde. O `resumeData` escrito pelo modelo, que o `@mastra/core@1.83.0` tira dos argumentos (`NM/evented-execution-4C5qBV8d.js:84215-84222`) e entrega sem o `suspendPayload` (`:84496-84497`), é recusado pelo `refuseUnaskedResume` do PR 1448, no gancho nativo `hooks.beforeToolCall` | A memória medida em 1.82 ("suspend() sobrevive a uma mensagem nova"; o `requireApproval` com `yolo:false` perde leituras): `suspend()`, como o Caderno | B-a | `H/network/network-tool.ts` |
 | 3 | As três respostas | U3, U4 | B-a | nenhum | Codex, **mesma situação** (por domínio, numa conversa): "Yes, and allow this host for this conversation", "Yes, and allow this host in the future", "No, and block this host in the future" (`codex-rs/tui/src/bottom_pane/approval_overlay.rs:913`, `:929`, `:933`), e a resposta "no futuro" só grava o domínio que foi pedido ("does not match approved host", `codex-rs/core/src/session/mod.rs:3258`), **lido**; Claude Code, **outra situação**: "Yes" vale "for the rest of the current session", "Yes, and don't ask again" grava uma regra `WebFetch(domain:...)` nas configurações (página acima), **documentado** | Uma resposta para esta conversa, uma que fica, e a recusa; a que fica grava só o que o cartão pediu | embrulhado: as três respostas são o `resumeSchema`; "empresa" é o "no futuro" do Codex, guardado na lista da empresa. O "bloquear no futuro" do Codex fica de fora: a E2B não bloqueia por nome ("Domain names are not supported for deny rules", `dist/index.d.ts:3145`) | — | B-a; a duração é a decisão A | — |
 | 4 | Quanto dura a liberação da conversa | U1, U3 | A a (2026-11-25) | nenhum | Claude Code ("for the rest of the current session"); Mastra Code `always_allow_category`, em memória por sessão (`MC/sdk/src/factory/remote-session.ts:428-438`, **lido**); Codex, `ApprovedForSession` em memória, `session_approved_hosts` (`codex-rs/core/src/tools/network_approval.rs:313-314`, `:1023-1033`), **lido** | Todas guardam a liberação da sessão em memória; nenhuma tem uma conversa que dura dias | remendo se (a): a linha por conversa | A decisão A, com o exemplo da terça; no `@mastra/core` 1.83.0 a permissão dada na sessão é um `Map` em memória (`NM/agent-controller-BhkzVgCi.js:4893-4895`, `:6952-6961`) | A a (2026-11-25) | `H/network/tables.ts` |
 | 5 | Quem libera | U1, U3 | B do `A3` ("dono ou administrador"); 24.5 `D3-a` (o papel lido na hora da resposta) | `Hub/identity/roles.ts:24-32` (`MANAGE_COMPANY`); `Hub/identity/admission.ts:86-90` (`manageCompanyMemory`, o mesmo desenho); `Hub/connectors/approval.ts:48-55` (`mayApprove`, lido na hora) | Cowork, **mesma situação** (o administrador da organização mantém a lista de domínios dos comandos do agente): "your admin sets them for the whole organization in **Organization settings > Capabilities**" (https://claude.com/docs/cowork/guide/network-access), **documentado**; Factory, **mesma situação** em quem responde a um pedido suspenso: "Only a signed-in person's turn may answer" (`MC/factory/src/tools/approval-tools.ts:36`), a sessão privada só pelo dono (`:63-64`), e a execução retomada age como quem respondeu (`:101-102`), **lido** | O administrador mantém a lista; a pessoa sem o papel não a muda; quem responde é uma pessoa, lida na hora da resposta | embrulhado: a regra de papel do Hub (`hasPermission` do Better Auth, `Hub/identity/may-use.ts:86-95`) | — | não precisa | — |
@@ -568,7 +581,7 @@ export type NetworkStore = {
     companyId: CompanyId; conversationId: ConversationId; personId: PersonId
     domains: readonly NetworkDomain[]; reason: string
   }): Promise<void>
-  forget(conversationId: ConversationId): Promise<void>
+  forget(where: { companyId: CompanyId; conversationId: ConversationId }): Promise<void>
   /** Tells the machines a company's list lost a domain. */
   onRemoved(listener: (companyId: CompanyId) => void): () => void
 }
@@ -622,23 +635,25 @@ Os testes pela rota, num banco descartável com o `postgres` e o `conexus_owner`
 ## U7 A permissão de liberar na conversa e a internet toda
 
 **Base e modelo.** `main` depois do G1. Sonnet: a forma é a da U1. É um pull request próprio (data
-D11), com a migração e a permissão (decisão E). Ele entra antes da U3, que lê a permissão nova; a U2
-pode ir antes dele.
+D11), com a migração e a permissão (decisão E). Ele entra antes do G2, que parte do `main` com ele.
 
 ### As linhas da tabela
 
 Linhas 18 e 20. Ler na base: `Hub/identity/roles.ts:24-50` e `:93-108` (os papéis);
-`Hub/identity/admission.ts:108-109` (`readNetwork`, `manageNetwork`); `H/network/` (a U1 no `main`).
+`Hub/identity/admission.ts:45-46` (o que `locks` segura) e `:108-109` (`readNetwork`,
+`manageNetwork`); `H/network/store.ts:70-78` e `:199-215` (`admitManager` e `grant`) e
+`H/network/network-store.test.ts:94-109`, que hoje recusa o desenvolvedor.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `Hub/identity/roles.ts` | Muda: `network: ['manage', 'open', 'openAll']` no `ac`; `BUILD` ganha `network: ['open']`; o dono `['manage', 'open', 'openAll']`; o administrador `['manage', 'open']` | `admission.ts` |
-| `Hub/identity/admission.ts`, `companies.ts`, `API/roles.ts` | Muda: `openConversationNetwork` (`network: ['open']`, `locks: false`) e `openAllNetwork` (`network: ['openAll']`, `locks: true`); `CompanyMay.openConversationNetwork`, `CompanyMay.openAllNetwork` | a U3, a U4, a U5 |
+| `Hub/identity/admission.ts`, `companies.ts`, `API/roles.ts` | Muda: `openConversationNetwork` (`network: ['open']`, `locks: true`, porque admite uma gravação, segurança S8) e `openAllNetwork` (`network: ['openAll']`, `locks: true`); `CompanyMay.openConversationNetwork`, `CompanyMay.openAllNetwork` | a U3, a U4, a U5 |
 | `H/network/tables.ts`, `apps/server/migrations/`, `apps/server/database-grants.sql`, a foto do catálogo | Cria: `company_network_open`, a política da empresa, `SELECT`, `INSERT` e `DELETE` para `hub_company`, nada para `hub_app` | a loja |
-| `H/network/store.ts`, `routes.ts` | Muda: `opened(...)` devolve `NetworkOpened`; as rotas `GET`, `PUT` e `DELETE …/network/open-all` | a U2, a U5 |
+| `H/network/store.ts`, `routes.ts` | Muda: `opened(...)` devolve `NetworkOpened`; `grant` admite pela ação do alcance; as rotas `GET`, `PUT` e `DELETE …/network/open-all` | a U2, a U3, a U5 |
 | `API/network.ts` | Muda: `NetworkOpened`, `CompanyNetworkOpen`; `DEVELOPMENT_HOSTS`, se a U2 ainda não o criou | o servidor e a web |
+| `apps/web/src/platform/test-may.ts`, `Hub/identity/test-roles.ts`, `Hub/identity/developer.test.ts` | Muda: os dois campos novos nas listas de `CompanyMay` dos testes (`:9`, `:126`, `:112`) | os testes da web e do Hub |
 
 **Uma armadilha do `main`.** Os papéis do dono e do administrador espalham `...MANAGE_COMPANY` e
 depois `...BUILD` (`Hub/identity/roles.ts:93-108`). Se `BUILD` ganhar `network`, a chave do `BUILD`
@@ -691,11 +706,17 @@ O estado é a união `NetworkOpened` por `kind`; o arquivo modelo é o da U1, `H
 3. **A loja e as rotas.** Critérios: 26, 27.
    - **Arquivos:** `store.ts`, `routes.ts`, `API/network.ts`.
    - **Testes:** `network-routes.test.ts`, pela porta pública, "só o dono liga a internet toda" e "só o dono desliga".
+4. **A liberação na conversa.** Critério: 34.
+   - **Arquivos:** `store.ts`, `network-store.test.ts`.
+   - **Referência a seguir:** `H/network/store.ts:70-78` e `:199-215`; `Hub/identity/admission.ts:45-46` e `:108-109`.
+   - **O que entra:** `grant` com `scope: 'CONVERSATION'` admite `openConversationNetwork`, e com `COMPANY`, `manageNetwork`; o comentário de `grant` (`store.ts:21`) passa a dizer isso.
+   - **Testes:** o caso de `:94-109` vira "liberar pede o papel de agora: o desenvolvedor só na conversa": aceita o desenvolvedor na conversa, recusa-o na empresa e recusa o membro nos dois alcances.
+   - **Mutações à mão:** voltar `manageNetwork` no alcance `CONVERSATION` deixa o caso do desenvolvedor vermelho.
 
 ### Como se prova
 
-Os testes pela rota, num banco descartável; `catalog.test.ts` mostra as permissões. Hoje a tabela não
-existe, e a rota dá `404`.
+Os testes pela rota e pela loja, num banco descartável; `catalog.test.ts` mostra as permissões. Hoje a
+tabela não existe, e a rota dá `404`.
 
 ### Parar se
 
@@ -708,14 +729,16 @@ palavra do fundador para as permissões (decisão E) no corpo do PR.
 
 ## U2 A máquina segue a lista
 
-**Base e modelo.** `main` depois do G1. Opus: a troca de rede corre na fila da conversa ao lado da
-partida e do download (code C65), e a remoção alcança máquinas de outras conversas. A lista pronta, os
-construtores, a conferência e o `sudo` entram sem esperar a U7. O ramo da internet toda (passo 5)
-entra quando a U7 estiver no `main`; se a U2 já estiver commitada, num commit da U3.
+**Base e modelo.** O commit `493d5786d` (a U2 de antes da emenda, no ramo `feat/conexus-rede-g2`),
+rebaseado no `main` com a U7. Opus: a troca de rede corre na fila da conversa ao lado da partida e do
+download (code C65), e a remoção alcança máquinas de outras conversas. A lista pronta, os
+construtores, a conferência, o `sudo` e a internet toda são desta unidade.
 
 ### As linhas da tabela
 
-Linhas 1, 8, 17, 19, 20 e 21. Ler na base: `H/machine/conversation.ts:157-200` (`boot`, `started`),
+Linhas 1, 8, 17, 19, 20 e 21. Ler na base o `H/machine/network.ts` do commit (`replaceList`,
+`change`) e as linhas abaixo, que são do `main` `dabaf9cef` (nos arquivos que o commit muda, elas
+se deslocam): `H/machine/conversation.ts:157-200` (`boot`, `started`),
 `:231-285` (`open`, `workspace`), `:308-328` (`stop`, `kill`); `H/machine/spec.ts:7-22`;
 `H/machine/e2b.ts:26-60`; `H/machine/kit.ts:31-35`, `:116-119`; `H/machine/confer.ts:239-265`;
 `H/machine/machines.ts:90-110` (o refazer da rede que falhou), `:206-232` (a partida e o `allowOut`);
@@ -735,19 +758,23 @@ e entra no mesmo dono da rede, `H/machine/network.ts` (decisão 8 do firstmate):
 | --- | --- | --- |
 | `H/machine/spec.ts` | Muda: `network` no lugar de `hosts`, sem o ramo `FIXED` | os três que montam |
 | `H/machine/conversation.ts` | Muda: `Session` ganha `companyId`, `networkStale` e `conferring`; `started` aplica sempre; `reopen` e `narrow` | a U3, `main.ts` |
-| `H/machine/network.ts` | Cria: a lista de cada partida, com `conferring` e a razão `CONFER` | `conversation.ts`, `machines.ts` |
+| `H/machine/network.ts` | Muda: a lista de cada partida ganha `conferring`, a razão `CONFER` e a internet toda | `conversation.ts`, `machines.ts` |
 | `H/machine/machines.ts`, `port.ts` | Muda: o Construtor de apps no mesmo dono da rede; `reopen` e `narrow` | a U3, `main.ts` |
+| `H/machine/part.ts` | Muda: o `narrow` ligado ao `onRemoved` | quem monta |
+| `H/network/public.ts`, `store.ts` | Muda: a porta que a máquina lê | `main.ts`, quem monta |
+| `Ag/app-builder/runs/ports.ts` | Muda: `builderPortsOf` entrega a porta de rede a `createMachines` (`:33-45`) | `main.ts` |
+| `apps/server/src/conversations-of.ts` | Muda: leva a loja às montagens | `main.ts` |
 | `H/machine/confer.ts` | Muda: a conferência deixa de escrever a rede | `machines.ts` |
 | `H/machine/e2b.ts`, `kit.ts` | Muda: `closeNetwork`, `ALLOWED_HOSTS`, `PACKAGE_HOSTS` e a linha fixa de rede saem; `openAll` entra | os que montam, `network.ts` |
 | `API/network.ts` | Muda: `DEVELOPMENT_HOSTS`, se a U7 ainda não o criou | a máquina e a U5 |
 | `Ag/assistant/assistant.ts`, `Ag/saved-agent/controller.ts`, `Ag/agent-builder/construtor.ts` | Muda: o `network` de cada um | — |
-| `apps/server/src/main.ts` | Muda: `store.onRemoved` liga as máquinas de todos os agentes | — |
+| `apps/server/src/main.ts` | Muda: `store.onRemoved` liga as máquinas de todos os agentes; `deps.machinesOf()` (`:168`) vem antes de `createNetwork` (`:231`), e o Construtor de apps precisa da porta ao ser criado | — |
 | `infra/e2b/template.ts` | Muda: `sudo` sem senha para `user`, só se faltar | a E2B |
 
 ### Os contratos que a unidade cria
 
 ```ts
-// H/machine/spec.ts: `hosts` sai, e o ramo `FIXED` com ele.
+// H/machine/spec.ts: o ramo `FIXED` do commit da base sai, e todo agente é `ON_REQUEST`.
 network: { kind: 'ON_REQUEST'; hosts: readonly string[]; opened: NetworkStore['opened'] }
 
 // Kit: `openAll` entra ao lado de `openNetwork`; `closeNetwork` sai.
@@ -770,7 +797,7 @@ nomes exatos, sem estrela:
 - `github.com`, `codeload.github.com`, `objects.githubusercontent.com`;
 - `deb.debian.org`, `security.debian.org`.
 
-O que sai: `MachineSpec.hosts`; o ramo `FIXED`, com o comentário "the Construtor: decision 0051";
+O que sai, contra o `main`: `MachineSpec.hosts`; o ramo `FIXED` que o commit da base trouxe;
 `ALLOWED_HOSTS` (`H/machine/kit.ts:32`, usado em `machines.ts:230` e
 `Ag/agent-builder/construtor.ts:308`); a linha fixa "Its network reaches only ..." (`kit.ts:119`);
 `closeNetwork` (`e2b.ts:59`), que perde o último chamador fora da rede; e o ramo
@@ -785,21 +812,24 @@ O que sai: `MachineSpec.hosts`; o ramo `FIXED`, com o comentário "the Construto
 ### A ordem do trabalho
 
 1. **A lista na partida.** Critérios: 8, 9, 11.
-   - **O que entra:** todo agente com máquina é `ON_REQUEST`; em `started`, com `companyId`, `kit.openNetwork(await opened(...))`; sem `companyId` (o download), só a base; uma falha lança e a partida dá `MACHINE_UNAVAILABLE` com `reason: 'NETWORK'`. A frase da rede da decisão 7 do firstmate vale também para os dois construtores, no lugar da linha fixa.
+   - **O que entra:** todo agente com máquina é `ON_REQUEST`; em `started`, com `companyId`, os `hosts` de um `opened(...)` em `LIST` vão a `kit.openNetwork` (o `ALL` é o passo 5); sem `companyId` (o download), só a base; uma falha lança e a partida dá `MACHINE_UNAVAILABLE` com `reason: 'NETWORK'`. A frase da rede da decisão 7 do firstmate vale também para os dois construtores, no lugar da linha fixa.
    - **Os nomes:** o construtor confere os do GitHub e do Debian com a máquina: um `npm install` de um pacote do GitHub e um `apt-get update` dizem quais faltam. Um nome a mais entra só com a falha que o pediu, escrita no PR (o critério de 0051).
    - **Testes:** `machine-network.test.ts` com o dublê `H/machine/test-machine-network.ts`, um caso por forma de partida; o caso 17 de `machine-e2b.test.ts` passa a esperar a lista pronta.
    - **Mutações à mão:** voltar a aplicar só em `connected` deixa vermelho o caso da criação.
 2. **A troca depois de uma liberação e de uma remoção.** Critério: 10.
    - **O que entra:** `reopen` e `narrow` pela fila `inLane` da conversa; a falha marca `networkStale`, e o `beforeToolCall` de `workspace.ts:34` aplica de novo antes da ferramenta. O `narrow` roda também quando a internet toda é desligada (o `onRemoved` do critério 27).
    - **Mutações à mão:** tirar o `networkStale` deixa vermelho "a troca que falha refaz na próxima ferramenta".
-3. **A conferência vira uma entrada da lista.** Critérios: 9, 33.
+3. **A conferência vira uma entrada da lista.** Critérios: 9, 33, 35.
    - **A causa:** dois donos escrevem a rede da mesma máquina, fora de uma fila comum. A conferência chama `kit.openNetwork(extra)` e `kit.closeNetwork()` direto (`confer.ts:257-259`); a rede troca a lista pela fila `network:<conversa>` (`network.ts` do ramo do G2, `replaceList` e `change`). `openNetwork` monta só a base mais o extra (`e2b.ts:58`): com o Construtor nas listas, a conferência apagaria a lista da conversa ao abrir e ao fechar, e uma liberação no meio correria contra ela. Trocar `closeNetwork` por `reopen` deixaria os dois donos de pé.
-   - **O que entra:** `replaceList` monta a base, mais `opened(...)`, mais `conferring`, na mesma chamada; o `network.open` e o `network.close` da conferência (`confer.ts:256-265`) marcam e desmarcam `conferring` e chamam `change(session, 'CONFER')`, pela mesma fila; o `onCloseFailed` vira o `networkStale`; com a internet toda, `conferring` não acrescenta nada. Um escritor, uma fila.
-   - **Mutações à mão:** voltar a conferência a chamar `kit.openNetwork` direto deixa o caso do 33 vermelho.
+   - **O que entra:** `replaceList` monta a base, mais `opened(...)`, mais `conferring`, na mesma chamada; o `network.open` e o `network.close` da conferência (`confer.ts:256-265`) marcam e desmarcam `conferring` e chamam `change(session, 'CONFER')`, pela mesma fila; o `change` devolve `boolean` e não lança, então o `open` lança quando ele devolve `false`, e o `attempted('network', …)` (`:170`) faz disso falha da plataforma; o `finally` (`:228-231`) desmarca; o `onCloseFailed` vira o `networkStale`; com a internet toda, `conferring` não acrescenta nada. Um escritor, uma fila.
+   - **Testes:** `machine-network.test.ts`, "a conferência é uma entrada da lista" e "a abertura que falha vira falha da plataforma".
+   - **Mutações à mão:** voltar a conferência a chamar `kit.openNetwork` direto deixa o caso do 33 vermelho; ignorar o `boolean` na abertura deixa o do 35 vermelho.
 4. **O `sudo` para o `apt`.** Critério: 12.
    - **O que entra:** o template parte de `fromNodeImage('24')` (`infra/e2b/template.ts:91`), e não está provado que o usuário `user` tem `sudo`. O caso opt-in confere `sudo -n true`; se faltar, o template ganha `sudo` sem senha para `user`, como o template `base` da E2B (dentro da C a da emenda).
 5. **A internet toda.** Critérios: 8, 10, 12.
    - **O que entra:** com `opened(...)` em `{ kind: 'ALL' }`, a troca é `openAll()`, `updateNetwork({ allowInternetAccess: true })` (`e2b@2.63.0` `dist/index.d.ts:9952-9956`). A troca "replaces all egress rules atomically — fields that are omitted are cleared" (`:9916-9920`), então as listas e o `denyOut` somem nessa chamada. Não se usa `updateNetwork({})`, que abriria só por omissão. `allowPublicTraffic: false` não muda: vale só na criação (`e2b.ts:43`).
+   - **Testes:** `machine-network.test.ts`, "a partida com a internet toda".
+   - **Mutações à mão:** mandar a lista em vez de `openAll()` deixa o caso vermelho.
 6. **A prova ao vivo, escrita.** Critério: 12.
    - **Arquivos:** um caso opt-in em `machine-e2b.test.ts`, ao lado dos de hoje (`:126`, `:175`).
    - **O que entra:** além de abrir e fechar, a linha de `/etc/hosts` que aponta o nome liberado para `192.0.2.1`, o `sudo apt-get update` com a lista pronta, e a internet toda ligada e desligada. Se o `curl` pelo nome apontado não responder, a E2B de produção não segue o `handlers.go:79-87` lido em `HEAD`: parar, e a decisão D volta ao fundador com o resultado.
@@ -822,26 +852,39 @@ construtor não tem: ele fica escrito e o roteiro do fundador o prova na nuvem (
 
 ## U3 O pedido na conversa
 
-**Base e modelo.** `main` depois da U2. Sonnet: a forma é a do cartão do Caderno.
+**Base e modelo.** `main` depois da U2, com o PR
+https://github.com/developmentconexus-ops/conexus/pull/1448. Sonnet: a forma é a do cartão do
+Caderno.
 
 ### As linhas da tabela
 
-Linhas 2, 3, 4, 6, 11, 12, 14, 17 e 18. Ler na base: `H/tools/connectors/connector-tools.ts:272-311`
-(`noteSaveTool`: suspender, voltar, recusar); `H/spec/ask-user.ts:42-64` (o `toModelOutput`);
+Linhas 2, 3, 4, 6, 11, 12, 14, 17 e 18. Ler na base: o `refuseUnaskedResume` do 1448
+(`H/spec/resume.ts`), que `agentOfSpec` monta no `beforeToolCall` (`H/spec/mount.ts:158`);
+`H/tools/connectors/connector-tools.ts:272-311` (`noteSaveTool`: suspender, voltar, recusar);
+`H/spec/ask-user.ts:42-64` (o `toModelOutput`);
 `H/machine/show-file.ts:60-97` (a ferramenta da máquina dada aos dois agentes); `Ag/assistant/mays.ts:6-29`
 e `H/spec/speakers.ts:30-60` (o que o papel e a execução permitem, lido uma vez por execução);
 `Ag/assistant/assistant.ts:166-180` e `Ag/saved-agent/agent.ts:255-262` (onde entra `show_file`);
-`Ag/assistant/prompt/assistant.md:55`.
+`Ag/assistant/prompt/assistant.md:55`; `Ag/agent-builder/construtor.ts:78-85`, `:289` e `:296-299`;
+`API/tools.ts:64-72` (`CLOSED_TOOLS`) e `Ag/app-builder/builder.ts:171`; `H/spec/factories.ts:98-135`;
+`H/spec/release.ts:17-28` e `:44-63`, `Ag/assistant/routes.ts:226`,
+`Ag/saved-agent/controller.ts:258-260` e `:320-323` (quem apaga a conversa).
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `H/network/network-tool.ts` | Cria | os quatro agentes com máquina |
-| `Ag/assistant/` | Muda: a ferramenta na lista, `mays.ts` (`network`), a frase da rede em `prompt/assistant.md`, o retrato regravado | — |
-| `Ag/saved-agent/agent.ts` | Muda: a ferramenta ao lado de `show_file`, só com o Computador | — |
-| `Ag/app-builder/`, `Ag/agent-builder/` | Muda: a ferramenta ao lado das ferramentas de máquina deles, a frase da rede (decisão 7 do firstmate) no prompt de cada um, os retratos regravados | — |
-| O apagamento das conversas (`machinePart.each`, `H/machine/part.ts:13`; no Construtor de apps, `Ag/app-builder/runs/removal.ts:39`) | Muda: `store.forget` antes do `kill` | os quatro agentes com máquina |
+| `H/network/network-tool.ts`, `public.ts` | Cria a ferramenta; exporta | os quatro agentes com máquina |
+| `Ag/assistant/` | Muda: a ferramenta na lista, `mays.ts` (`network`), `routes.ts:226` (o Apagar), a frase da rede em `prompt/assistant.md`, o retrato regravado | — |
+| `H/spec/speakers.ts` | Muda: `Mays.network` | `Ag/assistant/mays.ts` |
+| `Ag/saved-agent/agent.ts`, `controller.ts`, `machine-tools.ts` | Muda `agent.ts`: a ferramenta ao lado de `show_file`, só com o Computador; `controller.ts`: a loja chega à montagem e o `sweep` passa o `companyId`; cria `machine-tools.ts` se a ferramenta for montada à parte | — |
+| `Ag/app-builder/` | Muda: a ferramenta junto das de máquina, a frase da rede (decisão 7 do firstmate) no prompt, o retrato, o `ALLOWED` de `closure.test.ts:39-40`, `runs/removal.ts` | — |
+| `Ag/agent-builder/` | Muda: a ferramenta em `AVAILABLE_TOOLS` (`construtor.ts:78-85`) e em `own.fixed` (`:289`), o comentário de `:296-299`, o texto de rede do prompt sem `curl` nem terminal, o retrato | — |
+| `packages/hub-api/src/tools.ts` | Muda: `MACHINE_TOOL.requestNetwork` em `CLOSED_TOOLS` | `Ag/app-builder/builder.ts`, a web |
+| `apps/web/src/harness/room/tool-row.test.tsx` | Muda: a lista `drawn` deixa de repetir `MACHINE_TOOL.requestNetwork` (`:226`), que passa a vir de `CLOSED_TOOLS` | — |
+| `H/spec/release.ts`, `H/machine/part.ts`, `public.ts` | Muda: `releaseByMarks` passa o `companyId` ao `each` (`release.ts:44-63`), e o `each` chama `forget` antes do `kill` | os quatro agentes com máquina |
+| `apps/server/src/conversations-of.ts` | Muda: leva a loja inteira às montagens | `main.ts` |
+| `scripts/record.ts`, `scripts/record-calls.ts`, `scripts/record-tools.ts`, `apps/server/src/platform/recordings/` | Muda: a gravação T26 da suspensão e da volta | os testes |
 
 ### Os contratos que a unidade cria
 
@@ -865,7 +908,9 @@ dois é `LIST_ONLY` com `ROLE`. A suspensão leva os `scopes`, para o cartão de
 
 `inputSchema` é `NetworkAsked`, o `suspendSchema` é `NetworkAsked` com os `scopes`, e `resumeSchema` é
 `NetworkAnswer`; o resultado é `NetworkResult`, e `toModelOutput` dá ao modelo uma linha por caso (os
-domínios que abriram, ou por que não, e onde se liberam).
+domínios que abriram, ou por que não, e onde se liberam). `forget` fica como no `main`,
+`forget({ companyId, conversationId })` (`H/network/store.ts:30`); o apagamento é que passa o
+`companyId`.
 
 ### As skills e a leitura
 
@@ -874,13 +919,14 @@ domínios que abriram, ou por que não, e onde se liberam).
 
 ### A ordem do trabalho
 
-1. **A ferramenta.** Critérios: 13, 14, 15, 16, 30.
-   - **O que entra:** o domínio já coberto (o nome igual, ou uma estrela que o cobre) abre sem cartão; `LIST_ONLY` devolve `NOT_OPEN` sem suspender; `ASKS` suspende com os que faltam; na volta, `asking` é lido de novo (a execução retomada é outra, `oncePerRun`), e só então `grant` e `reopen`; uma resposta `COMPANY` de quem não tem `manageNetwork` é `NOT_OPEN` com `ROLE`, e nada se grava; com a internet toda ligada, a ferramenta devolve `OPEN` sem suspender e sem gravar.
-   - **Testes:** `network-tool.test.ts`, com a gravação T26 da suspensão e da volta (`npm run record`), nunca um chunk digitado.
-   - **Mutações à mão:** usar o papel da suspensão na volta deixa vermelho o critério 15; dar `COMPANY` ao desenvolvedor deixa vermelho o caso novo do 15; tirar o atalho da internet toda deixa vermelho o 30.
+1. **A ferramenta.** Critérios: 13, 14, 15, 16, 30, 36.
+   - **O que entra:** a ferramenta lê `agent.resumeData` como o cartão do Caderno. O 1.83 também entrega um `resumeData` que o modelo escreveu, e quem o recusa, antes de a ferramenta rodar, é o `refuseUnaskedResume` do 1448, que vale para os quatro agentes com máquina porque todos saem de `agentOfSpec`; a ferramenta não ganha guarda própria. A primeira coisa do `execute` é `NetworkAsked.parse` nos argumentos, porque uma retomada pula o `inputSchema` (`NM/tool-3X7mHzgh.js:880`, https://github.com/developmentconexus-ops/conexus/issues/1447). O domínio já coberto (o nome igual, ou uma estrela que o cobre) e a internet toda ligada são atalhos: a ferramenta chama `machines.reopen` e devolve `OPEN` sem suspender e sem gravar, e um `false` vira `NOT_OPEN` com `MACHINE_UNAVAILABLE`. `LIST_ONLY` devolve `NOT_OPEN` sem suspender; `ASKS` suspende com os que faltam; na volta, `asking` é lido de novo (a execução retomada é outra, `oncePerRun`), e só então `grant` e `reopen`; uma resposta `COMPANY` de quem não tem `manageNetwork` é `NOT_OPEN` com `ROLE`, e nada se grava.
+   - **Testes:** `network-tool.test.ts`, com a gravação T26 da suspensão e da volta (`npm run record`), nunca um chunk digitado; "o `resumeData` escrito pelo modelo é recusado", pela porta pública com o modelo dublê.
+   - **Mutações à mão:** usar o papel da suspensão na volta deixa vermelho o critério 15; dar `COMPANY` ao desenvolvedor deixa vermelho o caso novo do 15; tirar o atalho da internet toda, ou o `reopen` dele, deixa vermelho o 30; tirar o `beforeToolCall` de `agentOfSpec` deixa vermelho o 36.
 2. **Nos quatro agentes com máquina.** Critérios: 16, 17, 18.
-   - **O que entra:** `Mays.network` (`openConversationNetwork`, `manageNetwork` e `byAutomation`); a ferramenta também no Construtor de apps e no de agentes; a frase da rede no prompt de cada um (decisão 7 do firstmate); `store.forget` no apagamento da conversa. A automação não muda: usa só as listas, ou a internet toda, e nunca vê cartão.
-   - **Testes:** `prompt-tools.test.ts`, `Ag/saved-agent/machine.test.ts`, `automations/run.test.ts`, `Ag/app-builder/prompt.test.ts`, `Ag/agent-builder/construtor.test.ts`.
+   - **O que entra:** `Mays.network` (`openConversationNetwork`, `manageNetwork` e `byAutomation`). No Construtor de apps, `MACHINE_TOOL.requestNetwork` entra em `CLOSED_TOOLS`, senão o modo a esconde do modelo (`Ag/app-builder/builder.ts:171`, `H/spec/factories.ts:98-135`). No Construtor de agentes, entra em `AVAILABLE_TOOLS` e em `own.fixed`; o modelo dele não tem terminal nem arquivos (`construtor.ts:78-85`, `:296-299`), então o gatilho é só o pedido da pessoa, e o texto de rede do prompt diz isso, sem `curl` nem terminal. Nos outros prompts, a frase da rede é a da decisão 7 do firstmate. A lista morre com a conversa: `forget` antes do `kill`, no `each` de `part.ts` (o `companyId` vem de `releaseByMarks` e do `sweep` do agente salvo), no **Apagar** do Assistente (`routes.ts:226`) e na remoção do Construtor de apps (`runs/removal.ts:31-49`). A automação não muda: usa só as listas, ou a internet toda, e nunca vê cartão.
+   - **Testes:** `prompt-tools.test.ts`, `Ag/saved-agent/machine.test.ts`, `automations/run.test.ts`, `Ag/app-builder/prompt.test.ts`, `Ag/app-builder/closure.test.ts`, `Ag/agent-builder/construtor.test.ts`; `network-tool.test.ts`, "a lista morre com a conversa", apagando pela rota nos dois caminhos.
+   - **Mutações à mão:** tirar o nome de `CLOSED_TOOLS` deixa vermelho o critério 18; tirar o `forget` do Apagar deixa vermelho o 17.
 3. **O navegador.** Critério: 19.
    - **O que entra:** as linhas do prompt: `agent-browser open`, `wait --load networkidle`, `screenshot` numa pasta da conversa, `network requests` para ver o que não abriu e pedir todos os domínios num cartão só; nunca um campo de senha (decisão D-a).
    - **Antes do prompt:** gravar, com o `agent-browser` local, uma página de teste cuja fonte vem de um nome que não resolve: a saída de `network requests --json`, `errors` e `console`. A documentação não diz como aparece um pedido recusado (linha 12); a linha do prompt nomeia o que a gravação mostrou.
@@ -895,6 +941,8 @@ rota `tool-suspension` (`H/routes/test-questions.ts:134-155`). Hoje a ferramenta
 
 - A volta pela rota `tool-suspension` não trouxer o `requestContext` da pessoa que respondeu: parar,
   gravar e levar ao cartão.
+- O 1448 entrar no `main` sem o gancho em `agentOfSpec`, com outra forma de recusar a retomada: parar
+  e levar ao firstmate.
 
 ## G1 O ponto de conferência
 
