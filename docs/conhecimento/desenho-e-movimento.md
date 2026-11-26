@@ -8,7 +8,9 @@ em [movimento](../reference/movimento.md) e as etapas na [trilha Redesenho](../s
 
 - O fundador, em 2026-11-26, ao estudo do redesenho: a navegação do pedido e do objeto, a escala curta
   de movimento medida no G4 OS, abrir a fase visual do Impeccable, o processo em oito fases e as cinco
-  jornadas críticas. À direção visual: a direção B em grafite, "Fecha".
+  jornadas críticas. À direção visual: a direção B em grafite, "Fecha". Ao cartão da R1, no mesmo dia: "A A-b / B. B-a / C. Recomendado / D. Sim": as
+  molas de 420 ms no toque e 560 ms na mudança de estado; V5, V19, V22 e V28 reescritas como a direção
+  B num pull request de método; o primeiro aviso em "Salvar padrão"; a trilha Redesenho.
 
 ## Provado
 
@@ -33,8 +35,7 @@ em [movimento](../reference/movimento.md) e as etapas na [trilha Redesenho](../s
 
 ## Aberto
 
-- As molas de 420 e 560 ms do protótipo da direção B: decisão A do cartão da R1, do fundador.
-- As regras V5, V19, V22 e V28 que a direção B contradiz: decisão B do cartão da R1, do fundador.
+- O agente na barra ou na galeria, o rascunho testado conversando, Avisos única e as oito regras: ver a [trilha Redesenho](../steps/trilhas/redesenho.md).
 
 ## Estudos de origem
 

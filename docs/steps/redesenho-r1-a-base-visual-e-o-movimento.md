@@ -33,9 +33,9 @@ medido no G4 OS, e nada se estica.
 5. Em Configurações › Modelos, escolha outro modelo padrão e salve: um aviso escuro, de uma linha,
    diz "Padrão salvo" no canto e some sozinho.
 
-**O que você faz, e quando.** Antes: nada a fornecer. No começo: aprova esta página e responde as
-decisões abaixo; a decisão B pede um pull request de método, só de documentos, com a sua palavra,
-antes da U1 (delivery L20: uma etapa em curso guarda as regras com que começou). No fim: faz o roteiro, diz o que viu e aprova os textos ("Padrão salvo").
+**O que você faz, e quando.** Antes: nada a fornecer. No começo: aprova esta página (as quatro
+decisões abaixo já têm a sua resposta); o pull request de método da decisão B entra em `main`
+antes da U1. No fim: faz o roteiro, diz o que viu e aprova os textos ("Padrão salvo").
 
 **A visão.** "O estado de um trabalho é o do servidor ... nenhuma tela diz 'pronto' antes de o servidor
 confirmar": o aviso só aparece depois que o servidor salvou. "O Hub é de quem prepara a empresa e de
@@ -56,35 +56,27 @@ quem monta": a base serve as duas pessoas igualmente (decisão 7b do estudo).
   Avisos única para agentes, automações e projetos; e as oito regras da seção 3 do relatório dos
   protótipos. Elas voltam nos cartões da R2, da R5 e da R6.
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** Respondidas em 2026-11-26, pelo firstmate: "A A-b / B. B-a / C.
+Recomendado / D. Sim".
 
-- **A. As molas.** A direção acrescentou duas molas à escala curta que você decidiu.
-  - **A-a, a escala curta pura** (recomendo): o toque encolhe 2% em 100 ms; a chave e a caixa mudam de
-    cor em 160 ms. É a sua decisão de 26/11, é o que o G4 OS mediu ao vivo (pressionar 100 ms), e o
-    Craft Agents escreve 300 ms como "o máximo da UI" (`tokens.css:128`).
-  - **A-b, a escala curta mais as molas**: o toque cede e volta em 420 ms; a mudança de estado (chave,
-    caixa) assenta em 560 ms, como no protótipo. A navegação continua curta.
-  - Veredito: nativo nas duas (CSS `transition`, a mola como curva `linear()`, como o Craft Agents faz
-    em `tokens.css:131-136`). Trocar depois são duas variáveis.
-- **B. As regras do guia de design que a direção B contradiz.** A direção que você fechou passa por
-  cima de quatro regras aprovadas antes: V5 (o ipê marca só o lugar e o foco), V19 (duas regiões
-  planas separadas por um filete; sombra só no que flutua), V22 (raios 8, 12, 12 e 16; região sem
-  raio) e V28 (o aro de foco é ipê). Pela delivery L20 o guia muda só com a sua palavra, e entre duas etapas da trilha.
-  - **B-a** (recomendo): um pull request de método, só de documentos, depois desta aprovação e antes da
-    U1, reescreve as quatro como a direção B: o ipê aceso no botão principal, na chave e na caixa
-    ligadas, no progresso, no enviar e no selo "Novo"; a borda como sombra e a folha encaixada com
-    canto de 16 px; os raios 10, 14, 16 e 22; o foco em tinta no claro e em ipê no escuro. O mesmo
-    pull request põe o nome da trilha Redesenho na delivery L1 (decisão D).
-  - **B-b**: a U3 entra só com as cores, e as quatro regras ficam como estão: sem ipê aceso, com
-    filete, com os raios de hoje. Não é a direção que você fechou.
-- **C. O primeiro aviso.** Uma peça nasce com a tela que a usa (V62). Recomendo: "Salvar padrão" em
-  Configurações › Modelos, que hoje não diz nada quando salva. O aviso diz "Padrão salvo"; um erro
-  continua escrito embaixo do campo, como hoje, porque erro não anima nem some sozinho. Outra opção é
-  o "Salvo" que aparece ao trocar o papel de uma pessoa num app (`hub/projects/access.tsx:125-129`).
-- **D. A trilha Redesenho no roteiro.** Em 2026-11-14 você decidiu "1A. Duas trilhas". O estudo do
-  redesenho (seção 13.5) propõe uma terceira, "Redesenho", que o código já conhece como o trilho
-  `desenho` (`scripts/cli.ts:9-23`). Recomendo: a terceira trilha, só do Hub (casca e peças), com uma
-  etapa em construção por vez; as outras duas seguem construindo função e usam as peças desta (V62).
+- **A. As molas: A-b.** A escala curta mais as duas molas do protótipo: o toque cede e volta em 420 ms
+  (encolhe para 96%), e a mudança de estado da chave e da caixa assenta em 560 ms. A navegação
+  continua curta: hover, menu, dica, janela, gaveta e troca de tela seguem a escala da decisão 2.
+  Nativo: CSS `transition` com a mola como curva `linear()`, como o Craft Agents faz em
+  `tokens.css:131-136`; voltar à escala curta pura são duas variáveis.
+- **B. As regras do guia: B-a.** Um pull request de método, só de documentos, à parte deste cartão,
+  depois desta aprovação e antes da U1 (delivery L20: uma etapa em curso guarda as regras com que
+  começou), reescreve V5, V19, V22 e V28 como a direção B: o ipê aceso no botão principal, na chave e
+  na caixa ligadas, no progresso, no enviar e no selo "Novo"; a borda como sombra e a folha encaixada
+  com canto de 16 px; os raios 10, 14, 16 e 22; o foco em tinta no claro e em ipê no escuro. O mesmo
+  pull request põe o nome da trilha Redesenho na delivery L1.
+- **C. O primeiro aviso: o recomendado.** "Salvar padrão" em Configurações › Modelos, que hoje não diz
+  nada quando salva, mostra "Padrão salvo"; um erro continua escrito embaixo do campo, como hoje,
+  porque erro não anima nem some sozinho.
+- **D. A trilha Redesenho: sim.** A terceira trilha do roteiro, ao lado da decisão "1A. Duas trilhas"
+  de 2026-11-14, só do Hub (casca e peças), com uma etapa em construção por vez, na vaga `desenho`
+  que o código já conhece (`scripts/cli.ts:9-23`); as outras duas seguem construindo função e usam as
+  peças desta (V62).
 
 ## As unidades
 
@@ -92,8 +84,8 @@ quem monta": a base serve as duas pessoas igualmente (decisão 7b do estudo).
 | --- | --- | --- | --- | --- | --- |
 | G1 | U1 Tokens de movimento e reduzir | a escala curta com nome no `tokens.css`; com reduzir, nada anima; a barra e o rastro sem esticar; hover e toque | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md`, `docs/reference/movimento.md` | design | nada |
 | G1 | U2 Entradas e saídas | menu, popover, seletor, combobox, dica, janela, gaveta e painel pelos tokens; a troca de tela | `apps/web/src/ui/`, `apps/web/src/main.tsx`, `apps/web/src/brand/` | design | U1 |
-| G2 | U3 A direção visual nos tokens | a B em grafite nas cores, sombras, raios, título e foco; a moldura; o ipê aceso; o `DESIGN.md` pelo `document`; o teste de contraste | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md`, `PRODUCT.md`, `docs/reference/impeccable.md` | design | U1, decisão B |
-| G2 | U4 Aviso e esqueleto | o aviso sobre o Base UI, com o primeiro uso; o esqueleto nos tokens | `apps/web/src/ui/`, `apps/web/src/main.tsx`, `apps/web/src/harness/model-accounts/` | design | U1, U3, decisão C |
+| G2 | U3 A direção visual nos tokens | a B em grafite nas cores, sombras, raios, título e foco; a moldura; o ipê aceso; o `DESIGN.md` pelo `document`; o teste de contraste | `apps/web/src/brand/`, `apps/web/src/ui/`, `DESIGN.md`, `PRODUCT.md`, `docs/reference/impeccable.md` | design | U1, o pull request da decisão B |
+| G2 | U4 Aviso e esqueleto | o aviso sobre o Base UI, com o primeiro uso; o esqueleto nos tokens | `apps/web/src/ui/`, `apps/web/src/main.tsx`, `apps/web/src/harness/model-accounts/` | design | U1, U3 |
 
 Dois pull requests (delivery L9): G1 e G2.
 
@@ -105,7 +97,7 @@ Dois pull requests (delivery L9): G1 e G2.
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | Na vitrine, a linha da barra tem `transition-duration` 75 ms e o botão e a linha de tabela 160 ms; a lista `transition-property` de cada um tem só cores, sombra e (no botão) `scale` | `apps/web/motion.layout.test.ts`, "o mouse muda só a cor, no tempo da escala" | must |
-| 2 | U1 | O botão apertado encolhe por `transform` (A-a: 100 ms; A-b: 420 ms na mola) e volta; nada muda de tamanho de leiaute | `motion.layout.test.ts`, "o toque cede e volta" | must |
+| 2 | U1 | O botão apertado encolhe para `scale` .96 e volta na mola de 420 ms (`--ease-spring-press`); a chave e a caixa mudam de estado em 560 ms na mola `--ease-spring-state`; nada muda de tamanho de leiaute | `motion.layout.test.ts`, "o toque cede e volta" | must |
 | 3 | U1 | A barra recolhida e o passo do rastro trocam de largura e de altura de uma vez: no `sidebar-container`, no `sidebar-gap` e no `trace-collapsible-content`, nenhum par de `transition-property` e `transition-duration` junta `width`, `height` ou `all` a uma duração acima de 0 s; recusa: devolver `transition-[width]` a `ui/sidebar.tsx:152` deixa o teste vermelho | `motion.layout.test.ts`, "nada estica" | must |
 | 4 | U1, U2, U4 | Sob `prefers-reduced-motion: reduce`, toda duração de transição computada na vitrine é 0 s e `document.getAnimations()` fica vazio depois de abrir menu, dica, gaveta, janela e aviso e de trocar de tela; os laços de trabalho param (a marca, o arco, o brilho). A U1 cria o caso com a gaveta e a janela de hoje; a U2 e a U4 acrescentam o menu, a dica, a troca de tela e o aviso ao mesmo caso | `motion.layout.test.ts`, "com reduzir, nada anima" | must |
 | 5 | U2 | Menu, popover, seletor, combobox e dica entram de opacidade 0 e escala .96 em 120 ms e saem mais rápido que entram; ao passar de uma dica para outra, a segunda abre sem transição | `motion.layout.test.ts`, "o menu e a dica entram curtos" | must |
@@ -162,21 +154,21 @@ grafite; "decisão 2" é a dele do mesmo dia ao movimento.
 | 3 | A barra recolhe sem esticar | U1 | decisão 2: nada anima largura | `ui/sidebar.tsx:152,158` | SH `sidebar.tsx:233` (anima a largura: o contrário) | tirar a classe | nativo | · | não precisa | · |
 | 4 | O rastro dobra sem esticar | U1 | decisão 2: nem altura | `ui/trace.tsx:104` | Base UI `docs/react/components/collapsible.md` (`--collapsible-panel-height`) **documentado** | a altura vem por variável; sem transição, abre na hora | nativo | · | não precisa | · |
 | 5 | Passar o mouse | U1 | decisão 2 | `ui/button.tsx`, itens da `ui/sidebar.tsx` sem transição | MA `theme/motion.css:3` (mesma situação) | só a cor do controle anima no hover **lido** | nativo | · | não precisa | · |
-| 6 | Apertar e mudar de estado | U1 | decisão 2: pressionar 100 ms; molas abertas | `ui/button.tsx` sem `:active`; `ui/switch.tsx:11,18`, `ui/checkbox.tsx:13` | CR `tokens.css:131-136` (molas em `linear()`, situação diferente); protótipo `carater.css:12-19` **herdado** | `:active` com `scale` e a curva do token | nativo | · | **A** | · |
+| 6 | Apertar e mudar de estado | U1 | decisão A-b, 2026-11-26: o toque em 420 ms e a mudança de estado em 560 ms, nas molas | `ui/button.tsx` sem `:active`; `ui/switch.tsx:11,18`, `ui/checkbox.tsx:13` | CR `tokens.css:131-136` (molas em `linear()`, situação diferente); protótipo `carater.css:12-19` **herdado** | `:active` com `scale` e a curva do token | nativo | · | A-b | · |
 | 7 | Menu, popover, seletor, combobox | U2 | decisão 2: opacidade e escala | `ui/popover.tsx`, `ui/dropdown-menu.tsx`, `ui/select.tsx`, `ui/combobox.tsx` sem transição | Base UI `docs/react/handbook/animation.md:19-24` e `docs/react/components/tooltip.md:79` (mesma situação) | `data-starting-style`/`data-ending-style`, `origin-[var(--transform-origin)]`, transição que se cancela no meio **lido** | nativo | · | não precisa | · |
 | 8 | Dica | U2 | decisão 2 | `ui/tooltip.tsx:4-7` | MA-ds `Tooltip/tooltip.tsx:106-110` (mesma situação) | escala .95 e opacidade 0 nos dois atributos; `data-instant` sem transição **lido** | nativo | · | não precisa | · |
 | 9 | Janela | U2 | decisão 2: 150 ms | `ui/dialog.tsx:53,58`, `ui/alert-dialog.tsx:31,36` | Base UI `animation.md` | opacidade nos dois atributos | nativo | · | não precisa | · |
 | 10 | Gaveta e painel | U2 | estudo 13.2: 200 a 250 ms; folha de 17/11: sai em 150 | `ui/sheet.tsx:22,24,57,62`, `ui/drawer.tsx:30,36` | SH-ui `sheet.tsx:31,56` e DF-ui `drawer/index.tsx:57,90-98` (mesma situação) | deslocamento curto nos dois atributos; `data-swiping:duration-0` **lido** | nativo | · | não precisa | · |
 | 11 | Troca de tela | U2 | decisão 2: fade de 160 ms | `main.tsx:84` sem `defaultViewTransition` | `@tanstack/router-core` `router.d.ts:156`, `router.js:491-506` | o roteador chama `document.startViewTransition`; o CSS nomeia só a folha **lido**; passa na CSP com folha externa (estudo 6.3) **provado** | nativo | · | não precisa | · |
 | 12 | As cores | U3 | "Fecha"; decisão 3 | `brand/tokens.css:50-80`; `DESIGN.md` front matter; `brand/tokens.test.ts` | protótipo `b-noites.css:7,16-35` e a tabela "A paleta final" **herdado** | os valores medidos em `light-dark()` | nativo | · | "Fecha" | · |
-| 13 | A moldura grafite e a folha encaixada | U3 | "Fecha": 8 px de margem, canto de 16 px | `ui/frame.tsx`, `ui/sidebar.tsx:198` | SH-ui `sidebar.tsx:154,162,224-235` (variante `inset`, mesma situação) **lido** | a moldura pinta o grafite; a folha ganha margem e raio | embrulhado: a nossa `sidebar` ganha a variante `inset` | · | **B** | · |
-| 14 | A borda é sombra | U3 | "Fecha" | `border border-line` em `ui/input.tsx:19`, `ui/card.tsx:11`, `ui/input-group.tsx:18`; `tokens.css:155-156` | CR `tokens.css:120` (a borda dentro da sombra) **lido** | um token de sombra por camada | nativo | · | **B** | · |
-| 15 | O ipê aceso | U3 | "Fecha": botão principal, chave e caixa ligadas, progresso, enviar, selo "Novo" | `ui/button.tsx:17` (`bg-ink`), `ui/switch.tsx:11`, `ui/checkbox.tsx:13` | protótipo `carater.css:20-27` **herdado** | gradiente de dois tokens a 135°, tinta escura em cima | nativo | · | **B** | · |
-| 16 | Raios e título | U3 | "Fecha": 10, 14, 16, 22; título 1,875 rem, 700 | `tokens.css:86-89,120-126` | tabela "Os outros tokens da direção" **herdado** | troca de valor | nativo | · | **B** | · |
-| 17 | O foco | U3 | "Fecha": tinta no claro, ipê no escuro | `tokens.css:308` | protótipo `b-noites.css:30` **herdado** | um token `focus` próprio | nativo | · | **B** | · |
+| 13 | A moldura grafite e a folha encaixada | U3 | "Fecha": 8 px de margem, canto de 16 px | `ui/frame.tsx`, `ui/sidebar.tsx:198` | SH-ui `sidebar.tsx:154,162,224-235` (variante `inset`, mesma situação) **lido** | a moldura pinta o grafite; a folha ganha margem e raio | embrulhado: a nossa `sidebar` ganha a variante `inset` | · | B-a | · |
+| 14 | A borda é sombra | U3 | "Fecha" | `border border-line` em `ui/input.tsx:19`, `ui/card.tsx:11`, `ui/input-group.tsx:18`; `tokens.css:155-156` | CR `tokens.css:120` (a borda dentro da sombra) **lido** | um token de sombra por camada | nativo | · | B-a | · |
+| 15 | O ipê aceso | U3 | "Fecha": botão principal, chave e caixa ligadas, progresso, enviar, selo "Novo" | `ui/button.tsx:17` (`bg-ink`), `ui/switch.tsx:11`, `ui/checkbox.tsx:13` | protótipo `carater.css:20-27` **herdado** | gradiente de dois tokens a 135°, tinta escura em cima | nativo | · | B-a | · |
+| 16 | Raios e título | U3 | "Fecha": 10, 14, 16, 22; título 1,875 rem, 700 | `tokens.css:86-89,120-126` | tabela "Os outros tokens da direção" **herdado** | troca de valor | nativo | · | B-a | · |
+| 17 | O foco | U3 | "Fecha": tinta no claro, ipê no escuro | `tokens.css:308` | protótipo `b-noites.css:30` **herdado** | um token `focus` próprio | nativo | · | B-a | · |
 | 18 | O contraste dos pares | U3 | V8 | nenhum teste | nenhuma referência mede em teste **não achado** | · | remendo | o próprio teste, `playwright-core@1.63.0` com a fórmula da WCAG 2.2 | não precisa | `apps/web/contrast.layout.test.ts` |
 | 19 | O `DESIGN.md` pelo `document` | U3 | decisão 3: "abrir"; `document` só depois da direção | `docs/reference/impeccable.md:33-35` (proibido) | o Impeccable instalado **documentado** | lê o código e escreve o `DESIGN.md` | nativo | · | decisão 3 | · |
-| 20 | O aviso | U4 | estudo 6.3: o Toast do Base UI (o Sonner fere a W22); "Fecha": invertido, uma linha | nenhum (`DESIGN.md:638`) | Base UI `toast/` e `docs/react/components/toast.md:418-560,3781-3783` (mesma situação); DF-ui `toast/index.tsx:150-177` (mesma situação) **lido** | `Toast.Provider`, `useToastManager().add`; pilha e gesto pelas variáveis que o Base UI escreve | nativo | · | **C** | `apps/web/src/ui/notice.tsx` |
+| 20 | O aviso | U4 | estudo 6.3: o Toast do Base UI (o Sonner fere a W22); "Fecha": invertido, uma linha | nenhum (`DESIGN.md:638`) | Base UI `toast/` e `docs/react/components/toast.md:418-560,3781-3783` (mesma situação); DF-ui `toast/index.tsx:150-177` (mesma situação) **lido** | `Toast.Provider`, `useToastManager().add`; pilha e gesto pelas variáveis que o Base UI escreve | nativo | · | C | `apps/web/src/ui/notice.tsx` |
 | 21 | O esqueleto | U4 | estudo 6.3: o pulso de hoje | `ui/skeleton.tsx:10` | SH-ui `skeleton.tsx:3-12` | `animate-pulse` | nativo (fica, no token) | · | não precisa | · |
 | 22 | A vitrine e a CSP | todas | W22, V17 | `pieces.layout.test.ts:72-96`, `showcase.layout.test.ts` | · | o harness já abre a vitrine com a CSP e com a preferência | nativo | · | não precisa | · |
 | 23 | O brilho sincronizado | fica de fora: só o MA, por `style=` (V17) | nada registrado | · | MA-ds `Skeleton/skeleton.tsx:5-20` **lido** | · | nativo (CSS), fora | · | · | · |
@@ -227,7 +219,8 @@ Os nomes, em `@theme` do `tokens.css`, cada um dono do seu número (C26):
 ```css
 --duration-row: 75ms;      /* linha da barra, do menu, da paleta */
 --duration-control: 160ms; /* botão, aba, linha de tabela, campo */
---duration-press: 100ms;   /* A-b: 420ms com --ease-spring-press */
+--duration-press: 420ms;   /* o toque, na mola --ease-spring-press */
+--duration-state: 560ms;   /* chave e caixa, na mola --ease-spring-state */
 --duration-menu: 120ms;    /* menu, popover, seletor, combobox, dica */
 --duration-window: 150ms;  /* janela, véu, saída da gaveta */
 --duration-move: 200ms;    /* entrada da gaveta e do painel */
@@ -237,14 +230,19 @@ Os nomes, em `@theme` do `tokens.css`, cada um dono do seu número (C26):
 --default-transition-duration: var(--duration-control);
 ```
 
-Com A-b, também `--ease-spring-press` e `--ease-spring-state` (as curvas `linear()` de
-`carater.css:12,14`) e `--duration-state: 560ms`. `--ease-arrive` some: `--ease-enter` é o mesmo
+As duas molas da decisão A-b, as curvas `linear()` do protótipo (`carater.css:12,14`), copiadas:
+
+```css
+--ease-spring-press: linear(0, 0.061, 0.201, 0.371, 0.539, 0.687, 0.808, 0.898, 0.962, 1.003, 1.026, 1.036, 1.038, 1.035, 1.029, 1.023, 1.016, 1.011, 1.007, 1.003, 1.001, 1, 0.999, 0.999, 0.999, 1);
+--ease-spring-state: linear(0, 0.043, 0.143, 0.268, 0.397, 0.519, 0.627, 0.719, 0.793, 0.853, 0.898, 0.933, 0.958, 0.975, 0.987, 0.995, 1, 1.003, 1.005, 1.005, 1.005, 1.004, 1.004, 1.003, 1.003, 1);
+```
+ `--ease-arrive` some: `--ease-enter` é o mesmo
 valor; `--animate-fit-a/b` passam a usar `--ease-enter`. Sob `@media (prefers-reduced-motion: reduce)`,
 um bloco em `:root` põe todas as `--duration-*` em `0ms`. O Tailwind 4 instalado lê o utilitário `duration-*` de `--transition-duration-*`, não de `--duration-*`: cada nome ganha o seu `@utility`, como o MA faz (`motion.css:30-40`):
 
 ```css
 @utility duration-row { transition-duration: var(--duration-row); }
-/* e o mesmo para control, press, menu, window, move, page (e state, com A-b) */
+/* e o mesmo para control, press, state, menu, window, move e page */
 ```
 
 O `ease-*` lê `--ease-*`: `ease-enter`, `ease-exit` e `ease-fit` saem do `@theme` sem `@utility`.
@@ -279,7 +277,7 @@ shadcn, Base UI). Ler primeiro `docs/guides/design.md` V17, V26 e V28.
 3. **Hover e toque.** Critérios: 1, 2.
    - **Arquivos:** muda `ui/button.tsx`, itens de `ui/sidebar.tsx`, `ui/table.tsx:37`,
      `ui/attachment.tsx:12`, `ui/switch.tsx`, `ui/checkbox.tsx`.
-   - **O que entra:** `transition-colors duration-row` nas linhas da barra; `transition-[color,background-color,box-shadow,scale] duration-control` no botão, com `active:scale-98` em `duration-press` (A-b: `active:scale-96` e `ease-spring-press`); a chave e a caixa em `duration-control` (A-b: `duration-state`, `ease-spring-state`). Regras: V17, V26.
+   - **O que entra:** `transition-colors duration-row` nas linhas da barra; `transition-[color,background-color,box-shadow,scale] duration-control` no botão, com `active:scale-96` em `duration-press ease-spring-press`; a chave e a caixa em `duration-state ease-spring-state`. Regras: V17, V26.
    - **Testes:** "o mouse muda só a cor, no tempo da escala" (o estado `data-preview="hover"` da
      vitrine, `tokens.css:15-25`); "o toque cede e volta" (`data-preview="active"`).
 4. **A folha e o `DESIGN.md`.** Critérios: 1 a 4.
@@ -359,7 +357,7 @@ pode sair para a R2.
 
 ## U3 A direção visual nos tokens
 
-**Base e modelo.** O commit da U2; o pull request de método da decisão B entrou em `main` antes da U1. Opus: o
+**Base e modelo.** O commit da U2; o pull request de método da decisão B-a entrou em `main` antes da U1. Opus: o
 `document` do Impeccable reescreve o `DESIGN.md` inteiro e a unidade cruza tokens, peças e o teste de
 paridade.
 
@@ -455,7 +453,7 @@ Os critérios 8 a 12 falham hoje: os valores são os da Pauta e não há teste d
 ### Parar se
 
 Um par da paleta final passa abaixo de 4,5:1 numa peça real: pare e mande o par ao fundador; nunca
-ajuste a cor. O pull request da decisão B não está em `main`: a etapa não começa (vale para a U1).
+ajuste a cor. O pull request da decisão B-a não está em `main`: a etapa não começa (vale para a U1).
 
 ## U4 Aviso e esqueleto
 

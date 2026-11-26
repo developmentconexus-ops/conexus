@@ -9,7 +9,7 @@ documentou esse fluxo e etapas?"
 
 Esta página não é um cartão de etapa (delivery L5). O estudo, os protótipos e as capturas ficam fora do
 repositório (delivery L21). A trilha usa a vaga `desenho` que o código já conhece (`scripts/cli.ts`);
-ela entrar no roteiro como terceira trilha é a decisão D do cartão da R1.
+o fundador a aceitou como terceira trilha em 2026-11-26 ("D. Sim", à decisão D do cartão da R1).
 
 ## O que a trilha entrega, e para quem
 
