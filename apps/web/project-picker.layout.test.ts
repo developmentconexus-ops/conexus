@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Page } from 'playwright-core'
+import { atRest } from './at-rest.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, failure, PHONE, touching } from './layout-harness.ts'
 import type { Place } from './picker-places.ts'
@@ -131,6 +132,8 @@ for (const place of PLACES) {
       await fixed.waitFor()
       assert.equal(await fixed.getAttribute('aria-disabled'), null)
       await fixed.click()
+      // A pointer resting on a link for the 75 ms the list takes to leave would preload it.
+      await page.mouse.move(0, 0)
       await list.waitFor({ state: 'hidden' })
     }
     await page.close()
@@ -145,6 +148,7 @@ for (const place of PLACES) {
       await (await triggerOf(opened, place)).click()
       const list = opened.getByRole('listbox', { name: place.label, exact: true })
       await projectRows(list).nth(49).waitFor()
+      await atRest(opened)
       // A press under an emulated finger never settles in the headless shell: the finger comes after.
       if (finger) await touching(opened)
       const heights = await list

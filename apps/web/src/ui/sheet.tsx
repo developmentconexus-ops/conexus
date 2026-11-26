@@ -54,12 +54,12 @@ export function SheetContent({
     <SheetPrimitive.Portal>
       <SheetPrimitive.Backdrop
         data-slot="sheet-overlay"
-        className="fixed inset-0 z-50 bg-canvas opacity-80 transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none"
+        className="fixed inset-0 z-50 bg-canvas opacity-80 transition-opacity duration-window data-ending-style:opacity-0 data-starting-style:opacity-0"
       />
       <SheetPrimitive.Popup
         data-slot="sheet-content"
         className={cn(
-          'fixed z-50 flex flex-col gap-lg border-line bg-surface p-lg text-text transition duration-200 ease-in-out motion-reduce:transition-none data-ending-style:opacity-0 data-starting-style:opacity-0',
+          'fixed z-50 flex flex-col gap-lg border-line bg-surface p-lg text-text transition duration-move ease-enter data-ending-style:duration-window data-ending-style:ease-exit data-ending-style:opacity-0 data-starting-style:opacity-0',
           SIDES[side],
           className,
         )}

@@ -27,13 +27,13 @@ export function DrawerContent({
     <DrawerPrimitive.Portal>
       <DrawerPrimitive.Backdrop
         data-slot="drawer-overlay"
-        className="fixed inset-0 z-50 bg-canvas opacity-[calc(0.8*(1-var(--drawer-swipe-progress)))] transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0 motion-reduce:transition-none"
+        className="fixed inset-0 z-50 bg-canvas opacity-[calc(0.8*(1-var(--drawer-swipe-progress)))] transition-opacity duration-window data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0"
       />
       <DrawerPrimitive.Viewport className="fixed inset-0 z-50 flex items-end">
         <DrawerPrimitive.Popup
           data-slot="drawer-content"
           className={cn(
-            'flex max-h-[85dvh] w-full flex-col gap-md rounded-t-card border-t border-line bg-surface px-lg pt-sm pb-[max(1rem,env(safe-area-inset-bottom))] text-text outline-none [transform:translateY(var(--drawer-swipe-movement-y))] transition-transform duration-200 ease-out data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)] data-swiping:duration-0 motion-reduce:transition-none',
+            'flex max-h-[85dvh] w-full flex-col gap-md rounded-t-card border-t border-line bg-surface px-lg pt-sm pb-[max(1rem,env(safe-area-inset-bottom))] text-text outline-none [transform:translateY(var(--drawer-swipe-movement-y))] transition-transform duration-move ease-enter data-ending-style:duration-window data-ending-style:ease-exit data-ending-style:[transform:translateY(100%)] data-starting-style:[transform:translateY(100%)] data-swiping:duration-0',
             className,
           )}
           {...props}

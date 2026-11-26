@@ -14,7 +14,8 @@ import { useIsMobile } from './use-mobile.ts'
 // Copied from shadcn's base-nova `sidebar` (CLI 4.22.1), keeping the parts the frames use. Its
 // widths are the brand's container tokens instead of a `style` attribute (design V17); it keeps no
 // cookie, the frame decides when it opens; the phone drawer is the brand's `sheet` (V56); its
-// places are `nav-item` with 18px icons (V34); the transitions stop under reduced motion (V26).
+// places are `nav-item` with 18px icons (V34); a place's colour answers the pointer in the row's
+// time, and the width changes at once (V26).
 
 const SHORTCUT = 'b'
 
@@ -149,13 +150,13 @@ export function Sidebar({
       {/* Holds the sidebar's width in the page, under the fixed column. */}
       <div
         data-slot="sidebar-gap"
-        className="relative w-sidebar transition-[width] duration-200 ease-linear group-data-[collapsible=icon]:w-sidebar-icon motion-reduce:transition-none"
+        className="relative w-sidebar group-data-[collapsible=icon]:w-sidebar-icon"
       />
       <nav
         aria-label={label}
         data-slot="sidebar-container"
         className={cn(
-          'fixed inset-y-0 left-0 z-10 hidden h-dvh w-sidebar bg-canvas transition-[width] duration-200 ease-linear group-data-[collapsible=icon]:w-sidebar-icon motion-reduce:transition-none md:flex',
+          'fixed inset-y-0 left-0 z-10 hidden h-dvh w-sidebar bg-canvas group-data-[collapsible=icon]:w-sidebar-icon md:flex',
           !rail && 'border-r border-line',
         )}
       >
@@ -284,7 +285,7 @@ export function SidebarMenuItem({ className, ...props }: ComponentProps<'li'>) {
 
 // The router marks the current place `data-status="active"`; a menu marks its open trigger.
 const menuButton = cva(
-  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 relative hover:bg-surface-3 hover:text-text data-popup-open:bg-surface-4 data-[status=active]:bg-surface-4 data-[status=active]:text-text data-[status=active]:before:absolute data-[status=active]:before:top-1/2 data-[status=active]:before:left-0 data-[status=active]:before:h-4 data-[status=active]:before:w-[2px] data-[status=active]:before:-translate-y-1/2 data-[status=active]:before:rounded-pill data-[status=active]:before:bg-accent group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:pointer-coarse:size-11! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 relative transition-colors duration-row hover:bg-surface-3 hover:text-text data-popup-open:bg-surface-4 data-[status=active]:bg-surface-4 data-[status=active]:text-text data-[status=active]:before:absolute data-[status=active]:before:top-1/2 data-[status=active]:before:left-0 data-[status=active]:before:h-4 data-[status=active]:before:w-[2px] data-[status=active]:before:-translate-y-1/2 data-[status=active]:before:rounded-pill data-[status=active]:before:bg-accent group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:pointer-coarse:size-11! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       size: {

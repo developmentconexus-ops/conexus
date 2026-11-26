@@ -496,14 +496,58 @@ Flat by default (V19). Two shadows, both for what floats over the sheet: `float`
 menus, `composer` for the composer card only. Overlays (sheet, dialog, drawer backdrop) dim with
 chrome at 80%, not black.
 
-**Motion.** One sheet, no new values ([movimento](docs/reference/movimento.md)). Names:
-`duration-feedback` 150ms (colour, opacity, switch, dialog veil), `duration-move` 200ms (what enters
-or leaves: drawer, side panel), `ease-enter` (`--ease-arrive`), `ease-exit` (`ease-in`, leaving in
-150ms), `ease-fit`. Instant: hover, press, focus, menus, popovers, selects, tooltips, the sidebar
-width, collapsible panels, new messages, list rows, page and tab changes. Never animated: errors,
-validation, numbers, width, height, margin or position. Ambient: a busy composer's ring turns in 2.8s,
-working text shimmers in 1.8s, the mark's pieces part and fit back in 1.2s (`--ease-fit`), arrival
-0.9s (`--ease-arrive`). Under `prefers-reduced-motion` every transition is none (V26).
+**Motion.** One sheet ([movimento](docs/reference/movimento.md)); `brand/motion.css` writes each
+name below once, and a piece takes the name instead of a number of its own (V26). Two still write
+a number: the message scroller's button and the memory status in the room.
+
+| Name | Value | For |
+| --- | --- | --- |
+| `duration-row` | 75ms | the colour of a sidebar, menu or palette row; a menu's or tooltip's exit |
+| `duration-control` | 160ms | the colour and shadow of a button, tab, table row, field or card; a transition that names no time |
+| `duration-press` | 420ms | the press: a button gives to 96% and comes back |
+| `duration-state` | 560ms | a switch or a checkbox changing state |
+| `duration-menu` | 120ms | a menu, popover, select, combobox or tooltip entering |
+| `duration-window` | 150ms | a dialog and its veil; the exit of a drawer, side panel or toast |
+| `duration-move` | 200ms | a drawer, side panel or toast entering |
+| `duration-page` | 160ms | a change of screen |
+| `ease-enter` | `cubic-bezier(0.22, 1, 0.36, 1)` | what enters |
+| `ease-exit` | `ease-in` | what leaves |
+| `ease-fit` | `cubic-bezier(0.65, 0, 0.35, 1)` | what moves without entering or leaving: the mark |
+| `ease-spring-press` | `linear()` spring | the press |
+| `ease-spring-state` | `linear()` spring, calmer | the change of state |
+
+The same file names the two movements that pieces share: `button-motion` (the press and the mouse
+on a button) and `popup-motion` (a popup entering and leaving).
+
+What moves, and how:
+
+- **The mouse** changes colour and shadow only. **A press** gives to 96% and comes back. **A switch
+  or a checkbox** moves its colour and its thumb. **Focus** never moves: the ring shows at once.
+- **Menu, popover, select, combobox** enter by opacity and scale from 96% to 100%, from their
+  trigger, and leave faster. A select that opens over its trigger, as it does under a mouse or the
+  keyboard, is there at once. **Tooltip** the same entry, and passing from one tooltip to the next
+  opens the second with no transition.
+- **Dialog**: opacity only, of the window and its veil. **Drawer and side panel**: a short slide in
+  and out; no transition while a finger drags.
+- **A change of screen**, every change of the address's path, from the sidebar or after an action,
+  fades only the sheet; the sidebar does not blink. With a drawer or a window open the screen changes
+  at once, and they leave in their own time. A page's load, a change of the address's search alone
+  (the sidebar's search and tab) and a change that arrives during a fade apply at once too.
+- **Toast** (none exists yet), only for what went well: one line, inverted; it enters, leaves and
+  goes away by itself.
+- **AI pieces and tables** move only under the mouse. **Skeleton** keeps its pulse.
+- **At once**: the sidebar collapsing, a folding panel (tool line, reasoning, group), a new message
+  and arriving text (only the scroll to the end is smooth), a row entering or leaving a list, a page
+  turning ready on the first-entry panel. Tab pill, rolling number, drawn tick and a button's
+  "doing" and "done" stay at once until their pieces are born.
+- **Never**: errors and validation, focus, width, height, margin or layout position, a page's load,
+  and a loop that is not work in progress.
+- **Ambient**, only while work runs: a busy composer's ring turns in 2.8s, working text shimmers in
+  1.8s, the mark's pieces part and fit back in 1.2s (`ease-fit`); the mark arrives in 0.9s
+  (`ease-enter`).
+
+Under `prefers-reduced-motion` nothing animates, not even a fade: every duration is zero and every
+loop stops, with the final state readable.
 
 ## Shapes
 
