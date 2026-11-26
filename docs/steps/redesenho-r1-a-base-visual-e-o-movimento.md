@@ -105,15 +105,15 @@ Dois pull requests (delivery L9): G1 e G2.
 | 6 | U2 | A janela entra em 150 ms só por opacidade; a gaveta e o painel entram em 200 ms com deslocamento curto e saem em 150 ms; com `data-swiping` a duração da gaveta é 0 s | `motion.layout.test.ts`, "a janela e a gaveta" | must |
 | 7 | U2 | Toda mudança de caminho, pela barra ou depois de uma ação, esmaece só a folha, em 160 ms; a barra não pisca. Com uma gaveta ou uma janela aberta, a troca é de uma vez. A carga da página e uma mudança só da busca do endereço não esmaecem | `motion-screen.layout.test.ts`, "a troca de tela esmaece a folha", "a troca depois de uma ação esmaece a folha", "com a gaveta aberta a troca é de uma vez", "com a janela aberta a troca é de uma vez" e as três recusas (carga, letra na busca, aba da barra) | should |
 | 8 | U3 | O Hub pinta, nos dois temas, os valores da tabela de cores da U3 ("Os contratos que a unidade cria"); `DESIGN.md` e `tokens.css` dizem o mesmo valor por nome | `apps/web/src/brand/tokens.test.ts` (existente) e `apps/web/tokens.layout.test.ts`, "o tema" | must |
-| 9 | U3 | Todo par de texto e fundo dos tokens passa 4,5:1 nos dois temas; o ponto e o ícone de estado passam 3:1; recusa: um par abaixo falha nomeando o par e o tema | `apps/web/contrast.layout.test.ts`, "cada par se lê nos dois temas" | must |
-| 10 | U3 | A moldura e a barra são grafite nos dois temas; a folha tem 8 px de margem e canto de 16 px a partir de 768 px; a 390 px não há rolagem lateral | `apps/web/frame.layout.test.ts`, caso novo "a folha encaixada na moldura" | must |
+| 9 | U3 | Todo par de texto e fundo dos tokens passa 4,5:1 nos dois temas, a letra de estado (`success-text`, `warning-text`, `danger-text`) incluída, sobre a folha, o azulejo e o que flutua; o ponto e o ícone de estado (`success`, `warning`, `danger`) passam 3:1 sobre a folha e sobre o que flutua; recusa: um par abaixo falha nomeando o par e o tema | `apps/web/contrast.layout.test.ts`, "cada par se lê nos dois temas" | must |
+| 10 | U3 | A moldura e a barra são grafite nos dois temas; a folha tem 8 px de margem e canto de 16 px a partir de 768 px; a 390 px não há rolagem lateral; a rolagem de uma conversa acaba na borda da folha, que é a borda nova dela (2026-11-26, "Vale as cinco") | `apps/web/frame-inset.layout.test.ts`, "a folha encaixada na moldura" | must |
 | 11 | U3 | O botão principal, a chave e a caixa ligadas são ipê com a tinta escura; nenhum título, hover ou ação de repouso usa o ipê | `apps/web/pieces.layout.test.ts`, caso novo "o ipê acende só o que está ligado" | must |
 | 12 | U3 | O foco do teclado é visível em toda peça da vitrine nos dois temas | `apps/web/focus.layout.test.ts` (existente, com a cor nova) | must |
-| 13 | U4 | Salvar o padrão em Configurações › Modelos mostra "Padrão salvo" num aviso com `role="status"`, só depois da resposta do servidor; um erro do servidor não mostra aviso e continua no campo | `apps/web/notice.layout.test.ts`, "salvar o padrão avisa" e "o erro fica no campo" | must |
+| 13 | U4 | Salvar o padrão em Configurações › Modelos mostra "Padrão salvo" num aviso anunciado pela região do Toast do Base UI (`role="region"`, `aria-live="polite"`), sem `role="status"` por dentro, que um leitor de tela poderia ler duas vezes (2026-11-26, "Vale as cinco"), só depois da resposta do servidor; um erro do servidor não mostra aviso e continua no campo | `apps/web/notice.layout.test.ts`, "salvar o padrão avisa" e "o erro fica no campo" | must |
 | 14 | U4 | O aviso some sozinho em 5 s, fecha pelo botão e pela tecla Esc, e o foco não sai de onde estava | `notice.layout.test.ts`, "o aviso some e não rouba o foco" | must |
 | 15 | todas | A vitrine abre sem violação de CSP nos dois temas, a 1366 e 390 px; cada peça nova tem entrada na vitrine | `apps/web/showcase.layout.test.ts` e `pieces.layout.test.ts` (existentes) | must |
-| 17 | U3 | O item atual da barra, aberta e recolhida, tem o fundo mais claro que a moldura e o ícone em ipê, com `aria-current="page"`; recusa: nenhum pseudo-elemento `::before` pintado de ipê no item atual | `apps/web/frame.layout.test.ts`, caso novo "o item atual acende o ícone" | must |
-| 16 | todas | A catraca do lint de design desce de 325 para 311, a contagem de hoje, e não sobe | `npm run lint:design -w @conexus/web`, com `--max-warnings 311` | must |
+| 17 | U3 | O item atual da barra, aberta e recolhida, tem o fundo mais claro que a moldura e o ícone em ipê, com `aria-current="page"`; recusa: nenhum pseudo-elemento `::before` pintado de ipê no item atual | `apps/web/frame-inset.layout.test.ts`, "o item atual acende o ícone" | must |
+| 16 | todas | A catraca do lint de design desce de 325 para 303, a contagem de hoje, e não sobe | `npm run lint:design -w @conexus/web`, com `--max-warnings 303` | must |
 
 ## A matriz de estados
 
@@ -166,11 +166,11 @@ grafite; "decisão 2" é a dele do mesmo dia ao movimento.
 | 13 | A moldura grafite e a folha encaixada | U3 | "Fecha": 8 px de margem, canto de 16 px | `ui/frame.tsx`, `ui/sidebar.tsx:198` | SH-ui `sidebar.tsx:154,162,224-235` (variante `inset`, mesma situação) **lido** | a moldura pinta o grafite; a folha ganha margem e raio | embrulhado: a nossa `sidebar` ganha a variante `inset` | · | B-a | · |
 | 14 | A borda é sombra | U3 | "Fecha" | `border border-line` em `ui/input.tsx:19`, `ui/card.tsx:11`, `ui/input-group.tsx:18`; `tokens.css:155-156` | CR `tokens.css:120` (a borda dentro da sombra) **lido** | um token de sombra por camada | nativo | · | B-a | · |
 | 15 | O ipê aceso | U3 | "Fecha": botão principal, chave e caixa ligadas, progresso, enviar, selo "Novo" | `ui/button.tsx:17` (`bg-ink`), `ui/switch.tsx:11`, `ui/checkbox.tsx:13` | protótipo `carater.css:20-27` **herdado** | gradiente de dois tokens a 135°, tinta escura em cima | nativo | · | B-a | · |
-| 16 | Raios e título | U3 | "Fecha": 10, 14, 16, 22; título 1,875 rem, 700 | `tokens.css:86-89,120-126` | tabela "Os outros tokens da direção" **herdado** | troca de valor | nativo | · | B-a | · |
+| 16 | Raios e título | U3 | "Fecha": 10, 14, 16, 22; título 1,875 rem, 700; 2026-11-26, "Vale as cinco": a caixa de marcar, de 20 px, tem canto de 7 px, do protótipo (`carater.css:377`), fora da escala | `tokens.css:86-89,120-126` | tabela "Os outros tokens da direção" **herdado** | troca de valor | nativo | · | B-a | · |
 | 17 | O foco | U3 | "Fecha": tinta no claro, ipê no escuro | `tokens.css:308` | protótipo `b-noites.css:30` **herdado** | um token `focus` próprio | nativo | · | B-a | · |
 | 18 | O contraste dos pares | U3 | V8 | nenhum teste | nenhuma referência mede em teste **não achado** | · | remendo | o próprio teste, `playwright-core@1.63.0` com a fórmula da WCAG 2.2 | não precisa | `apps/web/contrast.layout.test.ts` |
 | 19 | O `DESIGN.md` pelo `document` | U3 | decisão 3: "abrir"; `document` só depois da direção | `docs/reference/impeccable.md:33-35` (proibido) | o Impeccable instalado **documentado** | lê o código e escreve o `DESIGN.md` | nativo | · | decisão 3 | · |
-| 20 | O aviso | U4 | estudo 6.3: o Toast do Base UI (o Sonner fere a W22); "Fecha": invertido, uma linha | nenhum (`DESIGN.md:638`) | Base UI `toast/` e `docs/react/components/toast.md:418-560,3781-3783` (mesma situação); DF-ui `toast/index.tsx:150-177` (mesma situação) **lido** | `Toast.Provider`, `useToastManager().add`; pilha e gesto pelas variáveis que o Base UI escreve | nativo | · | C | `apps/web/src/ui/notice.tsx` |
+| 20 | O aviso | U4 | estudo 6.3: o Toast do Base UI (o Sonner fere a W22); "Fecha": invertido, uma linha | nenhum (`DESIGN.md:638`) | Base UI `toast/` e `docs/react/components/toast.md:418-560,3781-3783` (mesma situação); DF-ui `toast/index.tsx:150-177` (mesma situação) **lido** | `Toast.Provider`, `useToastManager().add`; 2026-11-26, "Vale as cinco": a pilha no fluxo da página, um aviso sobre o outro, sem altura que anima e sem as variáveis de pilha e de gesto do Base UI; o aviso é anunciado pela região do Toast, sem `role="status"` por dentro | nativo | · | C | `apps/web/src/ui/notice.tsx` |
 | 21 | O esqueleto | U4 | estudo 6.3: o pulso de hoje | `ui/skeleton.tsx:10` | SH-ui `skeleton.tsx:3-12` | `animate-pulse` | nativo (fica, no token) | · | não precisa | · |
 | 22 | A vitrine e a CSP | todas | W22, V17 | `pieces.layout.test.ts:72-96`, `showcase.layout.test.ts` | · | o harness já abre a vitrine com a CSP e com a preferência | nativo | · | não precisa | · |
 | 23 | O brilho sincronizado | fica de fora: só o MA, por `style=` (V17) | nada registrado | · | MA-ds `Skeleton/skeleton.tsx:5-20` **lido** | · | nativo (CSS), fora | · | · | · |
@@ -213,7 +213,7 @@ entre módulos.
 | `apps/web/src/ui/` (`sidebar`, `trace`, `button`, `table`, `attachment`, `switch`, `checkbox`) | muda | as telas |
 | `DESIGN.md` "Motion" | muda | o Impeccable, a U2 e a U3 |
 | `apps/web/motion.layout.test.ts` | cria | `apps/web/package.json` `test:browser` |
-| `apps/web/package.json` | muda: `test:browser` ganha o teste; `lint:design` desce para `--max-warnings 311` | CI |
+| `apps/web/package.json` | muda: `test:browser` ganha o teste; `lint:design` desce para `--max-warnings 303` | CI |
 
 ### Os contratos que a unidade cria
 
@@ -384,6 +384,10 @@ guia como o #1428 os deixou; `docs/reference/impeccable.md` e `PRODUCT.md` só p
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/brand/tokens.css`, `DESIGN.md` front matter e prosa | muda | todo `apps/web/src`; `brand/tokens.test.ts`; o Impeccable |
+| `apps/web/src/brand/colors.css` | cria: as cores e as duas pinturas feitas delas, importadas pelo `tokens.css` com `theme(static)` | `brand/tokens.css`; `brand/tokens.test.ts` |
+| `apps/web/frame-inset.layout.test.ts`, `apps/web/frame-replies.ts` | cria: os casos dos critérios 10 e 17 e as respostas que os dois arquivos da moldura dividem | `test:browser` |
+| `apps/web/axis.layout.test.ts`, `apps/web/conversation.layout.test.ts` | muda: a rolagem na borda da folha e os raios novos da caixa de pedido e do controle | `test:browser` |
+| As telas que escrevem letra em cor de estado: 33 arquivos em `apps/web/src/agents`, `harness`, `hub` e `ui`, com os testes que leem a classe | muda: `text-danger`, `text-success` e `text-warning` de letra passam a `text-danger-text`, `text-success-text` e `text-warning-text`; o ícone e o ponto ficam na cor viva | as telas |
 | `apps/web/src/ui/` (as peças da linha da matriz) | muda | as telas |
 | `apps/web/contrast.layout.test.ts` | cria | `test:browser` |
 | `apps/web/package.json` | muda: `test:browser` ganha o teste | CI |
@@ -394,7 +398,8 @@ guia como o #1428 os deixou; `docs/reference/impeccable.md` e `PRODUCT.md` só p
 Os tokens que entram (o resto troca só o valor): `--color-frame` (a moldura, o `--noite` do protótipo),
 `--color-raised` (o que flutua, `--elevado`), `--color-accent-from`, `--color-accent-to` (o ipê aceso,
 `--ipe-a`, `--ipe-b`), `--color-on-accent` com o valor de `--sobre-ipe`, `--color-focus`,
-`--color-notice`, `--color-on-notice`; `--shadow-1`, `--shadow-2`, `--shadow-ring` (as camadas
+`--color-notice`, `--color-on-notice`, `--color-success-text`, `--color-warning-text`,
+`--color-danger-text` (a letra de estado); `--shadow-1`, `--shadow-2`, `--shadow-ring` (as camadas
 `--sombra-1`, `--sombra-2`, `--aro`). Cada um no front matter do `DESIGN.md` com o mesmo nome, que o
 `tokens.test.ts` confere. Os valores, copiados da tabela "A paleta final" do fechamento (lidos no navegador; nunca escolhidos
 aqui), em claro / escuro:
@@ -420,11 +425,22 @@ aqui), em claro / escuro:
 | `success` | #1f9d5c | #55d394 |
 | `warning` | #d97a06 | #f5a742 |
 | `danger` | #d93a4a | #ff7d8a |
+| `success-text` (letra de estado) | #007f46 | #55d394 |
+| `warning-text` (letra de estado) | #a65b00 | #f5a742 |
+| `danger-text` (letra de estado) | #ce2e41 | #ff7d8a |
+
+A letra de estado é decisão do fundador de 2026-11-26, "D": no tema claro `success`, `warning` e
+`danger` como letra ficam em 3,39, 3,04 e 4,40 sobre a folha, abaixo de 4,5:1. A letra usa o mesmo
+matiz OKLCH da cor viva, com a luz descida até passar 4,5:1 sobre a folha, o azulejo e o que flutua;
+a cor viva fica no ponto, no ícone e no preenchimento. No escuro a cor viva serve aos dois.
 
 O item ativo da barra é a moldura com 14% de branco (#333333 / #2b2b2b). As sombras `shadow-1`,
 `shadow-2` e `shadow-ring` seguem `b-noites.css:31-33` do protótipo, com o grafite (força de cor 0).
 `accent`, `accent-text`, `mark`, `memory` e as cores de código não estão na tabela: ficam como estão,
-e um par deles abaixo de 4,5:1 sobre a folha nova para a unidade (Parar se).
+e um par deles abaixo de 4,5:1 sobre a folha nova para a unidade (Parar se). Três ficam abaixo sobre a
+folha e não param a unidade (2026-11-26, "Vale as cinco"): `code-comment`
+(4,43) só é desenhado no bloco de código, que fica sobre o que flutua, onde dá 4,55; `accent` (3,63)
+não é letra (traço, aro e ícone, 3:1); `mark` (2,97) é a marca.
 
 ### A ordem do trabalho
 
@@ -482,7 +498,9 @@ ajuste a cor. O pull request da decisão B-a não está em `main`: a etapa não 
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/web/src/ui/notice.tsx` | cria | `default-choice.tsx` |
+| `apps/web/src/ui/notice.tsx` | muda: ganha o aviso ao lado da linha `Notice`, que já existe | `default-choice.tsx` e as 13 telas que já usam a linha |
+| `apps/web/src/routes/_app/companies/$companyId_/settings/route.tsx` | muda: o link "Voltar" da barra de Configurações passa a ser exato, para não ser marcado como lugar atual | Configurações |
+| `apps/web/src/hub/connectors/sign-in-return.test.tsx`, `hub/projects/project-bar.test.tsx`, `hub/requests/request-line.test.tsx` | muda: entre duas montagens do Hub no mesmo teste, `cleanup()` no lugar de esvaziar o `body`, que arrancava o portal do aviso de baixo do React | `test:unit` |
 | `apps/web/src/main.tsx`, `apps/web/src/ui/pieces-fixture.tsx` | muda: montam o `NoticeProvider` | o Hub e a vitrine |
 | `apps/web/package.json` | muda: `test:browser` ganha `notice.layout.test.ts` | CI |
 | `apps/web/motion.layout.test.ts` | muda: o aviso no caso do critério 4 | `test:browser` |
@@ -498,8 +516,8 @@ Em `apps/web/src/ui/notice.tsx`:
 
 ```ts
 export function NoticeProvider(props: { children: ReactNode }): ReactNode
-export type Notice = { title: string; description?: string }
-export function useNotice(): (notice: Notice) => void
+export type NoticeText = { title: string; description?: string }
+export function useNotice(): (notice: NoticeText) => void
 ```
 
 Um só tipo de aviso, o de feito: o erro não vai para aviso (folha de movimento, "Erro, aviso,
