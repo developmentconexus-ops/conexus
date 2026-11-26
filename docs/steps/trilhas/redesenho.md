@@ -22,7 +22,9 @@ escrito). Ficam decididas, no cartão da `R2`: A-a (o agente abre com a barra do
 própria nasce na `R5`), B-b (três títulos na barra: "Dados e contexto", "Agentes" e "Apps"), D-a (os
 guias mudam antes de construir), F-a (a barra do projeto na forma da versão 2, com as oito seções de
 hoje) e G-a (o Início não muda por dentro na `R2`). A decisão C, de como se chega nas conversas e se
-começa uma nova, volta a ele com o estudo que pediu.
+começa uma nova, voltou a ele com o estudo que pediu, em quatro opções; no quadro, no mesmo dia: "Ca"
+(como escrito). Fica decidida a C-a: na barra, em toda tela, "Nova conversa", o lugar "Conversas" e as
+conversas recentes que couberem.
 
 Esta página não é um cartão de etapa (delivery L5). O estudo, os protótipos e as capturas ficam fora do
 repositório (delivery L21). A trilha usa a vaga `desenho` que o código já conhece (`scripts/cli.ts`);
@@ -81,5 +83,5 @@ separada; o que a prévia de um app pode gravar; dado pessoal na amostra).
 fundador em 2026-11-26.
 
 O cartão da [R2, a casca nova](../redesenho-r2-a-casca-nova.md) está escrito pela versão 2 dos
-protótipos e espera a vez dele num pull request de rascunho (delivery L5), com cinco decisões
-respondidas e uma, a C, à espera da palavra do fundador.
+protótipos e espera a vez dele num pull request de rascunho (delivery L5), com as seis decisões
+respondidas e a página do fundador à espera da aprovação dele.

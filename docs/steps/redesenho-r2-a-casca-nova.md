@@ -13,8 +13,8 @@ que entrou em `main` em `301ee9b5` sem mudar nenhum arquivo citado:
 base (`ui@0e5b2e6`), Supabase (`supabase@3089aa3`), Dify (`dify@fce5d30`). A vaga do trilho `desenho` é
 do cartão da [R1](redesenho-r1-a-base-visual-e-o-movimento.md), aprovado em 2026-11-26: este cartão
 espera num pull request de rascunho até a R1 fechar (delivery L5). O fundador pôs a R2 logo depois da
-R1 ("Concordo", 2026-11-26) e respondeu cinco das seis decisões desta página no mesmo dia; as palavras
-dele estão na página da trilha. Falta a decisão C.
+R1 ("Concordo", 2026-11-26) e respondeu as seis decisões desta página no mesmo dia; as palavras dele
+estão na página da trilha.
 
 ## A página do fundador
 
@@ -50,8 +50,8 @@ de ligação, a galeria de projetos) chega nas etapas seguintes.
    "Buscar ou ir para…" abre a busca. Se você tem duas empresas, o menu da sua conta lista "Suas
    empresas".
 
-**O que você faz, e quando.** Antes: nada a fornecer. No começo: responde a decisão C, a única que
-falta, vendo cada opção no quadro da etapa, e aprova esta página; a mudança dos guias (decisão D) entra
+**O que você faz, e quando.** Antes: nada a fornecer. No começo: aprova esta página; as seis decisões
+abaixo você já respondeu, vendo as opções no quadro da etapa. A mudança dos guias (decisão D) entra
 antes da primeira unidade. No fim: faz o roteiro, vê o quadro do fim (cada tela do Hub ao lado da captura da
 versão 2), diz o que viu e aprova os textos ("Buscar ou ir para…", "Conversas", "Recentes", "← Todos
 os projetos", "Nada encontrado.", "Recolher a barra lateral", "Avisos", "Conhecimento").
@@ -73,7 +73,7 @@ navegação e, em quatro pontos, fugia dele; agora segue o que você aprovou.
 - Os títulos dos grupos, a barra do projeto, a barra do agente e o Início viraram decisões em imagem
   (B, F, A e G), que você respondeu em 2026-11-26. A vez da R2 já estava decidida (E).
 - As conversas: você perguntou se não valia manter a segunda coluna no Início, ou um "nova conversa"
-  à mão. O estudo está no quadro e virou a decisão C, refeita, com quatro opções.
+  à mão. O estudo está no quadro e virou a decisão C, refeita, com quatro opções; você escolheu a C-a.
 - As camadas de Dados viram abas no alto da página. A árvore ao lado, que você aprovou em 2026-11-15,
   morava na coluna que some; a versão 2 não desenha as camadas.
 
@@ -89,7 +89,7 @@ navegação e, em quatro pontos, fugia dele; agora segue o que você aprovou.
 - **O título em pergunta, o "Continuar" com agentes e projetos e os três números de "Estado" no
   Início** (decisão G). O Início de hoje já tem a caixa do pedido, as sugestões, Continuar, Projetos e
   Ligações.
-- **A segunda coluna de conversas**, no Início ou em toda tela (decisão C, opções C-b e C-d).
+- **A segunda coluna de conversas**, no Início ou em toda tela: você escolheu a barra (decisão C).
 - **Levar o foco à caixa do pedido quando você clica em "Nova conversa" já estando no Início.** Hoje o
   botão leva ao Início e, no próprio Início, não faz nada novo; fica assim, e vai com a etapa do Início
   (R6).
@@ -118,29 +118,17 @@ versão 2 e das telas do Mobbin.
   dividiu. O que você aceitou: o título "Agentes" fica em cima do item "Agentes", e "Apps" em cima de
   um item só, Projetos. Quem não gerencia agentes nem automações não vê o grupo Agentes. Ficou de fora:
   B-a (os dois títulos da versão 2, que era a recomendada).
-- **C. Como você chega nas conversas de antes e começa uma nova. Aberta.** Você perguntou, em
-  2026-11-26, se não vale deixar a segunda coluna no Início, "para facilitar", ou algo como um "nova
-  conversa". O estudo olhou dezenove produtos no Mobbin, desenhou quatro opções sobre o protótipo da
-  versão 2 e passou as quatro pela crítica do Impeccable; está no quadro da etapa. As letras são novas.
-  - **C-a (recomendada).** Na barra, em toda tela: o botão "Nova conversa", o lugar "Conversas" (a
-    lista inteira, por dia, com a busca e o filtro) e, no fim, "Recentes", com as últimas conversas que
-    couberem, até oito. Exemplo: de Integrações, um clique abre a conversa de ontem. Por quê: é o que
-    fazem os produtos com uma barra larga como a nossa (Claude, ChatGPT, Gemini, Langdock, WRITER,
-    Dropbox Dash); começar e retomar custam um clique de qualquer tela, no celular também, e a casca
-    não muda de forma. Custa: com três títulos de grupo, a 768 px de altura cabem três recentes (oito
-    numa tela alta, uma na gaveta do celular); a barra recolhida e a do projeto não as mostram.
-    Nativo: o botão e a lista de hoje, a lista mais curta.
-  - **C-b.** A coluna de conversas só onde se conversa, a sua ideia: no Início e numa conversa aberta,
-    a segunda coluna com "Nova conversa", a busca e a lista por dia; nas outras áreas, nenhuma. Ganha:
-    treze conversas e a busca à vista onde se conversa. Custa: ali a navegação toma 512 px dos 1366, e
-    a folha muda de lugar ao trocar de área; de Dados, voltar a uma conversa são dois cliques; no
-    celular a coluna não cabe e a página da lista existe do mesmo jeito. Dos quatro produtos que têm
-    a coluna, três a põem ao lado de um trilho fino de ícones (ClickUp, Plane, Productboard); só o
-    Remote a junta a uma barra larga. Nativo, mas a moldura volta a ter duas colunas em dois lugares.
-  - **C-c.** Só "Nova conversa" e "Conversas" na barra, sem "Recentes". A barra mais curta; de dentro
-    de uma conversa, chegar a outra são dois cliques. É a C-a sem o último grupo. Nativo.
-  - **C-d.** A coluna de conversas em toda tela, como hoje. Custa: a navegação toma 512 px em toda
-    área e desfaz o conteúdo no centro da folha, da versão 2; nenhum dos produtos vistos faz assim.
+- **C. Como você chega nas conversas de antes e começa uma nova. Decidida: C-a** (2026-11-26). Você
+  perguntou se não valia deixar a segunda coluna no Início, "para facilitar", ou algo como um "nova
+  conversa"; o estudo olhou dezenove produtos no Mobbin, desenhou quatro opções sobre o protótipo da
+  versão 2 e passou as quatro pela crítica do Impeccable. Você escolheu: na barra, em toda tela, o
+  botão "Nova conversa", o lugar "Conversas" (a lista inteira, por dia, com a busca e o filtro) e, no
+  fim, "Recentes", com as últimas conversas que couberem, até oito. É o que fazem os produtos com uma
+  barra larga como a nossa (Claude, ChatGPT, Gemini, Langdock, WRITER, Dropbox Dash). O que você
+  aceitou: com três títulos de grupo, a 768 px de altura cabem três recentes (oito numa tela alta, uma
+  na gaveta do celular), e a barra recolhida e a do projeto não as mostram. Ficaram de fora: C-b (a
+  coluna de conversas só no Início e numa conversa aberta), C-c (a barra sem "Recentes") e C-d (a
+  coluna em toda tela, como hoje).
 - **D. As regras escritas dos guias. Decidida: D-a** (2026-11-26). Os guias mudam antes de construir,
   num pull request só de documentos, logo depois da aprovação desta página, como foi na R1. Entra uma
   regra nova: os lugares do Hub são declarados num arquivo só, e a barra, a gaveta e a busca leem dele;
@@ -153,8 +141,8 @@ versão 2 e das telas do Mobbin.
   com o estado), com as oito seções de hoje nos quatro grupos. O que você aceitou: a barra do projeto
   ainda não é a da versão 2. Onde o agente mora continua uma regra sua, que o cartão da R5 traz; quando
   ela mudar, tirar uma seção da barra é uma linha. Ficou de fora: F-b (as cinco seções da versão 2 já).
-- **G. O Início. Decidida: G-a** (2026-11-26). Na R2 o Início só ganha a barra nova e o que a decisão C
-  trouxer para as conversas. O título em pergunta, o "Continuar" com agentes e projetos e os três
+- **G. O Início. Decidida: G-a** (2026-11-26). Na R2 o Início só ganha a barra nova, com o que a
+  decisão C pôs nela. O título em pergunta, o "Continuar" com agentes e projetos e os três
   números vão com a etapa do Início (R6), depois da R3, que traz a peça dos números. Ficou de fora: G-b
   (o título e o "Continuar" misto numa unidade a mais da R2).
 
@@ -363,7 +351,7 @@ escolheu em 2026-11-26; "a v2" é a versão 2 dos protótipos das jornadas, que 
 | 12 | A tecla Ctrl+K | U3 | a navegação | `ui/sidebar.tsx:56-66` (o mesmo padrão, para Ctrl+B) | MA `lib/command/use-navigation-command.ts:42-54` | um ouvinte de `keydown` em `document` com `metaKey` ou `ctrlKey` **lido** | nativo | · | não precisa | · |
 | 13 | A tecla desenhada | U3 | · | nenhum | SH `ui/kbd.tsx:3-14` | um `kbd` com classe **lido** | nativo (cópia) | · | não precisa | `ui/kbd.tsx` |
 | 14 | O gatilho "Buscar ou ir para…" | U3 | a navegação | nenhum | MA `app-sidebar.tsx:59-62,117-123` (mesma situação; lá some no celular, aqui fica na gaveta, como o protótipo de navegação) | um botão na barra com o atalho escrito, que abre a paleta e fecha a gaveta **lido** | nativo | · | não precisa | · |
-| 15 | A lista de conversas numa página | U1 | o fundador, 2026-11-26 (a pergunta da segunda coluna; decisão C aberta); a navegação; mapa 4 (conversas só no Início) | `agents/assistant/sidebar-conversations.tsx:115-232`; `agents/assistant/day.tsx:23-78` | [Claude, "Chats"](https://mobbin.com/screens/ef4dc71f-9d6e-4b35-89d7-26c2393c58c0) (mesma situação) e [SchoolAI, "Session history"](https://mobbin.com/screens/9f4e0804-c3ff-4456-aa14-07c8d7ad852f) **visto**; o código é o de hoje | a lista inteira como um lugar | nativo | · | C | `agents/assistant/conversations-page.tsx` |
+| 15 | A lista de conversas numa página | U1 | o fundador, 2026-11-26: C-a; a navegação; mapa 4 (conversas só no Início) | `agents/assistant/sidebar-conversations.tsx:115-232`; `agents/assistant/day.tsx:23-78` | [Claude, "Chats"](https://mobbin.com/screens/ef4dc71f-9d6e-4b35-89d7-26c2393c58c0) (mesma situação) e [SchoolAI, "Session history"](https://mobbin.com/screens/9f4e0804-c3ff-4456-aa14-07c8d7ad852f) **visto**; o código é o de hoje | a lista inteira como um lugar | nativo | · | C | `agents/assistant/conversations-page.tsx` |
 | 16 | As camadas de Dados em abas | U1 | a navegação (uma barra só); o mapa 4 punha a árvore na coluna | `hub/copies/data-tree.tsx:33-58,104-113` | [Databricks](https://mobbin.com/screens/c02170fd-f44b-42c0-8fd2-59a04b9ad0b0) (a árvore é painel do catálogo) **visto**; BU `tabs.md` | três abas que mudam o `layer` do endereço | nativo | · | D | · |
 | 17 | A gaveta do celular | U4 | V56 (2026-11-01); mapa 7 | `ui/sidebar.tsx:124-142`; `ui/frame.tsx:88-127` | SH `ui/sidebar.tsx:182-205` (a mesma barra dentro da `Sheet`) **lido** | no celular os filhos da barra vão para a gaveta | nativo (fica) | · | D | · |
 | 18 | A conta com a empresa, e a troca | U2 (a paleta, U3) | a v2 (a empresa sob o nome, no pé); W30 ("Suas empresas") | `hub/identity/company-switcher.tsx:17-42` (a lista, num menu no alto); `hub/identity/account-menu.tsx:36-124` (o nome e o e-mail) | SH `blocks/sidebar-07/components/nav-user.tsx:41-52,68-79` (a conta no pé, com duas linhas e o menu); [hilos](https://mobbin.com/screens/392e6413-c649-4ff9-82fd-65ec02979ebc) e [Snowflake](https://mobbin.com/screens/41e8b27f-bbca-4be6-9136-a536e37c17b4) **visto** (a troca pelo menu da conta); SB `AppLayout/OrganizationDropdown.tsx:60-101` (situação diferente: no alto, com busca, sobre `cmdk`) | a linha da conta com o lugar embaixo do nome, e a lista de lugares no menu dela | nativo (fica): o grupo "Suas empresas" muda do menu do alto para o da conta, sem peça nova; quem tem muitas acha pela paleta | · | não precisa | · |
@@ -376,10 +364,10 @@ escolheu em 2026-11-26; "a v2" é a versão 2 dos protótipos das jornadas, que 
 | 25 | O estado sob o nome do projeto | U2 | a v2 ("Projeto · Em construção" sob o nome) | `hub/projects/project-rail.tsx:38-71`; `hub/projects/project-state.ts:9-17,33-44` (as palavras do estado, já usadas na lista); `ui/sidebar-selector.tsx:6-22` (a cabeça só tem o título) | SH `blocks/sidebar-07/components/team-switcher.tsx:43-56` (a cabeça com duas linhas: o nome e o plano); [Gumloop](https://mobbin.com/screens/490f3e5a-96c0-487a-b1fa-bd9fe707f8c0) **visto** | uma segunda linha na cabeça da barra | nativo: um campo opcional na cabeça, com as palavras que já têm dono | · | não precisa | · |
 | 26 | Os endereços novos na lista do Hub | U1 | web W1 | `packages/hub-api/src/pages.ts:6-67`; `apps/server/src/platform/screens.ts:22-31`; `routes/__root.test.tsx:53-56` | o próprio Hub: cada tela nova entrou assim | uma linha por endereço, e o teste prende o roteador à lista | nativo | · | não precisa | · |
 | 27 | A barra do projeto com as cinco seções da v2, e "Arquivos" | fica de fora (decisão F) | a v2; mapa 1 e 5 (o Projeto como a casa dos agentes e das automações, J1, 2026-10-30) | `hub/projects/project-rail.tsx:81-145` | [Lovable](https://mobbin.com/screens/f89924d9-2ea2-4c9e-98dc-05001f4d4bd5) **visto** (lista curta, sem grupos) | · | nativo (dados), fora: depende da regra de onde o agente mora | · | F | · |
-| 28 | "Nova conversa" na barra | U2 | o fundador, 2026-11-26 ("alguma coisa como new chat") | `agents/assistant/sidebar-conversations.tsx:41-53` (`NewConversation`, hoje no alto da coluna); `route.tsx:136-139` | [Claude](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd), [ChatGPT](https://mobbin.com/screens/efb593c5-be61-47d5-a2bd-87aab6056cd2), [Gemini](https://mobbin.com/screens/9d72be69-e520-4406-9cb7-b8c7b7cb7c73), [Langdock](https://mobbin.com/screens/c4e7cdc1-9038-449d-8787-cd5889e08e94), [Gumloop](https://mobbin.com/screens/077b229c-378b-45fd-a9da-19db94513771) **visto** | o botão no alto da barra, antes dos lugares | nativo (fica): o mesmo link, na barra nova | · | C | · |
-| 29 | As conversas recentes na barra | U1 (a lista curta) e U2 (o lugar na barra) | o fundador, 2026-11-26 ("para facilitar") | `agents/assistant/sidebar-conversations.tsx:183-232`; `agents/assistant/conversation-row.tsx` | SH `blocks/sidebar-07/components/nav-projects.tsx:32-46` (um grupo de itens da barra, escondido quando recolhida); [Claude](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd), [ChatGPT](https://mobbin.com/screens/efb593c5-be61-47d5-a2bd-87aab6056cd2), [Gemini](https://mobbin.com/screens/9d72be69-e520-4406-9cb7-b8c7b7cb7c73), [Langdock](https://mobbin.com/screens/c4e7cdc1-9038-449d-8787-cd5889e08e94), [WRITER](https://mobbin.com/screens/c3f8b744-4ff6-4f1c-8d95-5d9f56da86a3), [Dropbox Dash](https://mobbin.com/screens/824a3c3d-e26f-4916-9df1-963eb0eca8f5) **visto** | as recentes num grupo no fim da barra, sem busca nem abas | nativo (fica): a lista de hoje, mais curta | · | C | · |
-| 30 | "Conversas" como lugar da barra | U2 | a decisão C | `routes/_app/companies/$companyId/conversations/` (hoje só a conversa aberta) | [Claude, "Chats"](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd) e [SchoolAI, "Session history"](https://mobbin.com/screens/9f4e0804-c3ff-4456-aa14-07c8d7ad852f) **visto**; MA `lib/nav/nav-items.tsx:24-39` | a lista inteira é uma linha da navegação | nativo: uma linha de dados | · | C | · |
-| 31 | A segunda coluna de conversas, só onde se conversa ou em toda tela | fica de fora (decisão C, opções C-b e C-d) | o fundador, 2026-11-26 (a pergunta) | `route.tsx:132-143` (a coluna de hoje, em quase toda área) | [Remote](https://mobbin.com/screens/9effb1a2-c07f-4697-b046-99a47370714f), [ClickUp](https://mobbin.com/screens/0464978f-1b51-41d4-81a3-3c09084fd7a2), [Plane](https://mobbin.com/screens/567b285a-8208-4b65-b8fb-fd37b2c11237), [Productboard](https://mobbin.com/screens/2de4d34c-149a-4bf8-bcbf-3c0938fe2501) **visto**: só na área do assistente, e em três dos quatro ao lado de um trilho fino | · | nativo (fica), fora: a moldura voltaria a ter duas colunas | · | C | · |
+| 28 | "Nova conversa" na barra | U2 | o fundador, 2026-11-26 ("alguma coisa como new chat"; C-a) | `agents/assistant/sidebar-conversations.tsx:41-53` (`NewConversation`, hoje no alto da coluna); `route.tsx:136-139` | [Claude](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd), [ChatGPT](https://mobbin.com/screens/efb593c5-be61-47d5-a2bd-87aab6056cd2), [Gemini](https://mobbin.com/screens/9d72be69-e520-4406-9cb7-b8c7b7cb7c73), [Langdock](https://mobbin.com/screens/c4e7cdc1-9038-449d-8787-cd5889e08e94), [Gumloop](https://mobbin.com/screens/077b229c-378b-45fd-a9da-19db94513771) **visto** | o botão no alto da barra, antes dos lugares | nativo (fica): o mesmo link, na barra nova | · | C | · |
+| 29 | As conversas recentes na barra | U1 (a lista curta) e U2 (o lugar na barra) | o fundador, 2026-11-26 ("para facilitar"; C-a) | `agents/assistant/sidebar-conversations.tsx:183-232`; `agents/assistant/conversation-row.tsx` | SH `blocks/sidebar-07/components/nav-projects.tsx:32-46` (um grupo de itens da barra, escondido quando recolhida); [Claude](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd), [ChatGPT](https://mobbin.com/screens/efb593c5-be61-47d5-a2bd-87aab6056cd2), [Gemini](https://mobbin.com/screens/9d72be69-e520-4406-9cb7-b8c7b7cb7c73), [Langdock](https://mobbin.com/screens/c4e7cdc1-9038-449d-8787-cd5889e08e94), [WRITER](https://mobbin.com/screens/c3f8b744-4ff6-4f1c-8d95-5d9f56da86a3), [Dropbox Dash](https://mobbin.com/screens/824a3c3d-e26f-4916-9df1-963eb0eca8f5) **visto** | as recentes num grupo no fim da barra, sem busca nem abas | nativo (fica): a lista de hoje, mais curta | · | C | · |
+| 30 | "Conversas" como lugar da barra | U2 | o fundador, 2026-11-26: C-a | `routes/_app/companies/$companyId/conversations/` (hoje só a conversa aberta) | [Claude, "Chats"](https://mobbin.com/screens/7f488e21-04bc-4523-8ac5-b2038e7977fd) e [SchoolAI, "Session history"](https://mobbin.com/screens/9f4e0804-c3ff-4456-aa14-07c8d7ad852f) **visto**; MA `lib/nav/nav-items.tsx:24-39` | a lista inteira é uma linha da navegação | nativo: uma linha de dados | · | C | · |
+| 31 | A segunda coluna de conversas, só onde se conversa ou em toda tela | fica de fora (decisão C: o fundador escolheu a C-a) | o fundador, 2026-11-26 (a pergunta, e a escolha) | `route.tsx:132-143` (a coluna de hoje, em quase toda área) | [Remote](https://mobbin.com/screens/9effb1a2-c07f-4697-b046-99a47370714f), [ClickUp](https://mobbin.com/screens/0464978f-1b51-41d4-81a3-3c09084fd7a2), [Plane](https://mobbin.com/screens/567b285a-8208-4b65-b8fb-fd37b2c11237), [Productboard](https://mobbin.com/screens/2de4d34c-149a-4bf8-bcbf-3c0938fe2501) **visto**: só na área do assistente, e em três dos quatro ao lado de um trilho fino | · | nativo (fica), fora: a moldura voltaria a ter duas colunas | · | C | · |
 
 **A medida do transplante.** Nenhuma parte trazida do produto antigo. Três peças de hoje mudam de
 lugar sem mudar de dono: a lista de conversas (232 linhas, cerca de 60 mudam), as camadas de Dados e a
@@ -436,7 +424,7 @@ O pull request de método da decisão D, só de documentos (delivery L20), antes
   paleta leem dele com um filtro só de permissão.
 
 A página da trilha já traz, com as palavras do fundador: a ordem das etapas (a R2 logo depois da R1),
-o quadro no começo e no fim de cada etapa e as cinco respostas de 2026-11-26. Por elas, a frase da R2
+o quadro no começo e no fim de cada etapa e as seis respostas de 2026-11-26. Por elas, a frase da R2
 perdeu "num agente ou" (A-a) e a linha da R6 perdeu "a casa do pedido (Início) vai com `R2`" (G-a).
 
 ## U1 As listas saem da coluna e Conhecimento ganha o lugar
@@ -588,8 +576,7 @@ sem id e `/knowledge` não existem, a coluna traz a lista inteira com a busca, e
 
 Uma unidade das trilhas Dados ou Agentes e Apps estiver aberta em `hub/copies/` ou em
 `agents/assistant/`: espere por ela (delivery L1); a tela Conhecimento é da trilha Dados (ficha TD11),
-e a U1 só a muda de endereço. O fundador responder C-b, C-c ou C-d: a unidade muda de forma; volte ao
-cartão. O menu da linha não sair de `conversation-row.tsx` para a página sem ser copiado: pare e
+e a U1 só a muda de endereço. O menu da linha não sair de `conversation-row.tsx` para a página sem ser copiado: pare e
 descreva (seria uma segunda implementação). Um caso dos testes de moldura do raio não couber no destino
 que a tabela dá: pare e diga qual. Uma tela, notificação ou ferramenta apontar para o endereço antigo da memória: pare e diga
 qual (a decisão 9 do firstmate supõe que nenhuma aponta).
@@ -792,7 +779,6 @@ recolher não está no Tab.
 
 - Um item da barra pedir um grupo ou um título fora dos três de B-b, ou uma seção do projeto fora das
   oito de F-a: pare e descreva.
-- O fundador responder C-b, C-c ou C-d: a barra do Hub muda; volte ao cartão.
 - "Recentes" empurrar um lugar para fora da barra aberta a 768 px de altura: os lugares ficam, e as
   recentes é que rolam ou somem; se não der sem código de medida, pare e descreva.
 - Um título de grupo ou um ícone não passar o contraste do critério 13: mande o par ao fundador; nunca
