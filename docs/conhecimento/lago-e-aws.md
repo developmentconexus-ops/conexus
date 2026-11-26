@@ -17,8 +17,11 @@ em [Extração Singer](extracao-singer.md). As etapas estão na [Trilha Dados](.
 - [0080](../decisions/0080-copy-declared-per-table-raw-appends.md), aceito para o modo incremental e proposto para a janela e a passada inteira: a camada bruta
   só acrescenta, e o Athena refaz a camada atual.
 - [0063](../decisions/0063-copy-models-proof.md), aceito em 2026-11-10: os modelos de cópia provados no Sankhya do fundador, só contando.
-- Aprovação: [o-lago-da-empresa-nasce-e-some](../approvals/o-lago-da-empresa-nasce-e-some.md), com
-  as decisões F, G e H do Lago 1.
+- Aprovações: [o-lago-da-empresa-nasce-e-some](../approvals/o-lago-da-empresa-nasce-e-some.md), com
+  as decisões F, G e H do Lago 1, e
+  [a-primeira-copia-chega-ao-lago](../approvals/a-primeira-copia-chega-ao-lago.md).
+- A bruta guarda a linha só até entrar na atual; a NF-e fica sem histórico (fundador,
+  2026-11-24).
 
 ## Provado
 
@@ -67,7 +70,6 @@ em [Extração Singer](extracao-singer.md). As etapas estão na [Trilha Dados](.
 
 ## Aberto
 
-- Por quanto tempo a camada bruta guarda o histórico: chega no cartão do Lago 2.
 - A fila justa de consultas no Hub, peça nossa sem referência (delivery L28): quando a segunda
   empresa entrar.
 - A coluna por leitor e a linha por pessoa no lago; com a permissão de quem o agente lê quando roda

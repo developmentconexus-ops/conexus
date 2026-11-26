@@ -37,7 +37,6 @@ e continuar o desenvolvimento". Never rename an id or reshape the answer.
 2. [live](references/live.md): the executor, the Assistant, the Builder, published apps, saved
    tools, writes with the approval card, and the five-place contract.
 3. [lake](references/lake.md): the table declaration, the Singer adapter and the copy task.
-   **Planejado** until part 1 of the card lands.
 4. [add](references/add.md): the steps to add a connector, from the folder to the docs.
 5. [checklist](references/checklist.md): what a review of connector work applies.
 6. [gaps](references/gaps.md): what the kit lacks for the next connectors, and where each piece
