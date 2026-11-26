@@ -70,18 +70,28 @@ A janela Ligar, com o fluxo da Nekt, e o link de 30 minutos (spec 02) entram na 
 fundador, 2026-11-23: "Sim, é esse" e "Já no Lago 2". A descrição do sistema (spec 02, `C1`) fica
 para a etapa que a pedir.
 
+A ordem mudou em 2026-11-25. No quadro do estudo do tratamento do lago, o fundador respondeu "Q8: a:
+Lago 2, `T1`, `T2`, `T3`, etapas de entrada (3a, XML, 5, 6, 7), `T4`, Negócio, Brain, Lago 3, Lago 4" e
+"Q9: a: duas portas para o mesmo tratamento: Explorer com Salvar como tratamento (T3a) e o agente
+(T3b)" ([aprovação](../../approvals/o-primeiro-modelo-vira-tabela-tratada.md)). Lago 2, 3 e 4 são as
+etapas 2, 3 e 4 da tabela. Em 2026-11-26, sobre a ordem, o fundador respondeu "A": a `T1` primeiro,
+depois A passada inteira agendada, com o cartão no pull request
+https://github.com/developmentconexus-ops/conexus/pull/1463. A tabela segue essa ordem; a etapa que
+ainda não está nela entra com o seu cartão.
+
 | Etapa | A pergunta que o fundador responde na tela | Prova com |
 | --- | --- | --- |
 | 1. O lago da empresa nasce e some | O Conexus cria e apaga sozinho o lago isolado de uma empresa, sem ninguém abrir o console da AWS? | Nenhum conector |
 | 2. A primeira cópia chega ao lago | Eu ligo o Sankhya numa janela só, escolho as tabelas e quando copiar, elas chegam inteiras ao lago, a mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados? | O Sankhya completo, núcleo, fiscal e contábil, e o XML da NF-e; o dublê do HubSpot na mesma bateria, para o adaptador não aprender um sistema só |
 | O conector no padrão novo, entre a parte 0 e a parte 1 da etapa 2 | O Assistente continua lendo o Sankhya e o Mercado Livre enquanto cada conector é refeito, e cada um nasce de uma definição só, com a sua skill e a classe da credencial? | O Sankhya e o Mercado Livre, um pull request por conector |
-| 3. O agente responde pelo lago | Pergunto ao Assistente e ele responde do lago, diz de quando é, e recusa o que o meu papel não lê? É o `D2` | Qualquer tabela copiada |
+| `T1`. O primeiro modelo vira tabela tratada | Depois de cada cópia, o Conexus grava a tabela Notas tratada e a Venda com a regra que eu liguei, e eu vejo em Dados as três camadas e de onde cada tabela veio? | O Sankhya, nas quatro tabelas de venda |
 | 3a. O arquivo chega ao lago, ligado à sua linha | Pergunto ao Assistente por uma linha e abro o arquivo ligado a ela, e quem não lê a tabela não abre o arquivo? | Uma leitura de API que baixa o arquivo (um documento ou anexo do Mercado Livre, se a prova PM1 confirmar; senão, o dublê do HubSpot) e uma coluna binária grande de banco (um anexo do Sankhya, se a sonda PS1 achar) |
 | O XML lido em linhas, depois da 3a | Pergunto ao Assistente se a nota que lançamos bate com o XML do fornecedor, e ele responde item por item, com as duas origens? | O XML da NF-e do Sankhya, guardado na etapa 2, lido em `nfe_notas` e `nfe_itens`; o dublê do conector NF-e |
-| 4. O app lê o que foi publicado | Um app publicado mostra o dado do lago sem nunca ver uma tabela pela metade? | Qualquer tabela copiada |
 | 5. A segunda classe pelo mesmo caminho | Uma lista de um sistema de outro tipo entra pelo mesmo caminho, sem código novo no adaptador? | O Mercado Livre, a lista de vendas. O estudo usa o conector dele numa plataforma de referência e o que já rodamos |
 | 6. Escolher o que copiar | Eu acho no dicionário uma tabela que o kit não declara e escolho os campos de cada tabela, e nada vem marcado? A escolha das tabelas do kit, na janela, entra na etapa 2 | O Sankhya pelo dicionário, o Mercado Livre pela lista declarada |
 | 7. A tabela grande e sem coluna de alteração | A primeira carga termina numa tarde, e o que sumiu da fonte some do lago? As fiscais e as contábeis já entram na etapa 2 | As fiscais e contábeis do Sankhya; as listas do Mercado Livre sem filtro de alteração |
+| 3. O agente responde pelo lago | Pergunto ao Assistente e ele responde do lago, diz de quando é, e recusa o que o meu papel não lê? É o `D2` | Qualquer tabela copiada |
+| 4. O app lê o que foi publicado | Um app publicado mostra o dado do lago sem nunca ver uma tabela pela metade? | Qualquer tabela copiada |
 
 Antes da etapa 1 entrou a mudança de método que dá ao
 repositório regra, teste e conferência para Python, para a infraestrutura da AWS e para testar o
@@ -159,8 +169,9 @@ rótulo do kit, para os agentes acharem a tabela pela origem; a parte gerada da 
 reais; a segunda ligação do mesmo sistema vem sugerida com o nome dela, e um nome repetido é
 recusado.
 
-Ficam para depois do lago implementado, por palavra do fundador em 2026-11-20: o tratamento e a
-qualidade dos dados, a camada Negócio no lago e o agente de dados. Por decisões anteriores: o
+Em 2026-11-20 o fundador pôs o tratamento e a qualidade dos dados, a camada Negócio no lago e o
+agente de dados depois do lago implementado. A ordem de 2026-11-25 (acima) traz os três para antes das
+etapas 3 e 4. Ficam para depois do lago implementado, por decisões anteriores: o
 BigQuery e o dado na nuvem do cliente, os gatilhos (`D5`), a medição por empresa (`D6`, que espera
 a conta oficial) e os bancos de dados por tap pronto. Os taps prontos da loja do Meltano ficam fora
 até um sistema pedir, e são ponto de partida do estudo de cada conector (2026-11-21: "G2 a"). Os
