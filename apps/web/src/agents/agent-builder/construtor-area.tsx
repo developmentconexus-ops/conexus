@@ -68,7 +68,7 @@ function AskBox(
         onSend={begin}
         notice={
           failure !== undefined && (
-            <p role="alert" className="text-danger">
+            <p role="alert" className="text-danger-text">
               {writeFailureText(failure, UNCONFIRMED_CREATION)}
             </p>
           )

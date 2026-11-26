@@ -82,7 +82,7 @@ export function Connections({ scope, agent }: Part) {
         )
       })}
       {gone.map((id) => (
-        <div key={id} className="flex items-center justify-between gap-md text-danger">
+        <div key={id} className="flex items-center justify-between gap-md text-danger-text">
           <span>{GONE_CONNECTION}</span>
           <Button size="sm" variant="ghost" onClick={() => change(id, false)}>
             Tirar

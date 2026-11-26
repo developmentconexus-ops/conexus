@@ -51,7 +51,7 @@ function Apps({ companyId, person }: { companyId: CompanyId; person: Person }) {
           {app.projectName}
           {app.role !== null &&
             (app.roleLabel === null ? (
-              <span className="text-danger"> · Papel que a versão publicada não tem mais</span>
+              <span className="text-danger-text"> · Papel que a versão publicada não tem mais</span>
             ) : (
               ` · ${app.roleLabel}`
             ))}

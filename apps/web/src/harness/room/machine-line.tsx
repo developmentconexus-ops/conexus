@@ -70,7 +70,7 @@ export function VersionLine({ data }: { data: VersionData }) {
       : undefined
   const failed = data.check?.state === 'failed'
   return (
-    <Marker className={failed ? 'text-danger' : 'text-text'}>
+    <Marker className={failed ? 'text-danger-text' : 'text-text'}>
       <MarkerIcon>{said === undefined ? <CheckIcon /> : <CircleAlertIcon />}</MarkerIcon>
       <MarkerContent>
         {versionSentence(data)}
@@ -83,7 +83,7 @@ export function VersionLine({ data }: { data: VersionData }) {
 export function FailureLine({ data }: { data: FailureData }) {
   const room = useRoom()
   return (
-    <Marker role="alert" className="text-danger">
+    <Marker role="alert" className="text-danger-text">
       <MarkerIcon>
         <CircleAlertIcon />
       </MarkerIcon>

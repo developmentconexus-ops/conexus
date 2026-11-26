@@ -53,7 +53,7 @@ function ConfirmDelete(props: {
     <AlertDialog open={props.open} onOpenChange={props.onOpenChange}>
       <AlertDialogContent title={`Apagar ${agent.name}?`} description={deleteWarning(agent.name)}>
         {error !== undefined && (
-          <p role="alert" className="text-danger">
+          <p role="alert" className="text-danger-text">
             {error}
           </p>
         )}
@@ -120,7 +120,7 @@ function Header(props: {
               <MoreHorizontalIcon aria-hidden="true" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem className="text-danger" onClick={() => setConfirming(true)}>
+              <DropdownMenuItem className="text-danger-text" onClick={() => setConfirming(true)}>
                 Apagar
               </DropdownMenuItem>
             </DropdownMenuContent>

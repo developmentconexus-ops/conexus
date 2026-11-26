@@ -110,7 +110,7 @@ export function QuestionnaireError({
   return (
     <QuestionnairePrimitive.Error
       data-slot="questionnaire-error"
-      className={cn('text-danger text-fact', className)}
+      className={cn('text-danger-text text-fact', className)}
       {...props}
     />
   )

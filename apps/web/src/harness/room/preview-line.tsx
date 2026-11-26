@@ -33,7 +33,7 @@ export function PreviewLine({
   const ready = data.state === 'ready'
   const cause = data.state === 'failed' ? data.cause : undefined
   return (
-    <Marker className={ready ? 'text-text' : 'items-start text-danger'}>
+    <Marker className={ready ? 'text-text' : 'items-start text-danger-text'}>
       <MarkerIcon>{ready ? <CheckIcon /> : <CircleAlertIcon />}</MarkerIcon>
       <MarkerContent>
         {ready ? 'Prévia pronta.' : `Prévia não atualizada: ${failureSaid(data.code, cause)}`}

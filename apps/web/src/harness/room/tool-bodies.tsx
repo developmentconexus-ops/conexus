@@ -238,12 +238,12 @@ export function Reason({ tool }: { tool: ToolItem }) {
   const detail = failureDetail(tool, room)
   if (detail === null) return null
   if (detail === undefined)
-    return <pre className={cn(BLOCK, 'text-danger')}>{shown(reasonOf(tool, room))}</pre>
+    return <pre className={cn(BLOCK, 'text-danger-text')}>{shown(reasonOf(tool, room))}</pre>
   return (
     <>
-      <p className="font-semibold text-danger">{detail.label}</p>
+      <p className="font-semibold text-danger-text">{detail.label}</p>
       {detail.message !== undefined && (
-        <pre className={cn(BLOCK, 'text-danger')}>{shown(detail.message)}</pre>
+        <pre className={cn(BLOCK, 'text-danger-text')}>{shown(detail.message)}</pre>
       )}
     </>
   )

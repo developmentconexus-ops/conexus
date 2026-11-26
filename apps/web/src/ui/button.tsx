@@ -20,7 +20,7 @@ const buttonClasses = cva(
         default: 'bg-raised text-text shadow-1 hover:shadow-2',
         ghost: 'bg-transparent text-text-2 hover:bg-surface-3 hover:text-text',
         // A destructive action: neutral on the page, full danger only at its confirmation (V55).
-        danger: 'bg-raised text-danger shadow-1 hover:shadow-2',
+        danger: 'bg-raised text-danger-text shadow-1 hover:shadow-2',
         'danger-confirm': 'bg-danger text-on-ink',
       },
       size: {

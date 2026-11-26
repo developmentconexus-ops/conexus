@@ -37,6 +37,9 @@
   --color-success: light-dark(#1f9d5c, #55d394);
   --color-warning: light-dark(#d97a06, #f5a742);
   --color-danger: light-dark(#d93a4a, #ff7d8a);
+  --color-success-text: light-dark(#007f46, #55d394);
+  --color-warning-text: light-dark(#a65b00, #f5a742);
+  --color-danger-text: light-dark(#ce2e41, #ff7d8a);
   --color-preview-paper: light-dark(#ffffff, #ffffff);
   /* The dark frame the Prévia draws round the app on a phone (design V3). */
   --color-phone-frame: light-dark(#1d2125, #3a4148);

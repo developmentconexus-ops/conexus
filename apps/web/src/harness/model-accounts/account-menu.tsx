@@ -88,7 +88,7 @@ export function AccountMenu(props: {
           {powers.act && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-danger" onClick={() => setDialog('remove')}>
+              <DropdownMenuItem className="text-danger-text" onClick={() => setDialog('remove')}>
                 Remover…
               </DropdownMenuItem>
             </>

@@ -30,7 +30,7 @@ function Refused(props: { scope: Scope; failure: unknown }) {
       .filter((part) => part.type === 'literal')
       .map((part) => part.value)
     return (
-      <p role="alert" className="text-danger">
+      <p role="alert" className="text-danger-text">
         Usada por{' '}
         {failure.agents.map((agent, index) => (
           <span key={agent.id}>
@@ -53,7 +53,7 @@ function Refused(props: { scope: Scope; failure: unknown }) {
     )
   }
   return (
-    <p role="alert" className="text-danger">
+    <p role="alert" className="text-danger-text">
       {writeFailureText(failure, UNCONFIRMED_DELETE)}
     </p>
   )

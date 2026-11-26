@@ -51,7 +51,7 @@ export function Failed(props: { run: Extract<LakeRun, { outcome: 'ERROR' }>; sys
   const { run } = props
   return (
     <span role="alert" className="mt-xs flex flex-col gap-xs">
-      <span className="text-danger">
+      <span className="text-danger-text">
         {run.failedTable !== null && `${stoppedAtText(run.failedTable)} `}
         {runFailureText(run.code, props.system)}
       </span>

@@ -29,6 +29,9 @@ colors:
   success: "#1F9D5C"
   warning: "#D97A06"
   danger: "#D93A4A"
+  success-text: "#007F46"
+  warning-text: "#A65B00"
+  danger-text: "#CE2E41"
   preview-paper: "#FFFFFF"
   phone-frame: "#1D2125"
   logo-plate: "#FFFFFF"
@@ -65,6 +68,9 @@ colors:
   dark-success: "#55D394"
   dark-warning: "#F5A742"
   dark-danger: "#FF7D8A"
+  dark-success-text: "#55D394"
+  dark-warning-text: "#F5A742"
+  dark-danger-text: "#FF7D8A"
   dark-preview-paper: "#FFFFFF"
   dark-phone-frame: "#3A4148"
   dark-logo-plate: "#FFFFFF"
@@ -187,7 +193,7 @@ components:
     height: "32px"
   button-danger:
     backgroundColor: "{colors.raised}"
-    textColor: "{colors.danger}"
+    textColor: "{colors.danger-text}"
     typography: "{typography.label}"
     rounded: "{rounded.control}"
     padding: "0 12px"
@@ -225,7 +231,7 @@ components:
     textColor: "{colors.text}"
     typography: "{typography.label}"
   field-error:
-    textColor: "{colors.danger}"
+    textColor: "{colors.danger-text}"
     typography: "{typography.label}"
   notice:
     textColor: "{colors.text}"
@@ -449,7 +455,8 @@ inside the frame takes its dark value in both themes.
 | Notice | `notice`, `on-notice` | the toast, inverted against the theme |
 | Mark | `mark` | the Conexus mark on the rail, and beside "Conexus" at the head of an answer and on the working line in the platform's three conversations (Construir, Agentes, Conversas); nothing else. A company's agent signs with its own name and the agent icon in `text-2`, and its working line carries that icon; founder, 2026-11-25 |
 | Memory | `memory` | the memory ring and the Memória budget only |
-| Status | `success`, `warning`, `danger` | always with a word (V35): the dot of a badge, the icon of a state, an error |
+| Status | `success`, `warning`, `danger` | always with a word (V35): the dot of a badge, the icon of a state, the danger fill; never letters |
+| Status text | `success-text`, `warning-text`, `danger-text` | the letters of a state, such as a field's error: in the light theme the same OKLCH hue as the status colour, darkened until it reads at 4.5:1 on the sheet, the tile and what floats; in the dark theme the status colour itself (founder, 2026-11-26) |
 | Outside the scheme | `preview-paper`, `phone-frame`, `logo-plate`, `code-*` | the Prévia's page, the drawn phone (V3), the light plate under a connector logo (V3), syntax highlighting |
 
 Contrast (V8), light and dark, of the colours the browser paints; `apps/web/contrast.layout.test.ts`
@@ -618,7 +625,7 @@ which shadcn file it was copied from; the front matter holds their values. Their
   on touch the target reaches 44 without being drawn larger (V32). Primary is the lit ipê with
   `on-accent` on it, brighter under the mouse, and `surface-4` with `text-2` when disabled, so a
   button that cannot act is not lit (V5). Default is `raised` with shadow `1`, and `2` under the
-  mouse; ghost is `text-2`. `button-danger` is the default with danger text; `button-danger-confirm`
+  mouse; ghost is `text-2`. `button-danger` is the default with `danger-text`; `button-danger-confirm`
   is the danger fill, only at the final confirmation (V55).
 - **Input.** `input.height`, `body`, 16px under `md` (V18), `raised` with shadow `1` and no border.
   Focus is an ipê edge with a 3px halo at 22%, not an outline (V28). Menu search is `spacing.control`
@@ -707,7 +714,7 @@ which shadcn file it was copied from; the front matter holds their values. Their
   the questions and the sources. Each takes ready data and its words as props; the conversation
   turns events into them.
 - **Empty, loading, error.** Empty is one sentence row or a centred column of 448 at most; loading is
-  skeletons with a pulse (none under reduced motion) and `role="status"`; an error is danger text
+  skeletons with a pulse (none under reduced motion) and `role="status"`; an error is `danger-text`
   with `role="alert"` and an action.
 - **Notice.** A `role="status"` line in the body colour, in the page's flow; the toast is its form
   for what was done away from the eye.

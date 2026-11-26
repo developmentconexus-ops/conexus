@@ -24,6 +24,8 @@ function on(grounds: string[], texts: string[], least: number): Pair[] {
 const PAIRS: Pair[] = [
   ...on(['surface', 'surface-3', 'canvas', 'raised', 'surface-4'], ['text', 'text-2'], TEXT),
   ...on(['surface', 'surface-3', 'raised'], ['accent-text'], TEXT),
+  // A state's letters, on the sheet, on the tile and on what floats.
+  ...on(['surface', 'surface-3', 'raised'], ['success-text', 'warning-text', 'danger-text'], TEXT),
   // Inside the frame every colour resolves on its dark side, in both themes.
   { text: 'text', ground: 'frame', least: TEXT, inFrame: true },
   { text: 'text-2', ground: 'frame', least: TEXT, inFrame: true },
@@ -31,7 +33,7 @@ const PAIRS: Pair[] = [
   { text: 'on-notice', ground: 'notice', least: TEXT },
   { text: 'on-ink', ground: 'ink', least: TEXT },
   { text: 'on-ink', ground: 'danger', least: TEXT },
-  // A state's dot and icon, where they are drawn: on the sheet and on what sits on it.
+  // A state's dot and icon, where they are drawn: on the sheet and on what floats.
   ...on(['surface', 'raised'], ['success', 'warning', 'danger'], GRAPHIC),
 ]
 

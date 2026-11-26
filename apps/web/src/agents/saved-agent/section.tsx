@@ -19,7 +19,7 @@ export function Section(props: {
       <div aria-busy={props.busy} className="flex min-w-0 flex-col gap-sm">
         {props.children}
         {props.error !== undefined && (
-          <p role="alert" className="text-danger">
+          <p role="alert" className="text-danger-text">
             {props.error}
           </p>
         )}

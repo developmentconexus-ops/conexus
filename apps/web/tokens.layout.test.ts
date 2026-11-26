@@ -36,6 +36,9 @@ const PALETTE = {
   success: ['#1f9d5c', '#55d394'],
   warning: ['#d97a06', '#f5a742'],
   danger: ['#d93a4a', '#ff7d8a'],
+  'success-text': ['#007f46', '#55d394'],
+  'warning-text': ['#a65b00', '#f5a742'],
+  'danger-text': ['#ce2e41', '#ff7d8a'],
 } as const
 
 function rgb(hex: string): string {

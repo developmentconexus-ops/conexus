@@ -128,13 +128,13 @@ test('as ações pequenas ficam na linha, em tabelas com nome (critério 27)', a
   const davi = within(people.getByRole('row', { name: /Davi Costa/ }))
   expect(davi.getByRole('button', { name: 'Mudar papel: Davi Costa' })).toBeTruthy()
   const remove = davi.getByRole('button', { name: 'Tirar da empresa: Davi Costa' })
-  expect(remove.className).toContain('text-danger')
+  expect(remove.className).toContain('text-danger-text')
   expect(remove.className).toContain('h-control-sm')
   expect(davi.getByRole('button', { name: 'Mudar papel: Davi Costa' }).className).toContain(
     'h-control-sm',
   )
   expect(davi.getByRole('button', { name: 'Mudar papel: Davi Costa' }).className).not.toContain(
-    'text-danger',
+    'text-danger-text',
   )
   expect(people.getByRole('table', { name: 'Pessoas' })).toBeTruthy()
   expect(people.getAllByRole('columnheader').map((head) => head.textContent)).toEqual([
