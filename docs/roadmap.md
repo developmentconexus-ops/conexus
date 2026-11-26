@@ -85,7 +85,7 @@ bonitos e quebrados.
 
 **O que não se faz agora.** O que nunca se faz está na [VISION.md](../VISION.md). Mais de um estudo
 aberto por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como
-agente. Tratamento e qualidade dos dados antes do lago implementado (2026-11-20).
+agente.
 
 ### O que você fornece, e quando
 
