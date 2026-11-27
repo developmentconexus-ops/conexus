@@ -25,7 +25,7 @@ export function TraceLine({
       data-slot="trace-line"
       data-status={status}
       className={cn(
-        'flex w-fit max-w-full min-w-0 items-center gap-sm text-body text-text-2 data-[status=error]:text-danger data-[status=running]:*:data-[slot=trace-title]:shimmer',
+        'flex w-fit max-w-full min-w-0 items-center gap-sm text-body text-text-2 data-[status=error]:text-danger-text data-[status=running]:*:data-[slot=trace-title]:shimmer',
         className,
       )}
       {...props}
@@ -80,7 +80,7 @@ export function TraceCollapsibleTrigger({
     <CollapsibleTrigger
       data-slot="trace-collapsible-trigger"
       className={cn(
-        'group/trace-collapsible-trigger flex w-fit max-w-full min-w-0 cursor-pointer items-center gap-xs rounded-control text-left text-text-2 hover:text-text has-[[data-status=error]]:text-danger',
+        'group/trace-collapsible-trigger flex w-fit max-w-full min-w-0 cursor-pointer items-center gap-xs rounded-control text-left text-text-2 hover:text-text has-[[data-status=error]]:text-danger-text',
         className,
       )}
       {...props}
@@ -101,7 +101,7 @@ export function TraceCollapsibleContent({
   return (
     <CollapsibleContent
       data-slot="trace-collapsible-content"
-      className="h-(--collapsible-panel-height) min-w-0 overflow-hidden motion-safe:transition-[height] motion-safe:duration-200 data-ending-style:h-0 data-starting-style:h-0"
+      className="h-(--collapsible-panel-height) min-w-0 overflow-hidden data-ending-style:h-0 data-starting-style:h-0"
       {...props}
     >
       <div

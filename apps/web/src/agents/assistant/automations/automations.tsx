@@ -169,7 +169,7 @@ export function Actions(props: {
                 {toggleText}
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="text-danger"
+                className="text-danger-text"
                 disabled={busy}
                 onClick={() => setConfirming(true)}
               >
@@ -191,7 +191,7 @@ export function Actions(props: {
       {note !== undefined && (
         <p
           role={note.kind === 'error' ? 'alert' : 'status'}
-          className={note.kind === 'error' ? 'text-danger' : 'text-text-2'}
+          className={note.kind === 'error' ? 'text-danger-text' : 'text-text-2'}
         >
           {note.text}
         </p>

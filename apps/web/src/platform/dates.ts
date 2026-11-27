@@ -32,6 +32,11 @@ export function dayAndMonth(instant: string): string {
   return DAY_AND_MONTH.format(new Date(instant))
 }
 
+/** The day, the month and the hour, as "28/10 09:30". */
+export function dayMonthAndHour(instant: string): string {
+  return `${dayAndMonth(instant)} ${clockOf(instant)}`
+}
+
 export type DayGroup = 'TODAY' | 'YESTERDAY' | 'WEEK' | 'BEFORE'
 
 const MS_PER_DAY = 86_400_000

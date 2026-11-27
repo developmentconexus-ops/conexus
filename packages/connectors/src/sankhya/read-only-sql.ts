@@ -1,10 +1,9 @@
 /*
- * The first of three layers, and only best effort: it refuses before any request is built what is
- * plainly not one read. Sankhya's DbExplorer refuses a consult that writes, and the company's read
- * only integration user is behind both. Sankhya runs on Oracle or SQL Server: SQL Server runs a second
- * statement with no `;` before it, so a statement word is refused anywhere outside quotes; the two
- * disagree on where a comment ends (SQL Server nests `/*`, and their line ends differ), so no comment
- * is read at all, quoted or not.
+ * The first of two layers, and only best effort: it refuses before any request is built what is
+ * plainly not one read. The other is Sankhya's gateway, which refuses a write. Sankhya runs on
+ * Oracle or SQL Server: SQL Server runs a second statement with no `;` before it, so a statement
+ * word is refused anywhere outside quotes; the two disagree on where a comment ends (SQL Server
+ * nests `/*`, and their line ends differ), so no comment is read at all, quoted or not.
  */
 
 const STATEMENT_WORDS = [

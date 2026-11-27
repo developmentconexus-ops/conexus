@@ -10,9 +10,9 @@ import { RUN_MARKS } from './run.ts'
 export type ReleaseScope = { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }
 
 /**
- * Deletes each thread: its session first, so its run is aborted, then the owner's step (the
- * Assistant's machine), then the thread. A thread deleted twice, or a failure halfway,
- * leaves what the next removal finds again.
+ * Deletes each thread: its session first, so its run is aborted, then `each` (what its kind drops
+ * with it), then the thread. A thread deleted twice, or a failure halfway, leaves what the next
+ * removal finds again.
  */
 export async function releaseThreads(
   deps: { controller: AgentController; memory: MastraMemory },
@@ -38,8 +38,8 @@ export async function threadsByMarks(
 
 /**
  * Deletes a marked kind's conversations that a removal names (the company, and maybe one person or
- * Projeto), by the kind's marks: each session, then `each` (its machine), then the thread; logs `code`
- * with the count.
+ * Projeto), by the kind's marks: each session, then `each` of the company (what its kind drops with
+ * a conversation, its machine among them), then the thread; logs `code` with the count.
  */
 export async function releaseByMarks(
   deps: { controller: AgentController; memory: MastraMemory; log: FailureLog },
@@ -50,7 +50,7 @@ export async function releaseByMarks(
       | 'ASSISTANT_CONVERSATIONS_RELEASED'
       | 'CONSTRUTOR_CONVERSATIONS_RELEASED'
       | 'AGENT_CONVERSATIONS_RELEASED'
-    each?: (id: ConversationId) => Promise<void>
+    each?: (companyId: CompanyId) => (id: ConversationId) => Promise<void>
   },
 ): Promise<number> {
   const { scope } = input
@@ -60,7 +60,7 @@ export async function releaseByMarks(
     ...(scope.personId === undefined ? {} : { [marks.person]: scope.personId }),
     ...(scope.projectId === undefined ? {} : { [marks.project]: scope.projectId }),
   })
-  const count = await releaseThreads(deps, ids, input.each)
+  const count = await releaseThreads(deps, ids, input.each?.(scope.companyId))
   deps.log.info({ companyId: scope.companyId, count }, input.code)
   return count
 }

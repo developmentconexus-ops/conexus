@@ -5,6 +5,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import type { CopySource } from '../connectors/public.ts'
 import { companiesWithConnections } from '../connectors/public.ts'
 import type { IdentityPorts } from '../identity/public.ts'
+import type { TreatmentHooks } from './lake-close.ts'
 import type { CopyClock } from './lake-copy.ts'
 import { createLakeCopies } from './lake-routes.ts'
 import type { StartClock } from './lake-run.ts'
@@ -29,11 +30,15 @@ export function lakeCopiesOf(deps: {
   tuning?: { now?: (() => Date) | undefined }
   /** A test's clock for a leave's wait on its task's stop. */
   copyStopWait?: StartClock
+  /** The treatment, made after the copies; its runs end through the copies' queue. */
+  treatment: () => TreatmentHooks
 }) {
   const { database, log, source } = deps
   const lakeRuns = createLakeRuns({
     ...{ database, log, source, tasks: deps.copyTasks, copy: deps.config.aws.copy },
+    tables: deps.lakeTables,
     ...{ queue: deps.copyQueue, companies: () => companiesWithConnections(database) },
+    treatment: deps.treatment,
   })
   const lakeCopies = createLakeCopies({
     ...{ database, log, source, identity: deps.identity, runs: lakeRuns, clock: deps.clock },

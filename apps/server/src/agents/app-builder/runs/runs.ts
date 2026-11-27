@@ -354,7 +354,11 @@ export class Runs {
     if (await copyPending(this.#context)) this.#retry.kick()
   }
 
-  /** Kills the machines of the removal's conversations, and takes its Projetos' source, before their threads go. */
+  reopen(conversationId: ConversationId): Promise<boolean> {
+    return this.#deps.machines.reopen(conversationId)
+  }
+
+  /** Drops the domains and machines of the removal's conversations, and takes its Projetos' source, before their threads go. */
   release(scope: ReleaseScope, conversations: ConversationId[]): Promise<void> {
     return releaseRuns(this.#context, scope, conversations)
   }

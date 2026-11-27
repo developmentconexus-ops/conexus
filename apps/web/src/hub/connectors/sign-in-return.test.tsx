@@ -1,5 +1,5 @@
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -39,7 +39,7 @@ test('state faltando ou estragado: a frase e nenhuma chamada ao Hub', async () =
     expect(screen.getByRole('link', { name: 'Voltar a Integrações' })).toBeTruthy()
     expect(sent).toEqual([])
     expect(history.location.search).toBe('')
-    document.body.innerHTML = ''
+    cleanup()
   }
 })
 

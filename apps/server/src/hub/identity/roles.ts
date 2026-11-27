@@ -30,6 +30,7 @@ const MANAGE_COMPANY = {
   companyMemory: ['manage'],
   dataRead: ['read'],
   network: ['manage'],
+  treatment: ['propose', 'approve'],
 } as const
 
 // Every member asks to publish a version; only an owner or an administrator decides (step 24.3.4, "3").
@@ -89,6 +90,7 @@ export function rolesFor(kit: RoleKit) {
     companyMemory: ['manage'],
     dataRead: ['read'],
     network: ['manage', 'open', 'openAll'],
+    treatment: ['propose', 'approve'],
   })
   const roles = {
     // The owner and the administrator use every operation of every connector, always.

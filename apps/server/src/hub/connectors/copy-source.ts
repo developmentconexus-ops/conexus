@@ -1,16 +1,24 @@
-import type { AccountRef, Connector, TableDeclaration, TableMode } from '@conexus/connectors'
+import type {
+  AccountRef,
+  Connector,
+  TableDeclaration,
+  TableMode,
+  TreatedTable,
+} from '@conexus/connectors'
 import {
   discoverTables,
-  lakeNameOf,
+  LakeTableName as KitLakeTableName,
   sourceOf,
   startDateLimits,
   suggestedLakeName,
   TableName,
   tablePrefixOf,
+  treatedSelect,
 } from '@conexus/connectors'
 import type { CompanyId, ConnectionId, ConnectorId, LakeUnavailable } from '@conexus/hub-api'
 import { LAKE_TABLE_NAME_PATTERN } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
+import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { OpenedConnection } from './executor.ts'
 import { valuesOf } from './executor.ts'
@@ -71,11 +79,19 @@ export type CopyConnection =
     }>
   | Readonly<{ kind: 'GONE' }>
 
+type TreatedTemplate = TreatedTable & Readonly<{ label: string; select(lakeName: string): string }>
+
 export type CopySource = {
+  treatedLookup(
+    tx: ReadTx,
+    companyId: CompanyId,
+  ): Promise<
+    (table: Readonly<{ connectionId: ConnectionId; source: string }>) => TreatedTemplate | null
+  >
   connection(at: Where): Promise<CopyConnection>
   open(at: Where): Promise<CopyOpened>
   columns(at: Where): Promise<CopyColumns>
-  /** A name is the connector's prefix and a part after it, inside the contract's pattern and the kit's rule (T.16). */
+  /** A name is the connector's prefix and a part after it, inside the contract's pattern (T.16). */
   nameIsValid(connector: ConnectorId, name: string): boolean
   /** The kit's suggestion for a table, with the connection's name when the plain one is taken (T.16). */
   suggestedName(
@@ -128,13 +144,32 @@ export function unavailableFor(connector: Connector): LakeUnavailable | null {
 
 function nameIsValid(connector: ConnectorId, name: string): boolean {
   const prefix = tablePrefixOf(connector)
-  if (!name.startsWith(prefix) || name.length === prefix.length) return false
-  if (!LAKE_TABLE_NAME_PATTERN.test(name)) return false
-  try {
-    return lakeNameOf(prefix, name.slice(prefix.length)) === name
-  } catch (error) {
-    if (error instanceof RangeError) return false
-    throw error
+  return (
+    name.startsWith(prefix) && name.length > prefix.length && LAKE_TABLE_NAME_PATTERN.test(name)
+  )
+}
+
+async function treatedLookupIn(
+  deps: Deps,
+  tx: ReadTx,
+  companyId: CompanyId,
+): ReturnType<CopySource['treatedLookup']> {
+  const rows = await tx
+    .select({ id: connection.id, connector: connection.connectorId })
+    .from(connection)
+    .where(eq(connection.companyId, companyId))
+  const connectors = new Map(rows.map((row) => [row.id, row.connector]))
+  return ({ connectionId, source }) => {
+    const id = connectors.get(connectionId)
+    const declared = id === undefined ? [] : (connectorIn(deps, id)?.tables?.declared ?? [])
+    const found = declared.find((each) => sourceOf(each) === source)
+    const treated = found?.treated
+    if (found === undefined || treated === undefined) return null
+    return {
+      ...treated,
+      label: found.label,
+      select: (lakeName) => treatedSelect(KitLakeTableName.parse(lakeName), treated),
+    }
   }
 }
 
@@ -154,6 +189,7 @@ export function createCopySource(deps: Deps): CopySource {
     }
   }
   return {
+    treatedLookup: (tx, companyId) => treatedLookupIn(deps, tx, companyId),
     async connection(at) {
       const scope = { kind: 'COMPANY', companyId: at.companyId, personId: null } as const
       const [row] = await deps.database.read(scope, (tx) =>

@@ -39,7 +39,7 @@ test('Machines.confer: a rede abre só para o host do app durante os comandos e 
     during.slice(-commands.length - 1),
     Array(commands.length + 1).fill(['localhost']),
   )
-  assert.equal(machine.control.networkOpenTo, undefined)
+  assert.deepEqual(machine.control.networkOpenTo, [])
   assert.equal(existsSync(join(machine.folder, 'conexus-confer-cookies.json')), false)
 })
 
@@ -50,7 +50,7 @@ test('Machines.confer: um comando que sai com erro, ou que não imprime o JSON d
     const at = { url: new URL('https://localhost:4433'), session: TOKEN }
     assert.deepEqual(await confer(machine, at), FAILED)
     assert.equal(stub.calls().at(-1)?.split(' ')[1], 'close')
-    assert.equal(machine.control.networkClosed, 1)
+    assert.deepEqual(machine.control.networkOpenTo, [])
     assert.equal(existsSync(join(machine.folder, 'conexus-confer-cookies.json')), false)
   }
 })
@@ -78,8 +78,10 @@ test('Machines.confer: um comando que lança não deixa a rede aberta nem o arqu
     return run(command, args, options)
   }
   assert.deepEqual(await confer(machine, at), FAILED)
-  assert.equal(machine.control.networkClosed, 2)
-  assert.equal(machine.control.networkOpenTo, undefined)
+  assert.deepEqual(
+    machine.control.networkApplied.map(({ hosts }) => hosts.includes('localhost')),
+    [false, true, false, true, false],
+  )
   assert.equal(existsSync(join(machine.folder, 'conexus-confer-cookies.json')), false)
 })
 
@@ -94,11 +96,31 @@ test('Machines.confer: uma rede que não fechou fecha de novo no próximo uso da
   const stub = stubBrowser(t)
   const machine = await conferring(t, stub.program)
   const at = { url: new URL('https://localhost:4433'), session: TOKEN }
-  machine.control.closeFails = 1
   assert.ok((await confer(machine, at)).ok)
-  assert.ok(machine.lines.join('\n').includes('MACHINE_NETWORK_CLOSE_FAILED'))
+  machine.control.afterCommand = () => {
+    machine.control.openFails = 1
+  }
+  assert.ok((await confer(machine, at)).ok)
+  assert.ok(machine.lines.join('\n').includes('MACHINE_NETWORK_FAILED'))
   assert.deepEqual(machine.control.networkOpenTo, ['localhost'])
+  machine.control.afterCommand = () => undefined
   await machine.machines.changed({ conversationId: CONVERSATION })
-  assert.equal(machine.control.networkOpenTo, undefined)
-  assert.equal(machine.control.networkClosed, 1)
+  assert.deepEqual(machine.control.networkOpenTo, [])
+})
+
+test('Machines.confer: uma rede que não abre é CONFER_PLATFORM_FAILED, sem abrir o navegador', async (t) => {
+  const stub = stubBrowser(t)
+  const machine = await conferring(t, stub.program)
+  const at = { url: new URL('https://localhost:4433'), session: TOKEN }
+  assert.ok((await confer(machine, at)).ok)
+  const before = stub.calls().length
+  machine.control.openFails = 1
+  assert.deepEqual(await confer(machine, at), FAILED)
+  assert.deepEqual(
+    stub
+      .calls()
+      .slice(before)
+      .map((line) => line.split(' ')[1]),
+    ['close'],
+  )
 })

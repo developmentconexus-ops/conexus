@@ -2,7 +2,12 @@ import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
-import type { CompanyAppRemoval, CompanyConversationRelease, OutsideResource } from './clients.ts'
+import type {
+  CompanyAppRemoval,
+  CompanyConversationRelease,
+  CompanyTreatmentRemoval,
+  OutsideResource,
+} from './clients.ts'
 import { createClients } from './clients.ts'
 import { registerClientRoutes } from './routes.ts'
 
@@ -18,6 +23,7 @@ export function createOperations(deps: {
   projects: ProjectPorts
   appRemoval: CompanyAppRemoval
   releaseConversations: CompanyConversationRelease
+  deleteCompanyTreatments: CompanyTreatmentRemoval
   /** The company's database and its lake, which deleting its client frees (card L.13). */
   outside: readonly OutsideResource[]
 }) {

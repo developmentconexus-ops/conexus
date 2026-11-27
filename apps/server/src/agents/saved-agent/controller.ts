@@ -1,5 +1,5 @@
-import type { ConversationId } from '@conexus/hub-api'
-import { AgentId as AgentIdSchema, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId } from '@conexus/hub-api'
+import { AgentId as AgentIdSchema, DEVELOPMENT_HOSTS, ProjectId } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -15,10 +15,10 @@ import {
   createConversationMachines,
   machineMarksOf,
   machinePart,
-  PACKAGE_HOSTS,
 } from '../../harness/machine/public.ts'
 import type { HubPart } from '../../harness/mastra/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
+import type { NetworkStore } from '../../harness/network/public.ts'
 import { TITLE } from '../../harness/prompt/public.ts'
 import type { ConversationSpec, Owner, ReleaseScope } from '../../harness/spec/public.ts'
 import {
@@ -207,6 +207,7 @@ type Deps = {
   /** The conversations' machines at the provider; an agent with its Computador gets one (step 24.4, U4). */
   machine: ConversationMachine
   machineTuning?: MachineTuning
+  network: NetworkStore
   /** The one `Mastra` the registry adds the agents to, made after the parts. */
   mastra: () => Mastra
   /** The saved tools' calls at the edge (step 24.4, U3). */
@@ -241,22 +242,23 @@ export function createAgentConversations(deps: Deps) {
   })
   const machines = createConversationMachines(
     {
-      hosts: PACKAGE_HOSTS,
+      network: { kind: 'ON_REQUEST', hosts: DEVELOPMENT_HOSTS, opened: deps.network.opened },
       otherTemplate: 'replace',
       marks: machineMarks(runOf, resolvedOf),
     },
     { ...deps.machine, log },
     deps.machineTuning,
   )
-  const { each, ...wired } = machinePart(machines)
+  const { each, ...wired } = machinePart(machines, deps.network)
   const spec = agentsSpec(
     { queue, own: { database, log } },
     { ...{ runOf, resolvedOf, activationOfRun }, threads: memory, machines },
   )
   const { controller } = mountAgent(spec, { queue, storage })
 
-  async function sweep(marks: Record<string, string>): Promise<number> {
-    return releaseThreads({ controller, memory }, await threadsByMarks(memory, marks), each)
+  async function sweep(companyId: CompanyId, marks: Record<string, string>): Promise<number> {
+    const ids = await threadsByMarks(memory, marks)
+    return releaseThreads({ controller, memory }, ids, each(companyId))
   }
   deps.agents.onChange((event) => followed(event, { registry, sweep, log }))
 
@@ -302,7 +304,7 @@ async function followed(
   event: AgentEvent,
   own: {
     registry: Registry
-    sweep: (marks: Record<string, string>) => Promise<number>
+    sweep: (companyId: CompanyId, marks: Record<string, string>) => Promise<number>
     log: FailureLog
   },
 ): Promise<void> {
@@ -317,7 +319,7 @@ async function followed(
     default:
       return event satisfies never
   }
-  const count = await own.sweep({
+  const count = await own.sweep(event.companyId, {
     [RUN_MARKS.agents.company]: event.companyId,
     [RUN_MARKS.agents.agent]: event.agentId,
   })

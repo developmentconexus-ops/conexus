@@ -73,8 +73,9 @@ test('Configurações: Voltar, a busca, Você e a empresa, cada seção na sua o
     'Padrões da empresa',
     'Memória observacional',
     'Memória da empresa',
+    'Internet',
   ])
-  expect(sections(nav)).toHaveLength(10)
+  expect(sections(nav)).toHaveLength(11)
 })
 
 test('a busca acha pelo nome e pelas palavras, sem acento: "convite" leva a Pessoas e convites', async () => {
@@ -108,7 +109,7 @@ test('a busca sem resultado diz "Nenhuma seção encontrada." e volta com o camp
   expect(sections(nav)).toHaveLength(0)
   fireEvent.change(search, { target: { value: '' } })
   expect(nav.queryByText('Nenhuma seção encontrada.')).toBeNull()
-  expect(sections(nav)).toHaveLength(10)
+  expect(sections(nav)).toHaveLength(11)
 })
 
 test('uma filha de settings com staticData.section aparece na sua ordem, sem mudar o índice', async () => {
@@ -139,6 +140,7 @@ test('uma filha de settings com staticData.section aparece na sua ordem, sem mud
     'Padrões da empresa',
     'Memória observacional',
     'Memória da empresa',
+    'Internet',
   ])
   fireEvent.change(nav.getByRole('searchbox', { name: 'Buscar nas configurações' }), {
     target: { value: 'fatura' },
@@ -192,7 +194,7 @@ test('cada seção com o seu ícone: um svg dentro do link', async () => {
   open()
   const nav = await index()
   const links = nav.getAllByRole('link').filter((link) => link.textContent !== 'Voltar')
-  expect(links).toHaveLength(10)
+  expect(links).toHaveLength(11)
   for (const link of links) expect(link.querySelector('svg'), link.textContent ?? '').toBeTruthy()
 })
 

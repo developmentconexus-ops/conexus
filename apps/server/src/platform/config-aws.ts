@@ -52,6 +52,8 @@ export type AwsConfig = Readonly<{
   /** The SDK's shared credentials file with the base key: the Hub only checks its mode and that it is not empty, the SDK reads the key (S31). */
   credentialsFile: string
   templateVersion: TemplateVersion
+  /** The recipes whose lakes have `tratado` and `negocio`: this image's and `TREATABLE_BEFORE` (card F15). */
+  treatable: ReadonlySet<TemplateVersion>
   copy: CopyPlatformConfig
   endpoint?: string
 }>
@@ -85,6 +87,16 @@ const KEY_VARIABLES = [
 /** The template in the image, beside the server: `infra/aws/lake.template.json` (hub.Dockerfile). */
 export const LAKE_TEMPLATE = new URL('../../../../infra/aws/lake.template.json', import.meta.url)
 
+/**
+ * The recipes before this image's whose lakes already have `tratado` and `negocio`: whoever changes
+ * `lake.template.json` adds the old sha-256 here, so a lake of it still treats (card F15).
+ */
+const TREATABLE_BEFORE: readonly TemplateVersion[] = []
+
+export function treatableWith(version: TemplateVersion): ReadonlySet<TemplateVersion> {
+  return new Set([version, ...TREATABLE_BEFORE])
+}
+
 function templateVersionOf(template: URL): TemplateVersion {
   try {
     return TemplateVersion.parse(createHash('sha256').update(readFileSync(template)).digest('hex'))
@@ -109,6 +121,7 @@ export function awsConfigOf(
     })
   }
   readSecretFile('AWS_SHARED_CREDENTIALS_FILE', serve.AWS_SHARED_CREDENTIALS_FILE)
+  const version = templateVersionOf(template)
   return {
     account: serve.HUB_AWS_ACCOUNT,
     region: serve.HUB_AWS_REGION,
@@ -116,7 +129,8 @@ export function awsConfigOf(
     serviceRoleArn: serve.HUB_AWS_SERVICE_ROLE_ARN,
     templateBucket: serve.HUB_AWS_TEMPLATE_BUCKET,
     credentialsFile: serve.AWS_SHARED_CREDENTIALS_FILE,
-    templateVersion: templateVersionOf(template),
+    templateVersion: version,
+    treatable: treatableWith(version),
     copy: {
       clusterArn: serve.HUB_AWS_COPY_CLUSTER_ARN,
       taskFamily: serve.HUB_AWS_COPY_TASK_FAMILY,

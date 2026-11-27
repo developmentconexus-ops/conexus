@@ -8,6 +8,7 @@ import type {
   RepositoryOf,
 } from './agents/app-builder/public.ts'
 import { builderPortsOf, createRuns, repositoriesIn } from './agents/app-builder/public.ts'
+import { centralOf } from './central-of.ts'
 import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
 import type { ConversationMachine, MachineTuning } from './harness/machine/public.ts'
@@ -29,13 +30,12 @@ import type { DataDeps } from './hub/data/public.ts'
 import { createCompanyData, createDataReads, recordRead } from './hub/data/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity } from './hub/identity/public.ts'
-import { createLakes } from './hub/lake/public.ts'
 import { notificationsOf } from './hub/notifications/public.ts'
-import { createOperations } from './hub/operations/public.ts'
 import { createProjects } from './hub/projects/public.ts'
 import { requestsOf } from './hub/requests/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
+import { createTreatment } from './hub/treatment/public.ts'
 import type { CopyQueue, CopyTasks, LakeStacks, LakeTables } from './platform/aws.ts'
 import { createAws, subjectPortsOf } from './platform/aws.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
@@ -94,7 +94,7 @@ export async function createHub(
   for (const part of [
     ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
     ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
-    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies, deps.network],
+    ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies, deps.network, deps.treatment],
   ]) {
     part.routes(app)
   }
@@ -161,13 +161,14 @@ type SubjectDeps = {
 export function subjectsOf(deps: SubjectDeps) {
   const { database, config, log, neon, repository, copy } = deps
   const identity = deps.identity.ports
-  const appsDomain = config.appsDomain
+  const { appsDomain, sealKeys } = config
   const appRemoval = createAppRemoval(deps)
-  const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
-  const machines = deps.machinesOf()
+  const network = createNetwork({ database, identity, log })
+  const machines = deps.machinesOf(network.store.opened)
+  network.store.onRemoved((companyId) => void machines.narrow(companyId))
   const runs = createRuns({
-    ...{ database, log, machines, repository, copy },
+    ...{ database, log, machines, repository, copy, network: network.store },
     repositories: () => repositoriesIn(config.gitRoot),
     // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
     send: (version) => apps.sendFromBuilder(version),
@@ -178,7 +179,7 @@ export function subjectsOf(deps: SubjectDeps) {
   })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
   const { conversations, assistant, automations, agents, lakeClock } = conversationsOf({
-    ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool },
+    ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool, network },
     ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
     tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
     ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
@@ -188,16 +189,15 @@ export function subjectsOf(deps: SubjectDeps) {
     ...{ notify: notifications.notify, automationClock: config.automationClock },
     lakeRuns: () => lakeRuns,
   })
-  const releaseConversations = conversations.release
   const projects = createProjects({
     ...{ database, identity, neon, log, appsDomain, appRemoval, appVersionsOf: versionNumbersOf },
-    ...{ releaseConversations, ...appAccessOf(database) },
+    ...{ releaseConversations: conversations.release, ...appAccessOf(database) },
     // The requests come below, after the apps they publish through; a Projeto's read comes long after.
     publishRequestOf: (tx, input) => requests.publishRequestOf(tx, input),
   })
   const { lakes, operations } = centralOf({
     ...{ database, identity, config, log, aws: deps.lakeStacks, projects: projects.ports },
-    ...{ appRemoval, releaseConversations, tables: deps.lakeTables },
+    ...{ appRemoval, releaseConversations: conversations.release, tables: deps.lakeTables },
     eraseCopies: (company) => lakeCopies.erase(company),
   })
   // The connectors come below, after the apps whose door they read; a publish comes long after.
@@ -219,7 +219,12 @@ export function subjectsOf(deps: SubjectDeps) {
     leaveCopy: (at) => lakeCopies.leave(at),
   })
   const lake = { ...deps, identity, source: connectors.copies, clock: lakeClock }
-  const { lakeRuns, lakeCopies } = lakeCopiesOf(lake)
+  // The treatment comes below, over the copies' queue; a copy ends long after.
+  const { lakeRuns, lakeCopies } = lakeCopiesOf({ ...lake, treatment: () => treatment.hooks })
+  const treatment = createTreatment({
+    ...{ database, identity, log, source: connectors.copies, tasks: deps.copyTasks },
+    ...{ copy: config.aws.copy, treatable: config.aws.treatable, watch: () => lakeRuns.watch },
+  })
   const access = createAccess({ database, identity, sources: connectors.access })
   const { data, dataReads } = dataOf({
     ...{ database, identity, log, access, projects: projects.ports },
@@ -228,17 +233,8 @@ export function subjectsOf(deps: SubjectDeps) {
   return {
     ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
     ...{ conversations, assistant, automations, agents, notifications, connectors, data },
-    ...{ lakeRuns, lakeClock, lakeCopies, network: createNetwork({ database, identity, log }) },
+    ...{ lakeRuns, lakeClock, lakeCopies, network, treatment },
   }
-}
-
-/** The Operations Central, and the lakes it frees with a client's database (card L.13). */
-function centralOf(
-  deps: Omit<Parameters<typeof createOperations>[0], 'outside'> & Parameters<typeof createLakes>[0],
-) {
-  const lakes = createLakes(deps)
-  const outside = [deps.projects.companyDatabase, lakes.outside]
-  return { lakes, operations: createOperations({ ...deps, outside }) }
 }
 
 /** The access contract the agents read through, and the Registro de dados its reads leave. */
@@ -296,6 +292,7 @@ async function runServer(): Promise<void> {
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      void subjects.treatment.sweepAll()
       // The copies the bucket did not take before the stop are tried again.
       void runs
         .resumeCopies()

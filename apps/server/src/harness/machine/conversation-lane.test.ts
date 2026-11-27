@@ -5,12 +5,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId, ConversationId } from '@conexus/hub-api'
+import { CompanyId, ConversationId, DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { RequestContext } from '@mastra/core/request-context'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { NEVER_ASKS } from '../spec/public.ts'
 import type { ConversationMachineApi, KitFactory } from './public.ts'
-import { createConversationMachines, MARK, MAX_BYTES, PACKAGE_HOSTS } from './public.ts'
+import { createConversationMachines, MARK, MAX_BYTES } from './public.ts'
 import { testConversationMachines } from './test-conversation-machines.ts'
 import { INSTALLATION, OLD_TEMPLATE } from './test-machine.ts'
 
@@ -46,7 +46,11 @@ function machinesOf(
   doubles.control.discoverable.push(`conexus-${INSTALLATION}-${id}`)
   const machines = createConversationMachines(
     {
-      hosts: PACKAGE_HOSTS,
+      network: {
+        kind: 'ON_REQUEST',
+        hosts: DEVELOPMENT_HOSTS,
+        opened: async () => ({ kind: 'LIST', hosts: [] }),
+      },
       otherTemplate: 'replace',
       marks: async () => ({ [MARK.company]: COMPANY }),
       ...(replace.readMedia === undefined ? {} : { readMedia: replace.readMedia }),
@@ -190,14 +194,7 @@ test('a fila da conversa: o turno que abre a máquina logo depois de uma pausa l
   assert.deepEqual(on.startedAfter, [0, 1], 'the next turn started after the pause ended')
 })
 
-test('a rede só fecha na máquina achada; a pasta que o mkdir não fez derruba a partida; o link para fora da pasta não é entregue (S)', async (t) => {
-  const connected = machinesOf(t)
-  await turnOf(connected)
-  assert.equal(connected.control.networkClosed, 1)
-  const created = machinesOf(t)
-  created.control.discoverable.length = 0
-  await turnOf(created)
-  assert.equal(created.control.networkClosed, 0)
+test('a pasta que o mkdir não fez derruba a partida; o link para fora da pasta não é entregue (S)', async (t) => {
   for (const executeCommand of [
     undefined,
     async () => ({ exitCode: 1, stdout: '', stderr: '', success: false, executionTimeMs: 0 }),

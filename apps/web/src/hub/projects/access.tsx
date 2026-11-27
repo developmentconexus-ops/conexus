@@ -120,7 +120,9 @@ function PersonRow(
           onPick={(next) => change.mutate({ params, body: { role: next } })}
         />
         {!person.roleDeclared && (
-          <span className="text-label text-danger">Papel que a versão publicada não tem mais</span>
+          <span className="text-label text-danger-text">
+            Papel que a versão publicada não tem mais
+          </span>
         )}
         {change.isSuccess && (
           <span role="status" className="text-label text-fact">
@@ -130,7 +132,7 @@ function PersonRow(
       </span>
     )
   } else if (!person.roleDeclared && list.roles.length > 0) {
-    role = <span className="text-danger">Papel que a versão publicada não tem mais</span>
+    role = <span className="text-danger-text">Papel que a versão publicada não tem mais</span>
   }
   return (
     <>

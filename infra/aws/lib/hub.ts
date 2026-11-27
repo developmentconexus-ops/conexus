@@ -8,6 +8,7 @@ import {
   stateBucket,
   TAG_COMPANY,
   TEMPLATE_PREFIX,
+  TREAT_SPEC_ROOT,
   templateBucket,
   templateUrlPattern,
 } from './names.ts'
@@ -133,6 +134,7 @@ function hubStatements(
 
 function copyStatements(stack: Stack, place: Place, copy: CopyPlatform): iam.PolicyStatement[] {
   const inTheCluster = { ArnEquals: { 'ecs:cluster': copy.cluster.clusterArn } }
+  const state = `arn:${stack.partition}:s3:::${stateBucket(stack.account, stack.region)}`
   return [
     new iam.PolicyStatement({
       sid: 'StartOnlyTheCopyTask',
@@ -150,9 +152,9 @@ function copyStatements(stack: Stack, place: Place, copy: CopyPlatform): iam.Pol
       conditions: inTheCluster,
     }),
     new iam.PolicyStatement({
-      sid: 'PassOnlyTheWritersToTheTask',
+      sid: 'PassOnlyTheCompanyTaskRoles',
       actions: ['iam:PassRole'],
-      resources: [place.writers, copy.executionRole.roleArn],
+      resources: [place.writers, place.treaters, copy.executionRole.roleArn],
       conditions: { StringEquals: { 'iam:PassedToService': 'ecs-tasks.amazonaws.com' } },
     }),
     new iam.PolicyStatement({
@@ -173,14 +175,18 @@ function copyStatements(stack: Stack, place: Place, copy: CopyPlatform): iam.Pol
     new iam.PolicyStatement({
       sid: 'ReadAndWriteTheCompanyStoppingPoints',
       actions: ['s3:GetObject', 's3:PutObject'],
-      resources: [
-        `arn:${stack.partition}:s3:::${stateBucket(stack.account, stack.region)}/\${aws:PrincipalTag/${TAG_COMPANY}}/*`,
-      ],
+      resources: [`${state}/\${aws:PrincipalTag/${TAG_COMPANY}}/*`],
+    }),
+    // A root of its own, outside the folder the company's writer reads, writes and deletes.
+    new iam.PolicyStatement({
+      sid: 'WriteTheCompanyTreatmentSpecs',
+      actions: ['s3:PutObject'],
+      resources: [`${state}/${TREAT_SPEC_ROOT}/\${aws:PrincipalTag/${TAG_COMPANY}}/*`],
     }),
     new iam.PolicyStatement({
       sid: 'ListTheCompanyStoppingPoints',
       actions: ['s3:ListBucket'],
-      resources: [`arn:${stack.partition}:s3:::${stateBucket(stack.account, stack.region)}`],
+      resources: [state],
       conditions: { StringLike: { 's3:prefix': `\${aws:PrincipalTag/${TAG_COMPANY}}/*` } },
     }),
   ]

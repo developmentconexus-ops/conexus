@@ -57,7 +57,7 @@ export function Slider({
           data-slot="slider-thumb"
           aria-label={label}
           getAriaValueText={getAriaValueText}
-          className="block size-[22px] shrink-0 rounded-pill bg-on-accent select-none lift has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-solid has-focus-visible:outline-accent"
+          className="block size-[22px] shrink-0 rounded-pill select-none lift has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-solid has-focus-visible:outline-focus"
         />
       </SliderPrimitive.Control>
     </SliderPrimitive.Root>

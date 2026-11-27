@@ -1,6 +1,7 @@
 import {
   ASSISTANT_TOOL,
   CONVERSATION_TOOL,
+  MACHINE_TOOL,
   SKILL_TOOLS,
   SUBAGENT_TOOL,
   TASK_TOOLS,
@@ -28,6 +29,7 @@ export const AVAILABLE_TOOLS: readonly string[] = [
     ...TOOLS_OF.assistant.filter((name) => name !== TYPED_READS),
     ...TYPED_READ_NAMES,
     ...Object.values(ASSISTANT_TOOL),
+    MACHINE_TOOL.requestNetwork,
     CONVERSATION_TOOL.webFetch,
     CONVERSATION_TOOL.webSearch,
     ...SKILL_TOOLS,

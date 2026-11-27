@@ -19,6 +19,7 @@ import {
   TAG_COMPANY,
   TAG_READER,
 } from './names.ts'
+import { treaterGrants, treaterRole, treaterWorkGroup } from './treater.ts'
 import { writerGrants, writerRole } from './writer.ts'
 
 /** The most a single query may scan, 1 GiB, as the study's P1 and P3 templates measured. */
@@ -26,9 +27,10 @@ const QUERY_BYTES_CUTOFF = 1024 ** 3
 
 /**
  * One company's lake, the template the Hub creates through CloudFormation's service role: the
- * table bucket, the `raw` and `current` namespaces, the reader role, the Athena workgroup, the
- * reader's two `DESCRIBE` grants, and the copy task's writer with its grants on both areas
- * (decision 0073, card L.1, L.5, U6).
+ * table bucket, the `raw`, `current`, `tratado` and `negocio` namespaces, the reader role, the
+ * Athena workgroup, the reader's two `DESCRIBE` grants, the copy task's writer with its grants on
+ * `raw` and `current`, and the treatment's role, workgroup and grants (decision 0073, cards L.1,
+ * L.5, U6, and the treatment card's decision 4.2).
  */
 export class LakeStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -56,8 +58,18 @@ export class LakeStack extends Stack {
       namespace: 'current',
       tableBucketArn: bucket.attrTableBucketArn,
     })
+    const tratado = new s3tables.CfnNamespace(this, 'Tratado', {
+      namespace: 'tratado',
+      tableBucketArn: bucket.attrTableBucketArn,
+    })
+    const negocio = new s3tables.CfnNamespace(this, 'Negocio', {
+      namespace: 'negocio',
+      tableBucketArn: bucket.attrTableBucketArn,
+    })
     const reader = readerRole(this, name, company)
     const writer = writerRole(this, name, company, bucket.attrTableBucketArn)
+    const treater = treaterRole(this, name, company)
+    treaterWorkGroup(this, name)
     new athena.CfnWorkGroup(this, 'WorkGroup', {
       name,
       recursiveDeleteOption: true,
@@ -89,6 +101,7 @@ export class LakeStack extends Stack {
     ]
     for (const grant of grants) grant.addResourceDependency(current)
     writerGrants(this, writer, catalogId, [raw, current])
+    treaterGrants(this, treater, catalogId, { reads: [current], writes: [tratado, negocio] })
 
     new CfnOutput(this, 'BucketArn', { value: bucket.attrTableBucketArn })
   }

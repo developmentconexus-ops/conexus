@@ -37,6 +37,7 @@ type AwsCall =
   | 'ListTables'
   | 'DeleteTable'
   | 'ForgetStoppingPoint'
+  | 'PutObject'
 
 // The screen gives up on the Hub at 10 s (web platform/hub.ts), and a read of a moving lake makes
 // up to three calls in a row: the stack, then its first failure and the leftover, or the deletion

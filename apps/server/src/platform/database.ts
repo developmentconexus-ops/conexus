@@ -53,7 +53,7 @@ type Orm<R extends AnyRelations = EmptyRelations> = NodePgDatabase<R> & { $clien
 type Transaction<R extends AnyRelations = EmptyRelations> = Parameters<
   Parameters<Orm<R>['transaction']>[0]
 >[0]
-export type ReadTx = Pick<Transaction, 'select' | 'selectDistinct' | 'execute'>
+export type ReadTx = Pick<Transaction, 'select' | 'selectDistinct' | 'selectDistinctOn' | 'execute'>
 export type CommandTx = Transaction
 type LibraryTx<R extends AnyRelations> = Transaction<R>
 

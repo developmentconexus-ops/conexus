@@ -254,6 +254,7 @@
         "apps/web/src/hub/connectors/test-hub.tsx",
         "apps/web/src/hub/connectors/test-lake.tsx",
         "apps/web/src/hub/copies/test-hub.tsx",
+        "apps/web/src/hub/treatment/test-hub.tsx",
         "apps/web/src/hub/copies/test-reads.tsx",
         "apps/web/src/hub/data/test-hub.tsx",
         "apps/web/src/hub/projects/test-hub.tsx",

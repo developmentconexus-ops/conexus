@@ -98,8 +98,8 @@ session kills the first, so it decides who renews in the copy task
 declares it as data: Nango serializes refreshes with a lock per connection
 (packages/shared/lib/services/connections/credentials/refresh.ts:445-457), and Airbyte stores the
 rotated refresh. A remendo with its `docs/reference/boundaries.md` entry. Today the Hub picks the
-process session or the database lease by the login's kind, not by the class; the copy's Hub (U8)
-is the first reader.
+process session or the database lease by the login's kind, not by the class. The lake copy reads the
+class (`unavailableFor`, `apps/server/src/hub/connectors/copy-source.ts`).
 
 ## The session
 
@@ -151,11 +151,3 @@ the credential never leaks.
 127.0.0.1 for the real executor), `page.ts` (a public documentation page, with a 30 s and 2 MB
 ceiling) and `oauth-double.ts`. Ours, with no reference: S40 and the executor's real `fetch` need
 them.
-
-## Leftovers of the old copy engine
-
-`copy.ts`, `list.ts`, `conformance-list.ts` and `list-fixture.ts` serve no live call, but they are
-still read: the conformance's page walk goes through `conformance-list.ts`, which uses the other
-two, `mercado-livre/operations/vendas.ts` imports `Instant` from `copy.ts`, and the index exports
-both. U3 moves `Instant`, rewrites the page walk and deletes them; `ListPaging` and `ListRead` stay. `assertNoCopyModels` in `definition.ts` and
-`inCopyTurn` in `limits.ts` guard or queue a shape no connector has. Never build on any of them.

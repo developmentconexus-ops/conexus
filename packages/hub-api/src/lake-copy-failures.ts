@@ -1,19 +1,5 @@
 import type { FailureRow } from './failure-row.ts'
-
-const USER_409 = {
-  category: 'USER',
-  settles: true,
-  status: 409,
-  action: '',
-  actionKind: 'NONE',
-} as const
-const USER_422 = {
-  category: 'USER',
-  settles: true,
-  status: 422,
-  action: '',
-  actionKind: 'NONE',
-} as const
+import { USER_409, USER_422 } from './failure-row.ts'
 
 /** The failures of marking a connection's tables for the lake copy (step "A primeira cópia chega ao lago", T.13). */
 export const LAKE_COPY_FAILURES = {

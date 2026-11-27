@@ -97,7 +97,7 @@ export function ProposalCard(props: {
           </Button>
         ) : (
           <div className="flex flex-wrap items-center gap-md">
-            <p role="status" className="text-success">
+            <p role="status" className="text-success-text">
               {CREATED}
             </p>
             <Link

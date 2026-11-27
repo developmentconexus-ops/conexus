@@ -1,10 +1,11 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import type { Conflicts, Kit } from './kit.ts'
+import type { NetworkedSession } from './network.ts'
 import type { Phase } from './port.ts'
 import type { SandboxExec } from './sandbox-filesystem/shell.ts'
 
-export type Session = {
+export type Session = NetworkedSession & {
   companyId: CompanyId
   projectId: ProjectId
   conversationId: ConversationId
@@ -24,8 +25,6 @@ export type Session = {
   /** The Hub saved a version the machine was not told of: its next use brings `main` in, as a start would. */
   unsynced: boolean
   ready: Promise<Kit> | undefined
-  /** A browser check's close of the network failed: the next use of the machine closes it again. */
-  networkOpen: boolean
 }
 
 /** The Git's missing copy-backed repository, wherever Mastra's start wrapped it: it is no machine fault. */

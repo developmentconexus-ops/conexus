@@ -97,11 +97,14 @@ export async function specOf(
   deps: { source: CopySource; copy: AwsConfig['copy'] },
   started: Started,
   lake: Readonly<{ where: Where; bucket: string }>,
-): Promise<string | null> {
+): Promise<Readonly<{ spec: string; reread: readonly LakeTableName[] }> | null> {
   const { at, connection, copy } = started
   const opened = await deps.source.open({ companyId: at.companyId, connectionId: connection })
   if (opened.kind === 'GONE') return null
   const { region, account } = lake.where
+  const reread = started.whole
+    ? copy.tables.filter((table) => opened.limited.get(table.source) === true)
+    : []
   const spec = CopyTaskSpec.parse({
     version: 1,
     runId: started.run,
@@ -115,10 +118,10 @@ export async function specOf(
     tables: copy.tables.map((table) => ({
       source: table.source,
       name: table.name,
-      whole: table.firstLoad || (started.whole && opened.limited.get(table.source) === true),
+      whole: table.firstLoad || reread.includes(table),
     })),
     lake: { bucketArn: `arn:aws:s3tables:${region}:${account}:bucket/${lake.bucket}`, region },
     queueUrl: deps.copy.queueUrl,
   })
-  return JSON.stringify(spec)
+  return { spec: JSON.stringify(spec), reread: reread.map((table) => table.name) }
 }

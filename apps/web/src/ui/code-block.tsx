@@ -9,7 +9,7 @@ export function CodeBlock({ className, ...props }: ComponentProps<'div'>) {
     <div
       data-slot="code-block"
       className={cn(
-        'group/code-block relative flex w-full min-w-0 flex-col overflow-hidden rounded-object border border-line bg-surface text-fact text-text',
+        'group/code-block relative flex w-full min-w-0 flex-col overflow-hidden rounded-object border border-transparent bg-raised shadow-1 text-fact text-text',
         className,
       )}
       {...props}

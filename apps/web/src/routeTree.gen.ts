@@ -43,6 +43,7 @@ import { Route as AppCompaniesCompanyIdSettingsDefaultsRouteImport } from './rou
 import { Route as AppCompaniesCompanyIdSettingsGeneralRouteImport } from './routes/_app/companies/$companyId_/settings/general.tsx'
 import { Route as AppCompaniesCompanyIdSettingsModelAccountsRouteImport } from './routes/_app/companies/$companyId_/settings/model-accounts.tsx'
 import { Route as AppCompaniesCompanyIdSettingsMyDefaultsRouteImport } from './routes/_app/companies/$companyId_/settings/my-defaults.tsx'
+import { Route as AppCompaniesCompanyIdSettingsNetworkRouteImport } from './routes/_app/companies/$companyId_/settings/network.tsx'
 import { Route as AppCompaniesCompanyIdSettingsObservationalMemoryRouteImport } from './routes/_app/companies/$companyId_/settings/observational-memory.tsx'
 import { Route as AppCompaniesCompanyIdSettingsPeopleRouteImport } from './routes/_app/companies/$companyId_/settings/people.tsx'
 import { Route as AppCompaniesCompanyIdSettingsRolesRouteImport } from './routes/_app/companies/$companyId_/settings/roles.tsx'
@@ -51,7 +52,9 @@ import { Route as AppCompaniesCompanyIdWelcomeBuildRouteImport } from './routes/
 import { Route as AppCompaniesCompanyIdWelcomeCompanyRouteImport } from './routes/_app/companies/$companyId_/welcome/company.tsx'
 import { Route as AppCompaniesCompanyIdWelcomeModelAccountRouteImport } from './routes/_app/companies/$companyId_/welcome/model-account.tsx'
 import { Route as AppCompaniesCompanyIdWelcomeTeamRouteImport } from './routes/_app/companies/$companyId_/welcome/team.tsx'
+import { Route as AppCompaniesCompanyIdDataBusinessModelIdRouteImport } from './routes/_app/companies/$companyId/data.business.$modelId.tsx'
 import { Route as AppCompaniesCompanyIdDataLakeTableIdRouteImport } from './routes/_app/companies/$companyId/data.lake.$tableId.tsx'
+import { Route as AppCompaniesCompanyIdDataTreatedNameRouteImport } from './routes/_app/companies/$companyId/data.treated.$name.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdIndexRouteImport } from './routes/_app/companies/$companyId/projects/$projectId.index.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdAboutRouteImport } from './routes/_app/companies/$companyId/projects/$projectId_.about.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdAccessRouteImport } from './routes/_app/companies/$companyId/projects/$projectId_.access.tsx'
@@ -299,6 +302,12 @@ const AppCompaniesCompanyIdSettingsMyDefaultsRoute =
     path: '/my-defaults',
     getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
   } as any)
+const AppCompaniesCompanyIdSettingsNetworkRoute =
+  AppCompaniesCompanyIdSettingsNetworkRouteImport.update({
+    id: '/network',
+    path: '/network',
+    getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
+  } as any)
 const AppCompaniesCompanyIdSettingsObservationalMemoryRoute =
   AppCompaniesCompanyIdSettingsObservationalMemoryRouteImport.update({
     id: '/observational-memory',
@@ -347,10 +356,22 @@ const AppCompaniesCompanyIdWelcomeTeamRoute =
     path: '/team',
     getParentRoute: () => AppCompaniesCompanyIdWelcomeRouteRoute,
   } as any)
+const AppCompaniesCompanyIdDataBusinessModelIdRoute =
+  AppCompaniesCompanyIdDataBusinessModelIdRouteImport.update({
+    id: '/data/business/$modelId',
+    path: '/data/business/$modelId',
+    getParentRoute: () => AppCompaniesCompanyIdRouteRoute,
+  } as any)
 const AppCompaniesCompanyIdDataLakeTableIdRoute =
   AppCompaniesCompanyIdDataLakeTableIdRouteImport.update({
     id: '/data/lake/$tableId',
     path: '/data/lake/$tableId',
+    getParentRoute: () => AppCompaniesCompanyIdRouteRoute,
+  } as any)
+const AppCompaniesCompanyIdDataTreatedNameRoute =
+  AppCompaniesCompanyIdDataTreatedNameRouteImport.update({
+    id: '/data/treated/$name',
+    path: '/data/treated/$name',
     getParentRoute: () => AppCompaniesCompanyIdRouteRoute,
   } as any)
 const AppCompaniesCompanyIdProjectsProjectIdIndexRoute =
@@ -519,6 +540,7 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/companies/$companyId/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
   '/companies/$companyId/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
+  '/companies/$companyId/settings/network': typeof AppCompaniesCompanyIdSettingsNetworkRoute
   '/companies/$companyId/settings/observational-memory': typeof AppCompaniesCompanyIdSettingsObservationalMemoryRoute
   '/companies/$companyId/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/companies/$companyId/settings/roles': typeof AppCompaniesCompanyIdSettingsRolesRoute
@@ -534,7 +556,9 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/projects/': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/companies/$companyId/settings/': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/companies/$companyId/welcome/': typeof AppCompaniesCompanyIdWelcomeIndexRoute
+  '/companies/$companyId/data/business/$modelId': typeof AppCompaniesCompanyIdDataBusinessModelIdRoute
   '/companies/$companyId/data/lake/$tableId': typeof AppCompaniesCompanyIdDataLakeTableIdRoute
+  '/companies/$companyId/data/treated/$name': typeof AppCompaniesCompanyIdDataTreatedNameRoute
   '/companies/$companyId/projects/$projectId/about': typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
   '/companies/$companyId/projects/$projectId/access': typeof AppCompaniesCompanyIdProjectsProjectIdAccessRoute
   '/companies/$companyId/projects/$projectId/data': typeof AppCompaniesCompanyIdProjectsProjectIdDataRouteWithChildren
@@ -583,6 +607,7 @@ export interface FileRoutesByTo {
   '/companies/$companyId/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/companies/$companyId/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
   '/companies/$companyId/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
+  '/companies/$companyId/settings/network': typeof AppCompaniesCompanyIdSettingsNetworkRoute
   '/companies/$companyId/settings/observational-memory': typeof AppCompaniesCompanyIdSettingsObservationalMemoryRoute
   '/companies/$companyId/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/companies/$companyId/settings/roles': typeof AppCompaniesCompanyIdSettingsRolesRoute
@@ -598,7 +623,9 @@ export interface FileRoutesByTo {
   '/companies/$companyId/projects': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/companies/$companyId/settings': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/companies/$companyId/welcome': typeof AppCompaniesCompanyIdWelcomeIndexRoute
+  '/companies/$companyId/data/business/$modelId': typeof AppCompaniesCompanyIdDataBusinessModelIdRoute
   '/companies/$companyId/data/lake/$tableId': typeof AppCompaniesCompanyIdDataLakeTableIdRoute
+  '/companies/$companyId/data/treated/$name': typeof AppCompaniesCompanyIdDataTreatedNameRoute
   '/companies/$companyId/projects/$projectId/about': typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
   '/companies/$companyId/projects/$projectId/access': typeof AppCompaniesCompanyIdProjectsProjectIdAccessRoute
   '/companies/$companyId/projects/$projectId/integrations': typeof AppCompaniesCompanyIdProjectsProjectIdIntegrationsRoute
@@ -654,6 +681,7 @@ export interface FileRoutesById {
   '/_app/companies/$companyId_/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/_app/companies/$companyId_/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
   '/_app/companies/$companyId_/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
+  '/_app/companies/$companyId_/settings/network': typeof AppCompaniesCompanyIdSettingsNetworkRoute
   '/_app/companies/$companyId_/settings/observational-memory': typeof AppCompaniesCompanyIdSettingsObservationalMemoryRoute
   '/_app/companies/$companyId_/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/_app/companies/$companyId_/settings/roles': typeof AppCompaniesCompanyIdSettingsRolesRoute
@@ -669,7 +697,9 @@ export interface FileRoutesById {
   '/_app/companies/$companyId/projects/': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/_app/companies/$companyId_/settings/': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/_app/companies/$companyId_/welcome/': typeof AppCompaniesCompanyIdWelcomeIndexRoute
+  '/_app/companies/$companyId/data/business/$modelId': typeof AppCompaniesCompanyIdDataBusinessModelIdRoute
   '/_app/companies/$companyId/data/lake/$tableId': typeof AppCompaniesCompanyIdDataLakeTableIdRoute
+  '/_app/companies/$companyId/data/treated/$name': typeof AppCompaniesCompanyIdDataTreatedNameRoute
   '/_app/companies/$companyId/projects/$projectId_/about': typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
   '/_app/companies/$companyId/projects/$projectId_/access': typeof AppCompaniesCompanyIdProjectsProjectIdAccessRoute
   '/_app/companies/$companyId/projects/$projectId_/data': typeof AppCompaniesCompanyIdProjectsProjectIdDataRouteWithChildren
@@ -725,6 +755,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/settings/general'
     | '/companies/$companyId/settings/model-accounts'
     | '/companies/$companyId/settings/my-defaults'
+    | '/companies/$companyId/settings/network'
     | '/companies/$companyId/settings/observational-memory'
     | '/companies/$companyId/settings/people'
     | '/companies/$companyId/settings/roles'
@@ -740,7 +771,9 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects/'
     | '/companies/$companyId/settings/'
     | '/companies/$companyId/welcome/'
+    | '/companies/$companyId/data/business/$modelId'
     | '/companies/$companyId/data/lake/$tableId'
+    | '/companies/$companyId/data/treated/$name'
     | '/companies/$companyId/projects/$projectId/about'
     | '/companies/$companyId/projects/$projectId/access'
     | '/companies/$companyId/projects/$projectId/data'
@@ -789,6 +822,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/settings/general'
     | '/companies/$companyId/settings/model-accounts'
     | '/companies/$companyId/settings/my-defaults'
+    | '/companies/$companyId/settings/network'
     | '/companies/$companyId/settings/observational-memory'
     | '/companies/$companyId/settings/people'
     | '/companies/$companyId/settings/roles'
@@ -804,7 +838,9 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects'
     | '/companies/$companyId/settings'
     | '/companies/$companyId/welcome'
+    | '/companies/$companyId/data/business/$modelId'
     | '/companies/$companyId/data/lake/$tableId'
+    | '/companies/$companyId/data/treated/$name'
     | '/companies/$companyId/projects/$projectId/about'
     | '/companies/$companyId/projects/$projectId/access'
     | '/companies/$companyId/projects/$projectId/integrations'
@@ -859,6 +895,7 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId_/settings/general'
     | '/_app/companies/$companyId_/settings/model-accounts'
     | '/_app/companies/$companyId_/settings/my-defaults'
+    | '/_app/companies/$companyId_/settings/network'
     | '/_app/companies/$companyId_/settings/observational-memory'
     | '/_app/companies/$companyId_/settings/people'
     | '/_app/companies/$companyId_/settings/roles'
@@ -874,7 +911,9 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId/projects/'
     | '/_app/companies/$companyId_/settings/'
     | '/_app/companies/$companyId_/welcome/'
+    | '/_app/companies/$companyId/data/business/$modelId'
     | '/_app/companies/$companyId/data/lake/$tableId'
+    | '/_app/companies/$companyId/data/treated/$name'
     | '/_app/companies/$companyId/projects/$projectId_/about'
     | '/_app/companies/$companyId/projects/$projectId_/access'
     | '/_app/companies/$companyId/projects/$projectId_/data'
@@ -1184,6 +1223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesCompanyIdSettingsMyDefaultsRouteImport
       parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
     }
+    '/_app/companies/$companyId_/settings/network': {
+      id: '/_app/companies/$companyId_/settings/network'
+      path: '/network'
+      fullPath: '/companies/$companyId/settings/network'
+      preLoaderRoute: typeof AppCompaniesCompanyIdSettingsNetworkRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
+    }
     '/_app/companies/$companyId_/settings/observational-memory': {
       id: '/_app/companies/$companyId_/settings/observational-memory'
       path: '/observational-memory'
@@ -1240,11 +1286,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesCompanyIdWelcomeTeamRouteImport
       parentRoute: typeof AppCompaniesCompanyIdWelcomeRouteRoute
     }
+    '/_app/companies/$companyId/data/business/$modelId': {
+      id: '/_app/companies/$companyId/data/business/$modelId'
+      path: '/data/business/$modelId'
+      fullPath: '/companies/$companyId/data/business/$modelId'
+      preLoaderRoute: typeof AppCompaniesCompanyIdDataBusinessModelIdRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdRouteRoute
+    }
     '/_app/companies/$companyId/data/lake/$tableId': {
       id: '/_app/companies/$companyId/data/lake/$tableId'
       path: '/data/lake/$tableId'
       fullPath: '/companies/$companyId/data/lake/$tableId'
       preLoaderRoute: typeof AppCompaniesCompanyIdDataLakeTableIdRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdRouteRoute
+    }
+    '/_app/companies/$companyId/data/treated/$name': {
+      id: '/_app/companies/$companyId/data/treated/$name'
+      path: '/data/treated/$name'
+      fullPath: '/companies/$companyId/data/treated/$name'
+      preLoaderRoute: typeof AppCompaniesCompanyIdDataTreatedNameRouteImport
       parentRoute: typeof AppCompaniesCompanyIdRouteRoute
     }
     '/_app/companies/$companyId/projects/$projectId/': {
@@ -1477,7 +1537,9 @@ interface AppCompaniesCompanyIdRouteRouteChildren {
   AppCompaniesCompanyIdDataIndexRoute: typeof AppCompaniesCompanyIdDataIndexRoute
   AppCompaniesCompanyIdIntegrationsIndexRoute: typeof AppCompaniesCompanyIdIntegrationsIndexRoute
   AppCompaniesCompanyIdProjectsIndexRoute: typeof AppCompaniesCompanyIdProjectsIndexRoute
+  AppCompaniesCompanyIdDataBusinessModelIdRoute: typeof AppCompaniesCompanyIdDataBusinessModelIdRoute
   AppCompaniesCompanyIdDataLakeTableIdRoute: typeof AppCompaniesCompanyIdDataLakeTableIdRoute
+  AppCompaniesCompanyIdDataTreatedNameRoute: typeof AppCompaniesCompanyIdDataTreatedNameRoute
   AppCompaniesCompanyIdProjectsProjectIdAboutRoute: typeof AppCompaniesCompanyIdProjectsProjectIdAboutRoute
   AppCompaniesCompanyIdProjectsProjectIdAccessRoute: typeof AppCompaniesCompanyIdProjectsProjectIdAccessRoute
   AppCompaniesCompanyIdProjectsProjectIdDataRoute: typeof AppCompaniesCompanyIdProjectsProjectIdDataRouteWithChildren
@@ -1519,8 +1581,12 @@ const AppCompaniesCompanyIdRouteRouteChildren: AppCompaniesCompanyIdRouteRouteCh
       AppCompaniesCompanyIdIntegrationsIndexRoute,
     AppCompaniesCompanyIdProjectsIndexRoute:
       AppCompaniesCompanyIdProjectsIndexRoute,
+    AppCompaniesCompanyIdDataBusinessModelIdRoute:
+      AppCompaniesCompanyIdDataBusinessModelIdRoute,
     AppCompaniesCompanyIdDataLakeTableIdRoute:
       AppCompaniesCompanyIdDataLakeTableIdRoute,
+    AppCompaniesCompanyIdDataTreatedNameRoute:
+      AppCompaniesCompanyIdDataTreatedNameRoute,
     AppCompaniesCompanyIdProjectsProjectIdAboutRoute:
       AppCompaniesCompanyIdProjectsProjectIdAboutRoute,
     AppCompaniesCompanyIdProjectsProjectIdAccessRoute:
@@ -1564,6 +1630,7 @@ interface AppCompaniesCompanyIdSettingsRouteRouteChildren {
   AppCompaniesCompanyIdSettingsGeneralRoute: typeof AppCompaniesCompanyIdSettingsGeneralRoute
   AppCompaniesCompanyIdSettingsModelAccountsRoute: typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
   AppCompaniesCompanyIdSettingsMyDefaultsRoute: typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
+  AppCompaniesCompanyIdSettingsNetworkRoute: typeof AppCompaniesCompanyIdSettingsNetworkRoute
   AppCompaniesCompanyIdSettingsObservationalMemoryRoute: typeof AppCompaniesCompanyIdSettingsObservationalMemoryRoute
   AppCompaniesCompanyIdSettingsPeopleRoute: typeof AppCompaniesCompanyIdSettingsPeopleRoute
   AppCompaniesCompanyIdSettingsRolesRoute: typeof AppCompaniesCompanyIdSettingsRolesRoute
@@ -1586,6 +1653,8 @@ const AppCompaniesCompanyIdSettingsRouteRouteChildren: AppCompaniesCompanyIdSett
       AppCompaniesCompanyIdSettingsModelAccountsRoute,
     AppCompaniesCompanyIdSettingsMyDefaultsRoute:
       AppCompaniesCompanyIdSettingsMyDefaultsRoute,
+    AppCompaniesCompanyIdSettingsNetworkRoute:
+      AppCompaniesCompanyIdSettingsNetworkRoute,
     AppCompaniesCompanyIdSettingsObservationalMemoryRoute:
       AppCompaniesCompanyIdSettingsObservationalMemoryRoute,
     AppCompaniesCompanyIdSettingsPeopleRoute:

@@ -15,6 +15,7 @@ import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { LAKE_STATES } from './sweep-lake-states.ts'
+import { NETWORK_CARD_STATES } from './sweep-network-card.ts'
 import { PREVIEW_STATES } from './sweep-preview-states.ts'
 import { PROJECT_INTEGRATIONS_STATES } from './sweep-project-integrations-states.ts'
 import { PROJECT_STATES } from './sweep-project-states.ts'
@@ -54,6 +55,7 @@ export const STATES: State[] = [
   ...PREVIEW_STATES,
   ...CONVERSATION_STATES,
   ...ASSISTANT_STATES,
+  ...NETWORK_CARD_STATES,
   ...CARD_STATES,
   ...APP_STATES,
   ...HOUSE_STATES,

@@ -88,8 +88,8 @@ function Change({ edit }: { edit: Edit }) {
       aria-label="Mudança no arquivo"
       className={cn(BLOCK, 'm-0 flex min-w-0 flex-col border-0')}
     >
-      <Side sign="-" text={shown(edit.before)} className="text-danger" />
-      <Side sign="+" text={shown(edit.after)} className="text-success" />
+      <Side sign="-" text={shown(edit.before)} className="text-danger-text" />
+      <Side sign="+" text={shown(edit.after)} className="text-success-text" />
     </fieldset>
   )
 }

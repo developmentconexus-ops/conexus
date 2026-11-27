@@ -17,8 +17,11 @@ em [Extração Singer](extracao-singer.md). As etapas estão na [Trilha Dados](.
 - [0080](../decisions/0080-copy-declared-per-table-raw-appends.md), aceito para o modo incremental e proposto para a janela e a passada inteira: a camada bruta
   só acrescenta, e o Athena refaz a camada atual.
 - [0063](../decisions/0063-copy-models-proof.md), aceito em 2026-11-10: os modelos de cópia provados no Sankhya do fundador, só contando.
-- Aprovação: [o-lago-da-empresa-nasce-e-some](../approvals/o-lago-da-empresa-nasce-e-some.md), com
-  as decisões F, G e H do Lago 1.
+- Aprovações: [o-lago-da-empresa-nasce-e-some](../approvals/o-lago-da-empresa-nasce-e-some.md), com
+  as decisões F, G e H do Lago 1, e
+  [a-primeira-copia-chega-ao-lago](../approvals/a-primeira-copia-chega-ao-lago.md).
+- A bruta guarda a linha só até entrar na atual; a NF-e fica sem histórico (fundador,
+  2026-11-24).
 
 ## Provado
 
@@ -61,13 +64,10 @@ em [Extração Singer](extracao-singer.md). As etapas estão na [Trilha Dados](.
 - A cópia no banco Neon da empresa (a Capacidade 2, a spec de dados e o `conexus-dados-spec-3`)
   caiu com a [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md) e a [0079](../decisions/0079-the-agent-reads-the-lake-neon-serves-apps.md). O Neon da empresa fica só para os apps.
 - "Não ter lakehouse", de `conexus-databricks-study` (2026-11-10), caiu com a [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md).
-- O dbt sobre o Athena (`conexus-tratamento-medalhao`) caiu com a [0080](../decisions/0080-copy-declared-per-table-raw-appends.md), que refaz a camada atual
-  em três comandos.
 - O Unity Catalog como modelo de regra (`conexus-unity-catalog-study`) caiu com a [0078](../decisions/0078-how-the-lake-knows-who-reads.md).
 
 ## Aberto
 
-- Por quanto tempo a camada bruta guarda o histórico: chega no cartão do Lago 2.
 - A fila justa de consultas no Hub, peça nossa sem referência (delivery L28): quando a segunda
   empresa entrar.
 - A coluna por leitor e a linha por pessoa no lago; com a permissão de quem o agente lê quando roda
@@ -99,7 +99,7 @@ Uma linha por estudo, da data mais nova para a mais velha. "Virou" é o registro
 | 2026-11-20 | `conexus-fases-2a4` | decidido | [0073](../decisions/0073-platform-by-cdk-one-stack-per-company.md); [0076](../decisions/0076-a-copy-runs-as-a-fargate-task-ending-by-a-queue.md); [0078](../decisions/0078-how-the-lake-knows-who-reads.md) | Cabem 100 empresas por conta (o `S3 Tables` recusa o 101º bucket); cadastrar leva 36 s, remover 26 s; fila justa no Hub zera recusas de cota do Athena. |
 | 2026-11-20 | `conexus-copia-lease-token` | superado, por conexus-copia-nativa-causa-raiz | [0076](../decisions/0076-a-copy-runs-as-a-fargate-task-ending-by-a-queue.md) | Em Prefect, Dagster, Airflow, Meltano e Temporal quem copia escreve o próprio resultado; a rodada fecha pelo aviso da AWS com o resultado vindo pela fila. |
 | 2026-11-20 | `conexus-alinhamento-repo-plano` | decidido | [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md); [0071](../decisions/0071-connectors-kit-live-copies-singer.md); [0072](../decisions/0072-the-lab-aws-account-is-provisional.md); [0073](../decisions/0073-platform-by-cdk-one-stack-per-company.md); [0074](../decisions/0074-python-for-extraction-in-apps-extraction.md); [0075](../decisions/0075-how-the-hub-reaches-aws.md); [0076](../decisions/0076-a-copy-runs-as-a-fargate-task-ending-by-a-queue.md); [0077](../decisions/0077-how-a-credential-reaches-the-copy-task.md); [0078](../decisions/0078-how-the-lake-knows-who-reads.md); [0079](../decisions/0079-the-agent-reads-the-lake-neon-serves-apps.md) | A direção é coerente, mas as peças finais nunca rodaram juntas; propôs quatro provas pequenas e o B0 com os registros do lago. |
-| 2026-11-19 | `conexus-tratamento-medalhao` | superado, por [0080](../decisions/0080-copy-declared-per-table-raw-appends.md) | - | Medalhão é recomendação, não requisito; com o bruto fiel de todas as colunas a camada tratada vira necessária; recomendava dbt-athena, a única ferramenta SQL com `S3 Tables` nativo. |
+| 2026-11-19 | `conexus-tratamento-medalhao` | decidido | [o-primeiro-modelo-vira-tabela-tratada](../approvals/o-primeiro-modelo-vira-tabela-tratada.md) | Medalhão é recomendação, não requisito; com o bruto fiel de todas as colunas a camada tratada vira necessária; recomendava dbt-athena, a única ferramenta SQL com `S3 Tables` nativo. |
 | 2026-11-19 | `conexus-plano-validacao` | superado, por conexus-plano-sistema | - | Plano de validar quatro candidatas inteiras de lugar e formato (VPS ou AWS, DuckLake ou Iceberg) pelo caminho de ponta a ponta mais curto, antes de qualquer teste. |
 | 2026-11-19 | `conexus-plano-sistema` | decidido | [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md); [0078](../decisions/0078-how-the-lake-knows-who-reads.md); [0080](../decisions/0080-copy-declared-per-table-raw-appends.md) | Plano de testes multiempresa das finalistas P0 Postgres, P1 BigQuery e P2 Athena com `S3 Tables` e Lake Formation; nenhum teste reprova por tempo; extração Singer sob Meltano. |
 | 2026-11-19 | `conexus-pilhas-sintese` | decidido | [0070](../decisions/0070-copied-company-data-lives-in-a-lake-on-aws.md) | Quatro finalistas: só Postgres como controle, AWS com Athena, BigQuery e DuckDB nosso; a permissão por papel tem de ser imposta pelo motor; protótipo local mostrou o DuckDB gravando Iceberg. |

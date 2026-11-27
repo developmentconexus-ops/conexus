@@ -1,12 +1,17 @@
 import type { RequestContext } from '@mastra/core/request-context'
+import type { NetworkStore } from '../network/public.ts'
 
 /**
  * What differs between the agents' conversation machines: the one parameter of
  * `createConversationMachines`, which each agent states beside the kit's own deps.
  */
 export type MachineSpec = {
-  /** The hosts the machine may reach, the user's decision (the Assistant's: 0059). */
-  hosts: readonly string[]
+  /**
+   * What the machine may reach, read from `opened` each time it is applied: `hosts` and the list it
+   * returns, or any address while the company has the whole internet on. A session with no company
+   * gets `hosts` alone.
+   */
+  network: { kind: 'ON_REQUEST'; hosts: readonly string[]; opened: NetworkStore['opened'] }
   /**
    * What a machine made from another template meets: `'replace'` kills it and makes a new one (the
    * Builder's, whose tools the template carries); `'resume'` wakes it by its id with its files.

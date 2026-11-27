@@ -5,6 +5,7 @@ import { CompanyId } from './companies.ts'
 import { ConnectionId } from './connectors.ts'
 import type { FailureCode } from './failures.ts'
 import { ProjectId } from './library-ids.ts'
+import { MACHINE_TOOL } from './machine.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 
 /** The tool of each card the person answers, as the controller names the call it parks. */
@@ -68,6 +69,7 @@ export const CLOSED_TOOLS = [
   ...SKILL_TOOLS,
   ...Object.values(CARD_TOOLS),
   ...TASK_TOOLS,
+  MACHINE_TOOL.requestNetwork,
 ] as const
 export type ClosedTool = (typeof CLOSED_TOOLS)[number]
 

@@ -8,7 +8,7 @@ import {
   enterHouse,
 } from '../../../../../hub/identity/public.ts'
 import { Frame } from '../../../../../ui/frame.tsx'
-import { PageTitle } from '../../../../../ui/list.tsx'
+import { PageTitle, SettingsPageTitle } from '../../../../../ui/list.tsx'
 import type { SectionMeta, SettingsSection } from '../../../../../ui/settings-index.tsx'
 import { SettingsIndex } from '../../../../../ui/settings-index.tsx'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '../../../../../ui/sidebar.tsx'
@@ -70,7 +70,13 @@ function SettingsFrame() {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Voltar"
-              render={<Link to="/companies/$companyId" params={{ companyId }} />}
+              render={
+                <Link
+                  to="/companies/$companyId"
+                  params={{ companyId }}
+                  activeOptions={{ exact: true }}
+                />
+              }
             >
               <ArrowLeftIcon aria-hidden="true" />
               <span>Voltar</span>
@@ -90,7 +96,7 @@ function SettingsFrame() {
       ) : section ? (
         <div className="mx-auto flex w-full max-w-[80rem] flex-col gap-xl">
           <div className="flex flex-col gap-xs">
-            <PageTitle className="text-display-narrow">{section.label}</PageTitle>
+            <SettingsPageTitle>{section.label}</SettingsPageTitle>
             <p className="text-text-2">{section.summary}</p>
           </div>
           <Outlet />

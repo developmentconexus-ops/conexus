@@ -18,6 +18,7 @@ export function assistantRoomOf(
   return assistantRoom({
     connectors: PLAIN_WORDS,
     notebook: { companyId: ROOM_COMPANY },
+    network: { companyId: ROOM_COMPANY },
     openFile: () => undefined,
     openedPath: undefined,
     proposals: { app: () => null, automation: () => null, companyMemory: () => null },
@@ -30,6 +31,7 @@ export const ASSISTANT_ROOM: RoomOf<'ASSISTANT'> = assistantRoomOf()
 export function agentRoom(connectors: ConnectorWords = PLAIN_WORDS): RoomOf<'AGENT_BUILDER'> {
   return agentBuilderRoom({
     connectors,
+    network: { companyId: ROOM_COMPANY },
     toolDescription: () => undefined,
     openAgent: () => undefined,
     openedAgent: undefined,
@@ -42,6 +44,7 @@ export function savedRoom(
 ): RoomOf<'SAVED_AGENT'> {
   return savedAgentRoom(agent, {
     connectors,
+    network: { companyId: ROOM_COMPANY },
     toolDescription: () => undefined,
     writeOf: () => undefined,
     connectorOf: () => undefined,

@@ -29,11 +29,11 @@ function textLineHeights(page: Page) {
   })
 }
 
-test('a fonte: Hanken Grotesk e JetBrains Mono, a saudação em 28 e 24, toda linha de texto na grade de 4', async () => {
+test('a fonte: Hanken Grotesk e JetBrains Mono, a saudação em 30 e 24, toda linha de texto na grade de 4', async () => {
   const home = STATES.find((each) => each.name === 'Início, a primeira de duas empresas')
   assert.ok(home, 'the sweep lacks Início')
   for (const [viewport, size, line] of [
-    [DESKTOP, '28px', '36px'],
+    [DESKTOP, '30px', '36px'],
     [{ width: 639, height: 844 }, '24px', '32px'],
   ] as const) {
     const page = await harness.open(home.path, { viewport, replies: home.replies })
@@ -45,11 +45,16 @@ test('a fonte: Hanken Grotesk e JetBrains Mono, a saudação em 28 e 24, toda li
     assert.deepEqual(families, ['Hanken Grotesk', 'JetBrains Mono'])
     const greeting = await page.getByRole('heading', { level: 1 }).evaluate((heading) => {
       const style = getComputedStyle(heading)
-      return [style.fontSize, style.lineHeight, style.fontFamily.split(',')[0]?.replaceAll('"', '')]
+      return [
+        style.fontSize,
+        style.lineHeight,
+        style.fontWeight,
+        style.fontFamily.split(',')[0]?.replaceAll('"', ''),
+      ]
     })
     assert.deepEqual(
       greeting,
-      [size, line, 'Hanken Grotesk'],
+      [size, line, '700', 'Hanken Grotesk'],
       `the greeting at ${viewport.width}px`,
     )
     assert.deepEqual(

@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import typing as t
+import urllib.parse
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
@@ -19,18 +20,25 @@ from conexus_extraction.contract import (
     PROJECT,
     Complete,
     Failed,
+    Interrupted,
     Lake,
     Machine,
     Result,
     Spec,
     SpecInvalid,
+    TreatResult,
     checked,
     parse_spec,
+    parse_treat_spec,
+    reply_address,
 )
 from conexus_extraction.machine import Meter
+from conexus_extraction.treat import database_of, refused, treated, workgroup_of
 from conexus_extraction.update import Athena, Mode, UpdateCounts, UpdateFailed, Updater
 
 MELTANO = str(Path(sys.executable).with_name("meltano"))
+RUN_PARAMETER = "CONEXUS_RUN_PARAMETER"
+TREAT_OBJECT = "CONEXUS_TREAT_OBJECT"
 
 CatalogOf = Callable[[Lake], dict[str, str]]
 StillOpen = Callable[[], bool]
@@ -180,7 +188,7 @@ def _chosen(
 
 def _result(
     spec: Spec,
-    outcome: Complete | Failed,
+    outcome: Complete | Failed | Interrupted,
     report: Mapping[str, t.Any],
     updated: Mapping[str, UpdateCounts] | None = None,
 ) -> Result:
@@ -218,6 +226,15 @@ def _measured(result: Result, machine: Machine | None) -> Result:
         return t.cast("Result", {**result, "machine": None})
 
 
+def _interrupted_if_closed(
+    spec: Spec, report: Mapping[str, t.Any], still_open: StillOpen
+) -> Result | None:
+    if still_open():
+        return None
+    log("RUN_CLOSED", runId=spec["runId"])
+    return _result(spec, {"kind": "INTERRUPTED"}, report)
+
+
 def _tables_safe_to_apply(
     spec: Spec, report: Mapping[str, t.Any], failed: Failed | None
 ) -> list[str]:
@@ -237,10 +254,7 @@ def _update_unless_interrupted(
     for asked in spec["tables"]:
         if asked["name"] not in safe:
             continue
-        if stopping.asked:
-            return None
-        if not still_open():
-            log("RUN_CLOSED", runId=spec["runId"])
+        if stopping.asked or not still_open():
             return None
         plan = plans[asked["name"]]
         try:
@@ -276,7 +290,7 @@ def copied(
     guard: tuple[Stopping, StillOpen],
 ) -> Result | None:
     catalog_of, athena = lake
-    stopping = guard[0]
+    stopping, still_open = guard
     try:
         round_ = Round(spec, work, base, stopping)
     except OSError:
@@ -285,7 +299,9 @@ def copied(
     discovered = round_.discovered()
     if discovered is None:
         failure = round_.tap_failure()
-        return None if failure is None else _result(spec, failure, round_.target_report())
+        if failure is None:
+            return _interrupted_if_closed(spec, round_.target_report(), still_open)
+        return _result(spec, failure, round_.target_report())
     tables, plans, missing = _chosen(discovered, spec)
     if missing is not None:
         unreadable: Failed = {
@@ -299,16 +315,13 @@ def copied(
     target = {
         "catalog": catalog,
         "tables": tables,
-        "run_parameter": base["CONEXUS_RUN_PARAMETER"],
+        "run_parameter": base[RUN_PARAMETER],
         "region": base["AWS_REGION"],
     }
     code = round_.run(discovered, target)
-    if stopping.asked:
-        return None
     report = round_.target_report()
-    if report["closed"]:
-        log("RUN_CLOSED", runId=spec["runId"])
-        return None
+    if stopping.asked or report["closed"]:
+        return _interrupted_if_closed(spec, report, still_open)
     failure = round_.tap_failure()
     if failure is None and report["failed"] is not None:
         failure = {
@@ -324,7 +337,7 @@ def copied(
     updater = Updater(load_catalog("lake", **catalog), athena)
     updated = _update_unless_interrupted(spec, updater, plans, guard, safe)
     if updated is None:
-        return None
+        return _interrupted_if_closed(spec, report, still_open)
     counts, failed = updated
     outcome: Complete | Failed = failure or failed or {"kind": "COMPLETE"}
     return _result(spec, outcome, report, counts)
@@ -334,9 +347,51 @@ def run(environ: Mapping[str, str], catalog_of: CatalogOf) -> int:
     stopping = Stopping()
     previous = signal.signal(signal.SIGTERM, stopping)
     try:
-        return _round(environ, catalog_of, stopping)
+        if TREAT_OBJECT in environ:
+            return _treatment(environ, stopping)
+        if RUN_PARAMETER in environ:
+            return _round(environ, catalog_of, stopping)
+        log("TREAT_SPEC_INVALID", field="(variable)")
+        return 1
     finally:
         signal.signal(signal.SIGTERM, previous)
+
+
+def _send(aws: boto3.session.Session, queue: str, result: Result | TreatResult) -> int:
+    try:
+        aws.client("sqs").send_message(QueueUrl=queue, MessageBody=json.dumps(result))
+    except (BotoCoreError, ClientError) as error:
+        log("RESULT_NOT_SENT", runId=result["runId"], error=type(error).__name__)
+        return 1
+    log("RESULT_SENT", runId=result["runId"], outcome=result["outcome"]["kind"])
+    return 0
+
+
+def _treatment(environ: Mapping[str, str], stopping: Stopping) -> int:
+    aws = boto3.session.Session(region_name=environ["AWS_REGION"])
+    address = urllib.parse.urlsplit(environ[TREAT_OBJECT])
+    try:
+        held = aws.client("s3").get_object(Bucket=address.netloc, Key=address.path.lstrip("/"))
+        text = held["Body"].read().decode()
+    except (BotoCoreError, ClientError) as error:
+        log("TREAT_SPEC_UNREAD", error=type(error).__name__)
+        return 1
+    try:
+        if RUN_PARAMETER in environ:
+            raise SpecInvalid("(variable)")
+        spec = parse_treat_spec(text)
+    except SpecInvalid as invalid:
+        log("TREAT_SPEC_INVALID", field=str(invalid))
+        answerable = reply_address(text)
+        return 1 if answerable is None else _send(aws, answerable["queueUrl"], refused(answerable))
+    bucket = spec["lake"]["bucketArn"].rsplit("/", 1)[-1]
+    athena = Athena(aws.client("athena"), workgroup_of(bucket), database_of(bucket))
+    with tempfile.TemporaryDirectory(prefix="tratamento-") as work:
+        result = treated(spec, Path(work), athena, log)
+    if stopping.asked:
+        log("RUN_STOPPED", runId=spec["runId"])
+        return 1
+    return _send(aws, spec["queueUrl"], result)
 
 
 def _open(ssm: t.Any, parameter: str) -> bool:
@@ -348,14 +403,14 @@ def _open(ssm: t.Any, parameter: str) -> bool:
 
 
 def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping) -> int:
-    parameter, region = environ["CONEXUS_RUN_PARAMETER"], environ["AWS_REGION"]
+    parameter, region = environ[RUN_PARAMETER], environ["AWS_REGION"]
     aws = boto3.session.Session(region_name=region)
     ssm = aws.client("ssm")
     try:
         answer = ssm.get_parameter(Name=parameter, WithDecryption=True)
     except ssm.exceptions.ParameterNotFound:
         log("RUN_CLOSED", parameter=parameter)
-        return 0
+        return 1
     try:
         spec = parse_spec(answer["Parameter"]["Value"])
     except SpecInvalid as invalid:
@@ -375,19 +430,11 @@ def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
             )
     finally:
         machine = meter.stop()
-    if stopping.asked:
-        log("RUN_STOPPED", runId=spec["runId"])
-        return 1
     if result is None:
+        if stopping.asked:
+            log("RUN_STOPPED", runId=spec["runId"])
         return 1
-    result = _measured(result, machine)
-    try:
-        aws.client("sqs").send_message(QueueUrl=spec["queueUrl"], MessageBody=json.dumps(result))
-    except (BotoCoreError, ClientError) as error:
-        log("RESULT_NOT_SENT", runId=spec["runId"], error=type(error).__name__)
-        return 1
-    log("RESULT_SENT", runId=spec["runId"], outcome=result["outcome"]["kind"])
-    return 0
+    return _send(aws, spec["queueUrl"], _measured(result, machine))
 
 
 def main() -> int:

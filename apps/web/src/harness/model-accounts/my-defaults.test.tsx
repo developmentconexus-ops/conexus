@@ -95,12 +95,14 @@ test('salvar o seu: o modelo e o nível seguem ao Hub, o topo passa a "seu padr�
   expect(sent.map((one) => [one.method, one.body])).toEqual([
     ['PUT', { model: SONNET, effort: 'high' }],
   ])
+  expect(await screen.findAllByText('Padrão salvo')).toHaveLength(1)
   fireEvent.click(await screen.findByRole('button', { name: 'Usar o da empresa' }))
   expect(
     await screen.findByText('Uma conversa nova começa em: GPT 5 · Desligado — padrão da empresa'),
   ).toBeTruthy()
   expect(sent.at(-1)?.method).toBe('DELETE')
   expect(screen.queryByRole('button', { name: 'Usar o da empresa' })).toBeNull()
+  expect(screen.getAllByText('Padrão salvo')).toHaveLength(1)
 })
 
 test('sem conta usável em nenhum degrau: a frase e o caminho a Minhas contas de modelo', async () => {

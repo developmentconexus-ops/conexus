@@ -14,7 +14,9 @@ import type { CopyTasks, Where } from '../../platform/aws.ts'
 import { LakeId, RunParameter, runParameterName } from '../../platform/aws.ts'
 import { AwsAccount, AwsRegion } from '../../platform/config-aws.ts'
 import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
+import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog, Scalar } from '../../platform/failure.ts'
+import { logFailure } from '../../platform/failure.ts'
 import { lakeRun, lakeTable, lakeTableRun } from './tables.ts'
 
 /** The Hub's own work on one company: its login, no person (data D20). */
@@ -66,18 +68,20 @@ const LakeRow = z.object({
   state: z.string(),
   account: AwsAccount,
   region: AwsRegion,
+  template: z.string(),
 })
 
 /** The company's lake as the company's login reads it (decision H): where to reach AWS, and whether it is ready. */
 export async function lakeOf(tx: ReadTx, companyId: CompanyId) {
   const found = await tx.execute(
-    sql`select lake_id, state, account, region from lake.company_lake where company_id = ${companyId}`,
+    sql`select lake_id, state, account, region, template from lake.company_lake where company_id = ${companyId}`,
   )
   const [row] = found.rows
   if (row === undefined) return null
   const lake = LakeRow.parse(row)
   const where: Where = { company: companyId, account: lake.account, region: lake.region }
-  return { where, lakeId: lake.lake_id, ready: lake.state === 'ready' }
+  const ready = lake.state === 'ready'
+  return { where, lakeId: lake.lake_id, ready, template: lake.template }
 }
 
 /** The connection's open round, which a person's stop and the leave end. */
@@ -122,12 +126,28 @@ function columnsOf(end: RunEnd) {
   }
 }
 
+/**
+ * The treatment's side of the copies' end, given by the Hub's start (subjects do not import each
+ * other): its rounds share the copy's task definition and queue, and a copy's complete end tells it.
+ */
+export type TreatmentHooks = Readonly<{
+  afterCopy(companyId: CompanyId, copied: readonly LakeTableName[]): Promise<unknown>
+  openRuns(): Promise<ReadonlyMap<string, CompanyId>>
+  companyOf(run: string): Promise<CompanyId | undefined>
+  /** The result, read by the treatment's own contract; `UNREADABLE` when it is not one. */
+  closeResult(companyId: CompanyId, result: unknown): Promise<'DONE' | 'UNREADABLE'>
+  /** The round's task stopped and no result came. */
+  closeLost(companyId: CompanyId, run: string): Promise<void>
+}>
+
 export type CloseDeps = {
   database: Database
   tasks: CopyTasks
   log: FailureLog
   /** The queue's consumer, told of each round closed (`lake-queue.ts`). */
   watch?: Readonly<{ ended(run: LakeRunId): void }>
+  /** The treatment, told of each copy that ends complete. */
+  treatment?: () => Pick<TreatmentHooks, 'afterCopy'>
 }
 
 /** The winning close's counts on each table, and the connection's 100 newest rounds kept. */
@@ -137,16 +157,15 @@ async function counted(
     at: CompanyScope
     connectionId: ConnectionId
     run: LakeRunId
+    end: RunEnd
     tables: readonly RunTableCounts[]
   }>,
 ) {
+  const lastRunId = a.end.kind === 'INTERRUPTED' ? sql`${lakeTable.lastRunId}` : a.run
   for (const counts of a.tables) {
     const [table] = await tx
       .update(lakeTable)
-      .set({
-        rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`,
-        lastRunId: a.run,
-      })
+      .set({ rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`, lastRunId })
       .where(and(eq(lakeTable.connectionId, a.connectionId), eq(lakeTable.name, counts.name)))
       .returning({ id: lakeTable.id, rows: lakeTable.rows })
     if (table === undefined) continue
@@ -234,7 +253,7 @@ export async function closeLakeRun(
       })
       .where(eq(lakeRun.id, close.run))
     const connectionId = ConnectionIdSchema.parse(row.connectionId)
-    await counted(tx, { at, connectionId, run: close.run, tables: close.tables })
+    await counted(tx, { at, connectionId, run: close.run, end, tables: close.tables })
     return { won: { connectionId, end, by }, lake: await lakeOf(tx, at.companyId) }
   })
   const of = { companyId: at.companyId, runId: close.run }
@@ -259,7 +278,25 @@ export async function closeLakeRun(
     },
     'COPY_RUN_ENDED',
   )
+  if (end.kind === 'COMPLETE') await toldTreatment(deps, at, close.tables)
   return { kind: 'CLOSED', parameter }
+}
+
+/**
+ * After the copy's transaction, never inside it: a database out there leaves the copy closed as
+ * it is, and the next copy or Tratar agora opens the treatment's round (card, the failures table).
+ */
+async function toldTreatment(deps: CloseDeps, at: CompanyScope, tables: readonly RunTableCounts[]) {
+  const treatment = deps.treatment?.()
+  if (treatment === undefined) return
+  try {
+    await treatment.afterCopy(
+      at.companyId,
+      tables.map((table) => table.name),
+    )
+  } catch (error) {
+    logFailure(deps.log, databaseFailure(error))
+  }
 }
 
 function parameterGone(

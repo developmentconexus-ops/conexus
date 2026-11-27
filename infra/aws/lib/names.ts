@@ -9,6 +9,10 @@ export const BUCKET_PREFIX = 'conexus-'
 export const READER_SUFFIX = '-leitor'
 /** A company's writer role, which the copy task runs as: conexus-<lakeId>-escritor. */
 export const WRITER_SUFFIX = '-escritor'
+/** A company's treatment role, which the treatment task runs as: conexus-<lakeId>-tratador. */
+export const TREATER_SUFFIX = '-tratador'
+/** The treatment's own Athena workgroup: conexus-<lakeId>-tratamento. */
+export const TREAT_WORKGROUP_SUFFIX = '-tratamento'
 /** The company, on the Hub's session, the stack and the table bucket. */
 export const TAG_COMPANY = 'conexus-empresa'
 /** Only on a reader's session, from step 3. */
@@ -56,6 +60,9 @@ export const COPY_LOGS = `${PLATFORM_STACK}-copia`
 export function stateBucket(account: string, region: string): string {
   return `conexus-estado-${account}-${region}`
 }
+
+/** The root of the treatment rounds' specifications in the state bucket: tratamento/<companyId>/. */
+export const TREAT_SPEC_ROOT = 'tratamento'
 
 /** The templates bucket, one per account and region, in the region of the stacks. */
 export function templateBucket(account: string, region: string): string {

@@ -1,5 +1,6 @@
-import { Question } from '@conexus/hub-api'
+import { CARD_TOOLS, Question } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { Message } from './messages.ts'
 
 const QuestionItemSchema = Question.partial({ options: true, multiSelect: true })
 
@@ -27,4 +28,19 @@ export function parseQuestions(input: unknown): Question[] {
     options: q.options ?? [],
     multiSelect: q.multiSelect ?? false,
   }))
+}
+
+/**
+ * What each question call asked, from the arguments of its call in any message: the resumed run
+ * tells the result alone, so the card must not wait for the call to be drawn to know its questions.
+ */
+export function questionsAsked(messages: readonly Message[]): Map<string, Question[]> {
+  const asked = new Map<string, Question[]>()
+  for (const part of messages.flatMap((message) => message.parts)) {
+    if (part.type !== 'tool-invocation' || part.toolInvocation.toolName !== CARD_TOOLS.question)
+      continue
+    const questions = parseQuestions(part.toolInvocation.args)
+    if (questions.length > 0) asked.set(part.toolInvocation.toolCallId, questions)
+  }
+  return asked
 }

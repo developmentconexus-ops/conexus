@@ -14,7 +14,9 @@ import { useIsMobile } from './use-mobile.ts'
 // Copied from shadcn's base-nova `sidebar` (CLI 4.22.1), keeping the parts the frames use. Its
 // widths are the brand's container tokens instead of a `style` attribute (design V17); it keeps no
 // cookie, the frame decides when it opens; the phone drawer is the brand's `sheet` (V56); its
-// places are `nav-item` with 18px icons (V34); the transitions stop under reduced motion (V26).
+// places are `nav-item` with 18px icons (V34); a place's colour answers the pointer in the row's
+// time, and the width changes at once (V26). It is graphite in both themes (V19): the wrapper paints
+// the frame, and inside the sidebar every colour resolves on its dark side.
 
 const SHORTCUT = 'b'
 
@@ -80,7 +82,7 @@ export function SidebarProvider({
     <SidebarContext.Provider value={value}>
       <div
         data-slot="sidebar-wrapper"
-        className={cn('group/sidebar-wrapper flex min-h-dvh w-full bg-canvas', className)}
+        className={cn('group/sidebar-wrapper flex min-h-dvh w-full bg-frame', className)}
         {...props}
       >
         {children}
@@ -106,7 +108,7 @@ function RailColumn({ rail }: { rail: RailContent }) {
 
 /**
  * The sidebar (web W30): from 768px the rail of places beside the place's list, both fixed on the
- * chrome ground, and only the rail once closed; on a phone the two go together into the drawer. A
+ * frame's graphite, and only the rail once closed; on a phone the two go together into the drawer. A
  * sidebar with no `rail` is the list alone, which closes to icons.
  */
 export function Sidebar({
@@ -128,7 +130,7 @@ export function Sidebar({
           closeClassName="relative inset-auto order-first mt-sm mr-md self-end"
           data-sidebar="sidebar"
           data-mobile="true"
-          className="max-w-drawer gap-0 bg-canvas p-0"
+          className="frame-ground max-w-drawer gap-0 p-0 scheme-dark"
         >
           <div className="flex min-h-0 flex-1">
             {rail && <RailColumn rail={rail} />}
@@ -141,7 +143,7 @@ export function Sidebar({
 
   return (
     <div
-      className="group peer hidden text-text md:block"
+      className="group peer hidden md:block"
       data-state={state}
       data-collapsible={state === 'collapsed' ? 'icon' : ''}
       data-slot="sidebar"
@@ -149,22 +151,19 @@ export function Sidebar({
       {/* Holds the sidebar's width in the page, under the fixed column. */}
       <div
         data-slot="sidebar-gap"
-        className="relative w-sidebar transition-[width] duration-200 ease-linear group-data-[collapsible=icon]:w-sidebar-icon motion-reduce:transition-none"
+        className="relative w-sidebar group-data-[collapsible=icon]:w-sidebar-icon"
       />
       <nav
         aria-label={label}
         data-slot="sidebar-container"
-        className={cn(
-          'fixed inset-y-0 left-0 z-10 hidden h-dvh w-sidebar bg-canvas transition-[width] duration-200 ease-linear group-data-[collapsible=icon]:w-sidebar-icon motion-reduce:transition-none md:flex',
-          !rail && 'border-r border-line',
-        )}
+        className="fixed inset-y-0 left-0 z-10 hidden h-dvh w-sidebar text-text scheme-dark group-data-[collapsible=icon]:w-sidebar-icon md:flex"
       >
         {rail && <RailColumn rail={rail} />}
         <div
           data-sidebar="sidebar"
           className={cn(
             'flex min-w-0 flex-1 flex-col',
-            rail && 'border-r border-line group-data-[collapsible=icon]:hidden',
+            rail && 'group-data-[collapsible=icon]:hidden',
           )}
         >
           {children}
@@ -192,11 +191,15 @@ function SidebarRail() {
   )
 }
 
+/** The sheet: from 768px it is inset in the frame (design V19). */
 export function SidebarInset({ className, ...props }: ComponentProps<'main'>) {
   return (
     <main
       data-slot="sidebar-inset"
-      className={cn('relative flex w-full min-w-0 flex-1 flex-col bg-surface', className)}
+      className={cn(
+        'relative flex w-full min-w-0 flex-1 flex-col bg-surface md:m-sm md:ml-0 md:overflow-clip md:rounded-card md:shadow-ring',
+        className,
+      )}
       {...props}
     />
   )
@@ -282,9 +285,10 @@ export function SidebarMenuItem({ className, ...props }: ComponentProps<'li'>) {
   )
 }
 
-// The router marks the current place `data-status="active"`; a menu marks its open trigger.
+// The router marks the current place `data-status="active"`: a lighter fill and its icon in ipê
+// (design V5); a menu marks its open trigger.
 const menuButton = cva(
-  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 relative hover:bg-surface-3 hover:text-text data-popup-open:bg-surface-4 data-[status=active]:bg-surface-4 data-[status=active]:text-text data-[status=active]:before:absolute data-[status=active]:before:top-1/2 data-[status=active]:before:left-0 data-[status=active]:before:h-4 data-[status=active]:before:w-[2px] data-[status=active]:before:-translate-y-1/2 data-[status=active]:before:rounded-pill data-[status=active]:before:bg-accent group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:pointer-coarse:size-11! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
+  'peer/menu-button flex w-full items-center gap-sm overflow-hidden rounded-control px-[0.6rem] text-left font-body text-label text-text-2 relative transition-colors duration-row hover:bg-surface-3 hover:text-text data-popup-open:bg-surface-4 data-[status=active]:frame-current data-[status=active]:text-text data-[status=active]:[&_svg]:text-accent-to group-data-[collapsible=icon]:size-row! group-data-[collapsible=icon]:pointer-coarse:size-11! group-data-[collapsible=icon]:p-sm! [&_svg]:size-[18px] [&_svg]:shrink-0 [&>span:last-child]:truncate',
   {
     variants: {
       size: {

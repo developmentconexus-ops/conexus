@@ -1,4 +1,5 @@
 import type { ConversationId } from '@conexus/hub-api'
+import { CompanyId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { CodeModeTransport } from '@mastra/core/tools'
 import type { Workspace, WorkspaceFilesystem } from '@mastra/core/workspace'
@@ -10,6 +11,9 @@ import { locate } from './conversation-file.ts'
 import { MAX_BYTES } from './git-facts.ts'
 import type { ConversationMachine, Kit } from './kit.ts'
 import { MARK, readCapped } from './kit.ts'
+import { createLanes } from './lanes.ts'
+import type { NetworkedSession } from './network.ts'
+import { isNetworkNotApplied, machineNetwork, networkNotApplied } from './network.ts'
 import type { Phase } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
 import { execIn, within } from './session.ts'
@@ -36,8 +40,8 @@ type FileRead =
 
 /**
  * The conversations' machines, of the Assistant and of whoever else opens one in a conversation:
- * the Builder's kit without the app's seed, Git, check or pack; the network reaches only the hosts
- * its user names. One owner (code C26) for start, stop, kill and read.
+ * the Builder's kit without the app's seed, Git, check or pack. One owner (code C26) for start,
+ * stop, kill and read.
  */
 export type ConversationMachines = {
   /** Where the conversation's files are on its machine. */
@@ -55,6 +59,13 @@ export type ConversationMachines = {
   stopAll(): Promise<void>
   /** The conversation is deleted: every machine it marked is killed (`MachineApi.kill`). */
   kill(conversationId: ConversationId): Promise<void>
+  /**
+   * Applies the conversation's two lists to its running machine now; false when that failed. True
+   * also when no machine runs: its next start applies them.
+   */
+  reopen(conversationId: ConversationId): Promise<boolean>
+  /** A company's list lost a domain: each running machine of it that the Hub holds takes its list again. Never rejects. */
+  narrow(companyId: CompanyId): Promise<void>
   /**
    * The filesystem `show_file` locates a file in: a short-lived instance, so a link made after a
    * first look is looked at again.
@@ -77,11 +88,9 @@ const ON_E2B: MachineTuning = { workFolder: WORK_FOLDER, toolchain: TOOLCHAIN, s
 
 type Deps = ConversationMachine & { log: FailureLog }
 
-type Session = {
-  conversationId: ConversationId
+type Session = NetworkedSession & {
   /** `conexus-<installation>-<conversationId>`, the provider's key to the machine. */
   name: string
-  kit: Kit
   files: SandboxFilesystem
   /**
    * The conversation's workspace for the turn: the controller asks for it at every step, and the
@@ -110,13 +119,16 @@ class Machines implements ConversationMachines {
   private readonly startMs: number
   private readonly sessions = new Map<ConversationId, Session>()
   /**
-   * Each conversation's line (code C65): a turn's opening of its workspace, its pause and a
-   * download run one after another, so neither a download nor the next turn starts a machine
-   * while one is being paused. The turn's start itself is not in the line: a download during the
-   * turn reads the turn's own session, whose start it shares.
+   * Each conversation's line (code C65): a turn's opening of its workspace, its pause, a download,
+   * `reopen` and `narrow` run one after another, so neither a download nor the next turn starts a
+   * machine while one is being paused. The turn's start itself is not in the line: a download
+   * during the turn reads the turn's own session, whose start it shares. Every change of a
+   * machine's list also waits in the list's own queue (`network.ts`), apart, because a download
+   * holds the conversation's line while its machine's start applies the list.
    */
-  private readonly lanes = new Map<ConversationId, Promise<unknown>>()
+  private readonly inLane = createLanes<ConversationId>()
   private readonly phases = new Map<ConversationId, (phase: Phase) => void>()
+  private readonly network: ReturnType<typeof machineNetwork>
 
   /**
    * What the model is told of the machine in place of the provider's own words; its files and its
@@ -132,27 +144,29 @@ class Machines implements ConversationMachines {
     this.toolchain = tuning.toolchain
     this.startMs = tuning.startMs
     this.told = `The conversation's own Linux machine. Commands start in ${this.folder}.`
-  }
-
-  /** Runs `work` once every earlier step of the conversation's line has settled. */
-  private inLane<T>(conversationId: ConversationId, work: () => Promise<T>): Promise<T> {
-    const run = Promise.allSettled([this.lanes.get(conversationId)]).then(work)
-    const settled = Promise.allSettled([run])
-    this.lanes.set(conversationId, settled)
-    void settled.then(() => {
-      if (this.lanes.get(conversationId) === settled) this.lanes.delete(conversationId)
+    const { opened } = spec.network
+    this.network = machineNetwork({
+      ...{ opened, log: deps.log, sessions: this.sessions, amongPauses: this.inLane },
     })
-    return run
   }
 
   /**
    * Wakes or creates the machine, once per session; with `replace`, a machine from another
-   * template is killed first.
+   * template is killed first. A change of its list that failed is made again before each use; a
+   * retry that fails holds no tool back, and the machine keeps the list it had.
    */
-  private ensure(session: Session): Promise<Kit> {
+  private async ensure(session: Session): Promise<Kit> {
     session.ready ??= this.boot(session)
-    return session.ready
+    const kit = await session.ready
+    if (session.networkStale !== undefined) {
+      await this.network.changeRunning(session, session.networkStale)
+    }
+    return kit
   }
+
+  reopen = (conversationId: ConversationId) => this.network.reopen(conversationId)
+
+  narrow = (companyId: CompanyId) => this.network.narrow(companyId)
 
   private async boot(session: Session): Promise<Kit> {
     const { conversationId } = session
@@ -160,8 +174,8 @@ class Machines implements ConversationMachines {
     const { otherTemplate } = this.spec
     this.phases.get(conversationId)?.('starting')
     // A machine found by its id is of the Hub's template: only a turn's start clears an older one.
-    // Either way the list comes first and a failed one stops the start: E2B's own lookup swallows
-    // it and makes an empty machine in place of the one it could not see.
+    // Either way the provider's list comes first and a failed one stops the start: E2B's own lookup
+    // swallows it and makes an empty machine in place of the one it could not see.
     const listed =
       session.found !== undefined
         ? undefined
@@ -175,8 +189,9 @@ class Machines implements ConversationMachines {
     } catch (cause) {
       session.ready = undefined
       if (ReattachFailed.safeParse(cause).success) throw new Failure('FILE_GONE', { cause })
+      const reason = isNetworkNotApplied(cause) ? 'NETWORK' : 'START'
       log.error(
-        { conversationId, reason: 'START', cause: String(cause).slice(0, 500) },
+        { conversationId, reason, cause: String(cause).slice(0, 500) },
         'MACHINE_UNAVAILABLE',
       )
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
@@ -186,13 +201,12 @@ class Machines implements ConversationMachines {
   }
 
   /**
-   * Mastra's `onStart`: the folder exists, and a machine found again has the network narrowed
-   * again.
-   * The folder is where commands start, and the template does not make it: the `mkdir` starts at
-   * the root, for E2B refuses a command whose folder does not exist.
+   * Mastra's `onStart`: the machine takes its list before anything runs on it. The template does
+   * not make the folder, and the `mkdir` starts at the root: E2B refuses a command whose folder
+   * does not exist.
    */
-  private async started(session: Session, outcome: string | undefined): Promise<void> {
-    if (outcome === 'connected') await session.kit.closeNetwork()
+  private async started(session: Session): Promise<void> {
+    if (!(await this.network.change(session, 'START'))) throw networkNotApplied()
     const made = await session.kit.sandbox.executeCommand?.('mkdir', ['-p', this.folder], {
       cwd: '/',
     })
@@ -238,7 +252,7 @@ class Machines implements ConversationMachines {
     const kit: Kit = this.deps.kit({
       id: name,
       ...(found === undefined ? {} : { foundAs: found }),
-      allowOut: this.spec.hosts,
+      allowOut: this.spec.network.hosts,
       metadata: {
         ...mark,
         ...marks,
@@ -246,10 +260,12 @@ class Machines implements ConversationMachines {
         [MARK.template]: template,
       },
       workingDirectory: this.folder,
-      onStart: ({ outcome }) => this.started(session, outcome),
+      onStart: () => this.started(session),
     })
     const session: Session = {
       conversationId,
+      companyId: CompanyId.optional().parse(marks[MARK.company]),
+      networkStale: undefined,
       name,
       kit,
       ready: undefined,

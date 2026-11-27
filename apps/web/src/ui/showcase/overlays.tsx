@@ -43,6 +43,19 @@ export const OVERLAYS: readonly ShowcaseEntry[] = [
     </AlertDialog>
   )),
   entry(
+    'alert-dialog.tsx',
+    'Sobreposições',
+    'Ler antes do sim, com a tela toda no celular.',
+    () => (
+      <AlertDialog>
+        <AlertDialogTrigger render={<Button />}>Ler e ligar</AlertDialogTrigger>
+        <AlertDialogContent size="page" title="Ligar venda v2?" description={OVERLAY_TEXT}>
+          <Button variant="primary">Ligar</Button>
+        </AlertDialogContent>
+      </AlertDialog>
+    ),
+  ),
+  entry(
     'sheet.tsx',
     'Sobreposições',
     'Um painel que desliza do lado, como a navegação do celular.',

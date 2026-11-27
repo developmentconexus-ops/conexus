@@ -88,7 +88,7 @@ export function PublishButton(props: { scope: Scope; agent: AgentDetail }) {
             onChange={(event) => setMessage(event.target.value)}
           />
           {error !== undefined && (
-            <p role="alert" className="text-danger">
+            <p role="alert" className="text-danger-text">
               {error}
             </p>
           )}

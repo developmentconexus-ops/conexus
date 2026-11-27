@@ -9,7 +9,7 @@ import type { Person } from '../identity/test-hub.ts'
 import { ANA_OWNER, call, codeOf, personOn } from '../identity/test-hub.ts'
 import type { LakeCopyOn } from './test-lake-copy.ts'
 import { DAILY, finished, lakeCopyOn, NOTAS, PARCEIROS, runsOf, wholeOf } from './test-lake-copy.ts'
-import { result } from './test-lake-queue.ts'
+import { drained, result, finished as taskExited } from './test-lake-queue.ts'
 
 const SILENT = { kind: 'NO_ANSWER' } as const
 
@@ -240,6 +240,33 @@ test('a tarefa que sai sozinha depois do pedido de parar fecha INTERRUPTED, não
     [ended?.outcome, ended?.cause, ended?.asked, ended?.code],
     ['INTERRUPTED', 'ECS_STOPPED', true, undefined],
   )
+})
+
+test('a rodada parada conta o que gravou: o resultado interrompido vale depois do evento da ECS, e a primeira carga recomeça', async (t) => {
+  const on = await lakeCopyOn(t)
+  const { connection, run, arn } = await openRound(on)
+  on.aws.lagStops(1_000)
+  assert.equal((await stop(on, connection)).statusCode, 202)
+
+  taskExited(on, { run, arn }, 'UserInitiated')
+  t.after(() => on.hub.lakeRuns.queue.stop())
+  await on.hub.lakeRuns.queue.start()
+  await drained(on)
+  assert.deepEqual(await rowOf(on, run), { ...OPEN, stopped_by: on.ana.id })
+  const counts = { read: 20, written: 10, rounded: 0, rows: null, whole: true }
+  on.aws.enqueue(result(run, { kind: 'INTERRUPTED' }, [{ name: 'sankhya_notas', ...counts }]))
+  await until(async () => (await rowOf(on, run))?.outcome !== null, 'the result closed the round')
+
+  const view = on.viewOf(await on.get(connection))
+  const notas = view.tables.find(({ source }) => source === 'TGFCAB')?.copy
+  assert.ok(view.lastRun?.outcome === 'INTERRUPTED' && notas?.kind === 'MARKED')
+  assert.ok(notas.lastRun?.outcome === 'INTERRUPTED' && notas.firstLoad)
+  assert.deepEqual([view.lastRun.read, view.lastRun.written], [20, 10])
+  assert.deepEqual([notas.lastRun.read, notas.lastRun.written], [20, 10])
+  assert.equal((await on.run(connection)).statusCode, 202)
+  await on.hub.lakeRuns.idle()
+  const [, next] = await runsOf(on, connection)
+  assert.deepEqual(wholeOf(on, next?.id), { sankhya_notas: true, sankhya_parceiros: true })
 })
 
 test('o resultado que chega depois do pedido de parar vale: o erro da tarefa continua erro', async (t) => {

@@ -29,6 +29,7 @@ function useAgentRoom(
   agent: AgentDetail,
   words: ReturnType<typeof useConnectorCatalog>['words'],
   held: {
+    companyId: CompanyId
     file: OpenedFile | undefined
     setFile: (file: OpenedFile) => void
     writes: { read: WritesRead; refresh: () => void }
@@ -36,11 +37,12 @@ function useAgentRoom(
     fixed: boolean
   },
 ) {
-  const { file, setFile, writes, fixed } = held
+  const { companyId, file, setFile, writes, fixed } = held
   return useMemo(
     () =>
       savedAgentRoom(agent.name, {
         connectors: words,
+        network: { companyId },
         toolDescription: (slug: string) =>
           agent.tools.find((one) => one.slug === slug)?.version.description,
         writeOf: (toolName: string) => writeOf(agent, toolName, fixed),
@@ -50,7 +52,7 @@ function useAgentRoom(
         openFile: setFile,
         openedPath: file?.path,
       }),
-    [agent, words, file?.path, setFile, writes, fixed],
+    [agent, words, companyId, file?.path, setFile, writes, fixed],
   )
 }
 
@@ -115,7 +117,7 @@ export function AgentChat(props: {
     [data, error, isFetching, refresh],
   )
   const fixed = draft || (agent.state.kind === 'PUBLISHED' && !agent.state.changed)
-  const room = useAgentRoom(agent, words, { file, setFile, writes, fixed })
+  const room = useAgentRoom(agent, words, { companyId, file, setFile, writes, fixed })
   const widen = useContext(FileWidth)
   const open = file !== undefined
   useEffect(() => {

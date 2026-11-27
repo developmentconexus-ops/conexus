@@ -18,6 +18,7 @@ ALTER SCHEMA ontology OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
 ALTER SCHEMA projects OWNER TO test_owner;
 ALTER SCHEMA requests OWNER TO test_owner;
+ALTER SCHEMA treatment OWNER TO test_owner;
 -- Step 5, provisional until the founder's word (firstmate, 2026-10-17): the operator's administrator
 -- check, one SECURITY DEFINER function owned by a role that cannot log in and reads only the
 -- administrators' rows; only hub_operator executes it.
@@ -120,6 +121,10 @@ ALTER TABLE projects.app_access OWNER TO test_owner;
 ALTER TABLE projects.company_database OWNER TO test_owner;
 ALTER TABLE projects.project OWNER TO test_owner;
 ALTER TABLE requests.request OWNER TO test_owner;
+ALTER TABLE treatment.model OWNER TO test_owner;
+ALTER TABLE treatment.model_run OWNER TO test_owner;
+ALTER TABLE treatment.run OWNER TO test_owner;
+ALTER TABLE treatment.version OWNER TO test_owner;
 -- Step 12, founder 2026-10-19 ("1. A", decision 0010): the Hub's database lets in its own logins only,
 -- so Mastra's login is refused at the door.
 REVOKE CONNECT,TEMPORARY ON DATABASE hub_database FROM PUBLIC;
@@ -173,6 +178,9 @@ GRANT USAGE ON SCHEMA projects TO hub_app_people;
 -- change the state of a request to publish, and read, create and mark read what a request tells; both
 -- leave by cascade, never by the Hub.
 GRANT USAGE ON SCHEMA requests TO hub_company;
+-- The treatment of the lake, T1 (D11, founder 2026-11-26, asked "O senhor aprova essas duas permissões, no PR próprio?", answered "2. Aprovo"): the permissions of the new treatment tables.
+GRANT USAGE ON SCHEMA treatment TO hub_company;
+GRANT USAGE ON SCHEMA treatment TO hub_operator;
 REVOKE ALL ON FUNCTION apps.companies_with_apps() FROM PUBLIC;
 GRANT ALL ON FUNCTION apps.companies_with_apps() TO hub_runtime;
 REVOKE ALL ON FUNCTION auth.is_installation_administrator(person text) FROM PUBLIC;
@@ -429,6 +437,8 @@ GRANT SELECT(state) ON TABLE lake.company_lake TO hub_company;
 GRANT SELECT(account) ON TABLE lake.company_lake TO hub_company;
 GRANT SELECT(region) ON TABLE lake.company_lake TO hub_company;
 GRANT UPDATE(template) ON TABLE lake.company_lake TO hub_operator;
+-- The treatment of the lake, T1 (D11, founder 2026-11-26, asked "O senhor aprova essas duas permissões, no PR próprio?", answered "2. Aprovo"): a company's login reads the recipe of its own lake.
+GRANT SELECT(template) ON TABLE lake.company_lake TO hub_company;
 GRANT UPDATE(stack_id) ON TABLE lake.company_lake TO hub_operator;
 GRANT UPDATE(since) ON TABLE lake.company_lake TO hub_operator;
 GRANT UPDATE(failure) ON TABLE lake.company_lake TO hub_operator;
@@ -517,6 +527,23 @@ GRANT SELECT,INSERT ON TABLE requests.request TO hub_company;
 GRANT UPDATE(state) ON TABLE requests.request TO hub_company;
 GRANT UPDATE(decided_by) ON TABLE requests.request TO hub_company;
 GRANT UPDATE(reason) ON TABLE requests.request TO hub_company;
+-- The treatment of the lake, T1 (D11, founder 2026-11-26, asked "O senhor aprova essas duas permissões, no PR próprio?", answered "2. Aprovo"): the permissions of the new treatment tables.
+GRANT SELECT,INSERT ON TABLE treatment.model TO hub_company;
+GRANT SELECT,DELETE ON TABLE treatment.model TO hub_operator;
+GRANT UPDATE(description) ON TABLE treatment.model TO hub_company;
+GRANT SELECT,INSERT ON TABLE treatment.model_run TO hub_company;
+GRANT SELECT,INSERT ON TABLE treatment.run TO hub_company;
+GRANT SELECT,DELETE ON TABLE treatment.run TO hub_operator;
+GRANT UPDATE(state) ON TABLE treatment.run TO hub_company;
+GRANT UPDATE(pending) ON TABLE treatment.run TO hub_company;
+GRANT UPDATE(failure) ON TABLE treatment.run TO hub_company;
+GRANT UPDATE(stopped_by) ON TABLE treatment.run TO hub_company;
+GRANT UPDATE(attempt) ON TABLE treatment.run TO hub_company;
+GRANT UPDATE(task) ON TABLE treatment.run TO hub_company;
+GRANT UPDATE(ended_at) ON TABLE treatment.run TO hub_company;
+GRANT SELECT,INSERT ON TABLE treatment.version TO hub_company;
+GRANT UPDATE(approved_by) ON TABLE treatment.version TO hub_company;
+GRANT UPDATE(approved_at) ON TABLE treatment.version TO hub_company;
 -- Step 12, founder 2026-10-19 ("1. A", decision 0010): Mastra's database, the same dump of its
 -- objects, open to Mastra's login alone, which creates its tables there at start.
 ALTER DATABASE mastra_database OWNER TO test_owner;

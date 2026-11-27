@@ -192,12 +192,12 @@ test('Esc fecha a gaveta e devolve o foco a "Abrir navegação"', async () => {
 })
 
 for (const viewport of [DESKTOP, PHONE]) {
-  test(`não encontrado na moldura fica na área, sem rolagem, e o link-botão tem borda, numa tela de ${viewport.width}px`, async () => {
+  test(`não encontrado na moldura fica na área, sem rolagem, e o link-botão tem a borda de sombra, numa tela de ${viewport.width}px`, async () => {
     const page = await open(`/companies/${COMPANY_ID}/nada`, viewport, HOUSE)
     const back = page.getByRole('link', { name: 'Voltar ao início' })
-    // A link drawn as a button keeps its variant's border, not the base's transparent one.
-    const border = await back.evaluate((link) => getComputedStyle(link).borderTopColor)
-    assert.notEqual(border, 'rgba(0, 0, 0, 0)')
+    // A link drawn as a button keeps its variant's edge, which is a shadow (design V19).
+    const edge = await back.evaluate((link) => getComputedStyle(link).boxShadow)
+    assert.notEqual(edge, 'none')
     const { scroll, inner } = await page.evaluate(() => ({
       scroll: document.documentElement.scrollHeight,
       inner: window.innerHeight,
@@ -231,6 +231,7 @@ test('o contorno do item do menu da conta fica longe da borda do menu', async ()
   const page = await open('/', DESKTOP, HOUSE)
   await page.getByRole('button', { name: 'Conta de Ana Lima' }).focus()
   await presses(page, 'Enter', 1)
+  await atRest(page)
   const edges = await page.evaluate(() => {
     const item = document.querySelector('[role=menuitem]')
     const menu = document.querySelector('[role=menu]')
@@ -265,6 +266,7 @@ test('os ícones têm 14px na barra, 16px ao lado de um texto e 20px no trilho',
   const close = await iconWidth(drawer.getByRole('button', { name: 'Fechar navegação' }))
   const rail = await iconWidth(drawer.getByRole('link', { name: 'Início' }))
   await drawer.getByRole('button', { name: 'Conta de Ana Lima' }).click()
+  await atRest(page)
   const leave = await iconWidth(page.getByRole('menuitem', { name: 'Sair do Conexus' }))
   assert.deepEqual({ opener, close, leave, rail }, { opener: 14, close: 14, leave: 16, rail: 20 })
   await page.close()

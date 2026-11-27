@@ -12,7 +12,7 @@ import type { MastraMemory } from '@mastra/core/memory'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import type { ConversationMachines } from '../../harness/machine/public.ts'
-import { showFileTool } from '../../harness/machine/public.ts'
+import { conversationMachineTools } from '../../harness/machine/public.ts'
 import { conversationRun } from '../../harness/memory/public.ts'
 import type { QueueDeps } from '../../harness/model-accounts/public.ts'
 import {
@@ -20,6 +20,7 @@ import {
   conversationStart,
   memoryModelsFor,
 } from '../../harness/model-accounts/public.ts'
+import type { NetworkStore } from '../../harness/network/public.ts'
 import { CONEXUS_PROMPT } from '../../harness/prompt/public.ts'
 import type { DataBinding, Owner, RunScope, Speakers, Stored } from '../../harness/spec/public.ts'
 import {
@@ -106,7 +107,7 @@ export async function agentTurnOf(
 
 export type AgentDeps = {
   database: Database
-  identity: Pick<IdentityPorts, 'mayUse' | 'mayPublishUnattended'>
+  identity: Pick<IdentityPorts, 'allows' | 'mayUse' | 'mayPublishUnattended'>
   queue: QueueDeps
   connectors: Connectors['assistant']
   appData: AppDataPort
@@ -121,7 +122,9 @@ export type AgentDeps = {
    * The conversations' machines, which the agents' controller owns (step 24.4, U4); an agent that
    * runs alone (the Construtor's test of the draft) gets none.
    */
-  machines?: Pick<ConversationMachines, 'folder' | 'serving' | 'codeMode'>
+  machines?: Pick<ConversationMachines, 'folder' | 'serving' | 'codeMode' | 'reopen'>
+  /** The domains the machines reach beyond the development list, which a run asks for. */
+  network: Pick<NetworkStore, 'opened' | 'grant'>
   /** The saved tools' calls at the edge (step 24.4, U3). */
   codeTools: CodeToolsDeps
   log: FailureLog
@@ -146,7 +149,7 @@ export type Plan = VersionRead & {
   offered: Awaited<ReturnType<Connectors['assistant']['connections']>>
   /** The run's company tools' scope: its view of what the version declares. */
   toolScope: CompanyToolScope<Plan['offered'][number]>
-  /** Whether the version has its Computador: the conversation's machine and `show_file`. */
+  /** Whether the version has its Computador: the conversation's machine and its tools. */
   machine: boolean
 }
 
@@ -259,7 +262,9 @@ function runToolsOf(
   plan: (requestContext: RequestContext) => Promise<Plan>,
 ) {
   const machines = frozen.machine ? deps.machines : undefined
-  const showFile = machines === undefined ? undefined : showFileTool(machines)
+  const ofMachine =
+    machines &&
+    conversationMachineTools(machines, deps, async (context) => (await plan(context)).runScope)
   const companyOf = agentTools(deps, turnKey.of, frozen.agentId)
   return oncePerRun(async (requestContext) => {
     const { scope, offered, start, tools, toolScope } = await plan(requestContext)
@@ -279,7 +284,7 @@ function runToolsOf(
       writes: Object.keys(preset.writes).length > 0,
       tools: {
         ...(frozen.web ? toolsOf(start.model) : {}),
-        ...(showFile === undefined ? {} : { [MACHINE_TOOL.showFile]: showFile }),
+        ...ofMachine,
         ...(program === undefined ? {} : { [MACHINE_TOOL.codeMode]: program.tool }),
         ...ofTheAgent,
         ...preset.writes,

@@ -108,6 +108,7 @@ test('as ferramentas: o modelo do Assistente da dona recebe a busca das leituras
     'propose_automation',
     'propose_company_memory',
     'recall',
+    'request_network_access',
     'search_tools',
     'show_file',
     'skill',

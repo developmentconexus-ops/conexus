@@ -166,7 +166,7 @@ function NamingBody(props: {
 /** The request sent, with the name of its Projeto under it, in the box's place. */
 function Naming(props: Parameters<typeof NamingBody>[0]) {
   return (
-    <div className={`${START_COLUMN} rounded-composer border border-line bg-surface`}>
+    <div className={`${START_COLUMN} rounded-composer bg-raised shadow-composer`}>
       <NamingBody {...props} />
     </div>
   )
@@ -244,7 +244,7 @@ export function StartBox(props: {
 /** The notice that takes the box's place when the person has no model account to ask with. */
 export function StartWithoutAccount({ companyId }: { companyId: CompanyId }): ReactNode {
   return (
-    <div className={`${START_COLUMN} rounded-composer border border-line bg-surface p-lg`}>
+    <div className={`${START_COLUMN} rounded-composer bg-raised p-lg shadow-composer`}>
       <NoAccount companyId={companyId} text={START_NO_ACCOUNT} action="button" />
     </div>
   )

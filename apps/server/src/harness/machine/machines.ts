@@ -1,11 +1,11 @@
-import type { ConversationId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId } from '@conexus/hub-api'
+import { DEVELOPMENT_HOSTS } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
 import { BROWSER_PROGRAM, conferOn } from './confer.ts'
 import type { Kit } from './kit.ts'
 import {
-  ALLOWED_HOSTS,
   APP_FOLDER,
   MARK,
   machineInstructions,
@@ -13,6 +13,7 @@ import {
   OUTPUT_MAX,
   readCapped,
 } from './kit.ts'
+import { isNetworkNotApplied, machineNetwork, networkNotApplied } from './network.ts'
 import { packIn } from './pack.ts'
 import type { Machines, MachinesDeps } from './port.ts'
 import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
@@ -40,6 +41,7 @@ class BuilderMachines implements Machines {
   private readonly startMs: number
   private readonly commandMs: number
   private readonly sessions = new Map<ConversationId, Session>()
+  private readonly network: ReturnType<typeof machineNetwork>
 
   constructor(deps: MachinesDeps) {
     this.deps = deps
@@ -47,6 +49,16 @@ class BuilderMachines implements Machines {
     this.tmp = deps.tmp ?? '/tmp'
     this.startMs = deps.startMs ?? 120_000
     this.commandMs = deps.commandMs ?? 120_000
+    const { opened, log } = deps
+    this.network = machineNetwork({ opened, log, sessions: this.sessions })
+  }
+
+  reopen(conversationId: ConversationId) {
+    return this.network.reopen(conversationId)
+  }
+
+  narrow(companyId: CompanyId) {
+    return this.network.narrow(companyId)
   }
 
   /** Every command the Hub runs in the machine has a budget, whatever the machine's own life: a stuck one must not hold the Projeto (code C57). */
@@ -92,25 +104,12 @@ class BuilderMachines implements Machines {
     }
     const kit = await session.ready
     await session.refreshing
-    if (session.networkOpen) await this.closeAgain(kit, session)
-    return kit
-  }
-
-  /**
-   * A running machine's start is a no-op, so `onStart` cannot close what a failed close left open:
-   * every use retries until one succeeds. A retry that fails does not stop the tool, which the
-   * machine still serves; its log is the failure.
-   */
-  private async closeAgain(kit: Kit, session: Session) {
-    try {
-      await kit.closeNetwork()
-      session.networkOpen = false
-    } catch (cause) {
-      this.deps.log.error(
-        { conversationId: session.conversationId, cause: String(cause).slice(0, 500) },
-        'MACHINE_NETWORK_CLOSE_FAILED',
-      )
+    // A running machine's start is a no-op (Mastra `_start`), so a failed change of its list is
+    // retried here; a retry that fails holds no tool back.
+    if (session.networkStale !== undefined) {
+      await this.network.changeRunning(session, session.networkStale)
     }
+    return kit
   }
 
   /** A start that ran meanwhile (a resume) told the conflicts itself, and its word is the later one. */
@@ -138,10 +137,8 @@ class BuilderMachines implements Machines {
     } catch (cause) {
       const restore = restoreFailure(cause)
       if (restore !== undefined) throw restore
-      this.deps.log.error(
-        { reason: 'START', cause: String(cause).slice(0, 500) },
-        'MACHINE_UNAVAILABLE',
-      )
+      const reason = isNetworkNotApplied(cause) ? 'NETWORK' : 'START'
+      this.deps.log.error({ reason, cause: String(cause).slice(0, 500) }, 'MACHINE_UNAVAILABLE')
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
     }
     this.deps.log.info({ conversationId: session.conversationId }, 'MACHINE_STARTED')
@@ -203,18 +200,17 @@ class BuilderMachines implements Machines {
   }
 
   /**
-   * What the machine holds once it is up, at every start Mastra's `onStart` hook runs: one found by
-   * name, or one E2B paused that a tool resumed (`retryOnDead`), keeps its folder and brings `main`
-   * in, with the work the Hub has not saved kept on it. A new one is seeded; a second new one in the
-   * same turn is a machine that died, and what the turn wrote on it is gone.
+   * What the machine holds once it is up, at every start Mastra's `onStart` hook runs: it takes its
+   * list before anything runs on it. One found by name, or one E2B paused that a tool resumed
+   * (`retryOnDead`), keeps its folder and brings `main` in, with the work the Hub has not saved kept
+   * on it. A new one is seeded; a second new one in the same turn is a machine that died, and what
+   * the turn wrote on it is gone.
    */
   private async onStart(session: Session, outcome: string | undefined) {
     const { conversationId, kit } = session
+    if (!(await this.network.change(session, 'START'))) throw networkNotApplied()
     session.starts += 1
-    if (outcome === 'connected') {
-      await kit.closeNetwork()
-      return this.sync(kit, session)
-    }
+    if (outcome === 'connected') return this.sync(kit, session)
     if (session.starts > 1) {
       session.lost = true
       this.deps.log.error({ conversationId }, 'MACHINE_DIED')
@@ -227,7 +223,7 @@ class BuilderMachines implements Machines {
     const { companyId, projectId, conversationId, onPhase } = input
     const kit = this.deps.kit({
       id: name,
-      allowOut: ALLOWED_HOSTS,
+      allowOut: DEVELOPMENT_HOSTS,
       metadata: {
         ...this.deps.mark,
         [MARK.company]: companyId,
@@ -248,7 +244,7 @@ class BuilderMachines implements Machines {
         conflicts: NO_CONFLICTS,
         unsynced: false,
         ready: undefined,
-        networkOpen: false,
+        networkStale: undefined,
       },
     }
     return session
@@ -307,12 +303,10 @@ class BuilderMachines implements Machines {
     if (session === undefined) return { ok: false, error: 'CONFER_PLATFORM_FAILED' } as const
     const kit = await this.ensure(session)
     return conferOn({
-      ...{ kit, conversationId, at, workdir: this.workdir, tmp: this.tmp, log: this.deps.log },
+      ...{ kit, at, workdir: this.workdir, tmp: this.tmp, log: this.deps.log },
       exec: (script, timeoutMs) => this.run(kit, script, timeoutMs),
       ...{ program: this.deps.browserProgram ?? BROWSER_PROGRAM, readyMs: this.deps.readyMs },
-      onCloseFailed: () => {
-        session.networkOpen = true
-      },
+      network: this.network.conference(session),
     })
   }
 

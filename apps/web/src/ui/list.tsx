@@ -18,6 +18,10 @@ export function PageTitle({
   )
 }
 
+export function SettingsPageTitle({ children }: { children: ReactNode }) {
+  return <PageTitle className="text-display-narrow">{children}</PageTitle>
+}
+
 export function SectionTitle({ children }: { children: ReactNode }) {
   return <h2 className="font-display text-title">{children}</h2>
 }

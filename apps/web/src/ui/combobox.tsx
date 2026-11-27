@@ -5,8 +5,8 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '
 
 // Copied from shadcn's base-nova `combobox`, painted with brand tokens: the list, its items and
 // the input with its trigger; the chips, the clear button and the separator are left out. The
-// popup takes a hairline instead of a shadow (V3) and no enter/exit animation; the chosen item is
-// ipê (V5), as the old picker's was.
+// popup takes a hairline instead of a shadow (V3); the chosen item is ipê (V5), as the old
+// picker's was.
 export const Combobox = ComboboxPrimitive.Root
 export const ComboboxCollection = ComboboxPrimitive.Collection
 
@@ -76,7 +76,7 @@ export function ComboboxContent({
         <ComboboxPrimitive.Popup
           data-slot="combobox-content"
           className={cn(
-            'group/combobox-content relative max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-(--anchor-width) origin-(--transform-origin) overflow-hidden rounded-object border border-line bg-surface text-text',
+            'popup-motion group/combobox-content relative max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-(--anchor-width) overflow-hidden rounded-object border border-transparent bg-raised shadow-float text-text',
             className,
           )}
           {...props}

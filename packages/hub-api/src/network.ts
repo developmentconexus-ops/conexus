@@ -22,17 +22,17 @@ const MORE_THAN_A_HOST = /[\s/\\?#@:%]/
 
 function domainOf(typed: string): string | null {
   if (MORE_THAN_A_HOST.test(typed)) return null
-  const host = URL.parse(`https://${typed}`)?.hostname
-  if (host === undefined) return null
-  const starred = host.startsWith('*.')
-  const name = starred ? host.slice(2) : host
+  const starred = typed.startsWith('*.')
+  // The star never reaches the URL parser: a browser writes it as `%2A` where Node keeps it.
+  const name = URL.parse(`https://${starred ? typed.slice(2) : typed}`)?.hostname
+  if (name === undefined) return null
   const listed = parse(name, { allowPrivateDomains: true })
   // `tldts` names no suffix for an IP address or for a text that is no hostname.
   if (listed.publicSuffix === null || !name.includes('.') || name.endsWith('.')) return null
   if (/(^|\.)(e2b\.(app|dev)|localhost)$/.test(name)) return null
   const starOverPublicSuffix = starred && listed.domain === null
   if (starOverPublicSuffix) return null
-  return host
+  return starred ? `*.${name}` : name
 }
 
 /** A domain the machines may reach: lowercase, punycode, an optional leading `*.` whose base is not a public suffix. */
@@ -55,18 +55,23 @@ export type NetworkAsked = z.infer<typeof NetworkAsked>
 export const NetworkAnswer = z.object({ scope: z.enum(['CONVERSATION', 'COMPANY', 'REFUSED']) })
 export type NetworkAnswer = z.infer<typeof NetworkAnswer>
 
-export type NetworkResult =
-  | {
-      kind: 'OPEN'
-      domains: readonly NetworkDomain[]
-      scope: 'ALREADY' | 'CONVERSATION' | 'COMPANY'
-    }
-  | { kind: 'REFUSED'; domains: readonly NetworkDomain[] }
-  | {
-      kind: 'NOT_OPEN'
-      domains: readonly NetworkDomain[]
-      reason: 'ROLE' | 'AUTOMATION' | 'MACHINE_UNAVAILABLE' | 'DATABASE'
-    }
+const Domains = z.array(NetworkDomain)
+
+/** What `request_network_access` answers: the model's line and the closed card read it. */
+export const NetworkResult = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('OPEN'),
+    domains: Domains,
+    scope: z.enum(['ALREADY', 'CONVERSATION', 'COMPANY']),
+  }),
+  z.object({ kind: z.literal('REFUSED'), domains: Domains }),
+  z.object({
+    kind: z.literal('NOT_OPEN'),
+    domains: Domains,
+    reason: z.enum(['ROLE', 'AUTOMATION', 'MACHINE_UNAVAILABLE', 'DATABASE']),
+  }),
+])
+export type NetworkResult = z.infer<typeof NetworkResult>
 
 /**
  * `LIST` holds the company's and the conversation's domains; `ALL` answers while the company has the
