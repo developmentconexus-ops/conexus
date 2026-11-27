@@ -35,7 +35,7 @@ cada papel lê só o seu, com a porta única, em 2026-11-17
 2026-11-22 ([aprovação](../../approvals/registro-e-conformidade.md)).
 
 As concessões por instância entram quando o primeiro cartão precisar de instância. A conexão MCP
-tem cartão próprio quando a primeira ferramenta de IA entrar.
+entra com o cartão da etapa 3 do lago, abaixo.
 
 A Ontologia volta como a etapa do Negócio, com estudo e cartão próprios; o PR 1030, fechado sem
 mesclar em 2026-11-16 com o ramo guardado, é a fonte dela, e o cartão antigo da Ontologia,
@@ -78,6 +78,24 @@ etapas 2, 3 e 4 da tabela. Em 2026-11-26, sobre a ordem, o fundador respondeu "A
 depois A passada inteira agendada, com o cartão no pull request
 https://github.com/developmentconexus-ops/conexus/pull/1463. A tabela segue essa ordem; a etapa que
 ainda não está nela entra com o seu cartão.
+
+Em 2026-11-27, o fundador retomou o lago pela etapa 3: "Vamos retomar o Lago [...] imagina eu continuar
+no studio e conseguir utilizar o data & context [...] eu quero seguir pelo principio make it work,
+depois juntariamos no conexus completo." Às cinco perguntas do estudo Data & Context
+(`conexus-data-context-arquitetura`) ele respondeu `"D1. A D2. A D3. A D4. A onde ja roda atualmente D5. Prefiro ja ir rodando em paralelo"`:
+
+- **`D1` (a).** Um agente de dados do Mastra Studio recebe só uma URL MCP e um token pelo ambiente, sem
+  código do Conexus. Isso emenda, para os agentes que leem dados, a regra de 2026-11-27 de que no Studio
+  não entram ferramentas do Conexus.
+- **`D2` (a).** A porta MCP mora no Hub, com o `MCPServer` do `@mastra/mcp`; o token do Better Auth na
+  fase 1 e o OAuth (`@better-auth/mcp`) na fase 2; o agente usa o `MCPClient`.
+- **`D3` (a).** Dois repositórios: `conexus-studio`, com os agentes, e `conexus`, com o Hub e Data &
+  Context.
+- **`D4` (a).** O Hub do primeiro passo roda onde já roda, no servidor de São Paulo.
+- **`D5`.** A auditoria do lago peça por peça, com a lente do Mastra, corre em paralelo ao primeiro passo.
+
+O primeiro passo é a etapa 3, O agente responde pelo lago, com a porta MCP, e ela entra na frente das
+etapas que ainda não começaram. O cartão é `docs/steps/o-agente-responde-pelo-lago.md`.
 
 | Etapa | A pergunta que o fundador responde na tela | Prova com |
 | --- | --- | --- |
