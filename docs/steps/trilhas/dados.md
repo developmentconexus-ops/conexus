@@ -79,12 +79,21 @@ depois A passada inteira agendada, com o cartão no pull request
 https://github.com/developmentconexus-ops/conexus/pull/1463. A tabela segue essa ordem; a etapa que
 ainda não está nela entra com o seu cartão.
 
+Em 2026-11-27, o fundador pediu ver a cópia enquanto ela roda ("eu não consigo saber o que está
+acontecendo agora enquanto está sendo copiado fazendo os syncs entende? Como a Nekt faz?") e pôs a
+etapa A rodada que se vê depois da `T1` e antes da `T2` ("Okay"). Às cinco decisões do estudo
+`conexus-rodada-que-se-ve` ele respondeu "A recomendado, B Sim, C Sim, D Sim, E Deixar como issue": o
+placar pela fila da cópia, a cada 10 s; os estados Na fila, Copiando, Copiada, Atualizando o lago e Com
+erro; a aba Rodadas na ligação; os logs na tela depois; e a tabela com erro que não para a rodada na
+issue https://github.com/developmentconexus-ops/conexus/issues/1501.
+
 | Etapa | A pergunta que o fundador responde na tela | Prova com |
 | --- | --- | --- |
 | 1. O lago da empresa nasce e some | O Conexus cria e apaga sozinho o lago isolado de uma empresa, sem ninguém abrir o console da AWS? | Nenhum conector |
 | 2. A primeira cópia chega ao lago | Eu ligo o Sankhya numa janela só, escolho as tabelas e quando copiar, elas chegam inteiras ao lago, a mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados? | O Sankhya completo, núcleo, fiscal e contábil, e o XML da NF-e; o dublê do HubSpot na mesma bateria, para o adaptador não aprender um sistema só |
 | O conector no padrão novo, entre a parte 0 e a parte 1 da etapa 2 | O Assistente continua lendo o Sankhya e o Mercado Livre enquanto cada conector é refeito, e cada um nasce de uma definição só, com a sua skill e a classe da credencial? | O Sankhya e o Mercado Livre, um pull request por conector |
 | `T1`. O primeiro modelo vira tabela tratada | Depois de cada cópia, o Conexus grava a tabela Notas tratada e a Venda com a regra que eu liguei, e eu vejo em Dados as três camadas e de onde cada tabela veio? | O Sankhya, nas quatro tabelas de venda |
+| A rodada que se vê ([cartão](../a-rodada-que-se-ve.md), em rascunho) | Enquanto o Sankhya copia, eu vejo em Dados qual tabela está indo, quantas linhas já foram, quais já terminaram e quais esperam, e depois abro cada rodada com as tabelas dela? | O Sankhya; o dublê na gravação |
 | 3a. O arquivo chega ao lago, ligado à sua linha | Pergunto ao Assistente por uma linha e abro o arquivo ligado a ela, e quem não lê a tabela não abre o arquivo? | Uma leitura de API que baixa o arquivo (um documento ou anexo do Mercado Livre, se a prova PM1 confirmar; senão, o dublê do HubSpot) e uma coluna binária grande de banco (um anexo do Sankhya, se a sonda PS1 achar) |
 | O XML lido em linhas, depois da 3a | Pergunto ao Assistente se a nota que lançamos bate com o XML do fornecedor, e ele responde item por item, com as duas origens? | O XML da NF-e do Sankhya, guardado na etapa 2, lido em `nfe_notas` e `nfe_itens`; o dublê do conector NF-e |
 | 5. A segunda classe pelo mesmo caminho | Uma lista de um sistema de outro tipo entra pelo mesmo caminho, sem código novo no adaptador? | O Mercado Livre, a lista de vendas. O estudo usa o conector dele numa plataforma de referência e o que já rodamos |
