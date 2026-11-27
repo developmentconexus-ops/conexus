@@ -1,5 +1,6 @@
 import { FAILURES } from '@conexus/hub-api'
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { delay } from 'msw'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
@@ -245,8 +246,8 @@ test('a aba Versões lista as versões, com quem propôs e quem ligou, e a ligad
   fireEvent.click(page.getByRole('tab', { name: 'Versões' }))
   const rows = (await page.findAllByRole('listitem')).map((row) => row.textContent)
   expect(rows).toEqual([
-    'v2proposta por Bia Souza em 25/11/2026, 14:00',
-    'v1proposta por Ana Lima em 25/11/2026, 14:00, ligada por Caio Dias em 25/11/2026, 14:30',
+    'v2proposta por Bia Souza em 25/11 14:00',
+    'v1Ligadaproposta por Ana Lima em 25/11 14:00, ligada por Caio Dias em 25/11 14:30',
   ])
 })
 
@@ -269,6 +270,47 @@ test('com duas versões ligadas, a página mostra a mais nova como a ligada, a q
   expect(page.queryByText(/^Ligada: v1/)).toBeNull()
   fireEvent.click(page.getByRole('tab', { name: 'SQL' }))
   expect(await page.findByText('select nunota, vlrnota')).toBeTruthy()
+})
+
+test('a aba Versões marca só a versão ligada, e a proposta fica sem a marca', async () => {
+  const newer = version({ number: 3, hash: 'd'.repeat(64) })
+  const second = bound({ number: 2, hash: 'c'.repeat(64) })
+  openTreatment(server, {
+    path: VENDA,
+    view: {
+      list: listOf({ tables: [venda({ active: second, proposal: newer })] }),
+      models: {
+        [MODEL_ID]: modelOf({
+          versions: [newer, second, bound()],
+          active: second,
+          proposal: newer,
+        }),
+      },
+    },
+  })
+  const page = await main()
+  fireEvent.click(await page.findByRole('tab', { name: 'Versões' }))
+  const marked = (await page.findAllByRole('listitem')).filter((row) =>
+    row.textContent?.includes('Ligada'),
+  )
+  expect(marked.map((row) => row.textContent?.slice(0, 2))).toEqual(['v2'])
+})
+
+test('enquanto a página do tratamento carrega, mostra o esqueleto das abas', async () => {
+  openTreatment(server, {
+    path: VENDA,
+    answers: {
+      model: async () => {
+        await delay('infinite')
+        return undefined
+      },
+    },
+  })
+  await screen.findByRole('navigation', { name: 'Dados' })
+  await waitFor(() =>
+    expect(document.querySelectorAll('main [data-slot="skeleton"]').length).toBeGreaterThan(2),
+  )
+  expect(screen.queryByRole('tab')).toBeNull()
 })
 
 test('o modelo cujo endereço não existe diz que não existe', async () => {

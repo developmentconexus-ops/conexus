@@ -689,7 +689,9 @@ which shadcn file it was copied from; the front matter holds their values. Their
   holds the rail and the list together on the frame's graphite (V56); the right panel
   (`drawer-right`) holds a form beside the page.
   The alert dialog is Base UI's, in the drawer's dress: a click outside does not close it, Escape
-  and its buttons do, and its first field takes the focus.
+  and its buttons do, and its first field takes the focus. Its `card` size is a card in the middle
+  at every width (`containers.column`); its `page` size fills the screen under `sm` and is that card
+  above it, for a text to read before the yes (the Ligar card).
 - **Dialog.** Four sizes, as `ui/dialog.tsx` names them: `form` (`containers.column`), `page`
   (`containers.page`), `fields` (`containers.wide`) and `ask` (a card under `sm`, `fields` above);
   `object` radius, `raised`, shadow `float`; `title` heading; a footer with a hairline.

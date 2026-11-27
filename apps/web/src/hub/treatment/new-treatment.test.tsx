@@ -223,6 +223,15 @@ test('Propor mudança abre o formulário com o SQL da versão ligada e envia a n
   expect(screen.getByRole('button', { name: 'Ligar' })).toBeTruthy()
 })
 
+test('sem versão ligada, Propor mudança abre o formulário vazio, mesmo com uma proposta esperando', async () => {
+  const waiting = version({ number: 1, sql: 'select 2' })
+  const { view } = openTreatment(server, { path: `${LIST}/business/${MODEL_ID}` })
+  view.models[MODEL_ID] = modelOf({ versions: [waiting] })
+  view.list = listOf({ tables: [venda({ proposal: waiting })] })
+  const form = await openForm('Propor mudança')
+  expect(form.getByRole('textbox', { name: 'SQL' })).toHaveProperty('value', '')
+})
+
 test('uma proposta ao mesmo tempo diz que a versão já não é a de agora, e o que foi digitado fica', async () => {
   openTreatment(server, {
     ...withBound(),

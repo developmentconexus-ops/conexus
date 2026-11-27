@@ -59,6 +59,14 @@ test('Ligar abre o cartão com o SQL, as tabelas que ele lê e o que acontece de
   ).toBeTruthy()
 })
 
+test('o cartão ocupa a tela abaixo de sm, pelo tamanho page de ui/alert-dialog', async () => {
+  openTreatment(server, waiting())
+  await openCard()
+  const popup = screen.getByRole('alertdialog', { name: 'Ligar venda v2?' })
+  expect(popup.getAttribute('data-slot')).toBe('alert-dialog-content')
+  expect(popup.classList.contains('inset-0')).toBe(true)
+})
+
 test('o cartão nomeia a tabela tratada pelo rótulo, como De onde vem', async () => {
   const held = waiting(version({ ...THREE, number: 2 }))
   held.view.list = listOf({
@@ -118,7 +126,11 @@ test('com a proposta mudada por Bia, o cartão diz que ela mudou, mostra a nova 
   fireEvent.click(card.getByRole('button', { name: 'Ligar' }))
 
   const changed = within(await screen.findByRole('alertdialog', { name: 'Ligar venda v3?' }))
-  expect(changed.getByText('A proposta mudou enquanto você lia. Esta é a nova.')).toBeTruthy()
+  expect(
+    changed.getByText(
+      'A proposta mudou enquanto você lia. Esta é a nova. A rodada seguinte passa a gravar esta tabela com este SQL. Nada roda agora.',
+    ),
+  ).toBeTruthy()
   expect(changed.getByText('from tratado.sankhya_notas')).toBeTruthy()
   expect(changed.getByText('Tratado › sankhya_notas')).toBeTruthy()
   expect(changed.queryByText("where status <> 'C'")).toBeNull()

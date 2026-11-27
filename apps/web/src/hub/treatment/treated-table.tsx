@@ -156,6 +156,20 @@ function Tabbed(props: {
   )
 }
 
+/** The tabs while the page loads: the strip of tabs and the body under it. */
+function TabsSkeleton() {
+  return (
+    <div className="flex flex-col gap-md">
+      <div className="flex gap-md border-b border-line pb-sm">
+        {[0, 1, 2, 3].map((tab) => (
+          <Skeleton key={tab} className="h-6 w-20" />
+        ))}
+      </div>
+      <Skeleton className="h-24 w-full" />
+    </div>
+  )
+}
+
 function Gate(props: { children: ReactNode }) {
   return useMay().proposeTreatment ? (
     <div className="mx-auto flex w-full max-w-page flex-col gap-xl">{props.children}</div>
@@ -214,7 +228,7 @@ export function TreatedTablePage() {
   return (
     <Gate>
       <Back companyId={companyId} layer="treated" />
-      {treated.isPending && <Skeleton className="h-24 w-full" />}
+      {treated.isPending && <TabsSkeleton />}
       {treated.isError && <ReadFailure text={READ_FAILED} onRetry={() => void treated.refetch()} />}
       {treated.isSuccess && table === undefined && <Empty>{NOT_HERE_ANYMORE}</Empty>}
       {table !== undefined && <TreatedBody companyId={companyId} table={table} />}
@@ -244,11 +258,11 @@ function ModelBody(props: {
           {data.description !== '' && <p className="break-words text-text-2">{data.description}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-md">
-          {may.proposeTreatment && shown !== null && (
+          {may.proposeTreatment && (
             <ProposeChange
               companyId={companyId}
               modelId={modelId}
-              sql={shown.sql}
+              sql={active?.sql ?? ''}
               description={data.description}
             />
           )}
@@ -285,8 +299,9 @@ function ModelBody(props: {
             <List>
               {data.versions.map((version) => (
                 <Row key={version.number}>
-                  <div className="flex flex-wrap gap-x-md gap-y-xs px-sm py-md">
+                  <div className="flex flex-wrap items-center gap-x-md gap-y-xs px-sm py-md">
                     <span className="font-medium">v{version.number}</span>
+                    {version.number === active?.number && <Badge tone="success">{ACTIVE}</Badge>}
                     <span className="text-text-2">{versionLine(version)}</span>
                   </div>
                 </Row>
@@ -313,7 +328,7 @@ export function BusinessModelPage() {
   return (
     <Gate>
       <Back companyId={companyId} layer="business" />
-      {model.isPending && <Skeleton className="h-24 w-full" />}
+      {model.isPending && <TabsSkeleton />}
       {model.isError && <ReadFailure text={READ_FAILED} onRetry={() => void model.refetch()} />}
       {model.isSuccess && (
         <ModelBody companyId={companyId} modelId={modelId} data={model.data} entry={entry} />

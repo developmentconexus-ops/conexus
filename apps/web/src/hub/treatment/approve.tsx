@@ -108,7 +108,8 @@ export function Approve(props: {
       <AlertDialog open={asking} onOpenChange={(next) => next || setAsking(false)}>
         <AlertDialogContent
           title={titleOf(name, shown)}
-          description={changed ? PROPOSAL_CHANGED : APPROVE_EFFECT}
+          size="page"
+          description={changed ? `${PROPOSAL_CHANGED} ${APPROVE_EFFECT}` : APPROVE_EFFECT}
         >
           {shown !== null && (
             <>

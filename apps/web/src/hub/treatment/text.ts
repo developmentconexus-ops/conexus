@@ -1,6 +1,6 @@
 import type { ModelRunView, RunView, TableRef } from '@conexus/hub-api'
 import { TreatmentRunFailure } from '@conexus/hub-api'
-import { clockOf, dayAndHour, dayAndMonth } from '../../platform/dates.ts'
+import { clockOf, dayAndMonth, dayMonthAndHour } from '../../platform/dates.ts'
 
 /** The words of the Tratado and Negócio screens; the founder approves them at the step's end. */
 export const READ_FAILED =
@@ -119,9 +119,9 @@ export function versionLine(version: {
   approvedBy: string | null
   approvedAt: string | null
 }): string {
-  const proposed = `proposta por ${version.proposedBy} em ${dayAndHour(version.proposedAt)}`
+  const proposed = `proposta por ${version.proposedBy} em ${dayMonthAndHour(version.proposedAt)}`
   if (version.approvedBy === null || version.approvedAt === null) return proposed
-  return `${proposed}, ligada por ${version.approvedBy} em ${dayAndHour(version.approvedAt)}`
+  return `${proposed}, ligada por ${version.approvedBy} em ${dayMonthAndHour(version.approvedAt)}`
 }
 
 /** A table the SQL reads by its place: a treated table shows its label when the list gives it. */
