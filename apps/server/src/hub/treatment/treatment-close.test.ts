@@ -5,11 +5,8 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import type { TreatmentRunId } from '@conexus/hub-api'
 import { until } from '../../platform/test-until.ts'
 import { finished } from '../copies/test-lake-queue.ts'
-import type { TreatmentOn } from './test-treatment.ts'
-import { built, treatmentOn, treatResult } from './test-treatment.ts'
-import { TreatTaskResult } from './treat-task.ts'
-import type { TreatmentEnd } from './treatment-rows.ts'
-import { closedIn } from './treatment-rows.ts'
+import type { TreatmentEnd, TreatmentOn } from './test-treatment.ts'
+import { built, closedIn, TreatTaskResult, treatmentOn, treatResult } from './test-treatment.ts'
 
 const BOTH = ['tratado__sankhya_notas', 'tratado__sankhya_parceiros']
 

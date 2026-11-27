@@ -2,9 +2,9 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { PAGE_SIZE } from '@conexus/hub-api'
-import { TemplateVersion } from '../../platform/config-aws.ts'
 import type { Connector } from '../connectors/public.ts'
 import { CONNECTORS } from '../connectors/public.ts'
+import { EARLIER_TEMPLATE } from '../copies/test-lake-copy.ts'
 import type { Hub } from '../identity/test-hub.ts'
 import { ANA_OWNER, call } from '../identity/test-hub.ts'
 import { lakeWorld } from '../lake/test-lake.ts'
@@ -151,11 +151,9 @@ test('lista: a receita anterior e o lago ausente se dizem', async (t) => {
   assert.equal((await on.listed()).lake, 'NONE')
 })
 
-const EARLIER = TemplateVersion.parse('a'.repeat(64))
-
 test('F15: o lago de uma receita anterior que ainda trata não está desatualizado, e Tratar agora abre; o de uma receita fora do conjunto está', async (t) => {
-  const on = await treatmentOn(t, { treatableBefore: [EARLIER] })
-  await on.rows(`update lake.company_lake set template = $1`, [EARLIER])
+  const on = await treatmentOn(t, { treatableBefore: [EARLIER_TEMPLATE] })
+  await on.rows(`update lake.company_lake set template = $1`, [EARLIER_TEMPLATE])
   assert.equal((await on.listed()).lake, 'CURRENT')
   const now = await on.treatNow()
   assert.equal(now.statusCode, 202, now.body)

@@ -17,6 +17,11 @@ import type { Person } from '../identity/test-hub.ts'
 import { call, post } from '../identity/test-hub.ts'
 import { TreatTaskResult, TreatTaskSpec } from './treat-task.ts'
 
+/** The inside a close test reaches past the public door (T5): the one close and the task's result. */
+export type { TreatmentEnd } from './treatment-rows.ts'
+export { closedIn } from './treatment-rows.ts'
+export { TreatTaskResult }
+
 const RunRow = z.object({
   id: TreatmentRunId,
   cause: z.string(),

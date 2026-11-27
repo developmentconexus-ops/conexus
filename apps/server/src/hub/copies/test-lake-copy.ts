@@ -10,7 +10,7 @@ import {
 } from '@conexus/hub-api'
 import type { CopyTasks, LakeStacks, LakeTables, Where } from '../../platform/aws.ts'
 import { createAws, LakeId } from '../../platform/aws.ts'
-import type { TemplateVersion } from '../../platform/config-aws.ts'
+import { TemplateVersion } from '../../platform/config-aws.ts'
 import { testAws } from '../../platform/test-aws.ts'
 import { awsServer } from '../../platform/test-aws-server.ts'
 import { silent } from '../../platform/test-database.ts'
@@ -31,6 +31,9 @@ import { companyScope } from './lake-close.ts'
 import type { StartClock } from './public.ts'
 import { CopyTaskSpec } from './public.ts'
 import { TEST_LAKE } from './test-lake-run.ts'
+
+/** A recipe of the lake older than the image's, for a test of the set that still treats (F15). */
+export const EARLIER_TEMPLATE = TemplateVersion.parse('a'.repeat(64))
 
 type Options = {
   /** The Hub's clock, for "today" in the date's check. */
