@@ -169,17 +169,17 @@ opção (a) de cada uma, a recomendada. A F vem do método (delivery L28), e nã
 | G1 | U2 A receita que troca | as concessões curinga e a `RenameTable` no papel do tratamento e no teto da plataforma | `infra/aws/` | security | U1 |
 | G1 | U3 Os testes do molde | `moldTests` (a chave e o que o molde declara) e os do Sankhya | `packages/connectors/src/kernel/`, `packages/connectors/src/sankhya/` | data | — |
 | G1 | U4 A tarefa que testa e troca | os testes no projeto dbt, as ondas, a troca, `HELD` (no resultado e no Hub) e os testes no resultado | `apps/extraction/`, `apps/server/src/hub/treatment/`, `packages/hub-api/src/treatment.ts`, uma migração, `docs/reference/boundaries.md` | testing | U1, U3 |
-| G2 | U5 Os testes no Hub | os testes na versão e na conferência do SQL; a especificação; `model_run.tests`; a lista | `apps/server/src/hub/treatment/`, `packages/hub-api/src/treatment*.ts`, uma migração | data | G1 |
+| G2 | U5 Os testes no Hub | os testes na versão e na conferência do SQL; a especificação; `model_run.tests`; a lista | `apps/server/src/hub/treatment/`, `packages/hub-api/src/treatment*.ts`, `apps/web/src/hub/treatment/`, uma migração | data | G1, U6 |
 | — | U6 As permissões do aviso | a tabela `notifications.treatment_notice`, a migração, as políticas por linha e as permissões | `apps/server/src/hub/notifications/tables.ts`, `apps/server/src/hub/treatment/public-tables.ts`, `apps/server/database-grants.sql`, uma migração | data | G1 |
-| G2 | U7 O aviso | o sino e o e-mail, por passagem | `apps/server/src/hub/notifications/`, `apps/server/src/hub/treatment/`, `apps/server/src/main.ts`, `packages/hub-api/src/notifications.ts` | data | U5, U6 |
-| G2 | U8 Os testes em Dados | a aba Testes, Travada e Com aviso, os testes no formulário e no cartão Ligar, o aviso no sino | `apps/web/src/hub/treatment/`, `apps/web/src/hub/notifications/` | web | U5, U7 |
+| G2 | U7 O aviso | o sino (no Hub e na tela) e o e-mail, por passagem | `apps/server/src/hub/notifications/`, `apps/server/src/hub/treatment/`, `apps/server/src/main.ts`, `packages/hub-api/src/notifications.ts`, `apps/web/src/hub/notifications/` | data | U5, U6 |
+| G2 | U8 Os testes em Dados | a aba Testes, Travada e Com aviso, os testes no formulário e no cartão Ligar | `apps/web/src/hub/treatment/` | web | U5, U7 |
 
 Três pull requests, um commit por unidade, nesta ordem: o G1; a U6 sozinha, no pull request próprio
 que a data D11 pede; e o G2, com a U5, a U7 e a U8. A U1 não tem código de produto: o registro fica no
 `conexus-estudos` e as gravações entram com a U4.
 
 **Orçamento de código alterado** (estimado por analogia com as unidades da `T1`, sem testes nem
-gerados). U1: 0. U2: 160. U3: 220. U4: 700. U5: 850. U6: 150. U7: 500. U8: 1.050. Total:
+gerados). U1: 0. U2: 160. U3: 220. U4: 700. U5: 850. U6: 150. U7: 580. U8: 970. Total:
 3.630, dentro da delivery L2. Com a decisão E (b), entra uma unidade de cerca de 700 linhas e a etapa se divide em duas.
 
 ## Os critérios de aceite
@@ -206,17 +206,17 @@ gerados). U1: 0. U2: 160. U3: 220. U4: 700. U5: 850. U6: 150. U7: 500. U8: 1.050
 | 18 | U5 | A proposta é recusada, sem gravar: teste com coluna fora do formato ou id repetido (`TREATMENT_TEST_INVALID`, com o índice), `RELATIONSHIP` para uma tabela que a empresa não tem (`TREATMENT_INPUT_UNKNOWN`), controle de `MATCH` que não é um `SELECT` ou que lê fora de `current`, `tratado` e `negocio` (os códigos do SQL de hoje, no campo do controle), e mais de 30 testes | `treatment-routes.test.ts`, um caso por código | must |
 | 19 | U4 | O `TREAT_RESULT` com `HELD` grava o modelo como `HELD`, sem linhas; um resultado repetido não grava de novo; depois de um `HELD`, a cópia seguinte que toca uma entrada abre a rodada com o modelo travado, e o Tratar agora também | `treatment-run.test.ts`, "duas rodadas depois de um HELD" | must |
 | 20 | U5 | A lista e o modelo trazem os testes do molde e os da versão ligada, cada um com o último resultado; quando a última rodada é `HELD`, a linha diz travada, com a hora da última boa | `treatment-list.test.ts` | must |
-| 29 | U5 | A especificação mandada à tarefa leva, num modelo `tratado`, os testes do molde, com o `RELATIONSHIP` no nome que a tabela de destino tem no lago e sem o teste cujo destino a empresa não copia; num `negocio`, os da versão ligada; a lista mostra os mesmos testes | `treatment-start.test.ts`, "os testes na especificação"; `treatment-list.test.ts` | must |
-| 30 | U5 | O `TREAT_RESULT` grava os testes em `model_run.tests` nos modelos `BUILT` e `HELD`; a migração roda sobre as linhas `BUILT` já gravadas, que ficam sem testes | `treatment-run.test.ts`, "os testes gravados"; `treatment/tables.test.ts` | must |
-| 31 | U6 | O `database-grants.sql` aprovado é o do banco migrado; a política de linha de `treatment_notice` recusa ler o aviso de outra pessoa e o de outra empresa | `apps/server/src/platform/catalog.test.ts`; `apps/server/src/hub/notifications/tables.test.ts` | must |
 | 21 | U7 | O fechamento que passa um modelo de `BUILT`, ou de nunca gravado, para `HELD` grava um aviso "travou" para cada pessoa que aprova tratamento e manda um e-mail a cada uma; a volta de `HELD` para `BUILT` grava "voltou" e manda o e-mail também; o estado de antes é o último que não é `SKIPPED`, então `HELD`, `SKIPPED`, `HELD` não avisa de novo e `HELD`, `SKIPPED`, `BUILT` avisa "voltou"; duas rodadas `HELD` seguidas não avisam; um resultado repetido não avisa | `apps/server/src/hub/treatment/treatment-notice.test.ts` | must |
 | 22 | U7 | O e-mail que falha (`MAIL_UNAVAILABLE`) não desfaz o aviso nem o fechamento; a página do sino, a contagem de não lidos e o marcar como lido juntam os avisos de tratamento aos de hoje, na ordem e com a continuação de hoje (code C44), e marcar um como lido grava `read_at` só nele | `treatment-notice.test.ts`; `notifications.test.ts`, "avisos de tratamento" | must |
 | 23 | U8 | A aba Testes lista cada teste com o rótulo, o nível e o último resultado ("Passou", "Falhou: 12 linhas", "Avisou: 3 linhas", "Deu erro ao rodar", "Não rodou"); a conferência diz "Falhou: o número não bateu", sem contagem; os do molde dizem "do molde" e não se editam | `apps/web/src/hub/treatment/treated-tests.test.tsx` | must |
 | 24 | U8 | Uma tabela travada mostra "Travada: segue a versão das <HH:MM>" e o primeiro teste que falhou; uma que nunca trocou e travou mostra "Ainda sem versão: <teste> falhou"; "Trocou, com <n> aviso(s)" para os `WARN`; um `TREAT_SWAP_FAILED` mostra "A troca da tabela falhou; a versão anterior segue no ar.", e não o código | `treated-table.test.tsx`; `treated-layer.test.tsx` | must |
 | 25 | U8 | Novo tratamento e Propor mudança acrescentam, mudam e tiram testes e a conferência; cada recusa do critério 18 aparece no teste dela; o cartão Ligar lista os testes | `new-treatment.test.tsx`; `approve.test.tsx` | must |
-| 26 | U8 | O sino mostra "<tabela> travou" e "<tabela> voltou", com o link para a tabela; o de uma tabela que saiu diz "Esta tabela não existe mais" | `apps/web/src/hub/notifications/bell.test.tsx` | must |
+| 26 | U7 | O sino mostra "<tabela> travou" e "<tabela> voltou", com o link para a tabela; o de uma tabela que saiu diz "Esta tabela não existe mais" e abre a página da empresa | `apps/web/src/hub/notifications/bell.test.tsx` | must |
 | 27 | U8 | A 390 px, a aba Testes, o formulário com testes e o cartão cabem sem rolagem lateral, nos dois temas | a QA (testing T25) | should |
 | 28 | todas | O roteiro de uso, feito na nuvem pelo fundador, sem terminal | o uso | must |
+| 29 | U5 | A especificação mandada à tarefa leva, num modelo `tratado`, os testes do molde, com o `RELATIONSHIP` no nome que a tabela de destino tem no lago e sem o teste cujo destino a empresa não copia; num `negocio`, os da versão ligada; a lista mostra os mesmos testes | `treatment-start.test.ts`, "os testes na especificação"; `treatment-list.test.ts` | must |
+| 30 | U5 | O `TREAT_RESULT` grava os testes em `model_run.tests` nos modelos `BUILT` e `HELD`; a migração roda sobre as linhas `BUILT` já gravadas, que ficam sem testes | `treatment-run.test.ts`, "os testes gravados"; `treatment/tables.test.ts` | must |
+| 31 | U6 | O `database-grants.sql` aprovado é o do banco migrado; a política de linha de `treatment_notice` recusa ler o aviso de outra pessoa e o de outra empresa | `apps/server/src/platform/catalog.test.ts`; `apps/server/src/hub/notifications/tables.test.ts` | must |
 
 ## A matriz de estados
 
@@ -236,11 +236,11 @@ gerados). U1: 0. U2: 160. U3: 220. U4: 700. U5: 850. U6: 150. U7: 500. U8: 1.050
 | `TreatTaskResult.models[].tests`, `HELD` | U4 | U4 (grava o `HELD`), U5 (grava os testes), U7 (a passagem) |
 | `treatment.version.tests` | U5, ao salvar | U5 (o hash, a especificação), U8 (o formulário, o cartão, a aba) |
 | `treatment.model_run.tests` | U5 | U5 (a lista), U8 (a aba Testes, Travada) |
-| `notifications.treatment_notice` | U6 (cria); U7 (o fechamento grava; o marcar como lido grava `read_at`) | U7 (a página do sino e a contagem de não lidos), U8 (o sino) |
+| `notifications.treatment_notice` | U6 (cria); U7 (o fechamento grava; o marcar como lido grava `read_at`) | U7 (a página do sino, a contagem de não lidos e o sino) |
 | `ProposeTreatment.tests`, `VersionView.tests` (`hub-api`) | U8 (o formulário), U5 (a versão) | U5 (guarda), U8 (o cartão Ligar, a aba) |
 | `ModelRunView` com `HELD` e `tests`, `lastBuiltAt` (`hub-api`) | U5 | U8 (a aba Testes, Travada, a hora da última boa) |
 | `TestView`: o teste, a origem e o último resultado (`hub-api`) | U5 | U8 (a aba Testes) |
-| `NotificationRow` `TREATMENT_HELD`, `TREATMENT_BACK` | U7 | U8 |
+| `NotificationRow` `TREATMENT_HELD`, `TREATMENT_BACK` | U7 (o Hub) | U7 (o sino) |
 
 O desenho, a 1280 px:
 
@@ -680,7 +680,8 @@ de `infra/aws`, `packages/connectors` e `apps/server/src/hub/treatment`; a linha
 
 ## U5 Os testes no Hub
 
-**Base e modelo.** o ramo do G2, sobre o G1. Sonnet.
+**Base e modelo.** o ramo do G2, aberto sobre o `main` com a U6, porque as migrações são encadeadas.
+Sonnet.
 
 ### As linhas da tabela
 
@@ -701,6 +702,7 @@ de `infra/aws`, `packages/connectors` e `apps/server/src/hub/treatment`; a linha
 | `apps/server/src/hub/treatment/` | Muda `tables.ts`, `versions.ts`, `treatment-rows.ts`, `models.ts`, `treatment-start.ts` (a especificação com os testes) | `routes.ts`; U7 |
 | `apps/server/src/hub/connectors/copy-source.ts`, `public.ts` | Muda: `treatedLookup` devolve também os testes do molde | `apps/server/src/hub/treatment/models.ts` |
 | `packages/hub-api/src/treatment.ts`, `treatment-failures.ts` | Muda: os testes na proposta, na versão e na lista; `ModelRunView` com `HELD`; `TREATMENT_TEST_INVALID` | `apps/web/src/hub/treatment/` (U8) |
+| `apps/web/src/hub/treatment/text.ts`, `test-hub.tsx`, `new-treatment.test.tsx` | Muda só o que o contrato novo obriga para a web compilar e os testes de hoje passarem: o caso `HELD` em `runText` (`text.ts:133-145`, que fecha com `satisfies never`), os campos novos nos dados de teste e o corpo enviado, que passa a levar `tests: []` (`new-treatment.test.tsx:63`, `:220`) | U8 |
 | uma migração em `apps/server` | Cria | — |
 
 ### Os contratos que a unidade cria
@@ -744,8 +746,9 @@ As linhas de `apps/server/src` do `stack.md`: `fastify` (`fastify-best-practices
 3. **Os testes no fechamento.** Critério: 30. **O que entra:** a coluna `model_run.tests`, por
    migração, e a gravação dela em `modelRunsWritten`. **Testes:** `treatment-run.test.ts`, "os testes
    gravados". **Mutações à mão:** não gravar `tests` num `HELD`, e o caso fica vermelho.
-4. **A lista.** Critério: 20. **Mutações à mão:** `lastBuiltAt` pela última rodada, e não pela última
-   `BUILT`, e o caso da travada fica vermelho.
+4. **A lista.** Critério: 20. **O que entra:** o mínimo da web do raio vai no mesmo commit do contrato
+   que o obriga; a U8 desenha as telas. **Mutações à mão:** `lastBuiltAt` pela última rodada, e não
+   pela última `BUILT`, e o caso da travada fica vermelho.
 
 ### Como se prova
 
@@ -805,15 +808,17 @@ As linhas `drizzle-orm`, `drizzle-kit` (a skill do pacote) e PostgreSQL do `stac
 ### Como se prova
 
 Pelo banco de teste (T19): o retrato do catálogo contra o `database-grants.sql` e a leitura recusada
-pela política. Hoje o 31 falha: a tabela não existe.
+pela política. Hoje o 31 falha: a tabela não existe. Antes do pull request, a conferência: a migração
+no banco de teste, o `check-migrations`, `catalog.test.ts`, `notifications/tables.test.ts` e o
+`npm run check`.
 
 ### Parar se
 
-- O fundador não aprovar as permissões: a U7 espera.
+- O fundador não aprovar as permissões: o G2 espera.
 
 ## U7 O aviso
 
-**Base e modelo.** o ramo do G2, depois da U5, sobre o `main` com a U6. Sonnet.
+**Base e modelo.** o ramo do G2, depois da U5. Sonnet.
 
 ### As linhas da tabela
 
@@ -829,12 +834,13 @@ pela política. Hoje o 31 falha: a tabela não existe.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/notifications/` | Muda `notifications.ts` (a página do sino junta os avisos), `mail.ts`, `notification-render.mjs`; cria `treatment-notices.ts`, `treatment-email.tsx` | U7 pela rota do sino |
+| `apps/server/src/hub/notifications/` | Muda `notifications.ts` (a página do sino junta os avisos), `mail.ts`, `notification-render.mjs`; cria `treatment-notices.ts`, `treatment-email.tsx` | `bell.tsx`, pela rota do sino |
 | `apps/server/src/hub/treatment/treatment-notice.ts` | Cria: a passagem e os tipos das duas portas; `closedIn` a chama no fechamento | `treatment-rows.ts`, `notifications/` |
 | `apps/server/src/hub/treatment/treatment-rows.ts`, `treatment-run.ts` | Muda: `closedIn` grava os avisos na transação e os devolve; `close` manda os e-mails depois dela | — |
-| `apps/server/src/hub/treatment/public.ts` | Muda: as portas nas dependências; o rótulo e a existência de uma tabela, para o sino | `notifications/` |
+| `apps/server/src/hub/treatment/public.ts` | Muda: as portas nas dependências; o rótulo, o `id` do Negócio e a existência de uma tabela, para o sino | `notifications/` |
 | `apps/server/src/main.ts` | Muda: passa `noticeTreatment` e `mailTreatmentNotices` da `notifications` à `treatment`, como `:211-212` | — |
-| `packages/hub-api/src/notifications.ts` | Muda: `NotificationRow` ganha `TREATMENT_HELD` e `TREATMENT_BACK` | U8 |
+| `packages/hub-api/src/notifications.ts` | Muda: `NotificationRow` ganha `TREATMENT_HELD` e `TREATMENT_BACK`; cria `noticedTablePath` | `bell.tsx`, `notifications/` |
+| `apps/web/src/hub/notifications/bell.tsx`, `bell.test.tsx` | Muda `textOf` (`bell.tsx:66-79`) e `pathOf` (`:83-95`), que fecham sobre cada `kind`: sem os dois novos a web não compila | o cabeçalho |
 
 ### Os contratos que a unidade cria
 
@@ -853,17 +859,33 @@ export type NoticeTreatment = (tx: CommandTx, notices: readonly TreatmentNotice[
 export type MailTreatmentNotices = (notices: readonly TreatmentNotice[]) => Promise<void>
 ```
 
-`NotificationRow`:
-`{ kind: 'TREATMENT_HELD' | 'TREATMENT_BACK', layer, table, label, at }`, sem nenhum valor do dado. A
+```ts
+// packages/hub-api/src/notifications.ts: NotificationRow ganha TREATMENT_HELD e TREATMENT_BACK, cada
+// um com os campos de OfNotification (:14-18) e `table`; nenhum valor do dado
+const NoticedTable = z.discriminatedUnion('layer', [
+  z.object({ layer: z.literal('tratado'), name: LakeTableName, label: z.string() }),
+  z.object({ layer: z.literal('negocio'), name: LakeTableName, id: TreatmentModelId }),
+])
+// table: NoticedTable.nullable()                             // null: a tabela saiu
+// o dono do endereço, para o e-mail e o sino (code C26), ao lado de automationPath:
+// /companies/<c>/data/treated/<name> e /companies/<c>/data/business/<id> (pages.ts:39-40)
+export function noticedTablePath(companyId: CompanyId, table: z.infer<typeof NoticedTable>): string
+```
+
+O `<tabela>` das frases é o `label` no Tratado e o `name` no Negócio. A
 passagem é uma função só, `noticesOf(before, after)`, dona da regra "um aviso por passagem" (C26); o
-"antes" é o último estado que não é `SKIPPED`, como `models.ts:185-198`. O sino lê o rótulo e se a
-tabela ainda existe pela `treatment/public.ts`, na hora de mostrar; a de uma tabela que saiu diz "Esta
+"antes" é o último estado que não é `SKIPPED`, como `models.ts:185-198`. O sino lê o rótulo, o `id`
+do Negócio e se a tabela ainda existe pela `treatment/public.ts`, na hora de mostrar; a de uma tabela
+que saiu diz "Esta tabela não existe mais" e abre a página da empresa, como o `AUTOMATION_PAUSED`
+(`bell.tsx:122-125`). Os textos, para o fundador aprovar: "<tabela> travou"; "<tabela> voltou"; "Esta
 tabela não existe mais".
 
 ### As skills e a leitura
 
 As linhas de `apps/server/src` do `stack.md` (`fastify-best-practices`, `drizzle-orm`, `drizzle-kit`;
-`react-email` lido da fonte); `pstack:typescript-best-practices`; o guia de dados.
+`react-email` lido da fonte); para o passo 4, as de `apps/web/src` (`@tanstack/react-router`,
+`@shadcn/react`, `vitest`, `msw`, `impeccable`); `pstack:typescript-best-practices`; os guias de dados
+e web.
 
 ### A ordem do trabalho
 
@@ -879,11 +901,14 @@ As linhas de `apps/server/src` do `stack.md` (`fastify-best-practices`, `drizzle
 3. **O sino.** Critérios: 22, 26 (o lado do servidor). A página, a contagem de não lidos e o
    `markRead` juntam a terceira tabela, com a continuação de hoje (code C44). **Mutações à mão:**
    deixar a contagem de não lidos sem a tabela nova, e o caso "avisos de tratamento" fica vermelho.
+4. **O sino na tela.** Critério: 26. **Referência a seguir:** `bell.tsx:66-95`. **Testes:**
+   `bell.test.tsx`. **Mutações à mão:** montar o endereço do Negócio pelo nome, e não pelo `id`, e o 26
+   fica vermelho.
 
 ### Como se prova
 
 Pela porta do Hub: o `TREAT_RESULT` pela fila de teste e a rota do sino, com o correio de teste e o
-banco de teste (T19). Hoje o 21 falha: o fechamento não avisa ninguém.
+banco de teste (T19); o 26, pelo teste de tela. Hoje o 21 falha: o fechamento não avisa ninguém.
 
 ### Parar se
 
@@ -898,14 +923,12 @@ banco de teste (T19). Hoje o 21 falha: o fechamento não avisa ninguém.
 - **16.** `apps/web/src/hub/treatment/treated-table.tsx:267` (as abas), `treated-layer.tsx`,
   `business-layer.tsx`.
 - **17.** `new-treatment.tsx:209` (`PROPOSE_CHANGE`), `approve.tsx`.
-- O sino: `apps/web/src/hub/notifications/bell.tsx`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/hub/treatment/` | Cria `treated-tests.tsx`; muda `treated-table.tsx`, `treated-layer.tsx`, `business-layer.tsx`, `new-treatment.tsx`, `approve.tsx`, `text.ts` | as rotas de Dados |
-| `apps/web/src/hub/notifications/` | Muda `bell.tsx` | o cabeçalho |
 
 ### Os contratos que a unidade cria
 
@@ -915,7 +938,7 @@ molde"; "Passou", "Falhou: <n> linhas", "Avisou: <n> linhas", "Deu erro ao rodar
 aviso(s)"; "Esta tabela não tem testes."; "Nenhum teste"; "Acrescentar teste"; "Conferência"; "A soma
 de <coluna> bate com"; "A contagem bate com"; "Falhou: o número não bateu"; "A troca da tabela
 falhou; a versão anterior segue no ar." (o `TREAT_SWAP_FAILED` em `text.ts`, ao lado de
-`modelReasonText`, `:78-86`); "<tabela> travou"; "<tabela> voltou"; "Esta tabela não existe mais".
+`modelReasonText`, `:78-86`).
 
 ### As skills e a leitura
 
@@ -931,8 +954,6 @@ As linhas de `apps/web/src` do `stack.md`: `@tanstack/react-router` (as skills d
    último, e o 24 fica vermelho.
 3. **O formulário e o cartão.** Critério: 25. **Mutações à mão:** mandar a proposta sem os testes, e o
    25 fica vermelho.
-4. **O sino.** Critério: 26. **Mutações à mão:** dar o link da tabela ao aviso de uma tabela que saiu,
-   e o 26 fica vermelho.
 
 Cada passo com o seu teste pela tela (Testing Library e o `msw` sobre os contratos do `hub-api`).
 
