@@ -122,7 +122,7 @@ pedem caem nas mesmas peças, e fazê-las depois da unificação é fazê-las um
 | G1 | U1 A ficha sem dependência da montagem | Saem a guarda morta `Object.hasOwn` e a memória repetida no agente; os tipos da ficha param de depender de `factories.ts` | `H/spec/` | testing | a etapa 3 fechada; a decisão B |
 | G1 | U2 A montagem num salto | Os sete tradutores de um chamador entram em `agentOfSpec` e `controllerOf` | `H/spec/` | testing | U1 |
 | G2 | U3 A liberação pelo tipo | `releaseByMarks` tira o código do tipo; os três `part.release` viram uma chamada | `H/spec/`, `Ag/assistant/`, `Ag/agent-builder/`, `Ag/saved-agent/` (só a montagem) | testing | G1 |
-| G2 | U4 A cabeça da conversa | `threadHead(thread)` e um `ConversationHead` base no contrato, com o mesmo JSON | `H/spec/`, `API/` (`conversations.ts`, `assistant.ts`, `construtor.ts`, `agents.ts`), as rotas de lista dos quatro agentes | testing | U3 |
+| G2 | U4 A cabeça da conversa | `threadHead(thread)` e o `ConversationSummary` como base no contrato, com o mesmo JSON | `H/spec/`, `API/` (`conversations.ts`, `assistant.ts`, `construtor.ts`, `agents.ts`), as rotas de lista dos quatro agentes | testing | U3 |
 | G2 | U5 Criar a conversa e a rota sem transação | `createdThread` para os três fluxos de criação; as funções que abrem transação saem dos arquivos de rota dos agentes (C14) | `H/spec/`, as rotas dos três agentes de conversa | testing | U4 |
 | G3 | U6 A máquina da conversa montada num lugar | `conversationMachinesFor(spec, deps)` monta `createConversationMachines` e `machinePart`, que hoje cada agente monta | `H/machine/`, `Ag/assistant/`, `Ag/agent-builder/`, `Ag/saved-agent/` (só a montagem) | testing | G2 |
 | G3 | U7 Uma partida de máquina | A partida (`startMachine`) e o mapa da falha (`startRefused`) com um dono, usados pelas duas máquinas | `H/machine/` | testing | U6 |
@@ -131,9 +131,8 @@ pedem caem nas mesmas peças, e fazê-las depois da unificação é fazê-las um
 | G4 | U10 A raiz só monta | Os adaptadores de `S/conversations-of.ts` vão para o `public.ts` de cada agente; a explicação do harness corrigida | `S/conversations-of.ts`, `Ag/*/public.ts`, `docs/explanation/harness.md` | delivery | U9 |
 | G4 | U11 A moldura da sala e o seletor | `RoomFrame` e `ConversationPicker` em `W/harness/room/`, usados pelas três salas e pelos dois seletores | `W/harness/room/`, `W/agents/` (só as salas e os seletores) | web | G1 (nenhum arquivo em comum) |
 
-**Os grupos.** Quatro pull requests, um commit por unidade, de duas a quatro unidades cada (delivery
-L9 e o passo 4 da `conexus-scope`: "usually two or three units each"). Cada grupo fecha uma área (a
-montagem, a conversa, a máquina, os lugares), e o G4 depende da decisão A. A U11 não divide arquivo com o servidor; ela fica no G4 para
+**Os grupos.** Quatro pull requests, um commit por unidade; o porquê de não ser um só está na decisão
+6 do firstmate. A U11 não divide arquivo com o servidor; ela fica no G4 para
 não abrir um quinto pull request.
 
 **Orçamento de código alterado.** U1: 60. U2: 150. U3: 60. U4: 80. U5: 160. U6: 90. U7: 150. U8: 80
@@ -171,7 +170,7 @@ sem permissão. O QA confere cada um contra a captura de antes, a 1366 e 390 px,
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `ConversationHead.id`, `title`, `createdAt` (U4, já existem) | `threadHead` | as listas de conversa da web dos quatro agentes |
+| `ConversationSummary.id`, `title`, `createdAt` (U4, já existem) | `threadHead` | as listas de conversa da web dos quatro agentes |
 | `updatedAt` (U4, já existe no Assistente, no Construtor de agentes e no agente salvo) | `threadHead` | as listas desses três |
 | `agentId`, `draft` (U4, já existem no agente salvo) | a rota do agente salvo | a lista de conversas do agente salvo |
 
@@ -184,7 +183,7 @@ de cada uma fica a de hoje.
 | --- | --- | --- | --- | --- | --- |
 | O apagamento das conversas de um tipo (`releaseByMarks`, U3): cada sessão, o `each` da empresa, a conversa | como hoje: a segunda acha menos conversas | como hoje: o que apagou fica apagado, e a remoção seguinte acha o resto | banco fora: falha como hoje | o mesmo `*_CONVERSATIONS_RELEASED`, com o mesmo `count` | 6 |
 | A criação da conversa (`createdThread`, U5): a conversa do Mastra e a linha do agente | como hoje: a mesma tentativa devolve a mesma conversa | como hoje | banco fora: `503` como hoje | o mesmo `*_CONVERSATION_CREATED` | 8 |
-| A partida da máquina (`startMachine`, U7): `killStale` ou `find`, depois `sandbox.start` | como hoje: a promessa da sessão serve a quem chega | como hoje: a promessa zerada, e a próxima ferramenta tenta de novo | E2B fora: `MACHINE_UNAVAILABLE` com `START` ou `NETWORK` | o mesmo `MACHINE_UNAVAILABLE` e `MACHINE_STARTED`, com os campos de hoje de cada máquina | 11, 13 |
+| A partida da máquina (`startMachine`, U7): `killStale` ou `find`, depois `sandbox.start` | como hoje: a promessa da sessão serve a quem chega | como hoje: a promessa zerada, e a próxima ferramenta tenta de novo | E2B fora: `MACHINE_UNAVAILABLE` com `START` ou `NETWORK` | o mesmo `MACHINE_UNAVAILABLE` e `MACHINE_STARTED`, com os campos de hoje de cada máquina | 11, 12, 13 |
 
 ## A tabela de referência
 
@@ -219,6 +218,7 @@ C26 não a alcança. Fica para a seção 11 da arquitetura, como informação.
 | 3 | As três tabelas de conversa ficam separadas | o ganho é pequeno, e é migração | juntar numa tabela com o tipo |
 | 4 | A forma do prompt da ficha espera o `A3` | o `A3` reescreve essa parte | colapsar antes |
 | 5 | A prova de cada unidade são os pedidos gravados, e não um teste novo por tradutor | a etapa não muda comportamento; os pedidos são o que o modelo recebe (critério 1); onde o pedido não alcança (a memória, as listas, a partida que falha), um caso novo, escrito e verde antes da mudança | — |
+| 6 | Quatro pull requests, e não um | cada grupo fecha uma área que o seu revisor lê inteira (a montagem, a conversa, a máquina, os lugares), a U7 pede um revisor atento à concorrência, e o G4 espera a decisão A; L9 é um "should", e 1 270 linhas caberiam num só | juntar os grupos num pull request |
 
 ## U1 A ficha sem dependência da montagem
 
@@ -375,15 +375,16 @@ Linha 3. Ler na base: `Ag/agent-builder/routes.ts:37`, `Ag/assistant/routes.ts:1
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `H/spec/head.ts` | Cria `threadHead` | as rotas de lista dos quatro agentes |
-| `API/conversations.ts` | Exporta o `ConversationHead` base; os outros três o estendem | a web, `packages/app` |
+| `API/conversations.ts` | O `ConversationSummary` vira a base; os outros três a usam | a web, `packages/app` |
 
 ### Os contratos que a unidade cria
 
 ```ts
 // API/conversations.ts: a base é o ConversationSummary de hoje (linhas 65-70), a do Construtor de apps, sem updatedAt
 export const ConversationSummary = z.object({ id: ConversationId, title: z.string().nullable(), createdAt: z.iso.datetime() })
-// API/assistant.ts, API/construtor.ts e API/agents.ts: os campos da base espalhados na ordem de hoje de cada esquema
-// (z.object({ ...ConversationSummary.shape, ... })), para que o documento emitido não mude nem na ordem (critério 3)
+// API/assistant.ts e API/construtor.ts: z.object({ ...ConversationSummary.shape, updatedAt }), que é a ordem de hoje
+// API/agents.ts: a ordem de hoje é id, agentId, draft, title, ... (linhas 168-175): os campos da base vêm um a um,
+// ConversationSummary.shape.id, .title, .createdAt, nas posições de hoje, para que o documento não mude nem na ordem (critério 3)
 // H/spec/head.ts
 export function threadHead(thread: StorageThreadType): { id: ConversationId; title: string | null; createdAt: string; updatedAt: string }
 ```
@@ -394,7 +395,7 @@ igual (critério 3). O builder confere no `main` os esquemas de hoje e copia del
 
 ### As skills e a leitura
 
-`mastra`; a forma de `extend` em `node_modules/zod`.
+`mastra`; a forma de `.shape` em `node_modules/zod`.
 
 ### A ordem do trabalho
 
@@ -429,8 +430,9 @@ abrem transação nos arquivos de rota: `admittedTo` (`Ag/agent-builder/routes.t
 
 `createdThread(deps: { memory: MastraMemory; log: FailureLog }, input: { kind: MarkedKind; owner:
 Owner; attemptId: AttemptId; marks: Record<string, string>; logged: Record<string, string | boolean> }):
-Promise<StorageThreadType>`, onde `logged` leva os campos de log de hoje de cada fluxo (`made`,
-`traceId`, `draft`, `agentId`) em
+Promise<StorageThreadType>`, onde `logged` leva os campos de log de hoje que existem antes da criação (`traceId`, `draft`,
+`agentId`); o que só se sabe depois (o `made`, que decide se a linha sai, e o `inProject` do Assistente,
+lido de `scopeOfThread`) fica no chamador, que escreve a linha como hoje quando for o caso, em
 `H/spec/open.ts`, com o `ownThread` e a linha `*_CONVERSATION_CREATED` de cada tipo, numa tabela por
 `MarkedKind` como a da U3. O builder confere no `main` os nomes de `Owner` e do id da tentativa, e usa
 os de hoje. As funções movidas mantêm a assinatura.
@@ -479,8 +481,9 @@ ConversationMachines; part: ReturnType<typeof machinePart> }`, com o `tuning` qu
 ### A ordem do trabalho
 
 1. **Uma montagem.** Critérios: 1, 10.
-   - **Mutações à mão:** trocar o `otherTemplate` de um agente na montagem nova; o teste da máquina
-     daquele agente fica vermelho.
+   - **Mutações à mão:** nenhuma que um teste de hoje pegue: os testes de máquina montam o seu próprio
+     `MachineSpec`, e a montagem só repassa o de cada agente. A prova é o critério 1 (o pedido de cada
+     agente leva a máquina dele) e o 10.
 
 ## U7 Uma partida de máquina
 
@@ -513,7 +516,7 @@ export type StartRefused =
   | { kind: 'GONE'; cause: unknown }                 // ReattachFailed, só a da conversa: FILE_GONE
   | { kind: 'UNAVAILABLE'; reason: 'START' | 'NETWORK'; cause: unknown }
 export function startRefused(cause: unknown, machine: 'PROJECT' | 'CONVERSATION'): StartRefused
-/** Lists, starts within `startMs`, maps a failure once, logs MACHINE_STARTED or MACHINE_UNAVAILABLE with each machine's fields of today, and throws the `Failure` of its refusal. */
+/** Awaits the caller's `starting` within `startMs`, maps a failure once, logs MACHINE_STARTED or MACHINE_UNAVAILABLE with each machine's fields of today, and throws the `Failure` of its refusal; each caller still clears its own `session.ready` on a failure, as today. */
 export function startMachine(input: {
   machine: 'PROJECT' | 'CONVERSATION'
   conversationId: ConversationId
