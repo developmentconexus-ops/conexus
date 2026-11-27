@@ -240,7 +240,13 @@ export const runTreatmentNow = defineOperation({
   bodyLimit: 1024,
   input: { params: InCompany },
   success: { status: 202, body: z.object({ run: TreatmentRunId }) },
-  failures: [...READ, 'ALREADY_RUNNING', 'LAKE_NOT_READY', 'NOTHING_TO_TREAT'],
+  failures: [
+    ...READ,
+    'ALREADY_RUNNING',
+    'LAKE_NOT_READY',
+    'NOTHING_TO_TREAT',
+    'TREATMENT_WAITING_COPY',
+  ],
 })
 
 export const StopTreatmentRunAnswer = z.object({ stopping: z.boolean() })

@@ -91,7 +91,9 @@ export const LAKE_TEMPLATE = new URL('../../../../infra/aws/lake.template.json',
  * The recipes before this image's whose lakes already have `tratado` and `negocio`: whoever changes
  * `lake.template.json` adds the old sha-256 here, so a lake of it still treats (card F15).
  */
-const TREATABLE_BEFORE: readonly TemplateVersion[] = []
+const TREATABLE_BEFORE: readonly TemplateVersion[] = [
+  'a63dcd7263a23c9444ad0b07de74bf0655cf6c86da2789257b3140e33180393d',
+].map((sha) => TemplateVersion.parse(sha))
 
 export function treatableWith(version: TemplateVersion): ReadonlySet<TemplateVersion> {
   return new Set([version, ...TREATABLE_BEFORE])

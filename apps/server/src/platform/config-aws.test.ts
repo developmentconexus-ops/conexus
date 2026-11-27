@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { AwsEnvironment, awsConfigOf } from './config-aws.ts'
+import { AwsEnvironment, awsConfigOf, TemplateVersion, treatableWith } from './config-aws.ts'
 import { TEST_AWS_ACCOUNT, TEST_AWS_REGION } from './test-aws.ts'
 import { serveEnvironment, unreachableDatabaseUrl } from './test-database.ts'
 
@@ -27,4 +27,11 @@ test('configuração: as saídas da plataforma da cópia entram na configuraçã
   ] as const) {
     refusal({ ...env, [name]: value }, name)
   }
+})
+
+test('F15: o lago nascido da receita da v0.24.136 segue tratando depois que a receita muda', () => {
+  const published = TemplateVersion.parse(
+    'a63dcd7263a23c9444ad0b07de74bf0655cf6c86da2789257b3140e33180393d',
+  )
+  assert.equal(treatableWith(TemplateVersion.parse('b'.repeat(64))).has(published), true)
 })

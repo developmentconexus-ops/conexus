@@ -90,6 +90,12 @@ function refOf(layer: TableRef['layer'], table: LakeTableName) {
   return `${layer}.${table}`
 }
 
+export async function tablesAwaitingFirstCopy(tx: ReadTx): Promise<TableRef[]> {
+  return (await markedTablesOf(tx))
+    .filter((table) => !table.appliedToCurrent)
+    .map((table) => TableRef.parse({ layer: 'current', table: table.name }))
+}
+
 export async function treatModelsOf(
   reads: TreatmentReads,
   tx: ReadTx,

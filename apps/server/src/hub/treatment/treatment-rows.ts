@@ -8,9 +8,9 @@ import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
 import { companiesWithConnections } from '../connectors/public.ts'
 import { companyScope } from '../copies/public.ts'
 import type { TreatmentReads } from './models.ts'
-import { treatModelsOf, treatmentLakeOf } from './models.ts'
+import { tablesAwaitingFirstCopy, treatModelsOf, treatmentLakeOf } from './models.ts'
 import type { LastStatus } from './select.ts'
-import { selection } from './select.ts'
+import { awaitingFirstCopy, selection } from './select.ts'
 import { treatmentModel, treatmentModelRun, treatmentRun, treatmentVersion } from './tables.ts'
 import type { TreatTaskResult } from './treat-task.ts'
 import { ModelName, modelNameOf } from './treat-task.ts'
@@ -28,6 +28,7 @@ type AfterCopy = (
 export type OpenAnswer =
   | Awaited<ReturnType<AfterCopy>>
   | Readonly<{ kind: 'ALREADY_RUNNING'; run: TreatmentRunId }>
+  | Readonly<{ kind: 'WAITING_COPY' }>
 
 /** How a run ends: its task's result, its task gone without one, its start failed, or a stop with no task. */
 export type TreatmentEnd =
@@ -55,8 +56,7 @@ async function lastOf(tx: ReadTx, lakeId: LakeId): Promise<LastStatus> {
   return new Map(found.rows.map((row) => Row.parse(row)).map((row) => [row.name, row.status]))
 }
 
-/** What a run of the company asks for now: every model, or those `selection` takes for the changed tables. */
-async function selectOf(
+async function runnableOf(
   deps: TreatmentReads,
   tx: ReadTx,
   companyId: CompanyId,
@@ -65,11 +65,13 @@ async function selectOf(
   const lake = await treatmentLakeOf(deps, tx, companyId)
   if (lake.state !== 'CURRENT' || lake.lakeId === null) return null
   const models = await treatModelsOf(deps, tx, companyId)
-  const select =
+  const asked =
     changed === 'ALL'
       ? models.map((model) => model.name)
       : selection(models, changed, await lastOf(tx, lake.lakeId))
-  return { lakeId: lake.lakeId, select }
+  const held = awaitingFirstCopy(models, await tablesAwaitingFirstCopy(tx))
+  const select = asked.filter((name) => !held.has(name))
+  return { lakeId: lake.lakeId, select, allWaiting: asked.length > 0 && select.length === 0 }
 }
 
 async function inserted(
@@ -175,8 +177,9 @@ export async function openIn(
   companyId: CompanyId,
   ask: OpenAsk,
 ): Promise<OpenAnswer | null> {
-  const chosen = await selectOf(deps, tx, companyId, ask.cause === 'NOW' ? 'ALL' : ask.changed)
+  const chosen = await runnableOf(deps, tx, companyId, ask.cause === 'NOW' ? 'ALL' : ask.changed)
   if (chosen === null) return { kind: 'LAKE_OUTDATED' }
+  if (chosen.allWaiting && ask.cause === 'NOW') return { kind: 'WAITING_COPY' }
   if (chosen.select.length === 0) return { kind: 'NOTHING_TO_TREAT' }
   const row = { companyId, lakeId: chosen.lakeId, cause: ask.cause, select: chosen.select }
   const run = await inserted(tx, row)
@@ -192,7 +195,7 @@ async function nextOf(
 ): Promise<TreatmentRunId | null> {
   const changed = Pending.parse(pending)
   if (changed.length === 0) return null
-  const chosen = await selectOf(deps, tx, companyId, changed)
+  const chosen = await runnableOf(deps, tx, companyId, changed)
   if (chosen === null || chosen.select.length === 0) return null
   return inserted(tx, { companyId, lakeId: chosen.lakeId, cause: 'COPY', select: chosen.select })
 }

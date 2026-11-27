@@ -36,4 +36,9 @@ export const TREATMENT_FAILURES = {
   },
   ALREADY_RUNNING: { ...USER_409, phrase: 'Uma rodada de tratamento já está em curso.' },
   NOTHING_TO_TREAT: { ...USER_409, phrase: 'A empresa ainda não tem tratamento para rodar.' },
+  TREATMENT_WAITING_COPY: {
+    ...USER_409,
+    phrase:
+      'A primeira cópia das tabelas ainda não terminou. O tratamento roda quando ela terminar.',
+  },
 } as const satisfies Record<string, FailureRow>

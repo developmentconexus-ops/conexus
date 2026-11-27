@@ -136,11 +136,14 @@ export async function treatmentOn(t: TestContext, options: Options = {}) {
               (select count(*)::int from treatment.run) as runs`,
     )
   }
+  function markCopiedWithoutRun(...names: string[]) {
+    return on.rows(`update copies.lake_table set rows = 3 where name = any($1)`, [names])
+  }
   const runs = runsOf(on, connection, base)
   return {
     ...on,
     ...{ base, models, propose, proposed, change, changed, approve, approved, listed, read, saved },
-    ...{ connection, ...runs },
+    ...{ connection, markCopiedWithoutRun, ...runs },
   }
 }
 
