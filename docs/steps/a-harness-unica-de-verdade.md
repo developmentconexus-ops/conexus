@@ -58,7 +58,8 @@ Assistente (leitura de PDF, comandos longos) mexem então na partida uma vez, e 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página e responde às duas decisões
 abaixo. No fim: faz o roteiro e diz o que viu. Não há texto novo de tela para aprovar.
 
-**A visão.** "Uma lógica por capacidade do Conexus" ("Isso é do conexus", 2026-11-12). "Pra mim eles
+**A visão.** "Cada capacidade do Conexus tem uma lógica só, que serve toda conversa e toda tela, e
+nunca uma cópia por Solution." Nas suas palavras: "Isso é do conexus" (2026-11-12). "Pra mim eles
 teriam que ter a mesma harness" (2026-11-24). "sem gambiarra, código bem feito, fluxo coeso"
 (2026-10-16). A etapa não cruza nenhuma linha da `VISION.md`: não muda o que uma pessoa vê.
 
@@ -88,12 +89,12 @@ recomendação de cada uma; se você escolher outra, a unidade que ela toca muda
 **A. As três pastas do harness fora da árvore que você aprovou em 2026-11-23** ("Aprovado entao").
 São `network/` (a lista de saída da máquina, que a etapa 3 criou), `copy-clock/` (o relógio da cópia
 do lago, um workflow do Mastra) e `schema/` (o esquema `builder` do banco, que os três agentes de
-conversa usam). Exemplo: quem procura "a rede da máquina" abre `harness/machine/` e não acha; ela
-mora ao lado, em `harness/network/`.
+conversa usam). Exemplo: quem procura "a rede da máquina" abre `harness/machine/` e acha só quem a aplica
+(`network.ts`); as listas, as rotas e as tabelas moram ao lado, em `harness/network/`.
 
 | Opção | O que acontece |
 | --- | --- |
-| a) **Recomendada, à espera da sua palavra** | `copy-clock` vai para `harness/mastra/`, porque é um workflow do Mastra e só pode morar onde o Mastra mora; `harness/mastra/` já guarda o agendador e a retenção. `network` vai para `harness/machine/network/`, porque é a lista de saída da máquina, e a ferramenta que pede um domínio vai para `harness/tools/`, porque três lugares a usam. `schema` entra na sua lista como peça compartilhada. A U8 faz as mudanças. |
+| a) **Recomendada, à espera da sua palavra** | `copy-clock` vai para `harness/mastra/`, porque é um workflow do Mastra e só pode morar onde o Mastra mora; `harness/mastra/` já guarda o agendador e a retenção. `network` vai para `harness/machine/network/`, junto com o `harness/machine/network.ts` que a aplica, porque é a lista de saída da máquina, e a ferramenta que pede um domínio vai para `harness/tools/`, porque três lugares a usam. `schema` entra na sua lista como peça compartilhada. A U8 faz as mudanças. |
 | b) | As três pastas entram na lista como estão. A U8 sai, e a U10 só corrige a árvore na explicação do harness. |
 | c) | `copy-clock` sai do harness para uma pasta da trilha Dados. Isso pede mudar a regra de camada que só deixa o Mastra no harness e nos agentes, numa mudança de método à parte (delivery L20). |
 
@@ -104,11 +105,11 @@ assunto, em árvores planas, e não decidem esta pergunta (a linha 6 da tabela).
 rede e o navegador), o `A2` e o `A3`; os cartões do `A2` e do `A3` estão aprovados e esperam. Uma
 etapa de refatoração é uma etapa do trilho (delivery L1), então entrar na fila é decisão sua.
 Exemplo: o `A3` muda a ficha e a montagem (`H/spec/spec.ts`, `factories.ts`, `mount.ts`) e o espaço da
-máquina (`H/machine/workspace.ts`), as mesmas peças que os grupos G1 e G3 enxugam.
+máquina (`H/machine/workspace.ts`), as mesmas peças que esta etapa enxuga na montagem e na máquina.
 
 | Opção | O que acontece |
 | --- | --- |
-| a) **Recomendada, à espera da sua palavra** | Entra logo depois do fechamento da etapa 3, antes do `A2`. O `A2`, o `A3` e o próximo cartão do Construtor de apps são construídos sobre a base mais curta, e o builder de cada um relê as linhas que o cartão dele cita, como todo build faz. Custa ao `A2` a espera desta etapa, cerca de 1 400 linhas sem mudança de tela. |
+| a) **Recomendada, à espera da sua palavra** | Entra logo depois do fechamento da etapa 3, antes do `A2`. O `A2`, o `A3` e o próximo cartão do Construtor de apps são construídos sobre a base mais curta, e o builder de cada um relê as linhas que o cartão dele cita, como todo build faz. Custa ao `A2` a espera desta etapa, cerca de 1 300 linhas sem mudança de tela. |
 | b) | Entra depois do `A3`. O `A2` e o `A3` entram como estão; esta etapa relê as próprias linhas depois deles, e o próximo cartão do Construtor de apps espera por ela. |
 
 Veredito: ordem, não remendo. Recomendo (a) porque as mudanças que o `A3` e o Construtor de apps
@@ -118,25 +119,25 @@ pedem caem nas mesmas peças, e fazê-las depois da unificação é fazê-las um
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 | U1 A ficha sem dependência da montagem | Saem a guarda morta `Object.hasOwn`, a memória repetida no agente e o `switched` do tipo do modelo; os tipos da ficha param de depender de `factories.ts` | `H/spec/`, `H/routes/changes.ts`, a ficha de três agentes (só a constante `MODEL`) | testing | a etapa 3 fechada; a decisão B |
+| G1 | U1 A ficha sem dependência da montagem | Saem a guarda morta `Object.hasOwn` e a memória repetida no agente; os tipos da ficha param de depender de `factories.ts` | `H/spec/` | testing | a etapa 3 fechada; a decisão B |
 | G1 | U2 A montagem num salto | Os sete tradutores de um chamador entram em `agentOfSpec` e `controllerOf` | `H/spec/` | testing | U1 |
 | G2 | U3 A liberação pelo tipo | `releaseByMarks` tira o código do tipo; os três `part.release` viram uma chamada | `H/spec/`, `Ag/assistant/`, `Ag/agent-builder/`, `Ag/saved-agent/` (só a montagem) | testing | G1 |
 | G2 | U4 A cabeça da conversa | `threadHead(thread)` e um `ConversationHead` base no contrato, com o mesmo JSON | `H/spec/`, `API/` (`conversations.ts`, `assistant.ts`, `construtor.ts`, `agents.ts`), as rotas de lista dos quatro agentes | testing | U3 |
 | G2 | U5 Criar a conversa e a rota sem transação | `createdThread` para os três fluxos de criação; as funções que abrem transação saem dos arquivos de rota dos agentes (C14) | `H/spec/`, as rotas dos três agentes de conversa | testing | U4 |
 | G3 | U6 A máquina da conversa montada num lugar | `conversationMachinesFor(spec, deps)` monta `createConversationMachines` e `machinePart`, que hoje cada agente monta | `H/machine/`, `Ag/assistant/`, `Ag/agent-builder/`, `Ag/saved-agent/` (só a montagem) | testing | G2 |
-| G3 | U7 Uma partida de máquina | A partida (`startMachine`), o mapa da falha e a abertura do kit (`kitOf`) com um dono, usados pelas duas máquinas; o `neverAsks` vira campo do `MachineSpec` | `H/machine/`, `Ag/app-builder/runs/ports.ts` | testing | U6 |
+| G3 | U7 Uma partida de máquina | A partida (`startMachine`) e o mapa da falha (`startRefused`) com um dono, usados pelas duas máquinas | `H/machine/` | testing | U6 |
 | G4 | U8 As pastas soltas | Pela decisão A: `copy-clock`, `network` e a ferramenta da rede nos lugares da opção escolhida | `H/copy-clock/`, `H/network/`, `H/mastra/`, `H/machine/`, `H/tools/`, os importadores, `scripts/record-tools.ts`, `scripts/rerun-never.json` | delivery | G3; a decisão A |
 | G4 | U9 As peças de um agente só | `search.ts` e `projectsOf` vão para `Ag/assistant/` | `H/tools/company/`, `H/tools/public.ts`, `Ag/assistant/` | testing | U8 |
 | G4 | U10 A raiz só monta | Os adaptadores de `S/conversations-of.ts` vão para o `public.ts` de cada agente; a explicação do harness corrigida | `S/conversations-of.ts`, `Ag/*/public.ts`, `docs/explanation/harness.md` | delivery | U9 |
 | G4 | U11 A moldura da sala e o seletor | `RoomFrame` e `ConversationPicker` em `W/harness/room/`, usados pelas três salas e pelos dois seletores | `W/harness/room/`, `W/agents/` (só as salas e os seletores) | web | G1 (nenhum arquivo em comum) |
 
-**Os grupos.** Quatro pull requests, um commit por unidade (delivery L9). Um só caberia no orçamento
-de L2, mas cada grupo fecha uma área que o seu revisor lê inteira (a montagem, a conversa, a máquina,
-os lugares), e o G4 depende da decisão A. A U11 não divide arquivo com o servidor; ela fica no G4 para
+**Os grupos.** Quatro pull requests, um commit por unidade, de duas a quatro unidades cada (delivery
+L9 e o passo 4 da `conexus-scope`: "usually two or three units each"). Cada grupo fecha uma área (a
+montagem, a conversa, a máquina, os lugares), e o G4 depende da decisão A. A U11 não divide arquivo com o servidor; ela fica no G4 para
 não abrir um quinto pull request.
 
-**Orçamento de código alterado.** U1: 60. U2: 150. U3: 60. U4: 80. U5: 160. U6: 90. U7: 250. U8: 80
-(imports). U9: 40. U10: 150. U11: 250. Total da etapa: cerca de 1 370 linhas, sem testes nem gerados,
+**Orçamento de código alterado.** U1: 60. U2: 150. U3: 60. U4: 80. U5: 160. U6: 90. U7: 150. U8: 80
+(imports). U9: 40. U10: 150. U11: 250. Total da etapa: cerca de 1 270 linhas, sem testes nem gerados,
 com mais linhas apagadas que acrescentadas.
 
 ## Os critérios de aceite
@@ -145,18 +146,18 @@ Toda unidade fecha também com os critérios 1 a 3.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | todas | Os doze pedidos gravados ao modelo (`Ag/*/requests/*.snapshot`) ficam iguais depois da normalização de `requestOf` (`H/spec/test-request.ts:85-91`); um pedido que muda faz o teste falhar sem `--test-update-snapshots` | todos os casos de `Ag/assistant/request.test.ts`, `Ag/assistant/browser.test.ts`, `Ag/app-builder/request.test.ts`, `Ag/agent-builder/request.test.ts` e `Ag/saved-agent/request.test.ts`; e `git diff --exit-code -- 'apps/server/src/agents/*/requests/*.snapshot'` | must |
+| 1 | todas | Os doze pedidos gravados ao modelo (`Ag/*/requests/*.snapshot`) ficam iguais depois da normalização de `requestOf` (`H/spec/test-request.ts:49-82`), comparados por `sameRequests` (`:85-91`); um pedido que muda faz o teste falhar sem `--test-update-snapshots` | todos os casos de `Ag/assistant/request.test.ts`, `Ag/assistant/browser.test.ts`, `Ag/app-builder/request.test.ts`, `Ag/agent-builder/request.test.ts` e `Ag/saved-agent/request.test.ts`; e `git diff --exit-code -- 'apps/server/src/agents/*/requests/*.snapshot'` | must |
 | 2 | todas | O grafo de imports não ganha violação nem ciclo; a regra `mastra-only-in-harness-and-agents` e a `hub-does-not-import-harness-or-agents` seguem recusando o que recusam hoje | `npm run deps` | must |
-| 3 | todas | O documento OpenAPI emitido não muda | `npm run openapi` na base e na unidade, cada saída num arquivo fora do repositório, e `diff` entre os dois sem diferença | must |
-| 4 | U1 | Numa conversa do Assistente, do Construtor de agentes e do agente salvo, o segundo turno manda ao modelo a mensagem do primeiro, com a memória posta só no controller | um caso novo, escrito antes da mudança e verde hoje, em `Ag/assistant/request.test.ts`, `Ag/agent-builder/request.test.ts` e `Ag/saved-agent/request.test.ts`: "o segundo turno leva o primeiro" | must |
-| 5 | U1 | A troca de modelo escreve a mesma linha `*_MODEL_SET` de hoje, uma por troca, em cada agente que troca de modelo | `H/spec/lines.test.ts`, os casos de `_MODEL_SET` (linhas 59-82); `Ag/assistant/routes.test.ts`, "o modelo: a dona troca o modelo" (linha 223) | must |
-| 6 | U3 | Apagar a empresa, a pessoa ou o Projeto apaga as conversas de cada agente e escreve o mesmo código `*_CONVERSATIONS_RELEASED` de hoje, por agente | `Ag/assistant/delete.test.ts`, `Ag/assistant/release.test.ts`, `Ag/saved-agent/release.test.ts`, `Ag/saved-agent/conversation.test.ts` ("a remoção", linhas 253 e 268), `Ag/agent-builder/routes.test.ts` (o `CONSTRUTOR_CONVERSATIONS_RELEASED`) | must |
+| 3 | todas | O documento OpenAPI emitido não muda, nem na ordem dos campos | `npm run openapi` na base e na unidade, cada saída num arquivo fora do repositório, e `diff` entre os dois sem diferença | must |
+| 4 | U1 | Numa conversa do Assistente, do Construtor de agentes, do agente salvo e do Construtor de apps, o segundo turno manda ao modelo a mensagem do primeiro, com a memória posta só no controller | um caso novo, escrito antes da mudança e verde hoje, em `Ag/assistant/request.test.ts`, `Ag/agent-builder/request.test.ts`, `Ag/saved-agent/request.test.ts` e `Ag/app-builder/request.test.ts`: "o segundo turno leva o primeiro" | must |
+| 5 | U2 | A troca de modelo escreve a mesma linha `*_MODEL_SET` de hoje, uma por troca, em cada agente que troca de modelo | `H/spec/lines.test.ts`, os casos de `_MODEL_SET` (linhas 59-82); `Ag/assistant/routes.test.ts`, "o modelo: a dona troca o modelo" (linha 223) | must |
+| 6 | U3 | Apagar a empresa, a pessoa ou o Projeto apaga as conversas de cada agente e escreve o mesmo código `*_CONVERSATIONS_RELEASED` de hoje, por agente | o código: `H/spec/lines.test.ts`, "soltar as conversas: tirar uma pessoa com uma conversa de cada tipo dá a linha de cada tipo" (linha 22); o apagamento: `Ag/assistant/delete.test.ts`, `Ag/assistant/release.test.ts`, `Ag/saved-agent/release.test.ts`, `Ag/saved-agent/conversation.test.ts` ("a remoção", linhas 253 e 268) | must |
 | 7 | U4 | As listas de conversa dos quatro agentes respondem o mesmo JSON de hoje, com o título vazio como `null` | `Ag/assistant/routes.test.ts`, "a lista" (linha 159); um caso novo, escrito antes da mudança, de lista no Construtor de agentes, no agente salvo e no histórico do Construtor de apps, que compara o JSON inteiro; o teste de declaração de `packages/app` | must |
 | 8 | U5 | Criar uma conversa nos três agentes responde como hoje, e quem não pode gerir o Projeto recebe a mesma recusa de hoje | `Ag/agent-builder/routes.test.ts`, `Ag/saved-agent/conversation.test.ts` ("abrir", linha 41), `Ag/assistant/create.test.ts` | must |
-| 9 | U5 | Nenhum arquivo de rota de agente abre transação | `grep -nE "database\.read\(\|\.command\(" apps/server/src/agents/*/*routes.ts` não acha nada; hoje acha cinco linhas | must |
+| 9 | U5 | Nenhum arquivo de rota de agente abre transação | `grep -n -e 'database.read(' -e 'database.command(' apps/server/src/agents/*/*routes.ts` não acha nada; hoje acha cinco linhas (`agent-builder/routes.ts:29`, `saved-agent/conversation-routes.ts:46`, `assistant/routes.ts:154`, `assistant/company-memory-routes.ts:28` e `:45`) | must |
 | 10 | U6 | As três máquinas de conversa ligam, rodam e se apagam como hoje, com a rede da empresa | `Ag/assistant/machine.test.ts`, `Ag/saved-agent/machine.test.ts`, `Ag/agent-builder/draft-machine.test.ts`, `H/machine/machine-network.test.ts` | must |
-| 11 | U7 | A partida que falha escreve `MACHINE_UNAVAILABLE` com o mesmo motivo e os mesmos campos nas duas máquinas; a máquina do Projeto cujo Git pede restauração devolve `GIT_RESTORE_NEEDED`; a conversa cuja máquina sumiu devolve `FILE_GONE`; depois de uma partida que falha, a seguinte tenta de novo | `H/machine/machine.test.ts`, "o Git a restaurar passa pelo início da máquina" (linha 266); `H/machine/machine-session.test.ts`, `machine-sync.test.ts`, `Ag/app-builder/closure.test.ts`; um caso novo em `H/machine/conversation-lane.test.ts`, escrito antes da mudança: "a partida que falha e a seguinte que liga" | must |
-| 12 | U7 | Num agente salvo com o Computador, cuja sessão pergunta antes de uma escrita, as ferramentas da máquina rodam sem perguntar, como hoje | um caso novo em `Ag/saved-agent/machine.test.ts`, escrito antes da mudança: "a ferramenta da máquina não pede aprovação" | must |
+| 11 | U7 | A partida que falha escreve `MACHINE_UNAVAILABLE` com o motivo e os campos de hoje de cada máquina; a máquina do Projeto cujo Git pede restauração devolve `GIT_RESTORE_NEEDED`; a conversa cuja máquina sumiu devolve `FILE_GONE`; depois de uma partida que falha, a seguinte tenta de novo | `H/machine/machine.test.ts`, "o Git a restaurar passa pelo início da máquina" (linha 266); `H/machine/machine-session.test.ts`, `machine-sync.test.ts`, `Ag/app-builder/closure.test.ts`; `H/machine/conversation-lane.test.ts`, os casos de `FILE_GONE` (linhas 111 e 119); um caso novo em `conversation-lane.test.ts`, escrito antes da mudança: "a partida que falha e a seguinte que liga" | must |
+| 12 | U7 | A partida que passa do prazo responde `MACHINE_UNAVAILABLE`, e a máquina da conversa que liga depois é pausada, porque a pausa espera a partida em curso | `H/machine/conversation-lane.test.ts`, "a partida que passa do prazo" (linha 151) | must |
 | 13 | U7 | No E2B de verdade, a máquina da conversa liga e roda um comando | `H/machine/machine-e2b.test.ts`, os casos opt-in (com a chave da instalação); a máquina do Projeto se prova no passo 4 do roteiro | should |
 | 14 | U8 | O relógio da cópia agenda e roda como hoje; a ferramenta da rede pede e libera como hoje | `H/copy-clock/clock.test.ts` e os testes de `H/network/` (`network-store`, `network-routes`, `network-tool`, `network-tool-answer`), nos lugares novos; `npm run rerun-list` | must |
 | 15 | U10 | O Hub monta e desmonta na mesma ordem; a explicação do harness diz a árvore de hoje | `S/boot.test.ts`, `S/main.test.ts`, `npm run docs` | must |
@@ -173,11 +174,10 @@ sem permissão. O QA confere cada um contra a captura de antes, a 1366 e 390 px,
 | `ConversationHead.id`, `title`, `createdAt` (U4, já existem) | `threadHead` | as listas de conversa da web dos quatro agentes |
 | `updatedAt` (U4, já existe no Assistente, no Construtor de agentes e no agente salvo) | `threadHead` | as listas desses três |
 | `agentId`, `draft` (U4, já existem no agente salvo) | a rota do agente salvo | a lista de conversas do agente salvo |
-| `MachineSpec.neverAsks` (U7) | o `MachineSpec` de cada agente | a abertura do workspace (`H/machine/workspace.ts:32`) |
 
 ## A tabela de falhas
 
-Nenhuma gravação ou comando novo. Cada linha é uma gravação que uma unidade move de lugar; a resposta
+Nenhuma gravação ou comando novo, e nenhuma tabela, coluna ou migração nova. Cada linha é uma gravação que uma unidade move de lugar; a resposta
 de cada uma fica a de hoje.
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio (depois de uma instrução ou chamada) | Uma dependência fora (banco ou terceiro) | O que o processo imprime | Critérios |
@@ -196,7 +196,7 @@ script rodou no pacote instalado).
 | 1 | A montagem | U1, U2 | a ficha e a montagem (etapa 1 do harness) | `H/spec/mount.ts:24-195`, `H/spec/factories.ts:56-155` | `M/mastracode/sdk/src/index.ts:1368` (`createCodingAgent`), `:1804` (`new AgentController`), **lido** | um objeto de config e um salto até o `new Agent` | embrulhado: a ficha fica, os tradutores de um chamador saem | — | — | — |
 | 2 | A memória do agente | U1 | — | `H/spec/mount.ts:177` (`memory: memory ?? threads`) | `NM/agent-controller-BhkzVgCi.js:8237`, `:8628-8635`, `:8733` (`propagateRuntimeServicesToAgent`), **provado**; a memória só no controller em `M/mastracode/sdk/src/index.ts:1820`, **lido** | o controller põe a sua memória no agente a cada `getCurrentAgent` | nativo | `@mastra/core` 1.83.0: o script `memory.mjs` do estudo (`before false`, `after false false`, `propagated true true`); o critério 4 o prova pela porta | — | — |
 | 3 | A conversa: liberar, cabeça, criar | U3, U4, U5 | a sala única (etapa 2 do harness) | `H/spec/release.ts:44-66`; as cinco cópias de `thread.title` com o vazio como `null` (U4); `H/spec/open.ts` | `M/mastracode/factory/src/factory.ts:1680-1830` (um dono da sessão), **lido** | um dono por conceito da conversa | nativo: a memória e o controller do Mastra por baixo; a repetição sai | — | — | `H/spec/head.ts` |
-| 4 | A máquina | U6, U7 | "a mesma harness" (2026-11-24) | `H/machine/machines.ts:129-147`, `:222-251` e `H/machine/conversation.ts:171-206`, `:245-278` | Factory `M/mastracode/factory/src/workspace.ts:1829-1833`, **lido** | uma máquina por sessão, de uma forma só | embrulhado: uma partida e uma abertura, e o que é de uma máquina só fica nela | — | — | `H/machine/start.ts` |
+| 4 | A máquina | U6, U7 | "a mesma harness" (2026-11-24) | `H/machine/machines.ts:129-147`, `:222-251` e `H/machine/conversation.ts:171-206`, `:245-278` | Factory `M/mastracode/factory/src/workspace.ts:1829-1833`, **lido** | uma máquina por sessão, de uma forma só | embrulhado: uma partida, e o que é de uma máquina só fica nela | — | — | `H/machine/start.ts` |
 | 5 | A moldura da sala na web | U11 | a sala única (etapa 2) | `W/agents/assistant/conversation.tsx`, `W/agents/saved-agent/agent-chat.tsx`, `W/agents/agent-builder/construtor-chat.tsx`; os seletores em `W/agents/app-builder/conversation-switch.tsx` e `W/agents/saved-agent/test-panel.tsx` | `M/mastracode/factory-ui/src/ui/domains/chat/`, **lido** | uma moldura de conversa, e cada domínio põe o seu | embrulhado: uma moldura | — | — | `W/harness/room/frame.tsx`, `W/harness/room/picker.tsx` |
 | 6 | A árvore | U8, U9, U10 | 2026-11-23 ("Aprovado entao"); a decisão 1 do firstmate na etapa 3 (`H/network/` à parte) | `H/network/`, `H/copy-clock/`, `H/schema/`; `S/conversations-of.ts` | `M/packages/core/src`, `M/mastracode/sdk/src`, Onyx `backend/onyx`, LibreChat `packages/api/src`, **lido** | árvores planas por assunto; a ferramenta é irmã do agente | nativo: a árvore é a regra do Conexus, mais estrita que as três, e o grafo medido a cumpre | — | A | — |
 | 7 | O fim do turno | fica de fora: um dono só pede um contrato novo (a página) | 0049 (a fila); a porta `TurnEnds` (emenda de 2026-11-24 da etapa 2) | `H/spec/turns.ts:116-130` e `H/turn/end.ts:312-360`, dois ouvintes de `agent_end` e de `onSessionDeleted`; `TurnEnds` (`H/turn/end.ts:146-156`) não tem o soltar da conta | os eventos de `AgentController` (`subscribe`, `onSessionDeleted`), **lido** | um ouvinte por papel | embrulhado: os dois papéis são legítimos | — | — | — |
@@ -214,11 +214,11 @@ C26 não a alcança. Fica para a seção 11 da arquitetura, como informação.
 
 | # | Decisão reversível (delivery L6) | Por quê, com a evidência | Como desfazer |
 | --- | --- | --- | --- |
-| 1 | A máquina do Projeto fica no harness e passa a partir pela mesma partida da conversa, em vez de ir para `Ag/app-builder/` | só o Construtor de apps a usa (`createMachines`, `createE2bKit` e `createE2bApi` só em `Ag/app-builder/runs/ports.ts`), mas "a mesma harness" (2026-11-24) pede a mesma máquina, e mover agora para juntar depois seria duas migrações | mover a camada do Projeto para `Ag/app-builder/` |
-| 2 | O núcleo comum da máquina é a partida e a abertura do kit, e não uma classe base | as duas máquinas só repetem isso; a pausa, o "parar tudo", a fila e a leitura de arquivo são só da conversa, e o Git, a conferência e o `refreshing` só do Projeto (`H/machine/port.ts:17-75`, `conversation.ts:46-83`) | uma classe base, se um terceiro uso pedir |
+| 1 | A máquina do Projeto fica no harness e passa a partir pela mesma partida da conversa, em vez de ir para `Ag/app-builder/` | só o Construtor de apps a usa (`createMachines` só em `Ag/app-builder/runs/ports.ts`; `createE2bKit` e `createE2bApi` ali e em `H/machine/e2b.ts:76-77`), mas "a mesma harness" (2026-11-24) pede a mesma máquina, e mover agora para juntar depois seria duas migrações | mover a camada do Projeto para `Ag/app-builder/` |
+| 2 | O núcleo comum da máquina é a partida e o mapa da sua falha, e não uma classe base | as duas máquinas só repetem isso (a abertura do kit é um repasse a `deps.kit` e fica em cada uma); a pausa, o "parar tudo", a fila e a leitura de arquivo são só da conversa, e o Git, a conferência e o `refreshing` só do Projeto (`H/machine/port.ts:17-75`, `conversation.ts:46-83`) | uma classe base, se um terceiro uso pedir |
 | 3 | As três tabelas de conversa ficam separadas | o ganho é pequeno, e é migração | juntar numa tabela com o tipo |
 | 4 | A forma do prompt da ficha espera o `A3` | o `A3` reescreve essa parte | colapsar antes |
-| 5 | A prova de cada unidade são os pedidos gravados, e não um teste novo por tradutor | a etapa não muda comportamento; os pedidos são o que o modelo recebe (critério 1); onde o pedido não alcança (a memória, a aprovação da máquina, as listas, a partida que falha), um caso novo, escrito e verde antes da mudança | — |
+| 5 | A prova de cada unidade são os pedidos gravados, e não um teste novo por tradutor | a etapa não muda comportamento; os pedidos são o que o modelo recebe (critério 1); onde o pedido não alcança (a memória, as listas, a partida que falha), um caso novo, escrito e verde antes da mudança | — |
 
 ## U1 A ficha sem dependência da montagem
 
@@ -229,27 +229,19 @@ C26 não a alcança. Fica para a seção 11 da arquitetura, como informação.
 Linhas 1 e 2. Ler na base: `H/spec/mount.ts:171-195` (`mountAgent`, o `memory ?? threads` da linha
 177); `H/spec/factories.ts:102-145` (`controllerOf`, a guarda `Object.hasOwn` da linha 125, que filtra
 as chaves do próprio `BUILTIN`); `H/spec/spec.ts:11` e `:104` (o import de `controllerOf` para tipar
-`mode`, `own`, `subagents` e `workspace`); `H/spec/spec.ts:39-48` (o `ModelSource`, com `switched` na
-linha 44); `H/routes/changes.ts:54` (a única leitora de `switched`); as constantes `MODEL` de
-`Ag/assistant/assistant.ts:215`, `Ag/agent-builder/construtor.ts:65` e `Ag/app-builder/builder.ts:40`.
-Referência: `NM/agent-controller-BhkzVgCi.js:8237`, `:8628-8635` e `:8733`.
+`mode`, `own`, `subagents` e `workspace`); Referência: `NM/agent-controller-BhkzVgCi.js:8237`, `:8628-8635` e `:8733`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `H/spec/` | Muda `spec.ts`, `mount.ts`, `factories.ts` | os quatro agentes, pela ficha |
-| `H/routes/changes.ts` | Muda: a frase de log da troca, por tipo | a rota de troca de modelo |
-| `Ag/assistant/assistant.ts`, `Ag/agent-builder/construtor.ts`, `Ag/app-builder/builder.ts` | Muda só a constante `MODEL` | a ficha de cada um |
 
 ### Os contratos que a unidade cria
 
 `ConversationSpec` declara os tipos de `mode`, `own`, `subagents` e `workspace` em `spec.ts`, e
 `controllerOf` os importa de lá (o tipo antes da função, C26). `NEVER_ASKS` fica exportado:
-`H/machine/workspace.ts:2` e `:32` o usam. O `ModelSource` `SESSION` perde `switched`; a frase de cada
-tipo que troca de modelo vira `MODEL_SET: { builder: 'CONVERSATION_MODEL_SET'; assistant:
-'ASSISTANT_MODEL_SET'; construtor: 'CONSTRUTOR_MODEL_SET' }` em `H/routes/changes.ts`, a única
-leitora, com as frases de hoje; o agente salvo, de modelo por run, não troca. O `memory` de
+`H/machine/workspace.ts:2` e `:32` o usam. O `memory` de
 `AgentSpec` vai ao `new Agent` só quando a ficha o tem.
 
 ### As skills e a leitura
@@ -273,20 +265,18 @@ leitora, com as frases de hoje; o agente salvo, de modelo por run, não troca. O
    - **Mutações à mão:** tirar a memória do controller em `mountAgent`; o critério 4 fica vermelho.
 3. **Os tipos da ficha sem a função.** Critérios: 1, 2.
    - **O que sai:** o `import` de `controllerOf` em `spec.ts`.
-4. **O `switched` na rota.** Critérios: 5.
-   - **Mutações à mão:** trocar duas frases na tabela; o critério 5 fica vermelho.
 
 ### Como se prova
 
-O critério 1 compara cada pedido; o 4, o segundo turno de cada agente de conversa; o 5, a linha de
-log da troca. Hoje todos passam: a unidade prova que continuam passando sem as peças que saem.
+O critério 1 compara cada pedido; o 4, o segundo turno de cada agente. Hoje todos passam: a unidade prova que continuam passando sem as peças que saem.
 
 ### Parar se
 
 Um caminho chamar o agente de uma ficha sem memória própria fora do controller (`agent.generate` ou
 `agent.stream` direto): sem o controller, a memória não é propagada. Nesse caminho a memória fica na
 ficha, e o builder escreve no relatório onde. O agente da versão do agente salvo
-(`Ag/saved-agent/agent.ts:346`) já tem memória na ficha e não muda.
+(`Ag/saved-agent/agent.ts:347`) já tem memória na ficha e não muda; o Construtor de apps não tem
+(`Ag/app-builder/builder.ts:183` passa só `threads`), e o critério 4 o cobre.
 
 ## U2 A montagem num salto
 
@@ -295,7 +285,8 @@ ficha, e o builder escreve no relatório onde. O agente da versão do agente sal
 ### As linhas da tabela
 
 Linha 1. Ler na base: `H/spec/mount.ts:24-124` (`messagesOf`, `instructionsOf`, `modelOf`, `turnsOf`,
-`toolsOfSpec`); `H/spec/factories.ts:56-92` (`agentDefaults`) e `:148-155` (`toolsOfRun`).
+`toolsOfSpec`); `H/spec/spec.ts:39-48` (o `ModelSource`, cujo `switched` a rota de troca lê pela parte do
+agente, `H/routes/changes.ts:54`, e que fica); `H/spec/factories.ts:56-92` (`agentDefaults`) e `:148-155` (`toolsOfRun`).
 Referência: `M/mastracode/sdk/src/index.ts:1368-1867`.
 
 ### O raio da mudança
@@ -316,11 +307,13 @@ ramo `satisfies never` (C21), dentro da função que os usa.
 
 ### A ordem do trabalho
 
-1. **Os tradutores entram no seu chamador.** Critérios: 1.
+1. **Os tradutores entram no seu chamador.** Critérios: 1, 5.
    - **Arquivos:** `H/spec/mount.ts`, `H/spec/factories.ts`.
    - **O que sai:** `messagesOf`, `instructionsOf`, `modelOf`, `turnsOf`, `toolsOfSpec`,
      `agentDefaults` e `toolsOfRun` como funções soltas; cada uma vira um bloco nomeado por uma
      constante dentro de `agentOfSpec` ou `controllerOf`, quando o corpo passa de três linhas.
+   - **Mutações à mão:** no `modelOf` dobrado, devolver o modelo da sessão para um `OF_RUN`; o critério
+     1 fica vermelho no agente salvo.
    - **Pronto quando:** os pedidos gravados passam e `mount.ts` mais `factories.ts` têm menos linhas.
 
 ### Parar se
@@ -387,15 +380,16 @@ Linha 3. Ler na base: `Ag/agent-builder/routes.ts:37`, `Ag/assistant/routes.ts:1
 ### Os contratos que a unidade cria
 
 ```ts
-// API/conversations.ts: a base, a do Construtor de apps
-export const ConversationHead = z.object({ id: ConversationId, title: z.string().nullable(), createdAt: z.iso.datetime() })
-// API/assistant.ts e API/construtor.ts: ConversationHead.extend({ updatedAt })
-// API/agents.ts: ConversationHead.extend({ updatedAt, agentId, draft })
+// API/conversations.ts: a base é o ConversationSummary de hoje (linhas 65-70), a do Construtor de apps, sem updatedAt
+export const ConversationSummary = z.object({ id: ConversationId, title: z.string().nullable(), createdAt: z.iso.datetime() })
+// API/assistant.ts, API/construtor.ts e API/agents.ts: os campos da base espalhados na ordem de hoje de cada esquema
+// (z.object({ ...ConversationSummary.shape, ... })), para que o documento emitido não mude nem na ordem (critério 3)
 // H/spec/head.ts
 export function threadHead(thread: StorageThreadType): { id: ConversationId; title: string | null; createdAt: string; updatedAt: string }
 ```
 
-`ConversationId` é a marca de hoje, conferida onde a conversa é lida (C23). O JSON de cada rota fica
+O nome `ConversationSummary` fica; o builder copia de cada esquema de hoje o tipo e a ordem de
+cada campo. `ConversationId` é a marca de hoje, conferida onde a conversa é lida (C23). O JSON de cada rota fica
 igual (critério 3). O builder confere no `main` os esquemas de hoje e copia deles o tipo de cada campo.
 
 ### As skills e a leitura
@@ -434,7 +428,9 @@ abrem transação nos arquivos de rota: `admittedTo` (`Ag/agent-builder/routes.t
 ### Os contratos que a unidade cria
 
 `createdThread(deps: { memory: MastraMemory; log: FailureLog }, input: { kind: MarkedKind; owner:
-Owner; attemptId: AttemptId; marks: Record<string, string> }): Promise<StorageThreadType>` em
+Owner; attemptId: AttemptId; marks: Record<string, string>; logged: Record<string, string | boolean> }):
+Promise<StorageThreadType>`, onde `logged` leva os campos de log de hoje de cada fluxo (`made`,
+`traceId`, `draft`, `agentId`) em
 `H/spec/open.ts`, com o `ownThread` e a linha `*_CONVERSATION_CREATED` de cada tipo, numa tabela por
 `MarkedKind` como a da U3. O builder confere no `main` os nomes de `Owner` e do id da tentativa, e usa
 os de hoje. As funções movidas mantêm a assinatura.
@@ -476,13 +472,15 @@ Linha 4. Ler na base: `Ag/assistant/assistant.ts:293-304`, `Ag/agent-builder/con
 ### Os contratos que a unidade cria
 
 `conversationMachinesFor(spec: MachineSpec, deps: Parameters<typeof createConversationMachines>[1] &
-{ lists: Pick<NetworkStore, 'onRemoved' | 'forget'> }): { machines: ConversationMachines; part:
-ReturnType<typeof machinePart> }`. O que difere entre os três (`otherTemplate`, `readMedia`, `marks`)
+{ lists: Pick<NetworkStore, 'onRemoved' | 'forget'> }, tuning?: MachineTuning): { machines:
+ConversationMachines; part: ReturnType<typeof machinePart> }`, com o `tuning` que os testes passam hoje. O que difere entre os três (`otherTemplate`, `readMedia`, `marks`)
 é o `MachineSpec` de cada agente, como hoje.
 
 ### A ordem do trabalho
 
 1. **Uma montagem.** Critérios: 1, 10.
+   - **Mutações à mão:** trocar o `otherTemplate` de um agente na montagem nova; o teste da máquina
+     daquele agente fica vermelho.
 
 ## U7 Uma partida de máquina
 
@@ -492,20 +490,18 @@ para as duas sem mudar o que cada uma devolve.
 ### As linhas da tabela
 
 Linha 4. Ler na base: `H/machine/machines.ts:86-114` (`ensure`, a promessa zerada na falha nas
-linhas 94-96), `:129-147` (`boot`: `killStale`, `restoreFailure`, o `MACHINE_UNAVAILABLE` sem
-`conversationId` na linha 141), `:222-251` (`open`, o kit) e `:273` (`neverAsks: false`);
-`H/machine/conversation.ts:158-165` (`ensure`), `:171-206` (`boot`: `found`, `killStale` ou `find`,
-`ReattachFailed` como `FILE_GONE` nas linhas 190-191, a promessa zerada na 190), `:245-278` (`open`, o
-kit) e `:296` (`neverAsks: true`); `H/machine/session.ts:28-50` (`restoreFailure`, `within`);
-`H/machine/workspace.ts:19-32`. Referência: Factory `M/mastracode/factory/src/workspace.ts:1829-1833`.
+linhas 94-96) e `:129-147` (`boot`: `killStale`, `restoreFailure`, o `MACHINE_UNAVAILABLE` sem
+`conversationId` na linha 141);
+`H/machine/conversation.ts:158-165` (`ensure`), `:171-206` (`boot`: `found`, `killStale` ou `find`, o
+`session.starting` das linhas 185-188, que a pausa espera, `ReattachFailed` como `FILE_GONE` nas linhas
+190-191, a promessa zerada na 190); `H/machine/session.ts:28-50` (`restoreFailure`, `within`). Referência: Factory `M/mastracode/factory/src/workspace.ts:1829-1833`.
 
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `H/machine/start.ts` | Cria `startMachine`, `startRefused`, `kitOf` | `machines.ts`, `conversation.ts` |
-| `H/machine/machines.ts`, `conversation.ts`, `spec.ts` | Muda: o `boot` e o `open` de cada uma chamam o núcleo; `MachineSpec.neverAsks` | `Ag/app-builder/runs/ports.ts`, U6 |
-| `Ag/app-builder/runs/ports.ts` | Muda só a montagem, com o `MachineSpec` do Construtor de apps | a raiz |
+| `H/machine/start.ts` | Cria `startMachine`, `startRefused` | `machines.ts`, `conversation.ts` |
+| `H/machine/machines.ts`, `conversation.ts` | Muda: o `boot` de cada uma chama a partida | `Ag/app-builder/runs/ports.ts`, U6 |
 
 ### Os contratos que a unidade cria
 
@@ -522,16 +518,15 @@ export function startMachine(input: {
   machine: 'PROJECT' | 'CONVERSATION'
   conversationId: ConversationId
   kit: Kit
-  before: Promise<unknown> // killStale ou find, como hoje
+  /** The list then `sandbox.start`, made by the caller, which keeps it (the conversation stores it as `session.starting`, which the pause awaits). */
+  starting: Promise<unknown>
   startMs: number
   log: FailureLog
 }): Promise<Kit>
-/** The machine's kit: the fields both `open` pass to `deps.kit` today (name, list, marks, folder, `onStart`). */
-export function kitOf(input: Parameters<KitFactory>[0] & { kit: KitFactory }): Kit
 ```
 
-`MachineSpec` ganha `neverAsks: boolean`, o de hoje de cada agente; o Construtor de apps passa a ter
-o seu `MachineSpec` (`otherTemplate: 'replace'`, `neverAsks: false`). Cada máquina continua lançando
+O `neverAsks` do workspace fica em cada máquina: é `false` no Projeto e `true` nas três conversas, e
+não varia por agente. Cada máquina continua lançando
 o `Failure` de hoje; a união só tira o mapa de dois lugares. A promessa da sessão, a fila, o
 `refreshing`, a pausa e o `stopAll` ficam onde estão (decisão 2 do firstmate).
 
@@ -542,19 +537,16 @@ first tool on `start()`"); `node_modules/e2b/dist/index.d.ts`.
 
 ### A ordem do trabalho
 
-1. **Os casos novos, antes.** Critérios: 11, 12. Escritos e verdes na base.
-2. **A partida.** Critérios: 1, 11, 13.
+1. **O caso novo, antes.** Critérios: 11. Escrito e verde na base.
+2. **A partida.** Critérios: 1, 11, 12, 13.
    - **Mutações à mão:** devolver `UNAVAILABLE` no lugar de `RESTORE`; o caso da linha 266 de
      `machine.test.ts` fica vermelho. Não zerar a promessa na falha da conversa; o caso novo de
-     `conversation-lane.test.ts` fica vermelho.
-3. **O kit e o `neverAsks`.** Critérios: 1, 10, 12.
-   - **Mutações à mão:** pôr `neverAsks: false` no agente salvo; o caso novo do critério 12 fica
+     `conversation-lane.test.ts` fica vermelho. Não guardar `session.starting`; o caso da linha 151 fica
      vermelho.
 
 ### Parar se
 
-As duas partidas diferirem num ponto que nenhum teste cobre (a ordem de `killStale` e `find`, o
-`session.starting` da conversa, as fases): o builder escreve o caso num teste antes de juntar, e para
+As duas partidas diferirem num ponto que nenhum teste cobre (a ordem de `killStale` e `find`, as fases): o builder escreve o caso num teste antes de juntar, e para
 se o teste mostrar que as duas não cabem numa partida.
 
 ## G3 O ponto de conferência
@@ -570,7 +562,8 @@ Servidor: `npm run check:local`, os testes de `H/machine/` e das máquinas dos q
 ### As linhas da tabela
 
 Linha 6. Pela opção (a), à espera da palavra do fundador: `H/copy-clock/` vai para
-`H/mastra/copy-clock.ts`; `H/network/` (menos a ferramenta) vai para `H/machine/network/`;
+`H/mastra/copy-clock/`, com os seus arquivos; `H/network/` (menos a ferramenta) e `H/machine/network.ts`
+vão para `H/machine/network/`;
 `H/network/network-tool.ts` vai para `H/tools/network-tool.ts`. Na (b), a unidade sai e a U10 corrige a
 árvore. Na (c), a unidade espera a mudança de método.
 
@@ -578,7 +571,7 @@ Linha 6. Pela opção (a), à espera da palavra do fundador: `H/copy-clock/` vai
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `H/copy-clock/`, `H/network/` | Apaga, pelo codemod | `S/conversations-of.ts`, `S/main.ts`, `H/machine/` (a ferramenta em `machine-tools.ts:4`), `Ag/app-builder/builder.ts:9`, `Ag/agent-builder/construtor.ts:23` |
+| `H/copy-clock/`, `H/network/`, `H/machine/network.ts` | Apaga, pelo codemod | `S/conversations-of.ts`, `S/main.ts`, `H/machine/` (a ferramenta em `machine-tools.ts:4`), `Ag/app-builder/builder.ts:9`, `Ag/agent-builder/construtor.ts:23` |
 | `H/mastra/`, `H/machine/network/`, `H/tools/` | Cria | os mesmos |
 | `scripts/record-tools.ts` | Muda o import (linha 10) | a gravação das ferramentas |
 | `scripts/rerun-never.json` | Muda os caminhos das seis entradas de `H/network/` | `npm run rerun-list` |
@@ -598,6 +591,8 @@ Linha 6. `H/tools/company/search.ts` (`companyReadSearch`) e `projectsOf`, de
 `H/tools/company/overview.ts`, têm só o Assistente como usuário (`Ag/assistant/assistant.ts:52`, `:55`).
 Ficam no harness `overviewTool` (usado por `H/tools/company/factory.ts:18`) e `H/turn/turn-line.ts`
 (usado por `H/turn/end.ts:22-23`): movê-los criaria um import de produção do harness para um agente.
+`search.ts` usa `connectorAccess` e `readTarget`, que `H/tools/public.ts` não exporta hoje: a porta
+passa a exportá-los, e o raio inclui `H/tools/public.ts`.
 
 ### A ordem do trabalho
 
