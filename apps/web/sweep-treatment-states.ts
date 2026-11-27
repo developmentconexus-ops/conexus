@@ -98,6 +98,8 @@ const MODEL = {
   name: 'venda',
   description: 'O que conta como venda',
   versions: [PROPOSAL, BOUND],
+  active: BOUND,
+  proposal: PROPOSAL,
   runs: [{ status: 'BUILT', rows: 9_120, at: AT }],
 } as const
 

@@ -118,6 +118,10 @@ export const TreatmentModel = z.object({
   description: z.string(),
   /** Newest first. */
   versions: z.array(VersionView),
+  /** The version the runs build: the highest approved. */
+  active: VersionView.nullable(),
+  /** The newest version, while no one approved it. */
+  proposal: VersionView.nullable(),
   /** The model's runs in the company's current lake, newest first, at most one page. */
   runs: z.array(ModelRunView),
 })

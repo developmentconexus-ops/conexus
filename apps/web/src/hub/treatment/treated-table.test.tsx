@@ -250,6 +250,27 @@ test('a aba Versões lista as versões, com quem propôs e quem ligou, e a ligad
   ])
 })
 
+test('com duas versões ligadas, a página mostra a mais nova como a ligada, a que o servidor diz', async () => {
+  const newer = bound({
+    number: 2,
+    hash: 'c'.repeat(64),
+    sql: 'select nunota, vlrnota\nfrom current.sankhya_notas',
+  })
+  const older = bound({ approvedBy: 'Caio Dias' })
+  openTreatment(server, {
+    path: VENDA,
+    view: {
+      list: listOf({ tables: [venda({ active: newer })] }),
+      models: { [MODEL_ID]: modelOf({ versions: [newer, older], active: newer, proposal: null }) },
+    },
+  })
+  const page = await main()
+  expect(await page.findByText(/^Ligada: v2/)).toBeTruthy()
+  expect(page.queryByText(/^Ligada: v1/)).toBeNull()
+  fireEvent.click(page.getByRole('tab', { name: 'SQL' }))
+  expect(await page.findByText('select nunota, vlrnota')).toBeTruthy()
+})
+
 test('o modelo cujo endereço não existe diz que não existe', async () => {
   openTreatment(server, { path: VENDA })
   expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()

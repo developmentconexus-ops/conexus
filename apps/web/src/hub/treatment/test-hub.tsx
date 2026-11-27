@@ -87,12 +87,19 @@ export function listOf(fields: Record<string, unknown> = {}): TreatedTables {
   return TreatedTables.parse({ lake: 'CURRENT', lastRun: null, tables: [], ...fields })
 }
 
-export function modelOf(fields: Record<string, unknown> = {}): TreatmentModel {
+/** A treatment as the Hub reads it; `active` and `proposal` follow the versions unless `fields` say otherwise. */
+export function modelOf(
+  fields: { versions?: VersionView[] } & Record<string, unknown> = {},
+): TreatmentModel {
+  const versions = fields.versions ?? []
+  const [newest] = versions
   return TreatmentModel.parse({
     id: MODEL_ID,
     name: 'venda',
     description: 'O que conta como venda',
-    versions: [],
+    versions,
+    active: versions.find((one) => one.approvedAt !== null) ?? null,
+    proposal: newest !== undefined && newest.approvedAt === null ? newest : null,
     runs: [],
     ...fields,
   })

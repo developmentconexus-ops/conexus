@@ -4,7 +4,6 @@ import type {
   TreatedTable,
   TreatmentModel,
   TreatmentModelId,
-  VersionView,
 } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
@@ -223,15 +222,6 @@ export function TreatedTablePage() {
   )
 }
 
-function activeOf(versions: readonly VersionView[]): VersionView | null {
-  return versions.find((version) => version.approvedAt !== null) ?? null
-}
-
-function proposalOf(versions: readonly VersionView[]): VersionView | null {
-  const newest = versions[0]
-  return newest !== undefined && newest.approvedAt === null ? newest : null
-}
-
 type Model = Extract<TreatedTable, { layer: 'negocio' }>
 
 function ModelBody(props: {
@@ -242,8 +232,7 @@ function ModelBody(props: {
 }) {
   const { companyId, modelId, data, entry } = props
   const may = useMay()
-  const active = activeOf(data.versions)
-  const proposal = proposalOf(data.versions)
+  const { active, proposal } = data
   const shown = active ?? proposal
   return (
     <>

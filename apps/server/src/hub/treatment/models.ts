@@ -298,8 +298,8 @@ export async function treatmentModelViewOf(
   const model = await businessModelOf(tx, modelId)
   const { lakeId } = await treatmentLakeOf(reads, tx, companyId)
   const runs = await modelRunsOf(tx, lakeId, modelNameOf('negocio', model.name))
-  const { id, name, description, versions } = model
-  return { id, name, description, versions, runs: runs.map(modelRunViewOf) }
+  const { id, name, description, versions, active, proposal } = model
+  return { id, name, description, versions, active, proposal, runs: runs.map(modelRunViewOf) }
 }
 
 export async function deleteCompanyTreatments(tx: CommandTx, companyId: CompanyId): Promise<void> {
