@@ -6,12 +6,13 @@ import type { CopyQueue } from '../../platform/aws.ts'
 import { RunParameter, TaskArn } from '../../platform/aws.ts'
 import type { Database } from '../../platform/database.ts'
 import { DatabaseUrl, openDatabase } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { awsRecording } from '../../platform/test-aws.ts'
 import { silent } from '../../platform/test-database.ts'
 import { until } from '../../platform/test-until.ts'
 import { createLakeQueue } from './lake-queue.ts'
-import { CopyTaskResult } from './lake-task.ts'
+import { CopyTaskProgress, CopyTaskResult } from './lake-task.ts'
 import type { LakeRunOn } from './test-lake-run.ts'
 import { queued } from './test-lake-run.ts'
 
@@ -54,6 +55,22 @@ export function result(
 ) {
   const sent = { type: 'RESULT', version: 1, runId: run, attempt: 1, outcome, tables, machine }
   return JSON.stringify(CopyTaskResult.parse(sent))
+}
+
+/** The scoreboard the task sends while it runs, read by the contract before it is sent. */
+export function progress(run: string, seq: number, change: object = {}) {
+  const sent = {
+    ...{ type: 'PROGRESS', version: 1, runId: run, attempt: 1, seq, at: '2026-11-27T14:03:00Z' },
+    phase: { kind: 'COPYING' },
+    tables: [
+      {
+        ...{ name: NOTAS.name, read: seq * 1000, written: seq * 1000 },
+        ...{ startedAt: '2026-11-27T14:02:30Z', endedAt: null, failed: false },
+      },
+    ],
+    ...change,
+  }
+  return JSON.stringify(CopyTaskProgress.parse(sent))
 }
 
 /** A round open on a connection of these tables, its task started in the double. */
@@ -118,12 +135,15 @@ export function silenceDelete(on: Pick<LakeRunOn, 'aws'>) {
 }
 
 /** A consumer of its own, on another database or queue than the Hub's. */
-export function consumerOn(on: LakeRunOn, ports: { database?: Database; queue?: CopyQueue } = {}) {
+export function consumerOn(
+  on: LakeRunOn,
+  ports: { database?: Database; queue?: CopyQueue; log?: FailureLog } = {},
+) {
   return createLakeQueue({
     database: ports.database ?? on.hub.test.database,
     tasks: on.ports.tasks,
     queue: ports.queue ?? on.ports.queue,
-    log: silent,
+    log: ports.log ?? silent,
     companies: on.companies,
   })
 }

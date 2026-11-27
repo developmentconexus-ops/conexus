@@ -57,11 +57,39 @@ export const CopyTaskResult = z.object({
       rounded: z.int().min(0),
       rows: z.int().min(0).nullable(),
       whole: z.boolean(),
+      /** The task's own clock; an older image sends neither. */
+      startedAt: z.iso.datetime().nullable().optional(),
+      endedAt: z.iso.datetime().nullable().optional(),
     }),
   ),
   machine: LakeRunMachine.nullable().optional(),
 })
 export type CopyTaskResult = z.infer<typeof CopyTaskResult>
+
+/** The task's scoreboard while it runs; never a row's content. The Hub keeps the highest `seq`. */
+export const CopyTaskProgress = z.object({
+  type: z.literal('PROGRESS'),
+  version: z.literal(1),
+  runId: LakeRunId,
+  attempt: z.int().min(1),
+  seq: z.int().min(1),
+  at: z.iso.datetime(),
+  phase: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('COPYING') }),
+    z.object({ kind: z.literal('UPDATING'), table: LakeTableName }),
+  ]),
+  tables: z.array(
+    z.object({
+      name: LakeTableName,
+      read: z.int().min(0),
+      written: z.int().min(0),
+      startedAt: z.iso.datetime().nullable(),
+      endedAt: z.iso.datetime().nullable(),
+      failed: z.boolean(),
+    }),
+  ),
+})
+export type CopyTaskProgress = z.infer<typeof CopyTaskProgress>
 
 export const COPY_TASK_SCHEMA = new URL(
   '../../../../extraction/contract/copy-task.schema.json',
@@ -69,7 +97,11 @@ export const COPY_TASK_SCHEMA = new URL(
 )
 
 export function copyTaskSchema() {
-  return { spec: z.toJSONSchema(CopyTaskSpec), result: z.toJSONSchema(CopyTaskResult) }
+  return {
+    spec: z.toJSONSchema(CopyTaskSpec),
+    result: z.toJSONSchema(CopyTaskResult),
+    progress: z.toJSONSchema(CopyTaskProgress),
+  }
 }
 
 if (import.meta.main)

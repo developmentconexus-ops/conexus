@@ -1408,6 +1408,10 @@
     {
       "file": "apps/server/src/harness/network/network-routes.test.ts",
       "name": "o dono rebaixado durante o pedido não liga a internet toda"
+    },
+    {
+      "file": "apps/server/src/hub/copies/lake-queue-progress.test.ts",
+      "name": "o placar de outra tentativa ou de rodada fechada é descartado"
     }
   ]
 }
