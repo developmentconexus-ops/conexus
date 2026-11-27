@@ -155,6 +155,7 @@ test('F15: o lago de uma receita anterior que ainda trata não está desatualiza
   const on = await treatmentOn(t, { treatableBefore: [EARLIER_TEMPLATE] })
   await on.rows(`update lake.company_lake set template = $1`, [EARLIER_TEMPLATE])
   assert.equal((await on.listed()).lake, 'CURRENT')
+  await on.markCopiedWithoutRun('sankhya_notas')
   const now = await on.treatNow()
   assert.equal(now.statusCode, 202, now.body)
   await on.hub.treatment.idle()

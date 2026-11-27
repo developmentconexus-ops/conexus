@@ -366,7 +366,7 @@ deixa para a `T2`.
 | 26 | U5b | O fim de uma rodada de cópia `COMPLETE` de uma tabela com molde, ou lida por um modelo ligado, abre uma rodada de tratamento da empresa que pede só os modelos abaixo das tabelas copiadas, mais os nunca gravados e os que falharam por último; sem nada a tratar, nenhuma rodada abre | `apps/server/src/hub/treatment/treatment-run.test.ts` | must |
 | 27 | U5b | Com uma rodada de tratamento aberta, o fim de outra cópia da empresa não abre uma segunda: guarda as tabelas, e quando a aberta fecha, uma nova roda só por elas | `treatment-run.test.ts`, caso "duas ligações" | must |
 | 28 | U5b | O `TREAT_RESULT` fecha a rodada e grava o estado, as linhas e o motivo de cada modelo; um fim de tarefa sem resultado e sem pedido de Parar fecha com `TREAT_TASK_STOPPED` (com o pedido, o critério 38); um resultado repetido não muda nada; o varredor fecha uma rodada aberta sem tarefa viva com `TREAT_TASK_STOPPED` | `treatment-run.test.ts`; `apps/server/src/hub/copies/lake-queue.test.ts`; `treatment-sweep.test.ts` | must |
-| 29 | U5b | Tratar agora abre uma rodada com todos os modelos da empresa; responde `ALREADY_RUNNING` com uma aberta, `LAKE_NOT_READY` com o lago sem a receita nova e `NOTHING_TO_TREAT` sem modelo | `treatment-routes.test.ts` | must |
+| 29 | U5b | Nenhuma rodada, de cópia ou de Tratar agora, pede um modelo que lê, direto ou por outro modelo, uma tabela marcada cuja primeira cópia não terminou; a tabela tirada da cópia não segura modelo nenhum. Tratar agora abre uma rodada com todos os outros modelos da empresa; responde `ALREADY_RUNNING` com uma aberta, `LAKE_NOT_READY` com o lago sem a receita nova, `NOTHING_TO_TREAT` sem modelo e `TREATMENT_WAITING_COPY` quando todos esperam a primeira cópia | `treatment-routes.test.ts`; `treatment-run.test.ts` | must |
 | 30 | U5b | A especificação vai num objeto em `tratamento/<empresa>/` do depósito de estado, e a tarefa a acha pela variável `CONEXUS_TREAT_OBJECT`; o `RunTask` é o da cópia, com o papel do tratamento; uma partida que falha depois das tentativas fecha com `TREAT_START_FAILED` | `apps/server/src/platform/aws-copy.test.ts`; `treatment-run.test.ts` | must |
 | 31 | U6 | Em Dados, Dono e Administrador veem Copiado, Tratado e Negócio; outro papel vê em Tratado e em Negócio "Seu papel ainda não lê nenhuma tabela."; com o lago numa receita anterior, Tratado diz "Apague e crie o lago de novo na Central para tratar" | `apps/web/src/hub/copies/data-page.test.tsx` | must |
 | 32 | U6 | Uma tabela tratada mostra as linhas e a hora da última rodada boa, "Esperando a próxima cópia" antes da primeira, e "A última rodada falhou" com o motivo pelo código e a linha do SQL, com a tabela fora; uma rodada que não terminou mostra o motivo dela no topo de Tratado | `apps/web/src/hub/treatment/treated-table.test.tsx` | must |
@@ -456,7 +456,8 @@ código só de leitura (`EST:234`).
 ## A tabela de referência
 
 Veredito pelo código C75: **nativo**, **embrulhado** ou **remendo**. As 23 linhas do estudo
-(`EST:627-651`) vêm primeiro, com a unidade; as linhas 24 a 32 são as que o cartão acrescentou, e as 33 e 34 as da emenda de 2026-11-26.
+(`EST:627-651`) vêm primeiro, com a unidade; as linhas 24 a 32 são as que o cartão acrescentou, e as 33 e 34 as da emenda de 2026-11-26; as 35 e 36 são do defeito de 2026-11-27
+(https://github.com/developmentconexus-ops/conexus/issues/1498).
 **Nenhuma linha fica sem referência.** A linha 26 (a conferência do SQL ao salvar) é a mais nova: a
 referência é a do produto (Nekt) e a da ferramenta (SQLMesh), e a biblioteca escolhida foi lida só na
 declaração de tipos (abaixo).
@@ -497,6 +498,8 @@ declaração de tipos (abaixo).
 | 32 | Refazer a tabela tratada quando o SQL muda ou falha | decisão 5 | nenhum | construir ao lado e trocar: `dbt-adapters@1.24.6 macros/materializations/models/table.sql:30-32`, `:42`, `:46`, `:59`; o dbt-athena no Iceberg do Glue (`dbt-athena@1.11.2 table.sql:124-169`); "there is never a time when the table doesn't exist" (docs.databricks.com/aws/en/delta/drop-table); o SQLMesh, "reduced to reference swapping" (sqlmesh.readthedocs.io/en/stable/concepts/plans/). No `S3 Tables` o dbt-athena apaga e cria (`table.sql:102-112`, o porquê em `:103-105`); o Athena não renomeia nem cria visão ali (docs.aws.amazon.com/athena/latest/ug/gdc-register-s3-table-bucket-cat.html); a API do `S3 Tables` renomeia (`RenameTable`, docs.aws.amazon.com/AmazonS3/latest/API/API_s3Buckets_RenameTable.html) | remendo nesta etapa (a janela aceita, com a entrada em `docs/reference/boundaries.md`); a troca pelo `RenameTable` na `T2` | `dbt-athena` 1.11.2, `table.sql:102-112`: no `S3 Tables` apaga e cria, e a tabela fica fora quando o SQL falha (`:106-107`); a U1 mede a janela, a tabela pela metade e o `RenameTable`; a entrada em `docs/reference/boundaries.md` | U3: o `materialized='table'` e a entrada de `boundaries.md`; a U1 mede a janela, a tabela pela metade e o `RenameTable` |
 | 33 | Parar a rodada de tratamento | Q4 do estudo do Parar cópia, "4. Okay": na U5b e na U6, na mesma forma do Parar cópia | o Parar cópia, https://github.com/developmentconexus-ops/conexus/pull/1433 (`apps/server/src/hub/copies/lake-stop.ts`: `stopped_by` com `coalesce`, o `StopTask`, 202 sem esperar, fechar na hora sem tarefa); antes dele, nenhuma parada de rodada | a Nekt pede a parada e não espera: `POST /api/v1/runs/{id}/cancel/`, com `cancel_requested_at` e `cancel_requested_by` e os estados `cancelling` e `canceled` (a OpenAPI da Nekt lida em 2026-11-14); a Databricks, `runs/cancel`, "canceled asynchronously"; o Airbyte dá "Start/cancel syncs" ao mesmo papel que dispara (`airbyte@82db089b docs/platform/access-management/rbac.md:30`); o `StopTask` do ECS (`@aws-sdk/client-ecs@3.1175.0 models_1.d.ts:3447-3474`). Os três lidos no estudo do Parar cópia, de 2026-11-26 (fora do repositório, delivery L21) | embrulhado | a forma do PR do Parar cópia, com os testes dele; a U5b prova os seus pelos critérios 38 e 39 | U5b: `apps/server/src/hub/treatment/treatment-stop.ts`; U6: o botão em `treated-layer.tsx` |
 | 34 | A descrição da coluna tratada | "1 okay" (2026-11-26): herda a da coluna copiada; "2 Okay também quero": Sugerir descrições numa etapa própria | a descrição da coluna copiada, gravada pela cópia em `copies.lake_table.columns` (`apps/server/src/hub/copies/tables.ts:144`) e mostrada em `LakeTableSummary.columns` (`packages/hub-api/src/lake-copies.ts:164-166`); o G1 já tirou `description` de `TreatedColumn` (https://github.com/developmentconexus-ops/conexus/pull/1430, `packages/connectors/src/kernel/tables-treated.ts:10-14`) | a descrição tem um dono só, a coluna copiada (code C26); na Databricks o comentário mora na coluna, e o sugerido pela IA é revisto antes de gravar ("you can review it and either accept it as-is or edit it before saving", docs.databricks.com/aws/en/comments/ai-comments) | nativo | — | U4: nenhuma descrição de coluna no molde; U5a: a coluna da lista de Tratado lê a da coluna copiada pela `column` |
+| 35 | A rodada que não pede o que espera a primeira cópia | `D1`: "a" (2026-11-27) | Tratar agora e o fim de uma cópia pediam todo modelo nunca gravado, e a `current` criada vazia pela cópia era lida como pronta | o dlt testa as fontes antes e não roda o pacote cuja fonte pode ainda não existir (`dlt@8fa90a97 dlt/helpers/dbt/runner.py:292-297`) | embrulhado | a marca de copiada é `copies.lake_table.rows`, que a cópia só grava depois de aplicar a `current`; critério 29 | U5b: `apps/server/src/hub/treatment/select.ts` |
+| 36 | O papel do tratamento acha o banco `current` | `D2`: "sim" (2026-11-27) | o papel tinha só `glue:GetTable` em `current`, e a tabela ausente voltava como acesso negado | Athena, "you need permissions to call this action on the resource (table or database) and all ancestors" (docs.aws.amazon.com/athena/latest/ug/fine-grained-access-to-glue-resources.html, lido em 2026-11-27) | nativo | — | U2: `infra/aws/lib/treater.ts` |
 
 **O que o G5 mudou nas linhas do estudo.** O estudo citou `main` em `99b5eceb`. Conferidas em
 `def26dd9`: a linha 2 já existe (`update.py`, que o estudo dava como "a construir"); "Atualizar a
@@ -671,7 +674,8 @@ export const TREAT_READS = ['current'] as const
   (`lake.ts:253`). Nenhuma coluna nova, nenhuma migração.
 - **O papel do tratamento** (`treater.ts`), no molde de `writerGrants`: `DESCRIBE` e `SELECT` em
   `current`; `DESCRIBE` e `CREATE_TABLE` em `tratado` e `negocio`, mais o que a U1 provar; nada em
-  `raw`; o Glue para criar, apagar e mudar tabela só nas duas áreas; o Athena só no workgroup do
+  `raw`; o Glue para criar, apagar e mudar tabela só nas duas áreas, e em `current` só
+  `GetDatabase` e `GetTable`; o Athena só no workgroup do
   tratamento, `<nome do depósito>-tratamento` (decisão F10), com o teto que a U1 medir; `s3:GetObject` só em
   `tratamento/<empresa>/*`; `sqs:SendMessage` na fila; nenhum `ssm:GetParameter`.
 - **O modelo de arquivo**: `infra/aws/lib/writer.ts` para `treater.ts`.
@@ -1114,7 +1118,8 @@ export const runTreatmentNow = defineOperation({
   id: 'runTreatmentNow', access: 'session', method: 'POST',
   path: '/api/companies/{companyId}/data/treated/run',
   success: { status: 202, body: z.object({ run: TreatmentRunId }) },
-  failures: ['FORBIDDEN', 'ALREADY_RUNNING', 'LAKE_NOT_READY', 'NOTHING_TO_TREAT', 'DATABASE_UNAVAILABLE'],
+  failures: ['FORBIDDEN', 'ALREADY_RUNNING', 'LAKE_NOT_READY', 'NOTHING_TO_TREAT', 'TREATMENT_WAITING_COPY',
+    'DATABASE_UNAVAILABLE'],
 })
 // a forma de stopLakeCopyRun: sem corpo; 202 { stopping: true } com o pedido feito, 200 { stopping: false } sem rodada aberta
 export const stopTreatmentRun = defineOperation({
@@ -1126,6 +1131,7 @@ export const stopTreatmentRun = defineOperation({
 
 // apps/server/src/hub/treatment/select.ts, puro
 export function selection(graph: ModelGraph, changed: readonly TableRef[], last: ReadonlyMap<ModelName, 'BUILT' | 'FAILED' | 'SKIPPED'>): readonly ModelName[]
+export function awaitingFirstCopy(graph: ModelGraph, uncopied: readonly TableRef[]): ReadonlySet<string>
 
 // apps/server/src/hub/treatment/treatment-run.ts
 export type AfterCopy = (companyId: CompanyId, copied: readonly LakeTableName[]) => Promise<

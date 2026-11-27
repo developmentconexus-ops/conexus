@@ -205,6 +205,7 @@ test('Tratar agora: abre uma rodada com todos os modelos da empresa e responde 2
   const on = await treatmentOn(t)
   const venda = await on.proposed(OF_NOTAS)
   await on.approved(venda.id, venda.version)
+  await on.markCopiedWithoutRun('sankhya_notas', 'sankhya_parceiros')
 
   const opened = await on.treatNow()
   assert.equal(opened.statusCode, 202, opened.body)
@@ -232,4 +233,34 @@ test('Tratar agora: o lago sem a receita nova recusa com LAKE_NOT_READY, e sem m
   const empty = await on.treatNow()
   assert.deepEqual([empty.statusCode, codeOf(empty)], [409, 'NOTHING_TO_TREAT'])
   assert.deepEqual(await on.treatRuns(), [])
+})
+
+test('Tratar agora com a primeira cópia ainda em curso recusa com TREATMENT_WAITING_COPY e nada abre; com uma tabela copiada, a rodada pede só o que a lê', async (t) => {
+  const on = await treatmentOn(t)
+  const venda = await on.proposed(OF_NOTAS)
+  await on.approved(venda.id, venda.version)
+
+  const early = await on.treatNow()
+  assert.deepEqual([early.statusCode, codeOf(early)], [409, 'TREATMENT_WAITING_COPY'])
+  assert.deepEqual(await on.treatRuns(), [])
+
+  await on.markCopiedWithoutRun('sankhya_notas')
+  const now = await on.treatNow()
+  assert.equal(now.statusCode, 202, now.body)
+  await on.hub.treatment.idle()
+  const [run] = await on.treatRuns()
+  assert.deepEqual(run?.select, ['tratado__sankhya_notas', 'negocio__venda'])
+})
+
+test('Tratar agora: o tratamento que lê uma tabela tirada da cópia não espera por ela e entra na rodada', async (t) => {
+  const on = await treatmentOn(t)
+  const vendedor = await on.proposed('select codvend from current.sankhya_vendedores', 'vendedor')
+  await on.approved(vendedor.id, vendedor.version)
+  await on.rows(`delete from copies.lake_table where name = 'sankhya_vendedores'`)
+
+  const now = await on.treatNow()
+  assert.equal(now.statusCode, 202, now.body)
+  await on.hub.treatment.idle()
+  const [run] = await on.treatRuns()
+  assert.deepEqual(run?.select, ['negocio__vendedor'])
 })

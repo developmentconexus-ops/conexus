@@ -21,10 +21,12 @@ export async function markedTablesOf(tx: ReadTx) {
       source: lakeTable.sourceTable,
       name: lakeTable.name,
       columns: lakeTable.columns,
+      rows: lakeTable.rows,
     })
     .from(lakeTable)
   return rows.map((row) => {
     const marked = Marked.parse(row)
-    return { ...marked, columns: marked.columns.map(inLakeSpelling) }
+    const appliedToCurrent = row.rows !== null
+    return { ...marked, columns: marked.columns.map(inLakeSpelling), appliedToCurrent }
   })
 }

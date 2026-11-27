@@ -35,4 +35,3 @@ test('F15: o lago nascido da receita da v0.24.136 segue tratando depois que a re
   )
   assert.equal(treatableWith(TemplateVersion.parse('b'.repeat(64))).has(published), true)
 })
-

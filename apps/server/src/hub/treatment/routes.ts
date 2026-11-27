@@ -41,6 +41,8 @@ async function runNow(deps: TreatmentRouteDeps, at: Asked) {
       throw new Failure('ALREADY_RUNNING')
     case 'LAKE_OUTDATED':
       throw new Failure('LAKE_NOT_READY')
+    case 'WAITING_COPY':
+      throw new Failure('TREATMENT_WAITING_COPY')
     case 'NOTHING_TO_TREAT':
       throw new Failure('NOTHING_TO_TREAT')
     default: {

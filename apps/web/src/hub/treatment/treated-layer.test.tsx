@@ -39,6 +39,10 @@ test.each([
   ['ALREADY_RUNNING', 'Uma rodada de tratamento já está em curso.'],
   ['LAKE_NOT_READY', 'Apague e crie o lago de novo na Central.'],
   ['NOTHING_TO_TREAT', 'A empresa ainda não tem tratamento para rodar.'],
+  [
+    'TREATMENT_WAITING_COPY',
+    'A primeira cópia das tabelas ainda não terminou. O tratamento roda quando ela terminar.',
+  ],
 ] as const)(
   'Tratar agora recusado com %s diz a frase do Hub e o botão volta',
   async (code, phrase) => {

@@ -187,9 +187,24 @@ test('lago novo: as rodadas do lago apagado não contam, cada modelo é tratado 
     1,
     'a table with no template and no reader opens no run',
   )
+  await on.markCopiedWithoutRun('sankhya_parceiros')
   await on.copyEnded(['sankhya_notas'])
   const [, current] = await on.treatRuns()
   assert.deepEqual([current?.lake_id, current?.select], [TEST_LAKE, BOTH])
+})
+
+test('o fim de uma cópia não pede o que lê uma tabela sem a primeira cópia, direto ou por outro tratamento; a cópia dela traz os dois', async (t) => {
+  const on = await treatmentOn(t)
+  const cliente = await on.proposed('select codparc from tratado.sankhya_parceiros', 'cliente')
+  await on.approved(cliente.id, cliente.version)
+  await on.copyEnded(['sankhya_notas'])
+  const [first] = await on.treatRuns()
+  assert.deepEqual(first?.select, ['tratado__sankhya_notas'])
+  await builtAll(t, on)
+
+  await on.copyEnded(['sankhya_parceiros'])
+  const [, next] = await on.treatRuns()
+  assert.deepEqual(next?.select, ['tratado__sankhya_parceiros', 'negocio__cliente'])
 })
 
 test('a partida recusada pela AWS fecha a rodada com TREAT_START_FAILED, e a próxima cópia a abre de novo', async (t) => {
