@@ -1,109 +1,87 @@
-# v0.24.135
+# v0.24.136
 
-Esta versão publica o que entrou no `main` em 26/11 depois da v0.24.134: o conserto do **Parar cópia**,
-a internet das máquinas dos agentes pelas listas, ainda sem tela, o começo do tratamento do lago, o
-desenho novo do Hub e documentos do projeto.
+Esta versão publica o que entrou no `main` depois da v0.24.135. São o tratamento do lago, da etapa
+**O primeiro modelo vira tabela tratada**, o cartão e a tela de internet dos agentes e um documento do
+projeto.
 
-**Esta versão pede um passo seu. Depois da publicação, apague o lago e crie de novo.** A receita do lago
-mudou. Ela ganhou as áreas **Tratado** e **Negócio** e um acesso próprio na AWS para o tratamento, e o
-Conexus ainda não atualiza um lago já criado (https://github.com/developmentconexus-ops/conexus/issues/1424).
-Num lago criado antes, a **Central** diz **Este lago é de uma receita anterior. Para tratar o dado,
-apague e crie o lago de novo.**
+**A receita do lago não muda nesta versão.** Se você apagou e criou o lago depois da v0.24.135, não
+precisa repetir. Se ainda não fez isso, siga antes os passos da nota daquela versão, que também diz o
+que se perde (https://github.com/developmentconexus-ops/conexus/releases/tag/v0.24.135). Sem esse
+passo, o lago antigo não trata, e a **Central** diz **Este lago é de uma receita anterior. Para tratar o
+dado, apague e crie o lago de novo.**
 
-1. Na **Central**, em **Clientes**, abra a empresa. Em **Lago de dados**, clique **Apagar o lago**,
-   digite o nome da empresa e confirme.
-2. Quando aparecer **Esta empresa ainda não tem lago.**, clique **Criar o lago** e espere o **Pronto**.
-3. Na empresa, em **Integrações**, abra cada ligação que copiava, vá à aba **Tabelas** e clique
-   **Escolher o que copiar**. Marque as tabelas, escolha a data em **Desde**, escolha o **Intervalo** e
-   clique **Ligar e copiar agora**.
+**Dados ganhou as camadas do lago.** **Bruto** passa a se chamar **Copiado**, e entram **Tratado** e
+**Negócio**. Só o dono e o administrador usam as duas camadas novas. Os outros papéis leem **Seu papel
+ainda não lê nenhuma tabela. Peça a quem administra a empresa.**
+(https://github.com/developmentconexus-ops/conexus/pull/1471,
+https://github.com/developmentconexus-ops/conexus/pull/1475,
+https://github.com/developmentconexus-ops/conexus/pull/1482 e
+https://github.com/developmentconexus-ops/conexus/pull/1486)
 
-**O que se perde ao apagar o lago.** Sai tudo o que foi copiado para ele, sem volta. Saem também, de
-cada ligação, as tabelas marcadas, o intervalo, a data e o histórico de rodadas. As ligações ficam, e o
-dado continua nos sistemas da empresa. A primeira rodada no lago novo lê tudo outra vez, desde a data
-escolhida, e pode levar horas. Uma mudança futura na receita do lago pode pedir este passo outra vez.
-Como evitar isso ainda não foi decidido (https://github.com/developmentconexus-ops/conexus/issues/1431).
-Você não precisa mexer na conta da AWS.
+**Tratado: as tabelas limpas do Sankhya.**
 
-**O Parar cópia foi consertado** (https://github.com/developmentconexus-ops/conexus/pull/1464).
+- São **Notas e pedidos**, **Itens das notas**, **Parceiros (clientes e fornecedores)** e **Produtos**.
+  Cada uma aparece quando a tabela de origem está na cópia.
+- Você não liga nada. Quando a cópia de uma delas termina bem, o Conexus abre uma rodada e grava a
+  tabela tratada. Antes disso, a linha diz **Esperando a próxima cópia**. Depois, mostra quantas linhas
+  a tabela tem e a hora.
+- Ao abrir uma tabela, você vê **Visão geral**, **Colunas** (nome, tipo em português e a descrição que
+  veio da cópia), **De onde vem** e **Quem lê**.
+- **Tratar agora** roda tudo o que há para tratar. Durante a rodada, **Parar** fica ao lado e pede
+  confirmação. O botão vira **Parando…**, e depois o topo de **Tratado** diz **Parada por**, com o nome
+  de quem parou e a hora. O que a rodada já gravou fica.
 
-- Numa tabela que já terminou a primeira carga, a cópia parada continua de onde parou, mesmo quando você
-  para nos primeiros minutos. Uma tabela que ainda não terminou a primeira carga continua começando do
-  zero, e uma tabela **Inteira** continua sendo lida desde o começo.
-- Parar uma rodada de **Ler de novo desde a data** não abandona mais a releitura. A próxima cópia a
-  continua.
-- A rodada parada mostra as linhas que leu e gravou. Se a máquina de cópia não conseguir encerrar a
-  tempo, a rodada fica sem a contagem.
-- Quando você muda a data da cópia para uma data mais antiga, uma leitura inteira que ficou pela metade é
-  planejada de novo, para não pular os meses entre as duas datas.
+**Negócio: a sua regra em SQL.**
 
-**As máquinas dos agentes passam a seguir as listas de internet.** Vale para as conversas em
-**Conversas**, com um agente salvo, em **Construir** e na construção de agentes
-(https://github.com/developmentconexus-ops/conexus/pull/1467).
+- **Novo tratamento** pede o nome, o que conta como a tabela e um `SELECT`. No SQL, cada tabela leva a
+  área na frente, que é `current` (o que foi copiado), `tratado` ou `negocio`. O Conexus confere o SQL
+  ao salvar e recusa, por exemplo, uma tabela que a empresa não tem ou um erro de escrita.
+- Salvar cria uma **Proposta, à espera do sim**, e nada roda. **Ligar** mostra o SQL e as tabelas que
+  ele lê. Nada roda nesse clique. Para gravar a tabela em `negocio` na hora, clique **Tratar agora** na
+  camada **Tratado**. A cópia seguinte das tabelas de que ela depende também a grava.
+- **Propor mudança** cria uma versão nova. A versão ligada continua valendo até você ligar a nova. A
+  aba **Versões** mostra quem propôs e quem ligou cada uma.
+- O SQL roda com o acesso de tratamento da AWS, que não alcança a senha do sistema de origem.
 
-- Toda máquina nasce com uma lista pronta, que tem os pacotes do npm e do PyPI, o GitHub e os
-  repositórios do Debian. Com ela, a máquina alcança mais do que antes. Em **Construir** e na construção
-  de agentes, as máquinas alcançavam só o npm. Nas outras conversas, alcançavam o npm e o PyPI. O GitHub
-  está na lista por escolha sua, e ele também é um caminho por onde um dado pode sair.
-- Além da lista pronta, a máquina abre o que estiver na lista da empresa e na lista da conversa. Com a
-  **Internet toda** ligada pelo dono, ela abre qualquer domínio. A internet toda começa desligada
-  (https://github.com/developmentconexus-ops/conexus/pull/1458 e
-  https://github.com/developmentconexus-ops/conexus/pull/1459).
-- O agente ganhou o pedido de acesso a um domínio. O agente salvo sem **Computador** não o tem.
+**O que saber antes de usar o tratamento.**
 
-**O pedido de internet ainda não tem tela. Ela vem na parte seguinte da etapa.** Enquanto isso:
+- Cada rodada apaga e cria de novo as tabelas que grava. Enquanto uma tabela é regravada, ela fica fora.
+  Na prova do laboratório, uma tabela de 100 mil linhas e 450 colunas ficou fora por cerca de 25
+  segundos.
+- Se o SQL de uma tabela falha, ela fica fora até a próxima rodada boa, mesmo que existisse antes.
+  **Dados** mostra **A última rodada falhou**, com o motivo. As tabelas que dependem dela não rodam
+  nessa vez.
+- Tirar uma tabela da cópia apaga também a tratada dela. Apagar o lago apaga todas. Os tratamentos e as
+  versões ficam no Conexus e voltam a rodar no lago novo.
+- Ainda não dá para apagar um tratamento. Também não há conferência de qualidade que trave a tabela,
+  prévia antes de ligar nem agente de dados. O Assistente e os apps ainda não leem **Tratado** nem
+  **Negócio**.
+- Há ajustes de tela para depois (https://github.com/developmentconexus-ops/conexus/issues/1491). Um
+  deles aparece logo no uso. Um tratamento proposto e nunca ligado diz **Esperando a próxima cópia**,
+  mas só roda depois do seu sim.
 
-- Quando o dono, o administrador ou o desenvolvedor está na conversa e o agente pede um domínio fechado,
-  a conversa fica esperando uma resposta e não mostra nenhum botão para dar. Clique **Parar** para
-  seguir. O domínio continua fechado.
-- Para um membro e numa automação, não há pedido, e o domínio fica fechado. O agente pode dizer que o dono
-  ou um administrador libera em **Configurações, Internet**, uma seção que ainda não existe.
-- Não há tela para mudar a lista da empresa nem para ligar a internet toda.
+**A internet dos agentes ganhou o cartão e a tela** que faltavam na v0.24.135
+(https://github.com/developmentconexus-ops/conexus/pull/1478).
 
-A publicação aplica no banco de dados as migrações da internet toda.
+- Quando um agente pede um domínio fechado, a conversa mostra o cartão **O Conexus quer acessar a
+  internet**, com os domínios e o motivo. O dono e o administrador escolhem **Liberar nesta conversa**,
+  **Liberar para a empresa** ou **Recusar**. O desenvolvedor libera só na conversa.
+- Um membro não tem botões para liberar, e uma automação também não. O Conexus diz quem pode.
+- **Configurações, Internet** mostra a lista que vem com o Conexus, a chave **Internet toda** e a
+  **Lista da empresa**. Só o dono liga a internet toda, depois de ler o aviso. O dono e o administrador
+  adicionam e removem domínios da lista da empresa. Os outros só leem.
 
-**Começou o tratamento do lago** (https://github.com/developmentconexus-ops/conexus/pull/1430). O lago
-novo nasce com as áreas **Tratado** e **Negócio**. O acesso do tratamento na AWS lê as tabelas copiadas,
-grava só nas duas áreas novas e não alcança a senha do sistema de origem. Entraram o molde das tabelas
-tratadas do Sankhya (notas, itens das notas, parceiros e produtos) e a tarefa que vai tratar o dado.
-**Nada disso gera tabela ainda.** O Conexus não chama essa tarefa, e a tela de **Dados** continua como
-estava.
+A publicação aplica no banco de dados as migrações do tratamento.
 
-**O Hub ganhou o desenho novo** (https://github.com/developmentconexus-ops/conexus/pull/1454). O menu e
-as áreas continuam os mesmos.
+**Documento do projeto.** Entrou a regra de tela da casca nova do Hub, que ainda não foi construída
+(https://github.com/developmentconexus-ops/conexus/pull/1474). Nada muda no Conexus que você usa.
 
-- A barra lateral e a moldura são grafite nos temas claro e escuro. No computador, a página fica encaixada
-  na moldura, com os cantos arredondados. As caixas brancas trocam a borda por sombra.
-- O amarelo ipê aparece forte no botão principal, na chave e na caixa ligadas, no progresso e no enviar.
-  O item aberto na barra tem o fundo mais claro e o ícone em ipê.
-- No tema claro, os textos em vermelho, verde e laranja ficaram mais escuros, para ler melhor.
-- Em **Configurações**, salvar o modelo em **Meus padrões** ou em **Padrões da empresa** mostra o aviso
-  **Padrão salvo**, que some sozinho.
+**O que ainda não está provado no ar.** Quando esta nota foi escrita, o motor do tratamento só tinha
+rodado na AWS na prova do laboratório, com dado gerado. A rodada inteira, do fim da cópia à tabela em
+**Dados**, e o **Parar** dela só tinham sido testados com um substituto da AWS. O cartão e a tela de
+internet só tinham sido testados com substitutos, sem a máquina de verdade. As telas novas foram vistas
+no Chromium, e faltam os outros navegadores e um celular de verdade. A conferência no Hub vem depois da
+publicação.
 
-**O Hub também ganhou movimento** (https://github.com/developmentconexus-ops/conexus/pull/1444). Menus,
-dicas, janelas, gavetas e painéis entram e saem com um movimento curto, e o botão cede ao toque. Na troca
-de tela, a área central esmaece, menos com uma gaveta ou uma janela aberta. Um clique dado nesse
-instante pode se perder. Com **reduzir movimento** ligado no seu sistema, nada anima.
-
-**Documentos do projeto.** Nada abaixo muda o Conexus que você usa.
-
-- A primeira parte do lago, **A primeira cópia chega ao lago**, fechou com o registro do seu uso. O que
-  ficou aberto está em https://github.com/developmentconexus-ops/conexus/issues/1461
-  (https://github.com/developmentconexus-ops/conexus/pull/1466).
-- Entrou o plano aprovado da etapa **O primeiro modelo vira tabela tratada**
-  (https://github.com/developmentconexus-ops/conexus/pull/1418), e a ordem das etapas do lago foi
-  atualizada (https://github.com/developmentconexus-ops/conexus/pull/1470).
-- Entrou o plano da etapa **A base visual e o movimento** e das etapas seguintes do redesenho
-  (https://github.com/developmentconexus-ops/conexus/pull/1427). O plano de publicar pela nota mudou de
-  vaga para essa etapa poder entrar (https://github.com/developmentconexus-ops/conexus/pull/1469).
-- Entrou uma conferência mais leve, que roda no computador de quem constrói antes de cada mudança
-  (https://github.com/developmentconexus-ops/conexus/pull/1451).
-
-**O que ainda não está provado no ar.** Quando esta nota foi escrita, o conserto do **Parar cópia** tinha
-sido testado com um substituto da AWS. As listas de internet tinham sido testadas com substitutos da
-máquina e do modelo de inteligência artificial, e o teste com a máquina de verdade não rodou. O lago com
-a receita nova ainda não tinha sido criado na instalação da nuvem. O desenho e o movimento só foram
-testados no Chromium: faltam Safari, Firefox, um celular de verdade e um leitor de tela. A conferência no
-Hub vem depois da publicação.
-
-Seguem as etapas O primeiro modelo vira tabela tratada, A rede e o navegador sob pedido e A base visual
-e o movimento.
+A etapa O primeiro modelo vira tabela tratada fecha depois que você a usar pelo roteiro do cartão. As
+etapas A rede e o navegador sob pedido e A base visual e o movimento também seguem abertas.
