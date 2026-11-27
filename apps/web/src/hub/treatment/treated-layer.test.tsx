@@ -37,7 +37,7 @@ test('Tratar agora abre a rodada, sem corpo, e o botão fica desligado enquanto 
 
 test.each([
   ['ALREADY_RUNNING', 'Uma rodada de tratamento já está em curso.'],
-  ['LAKE_NOT_READY', 'O lago desta empresa ainda não está pronto para os tratamentos.'],
+  ['LAKE_NOT_READY', 'Apague e crie o lago de novo na Central.'],
   ['NOTHING_TO_TREAT', 'A empresa ainda não tem tratamento para rodar.'],
 ] as const)(
   'Tratar agora recusado com %s diz a frase do Hub e o botão volta',

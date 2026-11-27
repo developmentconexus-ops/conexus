@@ -157,7 +157,7 @@ test('a aba Colunas traz o nome, o tipo e a descrição da coluna copiada, e o t
         tables: [
           notas({
             columns: [
-              { name: 'nunota', type: 'bigint', description: 'Chave da nota' },
+              { name: 'nunota', type: 'número', description: 'Chave da nota' },
               { name: 'dtalter', type: null, description: null },
             ],
           }),
@@ -177,7 +177,7 @@ test('a aba Colunas traz o nome, o tipo e a descrição da coluna copiada, e o t
     .getAllByRole('row')
     .slice(1)
     .map((row) => within(row).getAllByRole('cell')[1]?.textContent)
-  expect(types).toEqual(['bigint', ''])
+  expect(types).toEqual(['número', ''])
 })
 
 test('a aba Colunas traz o nome e a descrição da coluna copiada', async () => {

@@ -91,6 +91,7 @@ test('lista: uma tabela por cópia com molde, com a descrição da coluna copiad
   const on = await treatmentOn(t)
   await plantHubSpot(on)
   const { type, description } = await copiedColumn(on, 'sankhya_parceiros', 'nomeparc')
+  assert.equal(type, 'text')
   const view = await on.listed()
   assert.deepEqual(
     [view.lake, view.lastRun, view.tables.map((table) => `${table.layer}.${table.name}`)],
@@ -100,7 +101,7 @@ test('lista: uma tabela por cópia com molde, com a descrição da coluna copiad
   assert.ok(partners.layer === 'tratado')
   assert.deepEqual(
     partners.columns.find((column) => column.name === 'nomeparc'),
-    { name: 'nomeparc', type, description },
+    { name: 'nomeparc', type: 'texto', description },
   )
   const { id, version } = await on.proposed(OF_NOTAS)
   assert.deepEqual(tableOf(await on.listed(), 'tratado', 'sankhya_notas').readBy, [])
@@ -112,15 +113,16 @@ test('lista: uma tabela por cópia com molde, com a descrição da coluna copiad
   assert.deepEqual(tableOf(read, 'tratado', 'sankhya_parceiros').readBy, [])
 })
 
-test('lista: a tabela diz o rótulo do kit, e cada coluna o tipo: o da cópia se o molde mantém, o do Athena se converte', async (t) => {
+test('lista: a tabela diz o rótulo do kit, e cada coluna o tipo em português: o da cópia se o molde mantém, o do cast se converte', async (t) => {
   const on = await treatmentOn(t)
   const notas = tableOf(await on.listed(), 'tratado', 'sankhya_notas')
   assert.ok(notas.layer === 'tratado')
   assert.equal(notas.label, 'Notas e pedidos')
   const kept = await copiedColumn(on, 'sankhya_notas', 'nunota')
   const types = Object.fromEntries(notas.columns.map(({ name, type }) => [name, type]))
-  assert.equal(types.nunota, kept.type)
-  assert.equal(types.dtneg, 'date')
+  assert.equal(kept.type, 'bigint')
+  assert.equal(types.nunota, 'número')
+  assert.equal(types.dtneg, 'data')
   const parceiros = tableOf(await on.listed(), 'tratado', 'sankhya_parceiros')
   assert.ok(parceiros.layer === 'tratado')
   assert.equal(parceiros.label, 'Parceiros (clientes e fornecedores)')
@@ -129,11 +131,12 @@ test('lista: a tabela diz o rótulo do kit, e cada coluna o tipo: o da cópia se
 test('lista: o molde que renomeia mostra a descrição da coluna copiada', async (t) => {
   const on = await treatmentOn(t, { catalog: renamedPartners() })
   const { type, description } = await copiedColumn(on, 'sankhya_parceiros', 'nomeparc')
+  assert.equal(type, 'text')
   const partners = tableOf(await on.listed(), 'tratado', 'sankhya_parceiros')
   assert.ok(partners.layer === 'tratado')
   assert.deepEqual(
     [partners.description, partners.columns],
-    ['Parceiros, com o nome renomeado.', [{ name: 'nome_do_parceiro', type, description }]],
+    ['Parceiros, com o nome renomeado.', [{ name: 'nome_do_parceiro', type: 'texto', description }]],
   )
 })
 

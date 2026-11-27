@@ -61,8 +61,8 @@ export function notas(fields: Record<string, unknown> = {}): TreatedTable {
     connectionId: connection().id,
     description: 'Notas fiscais do Sankhya',
     columns: [
-      { name: 'nunota', type: 'bigint', description: 'Chave da nota' },
-      { name: 'dtalter', type: 'timestamp(6)', description: null },
+      { name: 'nunota', type: 'número', description: 'Chave da nota' },
+      { name: 'dtalter', type: 'data e hora', description: null },
     ],
     readBy: [],
     lastRun: null,
