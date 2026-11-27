@@ -28,6 +28,26 @@ function Refusal(props: { flow: Flow; entry: ConnectorEntry }) {
   return <Refused answer={stage.answer} name={props.entry.name} />
 }
 
+function When(props: { flow: Flow; entry: ConnectorEntry; lake: LakeTablesOfConnection }) {
+  const { flow, lake } = props
+  return (
+    <WhenStep
+      entry={props.entry}
+      lake={lake}
+      picks={flow.picks}
+      since={flow.since}
+      interval={flow.interval}
+      fullPass={flow.fullPass}
+      saving={flow.saving}
+      error={flow.error}
+      onInterval={flow.setInterval}
+      onFullPass={flow.setFullPass}
+      onLink={() => void flow.finish(lake)}
+      onBack={() => flow.setStage({ step: 'CHOOSE', lake })}
+    />
+  )
+}
+
 function Stage(props: Props & { flow: Flow }) {
   const { flow, entry } = props
   const { stage } = flow
@@ -65,20 +85,7 @@ function Stage(props: Props & { flow: Flow }) {
         />
       )
     case 'WHEN':
-      return (
-        <WhenStep
-          entry={entry}
-          lake={stage.lake}
-          picks={flow.picks}
-          since={flow.since}
-          interval={flow.interval}
-          saving={flow.saving}
-          error={flow.error}
-          onInterval={flow.setInterval}
-          onLink={() => void flow.finish(stage.lake)}
-          onBack={() => flow.setStage({ step: 'CHOOSE', lake: stage.lake })}
-        />
-      )
+      return <When flow={flow} entry={entry} lake={stage.lake} />
     case 'LINKED':
       return (
         <LinkedStep

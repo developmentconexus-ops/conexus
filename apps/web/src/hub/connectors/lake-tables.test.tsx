@@ -114,7 +114,7 @@ test('a seção: sem lago pronto diz a frase da matriz e não oferece escolher',
   expect(within(section).queryByRole('button', { name: 'Escolher o que copiar' })).toBeNull()
 })
 
-test('a seção: quem não gerencia cópias vê as caixas, Salvar, Rodar agora e Ler de novo à vista e desligados, com a frase de quem muda; clicar neles não chama rota', async () => {
+test('a seção: quem não gerencia cópias vê as caixas, Salvar, Rodar agora e Ler tudo de novo à vista e desligados, com a frase de quem muda; clicar neles não chama rota', async () => {
   const { section, sent } = await openTables(server, {
     role: 'member',
     mayManage: false,
@@ -127,7 +127,7 @@ test('a seção: quem não gerencia cópias vê as caixas, Salvar, Rodar agora e
   const boxes = view.getAllByRole('checkbox')
   expect(boxes).toHaveLength(2)
   for (const box of boxes) expect(box.getAttribute('aria-disabled')).toBe('true')
-  for (const name of ['Salvar', 'Rodar agora', 'Ler de novo desde a data']) {
+  for (const name of ['Salvar', 'Rodar agora', 'Ler tudo de novo']) {
     expect(view.getByRole('button', { name }).hasAttribute('disabled')).toBe(true)
   }
   expect(view.queryByRole('button', { name: /^Outras tabelas/ })).toBeNull()
@@ -172,46 +172,41 @@ test('a seção: a rodada aberta no Hub aparece como Rodando…, e a recusa por 
   ).toBeTruthy()
 })
 
-test('ler de novo desde a data: o diálogo lista as tabelas que a data limita, cada uma com o que o lago troca, e Ler de novo pede whole: true', async () => {
-  const { section, sent } = await openTables(server, {
-    lake: copiedLake(['TGFCAB', 'TGFITE', 'TGFPAR'], { startDate: '2021-11-24' }),
-  })
-  fireEvent.click(within(section).getByRole('button', { name: 'Ler de novo desde a data' }))
-  const dialog = await screen.findByRole('alertdialog', { name: 'Ler de novo desde 24/11/2021?' })
-  expect(within(dialog).getByText('O lago troca o que tem destas tabelas:')).toBeTruthy()
+test('ler tudo de novo: o diálogo lista todas as tabelas marcadas, cadastro e inteira incluídos, e Ler de novo pede whole: true', async () => {
+  const marked = copiedLake(['TGFCAB', 'TGFITE', 'TGFPAR', 'TGFNFE'], { startDate: '2021-11-24' })
+  const { section, sent } = await openTables(server, { lake: marked })
+  fireEvent.click(within(section).getByRole('button', { name: 'Ler tudo de novo' }))
+  const dialog = await screen.findByRole('alertdialog', { name: 'Ler tudo de novo?' })
+  expect(
+    within(dialog).getByText('O lago troca o que tem destas tabelas pelo que o Sankhya tem agora.'),
+  ).toBeTruthy()
   const rows = within(dialog)
     .getAllByRole('listitem')
     .map((one) => one.textContent)
   expect(rows).toEqual([
-    'Notas e pedidosSó o que mudou: o que veio antes da data, ou foi apagado no Sankhya, sai do lago.',
-    'Itens das notasJanela por mês: trocam-se só os meses desde o mês da data.',
+    'Notas e pedidossankhya_tgfcab',
+    'Itens das notassankhya_tgfite',
+    'Parceirossankhya_tgfpar',
+    'Dados da NF-esankhya_tgfnfe',
   ])
-  expect(within(dialog).getByText('As outras tabelas seguem como sempre.')).toBeTruthy()
+  expect(within(dialog).queryByText('As outras tabelas seguem como sempre.')).toBeNull()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Ler de novo' }))
   await waitFor(() => expect(sent.some((one) => one.path.endsWith('/lake-copy/run'))).toBe(true))
   expect(sent.find((one) => one.path.endsWith('/lake-copy/run'))?.body).toEqual({ whole: true })
-  expect(await within(section).findAllByText('Rodando…')).toHaveLength(3)
+  expect(await within(section).findAllByText('Rodando…')).toHaveLength(4)
   expect(screen.queryByRole('alertdialog')).toBeNull()
 })
 
-test('ler de novo desde a data: sem data o título diz "desde o começo" e Cancelar não chama nada', async () => {
-  const { section, sent } = await openTables(server, { lake: copiedLake(COPIED) })
-  fireEvent.click(within(section).getByRole('button', { name: 'Ler de novo desde a data' }))
-  const dialog = await screen.findByRole('alertdialog', { name: 'Ler de novo desde o começo?' })
+test('ler tudo de novo: Cancelar não chama nada', async () => {
+  const { section, sent } = await openTables(server, { lake: copiedLake(['TGFPAR', 'TGFNFE']) })
+  fireEvent.click(within(section).getByRole('button', { name: 'Ler tudo de novo' }))
+  const dialog = await screen.findByRole('alertdialog', { name: 'Ler tudo de novo?' })
   fireEvent.click(within(dialog).getByRole('button', { name: 'Cancelar' }))
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
   expect(sent.filter((one) => one.method !== 'GET')).toHaveLength(0)
 })
 
-test('ler de novo desde a data: sem tabela que a data limite o botão não aparece', async () => {
-  const { section } = await openTables(server, {
-    lake: copiedLake(['TGFPAR', 'TGFNFE'], { startDate: '2021-11-24' }),
-  })
-  expect(within(section).getByText('Parceiros')).toBeTruthy()
-  expect(within(section).queryByRole('button', { name: 'Ler de novo desde a data' })).toBeNull()
-})
-
-test('ler de novo desde a data: com a resposta already nada muda e as tabelas seguem Rodando…', async () => {
+test('ler tudo de novo: com a resposta already nada muda e as tabelas seguem Rodando…', async () => {
   const held: { view?: View } = {}
   const { view, section, sent } = await openTables(
     server,
@@ -224,7 +219,7 @@ test('ler de novo desde a data: com a resposta already nada muda e as tabelas se
     },
   )
   held.view = view
-  fireEvent.click(within(section).getByRole('button', { name: 'Ler de novo desde a data' }))
+  fireEvent.click(within(section).getByRole('button', { name: 'Ler tudo de novo' }))
   const dialog = await screen.findByRole('alertdialog')
   fireEvent.click(within(dialog).getByRole('button', { name: 'Ler de novo' }))
   expect(await within(section).findAllByText('Rodando…')).toHaveLength(2)

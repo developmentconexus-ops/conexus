@@ -1,6 +1,7 @@
 import type {
   CompanyId,
   ConnectorEntry,
+  LakeFullPass,
   LakeInterval,
   LakeTablesOfConnection,
 } from '@conexus/hub-api'
@@ -12,6 +13,7 @@ import { Field, FieldLabel } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
 import { SectionTitle } from '../../ui/list.tsx'
 import { Spinner } from '../../ui/spinner.tsx'
+import { FullPassField } from './full-pass-field.tsx'
 import { IntervalField } from './interval-field.tsx'
 import type { Picks } from './lake-pick.ts'
 import { isFuture, limitedCount, nameOf, prefixOf } from './lake-pick.ts'
@@ -23,6 +25,7 @@ import {
   CLOSE,
   CONTINUE,
   everyText,
+  fullPassHelpText,
   LINK_AND_COPY,
   LINKING,
   MANUAL_HELP,
@@ -138,9 +141,11 @@ export function WhenStep(props: {
   picks: Picks
   since: string
   interval: LakeInterval
+  fullPass: LakeFullPass
   saving: boolean
   error: string | null
   onInterval: (interval: LakeInterval) => void
+  onFullPass: (fullPass: LakeFullPass) => void
   onLink: () => void
   onBack: () => void
 }) {
@@ -156,6 +161,13 @@ export function WhenStep(props: {
               {props.interval === 'MANUAL' ? MANUAL_HELP : everyText(intervalText(props.interval))}
             </p>
           </IntervalField>
+          <FullPassField
+            value={props.fullPass}
+            manual={props.interval === 'MANUAL'}
+            onChange={props.onFullPass}
+          >
+            <p className="text-text-2">{fullPassHelpText(props.entry.name)}</p>
+          </FullPassField>
           <section aria-label={REVIEW} className="flex flex-col gap-sm">
             <SectionTitle>{REVIEW}</SectionTitle>
             <ul className="flex flex-col">

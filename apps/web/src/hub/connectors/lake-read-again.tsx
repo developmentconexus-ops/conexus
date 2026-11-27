@@ -1,6 +1,6 @@
 import { AlertDialog, AlertDialogContent } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
-import type { MarkedTable, Table } from './lake-pick.ts'
+import type { MarkedTable } from './lake-pick.ts'
 import {
   CANCEL,
   LEAVE_CONFIRM,
@@ -8,22 +8,14 @@ import {
   leaveTitle,
   OTHERS_STAY,
   READ_AGAIN_CONFIRM,
-  READ_AGAIN_LEAD,
-  readAgainEffectText,
-  readAgainTitle,
+  READ_AGAIN_TITLE,
+  readAgainLead,
   STOP_COPY,
   STOP_LEAD,
   STOP_OTHERS,
   STOP_TITLE,
   stopFirstLoadLead,
 } from './lake-text.ts'
-
-/** The copied tables a start date limits: the ones "Ler de novo desde a data" replaces in the lake. */
-export function readAgainTables(tables: readonly Table[]): Table[] {
-  return tables.filter(
-    (one) => one.copy.kind === 'MARKED' && one.limited && one.mode.kind !== 'FULL',
-  )
-}
 
 type Row = { key: string; label: string; detail: string; fact: boolean }
 
@@ -78,26 +70,17 @@ function TablesDialog(props: {
 
 type Ask = { pending: boolean; onConfirm: () => void; onCancel: () => void }
 
-/** "Ler de novo desde a data": what the lake trades in each table the date limits. */
 export function ReadAgainDialog(
-  props: Ask & { open: boolean; since: string; system: string; tables: readonly Table[] },
+  props: Ask & { open: boolean; system: string; tables: readonly MarkedTable[] },
 ) {
   return (
     <TablesDialog
       {...props}
-      title={readAgainTitle(props.since)}
-      lead={READ_AGAIN_LEAD}
+      title={READ_AGAIN_TITLE}
+      lead={readAgainLead(props.system)}
       confirm={READ_AGAIN_CONFIRM}
-      others={OTHERS_STAY}
-      rows={props.tables.map((table) => ({
-        key: table.source,
-        label: table.label,
-        detail: readAgainEffectText(
-          table.mode.kind === 'WINDOW' ? 'WINDOW' : 'CHANGED',
-          props.system,
-        ),
-        fact: false,
-      }))}
+      others={null}
+      rows={props.tables.map(namedRow)}
     />
   )
 }

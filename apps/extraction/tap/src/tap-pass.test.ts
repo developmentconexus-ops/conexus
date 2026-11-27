@@ -107,7 +107,7 @@ test('a janela por mês: a primeira passada lê os meses da contagem, fora do ca
     state: lastState(first),
     whole: ['TGFEFDVMRSTDIA'],
   })
-  assert.equal(monthsOf(whole).length, 6, 'Ler de novo desde a data relê a contagem')
+  assert.equal(monthsOf(whole).length, 6, 'Ler tudo de novo relê a contagem')
 })
 
 test('a janela parada: com o ponto meses atrás, a rodada relê do mês do ponto até hoje, sem pular mês', async () => {

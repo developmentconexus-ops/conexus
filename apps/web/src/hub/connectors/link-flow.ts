@@ -2,6 +2,7 @@ import type {
   CompanyId,
   Connection,
   ConnectorEntry,
+  LakeFullPass,
   LakeInterval,
   LakeTablesOfConnection,
 } from '@conexus/hub-api'
@@ -78,11 +79,13 @@ function useWindowState(props: Props) {
   const [since, setSince] = useState('')
   const [picks, setPicks] = useState<Picks>(NO_PICKS)
   const [interval, setInterval] = useState<LakeInterval>(LAKE_INTERVAL_DEFAULT)
+  const [fullPass, setFullPass] = useState<LakeFullPass>(LAKE_FULL_PASS_DEFAULT)
   const [error, setError] = useState<string | null>(null)
   const [nameRefusal, setNameRefusal] = useState<string | null>(null)
   return {
     ...{ stage, setStage, connection, setConnection, since, setSince, picks, setPicks },
-    ...{ interval, setInterval, error, setError, nameRefusal, setNameRefusal },
+    ...{ interval, setInterval, fullPass, setFullPass, error, setError },
+    ...{ nameRefusal, setNameRefusal },
   }
 }
 
@@ -175,7 +178,8 @@ function useAccess(props: Props, state: State) {
 /** "Ligar e copiar agora": the one `PUT` that sets the copy; a refused name sends the person back to choose. */
 function useFinish(props: Props, state: State) {
   const { companyId, entry } = props
-  const { connection, picks, interval, since, setStage, setError, setNameRefusal } = state
+  const { connection, picks, interval, since, fullPass } = state
+  const { setStage, setError, setNameRefusal } = state
   const queryClient = useQueryClient()
   const save = useMutation(sendLakeCopy)
 
@@ -187,8 +191,8 @@ function useFinish(props: Props, state: State) {
       await save.mutateAsync({
         params: { companyId, connectionId: connection.id },
         body: copyBody({
-          ...{ prefix: prefixOf(entry.id), tables: lake.tables, picks, interval, since },
-          fullPass: LAKE_FULL_PASS_DEFAULT,
+          ...{ prefix: prefixOf(entry.id), tables: lake.tables, picks },
+          ...{ interval, since, fullPass },
         }),
       })
     } catch (failure) {

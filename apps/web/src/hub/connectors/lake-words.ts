@@ -1,5 +1,5 @@
-import type { LakeInterval, LakeRun, LakeTablesOfConnection } from '@conexus/hub-api'
-import { LAKE_INTERVALS } from '@conexus/hub-api'
+import type { LakeFullPass, LakeInterval, LakeRun, LakeTablesOfConnection } from '@conexus/hub-api'
+import { LAKE_FULL_PASSES, LAKE_INTERVALS } from '@conexus/hub-api'
 
 const INTERVAL_LABELS = {
   '15m': '15 min',
@@ -19,6 +19,17 @@ export function intervalText(interval: LakeInterval): string {
 export const INTERVAL_ITEMS = LAKE_INTERVALS.map((value) => ({
   value,
   label: INTERVAL_LABELS[value],
+}))
+
+const FULL_PASS_LABELS = {
+  WEEKLY: 'Toda semana, domingo de madrugada',
+  DAILY: 'Toda madrugada',
+  OFF: 'Desligada',
+} as const satisfies Record<LakeFullPass, string>
+
+export const FULL_PASS_ITEMS = LAKE_FULL_PASSES.map((value) => ({
+  value,
+  label: FULL_PASS_LABELS[value],
 }))
 
 type Mode = LakeTablesOfConnection['tables'][number]['mode']

@@ -108,6 +108,8 @@ export function copiedLake(
   })
 }
 
+export const NEXT_FULL_PASS = '2026-11-29T06:07:00.000Z'
+
 export type LakeView = { lake: LakeTablesOfConnection; linkAddress?: string }
 
 export function stopOpenRound(view: LakeView): boolean {
@@ -129,6 +131,7 @@ export function applied(view: LakeView, body: SetLakeCopy): void {
     interval: body.interval,
     startDate: body.startDate,
     fullPass: body.fullPass,
+    fullNext: body.fullPass === 'OFF' || body.interval === 'MANUAL' ? null : NEXT_FULL_PASS,
     lastRun: round,
     tables: view.lake.tables.map((one) => {
       const name = names.get(one.source)
