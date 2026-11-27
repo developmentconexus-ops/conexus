@@ -56,12 +56,12 @@ const PROPOSAL = {
 const NOTAS = {
   layer: 'tratado',
   name: 'sankhya_notas',
-  label: 'Notas',
+  label: 'Notas e pedidos',
   connectionId: MATRIZ.id,
   description: 'Notas fiscais do Sankhya',
   columns: [
-    { name: 'nunota', type: 'bigint', description: 'Chave da nota' },
-    { name: 'dtalter', type: 'timestamp(6)', description: null },
+    { name: 'nunota', type: 'número', description: 'Chave da nota' },
+    { name: 'dtalter', type: 'data e hora', description: null },
   ],
   readBy: [{ layer: 'negocio', table: 'venda' }],
   lastRun: { status: 'BUILT', rows: 128_402, at: AT },

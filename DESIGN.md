@@ -703,7 +703,10 @@ which shadcn file it was copied from; the front matter holds their values. Their
 - **Table.** Header 40 in `label`, `text-2`, cells with the `table-row` padding, row hairline,
   hover on the tile's fill; its rows keep the table display at every width. A settings table sits in
   a `raised` frame with shadow `1`. A markdown table in a message has a header on the tile's fill
-  and a full hairline grid.
+  and a full hairline grid. **Columns table** (`ui/columns-table.tsx`): a table's columns in a framed
+  table, the name in mono, then the type and the description; under 768px those two go under the
+  name. **Fact** (`ui/fact.tsx`): one labelled fact of a `<dl>`, the label in `text-2` above its
+  value on a phone and beside it, 176px wide, from `sm`, over a row hairline.
 - **Chat messages.** The person's bubble: the tile's fill, `rounded.object`, right, 80% at most, the time as
   a fact under it. The assistant's turn is plain text on the sheet, headed by its sign (the mark, or
   the agent icon of a saved agent), its name and the model badge, on the axis. The working line
