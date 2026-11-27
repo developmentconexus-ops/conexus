@@ -97,6 +97,11 @@ depois juntariamos no conexus completo." Às cinco perguntas do estudo Data & Co
 O primeiro passo é a etapa 3, O agente responde pelo lago, com a porta MCP, e ela entra na frente das
 etapas que ainda não começaram. O cartão é `docs/steps/o-agente-responde-pelo-lago.md`.
 
+No mesmo dia, o fundador decidiu que a publicação feita pelo Studio passa pelo Hub: "Okay publicacao
+pelo hub". A porta MCP ganha a ferramenta `publish`, que chama as mesmas funções do botão Publicar. A
+empresa de teste mora na mesma conta da Cloudflare: "Usar mesma conta como se fosse uma empresa, para
+ser a de teste". O cartão da etapa 3 leva essa ferramenta na U7.
+
 | Etapa | A pergunta que o fundador responde na tela | Prova com |
 | --- | --- | --- |
 | 1. O lago da empresa nasce e some | O Conexus cria e apaga sozinho o lago isolado de uma empresa, sem ninguém abrir o console da AWS? | Nenhum conector |
