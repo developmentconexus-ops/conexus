@@ -47,7 +47,8 @@ páginas. Quando lê só uma parte, ele diz qual. A tela não cai quando você a
    e páginas de todo o documento.
 2. Pergunte "você leu o documento inteiro?". Ele diz a verdade, e a verdade é "sim".
 3. Na mesma conversa, anexe dois arquivos grandes, cada um com menos de 10 MB e somando uns 20 MB
-   (a planilha semanal da ANP e outro PDF público), e peça o ranking dos estados. A conversa segue viva enquanto os arquivos sobem, e a resposta vem.
+   (a planilha semanal da ANP e outro PDF público), e peça o ranking dos estados. A conversa segue viva enquanto os
+   arquivos sobem, e a resposta vem.
 4. Anexe um PDF de umas 150 páginas e peça um número dele. Ele responde pelo texto do documento e diz
    que não o leu página por página.
 5. Abra uma conversa que lê um sistema ligado e faça duas perguntas seguidas. As duas respondem,
@@ -103,7 +104,7 @@ comprimiu, o contexto caiu para 31 408 tokens, e o Assistente voltou a ler trech
 
 | Opção | O que acontece |
 | --- | --- |
-| a) **Recomendada, à espera da sua palavra** | O limiar vem da ficha de cada agente: 400 mil no Assistente, 30 mil nos outros. É o que a v5 provou. O egresso a mais do banco se mede no build (critério 6), e os números vêm a você antes do pull request quando passam de dez vezes o de hoje. |
+| a) **Recomendada, à espera da sua palavra** | O limiar vem da ficha de cada agente: 400 mil no Assistente, 30 mil nos outros. É o que a v5 provou. O egresso a mais do banco se mede no build (critério 6), e os números vêm a você antes do pull request quando passam de dez vezes os do mesmo turno a 30 mil. |
 | b) | 30 mil para todos. O Assistente lê o texto em blocos e cita, como o Claude Code, mas perde o que leu a cada compressão. A U2 sai, e a U3 só tira a proibição do prompt. |
 | c) | Ligar o buffer assíncrono, como o Mastra Code faz (`M/mastracode/sdk/src/agents/memory.ts:350-354`). Isso revê a decisão do egresso. |
 
@@ -146,7 +147,8 @@ Veredito: (a) é remendo até ter referência (delivery L28): uma porta ao lado 
 | G2 | U5 A busca de ferramentas sem reescrever o cache | As ferramentas que `search_tools` carrega não mudam o prefixo do pedido, e a ordem da busca na ficha tem teste | `Ag/assistant/` (a busca, que a harness única move para lá) | testing | a U9 da harness única (move a busca) |
 
 **Os grupos.** Dois pull requests, um commit por unidade. O G1 é a leitura de documentos: a U3 só
-funciona com a U2, e a U1 vem antes porque é a menor e já corta custo. O G2 é o stream e o cache, e não divide arquivo com o G1.
+funciona com a U2, e a U1 vem antes porque é a menor e já corta custo. O G2 é o stream e o cache,
+e não divide arquivo com o G1.
 
 **Orçamento de código alterado.** U1: 25. U2: 30. U3: 40, prompt incluído. U4: 50. U5: 90. Total da
 etapa: cerca de 235 linhas, sem testes nem gerados.
@@ -162,14 +164,14 @@ etapa: cerca de 235 linhas, sem testes nem gerados.
 | 5 | U3 | O prompt do Assistente não diz mais "Never load a whole document" nem "never comes into the conversation" | os cinco pedidos gravados do Assistente que levam o prompt (`Ag/assistant/requests/` `ajudante-pesquisar`, `automacao`, `inicio-com-ligacao`, `luna` e `projeto`), regravados na unidade com a seção nova; `grep` dessas duas frases em `Ag/assistant/prompt/` e `Ag/assistant/requests/` não acha nada | must |
 | 6 | U2, U3, U4 | O turno com o PDF de 73 páginas lido por `read_file`, e o turno com os dois anexos de 10 MB, têm medidos os bytes que o banco manda ao Hub, contra os mesmos turnos com o limiar a 30 mil; acima de dez vezes, os números vão ao fundador antes do pull request | a medição de "Como se prova" da U3, com os números no relatório do build e no pull request | should |
 | 7 | U3 | Com o modelo de verdade e o PDF do Banco Central, o Assistente lê as 73 páginas, acerta os quatro pontos do gabarito do estudo e não diz que leu o que não leu; o custo fica no teto da decisão B | `Ag/assistant/files-journey.test.ts`, "o roteiro com modelo de verdade" (linha 194), com o PDF e as perguntas do roteiro; opt-in, com a chave da instalação | should |
-| 8 | U3 | Com o modelo de verdade, um PDF de 150 páginas é lido pelo texto, sem `read_file` como mídia,, e a resposta diz que não foi lido página por página | o mesmo arquivo do critério 7, um segundo caso opt-in | should |
-| 9 | U4 | Uma mensagem com dois arquivos que não são imagem, somando cerca de 20 MB, mantém o stream aberto: nenhuma linha `BUILDER_STREAM_ENDED` com `reason BEHIND`; os arquivos chegam inteiros à máquina | um caso novo em `Ag/assistant/files-machine.test.ts`, com a máquina dublê de lá: "dois anexos de 10 MB não derrubam o stream", que abre o stream da conversa pela rota e lê o hash de cada arquivo em `uploads/` | must |
+| 8 | U3 | Com o modelo de verdade, um PDF de 150 páginas é lido pelo texto, sem `read_file` como mídia, e a resposta diz que não foi lido página por página | o mesmo arquivo do critério 7, um segundo caso opt-in | should |
+| 9 | U4 | Uma mensagem com dois arquivos que não são imagem, somando cerca de 20 MB, mantém o stream aberto: nenhuma linha `BUILDER_STREAM_ENDED` com `reason BEHIND`; os arquivos chegam inteiros à máquina. Hoje o evento de 25 MB passa dos 8 MiB mesmo numa página que lê no ritmo normal | um caso novo em `Ag/assistant/files-machine.test.ts`, com a máquina dublê de lá: "dois anexos de 10 MB não derrubam o stream", que abre o stream da conversa pela rota e lê o hash de cada arquivo em `uploads/` | must |
 | 10 | U4 | No stream, a parte de arquivo da mensagem da pessoa guarda `mediaType` e `filename` e perde `data` quando não é imagem; a imagem segue com `data`, e a tela mostra a miniatura | o caso do critério 9 lê o evento `message_start`; `W/harness/room/messages.test.tsx`, um caso novo: "o arquivo sem bytes vira um chip com o nome" | must |
 | 11 | U4 | Uma página que de fato fica 8 MiB atrás segue perdendo o stream, como hoje | `H/routes/conversation-stream-paced.test.ts`, o caso da linha 203 | must |
 | 12 | U5 | Numa conversa com conexão, o bloco de ferramentas do pedido do passo seguinte a um `search_tools` começa com os mesmos bytes do pedido anterior | um pedido gravado novo, `Ag/assistant/requests/busca-carrega.snapshot`, com dois passos, e um caso em `Ag/assistant/request.test.ts` que compara o começo dos dois | must |
 | 13 | U5 | A busca das leituras e `profileReadOnlyInRuns` ficam antes da escolha da conta; movê-las para depois deixa um teste vermelho (issue #1285) | um caso novo em `Ag/assistant/research.test.ts`, pelo caminho achatado do CLIProxy, como a issue pede | must |
 | 14 | U5 | Com o modelo de verdade, a pergunta de vendas do estudo tem leituras de cache a partir do segundo passo | `Ag/assistant/assistant.eval.test.ts`, um caso opt-in que lê `cacheRead` dos spans | should |
-| 15 | U3 | O provedor que recusa o pedido com o PDF (páginas demais, tipo não aceito) encerra o turno com a mesma falha de modelo de hoje, e a mensagem seguinte da conversa responde | um caso novo em `Ag/assistant/files-machine.test.ts`, com o modelo dublê que recusa o pedido que leva um PDF: "o provedor recusa o PDF, e a conversa segue" | must |
+| 15 | U3 | O provedor que recusa o pedido com o PDF (páginas demais, tipo não aceito) encerra o turno com a mesma falha de modelo de hoje, e não com uma falha nova nem com o turno parado | um caso novo em `Ag/assistant/files-machine.test.ts`, com o modelo dublê que recusa o pedido que leva um PDF: "o provedor recusa o PDF" | must |
 
 ## A matriz de estados
 
@@ -251,7 +253,8 @@ maxOutputTokens?: number
 ```
 
 O valor do Assistente é uma constante nomeada em `Ag/assistant/assistant.ts` (C26), ao lado de
-`readMedia`. C21 e C23 não se aplicam: não há estado nem id novo. `workspaceOf` passa `maxOutputTokens` às duas ferramentas só quando o campo existe.
+`readMedia`. C21 e C23 não se aplicam: não há estado nem id novo. `workspaceOf` passa
+`maxOutputTokens` às duas ferramentas só quando o campo existe.
 
 ### As skills e a leitura
 
@@ -309,7 +312,8 @@ observeAt: number
 
 O número dos 30 mil vira uma constante exportada de `H/spec/memory.ts` (o dono, C26), e as três
 fichas que não leem documentos a usam. O comentário das linhas 37-48 passa a dizer que o valor vem
-da ficha e por que o do Assistente é maior. A constante do Assistente vive em `Ag/assistant/memory.ts`. C21 e C23 não se aplicam.
+da ficha e por que o do Assistente é maior. A constante do Assistente vive em
+`Ag/assistant/memory.ts`. C21 e C23 não se aplicam.
 
 ### As skills e a leitura
 
@@ -385,7 +389,8 @@ para a seção do prompt.
 
 ### Como se prova
 
-O critério 6 roda no Hub local, com o Postgres num contêiner Docker do builder (`docker run --rm`),
+O critério 6 roda no Hub local, com o Postgres num contêiner Docker só para a medição
+(`docker run --rm`), que nenhum outro processo usa,
 o turno do PDF de 73 páginas e o turno dos dois anexos de 10 MB, cada um duas vezes: uma com a U2 e
 outra com o limiar a 30 mil. Conta os bytes que o banco manda ao Hub em cada turno pela diferença do
 `NET I/O` de saída em `docker stats --no-stream` antes e depois do turno, e põe os números no
@@ -398,7 +403,9 @@ relatório do build e no pull request. Hoje o PDF não entra no contexto, e não
 - O custo do critério 7 passa do teto da decisão B: pare, e diga o custo de cada rodada.
 - Antes do passo 2: o provedor do AI SDK instalado de um modelo da lista de partida
   (`H/model-accounts/providers.ts:109-114`) não aceita um PDF como mídia no resultado de uma
-  ferramenta. O laboratório só rodou o Sonnet. Pare e diga qual, com a linha do provedor.
+  ferramenta. Confira em `node_modules/@ai-sdk/<provedor>/dist/`, onde ele converte o resultado de
+  ferramenta com uma parte de arquivo. O laboratório só rodou o Sonnet. Pare e diga qual provedor,
+  com a linha.
 - O turno seguinte à recusa do critério 15 também falha, porque o PDF ficou na conversa: pare e diga.
 
 ## G1 O ponto de conferência
