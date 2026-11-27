@@ -27,6 +27,10 @@ empresa, e a página Dados a mostra. O cartão está no histórico do `main`, no
 último que o mudou. A trilha está sem cartão em `docs/steps/` até o cartão seguinte entrar: o do
 aviso de cópia parada vem primeiro.
 
+Depois da `T1` vem A passada inteira agendada: o cartão, aprovado pelo fundador em 2026-11-26
+([aprovação](../../approvals/a-passada-inteira-agendada.md)), entra em `docs/steps/` quando a `T1`
+fechar (delivery L5).
+
 As etapas anteriores fecharam: o lago da empresa nasce e some, a etapa 1 do lago, em 2026-11-23, na
 v0.24.110 ([aprovação](../../approvals/o-lago-da-empresa-nasce-e-some.md)); a pergunta respondida
 com a origem, em 2026-11-16 ([aprovação](../../approvals/a-pergunta-respondida-com-a-origem.md));
@@ -85,6 +89,7 @@ ainda não está nela entra com o seu cartão.
 | 2. A primeira cópia chega ao lago | Eu ligo o Sankhya numa janela só, escolho as tabelas e quando copiar, elas chegam inteiras ao lago, a mudança de hoje aparece na rodada seguinte, e eu vejo isso na página Dados? | O Sankhya completo, núcleo, fiscal e contábil, e o XML da NF-e; o dublê do HubSpot na mesma bateria, para o adaptador não aprender um sistema só |
 | O conector no padrão novo, entre a parte 0 e a parte 1 da etapa 2 | O Assistente continua lendo o Sankhya e o Mercado Livre enquanto cada conector é refeito, e cada um nasce de uma definição só, com a sua skill e a classe da credencial? | O Sankhya e o Mercado Livre, um pull request por conector |
 | `T1`. O primeiro modelo vira tabela tratada | Depois de cada cópia, o Conexus grava a tabela Notas tratada e a Venda com a regra que eu liguei, e eu vejo em Dados as três camadas e de onde cada tabela veio? | O Sankhya, nas quatro tabelas de venda |
+| A passada inteira agendada, depois da `T1` | A NF-e lê só as notas novas em cada rodada, e uma passada inteira, quando eu a ligo, tira do lago o que sumiu do Sankhya? | A NF-e (`TGFNFE`) e as tabelas marcadas do Sankhya |
 | 3a. O arquivo chega ao lago, ligado à sua linha | Pergunto ao Assistente por uma linha e abro o arquivo ligado a ela, e quem não lê a tabela não abre o arquivo? | Uma leitura de API que baixa o arquivo (um documento ou anexo do Mercado Livre, se a prova PM1 confirmar; senão, o dublê do HubSpot) e uma coluna binária grande de banco (um anexo do Sankhya, se a sonda PS1 achar) |
 | O XML lido em linhas, depois da 3a | Pergunto ao Assistente se a nota que lançamos bate com o XML do fornecedor, e ele responde item por item, com as duas origens? | O XML da NF-e do Sankhya, guardado na etapa 2, lido em `nfe_notas` e `nfe_itens`; o dublê do conector NF-e |
 | 5. A segunda classe pelo mesmo caminho | Uma lista de um sistema de outro tipo entra pelo mesmo caminho, sem código novo no adaptador? | O Mercado Livre, a lista de vendas. O estudo usa o conector dele numa plataforma de referência e o que já rodamos |
