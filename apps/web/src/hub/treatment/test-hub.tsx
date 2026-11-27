@@ -1,6 +1,7 @@
 import type { FailureCode, LakeTableSummary } from '@conexus/hub-api'
 import {
   FAILURES,
+  getCompany,
   PROBLEM_MEDIA_TYPE,
   ProposedTreatment,
   TreatedTable,
@@ -15,6 +16,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY, problemOf } from '../../platform/fixtures.ts'
 import type { hubServer } from '../../platform/test-hub.tsx'
 import { PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
+import { mayOf } from '../../platform/test-may.ts'
 import { connection, lakeTable } from '../copies/test-hub.tsx'
 import { CATALOG } from '../copies/test-sources.ts'
 
@@ -192,7 +194,13 @@ function viewOf(fields: Partial<View> = {}): View {
 /** Opens `path` as a person of `role`, on a Hub that holds `view`; `sent` lists the writes it received. */
 export function openTreatment(
   server: ReturnType<typeof hubServer>,
-  held: { view?: Partial<View>; answers?: Answers; path?: string; role?: string } = {},
+  held: {
+    view?: Partial<View>
+    answers?: Answers
+    path?: string
+    role?: string
+    may?: Partial<ReturnType<typeof mayOf>>
+  } = {},
 ) {
   const view = viewOf(held.view)
   const sent: Sent[] = []
@@ -202,6 +210,16 @@ export function openTreatment(
       HttpResponse.json({ connectors: CATALOG, connections: [connection()], mayManage: true }),
     ),
     http.get(`*/api/companies/${COMPANY.id}/lake-tables`, () => HttpResponse.json(view.copied)),
+    http.get(`*/api/companies/${COMPANY.id}`, () =>
+      HttpResponse.json(
+        getCompany.success.body.parse({
+          company: COMPANY,
+          role: held.role ?? 'owner',
+          mayInviteAs: [],
+          may: { ...mayOf(held.role ?? 'owner'), ...held.may },
+        }),
+      ),
+    ),
     ...projectsRead({
       projects: [PEDIDOS],
       databaseReady: true,

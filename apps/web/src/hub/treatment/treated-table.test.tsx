@@ -58,7 +58,7 @@ test('um código que a tela não conhece diz que o Athena recusou o SQL, com o c
   })
   expect(
     await (await main()).findByText(
-      'A última rodada falhou: O Athena recusou o SQL (TABLE_NOT_FOUND), na linha 7',
+      'A última rodada falhou: o Athena recusou o SQL (TABLE_NOT_FOUND), na linha 7',
     ),
   ).toBeTruthy()
 })

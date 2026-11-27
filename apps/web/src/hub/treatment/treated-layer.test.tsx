@@ -62,6 +62,16 @@ test('só quem pode ligar vê Tratar agora', async () => {
   expect(main.queryByRole('button', { name: 'Tratar agora' })).toBeNull()
 })
 
+test('quem pode propor mas não ligar não vê Tratar agora', async () => {
+  openTreatment(server, {
+    may: { approveTreatment: false },
+    view: { list: listOf({ tables: [notas({ lastRun: built() })] }) },
+  })
+  const main = await layer()
+  expect(await main.findByRole('link', { name: 'Notas' })).toBeTruthy()
+  expect(main.queryByRole('button', { name: 'Tratar agora' })).toBeNull()
+})
+
 test('com o lago de uma receita anterior, Tratado diz para apagar e criar de novo', async () => {
   openTreatment(server, { view: { list: listOf({ lake: 'OUTDATED', tables: [notas()] }) } })
   const main = await layer()

@@ -33,6 +33,21 @@ test('sem rodada aberta não há Parar', async () => {
   expect(main.queryByRole('button', { name: /^Par/ })).toBeNull()
 })
 
+test('com a rodada começando, Parar já aparece ao lado de Tratar agora', async () => {
+  openTreatment(server, {
+    view: {
+      list: listOf({
+        lastRun: { state: 'STARTING', since: '2026-11-26T17:00:00.000Z', stopping: false },
+        tables: [notas({ lastRun: built() })],
+      }),
+    },
+  })
+  const main = await layer()
+  const tratar = await main.findByRole('button', { name: 'Tratar agora' })
+  expect(tratar.hasAttribute('disabled')).toBe(true)
+  expect(tratar.nextElementSibling?.textContent).toBe('Parar')
+})
+
 test('com a rodada aberta, Parar fica ao lado de Tratar agora, confirma, envia o pedido sem corpo e vira Parando…', async () => {
   const { view, sent } = openTreatment(server, { view: { list: running() } })
   const main = await layer()

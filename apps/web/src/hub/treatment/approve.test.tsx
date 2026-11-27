@@ -178,3 +178,18 @@ test('sem proposta à espera não há Ligar', async () => {
   expect(await screen.findByRole('button', { name: 'Propor mudança' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull()
 })
+
+test('quem pode propor mas não ligar não vê Ligar, em Negócio nem na página, e ainda vê Novo tratamento', async () => {
+  const held = { ...waiting(), may: { approveTreatment: false } }
+  openTreatment(server, { ...held, path: `${LIST}?layer=business` })
+  expect(await screen.findByText('Proposta: v2, à espera do sim')).toBeTruthy()
+  expect(await screen.findByRole('button', { name: 'Novo tratamento' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull()
+})
+
+test('quem pode propor mas não ligar vê a proposta na página do tratamento e Propor mudança, sem Ligar', async () => {
+  openTreatment(server, { ...waiting(), may: { approveTreatment: false } })
+  expect(await screen.findByRole('button', { name: 'Propor mudança' })).toBeTruthy()
+  expect(await screen.findByText('Proposta, à espera do sim')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Ligar' })).toBeNull()
+})

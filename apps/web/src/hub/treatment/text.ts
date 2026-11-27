@@ -1,4 +1,5 @@
 import type { ModelRunView, RunView, TableRef } from '@conexus/hub-api'
+import { TreatmentRunFailure } from '@conexus/hub-api'
 import { clockOf, dayAndHour, dayAndMonth } from '../../platform/dates.ts'
 
 /** The words of the Tratado and Negócio screens; the founder approves them at the step's end. */
@@ -57,22 +58,34 @@ export const NO_ACTIVE = 'Nenhuma versão ligada'
 const RUN_FAILED = 'A última rodada falhou'
 const RUN_NOT_ENDED = 'A última rodada não terminou'
 
-/** What a failure code says: the code of a run, or the Athena's own type for a model; one owner for both (code C26). */
-const REASONS: Readonly<Record<string, string>> = {
+/** What a run's failure says: a closed set, so a new code of the Hub does not typecheck until it has its words (code C22). */
+const RUN_REASONS = {
   TREAT_START_FAILED: 'a rodada não conseguiu começar',
   TREAT_TASK_STOPPED: 'a rodada parou antes de terminar',
   TREAT_SPEC_INVALID: 'o pedido da rodada não passou na conferência',
   TREAT_ENGINE_FAILED: 'o motor de tratamento falhou',
+} as const satisfies Record<TreatmentRunFailure, string>
+
+/** The Athena's own types, which stay open: a model run that failed in the SQL carries one of them. */
+const ATHENA_REASONS: Readonly<Record<string, string>> = {
   COLUMN_NOT_FOUND: 'coluna que não existe',
 }
 
-function reasonText(code: string, line: number | null = null): string {
-  const reason = REASONS[code] ?? `O Athena recusou o SQL (${code})`
+function withLine(reason: string, line: number | null): string {
   return line === null ? reason : `${reason}, na linha ${line}`
 }
 
+/** A model run's failure is one of the run's codes or an Athena type. */
+function modelReasonText(code: string, line: number | null): string {
+  const run = TreatmentRunFailure.safeParse(code)
+  const reason = run.success
+    ? RUN_REASONS[run.data]
+    : (ATHENA_REASONS[code] ?? `o Athena recusou o SQL (${code})`)
+  return withLine(reason, line)
+}
+
 function failedText(code: string, line: number | null): string {
-  return `${RUN_FAILED}: ${reasonText(code, line)}`
+  return `${RUN_FAILED}: ${modelReasonText(code, line)}`
 }
 
 function rowsText(rows: number, at: string): string {
@@ -140,7 +153,7 @@ export function runTopText(run: RunView | null): string | null {
     case 'DONE':
       return null
     case 'FAILED':
-      return `${RUN_NOT_ENDED}: ${reasonText(run.failure)}`
+      return `${RUN_NOT_ENDED}: ${RUN_REASONS[run.failure]}`
     case 'STOPPED':
       return run.stoppedBy === null ? STOPPED : stoppedByText(run.stoppedBy.name, run.at)
     default:

@@ -202,8 +202,9 @@ function withBound() {
 
 test('Propor mudança abre o formulário com o SQL da versão ligada e envia a nova versão', async () => {
   const { sent, view } = openTreatment(server, withBound())
-  view.models[MODEL_ID] = modelOf({ versions: [version({ number: 2 }), bound()] })
-  view.list = listOf({ tables: [venda({ active: bound(), proposal: version({ number: 2 }) })] })
+  const waiting = version({ number: 2, sql: 'select 2' })
+  view.models[MODEL_ID] = modelOf({ versions: [waiting, bound()] })
+  view.list = listOf({ tables: [venda({ active: bound(), proposal: waiting })] })
   const form = await openForm('Propor mudança')
   expect(form.getByRole('textbox', { name: 'SQL' })).toHaveProperty('value', SQL)
   expect(form.queryByRole('textbox', { name: 'Nome' })).toBeNull()
