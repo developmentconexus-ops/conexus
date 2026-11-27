@@ -258,10 +258,10 @@ test('a passada desligada ou Só manual perdoa a pendência, e nada relê sozinh
     assert.deepEqual(await dueOf(on, connection), [], JSON.stringify(off))
     await finished(on, connection, BOTH)
     // A row the clock failed to take away still fires.
-    assert.deepEqual(await fired(on, left), { kind: 'QUEUED' })
+    const rounds = (await runsOf(on, connection)).length
+    assert.deepEqual(await fired(on, left), { kind: 'PASS_OFF' }, JSON.stringify(off))
     assert.deepEqual(await dueOf(on, connection), [], JSON.stringify(off))
-    assert.deepEqual(await lastWhole(on, connection), NONE_WHOLE)
-    await finished(on, connection, BOTH)
+    assert.equal((await runsOf(on, connection)).length, rounds, JSON.stringify(off))
   }
   await runNow(on, connection)
   assert.deepEqual(await lastWhole(on, connection), NONE_WHOLE)

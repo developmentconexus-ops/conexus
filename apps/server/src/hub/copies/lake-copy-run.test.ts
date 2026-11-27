@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { bodyOfStatus, runLakeCopy } from '@conexus/hub-api'
+import { queued, withOwnerLock } from '../../platform/test-database.ts'
 import { codeOf } from '../identity/test-hub.ts'
 import {
   counts,
@@ -13,6 +14,7 @@ import {
   specOf,
   wholeOf,
 } from './test-lake-copy.ts'
+import { ALL_WHOLE, lastWhole, loadedOn } from './test-lake-pass.ts'
 
 test('marcar depois: a tabela nova dispara a rodada que lê inteira só ela, e o horário não muda', async (t) => {
   const on = await lakeCopyOn(t)
@@ -143,6 +145,22 @@ test('inteira em todas: Ler tudo de novo pede whole em cada tabela marcada, cada
   await on.hub.lakeRuns.idle()
   const last = (await runsOf(on, connection)).at(-1)
   assert.deepEqual(wholeOf(on, last?.id), { sankhya_notas: false, sankhya_parceiros: false })
+})
+
+test('a passada que dispara enquanto a rodada abre entra nela', async (t) => {
+  const { on, connection } = await loadedOn(t, 'DAILY')
+  const held = 'lock table copies.lake_run in exclusive mode'
+
+  await withOwnerLock(on.hub.test, held, [], async (release) => {
+    const asked = on.hub.lakeRuns.iniciarRodada(on.at, connection, 'CLOCK')
+    await queued(on.hub.test, 1, asked)
+    assert.equal(await on.hub.lakeRuns.markFullPass(on.at, connection), 'DUE')
+    await release()
+    return asked
+  })
+  await on.hub.lakeRuns.idle()
+
+  assert.deepEqual(await lastWhole(on, connection), ALL_WHOLE)
 })
 
 test('rodar agora vale também sem relógio, e sem cópia não há o que rodar', async (t) => {

@@ -16,6 +16,8 @@ export type ScheduledCopy = Readonly<{
   anchor: Date
 }>
 
+export type FullPassFire = 'DUE' | 'PASS_OFF' | 'NO_COPY'
+
 /** The full pass the clock runs for a copy; null: off, or Só manual, under which nothing runs on its own. */
 export function runningPass(
   copy: Pick<ScheduledCopy, 'interval' | 'fullPass'>,
@@ -47,27 +49,30 @@ export async function scheduledCopies(
 
 /**
  * A full pass fired: each marked table owes one until a whole read of it reaches its current table,
- * or the copy stops running a full pass. A row the clock failed to take away marks nothing.
+ * or the copy stops running a full pass. `PASS_OFF`: the copy runs none, so the row that fired is
+ * one the clock failed to take away, and it marks nothing.
  */
 export async function markFullPass(
   deps: Readonly<{ database: Database; log: FailureLog }>,
   at: CompanyScope,
   connection: ConnectionId,
-): Promise<void> {
-  const marked = await deps.database.command(at, async (tx) => {
+): Promise<FullPassFire> {
+  const fire = await deps.database.command(at, async (tx): Promise<FullPassFire> => {
     const [copy] = await tx
       .select({ interval: lakeCopy.interval, fullPass: lakeCopy.fullPass })
       .from(lakeCopy)
       .where(eq(lakeCopy.connectionId, connection))
-    if (copy === undefined || runningPass(copy) === null) return false
+    if (copy === undefined) return 'NO_COPY'
+    if (runningPass(copy) === null) return 'PASS_OFF'
     await tx
       .update(lakeTable)
       .set({ fullDueAt: sql`statement_timestamp()` })
       .where(eq(lakeTable.connectionId, connection))
-    return true
+    return 'DUE'
   })
-  if (marked)
+  if (fire === 'DUE')
     deps.log.info({ companyId: at.companyId, connectionId: connection }, 'LAKE_FULL_PASS_DUE')
+  return fire
 }
 
 export async function forgetFullPass(tx: CommandTx, connection: ConnectionId): Promise<void> {

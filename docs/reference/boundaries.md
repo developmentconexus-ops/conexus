@@ -1660,8 +1660,8 @@ reference tool checks a read against its documentation.
   when: `cronOf(interval, anchor)` in São Paulo time, set into `mastra.schedules` under the
   connection's id, and a second row, `-full`, at 03h daily or on Sunday while the copy runs a full
   pass; each step calls `iniciarRodada` and ends when it answers, the full pass's after it marks
-  each table due (`lake_table.full_due_at`, which a later round pays if this one is refused).
-  `MANUAL` leaves no row. The start line, the machine sizes and the 48 hours of `RUN_STALE_MS` have
+  each table due (`lake_table.full_due_at`, which a later round pays if this one is refused). A
+  `-full` row left behind by a copy that runs no full pass asks for no round. `MANUAL` leaves no row. The start line, the machine sizes and the 48 hours of `RUN_STALE_MS` have
   one owner each in `lake-run.ts`.
 - **Why.** The library has no per-connection anchor, no start order and no rate keeper; a fixed
   `*/15` cron drifts from the minute the copy was born, and ten starts in a second would meet the
@@ -1670,7 +1670,8 @@ reference tool checks a read against its documentation.
   parameter double never receives more than 3 in a second), "dois disparos juntos", "a AWS recusa",
   "a AWS não responde"; `lake-sweep.test.ts`; `clock.test.ts` "o relógio conta da hora em que a cópia
   nasceu", "o relógio só diz quando" and "a linha da passada"; `lake-run.test.ts` "a passada
-  pendente não se perde"; `mastra.test.ts` "o relógio da ligação". On AWS, L.9: ten
+  pendente não se perde"; `lake-copy-run.test.ts` "a passada que dispara enquanto a rodada abre";
+  `lake-copy.test.ts` "a passada desligada ou Só manual"; `mastra.test.ts` "o relógio da ligação". On AWS, L.9: ten
   parameter writes through the start line, none refused
   (https://github.com/developmentconexus-ops/conexus/pull/1369).
 - **Revisit when** `@aws-sdk/client-ecs` or Mastra's schedules change, or SSM's default rate does.
