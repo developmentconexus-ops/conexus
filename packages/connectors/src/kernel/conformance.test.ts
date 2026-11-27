@@ -46,6 +46,10 @@ function withTables(
   })
 }
 
+function readByNumber(lag: number): Declared {
+  return { ...BASE, mode: { kind: 'CHANGED', column: 'NUNOTA', cursor: { kind: 'NUMBER', lag } } }
+}
+
 /** Each declaration the conformance refuses (criterion 10), with the refusal it gives. */
 const REFUSED: [string, () => unknown, RegExp | typeof ZodError][] = [
   [
@@ -92,6 +96,8 @@ const REFUSED: [string, () => unknown, RegExp | typeof ZodError][] = [
       ]),
     /windows by TIPMOV, which is no date/,
   ],
+  ['um lag negativo', () => withTables([readByNumber(-1)]), /no whole number from zero up/],
+  ['um lag com fração', () => withTables([readByNumber(1.5)]), /no whole number from zero up/],
   [
     'colunas descobertas sem o gancho',
     () =>
