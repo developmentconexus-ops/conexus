@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { PAGE_SIZE } from '@conexus/hub-api'
 import type { Connector } from '../connectors/public.ts'
 import { CONNECTORS } from '../connectors/public.ts'
+import { EARLIER_TEMPLATE } from '../copies/test-lake-copy.ts'
 import type { Hub } from '../identity/test-hub.ts'
 import { ANA_OWNER, call } from '../identity/test-hub.ts'
 import { lakeWorld } from '../lake/test-lake.ts'
@@ -75,21 +77,21 @@ test('os modelos da rodada: um por molde, com o SELECT do conector, e cada trata
   assert.equal(models[2]?.sql, OF_NOTAS)
 })
 
-async function partnerDescription(on: TreatmentOn, name: string) {
-  const [copied] = await on.rows(
-    `select columns from copies.lake_table where name = 'sankhya_parceiros'`,
-  )
+async function copiedColumn(on: TreatmentOn, table: string, name: string) {
+  const [copied] = await on.rows(`select columns from copies.lake_table where name = $1`, [table])
   const column = Object(copied).columns.find(
     (each: { name: string }) => each.name.toLowerCase() === name,
   )
   assert.equal(typeof column?.description, 'string')
-  return String(column.description)
+  assert.equal(typeof column?.type, 'string')
+  return { type: String(column.type), description: String(column.description) }
 }
 
 test('lista: uma tabela por cópia com molde, com a descrição da coluna copiada, e quem a lê', async (t) => {
   const on = await treatmentOn(t)
   await plantHubSpot(on)
-  const description = await partnerDescription(on, 'nomeparc')
+  const { type, description } = await copiedColumn(on, 'sankhya_parceiros', 'nomeparc')
+  assert.equal(type, 'text')
   const view = await on.listed()
   assert.deepEqual(
     [view.lake, view.lastRun, view.tables.map((table) => `${table.layer}.${table.name}`)],
@@ -99,7 +101,7 @@ test('lista: uma tabela por cópia com molde, com a descrição da coluna copiad
   assert.ok(partners.layer === 'tratado')
   assert.deepEqual(
     partners.columns.find((column) => column.name === 'nomeparc'),
-    { name: 'nomeparc', description },
+    { name: 'nomeparc', type: 'texto', description },
   )
   const { id, version } = await on.proposed(OF_NOTAS)
   assert.deepEqual(tableOf(await on.listed(), 'tratado', 'sankhya_notas').readBy, [])
@@ -111,14 +113,33 @@ test('lista: uma tabela por cópia com molde, com a descrição da coluna copiad
   assert.deepEqual(tableOf(read, 'tratado', 'sankhya_parceiros').readBy, [])
 })
 
+test('lista: a tabela diz o rótulo do kit, e cada coluna o tipo em português: o da cópia se o molde mantém, o do cast se converte', async (t) => {
+  const on = await treatmentOn(t)
+  const notas = tableOf(await on.listed(), 'tratado', 'sankhya_notas')
+  assert.ok(notas.layer === 'tratado')
+  assert.equal(notas.label, 'Notas e pedidos')
+  const kept = await copiedColumn(on, 'sankhya_notas', 'nunota')
+  const types = Object.fromEntries(notas.columns.map(({ name, type }) => [name, type]))
+  assert.equal(kept.type, 'bigint')
+  assert.equal(types.nunota, 'número')
+  assert.equal(types.dtneg, 'data')
+  const parceiros = tableOf(await on.listed(), 'tratado', 'sankhya_parceiros')
+  assert.ok(parceiros.layer === 'tratado')
+  assert.equal(parceiros.label, 'Parceiros (clientes e fornecedores)')
+})
+
 test('lista: o molde que renomeia mostra a descrição da coluna copiada', async (t) => {
   const on = await treatmentOn(t, { catalog: renamedPartners() })
-  const description = await partnerDescription(on, 'nomeparc')
+  const { type, description } = await copiedColumn(on, 'sankhya_parceiros', 'nomeparc')
+  assert.equal(type, 'text')
   const partners = tableOf(await on.listed(), 'tratado', 'sankhya_parceiros')
   assert.ok(partners.layer === 'tratado')
   assert.deepEqual(
     [partners.description, partners.columns],
-    ['Parceiros, com o nome renomeado.', [{ name: 'nome_do_parceiro', description }]],
+    [
+      'Parceiros, com o nome renomeado.',
+      [{ name: 'nome_do_parceiro', type: 'texto', description }],
+    ],
   )
 })
 
@@ -130,9 +151,22 @@ test('lista: a receita anterior e o lago ausente se dizem', async (t) => {
   assert.equal((await on.listed()).lake, 'NONE')
 })
 
+test('F15: o lago de uma receita anterior que ainda trata não está desatualizado, e Tratar agora abre; o de uma receita fora do conjunto está', async (t) => {
+  const on = await treatmentOn(t, { treatableBefore: [EARLIER_TEMPLATE] })
+  await on.rows(`update lake.company_lake set template = $1`, [EARLIER_TEMPLATE])
+  assert.equal((await on.listed()).lake, 'CURRENT')
+  const now = await on.treatNow()
+  assert.equal(now.statusCode, 202, now.body)
+  await on.hub.treatment.idle()
+  assert.equal((await on.treatRuns()).length, 1)
+
+  await on.rows(`update lake.company_lake set template = $1`, ['b'.repeat(64)])
+  assert.equal((await on.listed()).lake, 'OUTDATED')
+})
+
 async function plantRun(
   on: TreatmentOn,
-  run: Readonly<{ lake: string; state: string; hours: number; rows: number }>,
+  run: Readonly<{ lake: string; state: string; hours: number; rows: number | null }>,
   name: string,
 ) {
   const id = randomUUID()
@@ -142,8 +176,8 @@ async function plantRun(
     [id, on.companyId, run.lake, run.state, run.hours, run.state === 'STOPPED' ? on.ana.id : null],
   )
   await on.rows(
-    `insert into treatment.model_run (run_id, company_id, name, status, rows) values ($1, $2, $3, 'BUILT', $4)`,
-    [id, on.companyId, name, run.rows],
+    `insert into treatment.model_run (run_id, company_id, name, status, rows) values ($1, $2, $3, $4, $5)`,
+    [id, on.companyId, name, run.rows === null ? 'SKIPPED' : 'BUILT', run.rows],
   )
 }
 
@@ -167,6 +201,17 @@ test('rodadas: a lista e o modelo mostram só as do lago de agora, a mais nova p
     [2, 1],
   )
   assert.equal(tableOf(view, 'tratado', 'sankhya_notas').lastRun, null)
+})
+
+test('lista: o modelo pulado na última rodada mostra as linhas da última boa', async (t) => {
+  const on = await treatmentOn(t)
+  await on.proposed(OF_NOTAS)
+  const [lake] = await on.rows('select lake_id from lake.company_lake')
+  const now = String(Object(lake).lake_id)
+  await plantRun(on, { lake: now, state: 'DONE', hours: 3, rows: 7 }, 'negocio__venda')
+  await plantRun(on, { lake: now, state: 'DONE', hours: 1, rows: null }, 'negocio__venda')
+  const { lastRun } = tableOf(await on.listed(), 'negocio', 'venda')
+  assert.equal(lastRun?.status === 'BUILT' ? lastRun.rows : null, 7)
 })
 
 async function plantTreatment(hub: Hub, company: string, person: string) {
@@ -211,4 +256,25 @@ test('apagar o cliente leva os tratamentos da empresa, e só os dela', async (t)
     left.map((row) => Object(row).company_id),
     Array(4).fill(a.companyId),
   )
+})
+
+test('rodadas: o modelo mostra uma página das rodadas do lago, a mais nova primeiro', async (t) => {
+  const on = await treatmentOn(t)
+  const { id } = await on.proposed(OF_NOTAS)
+  const [lake] = await on.rows('select lake_id from lake.company_lake')
+  const lakeId = String(Object(lake).lake_id)
+  const total = PAGE_SIZE + 5
+  await on.rows(
+    `insert into treatment.run (id, company_id, lake_id, cause, state, "select", attempt, started_at, ended_at)
+     select gen_random_uuid(), $1, $2, 'NOW', 'DONE', '[]', 1,
+            now() - make_interval(mins => n), now() - make_interval(mins => n)
+     from generate_series(1, $3::int) n`,
+    [on.companyId, lakeId, total],
+  )
+  await on.rows(
+    `insert into treatment.model_run (run_id, company_id, name, status, rows)
+     select id, company_id, 'negocio__venda', 'BUILT', 1 from treatment.run`,
+  )
+  const runs = (await on.read(id)).runs
+  assert.equal(runs.length, PAGE_SIZE)
 })

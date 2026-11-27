@@ -12,6 +12,8 @@ import {
   CodeBlockTitle,
 } from '../code-block.tsx'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../collapsible.tsx'
+import { ColumnsTable } from '../columns-table.tsx'
+import { Fact } from '../fact.tsx'
 import { List, PageTitle, Row, SectionTitle, SettingsPageTitle } from '../list.tsx'
 import { Meter, MeterLabel } from '../meter.tsx'
 import { Page } from '../page.tsx'
@@ -78,6 +80,27 @@ export const DATA: readonly ShowcaseEntry[] = [
         </TableRow>
       </TableBody>
     </Table>
+  )),
+  entry(
+    'columns-table.tsx',
+    'Dados',
+    'As colunas de uma tabela: o nome, o tipo e o que guarda.',
+    () => (
+      <ColumnsTable
+        label="Colunas"
+        heads={['Coluna', 'Tipo', 'Descrição']}
+        columns={[
+          { name: 'nunota', type: 'número', description: 'Chave da nota' },
+          { name: 'dtneg', type: 'data', description: null },
+        ]}
+      />
+    ),
+  ),
+  entry('fact.tsx', 'Dados', 'Um fato com o seu rótulo, numa lista de fatos.', () => (
+    <dl className="flex flex-col">
+      <Fact label="Linhas">128.402</Fact>
+      <Fact label="Última rodada">às 14:05</Fact>
+    </dl>
   )),
   entry('list.tsx', 'Dados', 'Títulos de página e de seção, e a lista de linhas simples.', () => (
     <>

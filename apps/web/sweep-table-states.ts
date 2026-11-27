@@ -4,6 +4,7 @@ import {
   listConnections,
   listLakeTables,
   listProjects,
+  listTreatedTables,
 } from '@conexus/hub-api'
 import { failure, ok } from './layout-harness.ts'
 import { SANKHYA } from './src/hub/connectors/fixtures.ts'
@@ -11,6 +12,7 @@ import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { MEMBER, OWNER, PROJECT_ID, projectsPage } from './sweep-replies.ts'
+import { TREATMENT_STATES } from './sweep-treatment-states.ts'
 
 const COMPANY_API = `/api/companies/${COMPANY.id}`
 const PAGE = `/companies/${COMPANY.id}/data`
@@ -39,6 +41,11 @@ function dataPage(connections: (typeof MATRIZ)[]) {
       mayManage: true,
     }),
     [`GET ${COMPANY_API}/lake-tables`]: ok(listLakeTables, []),
+    [`GET ${COMPANY_API}/data/treated`]: ok(listTreatedTables, {
+      lake: 'CURRENT',
+      lastRun: null,
+      tables: [],
+    }),
   }
 }
 
@@ -86,10 +93,16 @@ export const LAYER_STATES: State[] = [
     settle: (p) => waitFor(p, 'Tentar de novo'),
   },
   {
+    name: 'Dados, a camada Tratado vazia',
+    path: `${PAGE}?layer=treated`,
+    replies: dataPage([MATRIZ]),
+    settle: (p) => waitFor(p, 'Tratar agora'),
+  },
+  {
     name: 'Dados, a camada Negócio vazia',
     path: `${PAGE}?layer=business`,
     replies: dataPage([MATRIZ]),
-    settle: (p) => waitFor(p, 'Nenhum conceito aprovado ainda'),
+    settle: (p) => waitFor(p, 'Nenhum tratamento ainda'),
   },
   {
     name: 'Dados, a camada Apps',
@@ -109,4 +122,5 @@ export const LAYER_STATES: State[] = [
     replies: { ...dataPage([MATRIZ]), ...MEMBER },
     settle: (p) => waitFor(p, 'Seu papel ainda não lê nenhuma tabela.'),
   },
+  ...TREATMENT_STATES,
 ]

@@ -47,16 +47,30 @@ test('a seleção: nada a tratar quando a tabela copiada não tem modelo e tudo 
 
 test('a seleção: o nunca gravado e o que falhou ou pulou por último entram, com o que está abaixo deles', () => {
   assert.deepEqual(
-    selection(GRAPH, [], last({ ...Object.fromEntries(ALL_BUILT), negocio__venda: 'FAILED' })),
-    ['negocio__venda', 'negocio__painel'],
+    selection(
+      GRAPH,
+      [ref('current', 'sankhya_parceiros')],
+      last({ ...Object.fromEntries(ALL_BUILT), negocio__venda: 'FAILED' }),
+    ),
+    ['tratado__sankhya_parceiros', 'negocio__venda', 'negocio__painel'],
   )
   assert.deepEqual(
-    selection(GRAPH, [], last({ ...Object.fromEntries(ALL_BUILT), negocio__painel: 'SKIPPED' })),
-    ['negocio__painel'],
+    selection(
+      GRAPH,
+      [ref('current', 'sankhya_parceiros')],
+      last({ ...Object.fromEntries(ALL_BUILT), negocio__painel: 'SKIPPED' }),
+    ),
+    ['tratado__sankhya_parceiros', 'negocio__painel'],
   )
   const firstLake = selection(GRAPH, [ref('current', 'sankhya_parceiros')], new Map())
   assert.deepEqual(
     firstLake,
     GRAPH.map(({ name }) => name),
   )
+})
+
+test('a seleção: uma tabela copiada sem molde e sem leitor não junta os não gravados (critério 26)', () => {
+  const failed = last({ ...Object.fromEntries(ALL_BUILT), negocio__venda: 'FAILED' })
+  assert.deepEqual(selection(GRAPH, [ref('current', 'sankhya_vendedores')], failed), [])
+  assert.deepEqual(selection(GRAPH, [ref('current', 'sankhya_vendedores')], new Map()), [])
 })

@@ -5,6 +5,7 @@ import { PageTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, ReadFailure } from '../../ui/states.tsx'
 import { ConnectorLogo, connectionsQuery, connectorName, stateBadge } from '../connectors/public.ts'
+import { BusinessLayer, TreatedLayer } from '../treatment/public.ts'
 import { AppsLayer } from './apps-layer.tsx'
 import { connectionsOfData } from './data-systems.ts'
 import { LakeList } from './lake-list.tsx'
@@ -13,27 +14,15 @@ import { useMay } from './member.ts'
 import { DataLayer } from './search.ts'
 import {
   CATALOG_FAILED,
-  CONCEPT_HINT,
   DATA_INTRO,
   DATA_TITLE,
   LINK_SYSTEM,
   lakeGroupText,
-  NO_CONCEPT,
   NO_SYSTEM,
   NO_SYSTEM_HINT,
   NO_TABLE_COPIED,
   NO_TABLE_OF_ROLE,
 } from './text.ts'
-
-/** The **Negócio** layer: no concept is approved yet, and what a concept is. */
-function BusinessLayer() {
-  return (
-    <div className="flex flex-col items-start gap-sm">
-      <p className="font-medium">{NO_CONCEPT}</p>
-      <Empty>{CONCEPT_HINT}</Empty>
-    </div>
-  )
-}
 
 function NoSystem({ companyId }: { companyId: CompanyId }) {
   return (
@@ -51,7 +40,7 @@ function NoSystem({ companyId }: { companyId: CompanyId }) {
   )
 }
 
-/** The **Bruto** layer: each active connection of the company, with the lake tables it copies. */
+/** The **Copiado** layer: each active connection of the company, with the lake tables it copies. */
 function SystemsLayer({ companyId }: { companyId: CompanyId }) {
   const connections = useQuery(connectionsQuery(companyId))
   const lake = useQuery(lakeTablesListQuery(companyId))
@@ -115,7 +104,18 @@ export function DataPage(props: { companyId: CompanyId; layer: DataLayer }) {
         ) : (
           <p className="font-medium">{NO_TABLE_OF_ROLE}</p>
         ))}
-      {layer === DataLayer.enum.business && <BusinessLayer />}
+      {layer === DataLayer.enum.treated &&
+        (may.proposeTreatment ? (
+          <TreatedLayer companyId={companyId} />
+        ) : (
+          <p className="font-medium">{NO_TABLE_OF_ROLE}</p>
+        ))}
+      {layer === DataLayer.enum.business &&
+        (may.proposeTreatment ? (
+          <BusinessLayer companyId={companyId} />
+        ) : (
+          <p className="font-medium">{NO_TABLE_OF_ROLE}</p>
+        ))}
       {layer === DataLayer.enum.apps && <AppsLayer companyId={companyId} />}
     </div>
   )

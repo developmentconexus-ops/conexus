@@ -1,5 +1,11 @@
 import type { Connection } from '@conexus/hub-api'
-import { ConnectionId, LakeRun, LakeTableSummary, listConnections } from '@conexus/hub-api'
+import {
+  ConnectionId,
+  LakeRun,
+  LakeTableSummary,
+  listConnections,
+  TreatedTables,
+} from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -73,11 +79,15 @@ export function lakeRun(fields: Record<string, unknown> = {}): LakeRun {
 type Held = {
   connections?: Connection[]
   tables?: LakeTableSummary[]
+  treated?: TreatedTables
   runs?: Record<string, LakeRun[]>
   answer?: () => Response | undefined
   lakeAnswer?: () => Response | undefined
   runsAnswer?: () => Response | undefined
 }
+
+/** A company whose lake treats and that has nothing treated yet. */
+const NOTHING_TREATED = TreatedTables.parse({ lake: 'CURRENT', lastRun: null, tables: [] })
 
 const COMPANY_ROOT = `/companies/${COMPANY.id}`
 export const LIST = `${COMPANY_ROOT}/data`
@@ -104,6 +114,9 @@ export function openData(
     http.get(
       `*/api/companies/${COMPANY.id}/lake-tables`,
       () => held.lakeAnswer?.() ?? HttpResponse.json(held.tables ?? []),
+    ),
+    http.get(`*/api/companies/${COMPANY.id}/data/treated`, () =>
+      HttpResponse.json(held.treated ?? NOTHING_TREATED),
     ),
     http.get(
       `*/api/companies/${COMPANY.id}/lake-tables/:tableId/runs`,

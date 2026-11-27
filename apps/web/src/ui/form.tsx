@@ -12,6 +12,7 @@ import { Button } from './button.tsx'
 import { cn } from './cn.ts'
 import { Field, FieldError, FieldGroup, FieldLabel } from './field.tsx'
 import { Input } from './input.tsx'
+import { Textarea } from './textarea.tsx'
 
 /** A form checked by the operation's own body schema from `packages/hub-api` (web W23). */
 export function useSchemaForm<I extends FieldValues, O>(
@@ -78,9 +79,11 @@ export function TextField(props: {
   autoComplete: string
   invalid?: string
   maxLength?: number
+  hint?: ReactNode
 }) {
   const { register } = useFormContext()
   const shown = useFieldError(props.name, props.invalid)
+  const hintId = `${shown.id}-hint`
   return (
     <Field {...shown.field}>
       <FieldLabel htmlFor={shown.id}>{props.label}</FieldLabel>
@@ -88,6 +91,41 @@ export function TextField(props: {
         id={shown.id}
         type={props.type}
         autoComplete={props.autoComplete}
+        maxLength={props.maxLength}
+        {...shown.control}
+        aria-describedby={
+          [props.hint === undefined ? undefined : hintId, shown.control['aria-describedby']]
+            .filter(Boolean)
+            .join(' ') || undefined
+        }
+        {...register(props.name)}
+      />
+      {props.hint !== undefined && (
+        <p id={hintId} className="text-label text-text-2">
+          {props.hint}
+        </p>
+      )}
+      <FieldError id={shown.errorId}>{shown.message}</FieldError>
+    </Field>
+  )
+}
+
+/** A field for code: a longer text in the mono face, grown with it, with no spell check. */
+export function CodeField(props: {
+  name: string
+  label: string
+  invalid?: string
+  maxLength?: number
+}) {
+  const { register } = useFormContext()
+  const shown = useFieldError(props.name, props.invalid)
+  return (
+    <Field {...shown.field}>
+      <FieldLabel htmlFor={shown.id}>{props.label}</FieldLabel>
+      <Textarea
+        id={shown.id}
+        spellCheck={false}
+        className="min-h-40 font-mono"
         maxLength={props.maxLength}
         {...shown.control}
         {...register(props.name)}
@@ -111,7 +149,10 @@ export function setServerError<I extends FieldValues, O>(
   error: unknown,
   field?: Path<I>,
 ) {
-  form.setError(field ?? 'root.server', { type: 'server', message: sentenceOf(error) })
+  form.setError(field ?? 'root.server', {
+    type: 'server',
+    message: sentenceOf(error),
+  })
 }
 
 /**

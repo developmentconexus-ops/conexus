@@ -7,11 +7,12 @@ import {
   TreatmentModel,
   VersionView,
 } from '@conexus/hub-api'
-import { and, asc, desc, eq, getTableColumns, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, getTableColumns, inArray, ne } from 'drizzle-orm'
 import type { LakeId } from '../../platform/aws.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CopySource } from '../connectors/public.ts'
+import { treatedColumnType } from '../connectors/public.ts'
 import { lakeOf, markedTablesOf } from '../copies/public.ts'
 import { personNameColumn } from '../identity/public.ts'
 import { treatmentModel, treatmentModelRun, treatmentRun, treatmentVersion } from './tables.ts'
@@ -180,14 +181,20 @@ export async function treatmentLakeOf(
 
 const RUN_COLUMNS = { ...getTableColumns(treatmentModelRun), at: treatmentRun.endedAt }
 
-/** The last run of each of the models in the lake. */
+/** The last run of each of the models in the lake that wrote or failed: a skipped model keeps its table, and the rows of its last good run. */
 async function lastModelRunsOf(tx: ReadTx, lakeId: LakeId | null, names: readonly string[]) {
   if (lakeId === null || names.length === 0) return []
   return tx
     .selectDistinctOn([treatmentModelRun.name], RUN_COLUMNS)
     .from(treatmentModelRun)
     .innerJoin(treatmentRun, eq(treatmentRun.id, treatmentModelRun.runId))
-    .where(and(eq(treatmentRun.lakeId, lakeId), inArray(treatmentModelRun.name, [...names])))
+    .where(
+      and(
+        eq(treatmentRun.lakeId, lakeId),
+        inArray(treatmentModelRun.name, [...names]),
+        ne(treatmentModelRun.status, 'SKIPPED'),
+      ),
+    )
     .orderBy(treatmentModelRun.name, desc(treatmentRun.startedAt))
 }
 
@@ -261,11 +268,16 @@ export async function treatedTablesOf(
         layer: 'tratado' as const,
         name,
         connectionId,
+        label: treated.label,
         description: treated.description,
-        columns: treated.columns.map(({ column, as }) => ({
-          name: as,
-          description: columns.find((each) => each.name === column)?.description ?? null,
-        })),
+        columns: treated.columns.map(({ column, as, cast }) => {
+          const copied = columns.find((each) => each.name === column)
+          return {
+            name: as,
+            type: treatedColumnType(cast, copied?.type ?? null),
+            description: copied?.description ?? null,
+          }
+        }),
         ...standing('tratado', name),
       })),
       ...business.map(({ id, name, description, active, proposal }) => ({
@@ -286,8 +298,8 @@ export async function treatmentModelViewOf(
   const model = await businessModelOf(tx, modelId)
   const { lakeId } = await treatmentLakeOf(reads, tx, companyId)
   const runs = await modelRunsOf(tx, lakeId, modelNameOf('negocio', model.name))
-  const { id, name, description, versions } = model
-  return { id, name, description, versions, runs: runs.map(modelRunViewOf) }
+  const { id, name, description, versions, active, proposal } = model
+  return { id, name, description, versions, active, proposal, runs: runs.map(modelRunViewOf) }
 }
 
 export async function deleteCompanyTreatments(tx: CommandTx, companyId: CompanyId): Promise<void> {

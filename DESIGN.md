@@ -689,7 +689,9 @@ which shadcn file it was copied from; the front matter holds their values. Their
   holds the rail and the list together on the frame's graphite (V56); the right panel
   (`drawer-right`) holds a form beside the page.
   The alert dialog is Base UI's, in the drawer's dress: a click outside does not close it, Escape
-  and its buttons do, and its first field takes the focus.
+  and its buttons do, and its first field takes the focus. Its `card` size is a card in the middle
+  at every width (`containers.column`); its `page` size fills the screen under `sm` and is that card
+  above it, for a text to read before the yes (the Ligar card).
 - **Dialog.** Four sizes, as `ui/dialog.tsx` names them: `form` (`containers.column`), `page`
   (`containers.page`), `fields` (`containers.wide`) and `ask` (a card under `sm`, `fields` above);
   `object` radius, `raised`, shadow `float`; `title` heading; a footer with a hairline.
@@ -701,7 +703,10 @@ which shadcn file it was copied from; the front matter holds their values. Their
 - **Table.** Header 40 in `label`, `text-2`, cells with the `table-row` padding, row hairline,
   hover on the tile's fill; its rows keep the table display at every width. A settings table sits in
   a `raised` frame with shadow `1`. A markdown table in a message has a header on the tile's fill
-  and a full hairline grid.
+  and a full hairline grid. **Columns table** (`ui/columns-table.tsx`): a table's columns in a framed
+  table, the name in mono, then the type and the description; under 768px those two go under the
+  name. **Fact** (`ui/fact.tsx`): one labelled fact of a `<dl>`, the label in `text-2` above its
+  value on a phone and beside it, 176px wide, from `sm`, over a row hairline.
 - **Chat messages.** The person's bubble: the tile's fill, `rounded.object`, right, 80% at most, the time as
   a fact under it. The assistant's turn is plain text on the sheet, headed by its sign (the mark, or
   the agent icon of a saved agent), its name and the model badge, on the axis. The working line

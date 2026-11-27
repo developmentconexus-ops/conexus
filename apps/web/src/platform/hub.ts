@@ -3,6 +3,7 @@ import type {
   Operation,
   ProblemAgents,
   ProblemField,
+  ProblemPosition,
   ProblemReason,
 } from '@conexus/hub-api'
 import {
@@ -35,6 +36,9 @@ export class HubFailure extends Error {
   readonly reason: ProblemReason | undefined
   /** The agents a refusal names, such as those that still use a tool (`TOOL_IN_USE`). */
   readonly agents: ProblemAgents | undefined
+  /** The table a treatment refusal names, and where the SQL stops parsing, for the screen to show. */
+  readonly table: string | undefined
+  readonly position: ProblemPosition | undefined
 
   constructor(
     code: FailureCode,
@@ -46,6 +50,8 @@ export class HubFailure extends Error {
       field?: ProblemField
       reason?: ProblemReason
       agents?: ProblemAgents
+      table?: string
+      position?: ProblemPosition
     } = {},
   ) {
     super(code, options)
@@ -57,6 +63,8 @@ export class HubFailure extends Error {
     this.field = options.field
     this.reason = options.reason
     this.agents = options.agents
+    this.table = options.table
+    this.position = options.position
   }
 }
 
@@ -89,6 +97,8 @@ export function failureOfProblem(body: unknown): HubFailure {
     field: problem.data.field,
     reason: problem.data.reason,
     agents: problem.data.agents,
+    table: problem.data.table,
+    position: problem.data.position,
   })
 }
 

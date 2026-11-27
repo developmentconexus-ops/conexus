@@ -29,7 +29,7 @@ const ICON = '[&_svg]:size-4'
 const TAIL = 'ms-auto shrink-0 text-eyebrow tabular-nums text-text-2'
 const NOTE = 'px-[0.6rem] text-text-2'
 
-/** A layer of Dados as a line of the tree. Bruto is the page without `layer`, the layer the address means when it says none. */
+/** A layer of Dados as a line of the tree. Copiado is the page without `layer`, the layer the address means when it says none. */
 function LayerGroup(props: { companyId: CompanyId; layer: DataLayer; count?: number }) {
   const { companyId, layer, count } = props
   const raw = layer === 'raw'
@@ -100,13 +100,14 @@ function RawNote({ companyId }: { companyId: CompanyId }) {
   return <p className={NOTE}>{linked ? NO_TABLE_COPIED : NO_SYSTEM}</p>
 }
 
-/** The tree of Dados in the frame's `nav`, in place of the conversations: Negócio, Bruto, Apps. */
+/** The tree of Dados in the frame's `nav`, in place of the conversations: Copiado, Tratado, Negócio, Apps. */
 export function DataTree({ companyId }: { companyId: CompanyId }) {
   const may = useMay()
   return (
     <nav aria-label={TREE_LABEL} className="flex min-w-0 flex-col">
-      <LayerGroup companyId={companyId} layer="business" count={0} />
       <RawGroup companyId={companyId} />
+      <LayerGroup companyId={companyId} layer="treated" />
+      <LayerGroup companyId={companyId} layer="business" />
       {may.viewAppData && <LayerGroup companyId={companyId} layer="apps" />}
     </nav>
   )

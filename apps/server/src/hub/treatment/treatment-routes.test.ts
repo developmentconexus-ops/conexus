@@ -143,10 +143,17 @@ test('versões: a ligada fica até a nova ser ligada, e a lista e o modelo mostr
       [1, ANA_OWNER.name, ANA_OWNER.name],
     ],
   )
+  assert.deepEqual([view.active?.number, view.proposal?.number], [1, 2])
   await on.approved(id, second)
   const after = tableOf(await on.listed(), 'negocio', 'venda')
   assert.ok(after.layer === 'negocio')
   assert.deepEqual([after.active?.number, after.proposal], [2, null])
+  const bothBound = await on.read(id)
+  assert.deepEqual(
+    bothBound.versions.map((v) => v.approvedAt !== null),
+    [true, true],
+  )
+  assert.deepEqual([bothBound.active?.number, bothBound.proposal], [2, null])
 })
 
 test('versões: duas propostas ao mesmo tempo não dão o mesmo número', async (t) => {

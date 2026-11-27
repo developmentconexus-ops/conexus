@@ -12,14 +12,16 @@ export const NO_TABLE_COPIED = 'Nenhuma tabela copiada. Escolha o que copiar na 
 export const NO_TABLE_OF_ROLE =
   'Seu papel ainda não lê nenhuma tabela. Peça a quem administra a empresa.'
 export const NO_TABLE_OF_ROLE_SHORT = 'Seu papel ainda não lê nenhuma tabela.'
-export const NO_CONCEPT = 'Nenhum conceito aprovado ainda'
-export const CONCEPT_HINT =
-  'Um conceito é o significado de uma palavra do negócio, aprovado por uma pessoa da empresa, como "Venda". Quando o primeiro for aprovado, ele aparece aqui.'
 export const CATALOG_FAILED =
   'Não deu para ler o catálogo agora. Nada foi apagado. Tente de novo em instantes.'
 export const TREE_LABEL = 'Dados'
 export const LOADING_LABEL = 'Carregando'
-export const DATA_LAYERS = { raw: 'Bruto', business: 'Negócio', apps: 'Apps' } as const
+export const DATA_LAYERS = {
+  raw: 'Copiado',
+  treated: 'Tratado',
+  business: 'Negócio',
+  apps: 'Apps',
+} as const
 
 /** A system's header in the list: its name, the connections' names (not one that repeats the system's) and how many tables it has. */
 export function systemText(system: string, accounts: readonly string[], tables: number): string {

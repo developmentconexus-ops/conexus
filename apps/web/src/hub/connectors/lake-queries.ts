@@ -5,16 +5,17 @@ import {
   setLakeCopy,
   stopLakeCopyRun,
 } from '@conexus/hub-api'
-import { queryOptions, useMutationState, useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { useFollowRun } from '../../platform/follow-run.ts'
 import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
-
-const WHILE_RUNNING = 5_000
-/** How long after the person's own request the section reads on: the Hub may open the round after the first re-read. */
-const AFTER_REQUEST = 30_000
 
 /** A connection's tables. `useLakeTables` is the one reader that follows a round. */
 export function lakeTablesQuery(companyId: CompanyId, connectionId: ConnectionId) {
-  return queryOptions(hubQuery(getLakeTablesOfConnection, { params: { companyId, connectionId } }))
+  return queryOptions(
+    hubQuery(getLakeTablesOfConnection, {
+      params: { companyId, connectionId },
+    }),
+  )
 }
 
 function isRunning(lake: LakeTablesOfConnection | undefined): boolean {
@@ -29,15 +30,10 @@ const OWN_WRITES: ReadonlySet<unknown> = new Set([setLakeCopy.id, runLakeCopy.id
  * the Hub opens the round (web W12).
  */
 export function useLakeTables(companyId: CompanyId, connectionId: ConnectionId) {
-  const sent = useMutationState({
-    filters: { predicate: (one) => OWN_WRITES.has(one.options.mutationKey?.[0]) },
-    select: (one) => one.state.submittedAt,
-  })
-  const lastSent = Math.max(0, ...sent)
+  const refetchInterval = useFollowRun(OWN_WRITES, isRunning)
   return useQuery({
     ...lakeTablesQuery(companyId, connectionId),
-    refetchInterval: (query) =>
-      isRunning(query.state.data) || Date.now() - lastSent < AFTER_REQUEST ? WHILE_RUNNING : false,
+    refetchInterval,
   })
 }
 

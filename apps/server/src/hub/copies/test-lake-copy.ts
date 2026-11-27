@@ -10,6 +10,7 @@ import {
 } from '@conexus/hub-api'
 import type { CopyTasks, LakeStacks, LakeTables, Where } from '../../platform/aws.ts'
 import { createAws, LakeId } from '../../platform/aws.ts'
+import { TemplateVersion } from '../../platform/config-aws.ts'
 import { testAws } from '../../platform/test-aws.ts'
 import { awsServer } from '../../platform/test-aws-server.ts'
 import { silent } from '../../platform/test-database.ts'
@@ -31,6 +32,9 @@ import type { StartClock } from './public.ts'
 import { CopyTaskSpec } from './public.ts'
 import { TEST_LAKE } from './test-lake-run.ts'
 
+/** A recipe of the lake older than the image's, for a test of the set that still treats (F15). */
+export const EARLIER_TEMPLATE = TemplateVersion.parse('a'.repeat(64))
+
 type Options = {
   /** The Hub's clock, for "today" in the date's check. */
   now?: Date
@@ -45,9 +49,17 @@ type Options = {
   /** The clock a disconnection waits for its task's stop on. */
   stopWait?: StartClock
   catalog?: readonly Connector[]
+  /** Earlier recipes whose lakes still treat, as `TREATABLE_BEFORE` lists them (card F15). */
+  treatableBefore?: readonly TemplateVersion[]
 }
 
 type Double = Awaited<ReturnType<typeof awsServer>>
+
+function awsOf(double: Double, options: Options) {
+  const aws = testAws(double.endpoint.href, double.credentialsFile)
+  const before = options.treatableBefore ?? []
+  return { ...aws, treatable: new Set([...aws.treatable, ...before]) }
+}
 
 function hubOf(t: TestContext, doubles: { aws: Double; origin: string }, options: Options) {
   const { now } = options
@@ -56,7 +68,7 @@ function hubOf(t: TestContext, doubles: { aws: Double; origin: string }, options
     (config) => ({
       ...config,
       connectorOrigins: new Map([['sankhya', doubles.origin]]),
-      aws: testAws(doubles.aws.endpoint.href, doubles.aws.credentialsFile),
+      aws: awsOf(doubles.aws, options),
     }),
     {
       ...(now === undefined ? {} : { now: () => now }),

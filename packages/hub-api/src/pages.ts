@@ -36,6 +36,8 @@ export const PAGES = [
   '/companies/$companyId/data',
   '/companies/$companyId/data/$copyId',
   '/companies/$companyId/data/lake/$tableId',
+  '/companies/$companyId/data/treated/$name',
+  '/companies/$companyId/data/business/$modelId',
   '/companies/$companyId/automations',
   '/companies/$companyId/automations/$automationId',
   '/companies/$companyId/integrations',

@@ -55,20 +55,21 @@ Tratado e Negócio, e em cada tabela de onde ela veio e quem a lê.
    nome da empresa, e depois **Criar o lago**. Em poucos minutos o bloco diz "Pronto".
 2. Em Dados, você marca de novo as tabelas do Sankhya, porque as cópias e os relógios saem com o lago
    (critério 48 da etapa 2). A primeira carga roda. No lugar de "Bruto" há três camadas: **Copiado**,
-   **Tratado** e **Negócio**. Em Tratado estão Notas, Itens das notas, Parceiros e Produtos do
-   Sankhya, cada uma com "Esperando a próxima cópia".
+   **Tratado** e **Negócio**. Em Tratado estão Notas e pedidos, Itens das notas, Parceiros e
+   Produtos do Sankhya, cada uma com "Esperando a próxima cópia".
 3. Quando a cópia termina, as quatro tabelas de Tratado mostram quantas linhas têm e a hora. Ao abrir
-   Notas, a aba **De onde vem** mostra Copiado › `sankhya_notas`, e a aba Colunas mostra os nomes e os
-   tipos de negócio, cada coluna com a descrição da coluna copiada de que ela sai.
+   Notas e pedidos, a aba **De onde vem** mostra Copiado › `sankhya_notas`, e a aba Colunas mostra
+   os nomes e os tipos em português (texto, número, data, data e hora), cada coluna com a descrição
+   da coluna copiada de que ela sai.
 4. Em Negócio, você clica **Novo tratamento**, dá o nome `venda`, escreve em uma frase o que conta como
    venda, cola o `SELECT` da sua regra (o firstmate o escreve com você a partir das suas palavras) e
    salva. Aparece "Proposta, à espera do sim", com as tabelas que o SQL lê. Um nome de tabela errado é
    recusado na hora, com o nome que faltou.
 5. Você clica **Ligar**. O cartão mostra o SQL, as tabelas que ele lê e o que acontece depois. Você
    liga, clica **Tratar agora**, e a tabela `negocio.venda` aparece com as linhas e a hora. Na aba De
-   onde vem: Tratado › Notas. Em Notas, a aba Quem lê mostra Venda. Enquanto uma rodada roda,
-   **Parar** fica ao lado de Tratar agora; se você para, o botão vira "Parando…" e depois o topo de
-   Tratado diz "Parada por <você> às <HH:MM>".
+   onde vem: Tratado › Notas e pedidos. Em Notas e pedidos, a aba Quem lê mostra Venda. Enquanto
+   uma rodada roda, **Parar** fica ao lado de Tratar agora; se você para, o botão vira "Parando…"
+   e depois o topo de Tratado diz "Parada por <você> às <HH:MM>".
 6. Em Venda, você clica **Propor mudança**, muda a regra (por exemplo, tirar a nota cancelada) e salva.
    Venda continua com a versão ligada até você ligar a nova, e a aba **Versões** mostra as duas, quem
    propôs e quem ligou.
@@ -410,12 +411,12 @@ deixa para a `T2`.
 ┌ Dados ───────────────────────────────────────────────────────────┐
 │ [Copiado] [Tratado] [Negócio] [Apps]              [Tratar agora] │
 │ Sankhya · sankhya                                                │
-│  Notas            128.402 linhas · tratada às 14:05              │
+│  Notas e pedidos  128.402 linhas · tratada às 14:05              │
 │  Itens das notas  901.233 linhas · tratada às 14:05              │
 │  Parceiros        A última rodada falhou: coluna que não existe, │
 │                   na linha 3                                     │
 └──────────────────────────────────────────────────────────────────┘
-┌ Notas ──────────────────────────────────────────────────────────┐
+┌ Notas e pedidos ────────────────────────────────────────────────┐
 │ [Visão geral] [Colunas] [De onde vem] [Quem lê]                  │
 │ De onde vem: Copiado › sankhya_notas                             │
 └──────────────────────────────────────────────────────────────────┘

@@ -32,8 +32,7 @@ export const TREATMENT_FAILURES = {
   },
   LAKE_NOT_READY: {
     ...USER_409,
-    phrase:
-      'O lago desta empresa ainda não está pronto para os tratamentos. Peça ao operador do Conexus.',
+    phrase: 'Apague e crie o lago de novo na Central.',
   },
   ALREADY_RUNNING: { ...USER_409, phrase: 'Uma rodada de tratamento já está em curso.' },
   NOTHING_TO_TREAT: { ...USER_409, phrase: 'A empresa ainda não tem tratamento para rodar.' },
