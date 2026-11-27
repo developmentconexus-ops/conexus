@@ -101,7 +101,7 @@ test('a lista de Negócio também liga a proposta, pelo botão da linha', async 
   expect(sent[0]?.path).toBe(APPROVE_PATH(2))
 })
 
-test('com a proposta mudada por outra pessoa, o cartão diz que ela mudou, mostra a nova e liga a nova', async () => {
+test('com a proposta mudada por Bia, o cartão diz que ela mudou, mostra a nova e liga a nova', async () => {
   const held = openTreatment(server, {
     ...waiting(),
     answers: {

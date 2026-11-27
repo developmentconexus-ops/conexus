@@ -1,8 +1,8 @@
 import { FAILURES } from '@conexus/hub-api'
 import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { hubServer } from '../../platform/test-hub.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
+import { hubServer } from '../../platform/test-hub.tsx'
 import {
   bound,
   built,
@@ -13,8 +13,8 @@ import {
   modelOf,
   notas,
   openTreatment,
-  version,
   venda,
+  version,
 } from './test-hub.tsx'
 
 // Tratado and the pages of a treated table and of a treatment: the last run, De onde vem, Quem lê, Versões.
@@ -250,7 +250,7 @@ test('a aba Versões lista as versões, com quem propôs e quem ligou, e a ligad
   ])
 })
 
-test('o modelo de outro endereço diz que não existe', async () => {
+test('o modelo cujo endereço não existe diz que não existe', async () => {
   openTreatment(server, { path: VENDA })
   expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
 })

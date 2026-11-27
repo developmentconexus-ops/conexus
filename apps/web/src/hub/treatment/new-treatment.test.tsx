@@ -238,7 +238,7 @@ test('uma proposta ao mesmo tempo diz que a versão já não é a de agora, e o 
   expect(form.getByRole('textbox', { name: 'SQL' })).toHaveProperty('value', 'select 2')
 })
 
-test('um modelo de outro endereço dá não encontrado e não abre o formulário', async () => {
+test('um modelo cujo endereço não existe dá não encontrado e não abre o formulário', async () => {
   openTreatment(server, { path: `${LIST}/business/${MODEL_ID}` })
   expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Propor mudança' })).toBeNull()

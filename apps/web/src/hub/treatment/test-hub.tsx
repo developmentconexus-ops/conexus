@@ -1,5 +1,4 @@
-import type { FailureCode } from '@conexus/hub-api'
-import type { LakeTableSummary } from '@conexus/hub-api'
+import type { FailureCode, LakeTableSummary } from '@conexus/hub-api'
 import {
   FAILURES,
   PROBLEM_MEDIA_TYPE,

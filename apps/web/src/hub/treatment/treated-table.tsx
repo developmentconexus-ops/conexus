@@ -20,8 +20,6 @@ import { Approve, Reads, Sql } from './approve.tsx'
 import { useMay } from './may.ts'
 import { ProposeChange } from './new-treatment.tsx'
 import { copiedTablesQuery, treatmentModelQuery, useTreatedTables } from './queries.ts'
-import type { Treated } from './treated-columns.tsx'
-import { Columns } from './treated-columns.tsx'
 import {
   ACTIVE,
   activeLine,
@@ -30,8 +28,8 @@ import {
   NO_ACCESS,
   NO_ACTIVE,
   NO_READER,
-  NOTHING_READ,
   NOT_HERE_ANYMORE,
+  NOTHING_READ,
   PROPOSAL,
   READ_FAILED,
   refText,
@@ -39,6 +37,8 @@ import {
   TABS,
   versionLine,
 } from './text.ts'
+import type { Treated } from './treated-columns.tsx'
+import { Columns } from './treated-columns.tsx'
 
 const treatedRoute = getRouteApi('/_app/companies/$companyId/data/treated/$name')
 const businessRoute = getRouteApi('/_app/companies/$companyId/data/business/$modelId')
@@ -139,7 +139,7 @@ function Tabbed(props: {
   const [first] = props.names
   return (
     <Tabs compact defaultValue={first}>
-      <div className="border-b border-line">
+      <div className="overflow-x-auto border-b border-line">
         <TabsList>
           {props.names.map((name) => (
             <TabsTrigger key={name} value={name}>
