@@ -70,6 +70,7 @@ test('a seção: marcar outra mostra o nome sugerido, que se troca; Salvar grava
     ],
     interval: '24h',
     startDate: '2021-11-24',
+    fullPass: 'OFF',
   })
 })
 
@@ -86,6 +87,7 @@ test('a seção: desmarcar e mudar o intervalo, Só manual incluído, gravam por
     tables: [{ source: 'TGFCAB', name: 'sankhya_tgfcab' }],
     interval: 'MANUAL',
     startDate: '2021-11-24',
+    fullPass: 'OFF',
   })
   await waitFor(() => expect(within(section).queryByText('Itens das notas')).toBeNull())
 })

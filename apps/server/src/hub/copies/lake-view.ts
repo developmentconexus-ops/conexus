@@ -5,11 +5,16 @@ import type { Database } from '../../platform/database.ts'
 import type { CopyConnection, CopySource } from '../connectors/public.ts'
 import type { CompanyScope } from './lake-close.ts'
 import { lakeOf } from './lake-close.ts'
+import type { CopyClock } from './lake-copy.ts'
 import { RUN_COLUMNS, runViewOf } from './lake-run-view.ts'
 import { isFirstLoad } from './lake-spec.ts'
 import { lakeCopy, lakeRun, lakeTable, lakeTableRun } from './tables.ts'
 
-export type ViewDeps = { database: Database; source: CopySource }
+export type ViewDeps = {
+  database: Database
+  source: CopySource
+  clock: Pick<CopyClock, 'fullNext'>
+}
 export type OfConnection = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
 /** The connection a list is made for: its connector, name and declared tables. */
 export type Listed = Omit<Extract<CopyConnection, { kind: 'FOUND' }>, 'kind'>
@@ -18,7 +23,11 @@ async function stored(database: Database, scope: CompanyScope, at: OfConnection)
   return database.read(scope, async (tx) => {
     const lake = await lakeOf(tx, at.companyId)
     const [copy] = await tx
-      .select({ interval: lakeCopy.interval, startDate: lakeCopy.startDate })
+      .select({
+        interval: lakeCopy.interval,
+        startDate: lakeCopy.startDate,
+        fullPass: lakeCopy.fullPass,
+      })
       .from(lakeCopy)
       .where(eq(lakeCopy.connectionId, at.connectionId))
     const named = await tx.select({ name: lakeTable.name }).from(lakeTable)
@@ -82,6 +91,8 @@ export async function lakeTablesOf(
   const empty = {
     interval: row.copy?.interval ?? null,
     startDate: row.copy?.startDate ?? null,
+    fullPass: row.copy?.fullPass ?? null,
+    fullNext: (await deps.clock.fullNext(at.connectionId))?.toISOString() ?? null,
     lastRun: null,
   }
   if (unavailable) return LakeTablesOfConnection.parse({ lake, ...empty, tables: [] })

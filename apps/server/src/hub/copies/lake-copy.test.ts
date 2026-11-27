@@ -11,6 +11,16 @@ import {
   runsOf,
   wholeOf,
 } from './test-lake-copy.ts'
+import {
+  BOTH,
+  dueOf,
+  fired,
+  lastWhole,
+  loadedOn,
+  NONE_WHOLE,
+  rowOf,
+  runNow,
+} from './test-lake-pass.ts'
 
 test('gravar a cópia: a linha, o relógio e a primeira rodada, inteira; o mesmo conjunto não muda nada', async (t) => {
   const on = await lakeCopyOn(t)
@@ -207,4 +217,52 @@ test('a AWS fora ao marcar: 503 e nada muda', async (t) => {
   const answered = await on.put(connection, { tables: [NOTAS], ...DAILY })
   assert.deepEqual([answered.statusCode, codeOf(answered)], [503, 'COPY_AWS_UNAVAILABLE'])
   assert.deepEqual(await counts(on), before)
+})
+
+test('a passada inteira grava: o PUT guarda e devolve o valor sem abrir rodada, e um valor de fora é 400', async (t) => {
+  const on = await lakeCopyOn(t)
+  const connection = await on.linked()
+  const marks = { tables: [NOTAS], ...DAILY }
+  const first = on.viewOf(await on.put(connection, marks))
+  assert.deepEqual([first.fullPass, first.fullNext], ['OFF', null])
+  await finished(on, connection, ['sankhya_notas'])
+  const before = await counts(on)
+
+  const weekly = on.viewOf(await on.put(connection, { ...marks, fullPass: 'WEEKLY' }))
+  assert.equal(weekly.fullPass, 'WEEKLY')
+  assert.ok(weekly.fullNext !== null && Date.parse(weekly.fullNext) > Date.now())
+  const read = on.viewOf(await on.get(connection))
+  assert.deepEqual([read.fullPass, read.fullNext], ['WEEKLY', weekly.fullNext])
+  await on.hub.lakeRuns.idle()
+  assert.deepEqual(await counts(on), before, 'saving the pass opens no round')
+
+  for (const fullPass of ['MONTHLY', undefined]) {
+    const refused = await on.put(connection, { ...marks, fullPass })
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [400, 'REQUEST_MALFORMED'])
+  }
+  const [row] = await on.rows(`select full_pass from copies.lake_copy where connection_id = $1`, [
+    connection,
+  ])
+  assert.deepEqual(row, { full_pass: 'WEEKLY' })
+})
+
+test('a passada desligada ou Só manual perdoa a pendência, e nada relê sozinho', async (t) => {
+  const { on, connection, put } = await loadedOn(t, 'OFF')
+  for (const off of [{ fullPass: 'OFF' }, { interval: 'MANUAL', fullPass: 'DAILY' }]) {
+    await put({ fullPass: 'DAILY' })
+    const left = await rowOf(on, connection, 'FULL')
+    await runNow(on, connection)
+    assert.deepEqual(await fired(on, left), { kind: 'ALREADY_RUNNING' })
+    assert.deepEqual(await dueOf(on, connection), BOTH)
+    await put(off)
+    assert.deepEqual(await dueOf(on, connection), [], JSON.stringify(off))
+    await finished(on, connection, BOTH)
+    // A row the clock failed to take away still fires.
+    assert.deepEqual(await fired(on, left), { kind: 'QUEUED' })
+    assert.deepEqual(await dueOf(on, connection), [], JSON.stringify(off))
+    assert.deepEqual(await lastWhole(on, connection), NONE_WHOLE)
+    await finished(on, connection, BOTH)
+  }
+  await runNow(on, connection)
+  assert.deepEqual(await lastWhole(on, connection), NONE_WHOLE)
 })

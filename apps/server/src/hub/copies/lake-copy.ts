@@ -13,7 +13,8 @@ import type { CompanyScope } from './lake-close.ts'
 import { companyScope, lakeOf } from './lake-close.ts'
 import type { Added, Plan, Row } from './lake-copy-write.ts'
 import { dropCopy, writePlan } from './lake-copy-write.ts'
-import type { LakeRuns, ScheduledCopy, StartClock } from './lake-run.ts'
+import type { LakeRuns, StartClock } from './lake-run.ts'
+import type { ScheduledCopy } from './lake-schedule.ts'
 import { lakeCopy, lakeRun, lakeTable } from './tables.ts'
 
 export const COPY_TIMEZONE = 'America/Sao_Paulo'
@@ -37,8 +38,10 @@ const AREAS_OF_A_COPY = ['raw', 'current', 'tratado'] as const satisfies readonl
 export type CopyClock = {
   set(copy: ScheduledCopy): Promise<void>
   remove(connection: ConnectionId): Promise<void>
-  /** The clock's next fire, or null when the connection has none (MANUAL). */
+  /** The common clock's next fire, or null when the connection has none (MANUAL). */
   next(connection: ConnectionId): Promise<Date | null>
+  /** The next full pass, or null when none runs. */
+  fullNext(connection: ConnectionId): Promise<Date | null>
 }
 
 export type LakeCopyDeps = {
@@ -64,7 +67,7 @@ export type Marker = Readonly<{
 }>
 
 type State = Readonly<{
-  copy: { interval: string; startDate: string | null; createdAt: Date } | undefined
+  copy: (Pick<Plan, 'interval' | 'startDate' | 'fullPass'> & { createdAt: Date }) | undefined
   tables: readonly Row[]
   taken: ReadonlySet<string>
   runOpen: boolean
@@ -76,6 +79,7 @@ async function stateOf(tx: CommandTx, at: Marker): Promise<State> {
     .select({
       interval: lakeCopy.interval,
       startDate: lakeCopy.startDate,
+      fullPass: lakeCopy.fullPass,
       createdAt: lakeCopy.createdAt,
     })
     .from(lakeCopy)
@@ -152,7 +156,8 @@ function planOf(
   for (const { name } of add)
     if (state.taken.has(name.toLowerCase())) throw new Failure('COPY_NAME_TAKEN')
   const remove = state.tables.filter((row) => !sources.has(row.source))
-  return { add, remove, interval: body.interval, startDate: body.startDate }
+  const { interval, startDate, fullPass } = body
+  return { add, remove, interval, startDate, fullPass }
 }
 
 export function awsDown(
@@ -254,9 +259,10 @@ async function dropUnmarked(deps: LakeCopyDeps, at: Marker, state: State, plan: 
 
 /**
  * Writes a connection's copy: the request checked, the unmarked tables
- * dropped in AWS, then the copy and its rows in one transaction; after it, the clock (none under
- * MANUAL) and, if a table was born, one round that reads only it whole. Changing only the
- * date or the interval starts nothing. The last table unmarked takes the copy and its clock.
+ * dropped in AWS, then the copy and its rows in one transaction; after it, the clocks (none under
+ * MANUAL) and, if a table was born, one round that reads it whole. Changing only the
+ * date, the interval or the full pass starts nothing. The last table unmarked takes the copy and
+ * its clocks.
  */
 export function createLakeCopy(deps: LakeCopyDeps) {
   const now = deps.now ?? (() => new Date())
@@ -285,6 +291,7 @@ export function createLakeCopy(deps: LakeCopyDeps) {
         companyId: at.companyId,
         connectionId: at.connectionId,
         interval: plan.interval,
+        fullPass: plan.fullPass,
         anchor: done.copy.createdAt,
       })
       if (plan.add.length > 0)

@@ -110,7 +110,7 @@ test('a data de hoje é a de São Paulo, não a do relógio da máquina', async 
   assert.equal(today.statusCode, 200, today.body)
 })
 
-test('ler de novo desde a data: whole só nas tabelas que a data limita, com a data na tarefa; com rodada aberta, já está rodando', async (t) => {
+test('inteira em todas: Ler tudo de novo pede whole em cada tabela marcada, cadastro incluído, com a data na tarefa; com rodada aberta, já está rodando', async (t) => {
   const on = await lakeCopyOn(t)
   const connection = await on.linked()
   const marks = { tables: [NOTAS, PARCEIROS], interval: '24h' }
@@ -126,7 +126,7 @@ test('ler de novo desde a data: whole só nas tabelas que a data limita, com a d
   assert.equal(runs[1]?.whole, true)
   const spec = specOf(on, runs[1]?.id)
   assert.equal(spec.startDate, '2024-03-01', 'the copy date is in the spec')
-  assert.deepEqual(wholeOf(on, runs[1]?.id), { sankhya_notas: true, sankhya_parceiros: false })
+  assert.deepEqual(wholeOf(on, runs[1]?.id), { sankhya_notas: true, sankhya_parceiros: true })
 
   const before = await counts(on)
   for (const body of [{ whole: true }, {}]) {

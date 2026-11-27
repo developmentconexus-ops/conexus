@@ -29,15 +29,13 @@ import { openedIn } from './testing.ts'
 
 type Where = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
 
-/** What one round's spec needs of its connection: the opened fields (S8) and what the start date limits. */
+/** What one round's spec needs of its connection: the opened fields (S8). */
 type CopyOpened =
   | Readonly<{
       kind: 'OPENED'
       connector: ConnectorId
       account: AccountRef | null
       credential: Readonly<Record<string, string>>
-      /** Each declared table by its source, and whether the start date limits it (`startDateLimits`). */
-      limited: ReadonlyMap<string, boolean>
     }>
   | Readonly<{ kind: 'GONE' }>
 
@@ -217,13 +215,11 @@ export function createCopySource(deps: Deps): CopySource {
       const { connector } = found
       if (connector.auth.kind !== 'client_credentials')
         throw new Failure('SEAL_REFUSED', { details: { reason: 'not a pasted login' } })
-      const declared = connector.tables?.declared ?? []
       return {
         kind: 'OPENED',
         connector: connector.id,
         account: found.accountRef,
         credential: valuesOf(found, connector.auth),
-        limited: new Map(declared.map((table) => [sourceOf(table), startDateLimits(table.mode)])),
       }
     },
     async columns(at) {

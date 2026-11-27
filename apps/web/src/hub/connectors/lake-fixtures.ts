@@ -7,6 +7,8 @@ export const NO_LAKE = LakeTablesOfConnection.parse({
   lake: { kind: 'UNAVAILABLE', reason: 'NO_TABLES' },
   interval: null,
   startDate: null,
+  fullPass: null,
+  fullNext: null,
   tables: [],
   lastRun: null,
 })
@@ -72,6 +74,8 @@ export function readyLake(fields: Partial<LakeTablesOfConnection> = {}): LakeTab
     lake: { kind: 'READY' },
     interval: null,
     startDate: null,
+    fullPass: null,
+    fullNext: null,
     tables: TABLES,
     lastRun: null,
     ...fields,
@@ -85,6 +89,7 @@ export function copiedLake(
 ): LakeTablesOfConnection {
   return readyLake({
     interval: '24h',
+    fullPass: 'OFF',
     lastRun: COMPLETE_ROUND,
     tables: TABLES.map((table) =>
       sources.includes(table.source) && table.copy.kind === 'UNMARKED'
@@ -113,7 +118,6 @@ export function stopOpenRound(view: LakeView): boolean {
   return true
 }
 
-/** What a PUT does to the lake the Hub holds: the marks, the interval and the date; a table added opens a round. */
 export function applied(view: LakeView, body: SetLakeCopy): void {
   const names = new Map(body.tables.map((one) => [one.source, one.name]))
   const added = view.lake.tables.some(
@@ -124,6 +128,7 @@ export function applied(view: LakeView, body: SetLakeCopy): void {
     ...view.lake,
     interval: body.interval,
     startDate: body.startDate,
+    fullPass: body.fullPass,
     lastRun: round,
     tables: view.lake.tables.map((one) => {
       const name = names.get(one.source)

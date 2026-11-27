@@ -5,7 +5,7 @@ import type {
   LakeInterval,
   LakeTablesOfConnection,
 } from '@conexus/hub-api'
-import { LAKE_INTERVAL_DEFAULT } from '@conexus/hub-api'
+import { LAKE_FULL_PASS_DEFAULT, LAKE_INTERVAL_DEFAULT } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
@@ -92,6 +92,7 @@ function useCopyWrites(props: Props, edit: Edit) {
         picks,
         interval,
         since,
+        fullPass: lake.fullPass ?? LAKE_FULL_PASS_DEFAULT,
       })
       await save.mutateAsync({ params, body })
     } catch (error) {

@@ -310,6 +310,35 @@ def test_a_data_mais_nova_nao_apaga_a_janela(task: Task) -> None:
     assert len(now) == len(october)
 
 
+def _months(task: Task) -> set[str]:
+    return {r["dtref"].isoformat()[:7] for r in _rows(task, "current", "efd_st_media_diaria")}
+
+
+def test_a_cancelada_sai_na_passada(task: Task) -> None:
+    first = task.spec(NOTAS, whole=True)
+    assert task.run(first) == 0
+    task.change("notas/100001", {"acao": "APAGAR"})
+    assert task.run(task.spec(NOTAS, whole=False, connection=first["connectionId"])) == 0
+    assert 100001 in _keys(task)
+    assert task.run(task.spec(NOTAS, whole=True, connection=first["connectionId"])) == 0
+    assert 100001 not in _keys(task)
+
+
+def test_a_passada_aplica_a_data(task: Task) -> None:
+    first = task.spec(NOTAS, JANELA, whole=True)
+    assert task.run(first) == 0
+    months = _months(task)
+    passed = task.spec(
+        NOTAS, JANELA, whole=True, start_date="2026-10-01", connection=first["connectionId"]
+    )
+    assert task.run(passed) == 0
+    source = _source(task, passed, "sankhya_notas").values()
+    assert set(_keys(task)) == _changed_on(source, "2026-10-01", since=True)
+    assert _changed_on(source, "2026-10-01", since=False)
+    assert _months(task) == months
+    assert "2026-08" in months
+
+
 def _append_changed_note_to_raw(task: Task, nunota: int, **values: t.Any) -> None:
     rows = task.lake.load_table(("current", "sankhya_notas")).scan().to_arrow()
     row = rows.filter(pc.equal(rows["nunota"], nunota))

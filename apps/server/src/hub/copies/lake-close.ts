@@ -163,9 +163,15 @@ async function counted(
 ) {
   const lastRunId = a.end.kind === 'INTERRUPTED' ? sql`${lakeTable.lastRunId}` : a.run
   for (const counts of a.tables) {
+    // A failed table's result still says `whole` as asked; only its rows say it reached current.
+    const passed = counts.whole && counts.rows !== null
     const [table] = await tx
       .update(lakeTable)
-      .set({ rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`, lastRunId })
+      .set({
+        rows: sql`coalesce(${counts.rows}::bigint, ${lakeTable.rows})`,
+        lastRunId,
+        ...(passed ? { fullDueAt: null } : {}),
+      })
       .where(and(eq(lakeTable.connectionId, a.connectionId), eq(lakeTable.name, counts.name)))
       .returning({ id: lakeTable.id, rows: lakeTable.rows })
     if (table === undefined) continue

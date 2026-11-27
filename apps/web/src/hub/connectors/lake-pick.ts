@@ -1,5 +1,6 @@
 import type {
   ConnectorEntry,
+  LakeFullPass,
   LakeInterval,
   LakeTablesOfConnection,
   SetLakeCopy,
@@ -97,13 +98,13 @@ export function isFuture(since: string): boolean {
   return since !== '' && since > todayIso()
 }
 
-/** The one `PUT` that sets the copy: every marked table by source and name, the interval and the date. */
 export function copyBody(args: {
   prefix: string
   tables: readonly Table[]
   picks: Picks
   interval: LakeInterval
   since: string
+  fullPass: LakeFullPass
 }): SetLakeCopy {
   return {
     tables: args.tables
@@ -111,5 +112,6 @@ export function copyBody(args: {
       .map((one) => ({ source: one.source, name: nameOf(args.prefix, one, args.picks) })),
     interval: args.interval,
     startDate: args.since === '' ? null : args.since,
+    fullPass: args.fullPass,
   }
 }

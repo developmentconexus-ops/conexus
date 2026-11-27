@@ -1,6 +1,18 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
+import { finished, NOTAS, PARCEIROS } from './test-lake-copy.ts'
+import {
+  ALL_WHOLE,
+  BOTH,
+  closed,
+  dueOf,
+  fire,
+  lastWhole,
+  loadedOn,
+  NONE_WHOLE,
+  runNow,
+} from './test-lake-pass.ts'
 import {
   busiestSecond,
   completed,
@@ -12,9 +24,6 @@ import {
   TEST_LAKE,
   testClock,
 } from './test-lake-run.ts'
-
-const NOTAS = { source: 'TGFCAB', name: 'sankhya_notas' }
-const PARCEIROS = { source: 'TGFPAR', name: 'sankhya_parceiros' }
 
 test('o disparo: abre a rodada, grava o parâmetro com o selo aberto e inicia a tarefa com o papel da empresa e o token', async (t) => {
   const on = await lakeRunOn(t)
@@ -203,7 +212,7 @@ test('a AWS não responde: o RunTask sem resposta é repetido com o mesmo token 
   assert.equal(on.aws.tasks().length, 1)
 })
 
-test('a data na tarefa: a especificação leva a data da cópia em toda rodada, e whole só nas tabelas que a data limita', async (t) => {
+test('a data na tarefa: a especificação leva a data da cópia em toda rodada, e Ler tudo de novo pede whole em todas', async (t) => {
   const on = await lakeRunOn(t)
   const connection = await on.copied(
     [
@@ -234,9 +243,8 @@ test('a data na tarefa: a especificação leva a data da cópia em toda rodada, 
     second.tables.map(({ name, whole }) => [name, whole]),
     [
       ['sankhya_notas', true],
-      ['sankhya_parceiros', false],
+      ['sankhya_parceiros', true],
     ],
-    'whole only where startDateLimits',
   )
   const [round] = await on.rows(`select whole from copies.lake_run where id = $1`, [again])
   assert.deepEqual(round, { whole: true })
@@ -264,4 +272,49 @@ test('as colunas de novo: cada disparo relê o dicionário, e uma coluna nova da
   const columns = await columnsOf()
   assert.equal(columns.length, 451)
   assert.ok(columns.some(({ name }) => name === coluna))
+})
+
+test('a passada pendente não se perde: com uma rodada aberta ela fica, a seguinte lê inteiro, e só a tabela que falhou segue inteira', async (t) => {
+  const { on, connection } = await loadedOn(t, 'DAILY')
+  await runNow(on, connection)
+  assert.deepEqual(await lastWhole(on, connection), NONE_WHOLE)
+  assert.deepEqual(await fire(on, connection, 'FULL'), {
+    kind: 'ALREADY_RUNNING',
+  })
+  assert.deepEqual(await dueOf(on, connection), BOTH)
+  await closed(
+    on,
+    connection,
+    BOTH.map((name) => ({ name, whole: false, rows: 3 })),
+  )
+  assert.deepEqual(await dueOf(on, connection), BOTH, 'an incremental read pays nothing')
+
+  assert.deepEqual(await fire(on, connection, 'ROUND'), { kind: 'QUEUED' })
+  assert.deepEqual(await lastWhole(on, connection), ALL_WHOLE)
+  await closed(on, connection, [
+    { name: NOTAS.name, whole: true, rows: 3 },
+    { name: PARCEIROS.name, whole: true, rows: null },
+  ])
+  assert.deepEqual(await dueOf(on, connection), [PARCEIROS.name])
+
+  await runNow(on, connection)
+  assert.deepEqual(await lastWhole(on, connection), {
+    sankhya_notas: false,
+    sankhya_parceiros: true,
+  })
+  await finished(on, connection, BOTH)
+  assert.deepEqual(await dueOf(on, connection), [])
+
+  assert.deepEqual(await fire(on, connection, 'FULL'), { kind: 'QUEUED' })
+  assert.deepEqual(await lastWhole(on, connection), ALL_WHOLE, 'marked before the round is asked')
+  const [due] = on.hub.lines.filter(({ message }) => message === 'LAKE_FULL_PASS_DUE')
+  assert.deepEqual(due?.fields, { companyId: on.companyId, connectionId: connection })
+})
+
+test('desligada, só as novas: sem a segunda linha e sem pendência, a rodada comum não relê', async (t) => {
+  const { on, connection } = await loadedOn(t, 'OFF')
+  assert.equal(await on.hub.mastra.schedules.get(`schedule_${connection}-full`), null)
+  assert.deepEqual(await fire(on, connection, 'ROUND'), { kind: 'QUEUED' })
+  assert.deepEqual(await dueOf(on, connection), [])
+  assert.deepEqual(await lastWhole(on, connection), NONE_WHOLE)
 })

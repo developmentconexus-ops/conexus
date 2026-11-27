@@ -4,6 +4,7 @@ import type { ConnectionId, LakeRunMachine } from '@conexus/hub-api'
 import {
   CompanyId as CompanyIdSchema,
   ConnectionId as ConnectionIdSchema,
+  LAKE_FULL_PASS_DEFAULT,
   LakeRunId,
   LakeTableName,
   LakeTablesOfConnection,
@@ -151,7 +152,10 @@ export async function lakeCopyOn(t: TestContext, options: Options = {}) {
     get: (connection: string, who: Person = ana) =>
       call(hub, who, 'GET', urlsOf(base, connection).list),
     put: (connection: string, body: object, who: Person = ana) =>
-      call(hub, who, 'PUT', urlsOf(base, connection).copy, body),
+      call(hub, who, 'PUT', urlsOf(base, connection).copy, {
+        fullPass: LAKE_FULL_PASS_DEFAULT,
+        ...body,
+      }),
     run: (connection: string, body: object = {}, who: Person = ana) =>
       post(hub, who, urlsOf(base, connection).run, body),
     rows: (statement: string, values: unknown[] = []) => hub.test.asOwner(statement, values),

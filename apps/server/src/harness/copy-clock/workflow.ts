@@ -6,7 +6,7 @@ import { companyScope } from '../../hub/copies/public.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { COPY_WORKFLOW } from '../mastra/public.ts'
-import { ClockInput, clockIdOf } from './clock.ts'
+import { ClockInput, clockIdsOf } from './clock.ts'
 
 const Fired = z.object({
   kind: z.enum(['QUEUED', 'ALREADY_RUNNING', 'NO_COPY', 'INPUT_UNREADABLE']),
@@ -14,13 +14,15 @@ const Fired = z.object({
 
 type Deps = {
   start: (at: CompanyScope, connection: ConnectionId, cause: 'CLOCK') => Promise<StartAnswer>
+  markFullPass: (at: CompanyScope, connection: ConnectionId) => Promise<void>
   log: FailureLog
 }
 
 /**
  * The target of every connection's clock row: one step that calls `iniciarRodada` and ends when it
- * answers; no copy runs inside the workflow, and the round's end is the queue's (Relógio). A
- * connection whose copy is gone takes its clock with it.
+ * answers; no copy runs inside the workflow, and the round's end is the queue's (Relógio). The full
+ * pass's row marks the pass due first, so a round that does not read it leaves it to a later one. A
+ * connection whose copy is gone takes its clocks with it.
  */
 export function copyClockWorkflow(deps: Deps) {
   const fire = createStep({
@@ -39,9 +41,12 @@ export function copyClockWorkflow(deps: Deps) {
         )
         return { kind: 'INPUT_UNREADABLE' }
       }
-      const { companyId, connectionId } = read.data
-      const answer = await deps.start(companyScope(companyId), connectionId, 'CLOCK')
-      if (answer.kind === 'NO_COPY') await mastra.schedules.delete(clockIdOf(connectionId))
+      const { companyId, connectionId, pass } = read.data
+      const at = companyScope(companyId)
+      if (pass === 'FULL') await deps.markFullPass(at, connectionId)
+      const answer = await deps.start(at, connectionId, 'CLOCK')
+      if (answer.kind === 'NO_COPY')
+        for (const id of clockIdsOf(connectionId)) await mastra.schedules.delete(id)
       return { kind: answer.kind }
     },
   })

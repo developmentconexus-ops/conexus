@@ -22,6 +22,13 @@ export type LakeInterval = z.infer<typeof LakeInterval>
 /** Founder, 2026-11-23: "24 h, como a Nekt". */
 export const LAKE_INTERVAL_DEFAULT = '24h' satisfies LakeInterval
 
+/** How often the clock reads every marked table whole; what a read no longer finds leaves the lake. */
+export const LAKE_FULL_PASSES = ['WEEKLY', 'DAILY', 'OFF'] as const
+export const LakeFullPass = z.enum(LAKE_FULL_PASSES)
+export type LakeFullPass = z.infer<typeof LakeFullPass>
+/** Founder, 2026-11-26: "A desligada". */
+export const LAKE_FULL_PASS_DEFAULT = 'OFF' satisfies LakeFullPass
+
 export const LAKE_RUN_FAILURE_CODES = [
   'COPY_SOURCE_NEEDS_REAUTH',
   'COPY_SOURCE_REFUSED',
@@ -112,6 +119,10 @@ export const LakeTablesOfConnection = z.object({
   interval: LakeInterval.nullable(),
   /** The copy's; null: the whole history. */
   startDate: z.iso.date().nullable(),
+  /** The copy's; null: no copy. */
+  fullPass: LakeFullPass.nullable(),
+  /** When the clock starts the next full pass; null: no full clock. */
+  fullNext: z.iso.datetime().nullable(),
   tables: z.array(
     z.object({
       source: SourceTableId,
@@ -157,10 +168,11 @@ export const SetLakeCopy = z.object({
   interval: LakeInterval,
   /** Null: the whole history. After today: 422 `COPY_START_DATE_INVALID`. Saving never starts a run (T.45). */
   startDate: z.iso.date().nullable(),
+  fullPass: LakeFullPass,
 })
 export type SetLakeCopy = z.infer<typeof SetLakeCopy>
 
-/** `whole: true` is Ler de novo desde a data, whole only where `startDateLimits` (T.45). */
+/** `whole: true` is Ler tudo de novo, every marked table read whole. */
 export const RunLakeCopy = z.object({ whole: z.boolean().default(false) })
 export type RunLakeCopy = z.infer<typeof RunLakeCopy>
 

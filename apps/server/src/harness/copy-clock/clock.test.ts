@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ConnectionId } from '@conexus/hub-api'
+import { finished, lakeCopyOn, NOTAS } from '../../hub/copies/test-lake-copy.ts'
 import { lakeRunOn } from '../../hub/copies/test-lake-run.ts'
 import { silent } from '../../platform/test-database.ts'
 import { until } from '../../platform/test-until.ts'
@@ -31,7 +33,7 @@ test('o relógio da ligação em mastra.schedules: o horário da cópia, nenhum 
   const companyId = CompanyId.parse(on.companyId)
   const connectionId = ConnectionId.parse(crypto.randomUUID())
   const id = `schedule_${connectionId}`
-  const copy = { companyId, connectionId, anchor: AT_10_07 }
+  const copy = { companyId, connectionId, anchor: AT_10_07, fullPass: 'OFF' } as const
 
   await lakeClock.set({ ...copy, interval: '15m' })
   const made = await schedules.get(id)
@@ -91,6 +93,7 @@ test('o relógio de uma ligação sem cópia sai no disparo', async (t) => {
     companyId,
     connectionId: connection,
     interval: '1h',
+    fullPass: 'OFF',
     anchor: AT_10_07,
   })
   const ended = await (await on.hub.mastra.getWorkflow(COPY_WORKFLOW).createRun()).start({
@@ -98,4 +101,100 @@ test('o relógio de uma ligação sem cópia sai no disparo', async (t) => {
   })
   assert.deepEqual(ended.status === 'success' ? ended.result : null, { kind: 'NO_COPY' })
   assert.equal(await on.hub.mastra.schedules.get(`schedule_${connection}`), null)
+})
+
+const SAO_PAULO_FIRE = new Intl.DateTimeFormat('en-GB', {
+  timeZone: COPY_TIMEZONE,
+  weekday: 'short',
+  hour: '2-digit',
+})
+
+async function passOn(t: TestContext) {
+  const on = await lakeCopyOn(t)
+  const connection = await on.linked()
+  const { schedules } = on.hub.mastra
+  return {
+    on,
+    connection,
+    schedules,
+    companyId: CompanyId.parse(on.companyId),
+    ids: { common: `schedule_${connection}`, full: `schedule_${connection}-full` },
+    async rows() {
+      const listed = await schedules.list({ workflowId: COPY_WORKFLOW })
+      return listed.map(({ id }) => id).sort()
+    },
+    async put(interval: string, fullPass: string, tables = [NOTAS]) {
+      const body = { tables, interval, startDate: null, fullPass }
+      const answered = await on.put(connection, body)
+      assert.equal(answered.statusCode, 200, answered.body)
+      await on.hub.lakeRuns.idle()
+    },
+  }
+}
+
+test('a linha da passada: às 03h do minuto da partida, no domingo ou todo dia, e some com OFF, Só manual ou sem tabela', async (t) => {
+  const { on, connection, schedules, ids, rows, put } = await passOn(t)
+  await put('1h', 'WEEKLY')
+  await finished(on, connection, ['sankhya_notas'])
+  const [born] = await on.rows(
+    `select to_char(created_at at time zone 'America/Sao_Paulo', 'FMMI') as minute
+       from copies.lake_copy where connection_id = $1`,
+    [connection],
+  )
+  const weekly = await schedules.get(ids.full)
+  assert.ok(weekly !== null && 'inputData' in weekly)
+  assert.equal(weekly.cron, `${born?.minute} 3 * * 0`)
+  assert.equal(weekly.timezone, COPY_TIMEZONE)
+  assert.deepEqual(weekly.inputData, {
+    version: 2,
+    companyId: on.companyId,
+    connectionId: connection,
+    pass: 'FULL',
+  })
+  assert.match(SAO_PAULO_FIRE.format(weekly.nextFireAt), /^Sun,? 03$/)
+  assert.deepEqual(await rows(), [ids.common, ids.full])
+
+  await put('1h', 'DAILY')
+  assert.equal((await schedules.get(ids.full))?.cron, `${born?.minute} 3 * * *`)
+
+  await put('1h', 'OFF')
+  assert.deepEqual(await rows(), [ids.common])
+  await put('MANUAL', 'DAILY')
+  assert.deepEqual(await rows(), [])
+  await put('24h', 'DAILY')
+  await put('24h', 'DAILY', [])
+  assert.deepEqual(await rows(), [], 'the last table unmarked takes both')
+})
+
+test('a linha da passada: o início do Hub repõe a que falta e apaga a que sobra, e o disparo sem cópia e a empresa levam as duas', async (t) => {
+  const { on, connection, schedules, companyId, ids, rows, put } = await passOn(t)
+  await put('24h', 'DAILY')
+  await finished(on, connection, ['sankhya_notas'])
+  const bare = await on.linked('Filial')
+  function setRows(connectionId: ConnectionId) {
+    const copy = { companyId, connectionId, anchor: AT_10_07 }
+    return on.hub.lakeClock.set({ ...copy, interval: '1h', fullPass: 'DAILY' })
+  }
+  async function atStart() {
+    await on.hub.lakeClock.reconcile(await on.hub.lakeRuns.scheduled())
+    return rows()
+  }
+  await setRows(bare)
+  await schedules.delete(ids.full)
+  assert.deepEqual(await atStart(), [ids.common, ids.full])
+  await on.rows(`update copies.lake_copy set full_pass = 'OFF' where connection_id = $1`, [
+    connection,
+  ])
+  assert.deepEqual(await atStart(), [ids.common], 'by connection and pass')
+
+  await setRows(bare)
+  const ended = await (await on.hub.mastra.getWorkflow(COPY_WORKFLOW).createRun()).start({
+    inputData: { version: 2, companyId, connectionId: bare, pass: 'FULL' },
+  })
+  assert.deepEqual(ended.status === 'success' ? ended.result : null, { kind: 'NO_COPY' })
+  assert.deepEqual(await rows(), [ids.common], 'a fire with no copy takes both')
+
+  await setRows(connection)
+  await on.hub.lakeClock.release({ companyId })
+  assert.deepEqual(await rows(), [])
 })

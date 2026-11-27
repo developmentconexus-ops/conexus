@@ -79,7 +79,8 @@ export function createLakeCopies(deps: LakeCopyDeps) {
     )
     serve(app, setLakeCopy, async ({ person, params, body, log }) => {
       const view = await set({ person: person.id, ...params }, body)
-      log.info({ by: person.id, ...params, tables: body.tables.length }, 'LAKE_COPY_SET')
+      const marks = { tables: body.tables.length, fullPass: body.fullPass }
+      log.info({ by: person.id, ...params, ...marks }, 'LAKE_COPY_SET')
       return answer(view)
     })
     serve(app, runLakeCopy, async ({ person, params, body, log }) => {

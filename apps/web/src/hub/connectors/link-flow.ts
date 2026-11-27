@@ -5,7 +5,7 @@ import type {
   LakeInterval,
   LakeTablesOfConnection,
 } from '@conexus/hub-api'
-import { LAKE_INTERVAL_DEFAULT } from '@conexus/hub-api'
+import { LAKE_FULL_PASS_DEFAULT, LAKE_INTERVAL_DEFAULT } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -186,7 +186,10 @@ function useFinish(props: Props, state: State) {
     try {
       await save.mutateAsync({
         params: { companyId, connectionId: connection.id },
-        body: copyBody({ prefix: prefixOf(entry.id), tables: lake.tables, picks, interval, since }),
+        body: copyBody({
+          ...{ prefix: prefixOf(entry.id), tables: lake.tables, picks, interval, since },
+          fullPass: LAKE_FULL_PASS_DEFAULT,
+        }),
       })
     } catch (failure) {
       if (failure instanceof HubFailure && NAME_REFUSALS.has(failure.code)) {

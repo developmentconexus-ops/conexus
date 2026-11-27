@@ -212,7 +212,7 @@ test('o ponto de parada sai: desmarcar tira o fluxo da tabela do arquivo da liga
   )
 })
 
-test('ler de novo desde a data tira o ponto das tabelas que a data limita antes de iniciar a tarefa; Rodar agora não tira', async (t) => {
+test('ler tudo de novo tira o ponto de cada tabela antes de iniciar a tarefa; Rodar agora não tira', async (t) => {
   const on = await lakeCopyOn(t)
   const connection = await on.linked()
   assert.equal((await on.put(connection, { tables: [NOTAS, PARCEIROS], ...DAILY })).statusCode, 200)
@@ -236,15 +236,15 @@ test('ler de novo desde a data tira o ponto das tabelas que a data limita antes 
 
   assert.equal((await on.run(connection, { whole: true })).statusCode, 202)
   await on.hub.lakeRuns.idle()
-  assert.deepEqual(bookmarks(), { sankhya_parceiros: point('2026-11-21') })
+  assert.deepEqual(bookmarks(), {})
   const started = on.aws
     .calls()
     .slice(calls)
     .filter((call) => call === 'PutObject' || call === 'RunTask')
-  assert.deepEqual(started, ['PutObject', 'RunTask'])
+  assert.deepEqual(started, ['PutObject', 'PutObject', 'RunTask'])
 })
 
-test('ler de novo desde a data sem a AWS tirar o ponto: a rodada fecha COPY_LAKE_UNAVAILABLE e a tarefa não inicia', async (t) => {
+test('ler tudo de novo sem a AWS tirar o ponto: a rodada fecha COPY_LAKE_UNAVAILABLE e a tarefa não inicia', async (t) => {
   const on = await lakeCopyOn(t, {
     tables: (real) => ({ ...real, forget: async () => ({ kind: 'NO_ANSWER' }) }),
   })

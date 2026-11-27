@@ -139,6 +139,7 @@ function handOffsOf(
 function lakeClockRun(deps: Pick<ConversationsDeps, 'lakeRuns' | 'log'>) {
   return copyClockWorkflow({
     start: (at, connection, cause) => deps.lakeRuns().iniciarRodada(at, connection, cause),
+    markFullPass: (at, connection) => deps.lakeRuns().markFullPass(at, connection),
     log: deps.log,
   })
 }

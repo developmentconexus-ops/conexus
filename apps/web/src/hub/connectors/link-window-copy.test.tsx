@@ -192,6 +192,7 @@ test('ligado: Ligar e copiar agora grava a cópia num pedido só, sem pedir roda
     ],
     interval: '24h',
     startDate: '2021-11-24',
+    fullPass: 'OFF',
   })
   const see = within(dialog).getByRole('link', { name: 'Ver em Dados' })
   expect(see.getAttribute('href')).toBe(`/companies/${COMPANY.id}/data`)
