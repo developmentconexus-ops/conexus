@@ -1,5 +1,5 @@
-import type { LakeInterval, LakeRun, LakeTablesOfConnection } from '@conexus/hub-api'
-import { LAKE_INTERVALS } from '@conexus/hub-api'
+import type { LakeFullPass, LakeInterval, LakeRun, LakeTablesOfConnection } from '@conexus/hub-api'
+import { LAKE_FULL_PASSES, LAKE_INTERVALS } from '@conexus/hub-api'
 
 const INTERVAL_LABELS = {
   '15m': '15 min',
@@ -21,13 +21,26 @@ export const INTERVAL_ITEMS = LAKE_INTERVALS.map((value) => ({
   label: INTERVAL_LABELS[value],
 }))
 
+const FULL_PASS_LABELS = {
+  WEEKLY: 'Toda semana, domingo de madrugada',
+  DAILY: 'Toda madrugada',
+  OFF: 'Desligada',
+} as const satisfies Record<LakeFullPass, string>
+
+export const FULL_PASS_ITEMS = LAKE_FULL_PASSES.map((value) => ({
+  value,
+  label: FULL_PASS_LABELS[value],
+}))
+
 type Mode = LakeTablesOfConnection['tables'][number]['mode']
 
-/** How a table is read, said as the card words it: "Só o que mudou, por DTALTER", "Janela por mês, por X" or "Inteira". */
+/** How a table is read, said as the card words it: "Só o que mudou, por DTALTER", "Só as novas, por NUNOTA", "Janela por mês, por X" or "Inteira". */
 export function modeText(mode: Mode): string {
   switch (mode.kind) {
     case 'CHANGED':
-      return `Só o que mudou, por ${mode.column}`
+      return mode.cursor === 'NUMBER'
+        ? `Só as novas, por ${mode.column}`
+        : `Só o que mudou, por ${mode.column}`
     case 'WINDOW':
       return `Janela por mês, por ${mode.column}`
     case 'FULL':

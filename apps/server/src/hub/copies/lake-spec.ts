@@ -16,6 +16,7 @@ type MarkedTable = Readonly<{
   name: LakeTableName
   /** No round carried it yet: it is read whole, on the bigger machine. */
   firstLoad: boolean
+  fullDue: boolean
 }>
 
 /** A connection's copy as a start reads it: the start date, the marked tables and the company's lake. */
@@ -25,7 +26,6 @@ export type CopyRead = Readonly<{
   lake: Awaited<ReturnType<typeof lakeOf>>
 }>
 
-/** A round being started: whose, which, and whether Ler de novo desde a data asked it. */
 export type Started = Readonly<{
   at: CompanyScope
   connection: ConnectionId
@@ -50,6 +50,7 @@ export async function readCopy(database: Database, at: CompanyScope, connection:
         source: lakeTable.sourceTable,
         name: lakeTable.name,
         lastRunId: lakeTable.lastRunId,
+        fullDueAt: lakeTable.fullDueAt,
       })
       .from(lakeTable)
       .where(eq(lakeTable.connectionId, connection))
@@ -57,6 +58,7 @@ export async function readCopy(database: Database, at: CompanyScope, connection:
       source: SourceTableId.parse(row.source),
       name: LakeTableName.parse(row.name),
       firstLoad: isFirstLoad(row),
+      fullDue: row.fullDueAt !== null,
     }))
     return { startDate: copy.startDate, tables, lake: await lakeOf(tx, at.companyId) }
   })
@@ -90,8 +92,10 @@ export async function writeColumns(
 
 /**
  * The round's spec, the one value the task receives: the tables with the name and `whole` of
- * each (a first load, or Ler de novo where the start date limits it), the start date in every
- * round, and the connection's fields opened from their seal (S8). Null: the connection left.
+ * each (a first load, a pending full pass, or Ler tudo de novo), the start date in every round,
+ * and the connection's fields opened from their seal (S8). `reread`: the tables Ler tudo de novo
+ * asked, whose stopping points the start forgets; a pending pass is kept on its table instead.
+ * Null: the connection left.
  */
 export async function specOf(
   deps: { source: CopySource; copy: AwsConfig['copy'] },
@@ -102,9 +106,6 @@ export async function specOf(
   const opened = await deps.source.open({ companyId: at.companyId, connectionId: connection })
   if (opened.kind === 'GONE') return null
   const { region, account } = lake.where
-  const reread = started.whole
-    ? copy.tables.filter((table) => opened.limited.get(table.source) === true)
-    : []
   const spec = CopyTaskSpec.parse({
     version: 1,
     runId: started.run,
@@ -118,10 +119,11 @@ export async function specOf(
     tables: copy.tables.map((table) => ({
       source: table.source,
       name: table.name,
-      whole: table.firstLoad || reread.includes(table),
+      whole: table.firstLoad || started.whole || table.fullDue,
     })),
     lake: { bucketArn: `arn:aws:s3tables:${region}:${account}:bucket/${lake.bucket}`, region },
     queueUrl: deps.copy.queueUrl,
   })
-  return { spec: JSON.stringify(spec), reread: reread.map((table) => table.name) }
+  const reread = started.whole ? copy.tables.map((table) => table.name) : []
+  return { spec: JSON.stringify(spec), reread }
 }

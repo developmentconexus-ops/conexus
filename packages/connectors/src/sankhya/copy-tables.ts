@@ -2,7 +2,7 @@ import { defineTables } from '../kernel/tables.ts'
 import type { TreatedColumn } from '../kernel/tables-treated.ts'
 import { contarMeses, descobrirTabelas, lerTabela, maiorAlteracao } from './copy-reads.ts'
 import type { Row } from './copy-tables-fiscal.ts'
-import { changed, FISCAL_TABLES, FULL } from './copy-tables-fiscal.ts'
+import { byTime, FISCAL_TABLES, FULL } from './copy-tables-fiscal.ts'
 
 /** The columns a TABLE source declares nothing of: the dictionary gives them, less the ones the copy leaves out. */
 const ALL = { kind: 'DISCOVERED', exclude: [] } as const
@@ -29,7 +29,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'vendas',
     table: 'TGFCAB',
     key: ['NUNOTA'],
-    mode: changed('DTALTER', false),
+    mode: byTime('DTALTER', false),
     treated: {
       description: 'Notas e pedidos (TGFCAB), limpos: uma linha por nota, com os tipos de negócio.',
       columns: [
@@ -46,7 +46,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'vendas',
     table: 'TGFITE',
     key: ['NUNOTA', 'SEQUENCIA'],
-    mode: changed('DTALTER', false),
+    mode: byTime('DTALTER', false),
     treated: {
       description: 'Itens das notas (TGFITE), limpos: uma linha por item de nota.',
       columns: kept(
@@ -68,7 +68,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'financeiro',
     table: 'TGFFIN',
     key: ['NUFIN'],
-    mode: changed('DTALTER', false),
+    mode: byTime('DTALTER', false),
   },
   {
     name: 'notas_origens',
@@ -87,7 +87,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'precos',
     table: 'TGFEXC',
     key: ['NUTAB', 'CODPROD', 'CODLOCAL', 'CONTROLE'],
-    mode: changed('DHALTREG', true),
+    mode: byTime('DHALTREG', true),
   },
   {
     name: 'parceiros',
@@ -97,7 +97,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'cadastros',
     table: 'TGFPAR',
     key: ['CODPARC'],
-    mode: changed('DTALTER', true),
+    mode: byTime('DTALTER', true),
     treated: {
       description: 'Parceiros (TGFPAR), limpos: uma linha por parceiro.',
       columns: kept(
@@ -120,7 +120,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'produtos',
     table: 'TGFPRO',
     key: ['CODPROD'],
-    mode: changed('DTALTER', true),
+    mode: byTime('DTALTER', true),
     exclude: ['IMAGEM'],
     treated: {
       description: 'Produtos (TGFPRO), limpos: uma linha por produto ou serviço.',
@@ -143,7 +143,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'cadastros',
     table: 'TGFVEN',
     key: ['CODVEND'],
-    mode: changed('DTALTER', true),
+    mode: byTime('DTALTER', true),
   },
   {
     name: 'estoque',
@@ -161,7 +161,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'precos',
     table: 'TGFTAB',
     key: ['NUTAB'],
-    mode: changed('DTALTER', true),
+    mode: byTime('DTALTER', true),
   },
   {
     name: 'tipos_operacao',
@@ -189,7 +189,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'produtos',
     table: 'TGFGRU',
     key: ['CODGRUPOPROD'],
-    mode: changed('DHALTER', true),
+    mode: byTime('DHALTER', true),
     exclude: ['IMAGEM'],
   },
   {
@@ -199,7 +199,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'cadastros',
     table: 'TSIEMP',
     key: ['CODEMP'],
-    mode: changed('DHALTER', true),
+    mode: byTime('DHALTER', true),
     exclude: ['LOGOMARCA'],
   },
   {
@@ -218,7 +218,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'cadastros',
     table: 'TGFNAT',
     key: ['CODNAT'],
-    mode: changed('DHALTER', true),
+    mode: byTime('DHALTER', true),
   },
   {
     name: 'locais_estoque',
@@ -245,7 +245,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'cadastros',
     table: 'TSICID',
     key: ['CODCID'],
-    mode: changed('DTALTER', true),
+    mode: byTime('DTALTER', true),
   },
   {
     name: 'estados',
@@ -254,7 +254,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'cadastros',
     table: 'TSIUFS',
     key: ['CODUF'],
-    mode: changed('DHALTREG', true),
+    mode: byTime('DHALTREG', true),
   },
   {
     name: 'custos',
@@ -264,7 +264,7 @@ const CORE_TABLES: readonly Row[] = [
     group: 'produtos',
     table: 'TGFCUS',
     key: ['CODPROD', 'CODEMP', 'DTATUAL', 'CODLOCAL', 'CONTROLE', 'NUNOTA', 'SEQUENCIA'],
-    mode: changed('DHALTER', true),
+    mode: byTime('DHALTER', true),
   },
 ]
 

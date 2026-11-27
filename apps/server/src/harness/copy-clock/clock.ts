@@ -7,7 +7,7 @@ import {
 import type { Mastra } from '@mastra/core/mastra'
 import { z } from 'zod'
 import type { ScheduledCopy } from '../../hub/copies/public.ts'
-import { COPY_TIMEZONE } from '../../hub/copies/public.ts'
+import { COPY_TIMEZONE, runningPass } from '../../hub/copies/public.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { COPY_WORKFLOW } from '../mastra/public.ts'
@@ -61,20 +61,60 @@ export function cronOf(interval: Clocked, anchor: Date): string {
   return `${minute} ${hour % step.hours}-23/${step.hours} * * *`
 }
 
-/** What the row's `inputData` keeps: the company and the connection whose round it starts (code C27). */
-export const ClockInput = z.object({
-  version: z.literal(1),
-  companyId: CompanyIdSchema,
-  connectionId: ConnectionIdSchema,
-})
+type FullPass = NonNullable<ReturnType<typeof runningPass>>
+
+const FULL_DAYS = { WEEKLY: '0', DAILY: '*' } as const satisfies Record<FullPass, string>
+/** The source's quiet hour, in São Paulo (firstmate F3). */
+const FULL_HOUR = 3
+
+function fullCronOf(pass: FullPass, anchor: Date): string {
+  return `${clockOf(anchor).minute} ${FULL_HOUR} * * ${FULL_DAYS[pass]}`
+}
+
+const Target = z.object({ companyId: CompanyIdSchema, connectionId: ConnectionIdSchema })
+
+/** What the row's `inputData` keeps: whose round it starts and which of its two rows it is (code C27). */
+export const ClockInput = z.union([
+  Target.extend({ version: z.literal(2), pass: z.enum(['ROUND', 'FULL']) }),
+  // A row made before the full pass existed is the common round's.
+  Target.extend({ version: z.literal(1) }).transform((row) => ({ ...row, pass: 'ROUND' as const })),
+])
+type Pass = z.infer<typeof ClockInput>['pass']
 const Metadata = z.object({ companyId: CompanyIdSchema, interval: LakeIntervalSchema })
 
 /**
  * The id of a connection's clock row: Mastra puts `schedule_` before the id given to a workflow
  * schedule (`canonicalizeScheduleId`), so the id carries it already.
  */
-export function clockIdOf(connection: ConnectionId): string {
+function clockIdOf(connection: ConnectionId): string {
   return `schedule_${connection}`
+}
+
+function fullClockIdOf(connection: ConnectionId): string {
+  return `${clockIdOf(connection)}-full`
+}
+
+export function clockIdsOf(connection: ConnectionId): readonly string[] {
+  return [clockIdOf(connection), fullClockIdOf(connection)]
+}
+
+type ClockRow = Readonly<{ id: string; pass: Pass; cron: string | null }>
+
+function rowsOf(copy: ScheduledCopy): readonly ClockRow[] {
+  const { connectionId, interval, anchor } = copy
+  const full = runningPass(copy)
+  return [
+    {
+      id: clockIdOf(connectionId),
+      pass: 'ROUND',
+      cron: interval === 'MANUAL' ? null : cronOf(interval, anchor),
+    },
+    {
+      id: fullClockIdOf(connectionId),
+      pass: 'FULL',
+      cron: full === null ? null : fullCronOf(full, anchor),
+    },
+  ]
 }
 
 async function stored<T>(work: Promise<T>): Promise<T> {
@@ -97,9 +137,9 @@ function ownedOf(row: Row, log: FailureLog) {
 }
 
 /**
- * The connections' clocks on `mastra.schedules`, one row per connection whose copy is not MANUAL,
- * by the connection's id; the row only says when (Relógio). The creation that loses a race at the
- * id finds the row made, as the copies' clock of before did.
+ * The connections' clocks on `mastra.schedules`, found by the connection's id: a row for the common
+ * round of each copy that is not MANUAL and one for its full pass when it runs one; a row only says
+ * when (Relógio).
  */
 export function createLakeClock(deps: { mastra: Mastra; log: FailureLog }) {
   const { schedules } = deps.mastra
@@ -111,14 +151,13 @@ export function createLakeClock(deps: { mastra: Mastra; log: FailureLog }) {
     return rows.flatMap((row) => ownedOf(row, deps.log) ?? [])
   }
 
-  async function set(copy: ScheduledCopy): Promise<void> {
-    const id = clockIdOf(copy.connectionId)
-    if (copy.interval === 'MANUAL') {
+  async function keep(copy: ScheduledCopy, { id, pass, cron }: ClockRow): Promise<void> {
+    if (cron === null) {
       await stored(schedules.delete(id))
       return
     }
-    const cron = cronOf(copy.interval, copy.anchor)
-    const metadata = { companyId: copy.companyId, interval: copy.interval }
+    const { companyId, connectionId, interval } = copy
+    const metadata = { companyId, interval }
     if ((await owned(id)) !== undefined) {
       await stored(schedules.update(id, { cron, metadata }))
       return
@@ -126,7 +165,7 @@ export function createLakeClock(deps: { mastra: Mastra; log: FailureLog }) {
     try {
       await schedules.create({
         ...{ id, workflowId: COPY_WORKFLOW, cron, timezone: COPY_TIMEZONE, metadata },
-        inputData: { version: 1, companyId: copy.companyId, connectionId: copy.connectionId },
+        inputData: { version: 2, companyId, connectionId, pass },
       })
     } catch (error) {
       // No stable field tells a race lost at the row's id (code C52): the row read again is the race.
@@ -135,30 +174,34 @@ export function createLakeClock(deps: { mastra: Mastra; log: FailureLog }) {
     }
   }
 
+  async function set(copy: ScheduledCopy): Promise<void> {
+    for (const row of rowsOf(copy)) await keep(copy, row)
+  }
+
+  async function nextOf(id: string): Promise<Date | null> {
+    const found = await owned(id)
+    return found === undefined || found.row.status !== 'active'
+      ? null
+      : new Date(found.row.nextFireAt)
+  }
+
   return Object.freeze({
     set,
-    /** Takes the connection's clock away: its copy left or went MANUAL. */
     async remove(connection: ConnectionId): Promise<void> {
-      await stored(schedules.delete(clockIdOf(connection)))
+      for (const id of clockIdsOf(connection)) await stored(schedules.delete(id))
     },
-    /** The clock's next fire, or null when the connection has none. */
-    async next(connection: ConnectionId): Promise<Date | null> {
-      const found = await owned(clockIdOf(connection))
-      return found === undefined || found.row.status !== 'active'
-        ? null
-        : new Date(found.row.nextFireAt)
-    },
+    next: (connection: ConnectionId) => nextOf(clockIdOf(connection)),
+    fullNext: (connection: ConnectionId) => nextOf(fullClockIdOf(connection)),
     /**
-     * At the Hub's start: a clock for each copy that is not MANUAL, and none for a connection that
-     * left; the copies of every company come from the Hub's database.
+     * At the Hub's start: the rows each copy runs, and none for a connection that left; the copies
+     * of every company come from the Hub's database.
      */
     async reconcile(copies: readonly ScheduledCopy[]): Promise<void> {
       for (const copy of copies) await set(copy)
-      const kept = new Set(
-        copies.filter((copy) => copy.interval !== 'MANUAL').map((copy) => copy.connectionId),
-      )
+      const wanted = copies.flatMap(rowsOf).filter((row) => row.cron !== null)
+      const kept = new Set(wanted.map((row) => row.id))
       for (const found of await ownedRows())
-        if (!kept.has(found.input.connectionId)) await stored(schedules.delete(found.row.id))
+        if (!kept.has(found.row.id)) await stored(schedules.delete(found.row.id))
     },
     /** The removal of a company takes its connections' clocks; a person's or a Projeto's leaves them. */
     async release(scope: ReleaseScope): Promise<void> {

@@ -2,10 +2,11 @@ import type {
   CompanyId,
   ConnectionId,
   ConnectorEntry,
+  LakeFullPass,
   LakeInterval,
   LakeTablesOfConnection,
 } from '@conexus/hub-api'
-import { LAKE_INTERVAL_DEFAULT } from '@conexus/hub-api'
+import { LAKE_FULL_PASS_DEFAULT, LAKE_INTERVAL_DEFAULT } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon } from 'lucide-react'
 import { useState } from 'react'
@@ -19,7 +20,7 @@ import type { Picks, Table } from './lake-pick.ts'
 import { copyBody, groupsOf, isMarked, picksOfCopied, prefixOf } from './lake-pick.ts'
 import { Group, LakePicker } from './lake-picker.tsx'
 import { lakeTablesPrefix, sendLakeCopy, sendLakeRun, sendLakeStop } from './lake-queries.ts'
-import { LeaveDialog, ReadAgainDialog, readAgainTables } from './lake-read-again.tsx'
+import { LeaveDialog, ReadAgainDialog } from './lake-read-again.tsx'
 import {
   dateEffectText,
   LAKE_TABLES,
@@ -33,13 +34,14 @@ type Props = { companyId: CompanyId; connectionId: ConnectionId; entry: Connecto
 
 const NAME_REFUSALS: ReadonlySet<string> = new Set(['COPY_NAME_INVALID', 'COPY_NAME_TAKEN'])
 
-/** What the person has edited so far: the picks, the interval and the date, against what is saved. */
 function useCopyEdit(props: Props) {
   const { lake } = props
   const [picks, setPicks] = useState<Picks>(() => picksOfCopied(lake.tables))
   const [interval, setInterval] = useState<LakeInterval>(lake.interval ?? LAKE_INTERVAL_DEFAULT)
   const savedSince = lake.startDate ?? ''
   const [since, setSince] = useState(savedSince)
+  const savedFullPass = lake.fullPass ?? LAKE_FULL_PASS_DEFAULT
+  const [fullPass, setFullPass] = useState<LakeFullPass>(savedFullPass)
   const [reading, setReading] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const copied = lake.tables.filter(isMarked)
@@ -48,21 +50,21 @@ function useCopyEdit(props: Props) {
   const dirty =
     interval !== (lake.interval ?? LAKE_INTERVAL_DEFAULT) ||
     since !== savedSince ||
+    fullPass !== savedFullPass ||
     leaving.length > 0 ||
     others.some((one) => picks.marked.has(one.source))
   return {
     ...{ picks, setPicks, interval, setInterval, since, setSince, savedSince },
-    ...{ reading, setReading, confirming, setConfirming, leaving },
-    ...{ copied, others, dirty, again: readAgainTables(lake.tables) },
+    ...{ fullPass, setFullPass, reading, setReading, confirming, setConfirming },
+    ...{ leaving, copied, others, dirty },
   }
 }
 
 type Edit = ReturnType<typeof useCopyEdit>
 
-/** The writes of the section: "Salvar" sets the copy, "Rodar agora" and "Ler de novo" ask for a round, "Parar cópia" asks the open one to stop. */
 function useCopyWrites(props: Props, edit: Edit) {
   const { companyId, connectionId, entry, lake } = props
-  const { picks, interval, since, savedSince, setReading } = edit
+  const { picks, interval, since, savedSince, fullPass, setReading } = edit
   const hasTypedName = Object.keys(picks.parts).some((source) => picks.marked.has(source))
   const [note, setNote] = useState<string | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
@@ -86,14 +88,10 @@ function useCopyWrites(props: Props, edit: Edit) {
     setFailure(null)
     setNameRefusal(null)
     try {
-      const body = copyBody({
-        prefix: prefixOf(entry.id),
-        tables: lake.tables,
-        picks,
-        interval,
-        since,
-      })
-      await save.mutateAsync({ params, body })
+      const prefix = prefixOf(entry.id)
+      const body = copyBody({ prefix, tables: lake.tables, picks, interval, since, fullPass })
+      const saved = await save.mutateAsync({ params, body })
+      setNote(dateEffectText(savedSince, since, saved.fullNext))
     } catch (error) {
       if (error instanceof HubFailure && NAME_REFUSALS.has(error.code) && hasTypedName) {
         setNameRefusal(sentenceOf(error))
@@ -102,7 +100,6 @@ function useCopyWrites(props: Props, edit: Edit) {
       }
       return
     }
-    setNote(dateEffectText(savedSince, since))
     stale()
   }
 
@@ -221,17 +218,12 @@ function OtherTables(props: {
   )
 }
 
-/**
- * The copied tables of a connection and everything that changes them: the boxes, the other tables
- * of the system, the interval and "Desde", "Salvar", "Rodar agora" and "Ler de novo desde a data".
- * Who does not manage copies sees the same controls turned off, with the sentence that says who can.
- */
 export function CopiedTables(props: Props & { editable: boolean }) {
   const { entry, lake } = props
   const edit = useCopyEdit(props)
   const writes = useCopyWrites(props, edit)
   const { picks, setPicks, interval, setInterval, since, setSince, savedSince } = edit
-  const { copied, others, dirty, again, reading, setReading } = edit
+  const { fullPass, setFullPass, copied, others, dirty, reading, setReading } = edit
   const { leaving, confirming, setConfirming } = edit
   const { note, failure, nameRefusal, running, submit, start } = writes
   return (
@@ -260,9 +252,12 @@ export function CopiedTables(props: Props & { editable: boolean }) {
         interval={interval}
         since={since}
         savedSince={savedSince}
+        fullPass={fullPass}
+        fullNext={lake.fullNext}
         dirty={dirty}
         saving={writes.saving}
         onInterval={setInterval}
+        onFullPass={setFullPass}
         onSince={setSince}
         onSave={() => (leaving.length > 0 ? setConfirming(true) : void submit())}
       />
@@ -272,16 +267,14 @@ export function CopiedTables(props: Props & { editable: boolean }) {
         editable={props.editable}
         running={running}
         stale={since !== savedSince}
-        again={again.length}
         stop={writes.stop}
         onRun={() => void start(false)}
         onReadAgain={() => setReading(true)}
       />
       <ReadAgainDialog
         open={reading}
-        since={savedSince}
         system={entry.name}
-        tables={again}
+        tables={copied}
         pending={writes.pending}
         onConfirm={() => void start(true)}
         onCancel={() => setReading(false)}

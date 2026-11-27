@@ -7,6 +7,8 @@ export const NO_LAKE = LakeTablesOfConnection.parse({
   lake: { kind: 'UNAVAILABLE', reason: 'NO_TABLES' },
   interval: null,
   startDate: null,
+  fullPass: null,
+  fullNext: null,
   tables: [],
   lastRun: null,
 })
@@ -16,7 +18,7 @@ function declared(fields: Record<string, unknown> & { source: string; label: str
   return LakeTablesOfConnection.shape.tables.element.parse({
     description: `O que guarda ${fields.label}.`,
     group: 'vendas',
-    mode: { kind: 'CHANGED', column: 'DTALTER', registry: false },
+    mode: { kind: 'CHANGED', column: 'DTALTER', cursor: 'TIME', registry: false },
     columns: 12,
     limited: true,
     copy: { kind: 'UNMARKED', suggested: `sankhya_${fields.source.toLowerCase()}` },
@@ -24,7 +26,7 @@ function declared(fields: Record<string, unknown> & { source: string; label: str
   })
 }
 
-/** Four tables: two the date limits (a change column and a window), a register and a whole one. */
+/** Four tables: two the date limits (a change column and a window), a register and one read by number. */
 export const TABLES: Table[] = [
   declared({ source: 'TGFCAB', label: 'Notas e pedidos' }),
   declared({
@@ -35,14 +37,14 @@ export const TABLES: Table[] = [
   declared({
     source: 'TGFPAR',
     label: 'Parceiros',
-    mode: { kind: 'CHANGED', column: 'DTALTER', registry: true },
+    mode: { kind: 'CHANGED', column: 'DTALTER', cursor: 'TIME', registry: true },
     limited: false,
   }),
   declared({
     source: 'TGFNFE',
     label: 'Dados da NF-e',
     group: 'financeiro',
-    mode: { kind: 'FULL' },
+    mode: { kind: 'CHANGED', column: 'NUNOTA', cursor: 'NUMBER', registry: false },
     limited: false,
   }),
 ]
@@ -72,6 +74,8 @@ export function readyLake(fields: Partial<LakeTablesOfConnection> = {}): LakeTab
     lake: { kind: 'READY' },
     interval: null,
     startDate: null,
+    fullPass: null,
+    fullNext: null,
     tables: TABLES,
     lastRun: null,
     ...fields,
@@ -85,6 +89,7 @@ export function copiedLake(
 ): LakeTablesOfConnection {
   return readyLake({
     interval: '24h',
+    fullPass: 'OFF',
     lastRun: COMPLETE_ROUND,
     tables: TABLES.map((table) =>
       sources.includes(table.source) && table.copy.kind === 'UNMARKED'
@@ -103,6 +108,8 @@ export function copiedLake(
   })
 }
 
+export const NEXT_FULL_PASS = '2026-11-29T06:07:00.000Z'
+
 export type LakeView = { lake: LakeTablesOfConnection; linkAddress?: string }
 
 export function stopOpenRound(view: LakeView): boolean {
@@ -113,7 +120,6 @@ export function stopOpenRound(view: LakeView): boolean {
   return true
 }
 
-/** What a PUT does to the lake the Hub holds: the marks, the interval and the date; a table added opens a round. */
 export function applied(view: LakeView, body: SetLakeCopy): void {
   const names = new Map(body.tables.map((one) => [one.source, one.name]))
   const added = view.lake.tables.some(
@@ -124,6 +130,8 @@ export function applied(view: LakeView, body: SetLakeCopy): void {
     ...view.lake,
     interval: body.interval,
     startDate: body.startDate,
+    fullPass: body.fullPass,
+    fullNext: body.fullPass === 'OFF' || body.interval === 'MANUAL' ? null : NEXT_FULL_PASS,
     lastRun: round,
     tables: view.lake.tables.map((one) => {
       const name = names.get(one.source)

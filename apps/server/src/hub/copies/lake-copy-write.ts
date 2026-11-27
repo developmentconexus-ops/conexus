@@ -3,6 +3,7 @@ import type { CompanyId, ConnectionId, ConnectorId, SetLakeCopy } from '@conexus
 import { eq, inArray, sql } from 'drizzle-orm'
 import type { CommandTx } from '../../platform/database.ts'
 import type { CopyColumn, CopyTable } from '../connectors/public.ts'
+import { forgetFullPass, runningPass } from './lake-schedule.ts'
 import { lakeCopy, lakeTable } from './tables.ts'
 
 export type Row = Readonly<{ id: string; source: string; name: string }>
@@ -12,11 +13,12 @@ export type Plan = Readonly<{
   remove: readonly Row[]
   interval: SetLakeCopy['interval']
   startDate: string | null
+  fullPass: SetLakeCopy['fullPass']
 }>
 type Written = Readonly<{
   at: Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
   plan: Plan
-  existing: Readonly<{ interval: string; startDate: string | null }> | undefined
+  existing: Pick<Plan, 'interval' | 'startDate' | 'fullPass'> | undefined
   connector: ConnectorId
 }>
 
@@ -36,7 +38,8 @@ async function removeRows(tx: CommandTx, remove: readonly Row[]) {
 }
 
 async function writeCopyRow(tx: CommandTx, { at, plan, existing, connector }: Written) {
-  const values = { interval: plan.interval, startDate: plan.startDate }
+  const { interval, startDate, fullPass } = plan
+  const values = { interval, startDate, fullPass }
   if (existing === undefined) {
     await tx.insert(lakeCopy).values({
       ...values,
@@ -45,7 +48,11 @@ async function writeCopyRow(tx: CommandTx, { at, plan, existing, connector }: Wr
       connectionId: at.connectionId,
       createdAt: sql`statement_timestamp()`,
     })
-  } else if (existing.interval !== values.interval || existing.startDate !== values.startDate) {
+  } else if (
+    existing.interval !== interval ||
+    existing.startDate !== startDate ||
+    existing.fullPass !== fullPass
+  ) {
     await tx.update(lakeCopy).set(values).where(eq(lakeCopy.connectionId, at.connectionId))
   }
 }
@@ -76,6 +83,7 @@ export async function writePlan(
   await removeRows(tx, written.plan.remove)
   await writeCopyRow(tx, written)
   await addRows(tx, written.at, written.plan.add, columns)
+  if (runningPass(written.plan) === null) await forgetFullPass(tx, written.at.connectionId)
   const [copy] = await tx
     .select({ createdAt: lakeCopy.createdAt })
     .from(lakeCopy)

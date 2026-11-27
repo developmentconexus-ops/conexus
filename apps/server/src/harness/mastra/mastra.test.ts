@@ -50,7 +50,7 @@ test('o relógio da ligação: a subida deixa um por cópia fora de MANUAL e nen
   const anchor = new Date('2026-11-24T13:07:00Z')
   for (const connectionId of [manual, gone])
     await createLakeClock({ mastra: hub.mastra, log: silent }).set({
-      ...{ companyId, connectionId, interval: '1h', anchor },
+      ...{ companyId, connectionId, interval: '1h', fullPass: 'OFF', anchor },
     })
 
   const beside = await hubBeside(t, hub)

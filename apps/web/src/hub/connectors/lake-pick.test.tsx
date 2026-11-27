@@ -24,7 +24,10 @@ test('o nome de uma tabela sugerida sem o prefixo é editado inteiro, sem o pref
   expect(shownPrefix('sankhya_', plain)).toBe('')
   const picks = { ...NO_PICKS, marked: new Set(['TGFCAB']) }
   expect(
-    copyBody({ prefix: 'sankhya_', tables: [plain], picks, interval: '24h', since: '' }).tables,
+    copyBody({
+      ...{ prefix: 'sankhya_', tables: [plain], picks, interval: '24h', since: '' },
+      fullPass: 'OFF',
+    }).tables,
   ).toEqual([{ source: 'TGFCAB', name: 'notas' }])
   expect(shownPrefix('sankhya_', tableOf('TGFCAB'))).toBe('sankhya_')
 })

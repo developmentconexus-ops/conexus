@@ -1,5 +1,6 @@
 import type {
   AccountRef,
+  ChangedCursor,
   Connector,
   TableDeclaration,
   TableMode,
@@ -29,15 +30,13 @@ import { openedIn } from './testing.ts'
 
 type Where = Readonly<{ companyId: CompanyId; connectionId: ConnectionId }>
 
-/** What one round's spec needs of its connection: the opened fields (S8) and what the start date limits. */
+/** What one round's spec needs of its connection: the opened fields (S8). */
 type CopyOpened =
   | Readonly<{
       kind: 'OPENED'
       connector: ConnectorId
       account: AccountRef | null
       credential: Readonly<Record<string, string>>
-      /** Each declared table by its source, and whether the start date limits it (`startDateLimits`). */
-      limited: ReadonlyMap<string, boolean>
     }>
   | Readonly<{ kind: 'GONE' }>
 
@@ -51,7 +50,7 @@ type CopyColumns =
 
 /** How a table is read, as the contract shows it. */
 type CopyMode =
-  | Readonly<{ kind: 'CHANGED'; column: string; registry: boolean }>
+  | Readonly<{ kind: 'CHANGED'; column: string; cursor: ChangedCursor['kind']; registry: boolean }>
   | Readonly<{ kind: 'WINDOW'; column: string }>
   | Readonly<{ kind: 'FULL' }>
 
@@ -107,7 +106,12 @@ export type CopySource = {
 function modeOf(mode: TableMode): CopyMode {
   switch (mode.kind) {
     case 'CHANGED':
-      return { kind: 'CHANGED', column: mode.column, registry: mode.registry }
+      return {
+        kind: 'CHANGED',
+        column: mode.column,
+        cursor: mode.cursor.kind,
+        registry: mode.cursor.kind === 'TIME' && mode.cursor.registry,
+      }
     case 'WINDOW':
       return { kind: 'WINDOW', column: mode.column }
     case 'FULL':
@@ -217,13 +221,11 @@ export function createCopySource(deps: Deps): CopySource {
       const { connector } = found
       if (connector.auth.kind !== 'client_credentials')
         throw new Failure('SEAL_REFUSED', { details: { reason: 'not a pasted login' } })
-      const declared = connector.tables?.declared ?? []
       return {
         kind: 'OPENED',
         connector: connector.id,
         account: found.accountRef,
         credential: valuesOf(found, connector.auth),
-        limited: new Map(declared.map((table) => [sourceOf(table), startDateLimits(table.mode)])),
       }
     },
     async columns(at) {

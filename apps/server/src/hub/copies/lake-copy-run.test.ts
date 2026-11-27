@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { bodyOfStatus, runLakeCopy } from '@conexus/hub-api'
+import { queued, withOwnerLock } from '../../platform/test-database.ts'
 import { codeOf } from '../identity/test-hub.ts'
 import {
   counts,
   finished,
   lakeCopyOn,
+  NFE,
   NOTAS,
   PARCEIROS,
   PRODUTOS,
@@ -13,6 +15,7 @@ import {
   specOf,
   wholeOf,
 } from './test-lake-copy.ts'
+import { ALL_WHOLE, lastWhole, loadedOn } from './test-lake-pass.ts'
 
 test('marcar depois: a tabela nova dispara a rodada que lê inteira só ela, e o horário não muda', async (t) => {
   const on = await lakeCopyOn(t)
@@ -110,12 +113,13 @@ test('a data de hoje é a de São Paulo, não a do relógio da máquina', async 
   assert.equal(today.statusCode, 200, today.body)
 })
 
-test('ler de novo desde a data: whole só nas tabelas que a data limita, com a data na tarefa; com rodada aberta, já está rodando', async (t) => {
+test('inteira em todas: Ler tudo de novo pede whole em cada tabela marcada, cadastro e NF-e incluídos, com a data na tarefa; com rodada aberta, já está rodando', async (t) => {
   const on = await lakeCopyOn(t)
   const connection = await on.linked()
-  const marks = { tables: [NOTAS, PARCEIROS], interval: '24h' }
+  const marks = { tables: [NOTAS, PARCEIROS, NFE], interval: '24h' }
+  const names = marks.tables.map(({ name }) => name)
   assert.equal((await on.put(connection, { ...marks, startDate: '2024-03-01' })).statusCode, 200)
-  await finished(on, connection, ['sankhya_notas', 'sankhya_parceiros'])
+  await finished(on, connection, names)
 
   const queued = await on.run(connection, { whole: true })
   assert.equal(queued.statusCode, 202, queued.body)
@@ -126,7 +130,11 @@ test('ler de novo desde a data: whole só nas tabelas que a data limita, com a d
   assert.equal(runs[1]?.whole, true)
   const spec = specOf(on, runs[1]?.id)
   assert.equal(spec.startDate, '2024-03-01', 'the copy date is in the spec')
-  assert.deepEqual(wholeOf(on, runs[1]?.id), { sankhya_notas: true, sankhya_parceiros: false })
+  assert.deepEqual(wholeOf(on, runs[1]?.id), {
+    sankhya_notas: true,
+    sankhya_parceiros: true,
+    sankhya_notas_nfe: true,
+  })
 
   const before = await counts(on)
   for (const body of [{ whole: true }, {}]) {
@@ -137,12 +145,32 @@ test('ler de novo desde a data: whole só nas tabelas que a data limita, com a d
   await on.hub.lakeRuns.idle()
   assert.deepEqual(await counts(on), before, 'already running writes nothing')
 
-  await finished(on, connection, ['sankhya_notas', 'sankhya_parceiros'])
+  await finished(on, connection, names)
   const plain = await on.run(connection)
   assert.equal(plain.statusCode, 202)
   await on.hub.lakeRuns.idle()
   const last = (await runsOf(on, connection)).at(-1)
-  assert.deepEqual(wholeOf(on, last?.id), { sankhya_notas: false, sankhya_parceiros: false })
+  assert.deepEqual(wholeOf(on, last?.id), {
+    sankhya_notas: false,
+    sankhya_parceiros: false,
+    sankhya_notas_nfe: false,
+  })
+})
+
+test('a passada que dispara enquanto a rodada abre entra nela', async (t) => {
+  const { on, connection } = await loadedOn(t, 'DAILY')
+  const held = 'lock table copies.lake_run in exclusive mode'
+
+  await withOwnerLock(on.hub.test, held, [], async (release) => {
+    const asked = on.hub.lakeRuns.iniciarRodada(on.at, connection, 'CLOCK')
+    await queued(on.hub.test, 1, asked)
+    assert.equal(await on.hub.lakeRuns.markFullPass(on.at, connection), 'DUE')
+    await release()
+    return asked
+  })
+  await on.hub.lakeRuns.idle()
+
+  assert.deepEqual(await lastWhole(on, connection), ALL_WHOLE)
 })
 
 test('rodar agora vale também sem relógio, e sem cópia não há o que rodar', async (t) => {

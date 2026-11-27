@@ -54,7 +54,7 @@ test('a rodada fechada leva a máquina medida ou null; a parada do ECS diz a fra
 
 test('gravar a cópia aceita até 60 tabelas e uma data só em dia; rodar agora lê inteiro só se pedido', () => {
   const table = { source: 'TGFCAB', name: 'sankhya_notas' }
-  const set = { tables: [table], interval: '24h', startDate: null }
+  const set = { tables: [table], interval: '24h', startDate: null, fullPass: 'OFF' }
   assert.ok(SetLakeCopy.safeParse(set).success)
   assert.ok(SetLakeCopy.safeParse({ ...set, startDate: '2026-01-31' }).success)
   assert.equal(SetLakeCopy.safeParse({ ...set, startDate: '31/01/2026' }).success, false)

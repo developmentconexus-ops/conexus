@@ -1,11 +1,14 @@
-import type { LakeInterval, LakeTablesOfConnection } from '@conexus/hub-api'
+import type { LakeFullPass, LakeInterval, LakeTablesOfConnection } from '@conexus/hub-api'
 import { useState } from 'react'
 import { clockOf, dayAndHour } from '../../platform/dates.ts'
 import { Button } from '../../ui/button.tsx'
+import { FullPassField } from './full-pass-field.tsx'
 import { IntervalField } from './interval-field.tsx'
 import { isFuture, isMarked } from './lake-pick.ts'
 import { StopDialog } from './lake-read-again.tsx'
 import {
+  FULL_PASS_MANUAL,
+  fullPassNextText,
   lastRunText,
   READ_AGAIN,
   RUN_NOW,
@@ -24,9 +27,12 @@ export function Controls(props: {
   interval: LakeInterval
   since: string
   savedSince: string
+  fullPass: LakeFullPass
+  fullNext: string | null
   dirty: boolean
   saving: boolean
   onInterval: (interval: LakeInterval) => void
+  onFullPass: (fullPass: LakeFullPass) => void
   onSince: (since: string) => void
   onSave: () => void
 }) {
@@ -37,6 +43,9 @@ export function Controls(props: {
           {intervalText(props.interval)} ·{' '}
           {props.savedSince === '' ? WHOLE_HISTORY : sinceOfTableText(props.savedSince)}
         </p>
+        <p className="text-text-2 tabular-nums">
+          {props.interval === 'MANUAL' ? FULL_PASS_MANUAL : fullPassNextText(props.fullNext)}
+        </p>
         <Button variant="primary" disabled>
           {SAVE}
         </Button>
@@ -44,9 +53,18 @@ export function Controls(props: {
     )
   }
   return (
-    <div className="grid gap-lg md:grid-cols-2">
-      <IntervalField value={props.interval} onChange={props.onInterval} />
+    <div className="grid grid-cols-1 gap-lg md:grid-cols-2">
+      <div className="md:col-span-2">
+        <IntervalField value={props.interval} onChange={props.onInterval} />
+      </div>
       <SinceField value={props.since} onChange={props.onSince} help={false} />
+      <FullPassField
+        value={props.fullPass}
+        manual={props.interval === 'MANUAL'}
+        onChange={props.onFullPass}
+      >
+        <p className="text-text-2 tabular-nums">{fullPassNextText(props.fullNext)}</p>
+      </FullPassField>
       <div className="flex flex-wrap gap-md md:col-span-2">
         <Button
           variant="primary"
@@ -68,13 +86,11 @@ function endedText(round: Ended) {
   return lastRunText(dayAndHour(round.endedAt))
 }
 
-/** "Rodar agora", "Parar cópia" while a round is open, "Ler de novo desde a data" and the last round, under the controls. */
 export function RunBar(props: {
   lake: LakeTablesOfConnection
   editable: boolean
   running: boolean
   stale: boolean
-  again: number
   stop: { stopping: boolean; pending: boolean; send: () => Promise<void> }
   onRun: () => void
   onReadAgain: () => void
@@ -95,14 +111,12 @@ export function RunBar(props: {
           {stop.stopping ? STOPPING : STOP_COPY}
         </Button>
       )}
-      {props.again > 0 && (
-        <Button
-          disabled={!props.editable || props.stale || props.running}
-          onClick={props.onReadAgain}
-        >
-          {READ_AGAIN}
-        </Button>
-      )}
+      <Button
+        disabled={!props.editable || props.stale || props.running}
+        onClick={props.onReadAgain}
+      >
+        {READ_AGAIN}
+      </Button>
       {lake.lastRun !== null && lake.lastRun.outcome !== 'RUNNING' && (
         <p className="text-text-2 tabular-nums">{endedText(lake.lastRun)}</p>
       )}

@@ -78,6 +78,7 @@ export {
 } from './kernel/session.ts'
 export { connectorSkill, type SkillTable } from './kernel/skill.ts'
 export {
+  type ChangedCursor,
   type ConnectorTables,
   DiscoveredTable,
   lakeNameOf,

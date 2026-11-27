@@ -39,7 +39,7 @@ test('o que copiar: as tabelas por assunto, nada marcado, com rótulo, origem, d
   expect(vendas.getByText('O que guarda Notas e pedidos.')).toBeTruthy()
   expect(vendas.getAllByText('Só o que mudou, por DTALTER')).toHaveLength(2)
   expect(vendas.getByText('Janela por mês, por DTNEG')).toBeTruthy()
-  expect(within(dialog).getByText('Inteira')).toBeTruthy()
+  expect(within(dialog).getByText('Só as novas, por NUNOTA')).toBeTruthy()
   const boxes = within(dialog).getAllByRole('checkbox')
   expect(boxes.filter((box) => box.getAttribute('aria-checked') === 'true')).toHaveLength(0)
   expect(within(dialog).queryByLabelText(/^Nome no lago/)).toBeNull()
@@ -192,6 +192,7 @@ test('ligado: Ligar e copiar agora grava a cópia num pedido só, sem pedir roda
     ],
     interval: '24h',
     startDate: '2021-11-24',
+    fullPass: 'OFF',
   })
   const see = within(dialog).getByRole('link', { name: 'Ver em Dados' })
   expect(see.getAttribute('href')).toBe(`/companies/${COMPANY.id}/data`)

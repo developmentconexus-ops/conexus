@@ -24,14 +24,14 @@ async function markPartners(section: ReturnType<typeof within>) {
   fireEvent.click(await section.findByRole('checkbox', { name: 'Parceiros' }))
 }
 
-test('com a rodada aberta Rodar agora e Ler de novo ficam desligados', async () => {
+test('com a rodada aberta Rodar agora e Ler tudo de novo ficam desligados', async () => {
   const section = await openTables({
     lake: copiedLake(COPIED, { lastRun: RUNNING_ROUND, startDate: '2021-11-24' }),
   })
   expect(section.getByRole('button', { name: 'Rodar agora' }).hasAttribute('disabled')).toBe(true)
-  expect(
-    section.getByRole('button', { name: 'Ler de novo desde a data' }).hasAttribute('disabled'),
-  ).toBe(true)
+  expect(section.getByRole('button', { name: 'Ler tudo de novo' }).hasAttribute('disabled')).toBe(
+    true,
+  )
 })
 
 test('um nome digitado e recusado sai uma vez só, ao lado da tabela', async () => {

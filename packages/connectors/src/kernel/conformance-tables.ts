@@ -106,7 +106,7 @@ function walkDeclaration(
         mode:
           list.changed === null
             ? { kind: 'FULL' }
-            : { kind: 'CHANGED', column: 'changed', registry: true },
+            : { kind: 'CHANGED', column: 'changed', cursor: { kind: 'TIME', registry: true } },
         history: false,
         columns: { kind: 'DECLARED', columns: [...fields, ...changed] },
       },

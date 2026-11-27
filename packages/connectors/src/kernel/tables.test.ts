@@ -22,7 +22,8 @@ function modeOf(table: TableDeclaration): string {
   const { mode } = table
   if (mode.kind === 'FULL') return 'FULL'
   if (mode.kind === 'WINDOW') return `WINDOW ${mode.column} ${mode.reread}`
-  return `CHANGED ${mode.column}${mode.registry ? ' registry' : ''}`
+  if (mode.cursor.kind === 'NUMBER') return `CHANGED ${mode.column} number ${mode.cursor.lag}`
+  return `CHANGED ${mode.column}${mode.cursor.registry ? ' registry' : ''}`
 }
 
 async function discovered(reach: TableReach) {
@@ -215,17 +216,25 @@ test('a fonte recusa: um dos quatro códigos, o que o sistema disse sem o corpo,
 })
 
 test('o que a data limita: só a tabela de movimento e a de janela; o cadastro e a inteira nunca', () => {
-  assert.equal(startDateLimits({ kind: 'CHANGED', column: 'DTALTER', registry: false }), true)
-  assert.equal(startDateLimits({ kind: 'CHANGED', column: 'DTALTER', registry: true }), false)
+  function byTime(registry: boolean) {
+    return { kind: 'CHANGED', column: 'DTALTER', cursor: { kind: 'TIME', registry } } as const
+  }
+  assert.equal(startDateLimits(byTime(false)), true)
+  assert.equal(startDateLimits(byTime(true)), false)
   assert.equal(startDateLimits({ kind: 'WINDOW', column: 'DTREF', step: 'MONTH', reread: 2 }), true)
   assert.equal(startDateLimits({ kind: 'FULL' }), false)
   for (const expected of [...SANKHYA_DISCOVERY, ...HUBSPOT_DISCOVERY])
     assert.equal(
       expected.limited,
       expected.mode.startsWith('WINDOW') ||
-        (expected.mode.startsWith('CHANGED') && !expected.mode.endsWith('registry')),
+        (expected.mode.startsWith('CHANGED') && !/ (registry|number \d+)$/.test(expected.mode)),
       expected.name,
     )
+})
+
+test('o número não é limitado', () => {
+  const cursor = { kind: 'NUMBER', lag: 0 } as const
+  assert.equal(startDateLimits({ kind: 'CHANGED', column: 'NUNOTA', cursor }), false)
 })
 
 test('a descoberta recusada diz por quê: a tabela sem colunas leva o código da fonte, e a ausente do dicionário não leva nenhum', async () => {

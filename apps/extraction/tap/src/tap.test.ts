@@ -8,6 +8,7 @@ import {
   tablePrefixOf,
 } from '@conexus/connectors'
 import { z } from 'zod'
+import { recordLine, schemaOf } from './messages.ts'
 import type { Double } from './test-tap.ts'
 import { hubspotDouble, lastState, recordsOf, sankhyaDouble, selected, tap } from './test-tap.ts'
 
@@ -25,7 +26,14 @@ const Entry = z.object({
 
 const Mode = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('FULL') }),
-  z.object({ kind: z.literal('CHANGED'), column: z.string(), registry: z.boolean() }),
+  z.object({
+    kind: z.literal('CHANGED'),
+    column: z.string(),
+    cursor: z.discriminatedUnion('kind', [
+      z.object({ kind: z.literal('TIME'), registry: z.boolean() }),
+      z.object({ kind: z.literal('NUMBER'), lag: z.int().min(0) }),
+    ]),
+  }),
   z.object({ kind: z.literal('WINDOW'), column: z.string(), reread: z.int() }),
 ])
 
@@ -42,7 +50,13 @@ function rowOf(entry: z.infer<typeof Entry>, prefix: string): ExpectedTable {
         ? 'FULL'
         : mode.kind === 'WINDOW'
           ? `WINDOW ${mode.column} ${mode.reread}`
-          : `CHANGED ${mode.column}${mode.registry ? ' registry' : ''}`,
+          : `CHANGED ${mode.column}${
+              mode.cursor.kind === 'NUMBER'
+                ? ` number ${mode.cursor.lag}`
+                : mode.cursor.registry
+                  ? ' registry'
+                  : ''
+            }`,
     limited: z.boolean().parse(top['conexus-limited']),
     columns: columns === 0 ? null : columns,
   }
@@ -213,4 +227,44 @@ test('a fonte recusa: código diferente de zero, o código da fonte e a tabela n
         `${what}: nenhum valor do segredo`,
       )
   }
+})
+
+test('o binário: base64 com contentEncoding no esquema, os bytes como vieram; o CLOB é texto', () => {
+  const columns = [
+    { name: 'IMAGEM', type: 'binary', description: null },
+    { name: 'XML', type: 'text', description: 'Campo xml' },
+  ] as const
+  assert.deepEqual(schemaOf(columns).properties, {
+    imagem: { type: ['string', 'null'], contentEncoding: 'base64' },
+    xml: { type: ['string', 'null'], description: 'Campo xml' },
+  })
+  const bytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 255]).toString('base64')
+  const line = JSON.parse(
+    recordLine({ stream: 's', columns, row: { IMAGEM: bytes, XML: '<a/>' }, version: 1 }),
+  )
+  assert.deepEqual(
+    Buffer.from(line.record.imagem, 'base64'),
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 255]),
+  )
+})
+
+test('o decimal declarado: a precisão e a escala vão ao esquema ao lado do x-singer.decimal, e o sem escala vai sem elas', () => {
+  const columns = [
+    {
+      name: 'VLRDESCPARCERIA',
+      type: 'numeric',
+      description: null,
+      decimal: { precision: 18, scale: 4 },
+    },
+    { name: 'VLRNOTA', type: 'numeric', description: null },
+  ] as const
+  assert.deepEqual(schemaOf(columns).properties, {
+    vlrdescparceria: {
+      type: ['string', 'null'],
+      format: 'x-singer.decimal',
+      precision: 18,
+      scale: 4,
+    },
+    vlrnota: { type: ['string', 'null'], format: 'x-singer.decimal' },
+  })
 })

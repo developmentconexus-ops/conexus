@@ -3,7 +3,7 @@ export type ExpectedTable = Readonly<{
   name: string
   source: string
   key: readonly string[]
-  mode: string // 'FULL', 'CHANGED <column>[ registry]' or 'WINDOW <column> <reread>'
+  mode: string // 'FULL', 'CHANGED <column>[ registry | number <lag>]' or 'WINDOW <column> <reread>'
   limited: boolean
   columns: number | null
 }>
@@ -104,7 +104,7 @@ export const SANKHYA_DISCOVERY: readonly ExpectedTable[] = [
     null,
   ),
   row('livros_fiscais', 'TGFLIV', ['NUNOTA', 'ORIGEM', 'SEQUENCIA', 'CODEMP'], 'FULL', false, null),
-  row('notas_nfe', 'TGFNFE', ['NUNOTA'], 'FULL', false, 4),
+  row('notas_nfe', 'TGFNFE', ['NUNOTA'], 'CHANGED NUNOTA number 4900', false, 4),
   row(
     'aliquotas_icms',
     'TGFICM',

@@ -11,9 +11,21 @@ function point(value: string) {
   return { replication_key: 'dtalter', replication_key_value: value }
 }
 
-function modeText(mode: { kind: string; column?: string; registry?: boolean }): string {
+function modeText(mode: {
+  kind: string
+  column?: string
+  cursor?: string
+  registry?: boolean
+}): string {
   if (mode.kind === 'FULL') return 'FULL'
+  if (mode.cursor === 'NUMBER') return `${mode.kind} ${mode.column} number`
   return `${mode.kind} ${mode.column}${mode.registry === true ? ' registry' : ''}`
+}
+
+function wireModeOf(mode: string): string {
+  const words = mode.split(' ')
+  if (mode.startsWith('WINDOW')) return words.slice(0, 2).join(' ')
+  return words[2] === 'number' ? words.slice(0, 3).join(' ') : mode
 }
 
 test('a lista da ligação: as tabelas do kit, nada marcado, com o nome sugerido e o dicionário', async (t) => {
@@ -69,11 +81,24 @@ test('a lista da ligação é a descoberta: cada tabela, origem, modo e coluna d
     SANKHYA_DISCOVERY.map((each) => ({
       name: `sankhya_${each.name}`,
       source: each.source,
-      mode: each.mode.startsWith('WINDOW') ? each.mode.split(' ').slice(0, 2).join(' ') : each.mode,
+      mode: wireModeOf(each.mode),
       limited: each.limited,
       columns: each.columns,
     })),
   )
+})
+
+test('o número não é limitado', async (t) => {
+  const on = await lakeCopyOn(t)
+  const view = on.viewOf(await on.get(await on.linked()))
+  const nfe = view.tables.find((table) => table.source === 'TGFNFE')
+  assert.deepEqual(nfe?.mode, {
+    kind: 'CHANGED',
+    column: 'NUNOTA',
+    cursor: 'NUMBER',
+    registry: false,
+  })
+  assert.equal(nfe.limited, false)
 })
 
 test('a lista de uma ligação de credencial exclusiva é indisponível, com o motivo', async (t) => {
@@ -212,7 +237,7 @@ test('o ponto de parada sai: desmarcar tira o fluxo da tabela do arquivo da liga
   )
 })
 
-test('ler de novo desde a data tira o ponto das tabelas que a data limita antes de iniciar a tarefa; Rodar agora não tira', async (t) => {
+test('ler tudo de novo tira o ponto de cada tabela antes de iniciar a tarefa; Rodar agora não tira', async (t) => {
   const on = await lakeCopyOn(t)
   const connection = await on.linked()
   assert.equal((await on.put(connection, { tables: [NOTAS, PARCEIROS], ...DAILY })).statusCode, 200)
@@ -236,15 +261,15 @@ test('ler de novo desde a data tira o ponto das tabelas que a data limita antes 
 
   assert.equal((await on.run(connection, { whole: true })).statusCode, 202)
   await on.hub.lakeRuns.idle()
-  assert.deepEqual(bookmarks(), { sankhya_parceiros: point('2026-11-21') })
+  assert.deepEqual(bookmarks(), {})
   const started = on.aws
     .calls()
     .slice(calls)
     .filter((call) => call === 'PutObject' || call === 'RunTask')
-  assert.deepEqual(started, ['PutObject', 'RunTask'])
+  assert.deepEqual(started, ['PutObject', 'PutObject', 'RunTask'])
 })
 
-test('ler de novo desde a data sem a AWS tirar o ponto: a rodada fecha COPY_LAKE_UNAVAILABLE e a tarefa não inicia', async (t) => {
+test('ler tudo de novo sem a AWS tirar o ponto: a rodada fecha COPY_LAKE_UNAVAILABLE e a tarefa não inicia', async (t) => {
   const on = await lakeCopyOn(t, {
     tables: (real) => ({ ...real, forget: async () => ({ kind: 'NO_ANSWER' }) }),
   })

@@ -4,6 +4,7 @@ import type { ConnectionId, LakeRunMachine } from '@conexus/hub-api'
 import {
   CompanyId as CompanyIdSchema,
   ConnectionId as ConnectionIdSchema,
+  LAKE_FULL_PASS_DEFAULT,
   LakeRunId,
   LakeTableName,
   LakeTablesOfConnection,
@@ -151,7 +152,10 @@ export async function lakeCopyOn(t: TestContext, options: Options = {}) {
     get: (connection: string, who: Person = ana) =>
       call(hub, who, 'GET', urlsOf(base, connection).list),
     put: (connection: string, body: object, who: Person = ana) =>
-      call(hub, who, 'PUT', urlsOf(base, connection).copy, body),
+      call(hub, who, 'PUT', urlsOf(base, connection).copy, {
+        fullPass: LAKE_FULL_PASS_DEFAULT,
+        ...body,
+      }),
     run: (connection: string, body: object = {}, who: Person = ana) =>
       post(hub, who, urlsOf(base, connection).run, body),
     rows: (statement: string, values: unknown[] = []) => hub.test.asOwner(statement, values),
@@ -168,6 +172,7 @@ export type LakeCopyOn = Awaited<ReturnType<typeof lakeCopyOn>>
 export const NOTAS = { source: 'TGFCAB', name: 'sankhya_notas' }
 export const PARCEIROS = { source: 'TGFPAR', name: 'sankhya_parceiros' }
 export const PRODUTOS = { source: 'TGFPRO', name: 'sankhya_produtos' }
+export const NFE = { source: 'TGFNFE', name: 'sankhya_notas_nfe' }
 export const DAILY = { interval: '24h', startDate: null }
 
 export function runsOf(on: LakeCopyOn, connection: string) {

@@ -32,14 +32,14 @@ test.each(ROLES)(
 )
 
 test.each(ROLES)(
-  'com cópia: $role vê Ler de novo desde a data, ligado só se gerencia cópias',
+  'com cópia: $role vê Ler tudo de novo, ligado só se gerencia cópias',
   async ({ role, mayManage, may }) => {
     const { section } = await openTables(server, {
       role,
       mayManage,
       lake: copiedLake(['TGFCAB', 'TGFITE'], { startDate: '2021-11-24' }),
     })
-    const again = within(section).getByRole('button', { name: 'Ler de novo desde a data' })
+    const again = within(section).getByRole('button', { name: 'Ler tudo de novo' })
     expect(again.hasAttribute('disabled')).toBe(!may)
     fireEvent.click(again)
     expect(screen.queryByRole('alertdialog') !== null).toBe(may)

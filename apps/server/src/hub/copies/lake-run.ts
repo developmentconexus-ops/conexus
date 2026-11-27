@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, ConnectionId, LakeInterval, LakeTableName } from '@conexus/hub-api'
-import { ConnectionId as ConnectionIdSchema, LakeRunId } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, LakeTableName } from '@conexus/hub-api'
+import { LakeRunId } from '@conexus/hub-api'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type {
   AwsAnswer,
@@ -18,12 +18,13 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { logFailure } from '../../platform/failure.ts'
 import type { CopySource } from '../connectors/public.ts'
 import type { CompanyScope, RunEnd, RunFields, TreatmentHooks } from './lake-close.ts'
-import { closeLakeRun, companyScope, deleteParameter } from './lake-close.ts'
+import { closeLakeRun, deleteParameter } from './lake-close.ts'
 import { createLakeQueue } from './lake-queue.ts'
+import { markFullPass, scheduledCopies } from './lake-schedule.ts'
 import type { Started } from './lake-spec.ts'
 import { readCopy, specOf, writeColumns } from './lake-spec.ts'
 import { sweep } from './lake-sweep.ts'
-import { lakeCopy, lakeRun } from './tables.ts'
+import { lakeRun } from './tables.ts'
 
 const RUN_STALE_MS = 48 * 60 * 60 * 1_000
 /** The Parameter Store's advanced tier, which `Intelligent-Tiering` picks past the standard 4 KB. */
@@ -65,14 +66,6 @@ export const MACHINE_CLOCK: StartClock = {
   now: () => Date.now(),
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 }
-
-/** A connection's copy as the clock reads it at the Hub's start: when it was born and how often it runs. */
-export type ScheduledCopy = Readonly<{
-  companyId: CompanyId
-  connectionId: ConnectionId
-  interval: LakeInterval
-  anchor: Date
-}>
 
 export type LakeRunDeps = {
   database: Database
@@ -229,8 +222,12 @@ async function forgotStoppingPoints(
   return true
 }
 
-async function start(deps: LakeRunDeps, line: Line, started: Started) {
-  const { at, copy } = started
+/** The copy is read again after the round opened, so a pass that fired before it is in the spec. */
+async function start(deps: LakeRunDeps, line: Line, round: Omit<Started, 'copy'>) {
+  const { at } = round
+  const copy = await readCopy(deps.database, at, round.connection)
+  if (copy === null) return
+  const started = { ...round, copy }
   const run = LakeRunId.parse(started.run)
   function unavailable() {
     return closeLakeRun(deps, at, { run, end: UNAVAILABLE, tables: [], cause: 'START' })
@@ -265,24 +262,6 @@ async function opened(
     if (violatedConstraint(error) === 'lake_run_open_key') return false
     throw error
   }
-}
-
-async function scheduled(deps: LakeRunDeps): Promise<ScheduledCopy[]> {
-  const copies: ScheduledCopy[] = []
-  for (const companyId of await deps.companies()) {
-    const rows = await deps.database.read(companyScope(companyId), (tx) =>
-      tx
-        .select({
-          connectionId: lakeCopy.connectionId,
-          interval: lakeCopy.interval,
-          anchor: lakeCopy.createdAt,
-        })
-        .from(lakeCopy),
-    )
-    for (const row of rows)
-      copies.push({ ...row, companyId, connectionId: ConnectionIdSchema.parse(row.connectionId) })
-  }
-  return copies
 }
 
 /**
@@ -320,7 +299,7 @@ export function createLakeRuns(input: LakeRunDeps) {
     }
     deps.watch.opened(at.companyId, run)
     starting.add(run)
-    const job: Promise<void> = start(deps, line, { at, connection, run, whole, copy })
+    const job: Promise<void> = start(deps, line, { at, connection, run, whole })
       .then(() => undefined)
       .catch((error: unknown) => logFailure(deps.log, databaseFailure(error)))
       .finally(() => {
@@ -337,8 +316,9 @@ export function createLakeRuns(input: LakeRunDeps) {
     /** The one close, for the queue's consumer (`lake-queue.ts`) and the sweep. */
     closeLakeRun: (at: CompanyScope, close: Parameters<typeof closeLakeRun>[2]) =>
       closeLakeRun(deps, at, close),
-    /** Every copy of a connection, of every company with a connection, for the clocks at start. */
-    scheduled: () => scheduled(deps),
+    scheduled: () => scheduledCopies(deps),
+    markFullPass: (at: CompanyScope, connection: ConnectionId) =>
+      markFullPass(deps, at, connection),
     /** The rounds' end: `start` reads the open rounds once, then the queue while one is open (D27). */
     queue: { start: consumer.start, stop: consumer.stop, reading: consumer.reading },
     /** The consumer told of a treatment round opened and closed, so it reads the queue meanwhile. */

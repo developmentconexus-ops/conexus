@@ -113,6 +113,14 @@ function assertCounts(tables: ConnectorTables): void {
     throw new Error('A discovery asks tables')
 }
 
+function assertMode({ name, mode }: TableDeclaration): void {
+  if (mode.kind === 'WINDOW' && (!Number.isSafeInteger(mode.reread) || mode.reread < 1))
+    throw new Error(`${name} rereads no month`)
+  if (mode.kind !== 'CHANGED' || mode.cursor.kind !== 'NUMBER') return
+  if (!Number.isSafeInteger(mode.cursor.lag) || mode.cursor.lag < 0)
+    throw new Error(`${name} has a lag that is no whole number from zero up`)
+}
+
 /** The part of a connector its tables' declaration reads. */
 type Declaring = Readonly<{
   id: string
@@ -127,9 +135,8 @@ function assertTable(connector: Declaring, tables: ConnectorTables, table: Table
     throw new Error(`${table.name} is grouped under ${table.group}, no subject of ${connector.id}`)
   if (table.key.length === 0 || new Set(table.key).size !== table.key.length)
     throw new Error(`${table.name} has no key, or repeats a key column`)
-  const { mode, columns } = table
-  if (mode.kind === 'WINDOW' && (!Number.isSafeInteger(mode.reread) || mode.reread < 1))
-    throw new Error(`${table.name} rereads no month`)
+  const { columns } = table
+  assertMode(table)
   assertSource(connector, tables, table)
   if (columns.kind === 'DECLARED') {
     assertDeclaredColumns(table, columns.columns)

@@ -1,4 +1,6 @@
 import {
+  LAKE_FULL_PASS_DEFAULT,
+  LAKE_FULL_PASSES,
   LAKE_INTERVALS,
   LAKE_RUN_FAILURE_CODES,
   LAKE_TABLE_NAME_PATTERN,
@@ -32,6 +34,7 @@ import { company } from '../identity/public-tables.ts'
 export const copies = pgSchema('copies')
 
 const INTERVALS = sql.raw(LAKE_INTERVALS.map((interval) => `'${interval}'`).join(', '))
+const FULL_PASSES = sql.raw(LAKE_FULL_PASSES.map((pass) => `'${pass}'`).join(', '))
 const OUTCOMES = ['COMPLETE', 'ERROR', 'INTERRUPTED'] as const
 const OUTCOME_LIST = sql.raw(OUTCOMES.map((outcome) => `'${outcome}'`).join(', '))
 const FAILURE_CODES = sql.raw(LAKE_RUN_FAILURE_CODES.map((code) => `'${code}'`).join(', '))
@@ -48,6 +51,9 @@ export const lakeCopy = copies.table(
     connectionId: uuid('connection_id').notNull(),
     interval: text('interval', { enum: LAKE_INTERVALS }).notNull(),
     startDate: date('start_date', { mode: 'string' }),
+    fullPass: text('full_pass', { enum: LAKE_FULL_PASSES })
+      .notNull()
+      .default(LAKE_FULL_PASS_DEFAULT),
     createdAt: instant('created_at').notNull(),
   },
   (table) => [
@@ -63,6 +69,7 @@ export const lakeCopy = copies.table(
       foreignColumns: [connection.companyId, connection.connectorId, connection.id],
     }).onDelete('cascade'),
     check('lake_copy_interval', sql`${table.interval} IN (${INTERVALS})`),
+    check('lake_copy_full_pass', sql`${table.fullPass} IN (${FULL_PASSES})`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
 )
@@ -146,6 +153,7 @@ export const lakeTable = copies.table(
     columns: jsonb('columns').notNull(),
     rows: bigint('rows', { mode: 'number' }),
     lastRunId: uuid('last_run_id'),
+    fullDueAt: instant('full_due_at'),
   },
   (table) => [
     foreignKey({

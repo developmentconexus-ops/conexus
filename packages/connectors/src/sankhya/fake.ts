@@ -242,6 +242,8 @@ async function testRoute(request: Request, url: URL, tables: CopyTables): Promis
   }
   if (what === 'nfe')
     return tables.nfe(nunota) ? json({ nunota }) : json({ code: 'NOT_FOUND' }, 404)
+  if (what === 'nfe-nova')
+    return tables.issueNfe(nunota) ? json({ nunota }) : json({ code: 'NOT_FOUND' }, 404)
   return json({ code: 'NOT_FOUND' }, 404)
 }
 

@@ -1,6 +1,7 @@
 import type {
   PageAsk,
   TableColumn,
+  TableColumnType,
   TableDeclaration,
   TableFilter,
   TablePageRead,
@@ -10,6 +11,7 @@ import type {
 import { readTablePage, startDateLimits, tableCeiling, tableMonths } from '@conexus/connectors'
 import type { Bookmark, Pass, SingerMessage } from './messages.ts'
 import { lineOf, recordLine, schemaOf } from './messages.ts'
+import { behind, latest } from './point.ts'
 
 export type PassDeps = Readonly<{
   now: () => number
@@ -168,12 +170,17 @@ function monthsToReread(now: number, point: string, reread: number): readonly st
   return Array.from({ length: last - first + 1 }, (_, at) => monthAt(first + at))
 }
 
-/** ISO dates and instants order as text, so the latest is the last after a sort. */
-function latest(values: readonly (string | null | undefined)[]): string | undefined {
-  return values
-    .filter((value) => value != null)
-    .sort()
-    .at(-1)
+function cursorTypeOf(run: RunTable, column: string): TableColumnType {
+  return run.columns.find(({ name }) => name === column)?.type ?? 'text'
+}
+
+function sinceOf(
+  run: RunTable,
+  { column, cursor }: Extract<TableDeclaration['mode'], { kind: 'CHANGED' }>,
+  { point, date }: Readonly<{ point: string | undefined; date: string | null }>,
+): string | undefined {
+  if (cursor.kind === 'TIME') return latest([point, date], cursorTypeOf(run, column))
+  return point === undefined ? undefined : behind(point, cursor.lag)
 }
 
 type Plan = Readonly<
@@ -191,7 +198,7 @@ async function planOf(
   const whole = point === undefined
   if (mode.kind === 'FULL') return { filters: [{ kind: 'ALL' }], point: null, whole }
   if (mode.kind === 'CHANGED') {
-    const since = latest([point, date])
+    const since = sinceOf(run, mode, { point, date })
     const filters: TableFilter[] = [
       since === undefined ? { kind: 'ALL' } : { kind: 'SINCE', column: mode.column, after: since },
     ]
@@ -218,26 +225,33 @@ async function planOf(
 }
 
 /** An operation's table has no ceiling to ask, so its pass saves the latest change it read. */
-function readOf(run: RunTable, rows: readonly Readonly<Record<string, string | null>>[]) {
+function pointAfter(
+  run: RunTable,
+  point: string | null,
+  rows: readonly Readonly<Record<string, string | null>>[],
+): string | null {
   const { mode, source } = run.table
-  if (mode.kind !== 'CHANGED' || source.kind !== 'OPERATION') return null
-  return latest(rows.map((row) => row[mode.column])) ?? null
+  if (mode.kind !== 'CHANGED' || source.kind !== 'OPERATION') return point
+  const read = rows.map((row) => row[mode.column])
+  return latest([point, ...read], cursorTypeOf(run, mode.column)) ?? null
 }
 
 function doneOf(run: RunTable, pass: Pass, before: Bookmark | undefined, now: number): Bookmark {
   const { mode } = run.table
   if (mode.kind === 'FULL') return {}
   if (mode.kind === 'WINDOW') return { replication_key_value: monthAt(thisMonth(now)) }
-  const value = latest([pass.point, run.whole ? null : before?.replication_key_value])
+  const value = latest(
+    [pass.point, run.whole ? null : before?.replication_key_value],
+    cursorTypeOf(run, mode.column),
+  )
   return value === undefined ? {} : { replication_key_value: value }
 }
 
 function advanced(
   pass: Pass,
   page: Extract<TablePageRead, { kind: 'PAGE' }>,
-  read: string | null,
+  point: string | null,
 ): Readonly<{ pass: Pass; done: boolean }> {
-  const point = latest([pass.point, read]) ?? null
   if (page.next !== null) return { pass: { ...pass, after: page.next, point }, done: false }
   if (pass.at + 1 < pass.filters.length)
     return { pass: { ...pass, at: pass.at + 1, after: null, point }, done: false }
@@ -309,7 +323,7 @@ export async function readTable(
         recordLine({ stream: run.stream, columns: run.columns, row, version: current.version }),
       )
     const cut = ceiling === undefined ? current : { ...current, ceiling }
-    ;({ pass, done } = advanced(cut, page, readOf(run, page.rows)))
+    ;({ pass, done } = advanced(cut, page, pointAfter(run, cut.point, page.rows)))
     if (!done) {
       bookmarks[run.stream] = { ...before, pass }
       await emit({ type: 'STATE', value: { bookmarks } })

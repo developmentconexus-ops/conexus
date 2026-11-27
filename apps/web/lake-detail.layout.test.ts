@@ -32,7 +32,7 @@ const TABLE = LakeTableSummary.parse({
   name: 'sankhya_notas',
   label: 'Notas e pedidos',
   source: 'TGFCAB',
-  mode: { kind: 'CHANGED', column: 'DTALTER', registry: false },
+  mode: { kind: 'CHANGED', column: 'DTALTER', cursor: 'TIME', registry: false },
   interval: '24h',
   startDate: null,
   rows: 118402,

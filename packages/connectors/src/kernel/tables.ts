@@ -54,20 +54,27 @@ export type TableSource =
   | Readonly<{ kind: 'TABLE'; table: SourceTable }>
   | Readonly<{ kind: 'OPERATION'; operation: OperationId; input: Readonly<Record<string, Scalar>> }>
 
+/** What a CHANGED table's column holds, so what its saved point means. */
+export type ChangedCursor =
+  // a date or an instant; registry: master data, which the start date never limits (NKH:134107)
+  | Readonly<{ kind: 'TIME'; registry: boolean }>
+  // grows on insert; the start date never limits it; each run reads from the point less `lag`
+  | Readonly<{ kind: 'NUMBER'; lag: number }>
+
 /** How a table is read each run, fixed by the connector (0080; NK:177752). */
 export type TableMode =
-  // rows past the saved point of a column that only grows; registry: master data, which the start date never limits (NKH:134107)
-  | Readonly<{ kind: 'CHANGED'; column: string; registry: boolean }>
+  // the rows from the cursor's saved point on, in a column that only grows
+  | Readonly<{ kind: 'CHANGED'; column: string; cursor: ChangedCursor }>
   // rereads the last `reread` months and replaces them; the start date limits its months
   | Readonly<{ kind: 'WINDOW'; column: string; step: 'MONTH'; reread: number }>
   // the whole table every run; the start date never limits it (singer-sdk _state.py:145-150)
   | Readonly<{ kind: 'FULL' }>
 
-/** The one owner of what a start date limits (T.43): a CHANGED table that is not a registry, and a WINDOW table. */
+/** The one owner of what a start date limits (T.43): a CHANGED table by time that is not a registry, and a WINDOW table. */
 export function startDateLimits(mode: TableMode): boolean {
   switch (mode.kind) {
     case 'CHANGED':
-      return !mode.registry
+      return mode.cursor.kind === 'TIME' && !mode.cursor.registry
     case 'WINDOW':
       return true
     case 'FULL':

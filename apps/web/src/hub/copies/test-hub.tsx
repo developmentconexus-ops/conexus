@@ -44,7 +44,7 @@ export function lakeTable(fields: Record<string, unknown> = {}): LakeTableSummar
     name: 'sankhya_notas',
     label: 'Notas e pedidos',
     source: 'TGFCAB',
-    mode: { kind: 'CHANGED', column: 'DTALTER', registry: false },
+    mode: { kind: 'CHANGED', column: 'DTALTER', cursor: 'TIME', registry: false },
     interval: '24h',
     startDate: null,
     rows: 118402,

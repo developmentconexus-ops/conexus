@@ -1,4 +1,5 @@
 import { CONNECTION_LINK_MINUTES } from '@conexus/hub-api'
+import { dayAndHour } from '../../platform/dates.ts'
 import { isoDayText } from './lake-words.ts'
 
 /** The words of the window "Ligar" and of the section "Tabelas no lago" (U9). */
@@ -88,6 +89,19 @@ export function everyText(interval: string): string {
 
 export const MANUAL_HELP = 'A ligação só copia quando você clicar em Rodar agora.'
 
+export const FULL_PASS = 'Passada inteira'
+export const FULL_PASS_MANUAL = 'Com Só manual, nada roda sozinho.'
+
+export function fullPassHelpText(system: string): string {
+  return `Relê todas as tabelas e tira do lago o que sumiu do ${system}.`
+}
+
+export function fullPassNextText(next: string | null): string {
+  return next === null
+    ? 'Passada inteira desligada.'
+    : `Próxima passada inteira: ${dayAndHour(next)}.`
+}
+
 export function reviewSinceText(since: string): string {
   return since === ''
     ? `${WHOLE_HISTORY}.`
@@ -122,7 +136,7 @@ export function chooseLeadText(system: string): string {
 }
 export const SAVE = 'Salvar'
 export const RUN_NOW = 'Rodar agora'
-export const READ_AGAIN = 'Ler de novo desde a data'
+export const READ_AGAIN = 'Ler tudo de novo'
 export const READ_AGAIN_CONFIRM = 'Ler de novo'
 export const RUNNING = 'Rodando…'
 export const UP_TO_DATE = 'Em dia'
@@ -166,22 +180,28 @@ export function lastRunText(when: string): string {
   return `Última rodada ${when}`
 }
 
-const NEWER =
-  'A data nova vale a partir da próxima rodada. As linhas de antes dela continuam no lago até você ler de novo desde a data.'
+function newerText(nextFullPass: string | null): string {
+  return nextFullPass === null
+    ? 'As linhas de antes dela continuam no lago até você ler tudo de novo.'
+    : `Na próxima passada inteira, ${dayAndHour(nextFullPass)}, as linhas de antes dela saem do lago nas tabelas de movimento; nas de janela, os meses anteriores ficam.`
+}
 
-/** What saving another date did, said once saved; null when the date did not change. */
-export function dateEffectText(before: string, after: string): string | null {
+export function dateEffectText(
+  before: string,
+  after: string,
+  nextFullPass: string | null,
+): string | null {
   if (before === after) return null
-  if (after !== '' && (before === '' || after > before)) return NEWER
+  if (after !== '' && (before === '' || after > before)) return newerText(nextFullPass)
   const since = after === '' ? 'desde o começo' : `desde ${isoDayText(after)}`
   return `As próximas rodadas continuam de onde pararam. Para trazer as linhas ${since}, clique ${READ_AGAIN}.`
 }
 
-export function readAgainTitle(since: string): string {
-  return `Ler de novo ${since === '' ? 'desde o começo' : `desde ${isoDayText(since)}`}?`
-}
+export const READ_AGAIN_TITLE = 'Ler tudo de novo?'
 
-export const READ_AGAIN_LEAD = 'O lago troca o que tem destas tabelas:'
+export function readAgainLead(system: string): string {
+  return `O lago troca o que tem destas tabelas pelo que o ${system} tem agora.`
+}
 export function leaveTitle(count: number): string {
   return count === 1 ? 'Tirar 1 tabela do lago?' : `Tirar ${count} tabelas do lago?`
 }
@@ -189,12 +209,6 @@ export function leaveTitle(count: number): string {
 export const LEAVE_LEAD = 'O lago apaga estas tabelas e as linhas delas:'
 export const LEAVE_CONFIRM = 'Tirar do lago'
 export const OTHERS_STAY = 'As outras tabelas seguem como sempre.'
-
-export function readAgainEffectText(kind: 'CHANGED' | 'WINDOW', system: string): string {
-  return kind === 'WINDOW'
-    ? 'Janela por mês: trocam-se só os meses desde o mês da data.'
-    : `Só o que mudou: o que veio antes da data, ou foi apagado no ${system}, sai do lago.`
-}
 
 export const SEND_KEYS = 'Enviar'
 

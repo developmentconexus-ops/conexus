@@ -97,12 +97,14 @@ def test_o_modo_por_tabela(task: Task) -> None:
         _from_point(task, again),
         False,
     )
-    assert (sent["sankhya_notas_nfe"]["read"], sent["sankhya_notas_nfe"]["whole"]) == (3, True)
+    # Every NF-e of the double lies within the lag behind the saved point.
+    assert (sent["sankhya_notas_nfe"]["read"], sent["sankhya_notas_nfe"]["whole"]) == (3, False)
     asked = task.spec(NOTAS, NFE, whole=True, connection=first["connectionId"])
     assert task.run(asked) == 0
     sent = _counts(task)
     assert sent["sankhya_notas"]["read"] > 100
     assert sent["sankhya_notas"]["whole"] is True
+    assert sent["sankhya_notas_nfe"]["whole"] is True
     (task.state / COMPANY / first["connectionId"] / STATE_ID / "state.json").unlink()
     lost = task.spec(NOTAS, NFE, whole=False, connection=first["connectionId"])
     assert task.run(lost) == 0

@@ -40,3 +40,11 @@ test('a seção: sem data a linha das tabelas não diz desde nem todo o históri
   expect(within(section).queryByText(/^· desde /)).toBeNull()
   expect(within(section).queryByText('· todo o histórico')).toBeNull()
 })
+
+test('o modo pelo cursor', async () => {
+  const { section } = await openTables(server, { lake: copiedLake(['TGFCAB', 'TGFNFE']) })
+  expect(
+    within(rowOf(section, 'Notas e pedidos')).getByText('Só o que mudou, por DTALTER'),
+  ).toBeTruthy()
+  expect(within(rowOf(section, 'Dados da NF-e')).getByText('Só as novas, por NUNOTA')).toBeTruthy()
+})
