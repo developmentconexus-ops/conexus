@@ -9,10 +9,10 @@ import {
 import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { HubFailure, sentenceOf, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import { Dialog, DialogContent } from '../../ui/dialog.tsx'
+import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
 import {
   CodeField,
   Form,
@@ -32,6 +32,7 @@ import {
   SAVING,
   SQL_LABEL,
   SQL_REQUIRED,
+  tableSentence,
   UNCONFIRMED_NEXT,
   UNCONFIRMED_WHAT,
 } from './text.ts'
@@ -56,7 +57,7 @@ function refusalOf(error: unknown): Refusal {
     error.position === undefined
       ? ''
       : ` Linha ${error.position.line}, coluna ${error.position.column}.`
-  const table = error.table === undefined ? '' : ` ${error.table}`
+  const table = error.table === undefined ? '' : tableSentence(error.table)
   if (ON_THE_NAME.has(error.code)) return { field: 'name', text: sentenceOf(error) }
   if (ON_THE_SQL.has(error.code))
     return { field: 'sql', text: `${sentenceOf(error)}${table}${place}` }
@@ -166,15 +167,23 @@ function ChangeForm(props: {
 
 function Opened(props: { label: string; children: (close: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false)
+  const popup = useRef<HTMLDivElement>(null)
   return (
-    <>
-      <Button onClick={() => setOpen(true)}>{props.label}</Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent title={props.label} size="ask">
-          {props.children(() => setOpen(false))}
-        </DialogContent>
-      </Dialog>
-    </>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button />}>{props.label}</DialogTrigger>
+      <DialogContent
+        ref={popup}
+        title={props.label}
+        size="ask"
+        initialFocus={(openedBy) =>
+          openedBy === 'touch'
+            ? popup.current
+            : popup.current?.querySelector<HTMLElement>('input, textarea')
+        }
+      >
+        {props.children(() => setOpen(false))}
+      </DialogContent>
+    </Dialog>
   )
 }
 
