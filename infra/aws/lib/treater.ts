@@ -69,9 +69,10 @@ function treaterStatements(stack: Stack, name: string, company: string): iam.Pol
       actions: ['glue:GetTable', 'glue:GetTables', ...TREAT_CHANGE_ACTIONS],
       resources: TREAT_AREAS.map((area) => arn('glue', `table/${catalog}/${area}/*`)),
     }),
+    // Without `GetDatabase`, Athena answers a table missing from `current` as access denied.
     new iam.PolicyStatement({
       sid: 'ReadTheCurrentTables',
-      actions: ['glue:GetTable'],
+      actions: ['glue:GetDatabase', 'glue:GetTable'],
       resources: TREAT_READS.flatMap((area) => [
         arn('glue', `database/${catalog}/${area}`),
         arn('glue', `table/${catalog}/${area}/*`),

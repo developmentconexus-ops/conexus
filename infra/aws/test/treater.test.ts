@@ -53,7 +53,7 @@ test('o papel que trata tem só as permissões da lista medida', () => {
       ],
       [
         'ReadTheCurrentTables',
-        ['glue:GetTable'],
+        ['glue:GetDatabase', 'glue:GetTable'],
         [`${glue}:database/${catalog}/current`, `${glue}:table/${catalog}/current/*`],
         undefined,
       ],
@@ -123,6 +123,20 @@ test('o que trata não toca raw, não muda current, não lê parâmetro nem outr
   const workgroup = `arn:aws:athena:${REGION}:${ACCOUNT}:workgroup/${bucket}`
   assert.equal(allows(treater, asked('athena:StartQueryExecution', workgroup)), false)
   assert.ok(!treater.flatMap(actionsOf).some((action) => /^(s3tables|ssm|iam|sts):/.test(action)))
+})
+
+test('o que trata acha o banco current, e não o raw: a tabela que falta volta como ausente, não como acesso negado', () => {
+  const treater = roleOf('Treater', 'lagodeaaaaaa', 'EmpresaTesteA0000000000000000001')
+  const boundary = statementsOf(find(readable('platform'), 'Boundary'))
+  function database(area: string) {
+    const catalog = 's3tablescatalog/conexus-lagodeaaaaaa'
+    return asked(
+      'glue:GetDatabase',
+      `arn:aws:glue:${REGION}:${ACCOUNT}:database/${catalog}/${area}`,
+    )
+  }
+  assert.equal(allowsWithin(treater, boundary, database('current')), true)
+  assert.equal(allows(treater, database('raw')), false)
 })
 
 test('o que trata lê current e cria em tratado e negocio pelo Lake Formation, e nada em raw', () => {
