@@ -19,7 +19,7 @@ Sim, E Deixar como issue". O cartão está escrito com elas.
 
 **Antes da construção.** A `T1` fecha antes (delivery L5): este cartão espera no seu rascunho. Os
 ajustes de tela da `T1` (https://github.com/developmentconexus-ops/conexus/issues/1491) mudam
-`lake-tabs.tsx` e `lake-runs.tsx`; o G2 espera o merge deles se tocar o mesmo arquivo (delivery L1).
+`lake-tabs.tsx` e `lake-runs.tsx`; o G1 espera o merge deles, porque a U3 e a U4 mudam os mesmos arquivos (delivery L1).
 
 ## A página do fundador
 
@@ -40,10 +40,11 @@ tabelas, as linhas, o início, o fim e o erro de cada uma. É o que a Nekt mostr
 4. Na página da ligação, você abre a aba **Rodadas**. A rodada de agora está no topo. Você a abre e vê
    cada tabela com Estado, Início, Fim, Duração e Linhas.
 5. Você abre uma rodada antiga que terminou com erro. A tabela que falhou mostra "Com erro" e a frase
-   do erro; as que terminaram antes mostram as linhas delas.
+   do erro; as que terminaram antes mostram as linhas delas, e as que a cópia não alcançou mostram "Não
+   chegou".
 
 **O que você faz, e quando.** Antes: nada; as cinco decisões já têm a sua palavra. No começo: aprova
-esta página. No fim, com o G2 publicado: faz o roteiro na nuvem com o Sankhya, diz o que viu e aprova os
+esta página. No fim, com o G1 publicado: faz o roteiro na nuvem com o Sankhya, diz o que viu e aprova os
 textos das telas.
 
 **A visão.**
@@ -87,11 +88,11 @@ Nada cruza a visão.
 | --- | --- | --- | --- | --- | --- |
 | G1 | U1 | O Hub recebe o placar: a mensagem `PROGRESS`, as colunas novas, o ramo da fila que grava sem fechar, e o fechamento que guarda o início e o fim de cada tabela | `apps/server/src/hub/copies`, `apps/server/migrations`, `apps/extraction/contract` | data | — |
 | G1 | U2 | A tarefa manda o placar: o alvo marca o início e o fim de cada tabela, e um batedor de 10 s manda `PROGRESS` com a fase | `apps/extraction/src/conexus_extraction`, `apps/extraction/tests` | testing | U1 |
-| G2 | U3 | O placar na tela: a visão da rodada aberta com as tabelas, o estado de cada tabela em Dados e na aba Tabelas da ligação, e a duração contando | `packages/hub-api/src`, `apps/server/src/hub/copies`, `apps/web/src/hub/copies`, `apps/web/src/hub/connectors` | web | U1 |
-| G2 | U4 | A aba Rodadas da ligação: a rota das rodadas de uma cópia, com as tabelas de cada uma, e a aba | `packages/hub-api/src`, `apps/server/src/hub/copies`, `apps/web/src/hub/connectors` | web | U3 |
+| G1 | U3 | O placar na tela: a visão da rodada aberta com as tabelas, o estado de cada tabela em Dados e na aba Tabelas da ligação, e a duração contando | `packages/hub-api/src`, `apps/server/src/hub/copies`, `apps/web/src/hub/copies`, `apps/web/src/hub/connectors` | web | U1 |
+| G1 | U4 | A aba Rodadas da ligação: a rota das rodadas de uma cópia, com as tabelas de cada uma, e a aba | `packages/hub-api/src`, `apps/server/src/hub/copies`, `apps/web/src/hub/connectors` | web | U3 |
 
-Dois pull requests (delivery L9): o G1 (U1 e U2) e o G2 (U3 e U4). O G1 sozinho não muda tela; ele
-se prova pela gravação e pelos testes da fila.
+Um pull request só (delivery L9): as quatro unidades somam ~1.450 linhas, dentro do L2, e um
+commit por unidade, nesta ordem.
 
 **Orçamento de código alterado.** U1: ~350 linhas. U2: ~200. U3: ~450. U4: ~450. Total: ~1.450,
 abaixo das 4.000 (delivery L2).
@@ -102,23 +103,24 @@ abaixo das 4.000 (delivery L2).
 | --- | --- | --- | --- | --- |
 | 1 | U1 | Um `PROGRESS` de uma rodada aberta grava o placar dela; a rodada continua aberta e a mensagem sai da fila | `lake-queue.test.ts`, "o placar grava e não fecha" | must |
 | 2 | U1 | Um `PROGRESS` com `seq` menor ou igual ao gravado não muda nada (a fila não garante ordem) | `lake-queue.test.ts`, "o placar velho não volta" | must |
-| 3 | U1 | Um `PROGRESS` de outra tentativa (`attempt` diferente do da rodada) ou de uma rodada fechada ou desconhecida sai da fila sem gravar | `lake-queue.test.ts`, "o placar de outra tentativa ou de rodada fechada é descartado" | must |
-| 4 | U1 | O banco fora ao gravar o placar: o Hub registra `COPY_PROGRESS_NOT_WRITTEN` e tira a mensagem da fila; a rodada não fecha e o próximo placar grava | `lake-queue.test.ts`, "o banco fora não prende o placar" | must |
+| 3 | U1 | Um `PROGRESS` de outra tentativa (`attempt` diferente do da rodada) ou de uma rodada fechada ou desconhecida sai da fila sem gravar | `lake-queue.test.ts`, "o placar de outra tentativa ou de rodada fechada é descartado" (a rodada nasce com `attempt` 1, `lake-run.ts:316`: o teste manda um `attempt` 2 feito à mão) | must |
+| 4 | U1 | O banco fora ao gravar o placar: o Hub registra `COPY_PROGRESS_NOT_WRITTEN` e tira a mensagem da fila; a rodada não fecha e o próximo placar grava | `lake-queue.test.ts`, "o banco fora não prende o placar", com o `flakyDatabase` do teste "o banco fora" de hoje (`lake-queue.test.ts:221-231`) | must |
 | 5 | U1 | Ao fechar a rodada (resultado, fim do ECS, varredura, parada), o placar sai da rodada, e cada `lake_table_run` guarda o início e o fim que o resultado trouxe; um resultado sem eles (imagem antiga) fecha igual, com os dois nulos | `lake-queue.test.ts`, "o fechamento guarda início e fim e limpa o placar"; `lake-queue.test.ts`, "o resultado antigo fecha" | must |
-| 6 | U1 | O banco recusa placar numa rodada fechada e `progress` sem `progress_seq` (as restrições `lake_run_progress`) | `lake-queue.test.ts`, "o banco recusa placar em rodada fechada" | must |
-| 7 | U2 | Durante a cópia, a tarefa manda `PROGRESS` a cada 10 s e logo que uma tabela termina, com `seq` crescente, todas as tabelas pedidas, as linhas lidas e gravadas, o início e o fim de cada uma | `tests/test_progress.py`, "o batedor manda o placar"; a gravação `record` da rodada do dublê | must |
+| 6 | U1 | O banco recusa placar numa rodada fechada e `progress` sem `progress_seq` (as restrições `lake_run_progress`) | `lake-queue.test.ts`, "o banco recusa placar em rodada fechada", por SQL direto do auxiliar `test-lake-queue.ts`, sem passar pelo `handle` (o `WHERE` do `handle` pararia antes) | must |
+| 7 | U2 | Durante a cópia, a tarefa manda `PROGRESS` a cada 10 s e logo que uma tabela termina, com `seq` crescente, todas as tabelas pedidas, as linhas lidas e gravadas, o início e o fim de cada uma | `tests/test_progress.py`, "o batedor manda o placar", com cada mensagem validada contra `copy-task.schema.json` | must |
 | 8 | U2 | Na fusão do Athena, a fase é `UPDATING` com a tabela da vez, mandada ao começar cada tabela | `tests/test_entry.py`, "a fusão diz a tabela da vez" | must |
 | 9 | U2 | A fila recusar um `PROGRESS` não muda a rodada: a tarefa registra `PROGRESS_NOT_SENT` e segue; o resultado sai como hoje | `tests/test_progress.py`, "a fila recusa e a rodada segue" | must |
 | 10 | U2 | O batedor para antes do `RESULT`: nenhum `PROGRESS` sai depois dele | `tests/test_entry.py`, "nada depois do resultado" | must |
 | 11 | U2 | Nenhum `PROGRESS` leva conteúdo de linha: só nomes de tabela, números, horas e a fase (security S41) | `tests/test_progress.py`, "o placar não leva linha" | must |
 | 12 | U3 | Em Dados, com a rodada aberta, cada tabela mostra o seu estado: "Na fila" sem placar, "Copiando · N linhas", "Copiada · N linhas", "Atualizando o lago", "Com erro"; com a rodada fechada, o rótulo de hoje ("Em dia", "Com erro", "Interrompida.") | `lake-list.test.tsx`, "cada tabela diz o seu estado na rodada aberta" | must |
 | 13 | U3 | A aba Tabelas da ligação mostra o mesmo estado por tabela | `lake-tables.test.tsx`, "o estado por tabela na ligação" | must |
-| 14 | U3 | A rodada aberta mostra a duração contando desde o início, e a aba Rodadas da tabela mostra as linhas da tabela da vez em vez de "—" | `lake-runs.test.tsx`, "a rodada aberta conta o tempo e as linhas" | must |
+| 14 | U3 | A rodada aberta mostra a duração contando desde o início, e a aba Rodadas da tabela mostra as linhas da tabela da vez em vez de "—" | `lake-runs.test.tsx`, "a rodada aberta conta o tempo e as linhas", com relógio falso (`mock.timers`) | must |
 | 15 | U3 | O estado de cada tabela vem de um só lugar no servidor (`tableProgressOf`), e a rota de Dados e a da ligação dão o mesmo estado para a mesma tabela | `lake-list.test.ts`, "Dados e a ligação dão o mesmo estado" | must |
 | 16 | U4 | A aba Rodadas da ligação lista as rodadas da cópia, a mais nova primeiro, com Início, Duração, Linhas e Resultado; a aberta relê a cada 5 s | `lake-copy-runs.test.tsx`, "a aba lista as rodadas" | must |
-| 17 | U4 | Uma rodada aberta na aba mostra cada tabela com Estado, Início, Fim, Duração e Linhas; a com erro mostra "Com erro" e a frase na tabela que falhou | `lake-copy-runs.test.tsx`, "a rodada abre com as tabelas" | must |
+| 17 | U4 | Uma rodada aberta na aba mostra cada tabela com Estado, Início, Fim, Duração e Linhas; uma rodada fechada mostra, por tabela, "Copiada", "Com erro" com a frase (a que falhou) ou "Não chegou" (a cópia parou antes dela) | `lake-copy-runs.test.tsx`, "a rodada abre com as tabelas", com uma rodada com erro e uma interrompida | must |
 | 18 | U4 | A rota das rodadas recusa quem não lê a ligação com 404 `NOT_FOUND` (como `getLakeTablesOfConnection`) e uma ligação sem cópia com 404 | `lake-routes.test.ts`, "as rodadas recusam quem não lê" | must |
 | 19 | U4 | Uma ligação sem rodada mostra "Esta cópia ainda não rodou." | `lake-copy-runs.test.tsx`, "sem rodada" | should |
+| 20 | U2 | O alvo grava o relatório num arquivo temporário e o troca com `os.replace`, então o batedor nunca lê um relatório pela metade; um relatório ilegível mesmo assim registra `PROGRESS_REPORT_UNREADABLE` e a batida seguinte tenta de novo | `tests/test_progress.py`, "o relatório ilegível não para o batedor"; `tests/test_target.py`, "o relatório troca inteiro" | must |
 
 ## A matriz de estados
 
@@ -136,6 +138,7 @@ abaixo das 4.000 (delivery L2).
 | `lake_run.progress`, `progress_seq` | U1, o ramo `PROGRESS`; U1, o fechamento limpa | U3, `runViewOf` |
 | `lake_table_run.started_at`, `ended_at` | U1, `closeLakeRun` | U4, `runsOfCopy` |
 | `LakeRun` RUNNING `tables`, `reportedAt` | U3, `runViewOf` | U3, Dados e a aba Tabelas; U4, a aba Rodadas |
+| `LakeCopyRun.tables[].outcome` | U4, `tableOutcomeOf` | U4, a aba Rodadas |
 | `LakeCopyRun.tables` | U4, `runsOfCopy` | U4, a aba Rodadas |
 
 **O desenho de caixas** (1280 px; a 390 px as colunas Início e Fim da tabela aberta somem, e a Duração
@@ -166,13 +169,14 @@ segue: `runs-3.png` da Nekt (EST:§6).
 | A tarefa manda `PROGRESS` (`sqs:SendMessage`) | Duas batidas não se sobrepõem: um batedor só, numa thread; a fila pode entregar duas vezes ou fora de ordem, e o `seq` resolve | A fila recusa: a batida seguinte manda o placar inteiro de novo | SQS fora: `PROGRESS_NOT_SENT`, e a rodada segue | `PROGRESS_NOT_SENT` com `runId` e o tipo do erro | 7, 9 |
 | O Hub grava o placar (`UPDATE lake_run … WHERE ended_at IS NULL AND attempt = $a AND progress_seq < $seq`) | Dois placares da mesma rodada: o `UPDATE` condicional deixa o de `seq` maior | Rodada fechada entre a leitura e o `UPDATE`: o `WHERE` não acha linha, e a mensagem sai | Banco fora: `COPY_PROGRESS_NOT_WRITTEN`, a mensagem sai da fila (o próximo placar a substitui) | `COPY_PROGRESS_NOT_WRITTEN` com `runId` | 1, 2, 3, 4 |
 | O fechamento grava início e fim por tabela e limpa o placar (`closeLakeRun`, a transação de hoje) | Como hoje: uma rodada fecha uma vez (`lake-close.ts`) | Como hoje: a transação desfaz tudo | Como hoje | Como hoje | 5, 6 |
+| O alvo grava o relatório (`_write_report`, outro processo que o batedor) | Uma gravação por vez no alvo (`threading.Lock`, `target.py:172-177`); o batedor só lê | O arquivo temporário e o `os.replace` deixam o relatório de antes ou o de agora, nunca metade | Disco cheio: o alvo falha como hoje e a rodada fecha com erro | `PROGRESS_REPORT_UNREADABLE` no batedor | 20 |
 | A migração das colunas novas | — | A migração é uma transação | — | — | 6 |
 
 ## A tabela de referência
 
 | Peça | Unidade | O que o fundador já decidiu | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Decisão | Arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| O placar sai da máquina da cópia durante a rodada | U2 | A, 2026-11-27: "A recomendado" | `apps/extraction/src/conexus_extraction/target.py:226-243` conta e grava o relatório local; nada sai antes de `entry.py:360-367` | `airbyte-platform@63d665f`, o trabalhador da sincronização num processo separado do servidor, **mesma situação** | `SyncPersistence.kt:90-101` agenda o `flush` a cada `persistenceFlushPeriodSec`, padrão 10 s (`airbyte-commons-micronaut/.../AirbyteConfig.kt:172`); `:233` chama `attemptApi.saveStats`, "For worker to set sync stats of a running attempt" (`config.yaml:6036-6042`); **lido** | embrulhado: `PROGRESS` pela fila que já existe; o batedor segue o `Meter` (`machine.py:89-130`) | A gravação `record` da rodada do dublê (testing T26) e os testes 7 a 11 | A | `apps/extraction/src/conexus_extraction/progress.py` |
+| O placar sai da máquina da cópia durante a rodada | U2 | A, 2026-11-27: "A recomendado" | `apps/extraction/src/conexus_extraction/target.py:226-243` conta e grava o relatório local; nada sai antes de `entry.py:360-367` | `airbyte-platform@63d665f`, o trabalhador da sincronização num processo separado do servidor, **mesma situação** | `SyncPersistence.kt:90-101` agenda o `flush` a cada `persistenceFlushPeriodSec`, padrão 10 s (`airbyte-commons-micronaut/.../AirbyteConfig.kt:172`); `:233` chama `attemptApi.saveStats`, "For worker to set sync stats of a running attempt" (`config.yaml:6036-6042`); **lido** | embrulhado: `PROGRESS` pela fila que já existe; o batedor segue o `Meter` (`machine.py:89-130`) | Os testes 7 a 11 e 20, com o contrato `copy-task.schema.json` | A | `apps/extraction/src/conexus_extraction/progress.py` |
 | O Hub recebe o placar sem fechar a rodada | U1 | A; 0076, "The task sends its own result to an SQS queue"; data D27 (a fila só é lida com rodada aberta) | `lake-queue.ts:297-305` lê em laço; `handle` (`:189-230`) fecha com `closeLakeRun` (`:219`); o fim do ECS com saída 0 só espera o resultado (`:196-201`) | a mesma, **mesma situação** | `AttemptHandler.kt:260` `saveStats` grava a estatística de uma tentativa aberta e não a fecha; **lido** | embrulhado: um ramo `PROGRESS` no `handle` | Os testes 1 a 6 | A | — |
 | A contagem por tabela | U2 | nada registrado | `target.py:126-138`: `read` por registro, `written` por lote | `singer-sdk==0.54.9` `metrics.py:26,371-396` (`record_count` a cada 60 s, por stream), **situação diferente: vai ao log**; Airbyte CDK `StateManager.kt:368`, `recordCount` no STATE | o SDK loga `METRIC:` por stream; o Airbyte anexa a contagem ao checkpoint; **lido** | nativo: o contador do alvo já existe; a U2 só acrescenta o início e o fim | — | não precisa | — |
 | O estado por tabela durante a rodada | U3 | B, 2026-11-27: "Sim" | só a rodada: `lake-run-view.ts:39-42`; os rótulos `apps/web/src/hub/connectors/lake-text.ts:127-130` | Airbyte docs, por stream "Queued, Syncing, Synced, Error", entre outros, **mesma situação**, documentado; CDK `StreamStatusManager.kt:81-116` STARTED, COMPLETE, INCOMPLETE, **lido**; Nekt `runs-3.png` "Loaded" por stream, **situação diferente: só na rodada terminada** | o conector emite início e fim por stream; a plataforma deriva o estado | embrulhado: `tableProgressOf` deriva os cinco estados do placar | Os testes 12, 13 e 15 | B | — |
@@ -261,9 +265,14 @@ Em `tables.ts`, `copies.lake_run`:
 | `progress` | `jsonb`, nula | `lake_run_progress`: `(progress IS NULL) = (progress_seq IS NULL) AND (progress IS NULL OR ended_at IS NULL)` |
 | `progress_seq` | `integer`, nula | a mesma |
 
-Em `copies.lake_table_run`: `started_at` e `ended_at`, `timestamptz`, nulas, com
-`lake_table_run_times`: `ended_at IS NULL OR started_at IS NULL OR ended_at >= started_at`. Nenhuma
-chave estrangeira nova. Nenhuma permissão nova: as tabelas já são de `hub_company`
+Em `copies.lake_table_run`:
+
+| Coluna | Tipo | Restrição |
+| --- | --- | --- |
+| `started_at` | `timestamptz`, nula (rodadas antigas e imagens antigas) | `lake_table_run_times`: `ended_at IS NULL OR started_at IS NULL OR ended_at >= started_at` |
+| `ended_at` | `timestamptz`, nula | a mesma |
+
+Nenhuma chave estrangeira nova; as de `lake_table_run` seguem `cascade` (`tables.ts`). Nenhuma permissão nova: as tabelas já são de `hub_company`
 (`database-grants.sql:421-424`), então a data D11 não se aplica; o `catalog.test.ts` confirma.
 
 `CopyQueueMessage` (`lake-queue.ts:25`) ganha `CopyTaskProgress`. O código de log novo:
@@ -297,7 +306,8 @@ As linhas de `docs/reference/stack.md` de `apps/server/src`: `fastify-best-pract
    - **Arquivos:** muda `lake-queue.ts`.
    - **O que entra:** em `handle`, antes de `exitedWell`: um `PROGRESS` de rodada em `open` grava
      com um `UPDATE` só, condicionado a `ended_at IS NULL`, `attempt` igual e `progress_seq` menor,
-     no escopo da empresa da rodada; qualquer outro caso tira da fila e registra `info`
+     no escopo da empresa da rodada, e só numa rodada de cópia (`ofKind`; uma rodada `TREATMENT` não
+     tem placar); qualquer outro caso tira da fila e registra `info`
      `COPY_QUEUE_RUN_UNKNOWN`, como hoje. Uma falha do banco registra `COPY_PROGRESS_NOT_WRITTEN` e
      tira da fila (F4). Regras: C50, data D27.
    - **Testes:** os quatro casos de `lake-queue.test.ts` dos critérios, pela dupla
@@ -360,7 +370,9 @@ class Beat:
 ```
 
 `PERIOD = 10.0`, como o `Meter`. O relatório do alvo ganha, por tabela, `startedAt` (na primeira linha
-lida) e `endedAt` (quando ela entra em `ended`), em ISO 8601 UTC. `Progress` vem do esquema da U1
+lida, que grava o relatório; hoje `count` só grava com `written`, `target.py:234-235`) e `endedAt`
+(quando ela entra em `ended`), em ISO 8601 UTC. `_write_report` passa a gravar num arquivo temporário
+e trocar com `os.replace`. `Progress` vem do esquema da U1
 (`contract.py`, como `Result`).
 
 ### As skills e a leitura
@@ -370,16 +382,20 @@ lida) e `endedAt` (quando ela entra em `ended`), em ISO 8601 UTC. `Progress` vem
 
 ### A ordem do trabalho
 
-1. **O relatório com início e fim.** Critérios: 7.
+1. **O relatório com início e fim.** Critérios: 7, 20.
    - **Arquivos:** muda `target.py`.
-   - **Testes:** `test_target.py`, a primeira linha marca o início e o STATE do fim marca o fim.
-2. **O batedor.** Critérios: 7, 9, 11.
+   - **O que entra:** a primeira linha de uma tabela marca `startedAt` e grava o relatório; o STATE do
+     fim marca `endedAt`; `_write_report` grava no temporário e troca.
+   - **Testes:** `test_target.py`, a primeira linha marca o início, o STATE do fim marca o fim, e "o
+     relatório troca inteiro".
+   - **Mutações à mão:** gravar direto no arquivo final; o teste da troca fica vermelho.
+2. **O batedor.** Critérios: 7, 9, 11, 20.
    - **Arquivos:** cria `progress.py`.
    - **Referência a seguir:** `machine.py:89-130` (a thread e o `Event`); `SyncPersistence.kt:90-101`.
    - **O que entra:** a cada `PERIOD`, ou quando `updating`/`ended` chamam, lê o relatório, monta o
      placar com todas as tabelas de `spec["tables"]` (zero onde não há conta), `seq` crescente, e
      manda; uma falha do envio registra `PROGRESS_NOT_SENT` e segue.
-   - **Testes:** `test_progress.py`, os casos dos critérios 7, 9 e 11.
+   - **Testes:** `test_progress.py`, os casos dos critérios 7, 9, 11 e 20.
    - **Mutações à mão:** não incrementar o `seq`; engolir a falha sem log; cada uma deixa um teste
      vermelho.
 3. **A tarefa liga o batedor.** Critérios: 8, 10.
@@ -388,26 +404,23 @@ lida) e `endedAt` (quando ela entra em `ended`), em ISO 8601 UTC. `Progress` vem
      `_send`; `_update_unless_interrupted` chama `updating(name)` antes de cada tabela; `_result` leva
      `startedAt` e `endedAt` do relatório.
    - **Testes:** `test_entry.py`, "a fusão diz a tabela da vez" e "nada depois do resultado".
-4. **A gravação.** Critérios: 7. `npm run record` de uma rodada do dublê do Sankhya, com as mensagens
-   da fila, para os testes da U1 e da U3 (testing T26).
+4. **O contrato.** Critérios: 7. Cada mensagem que o batedor monta é validada contra
+   `copy-task.schema.json` no teste. O `PROGRESS` é contrato nosso, não forma de biblioteca: não pede
+   gravação (testing T26).
 
 ### Como se prova
 
-Os testes do `pytest` de `apps/extraction` e a gravação. Hoje a fila só vê `RESULT`.
+Os testes do `pytest` de `apps/extraction`. Hoje a fila só vê `RESULT`.
 
 ### Parar se
 
-- O tap não manda STATE ao fim de uma tabela grande antes de começar a seguinte (`tap/src/pass.ts`
-  não foi lido no estudo, EST:§5): o "Copiada" chega só no fim. Parar e medir na gravação.
-
-## G1 O ponto de conferência
-
-Depois da U2: os passos 6 e 7 de `conexus-build` no servidor (a migração, `lake-queue`), no
-`pytest` de `apps/extraction`, e a gravação da rodada do dublê com `PROGRESS` e `RESULT`.
+- O "Copiada" de cada tabela depende do STATE do fim dela, e o tap o manda antes de começar a
+  seguinte (`apps/extraction/tap/src/pass.ts:320-321`, o laço em série de `tap.ts:155`, lido na
+  conferência do cartão). Se um teste mostrar outra ordem, parar.
 
 ## U3 O placar na tela
 
-**Base e modelo.** O merge do G1. Sonnet.
+**Base e modelo.** O commit da U2. Sonnet.
 
 ### As linhas da tabela
 
@@ -446,6 +459,12 @@ em `lake-run-view.ts` é o dono da regra (C26): `failed` dá `FAILED`; a fase `U
 `text.ts` e `lake-text.ts`: "Na fila", "Copiando · {n} linhas", "Copiada · {n} linhas", "Atualizando o
 lago", "Com erro", "há {duração}".
 
+As tabelas de uma rodada aberta vêm de `progress.tables` quando há placar; sem placar, das tabelas
+marcadas da ligação (`lake_table`, as mesmas que a rodada pediu, `lake-spec.ts`), todas `QUEUED`. O
+`runViewOf` recebe essa lista; quem a lê é `lake-list.ts` e `lake-view.ts`. O `progress` guardado é lido
+por um esquema Zod em `lake-run-view.ts` (C27), o `CopyTaskProgress` sem o envelope; um placar
+ilegível vira `reportedAt: null` e as tabelas `QUEUED`, com o log `COPY_PROGRESS_UNREADABLE`.
+
 ### As skills e a leitura
 
 `docs/reference/stack.md`, as linhas de `apps/web/src` (TanStack Query, TanStack Router, shadcn) e de
@@ -462,12 +481,13 @@ lago", "Com erro", "há {duração}".
 
 ### Como se prova
 
-Os testes de tela com a gravação da U2 como resposta da rota. Hoje toda tabela mostra "Rodando…".
+Os testes de tela com respostas montadas pelos tipos de `hub-api` (o molde de
+`apps/web/src/hub/connectors/lake-fixtures.ts`). Hoje toda tabela mostra "Rodando…".
 
 ### Parar se
 
-- A duração não avança entre duas releituras iguais (o TanStack Query não muda a tela com o mesmo
-  dado): parar e escolher, com a referência, entre um relógio na tela e o `reportedAt`.
+- A duração conta pelo `useSecondsSince` que já existe (`apps/web/src/harness/room/elapsed.ts:13-16`),
+  que redesenha a cada segundo; se ele não servir fora da sala, parar e dizer por quê.
 
 ## U4 A aba Rodadas da ligação
 
@@ -501,6 +521,7 @@ export const LakeCopyRun = z.object({
     read: z.int().min(0),
     startedAt: z.iso.datetime().nullable(),
     endedAt: z.iso.datetime().nullable(),
+    outcome: z.enum(['COPIED', 'FAILED', 'NOT_REACHED']),
   })),
 })
 export const listLakeCopyRuns = defineOperation({
@@ -513,7 +534,10 @@ export const listLakeCopyRuns = defineOperation({
 ```
 
 Uma rodada aberta leva as tabelas pelo `run.tables` da U3 e `tables` vazio; uma fechada leva as linhas
-de `lake_table_run`. A tabela que falhou vem de `run.failedTable`. O acesso é o de
+de `lake_table_run`. O `outcome` de cada tabela de uma rodada fechada tem um dono só,
+`tableOutcomeOf(run, row)` em `lake-run-view.ts`, ao lado de `tableProgressOf` (C26): o nome igual a
+`run.failedTable` dá `FAILED`; `ended_at` preenchido, ou a rodada `COMPLETE`, dá `COPIED`; o resto,
+`NOT_REACHED` ("Não chegou"). O acesso é o de
 `getLakeTablesOfConnection` (`admit`, `lake-list.ts`).
 
 ### As skills e a leitura
@@ -522,21 +546,23 @@ As mesmas da U3, mais `fastify-best-practices` para a rota.
 
 ### A ordem do trabalho
 
-1. **A rota.** Critérios: 18. Cria o contrato e `runsOfCopy`; `lake-routes.test.ts`, "as rodadas
-   recusam quem não lê". Mutação: tirar o `admit`.
+1. **A rota.** Critérios: 17, 18. Cria o contrato, `runsOfCopy` e `tableOutcomeOf`; `lake-routes.test.ts`,
+   "as rodadas recusam quem não lê". Mutações: tirar o `admit`; trocar a ordem de `failedTable` e
+   `ended_at` em `tableOutcomeOf`.
 2. **A aba.** Critérios: 16, 17, 19. Cria `lake-copy-runs.tsx` com `FramedTable` e `Collapsible`, a
    aberta aberta e relida a cada 5 s; muda `connection-page.tsx`.
 
 ### Como se prova
 
-`lake-copy-runs.test.tsx` com a gravação da U2 e uma rodada com erro. Hoje a aba não existe.
+`lake-copy-runs.test.tsx` com respostas montadas pelos tipos de `hub-api`, uma rodada com erro e uma
+interrompida. Hoje a aba não existe.
 
 ### Parar se
 
 - A aba pede uma rota nova de página (uma rota nova entra na lista `PAGES` de `hub-api`): ela é
   uma aba da página da ligação, não uma rota; se o desenho pedir rota, parar.
 
-## G2 O ponto de conferência
+## G1 O ponto de conferência
 
 Depois da U4: os passos 6 e 7 de `conexus-build` nas telas (Dados, a ligação, a tabela), a 1280 e a
 390 px, nos dois temas, com uma rodada do dublê rodando; depois o QA (testing T25) e a revisão da etapa
