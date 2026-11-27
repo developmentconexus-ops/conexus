@@ -2,7 +2,13 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { COPY_TASK_SCHEMA, CopyTaskResult, CopyTaskSpec, copyTaskSchema } from './public.ts'
+import {
+  COPY_TASK_SCHEMA,
+  CopyTaskProgress,
+  CopyTaskResult,
+  CopyTaskSpec,
+  copyTaskSchema,
+} from './public.ts'
 
 test('o esquema da tarefa guardado é o que o Zod gera hoje', () => {
   assert.deepEqual(JSON.parse(readFileSync(COPY_TASK_SCHEMA, 'utf8')), copyTaskSchema())
@@ -57,4 +63,42 @@ test('a especificação pede ao menos uma tabela', () => {
   }
   assert.equal(CopyTaskSpec.safeParse(spec).success, true)
   assert.equal(CopyTaskSpec.safeParse({ ...spec, tables: [] }).success, false)
+})
+
+test('o placar: a fase é copiando ou atualizando uma tabela, e a tabela leva só nome, números e horas', () => {
+  const table = {
+    ...{ name: 'sankhya_notas', read: 3, written: 2, failed: false },
+    ...{ startedAt: '2026-11-27T14:02:30Z', endedAt: null },
+  }
+  const progress = {
+    ...{ type: 'PROGRESS', version: 1, runId: randomUUID(), attempt: 1, seq: 1 },
+    ...{ at: '2026-11-27T14:03:00Z', phase: { kind: 'COPYING' }, tables: [table] },
+  }
+  function accepted(change: object) {
+    return CopyTaskProgress.safeParse({ ...progress, ...change }).success
+  }
+  assert.equal(accepted({}), true)
+  assert.equal(accepted({ phase: { kind: 'UPDATING', table: 'sankhya_notas' } }), true)
+  assert.equal(accepted({ phase: { kind: 'UPDATING' } }), false, 'the table of the turn is asked')
+  assert.equal(accepted({ seq: 0 }), false)
+  assert.equal(accepted({ tables: [{ ...table, read: -1 }] }), false)
+  assert.equal(accepted({ tables: [{ ...table, startedAt: 'ontem' }] }), false)
+})
+
+test('o resultado: o início e o fim da tabela valem ou faltam, como numa imagem antiga', () => {
+  const entry = { name: 'sankhya_notas', read: 1, written: 1, rounded: 0, rows: 1, whole: false }
+  const result = {
+    ...{ type: 'RESULT', version: 1, runId: randomUUID(), attempt: 1 },
+    outcome: { kind: 'COMPLETE' },
+  }
+  function accepted(change: object) {
+    return CopyTaskResult.safeParse({ ...result, tables: [{ ...entry, ...change }] }).success
+  }
+  assert.equal(accepted({}), true, 'a task of the earlier image')
+  assert.equal(accepted({ startedAt: null, endedAt: null }), true)
+  assert.equal(
+    accepted({ startedAt: '2026-11-27T14:02:30Z', endedAt: '2026-11-27T14:05:10Z' }),
+    true,
+  )
+  assert.equal(accepted({ startedAt: 'ontem' }), false)
 })

@@ -55,6 +55,9 @@ export type RunTableCounts = Readonly<{
   rounded: number
   rows: number | null
   whole: boolean
+  /** The task's clock for the table; an older image sends neither. */
+  startedAt?: string | null
+  endedAt?: string | null
 }>
 
 /**
@@ -150,6 +153,14 @@ export type CloseDeps = {
   treatment?: () => Pick<TreatmentHooks, 'afterCopy'>
 }
 
+function timesOf(counts: RunTableCounts) {
+  const { startedAt, endedAt } = counts
+  return {
+    startedAt: startedAt ? new Date(startedAt) : null,
+    endedAt: endedAt ? new Date(endedAt) : null,
+  }
+}
+
 /** The winning close's counts on each table, and the connection's 100 newest rounds kept. */
 async function counted(
   tx: CommandTx,
@@ -177,6 +188,7 @@ async function counted(
       written: counts.written,
       rows: table.rows ?? 0,
       whole: counts.whole,
+      ...timesOf(counts),
     })
   }
   const kept = tx
@@ -248,6 +260,8 @@ export async function closeLakeRun(
       .update(lakeRun)
       .set({
         endedAt: sql`statement_timestamp()`,
+        progress: null,
+        progressSeq: null,
         ...columnsOf(end),
         ...machineColumns(close.machine ?? null),
       })

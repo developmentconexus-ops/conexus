@@ -12,17 +12,19 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { logFailure } from '../../platform/failure.ts'
 import type { CloseCause, RunEnd, RunTableCounts, TreatmentHooks } from './lake-close.ts'
 import { closeLakeRun, companyScope, RESULT_GRACE_MS } from './lake-close.ts'
-import { CopyTaskResult } from './lake-task.ts'
+import { takeProgress } from './lake-progress.ts'
+import { CopyTaskProgress, CopyTaskResult } from './lake-task.ts'
 import { lakeRun } from './tables.ts'
 
 /** A treatment round's result as the queue sees it: its run, the rest read by the treatment. */
 const TreatResultEnvelope = z.looseObject({ type: z.literal('TREAT_RESULT'), runId: z.uuid() })
 
 /**
- * What reaches the queue, once read: a copy's or a treatment's result, or ECS's stop of a round's
- * task, whose `runId` is the round of either.
+ * What reaches the queue, once read: a copy's scoreboard or a copy's or a treatment's result, or
+ * ECS's stop of a round's task, whose `runId` is the round of either.
  */
 const CopyQueueMessage = z.discriminatedUnion('type', [
+  CopyTaskProgress,
   CopyTaskResult,
   TreatResultEnvelope,
   z.object({
@@ -68,7 +70,7 @@ const EcsStopped = z
     }
   })
 
-const QueueEntry = z.union([CopyTaskResult, TreatResultEnvelope, EcsStopped])
+const QueueEntry = z.union([CopyTaskProgress, CopyTaskResult, TreatResultEnvelope, EcsStopped])
 
 /** ECS's `stopCode` for a `StopTask`: only the Hub stops a copy's task. */
 const STOPPED_BY_THE_HUB = 'UserInitiated'
@@ -85,7 +87,7 @@ function readEntry(body: string): CopyQueueMessage | null {
   }
 }
 
-type RoundMessage = Exclude<CopyQueueMessage, { type: 'TREAT_RESULT' }>
+type RoundMessage = Exclude<CopyQueueMessage, { type: 'TREAT_RESULT' | 'PROGRESS' }>
 
 function endOf(message: RoundMessage): Readonly<{
   end: RunEnd
@@ -195,6 +197,7 @@ async function handle(held: Held, message: { handle: string; entry: CopyQueueMes
     return
   }
   const run = entry.runId
+  if (entry.type === 'PROGRESS') return takeProgress(deps, open.get(run), entry, message.handle)
   if (open.has(run) && exitedWell(entry)) {
     if (!resultDeadlines.has(run))
       resultDeadlines.set(run, (deps.clock ?? Date).now() + RESULT_GRACE_MS)

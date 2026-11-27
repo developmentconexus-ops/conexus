@@ -81,6 +81,7 @@ Uma linha por estudo, da data mais nova para a mais velha. "Virou" é o registro
 
 | Data | Estudo | Estado | Virou | Em uma frase |
 | --- | --- | --- | --- | --- |
+| 2026-11-27 | `conexus-rodada-que-se-ve` | decidido | [a-rodada-que-se-ve](../steps/a-rodada-que-se-ve.md) | O Hub não sabia nada entre abrir e fechar a rodada; o placar por tabela, que o alvo já contava, vai pela fila da cópia a cada 10 s, como o Airbyte, e a ligação ganha a aba Rodadas. |
 | 2026-11-26 | `conexus-lago-p1-incremental` | decidido | https://github.com/developmentconexus-ops/conexus/issues/1460 | A rodada trouxe o que mudou; a NF-e é lida inteira porque a origem não tem coluna que cresça; a decisão é trazer as notas novas pelo número e o resto numa passada inteira agendada. |
 | 2026-11-23 | `conexus-n5-duas-ligacoes` | decidido | PR 1260 (cartão do Lago 2) | Uma tabela por ligação: as quatro referências separam pela credencial e juntam só na camada seguinte; uma tabela única quebraria a passada inteira da [0080](../decisions/0080-copy-declared-per-table-raw-appends.md). |
 | 2026-11-23 | `conexus-lago2-reestudo` | decidido | [aprovação](../approvals/a-primeira-copia-chega-ao-lago.md) | O modelo Vendas fugia do padrão: regra de negócio, 11 de 450 colunas e nome de negócio; a cópia traz a tabela inteira, e o lago é a única fonte. |

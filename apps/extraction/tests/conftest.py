@@ -128,12 +128,20 @@ def metadata(monkeypatch: pytest.MonkeyPatch) -> Iterator[Metadata]:
 @dataclass
 class Aws:
     parameters: dict[str, str] = field(default_factory=dict)
-    sent: list[dict[str, t.Any]] = field(default_factory=list)
+    messages: list[dict[str, t.Any]] = field(default_factory=list)
     gets: int = 0
     refuse_after_gets: int | None = None
     refusal: str = "get-parameter-apagado"
     athena: AthenaDouble | None = None
     objects: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def sent(self) -> list[dict[str, t.Any]]:
+        return [message for message in self.messages if message["type"] != "PROGRESS"]
+
+    @property
+    def progress(self) -> list[dict[str, t.Any]]:
+        return [message for message in self.messages if message["type"] == "PROGRESS"]
 
     def object(self, path: str) -> tuple[dict[str, t.Any], str]:
         found = self.objects.get(path)
@@ -163,7 +171,7 @@ class Aws:
             body["Parameter"].update(Name=request["Name"], Value=value)
             return found, json.dumps(body)
         sent = recording("send-message")
-        self.sent.append(json.loads(request["MessageBody"]))
+        self.messages.append(json.loads(request["MessageBody"]))
         body = json.loads(sent["body"])
         body["MD5OfMessageBody"] = hashlib.md5(request["MessageBody"].encode()).hexdigest()
         return sent, json.dumps(body)

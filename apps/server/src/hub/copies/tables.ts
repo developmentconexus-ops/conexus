@@ -91,6 +91,9 @@ export const lakeRun = copies.table(
     cpuPeak: numeric('cpu_peak', { precision: 5, scale: 2, mode: 'number' }),
     memoryPeakMib: integer('memory_peak_mib'),
     machineSamples: jsonb('machine_samples'),
+    /** The task's last scoreboard while the round is open; the close clears it. */
+    progress: jsonb('progress'),
+    progressSeq: integer('progress_seq'),
   },
   (table) => [
     foreignKey({
@@ -128,6 +131,10 @@ export const lakeRun = copies.table(
     check(
       'lake_run_machine',
       sql`(${table.cpuAllocated} IS NULL AND ${table.memoryAllocatedMib} IS NULL AND ${table.cpuPeak} IS NULL AND ${table.memoryPeakMib} IS NULL AND ${table.machineSamples} IS NULL) OR (${table.cpuAllocated} IS NOT NULL AND ${table.memoryAllocatedMib} IS NOT NULL AND ${table.cpuPeak} >= 0 AND ${table.memoryPeakMib} >= 0 AND ${table.machineSamples} IS NOT NULL AND ${table.endedAt} IS NOT NULL)`,
+    ),
+    check(
+      'lake_run_progress',
+      sql`((${table.progress} IS NULL) = (${table.progressSeq} IS NULL)) AND (${table.progress} IS NULL OR ${table.endedAt} IS NULL)`,
     ),
     uniqueIndex('lake_run_open_key').on(table.connectionId).where(sql`${table.endedAt} IS NULL`),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
@@ -184,6 +191,8 @@ export const lakeTableRun = copies.table(
     written: integer('written').notNull(),
     rows: bigint('rows', { mode: 'number' }).notNull(),
     whole: boolean('whole').notNull(),
+    startedAt: instant('started_at'),
+    endedAt: instant('ended_at'),
   },
   (table) => [
     primaryKey({ columns: [table.runId, table.tableId] }),
@@ -200,6 +209,10 @@ export const lakeTableRun = copies.table(
     check(
       'lake_table_run_counts',
       sql`${table.read} >= 0 AND ${table.written} >= 0 AND ${table.rows} >= 0`,
+    ),
+    check(
+      'lake_table_run_times',
+      sql`${table.endedAt} IS NULL OR ${table.startedAt} IS NULL OR ${table.endedAt} >= ${table.startedAt}`,
     ),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
   ],
