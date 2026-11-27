@@ -104,7 +104,7 @@ abaixo das 4.000 (delivery L2).
 | 1 | U1 | Um `PROGRESS` de uma rodada aberta grava o placar dela; a rodada continua aberta e a mensagem sai da fila | `lake-queue.test.ts`, "o placar grava e não fecha" | must |
 | 2 | U1 | Um `PROGRESS` com `seq` menor ou igual ao gravado não muda nada (a fila não garante ordem) | `lake-queue.test.ts`, "o placar velho não volta" | must |
 | 3 | U1 | Um `PROGRESS` de outra tentativa (`attempt` diferente do da rodada) ou de uma rodada fechada ou desconhecida sai da fila sem gravar | `lake-queue.test.ts`, "o placar de outra tentativa ou de rodada fechada é descartado" (a rodada nasce com `attempt` 1, `lake-run.ts:316`: o teste manda um `attempt` 2 feito à mão) | must |
-| 4 | U1 | O banco fora ao gravar o placar: o Hub registra `COPY_PROGRESS_NOT_WRITTEN` e tira a mensagem da fila; a rodada não fecha e o próximo placar grava | `lake-queue.test.ts`, "o banco fora não prende o placar", com o `flakyDatabase` do teste "o banco fora" de hoje (`lake-queue.test.ts:221-231`) | must |
+| 4 | U1 | O banco fora ao gravar o placar: o Hub registra `COPY_PROGRESS_NOT_WRITTEN` e tira a mensagem da fila; a rodada não fecha e o próximo placar grava | `lake-queue.test.ts`, "o banco fora não prende o placar", com o `flakyDatabase` do teste "o banco fora" de hoje (`lake-queue.test.ts:221-231`), a rodada já em `open` (`running(on)` e `start`), para a recusa cair no `UPDATE` do placar | must |
 | 5 | U1 | Ao fechar a rodada (resultado, fim do ECS, varredura, parada), o placar sai da rodada, e cada `lake_table_run` guarda o início e o fim que o resultado trouxe; um resultado sem eles (imagem antiga) fecha igual, com os dois nulos | `lake-queue.test.ts`, "o fechamento guarda início e fim e limpa o placar"; `lake-queue.test.ts`, "o resultado antigo fecha" | must |
 | 6 | U1 | O banco recusa placar numa rodada fechada e `progress` sem `progress_seq` (as restrições `lake_run_progress`) | `lake-queue.test.ts`, "o banco recusa placar em rodada fechada", por SQL direto do auxiliar `test-lake-queue.ts`, sem passar pelo `handle` (o `WHERE` do `handle` pararia antes) | must |
 | 7 | U2 | Durante a cópia, a tarefa manda `PROGRESS` a cada 10 s e logo que uma tabela termina, com `seq` crescente, todas as tabelas pedidas, as linhas lidas e gravadas, o início e o fim de cada uma | `tests/test_progress.py`, "o batedor manda o placar", com cada mensagem validada contra `copy-task.schema.json` | must |
@@ -114,10 +114,10 @@ abaixo das 4.000 (delivery L2).
 | 11 | U2 | Nenhum `PROGRESS` leva conteúdo de linha: só nomes de tabela, números, horas e a fase (security S41) | `tests/test_progress.py`, "o placar não leva linha" | must |
 | 12 | U3 | Em Dados, com a rodada aberta, cada tabela mostra o seu estado: "Na fila" sem placar, "Copiando · N linhas", "Copiada · N linhas", "Atualizando o lago", "Com erro"; com a rodada fechada, o rótulo de hoje ("Em dia", "Com erro", "Interrompida.") | `lake-list.test.tsx`, "cada tabela diz o seu estado na rodada aberta" | must |
 | 13 | U3 | A aba Tabelas da ligação mostra o mesmo estado por tabela | `lake-tables.test.tsx`, "o estado por tabela na ligação" | must |
-| 14 | U3 | A rodada aberta mostra a duração contando desde o início, e a aba Rodadas da tabela mostra as linhas da tabela da vez em vez de "—" | `lake-runs.test.tsx`, "a rodada aberta conta o tempo e as linhas", com relógio falso (`mock.timers`) | must |
+| 14 | U3 | A rodada aberta mostra a duração contando desde o início, e a aba Rodadas da tabela mostra as linhas da tabela da vez em vez de "—" | `lake-runs.test.tsx`, "a rodada aberta conta o tempo e as linhas", com relógio falso (`vi.useFakeTimers({ shouldAdvanceTime: true })`, como `apps/web/src/hub/operations/lake.test.tsx:28`) | must |
 | 15 | U3 | O estado de cada tabela vem de um só lugar no servidor (`tableProgressOf`), e a rota de Dados e a da ligação dão o mesmo estado para a mesma tabela | `lake-list.test.ts`, "Dados e a ligação dão o mesmo estado" | must |
 | 16 | U4 | A aba Rodadas da ligação lista as rodadas da cópia, a mais nova primeiro, com Início, Duração, Linhas e Resultado; a aberta relê a cada 5 s | `lake-copy-runs.test.tsx`, "a aba lista as rodadas" | must |
-| 17 | U4 | Uma rodada aberta na aba mostra cada tabela com Estado, Início, Fim, Duração e Linhas; uma rodada fechada mostra, por tabela, "Copiada", "Com erro" com a frase (a que falhou) ou "Não chegou" (a cópia parou antes dela) | `lake-copy-runs.test.tsx`, "a rodada abre com as tabelas", com uma rodada com erro e uma interrompida | must |
+| 17 | U4 | Uma rodada aberta na aba mostra cada tabela com Estado, Início, Fim, Duração e Linhas; uma rodada fechada mostra, por tabela, "Copiada", "Com erro" com a frase (a que falhou), "Parou no meio" (começou e não terminou), "Não chegou" (a cópia parou antes dela) ou "—" (rodada de antes desta etapa, sem as horas); uma rodada fechada sem resultado (varredura ou fim do ECS) diz "A rodada fechou sem o placar das tabelas." | `lake-copy-runs.test.tsx`, "a rodada abre com as tabelas", com uma rodada com erro, uma interrompida no meio de uma tabela, uma antiga e uma fechada pela varredura | must |
 | 18 | U4 | A rota das rodadas recusa quem não lê a ligação com 404 `NOT_FOUND` (como `getLakeTablesOfConnection`) e uma ligação sem cópia com 404 | `lake-routes.test.ts`, "as rodadas recusam quem não lê" | must |
 | 19 | U4 | Uma ligação sem rodada mostra "Esta cópia ainda não rodou." | `lake-copy-runs.test.tsx`, "sem rodada" | should |
 | 20 | U2 | O alvo grava o relatório num arquivo temporário e o troca com `os.replace`, então o batedor nunca lê um relatório pela metade; um relatório ilegível mesmo assim registra `PROGRESS_REPORT_UNREADABLE` e a batida seguinte tenta de novo | `tests/test_progress.py`, "o relatório ilegível não para o batedor"; `tests/test_target.py`, "o relatório troca inteiro" | must |
@@ -460,7 +460,9 @@ em `lake-run-view.ts` é o dono da regra (C26): `failed` dá `FAILED`; a fase `U
 lago", "Com erro", "há {duração}".
 
 As tabelas de uma rodada aberta vêm de `progress.tables` quando há placar; sem placar, das tabelas
-marcadas da ligação (`lake_table`, as mesmas que a rodada pediu, `lake-spec.ts`), todas `QUEUED`. O
+marcadas da ligação (`lake_table`, as que a rodada pediu, `lake-spec.ts`), todas `QUEUED`. Uma tabela
+marcada ou desmarcada durante a rodada faz essa lista diferir da rodada até o primeiro placar; fica
+aceito, porque o primeiro placar chega em segundos e traz a lista da rodada. O
 `runViewOf` recebe essa lista; quem a lê é `lake-list.ts` e `lake-view.ts`. O `progress` guardado é lido
 por um esquema Zod em `lake-run-view.ts` (C27), o `CopyTaskProgress` sem o envelope; um placar
 ilegível vira `reportedAt: null` e as tabelas `QUEUED`, com o log `COPY_PROGRESS_UNREADABLE`.
@@ -521,7 +523,7 @@ export const LakeCopyRun = z.object({
     read: z.int().min(0),
     startedAt: z.iso.datetime().nullable(),
     endedAt: z.iso.datetime().nullable(),
-    outcome: z.enum(['COPIED', 'FAILED', 'NOT_REACHED']),
+    outcome: z.enum(['COPIED', 'FAILED', 'STOPPED', 'NOT_REACHED', 'UNKNOWN']),
   })),
 })
 export const listLakeCopyRuns = defineOperation({
@@ -535,9 +537,13 @@ export const listLakeCopyRuns = defineOperation({
 
 Uma rodada aberta leva as tabelas pelo `run.tables` da U3 e `tables` vazio; uma fechada leva as linhas
 de `lake_table_run`. O `outcome` de cada tabela de uma rodada fechada tem um dono só,
-`tableOutcomeOf(run, row)` em `lake-run-view.ts`, ao lado de `tableProgressOf` (C26): o nome igual a
-`run.failedTable` dá `FAILED`; `ended_at` preenchido, ou a rodada `COMPLETE`, dá `COPIED`; o resto,
-`NOT_REACHED` ("Não chegou"). O acesso é o de
+`tableOutcomeOf(run, row)` em `lake-run-view.ts`, ao lado de `tableProgressOf` (C26): na ordem, o nome igual a
+`run.failedTable` dá `FAILED`; `ended_at` preenchido, ou a rodada `COMPLETE`, dá `COPIED`; `started_at`
+preenchido dá `STOPPED` ("Parou no meio"); `read` zero dá `NOT_REACHED` ("Não chegou"); o resto é uma
+linha de antes da migração, sem as horas, e dá `UNKNOWN` ("—"). Uma linha nova com `read` maior que
+zero sempre tem `started_at`, porque a primeira linha lida o grava. Uma rodada fechada sem resultado
+(varredura, fim do ECS) não tem linhas em `lake_table_run` (`lake-close.ts:164-180`): `tables` vem
+vazio e a aba diz "A rodada fechou sem o placar das tabelas." O acesso é o de
 `getLakeTablesOfConnection` (`admit`, `lake-list.ts`).
 
 ### As skills e a leitura
@@ -547,8 +553,8 @@ As mesmas da U3, mais `fastify-best-practices` para a rota.
 ### A ordem do trabalho
 
 1. **A rota.** Critérios: 17, 18. Cria o contrato, `runsOfCopy` e `tableOutcomeOf`; `lake-routes.test.ts`,
-   "as rodadas recusam quem não lê". Mutações: tirar o `admit`; trocar a ordem de `failedTable` e
-   `ended_at` em `tableOutcomeOf`.
+   "as rodadas recusam quem não lê". Mutações: tirar o `admit`; trocar a ordem de `started_at` e
+   `read` em `tableOutcomeOf`.
 2. **A aba.** Critérios: 16, 17, 19. Cria `lake-copy-runs.tsx` com `FramedTable` e `Collapsible`, a
    aberta aberta e relida a cada 5 s; muda `connection-page.tsx`.
 
