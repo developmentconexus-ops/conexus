@@ -1,87 +1,50 @@
-# v0.24.136
+# v0.24.137
 
-Esta versão publica o que entrou no `main` depois da v0.24.135. São o tratamento do lago, da etapa
-**O primeiro modelo vira tabela tratada**, o cartão e a tela de internet dos agentes e um documento do
-projeto.
+Esta versão publica o que entrou no `main` depois da v0.24.136. É o conserto de um defeito do
+tratamento do lago, achado no roteiro de uso da etapa **O primeiro modelo vira tabela tratada**
+(https://github.com/developmentconexus-ops/conexus/issues/1498 e
+https://github.com/developmentconexus-ops/conexus/pull/1499).
 
-**A receita do lago não muda nesta versão.** Se você apagou e criou o lago depois da v0.24.135, não
-precisa repetir. Se ainda não fez isso, siga antes os passos da nota daquela versão, que também diz o
-que se perde (https://github.com/developmentconexus-ops/conexus/releases/tag/v0.24.135). Sem esse
-passo, o lago antigo não trata, e a **Central** diz **Este lago é de uma receita anterior. Para tratar o
-dado, apague e crie o lago de novo.**
+**O que acontecia.** Num lago recém-criado, **Tratado** mostrava **Notas e pedidos** com 0 linhas, e
+**Itens das notas**, **Parceiros (clientes e fornecedores)** e **Produtos** com **A última rodada
+falhou: o motor de tratamento falhou**. A cópia cria a tabela vazia no começo e grava o dado só depois
+de ler todas as tabelas. Uma rodada de tratamento aberta nesse intervalo tratava a tabela ainda vazia,
+que saía com 0 linhas, e falhava nas que ainda não existiam. A mensagem também escondia a causa. O
+acesso de tratamento da AWS não podia consultar o banco de **Copiado**, e a falta de uma tabela voltava
+como acesso negado.
 
-**Dados ganhou as camadas do lago.** **Bruto** passa a se chamar **Copiado**, e entram **Tratado** e
-**Negócio**. Só o dono e o administrador usam as duas camadas novas. Os outros papéis leem **Seu papel
-ainda não lê nenhuma tabela. Peça a quem administra a empresa.**
-(https://github.com/developmentconexus-ops/conexus/pull/1471,
-https://github.com/developmentconexus-ops/conexus/pull/1475,
-https://github.com/developmentconexus-ops/conexus/pull/1482 e
-https://github.com/developmentconexus-ops/conexus/pull/1486)
+**O que muda.**
 
-**Tratado: as tabelas limpas do Sankhya.**
+- Uma rodada, aberta por uma cópia ou por **Tratar agora**, deixa de fora o tratamento que lê uma
+  tabela cuja primeira cópia não terminou. Vale também para quem a lê por meio de outro tratamento. A
+  tabela que nunca rodou continua em **Esperando a próxima cópia**, e a rodada da cópia que terminar
+  bem a grava.
+- Se você clica **Tratar agora** e todos os tratamentos ainda esperam a primeira cópia, nada roda, e a
+  tela diz **A primeira cópia das tabelas ainda não terminou. O tratamento roda quando ela terminar.**
+  Se só alguns esperam, os outros rodam.
+- Uma tabela que você tirou da cópia não segura ninguém. O tratamento que a lê entra na rodada e mostra
+  a falha.
+- Num lago criado a partir desta versão, a falta de uma tabela de **Copiado** aparece como **o Athena
+  recusou o SQL (TABLE_NOT_FOUND)**, e não como **o motor de tratamento falhou**.
 
-- São **Notas e pedidos**, **Itens das notas**, **Parceiros (clientes e fornecedores)** e **Produtos**.
-  Cada uma aparece quando a tabela de origem está na cópia.
-- Você não liga nada. Quando a cópia de uma delas termina bem, o Conexus abre uma rodada e grava a
-  tabela tratada. Antes disso, a linha diz **Esperando a próxima cópia**. Depois, mostra quantas linhas
-  a tabela tem e a hora.
-- Ao abrir uma tabela, você vê **Visão geral**, **Colunas** (nome, tipo em português e a descrição que
-  veio da cópia), **De onde vem** e **Quem lê**.
-- **Tratar agora** roda tudo o que há para tratar. Durante a rodada, **Parar** fica ao lado e pede
-  confirmação. O botão vira **Parando…**, e depois o topo de **Tratado** diz **Parada por**, com o nome
-  de quem parou e a hora. O que a rodada já gravou fica.
+**Não precisa apagar nem recriar o lago.** Um lago criado na v0.24.135 ou na v0.24.136 continua
+tratando. Ele só não ganha a mensagem nova da tabela que falta. Um lago de antes da v0.24.135 ainda
+precisa dos passos da nota daquela versão, que também diz o que se perde
+(https://github.com/developmentconexus-ops/conexus/releases/tag/v0.24.135).
 
-**Negócio: a sua regra em SQL.**
+**Se o seu lago mostra o defeito.** Espere a cópia das tabelas terminar em **Copiado**. Depois, na
+camada **Tratado**, clique **Tratar agora**. A rodada apaga e grava de novo as tabelas tratadas que já
+podem rodar, e cada uma fica fora enquanto é regravada.
 
-- **Novo tratamento** pede o nome, o que conta como a tabela e um `SELECT`. No SQL, cada tabela leva a
-  área na frente, que é `current` (o que foi copiado), `tratado` ou `negocio`. O Conexus confere o SQL
-  ao salvar e recusa, por exemplo, uma tabela que a empresa não tem ou um erro de escrita.
-- Salvar cria uma **Proposta, à espera do sim**, e nada roda. **Ligar** mostra o SQL e as tabelas que
-  ele lê. Nada roda nesse clique. Para gravar a tabela em `negocio` na hora, clique **Tratar agora** na
-  camada **Tratado**. A cópia seguinte das tabelas de que ela depende também a grava.
-- **Propor mudança** cria uma versão nova. A versão ligada continua valendo até você ligar a nova. A
-  aba **Versões** mostra quem propôs e quem ligou cada uma.
-- O SQL roda com o acesso de tratamento da AWS, que não alcança a senha do sistema de origem.
+A publicação não muda nenhuma tabela do banco de dados.
 
-**O que saber antes de usar o tratamento.**
+**Documento do projeto.** A frase nova da tela e a emenda do cartão da etapa estão no arquivo de
+aprovação.
 
-- Cada rodada apaga e cria de novo as tabelas que grava. Enquanto uma tabela é regravada, ela fica fora.
-  Na prova do laboratório, uma tabela de 100 mil linhas e 450 colunas ficou fora por cerca de 25
-  segundos.
-- Se o SQL de uma tabela falha, ela fica fora até a próxima rodada boa, mesmo que existisse antes.
-  **Dados** mostra **A última rodada falhou**, com o motivo. As tabelas que dependem dela não rodam
-  nessa vez.
-- Tirar uma tabela da cópia apaga também a tratada dela. Apagar o lago apaga todas. Os tratamentos e as
-  versões ficam no Conexus e voltam a rodar no lago novo.
-- Ainda não dá para apagar um tratamento. Também não há conferência de qualidade que trave a tabela,
-  prévia antes de ligar nem agente de dados. O Assistente e os apps ainda não leem **Tratado** nem
-  **Negócio**.
-- Há ajustes de tela para depois (https://github.com/developmentconexus-ops/conexus/issues/1491). Um
-  deles aparece logo no uso. Um tratamento proposto e nunca ligado diz **Esperando a próxima cópia**,
-  mas só roda depois do seu sim.
+**O que ainda não está provado no ar.** Quando esta nota foi escrita, **Tratar agora** e o fim de uma
+cópia com o código novo só tinham sido testados com um substituto da AWS. A permissão nova foi provada
+na AWS num lago de teste do laboratório, com empresa inventada. A frase nova passou em teste de tela e
+não foi vista no navegador. Não houve cópia real do Sankhya com o código novo. A conferência no Hub vem
+depois da publicação.
 
-**A internet dos agentes ganhou o cartão e a tela** que faltavam na v0.24.135
-(https://github.com/developmentconexus-ops/conexus/pull/1478).
-
-- Quando um agente pede um domínio fechado, a conversa mostra o cartão **O Conexus quer acessar a
-  internet**, com os domínios e o motivo. O dono e o administrador escolhem **Liberar nesta conversa**,
-  **Liberar para a empresa** ou **Recusar**. O desenvolvedor libera só na conversa.
-- Um membro não tem botões para liberar, e uma automação também não. O Conexus diz quem pode.
-- **Configurações, Internet** mostra a lista que vem com o Conexus, a chave **Internet toda** e a
-  **Lista da empresa**. Só o dono liga a internet toda, depois de ler o aviso. O dono e o administrador
-  adicionam e removem domínios da lista da empresa. Os outros só leem.
-
-A publicação aplica no banco de dados as migrações do tratamento.
-
-**Documento do projeto.** Entrou a regra de tela da casca nova do Hub, que ainda não foi construída
-(https://github.com/developmentconexus-ops/conexus/pull/1474). Nada muda no Conexus que você usa.
-
-**O que ainda não está provado no ar.** Quando esta nota foi escrita, o motor do tratamento só tinha
-rodado na AWS na prova do laboratório, com dado gerado. A rodada inteira, do fim da cópia à tabela em
-**Dados**, e o **Parar** dela só tinham sido testados com um substituto da AWS. O cartão e a tela de
-internet só tinham sido testados com substitutos, sem a máquina de verdade. As telas novas foram vistas
-no Chromium, e faltam os outros navegadores e um celular de verdade. A conferência no Hub vem depois da
-publicação.
-
-A etapa O primeiro modelo vira tabela tratada fecha depois que você a usar pelo roteiro do cartão. As
-etapas A rede e o navegador sob pedido e A base visual e o movimento também seguem abertas.
+A etapa O primeiro modelo vira tabela tratada continua aberta até você a usar pelo roteiro do cartão.
