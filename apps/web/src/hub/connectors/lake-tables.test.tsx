@@ -172,7 +172,7 @@ test('a seção: a rodada aberta no Hub aparece como Rodando…, e a recusa por 
   ).toBeTruthy()
 })
 
-test('ler tudo de novo: o diálogo lista todas as tabelas marcadas, cadastro e inteira incluídos, e Ler de novo pede whole: true', async () => {
+test('ler tudo de novo: o diálogo lista todas as tabelas marcadas, o cadastro e a NF-e incluídos, e Ler de novo pede whole: true', async () => {
   const marked = copiedLake(['TGFCAB', 'TGFITE', 'TGFPAR', 'TGFNFE'], { startDate: '2021-11-24' })
   const { section, sent } = await openTables(server, { lake: marked })
   fireEvent.click(within(section).getByRole('button', { name: 'Ler tudo de novo' }))

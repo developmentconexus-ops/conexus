@@ -15,7 +15,7 @@ const BASE: Declared = {
   group: 'vendas',
   source: { kind: 'TABLE', table: 'AD_TESTE' },
   key: ['NUNOTA'],
-  mode: { kind: 'CHANGED', column: 'DTALTER', registry: false },
+  mode: { kind: 'CHANGED', column: 'DTALTER', cursor: { kind: 'TIME', registry: false } },
   history: false,
   columns: {
     kind: 'DECLARED',
@@ -67,7 +67,13 @@ const REFUSED: [string, () => unknown, RegExp | typeof ZodError][] = [
   ],
   [
     'uma coluna de alteração fora das colunas',
-    () => withTables([{ ...BASE, mode: { kind: 'CHANGED', column: 'DHALTER', registry: true } }]),
+    () =>
+      withTables([
+        {
+          ...BASE,
+          mode: { kind: 'CHANGED', column: 'DHALTER', cursor: { kind: 'TIME', registry: true } },
+        },
+      ]),
     /names DHALTER/,
   ],
   [

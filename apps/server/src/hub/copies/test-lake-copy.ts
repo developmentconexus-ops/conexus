@@ -172,6 +172,7 @@ export type LakeCopyOn = Awaited<ReturnType<typeof lakeCopyOn>>
 export const NOTAS = { source: 'TGFCAB', name: 'sankhya_notas' }
 export const PARCEIROS = { source: 'TGFPAR', name: 'sankhya_parceiros' }
 export const PRODUTOS = { source: 'TGFPRO', name: 'sankhya_produtos' }
+export const NFE = { source: 'TGFNFE', name: 'sankhya_notas_nfe' }
 export const DAILY = { interval: '24h', startDate: null }
 
 export function runsOf(on: LakeCopyOn, connection: string) {

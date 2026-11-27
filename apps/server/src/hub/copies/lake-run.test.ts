@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { finished, NOTAS, PARCEIROS } from './test-lake-copy.ts'
+import { finished, NFE, NOTAS, PARCEIROS } from './test-lake-copy.ts'
 import {
   ALL_WHOLE,
   BOTH,
@@ -311,10 +311,10 @@ test('a passada pendente não se perde: com uma rodada aberta ela fica, a seguin
   assert.deepEqual(due?.fields, { companyId: on.companyId, connectionId: connection })
 })
 
-test('desligada, só as novas: sem a segunda linha e sem pendência, a rodada comum não relê', async (t) => {
-  const { on, connection } = await loadedOn(t, 'OFF')
+test('desligada, só as novas: sem a segunda linha e sem pendência, a rodada comum não relê, a NF-e inclusa', async (t) => {
+  const { on, connection } = await loadedOn(t, 'OFF', [NOTAS, PARCEIROS, NFE])
   assert.equal(await on.hub.mastra.schedules.get(`schedule_${connection}-full`), null)
   assert.deepEqual(await fire(on, connection, 'ROUND'), { kind: 'QUEUED' })
   assert.deepEqual(await dueOf(on, connection), [])
-  assert.deepEqual(await lastWhole(on, connection), NONE_WHOLE)
+  assert.deepEqual(await lastWhole(on, connection), { ...NONE_WHOLE, [NFE.name]: false })
 })

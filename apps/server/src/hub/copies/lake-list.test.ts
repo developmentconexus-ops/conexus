@@ -22,7 +22,12 @@ test('a lista de Dados: agrupada pela ligação, com o rótulo, o modo, o estado
   assert.deepEqual([notas.connection.id, notas.connection.connector], [matriz, 'sankhya'])
   assert.deepEqual([notas.source, notas.interval, notas.rows], ['TGFCAB', '24h', 3])
   assert.ok(notas.label.length > 0)
-  assert.deepEqual(notas.mode, { kind: 'CHANGED', column: 'DTALTER', registry: false })
+  assert.deepEqual(notas.mode, {
+    kind: 'CHANGED',
+    column: 'DTALTER',
+    cursor: 'TIME',
+    registry: false,
+  })
   assert.equal(notas.startDate, SINCE, 'the date limits this table')
   assert.equal(notas.columns.length, 450)
   assert.equal(notas.lastRun?.outcome, 'COMPLETE')

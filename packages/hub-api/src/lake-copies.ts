@@ -102,7 +102,12 @@ export const LakeRun = z.discriminatedUnion('outcome', [
 export type LakeRun = z.infer<typeof LakeRun>
 
 const LakeMode = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('CHANGED'), column: z.string(), registry: z.boolean() }),
+  z.object({
+    kind: z.literal('CHANGED'),
+    column: z.string(),
+    cursor: z.enum(['TIME', 'NUMBER']),
+    registry: z.boolean(),
+  }),
   z.object({ kind: z.literal('WINDOW'), column: z.string() }),
   z.object({ kind: z.literal('FULL') }),
 ])

@@ -32,6 +32,8 @@ async function columnsOf(name: string): Promise<readonly TableColumn[]> {
   return found.find(({ declaration }) => declaration.name === name)?.columns ?? assert.fail(name)
 }
 
+const REGISTER = { kind: 'TIME', registry: true } as const
+
 test('o Sankhya declara as tabelas que as sondas fecharam, e o dicionário dá a descrição e as colunas', async () => {
   const declared = sankhya.tables?.declared ?? []
   assert.equal(declared.length, 49)
@@ -42,14 +44,14 @@ test('o Sankhya declara as tabelas que as sondas fecharam, e o dicionário dá a
     group: 'vendas',
     source: { kind: 'TABLE', table: 'TGFCAB' },
     key: ['NUNOTA'],
-    mode: { kind: 'CHANGED', column: 'DTALTER', registry: false },
+    mode: { kind: 'CHANGED', column: 'DTALTER', cursor: { kind: 'TIME', registry: false } },
   })
   assert.partialDeepStrictEqual(tableOf('efd_st_media_diaria'), {
     mode: { kind: 'WINDOW', column: 'DTREF', step: 'MONTH' },
   })
   assert.partialDeepStrictEqual(tableOf('notas_nfe'), {
     source: { kind: 'TABLE', table: 'TGFNFE' },
-    mode: { kind: 'FULL' },
+    mode: { kind: 'CHANGED', column: 'NUNOTA', cursor: { kind: 'NUMBER', lag: 4900 } },
     history: false,
     meanings: { XML: 'NFE_XML' },
   })
@@ -62,12 +64,12 @@ test('o Sankhya declara as tabelas que as sondas fecharam, e o dicionário dá a
   assert.partialDeepStrictEqual(measured, {
     TGFCUS: {
       key: ['CODPROD', 'CODEMP', 'DTATUAL', 'CODLOCAL', 'CONTROLE', 'NUNOTA', 'SEQUENCIA'],
-      mode: { kind: 'CHANGED', column: 'DHALTER', registry: true },
+      mode: { kind: 'CHANGED', column: 'DHALTER', cursor: REGISTER },
     },
     TGFICM: { mode: { kind: 'FULL' } },
     TGFIPI: { key: ['CODIPI'], mode: { kind: 'FULL' } },
     TGFCFO: { key: ['CODCFO'], mode: { kind: 'FULL' } },
-    TGFAJA: { key: ['NUAJA'], mode: { kind: 'CHANGED', column: 'DTALTER', registry: true } },
+    TGFAJA: { key: ['NUAJA'], mode: { kind: 'CHANGED', column: 'DTALTER', cursor: REGISTER } },
     TGFCTS: { mode: { kind: 'FULL' } },
     TCBSALEMP: {
       key: ['CODEMP', 'CODCTACTB', 'CODCENCUS', 'CODPROJ', 'REFERENCIA', 'CODEMPDEST'],
@@ -241,7 +243,7 @@ test('o que a data limita: as quatro de movimento e as de janela; os cadastros e
     ['lancamentos_contabeis', 'REFERENCIA'],
   ])
   for (const name of ['parceiros', 'produtos', 'vendedores', 'precos_tabelas'])
-    assert.partialDeepStrictEqual(tableOf(name).mode, { kind: 'CHANGED', registry: true }, name)
+    assert.partialDeepStrictEqual(tableOf(name).mode, { cursor: REGISTER }, name)
 })
 
 test('a data inicial e o ponto salvo: a página só traz o que mudou desde eles, e a linha sem data fica fora', async () => {

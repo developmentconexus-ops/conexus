@@ -23,6 +23,7 @@ export const WINDOW_MONTHS = ['0208-12', '2026-08', '2026-09', '2026-10', '2026-
 export type CopyTables = Readonly<{
   note(nunota: number, action: 'ALTERAR' | 'CRIAR' | 'APAGAR', at?: string): boolean
   nfe(nunota: number): boolean
+  issueNfe(nunota: number): boolean
   addColumn(): string
 }>
 
@@ -144,12 +145,12 @@ function create(database: DatabaseSync, decimal: string): void {
   const notes = database.prepare('SELECT NUNOTA FROM TGFCAB ORDER BY NUNOTA LIMIT 3').all()
   insert(
     'INSERT INTO TGFNFE (NUNOTA, CHAVENFE, XML) VALUES (?, ?, ?)',
-    notes.map(({ NUNOTA }, at) => [
-      Number(NUNOTA),
-      `3526${String(NUNOTA).padStart(40, '0')}`,
-      xmlOf(Number(NUNOTA), at === 1 ? LARGE_XML_BYTES : 2_000),
-    ]),
+    notes.map(({ NUNOTA }, at) => nfeRow(Number(NUNOTA), at === 1 ? LARGE_XML_BYTES : 2_000)),
   )
+}
+
+function nfeRow(nunota: number, bytes: number): [number, string, string] {
+  return [nunota, `3526${String(nunota).padStart(40, '0')}`, xmlOf(nunota, bytes)]
 }
 
 /** The dictionary of the tables above: TDDTAB, TDDCAM (with a calculated field the join leaves out) and Oracle's ALL_TAB_COLUMNS. */
@@ -232,6 +233,12 @@ export function copyTablesOn(database: DatabaseSync, decimal: string): CopyTable
       const done = database
         .prepare('UPDATE TGFNFE SET XMLCANC = ? WHERE NUNOTA = ?')
         .run(`<procEventoNFe><evento>cancelamento ${nunota}</evento></procEventoNFe>`, nunota)
+      return done.changes > 0
+    },
+    issueNfe(nunota) {
+      const done = database
+        .prepare('INSERT OR IGNORE INTO TGFNFE (NUNOTA, CHAVENFE, XML) VALUES (?, ?, ?)')
+        .run(...nfeRow(nunota, 2_000))
       return done.changes > 0
     },
     addColumn() {

@@ -1,7 +1,8 @@
+import type { TableMode } from '../kernel/tables.ts'
 import type { TreatedTable } from '../kernel/tables-treated.ts'
 
-export function changed(column: string, registry: boolean) {
-  return { kind: 'CHANGED', column, registry } as const
+export function byTime(column: string, registry: boolean) {
+  return { kind: 'CHANGED', column, cursor: { kind: 'TIME', registry } } as const
 }
 
 function window(column: string, reread: number) {
@@ -17,7 +18,7 @@ export type Row = Readonly<{
   group: string
   table: string
   key: readonly string[]
-  mode: ReturnType<typeof changed> | ReturnType<typeof window> | typeof FULL
+  mode: TableMode
   exclude?: readonly string[]
   meanings?: Readonly<Record<string, 'NFE_XML'>>
   treated?: TreatedTable
@@ -54,7 +55,7 @@ export const FISCAL_TABLES: readonly Row[] = [
     group: 'fiscal',
     table: 'TGFDIN',
     key: ['NUNOTA', 'SEQUENCIA', 'CODIMP', 'CODINC'],
-    mode: changed('DHALTER', false),
+    mode: byTime('DHALTER', false),
   },
   {
     name: 'efd_st_media_diaria',
@@ -102,7 +103,8 @@ export const FISCAL_TABLES: readonly Row[] = [
     group: 'fiscal',
     table: 'TGFNFE',
     key: ['NUNOTA'],
-    mode: FULL,
+    // lag: twice the farthest, in NUNOTA, an NF-e was authorized behind a higher one over 60 days (measured 2026-11-27), up to the next hundred
+    mode: { kind: 'CHANGED', column: 'NUNOTA', cursor: { kind: 'NUMBER', lag: 4900 } },
     meanings: { XML: 'NFE_XML' },
   },
   {
@@ -148,7 +150,7 @@ export const FISCAL_TABLES: readonly Row[] = [
     group: 'fiscal',
     table: 'TGFAJA',
     key: ['NUAJA'],
-    mode: changed('DTALTER', true),
+    mode: byTime('DTALTER', true),
   },
   {
     name: 'estoque_contagens_serie',

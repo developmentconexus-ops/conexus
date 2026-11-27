@@ -18,7 +18,7 @@ function declared(fields: Record<string, unknown> & { source: string; label: str
   return LakeTablesOfConnection.shape.tables.element.parse({
     description: `O que guarda ${fields.label}.`,
     group: 'vendas',
-    mode: { kind: 'CHANGED', column: 'DTALTER', registry: false },
+    mode: { kind: 'CHANGED', column: 'DTALTER', cursor: 'TIME', registry: false },
     columns: 12,
     limited: true,
     copy: { kind: 'UNMARKED', suggested: `sankhya_${fields.source.toLowerCase()}` },
@@ -26,7 +26,7 @@ function declared(fields: Record<string, unknown> & { source: string; label: str
   })
 }
 
-/** Four tables: two the date limits (a change column and a window), a register and a whole one. */
+/** Four tables: two the date limits (a change column and a window), a register and one read by number. */
 export const TABLES: Table[] = [
   declared({ source: 'TGFCAB', label: 'Notas e pedidos' }),
   declared({
@@ -37,14 +37,14 @@ export const TABLES: Table[] = [
   declared({
     source: 'TGFPAR',
     label: 'Parceiros',
-    mode: { kind: 'CHANGED', column: 'DTALTER', registry: true },
+    mode: { kind: 'CHANGED', column: 'DTALTER', cursor: 'TIME', registry: true },
     limited: false,
   }),
   declared({
     source: 'TGFNFE',
     label: 'Dados da NF-e',
     group: 'financeiro',
-    mode: { kind: 'FULL' },
+    mode: { kind: 'CHANGED', column: 'NUNOTA', cursor: 'NUMBER', registry: false },
     limited: false,
   }),
 ]

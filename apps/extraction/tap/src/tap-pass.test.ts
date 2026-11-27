@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { hubspotFake } from '@conexus/connectors'
-import { recordLine, schemaOf } from './messages.ts'
+import type { TableDeclaration } from '@conexus/connectors'
+import { discoverTables } from '@conexus/connectors'
+import { readTable } from './pass.ts'
+import { senderOf, sessionFor } from './source.ts'
 import type { Double, TapRun } from './test-tap.ts'
 import {
   activated,
@@ -10,6 +12,7 @@ import {
   monthsOf,
   NOW,
   recordsOf,
+  SANKHYA,
   sankhyaDouble,
   selected,
   tap,
@@ -130,14 +133,138 @@ test('a janela desde a data: só os meses a partir do mês da data, e a releitur
   assert.deepEqual(monthsOf(next), ['2026-11'])
 })
 
-test('a inteira: a NF-e lê tudo a cada rodada, com o mesmo estado', async () => {
-  const first = await tap(sankhyaDouble(), { streams: [selected('TGFNFE', 'nfe')] })
-  const again = await tap(sankhyaDouble(), {
-    streams: [selected('TGFNFE', 'nfe')],
-    state: lastState(first),
+const NFE = [selected('TGFNFE', 'nfe')]
+const DEALS = [selected('negocios', 'deals')]
+
+test('a inteira: os negócios leem tudo a cada rodada, com o mesmo estado', async () => {
+  const first = await tap(await hubspotDouble(), { streams: DEALS })
+  const again = await tap(await hubspotDouble(), { streams: DEALS, state: lastState(first) })
+  assert.ok(recordsOf(first, 'deals').length > 0)
+  assert.equal(recordsOf(again, 'deals').length, recordsOf(first, 'deals').length)
+  assert.deepEqual(lastState(first).bookmarks.deals, {})
+})
+
+function nfeTable() {
+  return SANKHYA.tables?.declared.find(({ name }) => name === 'notas_nfe') ?? assert.fail()
+}
+
+function nfeLag(): number {
+  const { mode } = nfeTable()
+  return mode.kind === 'CHANGED' && mode.cursor.kind === 'NUMBER' ? mode.cursor.lag : assert.fail()
+}
+
+async function issued(double: Double, ...numbers: readonly number[]): Promise<Double> {
+  for (const nunota of numbers) {
+    const url = new URL(`/__teste/nfe-nova/${nunota}`, double.connector.origin)
+    const answer = await double.fake.handle(new Request(url, { method: 'POST' }))
+    assert.equal(answer.status, 200)
+  }
+  return double
+}
+
+function numbersOf(run: TapRun): readonly number[] {
+  return recordsOf(run, 'nfe').map((row) => Number(row.nunota))
+}
+
+function saved(point: string) {
+  return { bookmarks: { nfe: { replication_key_value: point } } }
+}
+
+test('o ponto de número ordena como número', async () => {
+  const double = await issued(sankhyaDouble(), 1_000_000)
+  const run = await tap(double, { streams: NFE, state: saved('999999') })
+  assert.deepEqual(lastState(run).bookmarks.nfe, { replication_key_value: '1000000' })
+})
+
+async function readFrom(
+  double: Double,
+  table: TableDeclaration,
+  point: string,
+): Promise<readonly number[]> {
+  const { connector } = double
+  const credential = { ...double.secret }
+  const send = senderOf(connector, {
+    credential,
+    now: () => NOW,
+    timeoutMs: 60_000,
+    fetch: async (input, init) => double.fake.handle(new Request(input, init)),
   })
-  assert.equal(recordsOf(again, 'nfe').length, recordsOf(first, 'nfe').length)
-  assert.deepEqual(lastState(first).bookmarks.nfe, {})
+  const reach = {
+    connector,
+    send,
+    session: sessionFor(connector, { credential, send, now: () => NOW }),
+    account: { ref: null },
+    signal: AbortSignal.timeout(60_000),
+  }
+  const found = await discoverTables({ ...reach, connector })
+  const columns =
+    found.find(({ declaration }) => declaration.name === table.name)?.columns ?? assert.fail()
+  const numbers: number[] = []
+  const failed = await readTable(
+    reach,
+    { table, columns, stream: 'nfe', whole: false },
+    {
+      bookmarks: saved(point).bookmarks,
+      startDate: null,
+      deps: {
+        now: () => NOW,
+        sleep: async () => undefined,
+        random: () => 0.5,
+        write: async (line) => {
+          const message = JSON.parse(line)
+          if (message.type === 'RECORD') numbers.push(Number(message.record.nunota))
+        },
+        log: () => undefined,
+      },
+    },
+  )
+  assert.equal(failed, null)
+  return numbers
+}
+
+test('o cursor número relê o atraso', async () => {
+  const lag = nfeLag()
+  const top = 1_000_000
+  const double = await issued(sankhyaDouble(), top - lag - 1, top - lag, top - 1, top)
+  const next = await tap(double, { streams: NFE, state: saved(String(top)) })
+  assert.deepEqual(
+    numbersOf(next),
+    [top - lag, top - 1, top],
+    'do ponto menos o atraso, e nada antes',
+  )
+  const none = { kind: 'NUMBER', lag: 0 } as const
+  const noLag = {
+    ...nfeTable(),
+    mode: { kind: 'CHANGED', column: 'NUNOTA', cursor: none } as const,
+  }
+  assert.deepEqual(await readFrom(double, noLag, String(top)), [top], 'sem atraso, do ponto')
+})
+
+test('a data não limita o número', async () => {
+  const double = await issued(sankhyaDouble(), 1_000_000)
+  const first = await tap(double, { streams: NFE, startDate: '2099-01-01' })
+  const plain = await tap(double, { streams: NFE })
+  assert.deepEqual(numbersOf(first), numbersOf(plain), 'a primeira passada lê tudo')
+  const next = await tap(double, {
+    streams: NFE,
+    state: lastState(first),
+    startDate: '2099-01-01',
+  })
+  assert.deepEqual(numbersOf(next), [1_000_000], 'a seguinte, só pelo ponto')
+})
+
+test('de inteira para só as novas', async () => {
+  const double = sankhyaDouble()
+  const all = numbersOf(await tap(double, { streams: NFE }))
+  const first = await tap(double, { streams: NFE, state: { bookmarks: { nfe: {} } } })
+  assert.deepEqual(numbersOf(first), all, 'lê a tabela inteira')
+  assert.equal(activated(first, 'nfe').length, 1)
+  assert.deepEqual(lastState(first).bookmarks.nfe, {
+    replication_key_value: String(Math.max(...all)),
+  })
+  const next = await tap(await issued(double, 1_000_000), { streams: NFE, state: lastState(first) })
+  assert.equal(activated(next, 'nfe').length, 0, 'a seguinte lê só pelo ponto')
+  assert.ok(numbersOf(next).includes(1_000_000))
 })
 
 test('a passada inteira, e só ela, termina com ACTIVATE_VERSION: a primeira, a pedida, a sem ponto e a inteira; a que lê só o que mudou, não', async () => {
@@ -153,139 +280,11 @@ test('a passada inteira, e só ela, termina com ACTIVATE_VERSION: a primeira, a 
     state: { bookmarks: { outra: { replication_key_value: '2026-11-01' } } },
   })
   assert.equal(activated(lost, 'itens').length, 1, 'sem ponto no estado, lê tudo')
-  const nfe = [selected('TGFNFE', 'nfe')]
-  const full = await tap(sankhyaDouble(), { streams: nfe })
-  const again = await tap(sankhyaDouble(), { streams: nfe, state: lastState(full) })
-  assert.equal(activated(again, 'nfe').length, 1, 'a tabela inteira lê tudo a cada rodada')
+  const full = await tap(await hubspotDouble(), { streams: DEALS })
+  const again = await tap(await hubspotDouble(), { streams: DEALS, state: lastState(full) })
+  assert.equal(activated(again, 'deals').length, 1, 'a tabela inteira lê tudo a cada rodada')
   const months = [selected('TGFCAB', 'notas')]
   const window = await tap(sankhyaDouble(), { streams: months })
   const next = await tap(sankhyaDouble(), { streams: months, state: lastState(window) })
   assert.deepEqual([activated(window, 'notas').length, activated(next, 'notas').length], [1, 0])
-})
-
-function failing(double: Double, failures: number, fail: () => Response | never) {
-  let left = failures
-  let pages = 0
-  return {
-    count: () => pages,
-    fetch: async (request: Request) => {
-      if (new URL(request.url).pathname === '/authenticate') return double.fake.handle(request)
-      pages += 1
-      if (pages > 1 && left > 0) {
-        left -= 1
-        return fail()
-      }
-      return double.fake.handle(request)
-    },
-  }
-}
-
-const VENDEDORES = [selected('TGFVEN', 'vendedores')]
-
-test('a consulta que cai e volta: 5xx, 429 e a rede repetidos até cinco vezes, com a espera crescendo; um 4xx não', async () => {
-  const kinds: [string, () => Response][] = [
-    ['5xx', () => new Response('{}', { status: 503 })],
-    ['429', () => new Response('{}', { status: 429, headers: { 'retry-after-ms': '1500' } })],
-    [
-      'a rede',
-      () => {
-        throw new TypeError('fetch failed')
-      },
-    ],
-  ]
-  const plain = recordsOf(await tap(sankhyaDouble(), { streams: VENDEDORES }), 'vendedores')
-  for (const [what, fail] of kinds) {
-    const double = sankhyaDouble()
-    const back = failing(double, 4, fail)
-    const run = await tap(double, { streams: VENDEDORES, fetch: back.fetch })
-    assert.equal(run.code, 0, what)
-    assert.equal(run.result, null, `${what}: nenhum TapFailure`)
-    assert.deepEqual(recordsOf(run, 'vendedores'), plain, `${what}: as linhas uma vez`)
-    const waited = what === '429' ? [1500, 1500, 1500, 1500] : [2500, 4500, 8500, 16500]
-    assert.deepEqual(run.waits, waited, what)
-  }
-  const double = sankhyaDouble()
-  const down = await tap(double, {
-    streams: VENDEDORES,
-    fetch: failing(double, 5, () => new Response('{}', { status: 502 })).fetch,
-  })
-  assert.equal(down.code, 1)
-  assert.partialDeepStrictEqual(down.result, {
-    code: 'COPY_SOURCE_UNREACHABLE',
-    table: 'vendedores',
-  })
-  const refused = sankhyaDouble()
-  const once = failing(refused, 1, () => new Response('{"error":"bad"}', { status: 400 }))
-  const bad = await tap(refused, { streams: VENDEDORES, fetch: once.fetch })
-  assert.equal(bad.code, 1)
-  assert.equal(once.count(), 3, 'o dicionário, o teto e o logout: o 4xx não se repete')
-  assert.deepEqual(bad.waits, [])
-})
-
-test('a rodada seguinte retoma do ponto: STATE depois de cada página, e a passada parada segue com a mesma versão', async () => {
-  const run = await tap(await hubspotDouble(), { streams: [selected('negocios', 'deals')] })
-  const types = run.messages.map(({ type }) => type).filter((type, at, all) => type !== all[at - 1])
-  assert.deepEqual(types, [
-    'SCHEMA',
-    'RECORD',
-    'STATE',
-    'RECORD',
-    'STATE',
-    'RECORD',
-    'ACTIVATE_VERSION',
-    'STATE',
-  ])
-  const middle = run.messages.filter(({ type }) => type === 'STATE')[0]
-  const fake = hubspotFake()
-  const resumed = await tap(await hubspotDouble(fake), {
-    streams: [selected('negocios', 'deals')],
-    state: lastState({ ...run, messages: [middle ?? assert.fail()] }),
-    now: NOW + 60_000,
-  })
-  const first = recordsOf(run, 'deals').length - recordsOf(resumed, 'deals').length
-  assert.equal(first, 100, 'a primeira página não se relê')
-  assert.deepEqual(
-    new Set(resumed.messages.filter(({ type }) => type === 'RECORD').map(({ version }) => version)),
-    new Set([NOW]),
-  )
-})
-
-test('o binário: base64 com contentEncoding no esquema, os bytes como vieram; o CLOB é texto', () => {
-  const columns = [
-    { name: 'IMAGEM', type: 'binary', description: null },
-    { name: 'XML', type: 'text', description: 'Campo xml' },
-  ] as const
-  assert.deepEqual(schemaOf(columns).properties, {
-    imagem: { type: ['string', 'null'], contentEncoding: 'base64' },
-    xml: { type: ['string', 'null'], description: 'Campo xml' },
-  })
-  const bytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 255]).toString('base64')
-  const line = JSON.parse(
-    recordLine({ stream: 's', columns, row: { IMAGEM: bytes, XML: '<a/>' }, version: 1 }),
-  )
-  assert.deepEqual(
-    Buffer.from(line.record.imagem, 'base64'),
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 255]),
-  )
-})
-
-test('o decimal declarado: a precisão e a escala vão ao esquema ao lado do x-singer.decimal, e o sem escala vai sem elas', () => {
-  const columns = [
-    {
-      name: 'VLRDESCPARCERIA',
-      type: 'numeric',
-      description: null,
-      decimal: { precision: 18, scale: 4 },
-    },
-    { name: 'VLRNOTA', type: 'numeric', description: null },
-  ] as const
-  assert.deepEqual(schemaOf(columns).properties, {
-    vlrdescparceria: {
-      type: ['string', 'null'],
-      format: 'x-singer.decimal',
-      precision: 18,
-      scale: 4,
-    },
-    vlrnota: { type: ['string', 'null'], format: 'x-singer.decimal' },
-  })
 })

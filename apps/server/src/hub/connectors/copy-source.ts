@@ -1,5 +1,6 @@
 import type {
   AccountRef,
+  ChangedCursor,
   Connector,
   TableDeclaration,
   TableMode,
@@ -49,7 +50,7 @@ type CopyColumns =
 
 /** How a table is read, as the contract shows it. */
 type CopyMode =
-  | Readonly<{ kind: 'CHANGED'; column: string; registry: boolean }>
+  | Readonly<{ kind: 'CHANGED'; column: string; cursor: ChangedCursor['kind']; registry: boolean }>
   | Readonly<{ kind: 'WINDOW'; column: string }>
   | Readonly<{ kind: 'FULL' }>
 
@@ -105,7 +106,12 @@ export type CopySource = {
 function modeOf(mode: TableMode): CopyMode {
   switch (mode.kind) {
     case 'CHANGED':
-      return { kind: 'CHANGED', column: mode.column, registry: mode.registry }
+      return {
+        kind: 'CHANGED',
+        column: mode.column,
+        cursor: mode.cursor.kind,
+        registry: mode.cursor.kind === 'TIME' && mode.cursor.registry,
+      }
     case 'WINDOW':
       return { kind: 'WINDOW', column: mode.column }
     case 'FULL':

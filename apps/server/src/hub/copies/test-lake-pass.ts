@@ -8,16 +8,24 @@ export const BOTH = [NOTAS.name, PARCEIROS.name]
 export const NONE_WHOLE = { sankhya_notas: false, sankhya_parceiros: false }
 export const ALL_WHOLE = { sankhya_notas: true, sankhya_parceiros: true }
 
-export async function loadedOn(t: TestContext, fullPass: 'DAILY' | 'OFF') {
+export async function loadedOn(
+  t: TestContext,
+  fullPass: 'DAILY' | 'OFF',
+  tables = [NOTAS, PARCEIROS],
+) {
   const on = await lakeCopyOn(t)
   const connection = await on.linked()
   async function put(change: object) {
-    const marks = { tables: [NOTAS, PARCEIROS], interval: '24h', startDate: null }
+    const marks = { tables, interval: '24h', startDate: null }
     const answered = await on.put(connection, { ...marks, ...change })
     assert.equal(answered.statusCode, 200, answered.body)
   }
   await put({ fullPass })
-  await finished(on, connection, BOTH)
+  await finished(
+    on,
+    connection,
+    tables.map(({ name }) => name),
+  )
   return { on, connection, put }
 }
 

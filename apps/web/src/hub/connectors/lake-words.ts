@@ -34,11 +34,13 @@ export const FULL_PASS_ITEMS = LAKE_FULL_PASSES.map((value) => ({
 
 type Mode = LakeTablesOfConnection['tables'][number]['mode']
 
-/** How a table is read, said as the card words it: "Só o que mudou, por DTALTER", "Janela por mês, por X" or "Inteira". */
+/** How a table is read, said as the card words it: "Só o que mudou, por DTALTER", "Só as novas, por NUNOTA", "Janela por mês, por X" or "Inteira". */
 export function modeText(mode: Mode): string {
   switch (mode.kind) {
     case 'CHANGED':
-      return `Só o que mudou, por ${mode.column}`
+      return mode.cursor === 'NUMBER'
+        ? `Só as novas, por ${mode.column}`
+        : `Só o que mudou, por ${mode.column}`
     case 'WINDOW':
       return `Janela por mês, por ${mode.column}`
     case 'FULL':

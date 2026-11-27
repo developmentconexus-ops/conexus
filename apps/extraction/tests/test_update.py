@@ -74,15 +74,28 @@ def test_a_limpeza(task: Task) -> None:
 def test_a_inteira_troca_tudo(task: Task) -> None:
     first = task.spec(NFE, whole=False)
     assert task.run(first) == 0
-    [nunota] = [row["nunota"] for row in _rows(task, "current", "sankhya_notas_nfe")][:1]
+    [nunota] = [row["nunota"] for row in _rows(task, "current", NFE[1])][:1]
+    task.change(f"nfe/{nunota}")
+    assert task.run(task.spec(NFE, whole=True, connection=first["connectionId"])) == 0
+    current = {row["nunota"]: row for row in _rows(task, "current", NFE[1])}
+    source = _source(task, first, NFE[1])
+    assert current.keys() == source.keys()
+    assert current[nunota]["xmlcanc"] == source[nunota]["xmlcanc"]
+    assert task.aws.sent[-1]["tables"][0]["whole"] is True
+
+
+def test_a_nfe_relida_no_atraso_leva_o_evento(task: Task) -> None:
+    first = task.spec(NFE, whole=False)
+    assert task.run(first) == 0
+    [nunota] = [row["nunota"] for row in _rows(task, "current", NFE[1])][:1]
     task.change(f"nfe/{nunota}")
     assert task.run(task.spec(NFE, whole=False, connection=first["connectionId"])) == 0
-    current = {row["nunota"]: row for row in _rows(task, "current", "sankhya_notas_nfe")}
-    source = _source(task, first, "sankhya_notas_nfe")
+    current = {row["nunota"]: row for row in _rows(task, "current", NFE[1])}
+    source = _source(task, first, NFE[1])
     assert current.keys() == source.keys()
     assert current[nunota]["xmlcanc"] == source[nunota]["xmlcanc"]
     assert "cancelamento" in current[nunota]["xmlcanc"]
-    assert task.aws.sent[-1]["tables"][0]["whole"] is True
+    assert task.aws.sent[-1]["tables"][0]["whole"] is False
 
 
 def test_o_xml_sem_historico(task: Task) -> None:
@@ -315,13 +328,15 @@ def _months(task: Task) -> set[str]:
 
 
 def test_a_cancelada_sai_na_passada(task: Task) -> None:
-    first = task.spec(NOTAS, whole=True)
+    first = task.spec(NOTAS, NFE, whole=True)
     assert task.run(first) == 0
     task.change("notas/100001", {"acao": "APAGAR"})
-    assert task.run(task.spec(NOTAS, whole=False, connection=first["connectionId"])) == 0
+    assert task.run(task.spec(NOTAS, NFE, whole=False, connection=first["connectionId"])) == 0
     assert 100001 in _keys(task)
-    assert task.run(task.spec(NOTAS, whole=True, connection=first["connectionId"])) == 0
+    assert 100001 in _keys(task, NFE[1])
+    assert task.run(task.spec(NOTAS, NFE, whole=True, connection=first["connectionId"])) == 0
     assert 100001 not in _keys(task)
+    assert 100001 not in _keys(task, NFE[1])
 
 
 def test_a_passada_aplica_a_data(task: Task) -> None:
