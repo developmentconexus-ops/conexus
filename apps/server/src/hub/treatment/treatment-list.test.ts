@@ -136,7 +136,10 @@ test('lista: o molde que renomeia mostra a descrição da coluna copiada', async
   assert.ok(partners.layer === 'tratado')
   assert.deepEqual(
     [partners.description, partners.columns],
-    ['Parceiros, com o nome renomeado.', [{ name: 'nome_do_parceiro', type: 'texto', description }]],
+    [
+      'Parceiros, com o nome renomeado.',
+      [{ name: 'nome_do_parceiro', type: 'texto', description }],
+    ],
   )
 })
 
