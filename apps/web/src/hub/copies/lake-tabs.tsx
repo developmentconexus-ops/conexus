@@ -1,7 +1,7 @@
 import type { LakeRun, LakeTableSummary } from '@conexus/hub-api'
-import type { ReactNode } from 'react'
+import { ColumnsTable } from '../../ui/columns-table.tsx'
+import { Fact } from '../../ui/fact.tsx'
 import { Empty } from '../../ui/states.tsx'
-import { FramedTable, TableBody, TableCell, TableRow } from '../../ui/table.tsx'
 import {
   DICTIONARY_OUT,
   intervalText,
@@ -36,15 +36,6 @@ import {
   systemAnswered,
   TABLE_COLUMNS,
 } from './text.ts'
-
-function Fact(props: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-xs border-b border-line py-sm sm:flex-row sm:gap-lg">
-      <dt className="text-text-2 sm:w-44 sm:shrink-0">{props.label}</dt>
-      <dd className="min-w-0 break-words">{props.children}</dd>
-    </div>
-  )
-}
 
 /** What a round that ended with an error says: the sentence of its code, where it stopped, and the system's own answer. */
 export function Failed(props: { run: Extract<LakeRun, { outcome: 'ERROR' }>; system: string }) {
@@ -109,38 +100,7 @@ export function Columns({ table }: { table: LakeTableSummary }) {
   return (
     <div className="flex flex-col gap-md">
       <p className="text-text-2 tabular-nums">{columnsCountText(table.columns.length)}</p>
-      <FramedTable
-        aria-label={TABLE_COLUMNS}
-        columns={[
-          { name: COLUMN_COLUMNS[0] },
-          { name: COLUMN_COLUMNS[1], leavesOnPhone: true, width: 'lg:w-40' },
-          { name: COLUMN_COLUMNS[2], leavesOnPhone: true, width: 'lg:w-80' },
-        ]}
-        showHeader
-      >
-        <TableBody>
-          {table.columns.map((column) => (
-            <TableRow key={column.name}>
-              <TableCell className="whitespace-normal px-sm">
-                <span className="flex flex-col">
-                  <span className="font-mono text-fact">{column.name}</span>
-                  <span className="text-text-2 md:hidden">
-                    {[column.type, column.description]
-                      .filter((part) => part !== null && part !== '')
-                      .join(' · ')}
-                  </span>
-                </span>
-              </TableCell>
-              <TableCell className="px-sm max-md:hidden">
-                <span className="text-text-2">{column.type}</span>
-              </TableCell>
-              <TableCell className="whitespace-normal px-sm max-md:hidden">
-                <span className="text-text-2">{column.description}</span>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </FramedTable>
+      <ColumnsTable label={TABLE_COLUMNS} heads={COLUMN_COLUMNS} columns={table.columns} padded />
     </div>
   )
 }

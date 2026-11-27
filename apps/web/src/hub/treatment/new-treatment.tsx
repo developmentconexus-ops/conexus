@@ -10,14 +10,17 @@ import { useMutation } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
 import { HubFailure, sentenceOf, unconfirmedText, writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent } from '../../ui/dialog.tsx'
-import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
-import { Form, FormAlert, SubmitButton, useFieldError, useSchemaForm } from '../../ui/form.tsx'
-import { Input } from '../../ui/input.tsx'
-import { Textarea } from '../../ui/textarea.tsx'
+import {
+  CodeField,
+  Form,
+  FormAlert,
+  SubmitButton,
+  TextField,
+  useSchemaForm,
+} from '../../ui/form.tsx'
 import { sendProposal, sendVersion } from './queries.ts'
 import {
   DESCRIPTION_LABEL,
@@ -60,46 +63,43 @@ function refusalOf(error: unknown): Refusal {
   return { field: null, text: sentence }
 }
 
-function InputField(props: { name: string; label: string; maxLength: number; invalid?: string }) {
-  const { register } = useFormContext()
-  const shown = useFieldError(props.name, props.invalid)
+function Texts(props: { named: boolean }) {
   return (
-    <Field {...shown.field}>
-      <FieldLabel htmlFor={shown.id}>{props.label}</FieldLabel>
-      <Input
-        id={shown.id}
+    <>
+      {props.named && (
+        <TextField
+          name="name"
+          type="text"
+          autoComplete="off"
+          label={NAME_LABEL}
+          maxLength={LAKE_TABLE_NAME_MAX}
+          invalid={NAME_INVALID}
+        />
+      )}
+      <TextField
+        name="description"
+        type="text"
         autoComplete="off"
-        maxLength={props.maxLength}
-        {...shown.control}
-        {...register(props.name)}
+        label={DESCRIPTION_LABEL}
+        maxLength={TREATMENT_DESCRIPTION_MAX}
       />
-      <FieldError id={shown.errorId}>{shown.message}</FieldError>
-    </Field>
-  )
-}
-
-function SqlField() {
-  const { register } = useFormContext()
-  const shown = useFieldError('sql', SQL_REQUIRED)
-  return (
-    <Field {...shown.field}>
-      <FieldLabel htmlFor={shown.id}>{SQL_LABEL}</FieldLabel>
-      <Textarea
-        id={shown.id}
-        spellCheck={false}
-        className="min-h-40 font-mono"
+      <CodeField
+        name="sql"
+        label={SQL_LABEL}
+        invalid={SQL_REQUIRED}
         maxLength={TREATMENT_SQL_MAX}
-        {...shown.control}
-        {...register('sql')}
       />
-      <FieldError id={shown.errorId}>{shown.message}</FieldError>
-    </Field>
+    </>
   )
 }
 
 function NewForm(props: { companyId: CompanyId; onSaved: (id: TreatmentModelId) => void }) {
   const send = useMutation(sendProposal)
-  const form = useSchemaForm(ProposeTreatment, { name: '', description: '', sql: '' })
+  const form = useSchemaForm(ProposeTreatment, {
+    name: '',
+    description: '',
+    sql: '',
+  })
   return (
     <Form
       form={form}
@@ -112,22 +112,14 @@ function NewForm(props: { companyId: CompanyId; onSaved: (id: TreatmentModelId) 
           props.onSaved(saved.id)
         } catch (error) {
           const { field, text } = refusalOf(error)
-          form.setError(field ?? 'root.server', { type: 'server', message: text })
+          form.setError(field ?? 'root.server', {
+            type: 'server',
+            message: text,
+          })
         }
       }}
     >
-      <InputField
-        name="name"
-        label={NAME_LABEL}
-        maxLength={LAKE_TABLE_NAME_MAX}
-        invalid={NAME_INVALID}
-      />
-      <InputField
-        name="description"
-        label={DESCRIPTION_LABEL}
-        maxLength={TREATMENT_DESCRIPTION_MAX}
-      />
-      <SqlField />
+      <Texts named />
       <FormAlert />
       <SubmitButton idle={SAVE} pending={SAVING} />
     </Form>
@@ -158,16 +150,14 @@ function ChangeForm(props: {
           props.onSaved()
         } catch (error) {
           const { field, text } = refusalOf(error)
-          form.setError(field === 'sql' ? 'sql' : 'root.server', { type: 'server', message: text })
+          form.setError(field === 'sql' ? 'sql' : 'root.server', {
+            type: 'server',
+            message: text,
+          })
         }
       }}
     >
-      <InputField
-        name="description"
-        label={DESCRIPTION_LABEL}
-        maxLength={TREATMENT_DESCRIPTION_MAX}
-      />
-      <SqlField />
+      <Texts named={false} />
       <FormAlert />
       <SubmitButton idle={SAVE} pending={SAVING} />
     </Form>

@@ -11,6 +11,7 @@ import { ArrowLeftIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { HubFailure } from '../../platform/hub.ts'
 import { Badge } from '../../ui/badge.tsx'
+import { Fact } from '../../ui/fact.tsx'
 import { List, PageTitle, Row } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
@@ -119,15 +120,6 @@ function Refs(props: { companyId: CompanyId; refs: readonly TableRef[]; none: st
         </Row>
       ))}
     </List>
-  )
-}
-
-function Fact(props: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-xs border-b border-line py-sm sm:flex-row sm:gap-lg">
-      <dt className="text-text-2 sm:w-44 sm:shrink-0">{props.label}</dt>
-      <dd className="min-w-0 break-words">{props.children}</dd>
-    </div>
   )
 }
 

@@ -9,12 +9,9 @@ import {
   runTreatmentNow,
   stopTreatmentRun,
 } from '@conexus/hub-api'
-import { queryOptions, useMutationState, useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery } from '@tanstack/react-query'
+import { useFollowRun } from '../../platform/follow-run.ts'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
-
-const WHILE_RUNNING = 5_000
-/** How long after the person's own Tratar agora the screen reads on: the Hub may open the run after the first re-read. */
-const AFTER_REQUEST = 30_000
 
 export function isOpen(run: TreatedTables['lastRun']): run is NonNullable<typeof run> & {
   state: 'STARTING' | 'RUNNING'
@@ -31,18 +28,10 @@ const OWN_WRITES: ReadonlySet<unknown> = new Set([runTreatmentNow.id])
 
 /** The same read, read again every 5 s while a run is open, and for a bounded time after a Tratar agora of this browser (web W12). */
 export function useTreatedTables(companyId: CompanyId) {
-  const sent = useMutationState({
-    filters: { predicate: (one) => OWN_WRITES.has(one.options.mutationKey?.[0]) },
-    select: (one) => one.state.submittedAt,
-  })
-  const lastSent = Math.max(0, ...sent)
-  return useQuery({
-    ...treatedTablesQuery(companyId),
-    refetchInterval: (query) =>
-      isOpen(query.state.data?.lastRun ?? null) || Date.now() - lastSent < AFTER_REQUEST
-        ? WHILE_RUNNING
-        : false,
-  })
+  const refetchInterval = useFollowRun<TreatedTables>(OWN_WRITES, (data) =>
+    isOpen(data?.lastRun ?? null),
+  )
+  return useQuery({ ...treatedTablesQuery(companyId), refetchInterval })
 }
 
 export function treatmentModelQuery(companyId: CompanyId, modelId: TreatmentModelId) {

@@ -1,58 +1,27 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { addNetworkDomain, NETWORK_LIMITS, NetworkDomain } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
 import type { z } from 'zod'
 import { sentenceOfCode, unconfirmedText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
-import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import {
   Form,
   FormAlert,
   SubmitButton,
   setWriteError,
-  useFieldError,
+  TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
-import { Input } from '../../ui/input.tsx'
 import { Fact } from './domain-words.tsx'
 import { addNetworkDomainMutation } from './queries.ts'
 
 const UNCONFIRMED = unconfirmedText('a mudança', 'Veja a lista.')
 
-const BodyWithCheckedDomain = addNetworkDomain.input.body.extend({ domain: NetworkDomain })
-
-function HintedField(props: {
-  name: 'domain' | 'reason'
-  label: string
-  hint: ReactNode
-  invalid?: string
-  maxLength?: number
-}) {
-  const { register } = useFormContext()
-  const shown = useFieldError(props.name, props.invalid)
-  const hintId = `${shown.id}-hint`
-  return (
-    <Field {...shown.field}>
-      <FieldLabel htmlFor={shown.id}>{props.label}</FieldLabel>
-      <Input
-        id={shown.id}
-        autoComplete="off"
-        maxLength={props.maxLength}
-        {...shown.control}
-        aria-describedby={[hintId, shown.control['aria-describedby']].filter(Boolean).join(' ')}
-        {...register(props.name)}
-      />
-      <p id={hintId} className="text-label text-text-2">
-        {props.hint}
-      </p>
-      <FieldError id={shown.errorId}>{shown.message}</FieldError>
-    </Field>
-  )
-}
+const BodyWithCheckedDomain = addNetworkDomain.input.body.extend({
+  domain: NetworkDomain,
+})
 
 function AddForm({ companyId, onClose }: { companyId: CompanyId; onClose: () => void }) {
   const send = useMutation(addNetworkDomainMutation)
@@ -63,14 +32,18 @@ function AddForm({ companyId, onClose }: { companyId: CompanyId; onClose: () => 
       await send.mutateAsync({ params: { companyId }, body })
       onClose()
     } catch (error) {
-      setWriteError(form, error, UNCONFIRMED, { NETWORK_DOMAIN_INVALID: 'domain' })
+      setWriteError(form, error, UNCONFIRMED, {
+        NETWORK_DOMAIN_INVALID: 'domain',
+      })
     }
   }
 
   return (
     <Form form={form} onSubmit={submit}>
-      <HintedField
+      <TextField
         name="domain"
+        type="text"
+        autoComplete="off"
         label="Domínio"
         invalid={sentenceOfCode('NETWORK_DOMAIN_INVALID')}
         hint={
@@ -80,8 +53,10 @@ function AddForm({ companyId, onClose }: { companyId: CompanyId; onClose: () => 
           </>
         }
       />
-      <HintedField
+      <TextField
         name="reason"
+        type="text"
+        autoComplete="off"
         label="Motivo"
         hint={`Fica na lista, para quem ler depois. Até ${NETWORK_LIMITS.reason} caracteres.`}
         invalid="Escreva o motivo."
