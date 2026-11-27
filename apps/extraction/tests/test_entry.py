@@ -16,6 +16,7 @@ import pytest
 from conexus_extraction.contract import Machine
 from conexus_extraction.entry import Round
 from conexus_extraction.machine import Meter
+from conexus_extraction.progress import Beat
 from tests.conftest import TAP_DOUBLE, Metadata, Task, fargate
 
 NOTAS = ("TGFCAB", "sankhya_notas")
@@ -41,6 +42,7 @@ def test_um_resultado_por_rodada(task: Task, metadata: Metadata) -> None:
     assert result["runId"] == spec["runId"]
     assert result["outcome"] == {"kind": "COMPLETE"}
     rows = {name: len(r) for name, r in task.source(spec).items()}
+    times = [(table.pop("startedAt"), table.pop("endedAt")) for table in result["tables"]]
     assert result["tables"] == [
         {
             "name": name,
@@ -52,6 +54,7 @@ def test_um_resultado_por_rodada(task: Task, metadata: Metadata) -> None:
         }
         for name, rounded in (("sankhya_notas", 1), ("sankhya_notas_nfe", 0))
     ]
+    assert all(started <= ended for started, ended in times)
     assert "1234567890123" not in json.dumps(result)
     machine = result["machine"]
     assert machine["allocated"] == {"vcpu": 1, "memoryMib": 2048}
@@ -372,3 +375,35 @@ def _tap_stops_after(task: Task, kind: str) -> None:
             ]
         )
     )
+
+
+def test_a_fusao_diz_a_tabela_da_vez(task: Task) -> None:
+    spec = task.spec(NOTAS, ("TGFNFE", "sankhya_notas_nfe"))
+    assert task.run(spec) == 0
+    updating = [
+        message["phase"]["table"]
+        for message in task.aws.progress
+        if message["phase"]["kind"] == "UPDATING"
+    ]
+    assert updating == ["sankhya_notas", "sankhya_notas_nfe"]
+    first = next(m for m in task.aws.progress if m["phase"]["kind"] == "UPDATING")
+    assert [table["name"] for table in first["tables"]] == [
+        "sankhya_notas",
+        "sankhya_notas_nfe",
+    ]
+    assert all(table["endedAt"] is not None for table in first["tables"])
+
+
+def test_nada_depois_do_resultado(task: Task, monkeypatch: pytest.MonkeyPatch) -> None:
+    start = Beat.start.__func__  # type: ignore[attr-defined]
+    monkeypatch.setattr(
+        Beat, "start", classmethod(lambda cls, *args, **_: start(cls, *args, period=0.02))
+    )
+    assert task.run(task.spec(NOTAS, ("TGFNFE", "sankhya_notas_nfe"))) == 0
+    time.sleep(0.3)
+    kinds = [message["type"] for message in task.aws.messages]
+    assert kinds.count("RESULT") == 1
+    assert kinds[-1] == "RESULT"
+    assert "PROGRESS" in kinds
+    seqs = [message["seq"] for message in task.aws.progress]
+    assert seqs == sorted(set(seqs))

@@ -4,6 +4,7 @@ import base64
 import contextlib
 import functools
 import json
+import os
 import threading
 import typing as t
 from collections.abc import Iterator, Mapping, Sequence
@@ -15,6 +16,8 @@ import pyarrow as pa
 from pyiceberg.catalog import Catalog, load_catalog
 from singer_sdk import BatchSink, Target
 from singer_sdk import typing as th
+
+from conexus_extraction.contract import utc_now
 
 RAW = "raw"
 CURRENT = "current"
@@ -187,7 +190,7 @@ class TargetConexus(Target):
         self.drain_all()
         for stream, bookmark in message_dict["value"].get("bookmarks", {}).items():
             if self._pass_just_ended(stream, bookmark):
-                self.report(ended=[*self._report["ended"], stream])
+                self.end(stream)
 
     def _pass_just_ended(self, stream: str, bookmark: Mapping[str, t.Any]) -> bool:
         unmarked = stream not in self._report["ended"]
@@ -223,16 +226,32 @@ class TargetConexus(Target):
         except self._ssm.exceptions.ParameterNotFound as gone:
             raise RunClosed from gone
 
+    def _counts(self, stream: str) -> dict[str, t.Any]:
+        return t.cast(
+            "dict[str, t.Any]",
+            self._report["tables"].setdefault(
+                stream,
+                {"read": 0, "written": 0, "rounded": 0, "startedAt": None, "endedAt": None},
+            ),
+        )
+
     def count(self, stream: str, *, read: int = 0, written: int = 0, rounded: int = 0) -> None:
         with self._lock:
-            counts = self._report["tables"].setdefault(
-                stream, {"read": 0, "written": 0, "rounded": 0}
-            )
+            counts = self._counts(stream)
+            starting = counts["startedAt"] is None
+            if starting:
+                counts["startedAt"] = utc_now()
             counts["read"] += read
             counts["written"] += written
             counts["rounded"] += rounded
-            if written:
+            if written or starting:
                 self._write_report()
+
+    def end(self, stream: str) -> None:
+        with self._lock:
+            self._counts(stream)["endedAt"] = utc_now()
+            self._report["ended"] = [*self._report["ended"], stream]
+            self._write_report()
 
     def report(self, **fields: t.Any) -> None:
         with self._lock:
@@ -240,4 +259,7 @@ class TargetConexus(Target):
             self._write_report()
 
     def _write_report(self) -> None:
-        Path(self.config["report_path"]).write_text(json.dumps(self._report))
+        path = Path(self.config["report_path"])
+        partial = path.with_name(f"{path.name}.partial")
+        partial.write_text(json.dumps(self._report))
+        os.replace(partial, path)

@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import json
+import os
+import typing as t
 import urllib.request
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 from pyiceberg.serializers import FromInputFile
 from pyiceberg.table import Table
 
+from conexus_extraction.target import TargetConexus
 from tests.conftest import Task
 
 NOTAS = ("TGFCAB", "sankhya_notas")
@@ -26,6 +30,10 @@ SDC = {
 @pytest.fixture(autouse=True)
 def _raw_stays(task: Task) -> None:
     task.athena.keep_raw = True
+
+
+def _counts(report: dict[str, t.Any], table: str) -> dict[str, int]:
+    return {k: v for k, v in report["tables"][table].items() if not k.endswith("At")}
 
 
 def _rows_when_marked(table: Table) -> int | None:
@@ -91,7 +99,7 @@ def test_o_xml_inteiro(task: Task) -> None:
 def test_o_valor_com_dez_casas_e_arredondado_e_contado(task: Task) -> None:
     report = task.feed("arredonda.jsonl", {"teste_decimal": "TESTE"})
     assert report["failed"] is None
-    assert report["tables"]["teste_decimal"] == {"read": 7, "written": 7, "rounded": 5}
+    assert _counts(report, "teste_decimal") == {"read": 7, "written": 7, "rounded": 5}
     lake = task.lake.load_table(("raw", "teste_decimal")).scan().to_arrow()
     assert str(lake.schema.field("valor").type) == "decimal128(38, 9)"
     assert dict(
@@ -110,7 +118,7 @@ def test_o_valor_com_dez_casas_e_arredondado_e_contado(task: Task) -> None:
 def test_a_contagem_soma_os_lotes_da_tabela(task: Task) -> None:
     report = task.feed("arredonda.jsonl", {"teste_decimal": "TESTE"}, batch_size_rows=3)
     assert report["failed"] is None
-    assert report["tables"]["teste_decimal"] == {"read": 7, "written": 7, "rounded": 5}
+    assert _counts(report, "teste_decimal") == {"read": 7, "written": 7, "rounded": 5}
     lake = task.lake.load_table(("raw", "teste_decimal"))
     assert len(lake.inspect.snapshots()) == 3
 
@@ -179,3 +187,47 @@ def test_a_coluna_que_some_fica(task: Task) -> None:
     lake = task.lake.load_table(("raw", "teste_colunas")).scan().to_arrow()
     rows = {row["codigo"]: row["extra"] for row in lake.to_pylist()}
     assert rows == {1: "x", 2: None}
+
+
+def test_a_primeira_linha_marca_o_inicio_e_o_estado_do_fim_marca_o_fim(task: Task) -> None:
+    report = task.feed("arredonda.jsonl", {"teste_decimal": "TESTE"})
+    counts = report["tables"]["teste_decimal"]
+    assert counts["startedAt"].endswith("Z")
+    assert counts["endedAt"] is None
+    assert task.run(task.spec(NOTAS, NFE)) == 0
+    [result] = task.aws.sent
+    for table in result["tables"]:
+        assert table["startedAt"].endswith("Z")
+        assert table["startedAt"] <= table["endedAt"]
+    assert result["tables"][0]["endedAt"] <= result["tables"][1]["startedAt"]
+
+
+def test_o_relatorio_troca_inteiro(task: Task, monkeypatch: pytest.MonkeyPatch) -> None:
+    path = task.dumps / "relatorio.json"
+    target = TargetConexus(
+        config={
+            "catalog": json.dumps(task.catalog),
+            "tables": {},
+            "run_parameter": "/p",
+            "region": "us-east-2",
+            "report_path": str(path),
+        }
+    )
+    target.report(failed=None)
+    before = path.read_text()
+    swaps: list[tuple[str, str, dict[str, t.Any]]] = []
+    swap = os.replace
+
+    def watched(source: str | Path, destination: str | Path) -> None:
+        swaps.append((str(source), str(destination), json.loads(Path(source).read_text())))
+        assert path.read_text() == before
+        swap(source, destination)
+
+    monkeypatch.setattr(os, "replace", watched)
+    target.count("notas", read=1)
+    [(source, destination, whole)] = swaps
+    assert destination == str(path)
+    assert source != destination
+    assert whole["tables"]["notas"]["read"] == 1
+    assert json.loads(path.read_text()) == whole
+    assert not list(task.dumps.glob("*.partial"))

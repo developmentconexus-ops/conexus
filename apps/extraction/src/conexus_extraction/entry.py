@@ -23,6 +23,7 @@ from conexus_extraction.contract import (
     Interrupted,
     Lake,
     Machine,
+    Progress,
     Result,
     Spec,
     SpecInvalid,
@@ -33,10 +34,12 @@ from conexus_extraction.contract import (
     reply_address,
 )
 from conexus_extraction.machine import Meter
+from conexus_extraction.progress import Beat
 from conexus_extraction.treat import database_of, refused, treated, workgroup_of
 from conexus_extraction.update import Athena, Mode, UpdateCounts, UpdateFailed, Updater
 
 MELTANO = str(Path(sys.executable).with_name("meltano"))
+REPORT = "target-report.json"
 RUN_PARAMETER = "CONEXUS_RUN_PARAMETER"
 TREAT_OBJECT = "CONEXUS_TREAT_OBJECT"
 
@@ -107,7 +110,7 @@ class Round:
         self.spec = spec
         self.meltano = stopping.meltano
         self.tap_result = work / "tap-result.json"
-        self.report = work / "target-report.json"
+        self.report = work / REPORT
         self.catalog = work / "catalog.json"
         tap = {
             "connector": spec["connector"],
@@ -211,6 +214,8 @@ def _result(
                     "whole": applied[asked["name"]].whole
                     if asked["name"] in applied
                     else asked["whole"],
+                    "startedAt": counts.get(asked["name"], {}).get("startedAt"),
+                    "endedAt": counts.get(asked["name"], {}).get("endedAt"),
                 }
                 for asked in spec["tables"]
             ],
@@ -248,6 +253,7 @@ def _update_unless_interrupted(
     plans: Mapping[str, Plan],
     guard: tuple[Stopping, StillOpen],
     safe: Sequence[str],
+    beat: Beat,
 ) -> tuple[dict[str, UpdateCounts], Failed | None] | None:
     stopping, still_open = guard
     counts: dict[str, UpdateCounts] = {}
@@ -257,6 +263,7 @@ def _update_unless_interrupted(
         if stopping.asked or not still_open():
             return None
         plan = plans[asked["name"]]
+        beat.updating(asked["name"])
         try:
             counts[asked["name"]] = updater.update(
                 asked["name"],
@@ -288,6 +295,7 @@ def copied(
     base: Mapping[str, str],
     lake: tuple[CatalogOf, Athena],
     guard: tuple[Stopping, StillOpen],
+    beat: Beat,
 ) -> Result | None:
     catalog_of, athena = lake
     stopping, still_open = guard
@@ -335,7 +343,7 @@ def copied(
         return None
     safe = _tables_safe_to_apply(spec, report, failure)
     updater = Updater(load_catalog("lake", **catalog), athena)
-    updated = _update_unless_interrupted(spec, updater, plans, guard, safe)
+    updated = _update_unless_interrupted(spec, updater, plans, guard, safe, beat)
     if updated is None:
         return _interrupted_if_closed(spec, report, still_open)
     counts, failed = updated
@@ -394,6 +402,15 @@ def _treatment(environ: Mapping[str, str], stopping: Stopping) -> int:
     return _send(aws, spec["queueUrl"], result)
 
 
+def _sent_to(aws: boto3.session.Session, spec: Spec) -> Callable[[Progress], None]:
+    sqs = aws.client("sqs")
+
+    def send(progress: Progress) -> None:
+        sqs.send_message(QueueUrl=spec["queueUrl"], MessageBody=json.dumps(progress))
+
+    return send
+
+
 def _open(ssm: t.Any, parameter: str) -> bool:
     try:
         ssm.get_parameter(Name=parameter)
@@ -421,13 +438,18 @@ def _round(environ: Mapping[str, str], catalog_of: CatalogOf, stopping: Stopping
         with tempfile.TemporaryDirectory(prefix="copia-") as work:
             lake = spec["lake"]["bucketArn"].rsplit("/", 1)[-1]
             athena = Athena(aws.client("athena"), lake, f"s3tablescatalog/{lake}")
-            result = copied(
-                spec,
-                Path(work),
-                environ,
-                (catalog_of, athena),
-                (stopping, lambda: _open(ssm, parameter)),
-            )
+            beat = Beat.start(spec, Path(work) / REPORT, _sent_to(aws, spec), log)
+            try:
+                result = copied(
+                    spec,
+                    Path(work),
+                    environ,
+                    (catalog_of, athena),
+                    (stopping, lambda: _open(ssm, parameter)),
+                    beat,
+                )
+            finally:
+                beat.stop()
     finally:
         machine = meter.stop()
     if result is None:

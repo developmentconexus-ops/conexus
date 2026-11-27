@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import typing as t
+from datetime import UTC, datetime
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
@@ -10,6 +11,7 @@ PROJECT = Path(__file__).parents[2]
 _SCHEMA = json.loads((PROJECT / "contract" / "copy-task.schema.json").read_text())
 _SPEC = Draft202012Validator(_SCHEMA["spec"], format_checker=FormatChecker())
 _RESULT = Draft202012Validator(_SCHEMA["result"], format_checker=FormatChecker())
+_PROGRESS = Draft202012Validator(_SCHEMA["progress"], format_checker=FormatChecker())
 _TREAT = json.loads((PROJECT / "contract" / "treat-task.schema.json").read_text())
 _TREAT_SPEC = Draft202012Validator(_TREAT["spec"], format_checker=FormatChecker())
 _TREAT_RESULT = Draft202012Validator(_TREAT["result"], format_checker=FormatChecker())
@@ -78,6 +80,8 @@ class TableCounts(t.TypedDict):
     rounded: int
     rows: int | None
     whole: bool
+    startedAt: str | None
+    endedAt: str | None
 
 
 class Allocated(t.TypedDict):
@@ -105,6 +109,35 @@ class Result(t.TypedDict):
     outcome: Complete | Failed | Interrupted
     tables: list[TableCounts]
     machine: t.NotRequired[Machine | None]
+
+
+class Copying(t.TypedDict):
+    kind: t.Literal["COPYING"]
+
+
+class Updating(t.TypedDict):
+    kind: t.Literal["UPDATING"]
+    table: str
+
+
+class ProgressTable(t.TypedDict):
+    name: str
+    read: int
+    written: int
+    startedAt: str | None
+    endedAt: str | None
+    failed: bool
+
+
+class Progress(t.TypedDict):
+    type: t.Literal["PROGRESS"]
+    version: t.Literal[1]
+    runId: str
+    attempt: int
+    seq: int
+    at: str
+    phase: Copying | Updating
+    tables: list[ProgressTable]
 
 
 class TreatModel(t.TypedDict):
@@ -207,6 +240,15 @@ def reply_address(text: str) -> ReplyAddress | None:
 def checked(result: Result) -> Result:
     _RESULT.validate(result)
     return result
+
+
+def checked_progress(progress: Progress) -> Progress:
+    _PROGRESS.validate(progress)
+    return progress
+
+
+def utc_now() -> str:
+    return datetime.now(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 def checked_treat(result: TreatResult) -> TreatResult:
