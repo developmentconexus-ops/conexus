@@ -33,23 +33,23 @@ changes, reread the line it names.
   `typecheck` still start the launchers
   ([issue 1453](https://github.com/developmentconexus-ops/conexus/issues/1453)).
 
-## Better Auth 1.7.8
+## Better Auth 1.7.28
 
 ### The session's total lifetime
 
-- **Library line.** `better-auth/dist/api/routes/session.mjs:178-200`. `getSession` renews a
+- **Library line.** `better-auth/dist/api/routes/session.mjs:180-202`. `getSession` renews a
   session once `updateAge` (60 s) has passed since the last renewal, to `expiresIn` (1800 s) from
-  now. The library has no total deadline. It tests the stored expiry (`session.mjs:155`) before it
+  now. The library has no total deadline. It tests the stored expiry (`session.mjs:156`) before it
   renews, so a renewal it shortens into the past still returns the session it read.
 - **Hand-made piece.** `capAtTotalLifetime` in `apps/server/src/hub/identity/auth.ts`, the
   library's own `databaseHooks.session.update.before`. It caps a renewal's `expiresAt` at
-  `createdAt` plus 8 h; the library then ends the session on its idle deadline (`session.mjs:155`).
+  `createdAt` plus 8 h; the library then ends the session on its idle deadline (`session.mjs:156`).
   `createSessionReader` in `session.ts` also answers "signed out" to a session read at `createdAt`
   plus 8 h or later. Both read the total from `endOfLifetime`.
 - **Why.** The founder's 8 hours in total (step 3, answer "4. A"). The test "prazo total" in
   `session.test.ts`, a session read every 25 min through the library, fails without the hook: the
   row stays. The cost: once `expiresAt` is capped, the library's
-  renewal test (`session.mjs:180`) holds on every read, so each read writes the row from
+  renewal test (`session.mjs:182`) holds on every read, so each read writes the row from
   `createdAt` plus 7 h 31 min, the last 29 minutes (`expiresIn` minus `updateAge`, 1740 s). Before
   that, a read writes at most once a minute. The idle deadline and the renewal stay the library's,
   by the founder's answer of 2026-10-15 ("1. A").
@@ -65,13 +65,15 @@ changes, reread the line it names.
 
 ### A failure inside the library reads as the database's
 
-- **Library line.** `better-auth/dist/api/routes/session.mjs:231-232`. `getSession` turns a failed
-  query into a 500 `APIError` and drops its cause. `auth.handler` throws a raw query error, because
+- **Library line.** `better-auth/dist/api/routes/session.mjs:233-235`. `getSession` turns a failed
+  query into a 500 `APIError` that keeps the error as its `cause`, which `databaseFailure` reads for
+  a SQLSTATE; a refused connection carries none. `auth.handler` throws a raw query error, because
   `onAPIError: { throw: true }` keeps the router from printing it, row values and all, to stderr
-  (`better-call/dist/router.mjs:93`).
+  (`better-call/dist/router.mjs:94`).
 - **Hand-made piece.** `inLibrary` in `apps/server/src/hub/identity/auth.ts`. It wraps the session
   read (`session.ts`) and the route calls (`routes.ts`), mapping a failure through
-  `databaseFailure` and a 5xx it cannot name to `DATABASE_UNAVAILABLE`. A library command goes
+  `databaseFailure` and a 5xx it cannot name, a refused connection among them, to
+  `DATABASE_UNAVAILABLE`. A library command goes
   through `libraryCommand`, which `databaseFailure` maps in the database module.
 - **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside system;
   unavailable SQLSTATEs map to 503 (`DATABASE_UNAVAILABLE`), while a refused write or unexpected
@@ -81,9 +83,10 @@ changes, reread the line it names.
 
 ### A library refusal becomes the Hub's code by one reader
 
-- **Library line.** `better-call/dist/error.mjs:97-116`. `auth.api` throws an `APIError` with
+- **Library line.** `better-call/dist/error.mjs:97-122`. `auth.api` throws an `APIError` with
   `statusCode` and `body.code`, while `auth.handler` answers a `Response` with the same body. The
-  library maps neither to the Hub's failure codes.
+  library maps neither to the Hub's failure codes. A `cause` given to it stays on the error and out
+  of the body (`:112-120`).
 - **Hand-made piece.** `refusalOf` in `apps/server/src/hub/identity/auth.ts`, with its two entry
   points, `refusedAs` for a thrown refusal and `refusedReply` for a refused reply. Each call names
   the refusals it expects, by the library's code or by status.
@@ -94,10 +97,10 @@ changes, reread the line it names.
 
 ### Every library write joins one Hub transaction
 
-- **Library line.** `@better-auth/core/dist/context/transaction.mjs:65`. `runWithTransaction` opens
+- **Library line.** `@better-auth/core/dist/context/transaction.mjs:69`. `runWithTransaction` opens
   the library's own unit of work. The organization plugin's accept opens one more on
   `ctx.context.adapter`, the library's own connection
-  (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:291`), and on a failure resets the
+  (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:295`), and on a failure resets the
   invitation in a second write (`:332-339`).
 - **Hand-made piece.** `libraryCommandOn` in `apps/server/src/hub/identity/auth.ts`. It opens one
   `database.libraryCommand` in the caller's scope and runs the work in `runWithTransaction` on an
@@ -119,7 +122,7 @@ changes, reread the line it names.
 - **Library line.** `@better-auth/core/context` exports `getCurrentAdapter`, which the internal
   adapter and the organization plugin's adapter call to reach the open transaction. The invitation
   endpoint's `resend` branch does not: it writes the new expiry through `ctx.context.adapter`
-  (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:135-143`), on the library's own
+  (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:139-149`), on the library's own
   connection, as the Hub's login, outside the scope.
 - **Hand-made piece.** `joiningTransaction` in `apps/server/src/hub/identity/auth.ts` wraps the
   adapter `createAuth` gives the library, so each of its calls goes to `getCurrentAdapter`.
@@ -132,8 +135,8 @@ changes, reread the line it names.
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-org.mjs:74-100`.
   `createOrganization` always writes the caller as a member with `creatorRole`. The invitation
   endpoints admit only a member of the company (`routes/crud-invites.mjs:93-100` to create and
-  resend, `:430-434` to cancel). `getOrgAdapter`, exported by the plugin (`index.mjs:1-4`), writes
-  the same rows without those checks (`adapter.mjs:141`, `:352`, `:728`, `:793`), on
+  resend, `:435-439` to cancel). `getOrgAdapter`, exported by the plugin (`index.mjs:1-5`), writes
+  the same rows without those checks (`adapter.mjs:142`, `:358`, `:736`, `:802`), on
   `getCurrentAdapter`, so inside `runWithTransaction` on the Hub's transaction.
 - **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, on the
   operator's path, and for an app's invitation (the entry below): `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and an owner's
@@ -169,10 +172,10 @@ changes, reread the line it names.
 
 ### An invitation to use one app: the library's invitation row, written, accepted and canceled by the Hub
 
-- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:128-132`:
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:131-135`:
   `createInvitation` refuses an address with any open invitation in the company
-  (`findPendingInvitation`, `adapter.mjs:753-768`), so one person cannot hold a company invitation
-  and an app's, or two apps', at once. `:268`: the acceptance checks the deadline. `:324`: the
+  (`findPendingInvitation`, `adapter.mjs:762-777`), so one person cannot hold a company invitation
+  and an app's, or two apps', at once. `:272`: the acceptance checks the deadline. `:329`: the
   acceptance always writes the member. The library knows no invitation that does not make a member.
 - **Hand-made piece.** The invitation row carries two Hub fields, `project_id` and `app_role`
   (`additionalFields` in `auth.ts`), and an app's invitation has `role` NULL; the check
@@ -201,8 +204,8 @@ changes, reread the line it names.
 
 ### A person given one app: the Hub's own table, since the library's teams need a member
 
-- **Library line.** `better-auth/dist/plugins/organization/routes/crud-team.mjs:637-640`: adding a
-  person to a team refuses one who is not a member of the company. `crud-invites.mjs:324`: an
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-team.mjs:639-642`: adding a
+  person to a team refuses one who is not a member of the company. `crud-invites.mjs:329`: an
   accepted invitation always writes the member. The library keeps no (person, app, role) pair for
   someone outside the company.
 - **Hand-made piece.** `projects.app_access`, one row per Projeto and person (primary key
@@ -219,7 +222,7 @@ changes, reread the line it names.
 
 - **Library line.** `organization/routes/crud-org.mjs:255`: with `disableOrganizationDeletion`
   the endpoint answers `ORGANIZATION_DELETION_DISABLED` before it reads the session. The adapter's
-  `deleteOrganization` (`adapter.mjs:370`) deletes the members, the invitations and the company
+  `deleteOrganization` (`adapter.mjs:377`) deletes the members, the invitations and the company
   and returns the id whether or not a row was there.
 - **Hand-made piece.** `deleteCompanyOn` in `identity/clients.ts`, called by `remove` in
   `operations/clients.ts` after the client's row is deleted. No check follows: the adapter returns
@@ -234,15 +237,15 @@ changes, reread the line it names.
 ### Taking a person out and changing a role: the plugin's adapter, with the native routes unused
 
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-members.mjs:139` (remove),
-  `:236` (update the role) and `:406` (leave). Each admits only a caller who is a member of the
+  `:234` (update the role) and `:404` (leave). Each admits only a caller who is a member of the
   company (`:178`), which the operator is not. Each counts the owners and then writes, with no lock:
-  the step 4 proof left 0 owners in 20 of 20 races (`:197-200`, `:293-302`, `:419-427`). An
+  the step 4 proof left 0 owners in 20 of 20 races (`:197-198`, `:291-298`, `:417-425`). An
   administrator who removes an owner is answered with the code of the last owner (`:195-196`), and
   leaving calls no hook.
 - **Hand-made piece.** `removeMemberCommand` and `changeMemberRoleCommand` in
   `apps/server/src/hub/identity/memberships.ts` take the company's lock, admit the caller (a member
   or the operator, `admitCompany`), decide by `rankAllows` in `admission.ts` and write through
-  `deleteMember` and `updateMember` of the plugin's adapter (`organization/adapter.mjs:305`, `:295`),
+  `deleteMember` and `updateMember` of the plugin's adapter (`organization/adapter.mjs:311`, `:301`),
   from `organizationAdapter`. `keepOwner` counts the owners under that lock, and
   `cancelSentBy` cancels the invitations the removed person sent, in the same transaction. Each
   action carries the plugin's statement in `ACTIONS` (`member:delete` to remove, `member:update`
@@ -259,7 +262,7 @@ changes, reread the line it names.
 
 ### Sign-in and the first password reach the library through a request we build
 
-- **Library line.** `better-auth/dist/api/index.mjs:165-173`. The attempt limit runs in the
+- **Library line.** `better-auth/dist/api/index.mjs:168-176`. The attempt limit runs in the
   router's `onRequest`, so an `auth.api` call skips it.
 - **Hand-made piece.** `libraryRequest` in `apps/server/src/hub/identity/routes.ts`. It builds the
   `Request` for `auth.handler` from the Hub's own route, with only `origin`, `cf-connecting-ip`,
@@ -270,7 +273,7 @@ changes, reread the line it names.
 
 ### An earlier link stops working when a new one is given
 
-- **Library line.** `better-auth/dist/db/internal-adapter.mjs:775`. The library deletes a link only
+- **Library line.** `better-auth/dist/db/internal-adapter.mjs:853`. The library deletes a link only
   by its identifier, which it stores as a hash of the token, so a link whose token is gone cannot be
   addressed.
 - **Hand-made piece.** `forgetLinks` in `apps/server/src/hub/identity/auth.ts`. It deletes the
@@ -293,8 +296,8 @@ changes, reread the line it names.
 
 ### Who may act on a company: admission over the plugin's roles
 
-- **Library line.** `better-auth/dist/plugins/organization/has-permission.mjs:7`, which decides at
-  `:31` through `hasPermissionFn` (`permission.mjs:2`). The plugin checks a role inside each of its
+- **Library line.** `better-auth/dist/plugins/organization/has-permission.mjs:24`, which decides at
+  `:50` through `hasPermissionFn` (`permission.mjs:3`). The plugin checks a role inside each of its
   own endpoints, and its reads (`/organization/list-members`,
   `/organization/list-invitations`) answer an outsider 403 and read the company's whole roster.
 - **Hand-made piece.** `admit`, `admitInviter` and `admitOperator` in
@@ -314,17 +317,17 @@ changes, reread the line it names.
 
 ### The lists the Hub reads itself, 50 rows a page
 
-- **Library line.** `@better-auth/core/dist/db/adapter/factory.mjs:603`. A `findMany` without a
+- **Library line.** `@better-auth/core/dist/db/adapter/factory.mjs:608`. A `findMany` without a
   limit reads `defaultFindManyLimit`, 100 rows. The plugin's `listInvitations` reads a company's
-  invitations that way, in no order (`better-auth/dist/plugins/organization/adapter.mjs:784`), and
-  `listMembers` pages by offset (`:186`).
+  invitations that way, in no order (`better-auth/dist/plugins/organization/adapter.mjs:793`), and
+  `listMembers` pages by offset (`:188`).
 - **Hand-made piece.** `readMemberships` and `readMembers` in
   `apps/server/src/hub/identity/companies.ts`, `readInvitations` and `readReceived` in
   `invitation-reads.ts`, with `pageOf` and `pageKey` of `platform/pages.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page
   starts after the last row's id.
 - **Why.** A list past 100 rows would lose rows silently, and a page by offset shifts when a row
   arrives. The plugin's `getInvitation` also refuses an invitation that is no longer pending
-  (`crud-invites.mjs:503`), and the screen must say it expired or was accepted. The test "fora: a
+  (`crud-invites.mjs:508`), and the screen must say it expired or was accepted. The test "fora: a
   segunda página" in `companies.test.ts` reads past the first 50 rows.
 
 ### An app's rows, 50 a page by offset (Capacidade 1)
@@ -353,9 +356,9 @@ changes, reread the line it names.
 
 ### Open invitations are counted under the company's lock
 
-- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:167-172`.
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:171-176`.
   `invitationLimit` counts `findPendingInvitations`, which reads at most 100 pending rows in no
-  order and drops the expired ones in JavaScript (`adapter.mjs:772`). Two invites at once both
+  order and drops the expired ones in JavaScript (`adapter.mjs:781`). Two invites at once both
   count before either writes.
 - **Hand-made piece.** `checkRoom` in `apps/server/src/hub/identity/invitations.ts`, with
   `invitationLimit` set to infinity. After `lockCompany` takes the company row `FOR NO KEY UPDATE`,
@@ -367,9 +370,9 @@ changes, reread the line it names.
 
 ### Renewing a live invitation and reissuing an expired one
 
-- **Library line.** `better-auth/dist/plugins/organization/adapter.mjs:753-770` drops expired rows
+- **Library line.** `better-auth/dist/plugins/organization/adapter.mjs:762-779` drops expired rows
   from `findPendingInvitation`. Native `resend: true` extends only a live invitation
-  (`routes/crud-invites.mjs:128-160`); cancel writes even a terminal status (`:428-450`).
+  (`routes/crud-invites.mjs:131-165`); cancel writes even a terminal status (`:433-455`).
 - **Hand-made piece.** `openOf` in `invitations.ts` finds the pending row without a clock. An
   explicit expired replacement compares its id/revision/email/role under the company lock, cancels
   through the plugin (a member's by the endpoint, the operator's by the adapter), stamps
@@ -389,11 +392,12 @@ changes, reread the line it names.
 
 ### Three reads through the library's internal adapter
 
-- **Library line.** `better-auth/dist/db/internal-adapter.mjs:583`, `:667` and `:227`.
+- **Library line.** `better-auth/dist/db/internal-adapter.mjs:652`, `:732` and `:275`.
   `findUserByEmail`, `findCredentialAccount` and `listUsers` belong to the adapter the library
   gives its plugins, and the Hub reaches them through `auth.$context`, which the library documents
   for no application. Creating a person has the public `auth.api.createUser` of the admin plugin
-  (`better-auth/dist/plugins/admin/routes.mjs:195-201`), and the Hub uses it.
+  (`better-auth/dist/plugins/admin/routes.mjs:196-214`, which runs inside `runWithTransaction` and so
+  joins the command's open transaction), and the Hub uses it.
 - **Hand-made piece.** `createFirstPerson` in `apps/server/src/hub/identity/first-person.ts`,
   `passwordCommand` in `invitation-response.ts` and `hasPassword` in `auth.ts`. They read the person by
   e-mail, whether she has a password, and whether the installation has anyone, inside the command's
@@ -421,7 +425,7 @@ changes, reread the line it names.
 
 ### The invitation's e-mail leaves after the commit and is marked when answered
 
-- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:226`. The plugin
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:230`. The plugin
   sends through `sendInvitationEmail` inside its own call, so inside the Hub's transaction, and it
   keeps no record that an e-mail left.
 - **Hand-made piece.** `mailInvitation` in `apps/server/src/hub/identity/invitation-mail.ts` sends
@@ -446,7 +450,7 @@ changes, reread the line it names.
 
 ### The pace of invitations
 
-- **Library line.** `better-auth/dist/api/index.mjs:165-173`. The library limits attempts only in
+- **Library line.** `better-auth/dist/api/index.mjs:168-176`. The library limits attempts only in
   its router's `onRequest`, which `auth.api` skips, and it keys them by address and path
   (`api/rate-limiter/index.mjs:248`).
 - **Hand-made piece.** `checkPace` in `apps/server/src/hub/identity/invitations.ts` counts the
@@ -458,11 +462,11 @@ changes, reread the line it names.
 
 ### The library writes its timestamps with the application's clock
 
-- **Library line.** `better-auth/dist/plugins/organization/adapter.mjs:730-735` writes an
+- **Library line.** `better-auth/dist/plugins/organization/adapter.mjs:738-743` writes an
   invitation's `expires_at` from `getDate` (`utils/date.mjs`, `Date.now()`) and its `created_at`
-  from `new Date()`; `better-auth/dist/db/internal-adapter.mjs:720` writes a password link's
+  from `new Date()`; `better-auth/dist/db/internal-adapter.mjs:785` writes a password link's
   `created_at` the same way. The plugin tests its own deadline with `new Date()`
-  (`crud-invites.mjs:268`, `:503`).
+  (`crud-invites.mjs:272`, `:508`).
 - **Hand-made piece.** None. The Hub's own comparisons of those columns run in SQL against
   `statement_timestamp()`, the database's clock, and `mailed_at` is written with it
   (`invitations.ts`, `invitation-mail.ts`).
@@ -474,7 +478,7 @@ changes, reread the line it names.
 
 ### Accepting: the recipient first, then the company's lock
 
-- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:268-279`. The
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:272-283`. The
   accept checks the invitation's state before its recipient, so another person learns whether it
   is open, and it counts the members with no lock, so two accepts at once both pass the limit.
 - **Hand-made piece.** `acceptCommand` in `apps/server/src/hub/identity/invitation-response.ts`. It
@@ -487,7 +491,7 @@ changes, reread the line it names.
 
 ### Public invitation responses and terminal replay
 
-- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:268,352-396,503`.
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:272,357-401,508`.
   Reads require a signed-in recipient and refuse terminal invitations; rejection requires a session;
   acceptance refuses an already accepted invitation. The default opaque id proves delivery to the
   invited address (`:29-36`).
@@ -503,7 +507,7 @@ changes, reread the line it names.
 
 ### Invitation attempts counted by the native router outside the business transaction
 
-- **Library line.** `better-auth/dist/api/index.mjs:165-173` invokes rate limiting from the router;
+- **Library line.** `better-auth/dist/api/index.mjs:168-176` invokes rate limiting from the router;
   `auth.api` skips it. `api/rate-limiter/index.mjs:262-278` applies custom path rules.
 - **Hand-made piece.** The `invitation-attempts` plugin declares two native endpoints with
   `createAuthEndpoint`; `countAttempt` calls them through `auth.handler` before opening
@@ -549,6 +553,26 @@ changes, reread the line it names.
   (`tests/e2e/invitation-image.test.ts`) blocks the host with `--add-host` and sets the password in
   the database; the review found it reaching the service. The password-check tests cover the
   protections.
+
+### The Mastra login receives the Hub's own Better Auth instance, typed once
+
+- **Library line.** `@mastra/auth-better-auth/dist/index.d.ts:31` (`auth?: Auth`) and
+  `dist/index.js:520`, `:552`, `:855-880`. Given an `auth`, `init` returns at once and the provider
+  migrates nothing, so it builds no libsql dialect and writes no table. `authenticateToken` reads
+  only the request's `Cookie` header, asks `auth.api.getSession`, and answers `null` for every
+  failure, a database that is down included. It reads neither the 8 h total nor the renewed
+  `set-cookie`. The option's type is the bare `Auth`, to which no configured instance is assignable,
+  its `$context.adapter` being invariant there (`tsc` at `@mastra/core` 1.83 and
+  `better-auth` 1.7.28).
+- **Hand-made piece.** `auth` in the object `createIdentity` returns, read only by the Mastra host,
+  never by a subject. `harness/routes/mastra-login.test.ts` builds the provider over it with one
+  `@ts-expect-error` at that boundary, as `auth.ts` does for `getOrgAdapter`; it breaks the day the
+  library's type fits, and then goes.
+- **Why.** [Code C75](../guides/code.md): the native provider reads the session the Hub already
+  keeps, so no second login is written. The cases of that test read what the provider
+  returns: "prazo total" fails without `capAtTotalLifetime`, since the provider does not read the
+  total, and every case fails to compile without `auth` in the object. The 401 for a database that
+  is down is the provider's, not the Hub's 503.
 
 ## TanStack Router 1.170.44: stable public-page data
 
@@ -766,7 +790,7 @@ changes, reread the line it names.
   request's shape and the asset hash, the SHA-256 of the base64 and the extension as Cloudflare's
   direct-upload guide writes it. Revalidate when the SDK caps a reply.
 
-## TanStack Query 5.104.0, Better Auth 1.7.8 and the browser's `fetch`
+## TanStack Query 5.104.0, Better Auth 1.7.28 and the browser's `fetch`
 
 ### The Hub client: one address, one reply schema, one closed failure table
 

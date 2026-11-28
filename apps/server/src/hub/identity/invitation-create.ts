@@ -180,7 +180,7 @@ async function cancelOpen(auth: Auth, tx: CommandTx, input: Open) {
  * Writes the invitation: a member's into the company through the plugin's endpoint, which owns the
  * roles and the member check (K21r, K23); the owner's, by the operator who is no member, and an
  * app's, which the endpoint would refuse beside the address's other open invitations
- * (better-auth 1.7.8 crud-invites.mjs:128-132), through its adapter, with `role` NULL and the
+ * (better-auth 1.7.28 crud-invites.mjs:131-135), through its adapter, with `role` NULL and the
  * Projeto and the role in the app in the Hub's two fields (docs/reference/boundaries.md).
  */
 async function written(
@@ -209,7 +209,7 @@ async function written(
   }
   const app = { projectId: invited.projectId, appRole: invited.role }
   return adapter.createInvitation({
-    // @ts-expect-error: better-auth 1.7.8 types the role as a string; an app's invitation has none, and the adapter writes the row as given (organization/adapter.mjs:728-742).
+    // @ts-expect-error: better-auth 1.7.28 types the role as a string; an app's invitation has none, and the adapter writes the row as given (organization/adapter.mjs:736-751).
     invitation: { ...row, role: null, ...app },
     user: inviter,
   })

@@ -158,7 +158,7 @@ export async function refusedReply(reply: Response, refusals: Refusals): Promise
 
 /**
  * Runs a call into the library. Its one outside system is the database, so a failure it cannot
- * name, such as a 500 that dropped its cause, is the database's (code C50, C52).
+ * name, such as a 500 whose cause holds no SQLSTATE, is the database's (code C50, C52).
  */
 export async function inLibrary<T>(work: () => Promise<T>): Promise<T> {
   try {
@@ -184,7 +184,7 @@ function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
 
 /**
  * Each call of the library's adapter goes to the transaction open on this request, as its internal
- * adapter's do: the plugin's resend writes through the plain adapter (`crud-invites.mjs:135-143`),
+ * adapter's do: the plugin's resend writes through the plain adapter (`crud-invites.mjs:139-149`),
  * which would leave the scope's transaction for the Hub's login.
  */
 function joiningTransaction(adapter: ReturnType<typeof adapterFor>): ReturnType<typeof adapterFor> {
@@ -263,14 +263,14 @@ export async function hasPassword(auth: Auth, personId: PersonId): Promise<boole
  */
 export async function organizationAdapter(auth: Auth) {
   const context = await auth.$context
-  // @ts-expect-error: better-auth 1.7.8 types the parameter AuthContext<BetterAuthOptions>, which no configured auth's context matches, its options being invariant there; the adapter reads only context.adapter (organization/adapter.mjs:126).
+  // @ts-expect-error: better-auth 1.7.28 types the parameter AuthContext<BetterAuthOptions>, which no configured auth's context matches, its options being invariant there; the adapter reads only context.adapter (organization/adapter.mjs:126).
   return getOrgAdapter(context, ORGANIZATION)
 }
 
 /**
  * A renewal never moves a session past 8 h from its creation, the founder's total. `getSession`
  * renews after placing the session it read on the context
- * (`better-auth/dist/api/routes/session.mjs:154`).
+ * (`better-auth/dist/api/routes/session.mjs:167`).
  */
 async function capAtTotalLifetime(
   data: { expiresAt?: Date },

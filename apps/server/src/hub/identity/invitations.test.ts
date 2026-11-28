@@ -108,7 +108,7 @@ test('convidar: o membro, ou quem é de outra empresa, 404 e nenhuma linha', asy
   assert.deepEqual(hub.mail.sent, [])
 })
 
-// The creator-role refusal of a renewal lives only in the plugin's endpoint (crud-invites.mjs:123).
+// The creator-role refusal of a renewal lives only in the plugin's endpoint (crud-invites.mjs:126, and :140 for a resend).
 test('renovar: o administrador renovando o convite de um dono, 403 INVITATION_ROLE_REFUSED; o dono renova', async (t) => {
   const { hub, ana, bruno, companyId, invite } = await companyOn(t)
   const invited = await invite(ana, INVITEE, 'owner')
