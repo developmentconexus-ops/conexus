@@ -1301,7 +1301,7 @@ reference tool checks a read against its documentation.
   declared table does so today.
 - **Revisit when** the kit can be read from Python, or Meltano changes how it calls a tap.
 
-## Mastra 1.83.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
+## Mastra 1.86.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
 
 - **Library line.** None. At `@mastra/core` 1.86.0 the model router reaches every provider of
   `dist/provider-registry.json`, and Mastra Code's `auth/storage.ts` (`@mastra/code-sdk` 1.18.0)
@@ -1321,7 +1321,7 @@ reference tool checks a read against its documentation.
   OpenAI"; `openai/sign-in.test.ts` "tipo desligado no meio".
 - **Revisit when** Mastra or an auth library ships a per-tenant switch of providers or sign-in kinds.
 
-## @aws-sdk/client-ecs, client-ssm and client-sqs 3.1175.0, Mastra 1.83.0: the lake copy's start and its end (A primeira cópia chega ao lago)
+## @aws-sdk/client-ecs, client-ssm and client-sqs 3.1175.0, Mastra 1.86.0: the lake copy's start and its end (A primeira cópia chega ao lago)
 
 ### The start: one door, `iniciarRodada`, with a start line of its own
 

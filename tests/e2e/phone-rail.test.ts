@@ -24,7 +24,6 @@ const PLACES = [
   { link: 'Início', path: '' },
   { link: 'Projetos', path: '/projects' },
   { link: 'Integrações', path: '/integrations' },
-  { link: 'Automações', path: '/automations' },
   { link: 'Configurações', path: '/settings' },
 ]
 

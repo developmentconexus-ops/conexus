@@ -59,6 +59,9 @@ function companyOf(projects: string): CompanyId {
   return CompanyId.parse(projects.split('/')[3])
 }
 
+/** The turns each Projeto has sent: the Builder's own count of its versions, which a prune does not reset. */
+const sent = new Map<string, number>()
+
 /**
  * Sends a version as the person, through the apps' door a Builder turn's end calls
  * (`sendFromBuilder`), as the next number of the Projeto.
@@ -71,12 +74,9 @@ export async function send(
 ): Promise<Turned> {
   const { hub } = subject
   const projectId = ProjectId.parse(options.projectId ?? subject.projectId)
-  const [last] = await hub.test.asOwner(
-    'select coalesce(max(number), 0) as number from apps.app_version where project_id = $1',
-    [projectId],
-  )
-  const number = z.coerce.number().parse(last?.number) + 1
-  const sent = await hub.apps.sendFromBuilder({
+  const number = (sent.get(projectId) ?? 0) + 1
+  sent.set(projectId, number)
+  const result = await hub.apps.sendFromBuilder({
     ...{ companyId: companyOf(subject.projects), projectId, personId: PersonId.parse(person.id) },
     ...{
       runId: RunId.parse(randomUUID()),
@@ -85,8 +85,8 @@ export async function send(
     },
   })
   // As the stream said it: JSON drops the keys that are `undefined`.
-  const raw = JSON.stringify(sent)
-  const preview = sent === undefined ? undefined : PreviewData.parse(JSON.parse(raw))
+  const raw = JSON.stringify(result)
+  const preview = result === undefined ? undefined : PreviewData.parse(JSON.parse(raw))
   return { number: preview === undefined ? undefined : number, preview, raw }
 }
 

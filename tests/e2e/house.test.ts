@@ -62,11 +62,11 @@ async function ownerArrives(
 
 /** Step 1 shows the name and the suggested nickname; steps 2 and 3 as the script says. */
 async function welcome(page: Page) {
-  await page.getByText('Passo 1 de 4').waitFor()
+  await page.getByText('Passo 1 de 3').waitFor()
   assert.equal(await page.getByRole('definition').textContent(), COMPANY)
   assert.match(await page.getByLabel('Apelido').inputValue(), /^[a-z0-9-]{3,}$/)
   await chooseNickname(page)
-  await page.getByText('Passo 2 de 4').waitFor()
+  await page.getByText('Passo 2 de 3').waitFor()
   await page.getByRole('link', { name: 'Fazer depois', exact: true }).click()
   await page.getByRole('heading', { name: 'Convide sua equipe', exact: true }).waitFor()
   await page.getByText('Passo 3 de 3').waitFor()
@@ -154,7 +154,7 @@ async function anaAccepts(page: Page, next: () => Promise<Parameters<typeof link
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
   await waitForHome(page)
   await sidebarOf(page).getByText(COMPANY, { exact: true }).waitFor()
-  assert.equal(await page.getByText(/Passo \d de 4/).count(), 0)
+  assert.equal(await page.getByText(/Passo \d de 3/).count(), 0)
   assert.equal(await page.getByRole('region', { name: 'Termine de preparar a empresa' }).count(), 0)
   await openSettings(page, 'Contas de modelo')
   await page
