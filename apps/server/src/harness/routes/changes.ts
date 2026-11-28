@@ -21,7 +21,7 @@ export const Told = z.object({ fields: z.record(z.string(), z.string()), message
 export type Told = z.infer<typeof Told>
 
 /**
- * Stricter than Mastra's body (`@mastra/server@1.83.0` `agent-controller.js:224-233`, whose
+ * Stricter than Mastra's body (`@mastra/server@1.86.0` `agent-controller-CzKnfKkw.js:319-330`, whose
  * `thinkingLevel` is optional): the effort always comes with the model, and a field more is refused.
  */
 const ModelChoiceBody = z.strictObject({ modelId: ModelId, thinkingLevel: Effort })

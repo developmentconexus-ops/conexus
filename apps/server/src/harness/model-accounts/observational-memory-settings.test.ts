@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { call, codeOf } from '../../hub/identity/test-hub.ts'
 import { company, connect } from './test-defaults.ts'
 
-const MODEL = 'openai/gpt-5'
+const MODEL = 'openai/gpt-5.6-luna'
 
 test('the company configures Observer and Reflector independently and restores following', async (t) => {
   const { hub, ana, carla, accounts, base } = await company(t)
@@ -37,7 +37,7 @@ test('an explicit model without an eligible account is refused', async (t) => {
   const { hub, ana, base } = await company(t)
   const refused = await call(hub, ana, 'PUT', `${base}/observational-memory-models`, {
     role: 'observer',
-    model: 'openai/gpt-5',
+    model: 'openai/gpt-5.6-luna',
   })
   assert.equal(refused.statusCode, 422)
   assert.equal(codeOf(refused), 'MODEL_NO_ACCOUNT')

@@ -36,7 +36,7 @@ test('a troca de modelo tira a busca e a leitura de página', () => {
   assert.deepEqual(minusProviderTools(active, ModelId.parse('anthropic/claude-sonnet-4-6')), [
     'recall',
   ])
-  for (const other of ['openai/gpt-5', 'xai/grok-4', 'google/gemini-2.5-pro'])
+  for (const other of ['openai/gpt-5.6-luna', 'xai/grok-4', 'google/gemini-3.6-flash'])
     assert.deepEqual(
       minusProviderTools(active, ModelId.parse(other)),
       ['web_fetch', 'recall'],

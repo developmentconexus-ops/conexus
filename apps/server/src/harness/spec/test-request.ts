@@ -12,8 +12,8 @@ const RUN_ID =
 
 /**
  * The judge's message, as Mastra writes it after `isTaskComplete` refuses: its `Duration: <n>ms` line is
- * the wall time the scorers took (`@mastra/core` 1.83.0 `dist/evented-execution-4C5qBV8d.js:33553`,
- * `:33613`, written at `:33911` by `formatStreamCompletionFeedback`). Firstmate, 2026-11-23: only that value.
+ * the wall time the scorers took (`@mastra/core` 1.86.0 `dist/run-registry-Bx06ZIN_.js:65033`,
+ * `:65093`, written at `:65386-65404` by `formatStreamCompletionFeedback`, called at `:80217`). Firstmate, 2026-11-23: only that value.
  */
 const JUDGED = '#### Completion Check Results'
 const JUDGE_DURATION = /^Duration: \d+ms$/m

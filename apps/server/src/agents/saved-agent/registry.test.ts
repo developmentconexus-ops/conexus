@@ -140,7 +140,7 @@ test('roda sozinho: o agente registrado, com o dono no requestContext, chama o m
 
   const gpt = await publishedAgent(on.hub, on.ana, on.agents, {
     instructions: 'Responda.',
-    model: 'openai/gpt-5',
+    model: 'openai/gpt-5.6-luna',
     memory: { observational: false },
   })
   const other = registered(on.hub, gpt.id)

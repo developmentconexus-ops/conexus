@@ -306,7 +306,7 @@ test('testar: um rascunho cujo modelo a pessoa não tem conta volta recusado MOD
   draft = (
     await drafted(on.hub, on.ana, on.agents, agent, {
       instructions: FIRST,
-      model: 'openai/gpt-5',
+      model: 'openai/gpt-5.6-luna',
       memory: { observational: false },
     })
   ).id

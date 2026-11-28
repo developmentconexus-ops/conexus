@@ -15,7 +15,7 @@ import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
 import { company, connect } from './test-defaults.ts'
 
 const SONNET_NEW = 'anthropic/claude-sonnet-5-5'
-const SONNET_OLD = 'anthropic/claude-sonnet-4-5'
+const SONNET_OLD = 'anthropic/claude-sonnet-4-6'
 
 /** The models the company picker offers in a read of the accounts. */
 function offered(read: { choices: { company: { models: { id: string }[] }[] } }): string[] {
@@ -94,13 +94,14 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemin
   async function read() {
     return Object((await call(hub, ana, 'GET', accounts)).json())
   }
-  // Matching the registry's ids exactly kept only the two Flash Lites.
+  // Matching the registry's ids exactly kept only the 3.5 Flash Lite: Mastra 1.86 retires the 3.1
+  // one, which the proxy still serves, so it comes after the registry's, by the family rule.
   const [google] = (await read()).choices.company
   assert.deepEqual(google.models, [
-    { id: 'google/gemini-3.1-flash-lite', efforts: ['low', 'medium', 'high'] },
     { id: 'google/gemini-3.5-flash-lite', efforts: ['low', 'medium', 'high'] },
     { id: 'google/gemini-3.8-flash-high', efforts: ['off', 'low', 'medium', 'high'] },
     { id: 'google/gemini-3-flash', efforts: ['off'] },
+    { id: 'google/gemini-3.1-flash-lite', efforts: ['low', 'medium', 'high'] },
   ])
   assert.deepEqual((await read()).defaults.start, {
     model: 'google/gemini-3.8-flash-high',
@@ -109,7 +110,7 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemin
     account: 'Google',
   })
   const refused = await call(hub, ana, 'PUT', `/api/companies/${companyId}/default-model`, {
-    model: 'google/gemini-2.5-pro',
+    model: 'google/gemini-3.6-flash',
     effort: 'low',
   })
   assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'MODEL_NO_ACCOUNT'])

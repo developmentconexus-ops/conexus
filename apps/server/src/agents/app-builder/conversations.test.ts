@@ -137,7 +137,7 @@ test('a mesma chave: uma conversa e um modelo, também depois de reiniciar; outr
   const company = conversations.slice(0, conversations.indexOf('/projects/'))
   const openai = { owner: 'company', provider: 'openai', label: 'OpenAI', key: 'sk-openai-0001' }
   const linked = await post(hub, ana, `${company}/model-accounts`, openai)
-  const unusable = { model: 'openai/gpt-4o-mini', effort: 'off' }
+  const unusable = { model: 'openai/gpt-5.4-mini', effort: 'off' }
   assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, unusable)).statusCode, 200)
   const gone = `${company}/model-accounts/${Object(linked.json()).account.id}`
   assert.equal((await call(hub, ana, 'DELETE', gone)).statusCode, 204)
@@ -185,11 +185,11 @@ test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao cria
     kind: 'text',
     text: 'ok',
   }))
-  const created = await post(hub, ana, conversations, { model: 'openai/gpt-5' })
+  const created = await post(hub, ana, conversations, { model: 'openai/gpt-5.6-luna' })
   assert.equal(created.statusCode, 422)
   assert.equal(codeOf(created), 'MODEL_NO_ACCOUNT')
   const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const gpt = { model: 'openai/gpt-5', effort: 'off' }
+  const gpt = { model: 'openai/gpt-5.6-luna', effort: 'off' }
   const refused = await switched(hub, ana, url, gpt)
   assert.equal(refused.statusCode, 422)
   assert.equal(codeOf(refused), 'MODEL_NO_ACCOUNT')
