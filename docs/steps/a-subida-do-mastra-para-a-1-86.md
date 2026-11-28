@@ -80,17 +80,17 @@ em cinco perguntas, uma por vez; cada resposta foi conferida nos pacotes:
 **As decisões suas nesta etapa.** Nenhuma. A decisão que havia (conversa num modelo aposentado) saiu: você
 disse que não existe.
 
-As quatro coisas acima são decisões técnicas reversíveis do firstmate (delivery L6), na tabela mais abaixo,
-cada uma com a evidência e como desfazer.
+As decisões técnicas reversíveis do firstmate (delivery L6) estão na tabela mais abaixo, cada uma com a
+evidência e como desfazer.
 
 ## As unidades
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 | U1 | Os nove pacotes na 1.86, o que ela força no código (a recuperação, o laço, os ids aposentados dos exemplos), os testes e a gravação ajustados, a prova do diário | `package.json` da raiz, `apps/server/`, `apps/web/`, `packages/app/` | [testing](../guides/testing.md) | nada |
+| G1 | U1 | Os nove pacotes na 1.86, o que ela força no código (a recuperação, o laço, os ids aposentados dos exemplos, o modelo barato da memória do Google), os testes e a gravação ajustados, a prova do diário | `package.json` da raiz, `apps/server/`, `apps/web/`, `packages/app/`, `packages/hub-api/` (um comentário) | [testing](../guides/testing.md) | nada |
 | G1 | U2 | O registro: a tabela da stack, as entradas de `boundaries`, a explicação do harness | `docs/reference/`, `docs/explanation/` | [delivery](../guides/delivery.md) | U1 |
 
-**Orçamento de código alterado.** U1: cerca de 40 linhas de código de produção (apagar o laço, uma opção,
+**Orçamento de código alterado.** U1: cerca de 40 linhas de código de produção (apagar o laço, uma opção, um id da memória,
 os nomes de modelo, os pins), mais testes e arquivos gerados que não contam. U2:
 nenhuma linha de código. Total da etapa: cerca de 40 linhas.
 
@@ -105,7 +105,8 @@ nenhuma linha de código. Total da etapa: cerca de 40 linhas.
 | 5 | U1 | O diário de workflow: o Hub da branch (1.86), no mesmo banco que o `main` (1.83) usou, lê a agenda e os snapshots que a 1.83 deixou, dispara a cópia agendada no horário dela e roda a retenção uma vez, de verdade, com o resultado `Pruned`. Recusa: a agenda não dispara, o snapshot antigo não lista, ou a retenção falha (a prova que não roda a retenção não vale) | prova da seção "Como se prova", registrada no PR | must |
 | 6 | U1 | Nenhum run deixado "rodando" por um Hub antigo é reiniciado pelo novo, e o banco fica quieto sem uso (data D27). Recusa: o run plantado volta a executar um passo, o provedor dublê recebe chamada, ou o pool do Mastra lê a agenda depois da partida | `agents/assistant/automations/scheduler.test.ts` (a agenda só tem a limpeza e o pool chega a zero, `:50`; o processo que morreu aparece `FAILED`/`INTERRUPTED`, `:138`), com a opção `recovery` tirada de mutação, mais a prova da seção "Como se prova" | must |
 | 7 | U1 | O log de um domínio do store chega ao `HubLogger` sem o laço. Recusa: `rg "__setLogger" apps/server/src` vazio, e a falha plantada num domínio aparece no registro central | `H/mastra/mastra.test.ts` (caso novo, com o store do Hub) | must |
-| 8 | U1 | Um modelo que o registro 1.86 aposentou (`anthropic/claude-sonnet-4-5`) não é oferecido, uma escolha salva com ele é pulada para o próximo passo da cadeia, e a troca da conversa ou a escolha de padrão para ele dá `MODEL_UNKNOWN`. Recusa: o seletor o lista, ou a conversa nasce nele | `harness/model-accounts/providers.test.ts`, `model-start.test.ts:30`, `model-defaults.test.ts:46`, `queue.test.ts` (troca) | must |
+| 8 | U1 | Um modelo que o registro 1.86 aposentou (`anthropic/claude-sonnet-4-5`) não é oferecido, uma escolha salva com ele é pulada para o próximo passo da cadeia, e a troca da conversa ou a escolha de padrão para ele dá `MODEL_UNKNOWN`. Recusa: o seletor o lista, ou a conversa nasce nele | `harness/model-accounts/providers.test.ts`; dois casos novos pela porta pública (T5): uma escolha salva com `anthropic/claude-sonnet-4-5`, plantada por SQL (o `PUT` a recusa), e a conversa nova nasce no próximo degrau da cadeia (`model-defaults.test.ts`); a troca da conversa para esse id dá 422 `MODEL_UNKNOWN` pela rota de troca (`model-fallback.test.ts`); `model-start.test.ts:30` (o padrão e a conversa nova recusados) | must |
+| 17 | U1 | A memória observacional de quem usa chave do Google segue num modelo barato vivo: com a chave do Google o Observer e o Reflector usam `google/gemini-3.5-flash-lite`, não o modelo da conversa (que o 1.86 faria cair ao aposentar `gemini-2.5-flash`, o padrão do `@mastra/memory`). Recusa: o Automático devolve `null` para o Google por chave | `harness/model-accounts/auto-memory-model.test.ts` (o caso `api_key` e `undefined` muda de `gemini-2.5-flash` para `gemini-3.5-flash-lite`) | must |
 | 9 | U1 | Os sete nomes novos do registro estão lidos: cada um é de modelo de conversa (e fica na lista) ou entra em `NOT_CHAT`. Recusa: um nome novo sem leitura faz `providers.test.ts` falhar | `H/model-accounts/providers.test.ts` (`HINTS_NOT_CHAT`, `CHAT_FAMILIES`) | must |
 | 10 | U1 | Nenhum teste usa como exemplo "um modelo que conversa" um id que o 1.86 aposenta, exceto o caso deliberado do critério 8. Recusa: um teste verde só por ter o id aposentado como fixture | os testes tocados do servidor verdes; `rg` dos ids aposentados nos testes só acha os do critério 8 | must |
 | 11 | U1 | A gravação `reads.jsonl` carrega a versão 1.86.0 no cabeçalho e os leitores dela passam. Recusa: cabeçalho antigo | `apps/server/src/platform/recordings.test.ts` (caso `reads`) | must |
@@ -174,6 +175,7 @@ usado; entra se o Construtor novo precisar.
 | 2 | Apagar o laço `__setLogger` do `mastra.ts` | O 1.86 repassa o logger aos domínios (IA: mudança do 1.85.0; `NOVO/core/dist/filesystem-versioned-BL1ojJLo.js:295-309`); prova executada com `InMemoryStore`: 20 de 20 domínios com o logger do Mastra | Devolver as quatro linhas do laço |
 | 3 | Trocar os ids aposentados nos exemplos dos testes por ids vivos, e manter um caso deliberado com `claude-sonnet-4-5` | O roteador ainda aceita o id (IA, `deprecatedModels` só é dica); o Hub é que esconde. O seletor segue a regra do Hub sobre o registro, nativo | Voltar os ids; os testes voltam a falhar com `MODEL_UNKNOWN` |
 | 4 | `@mastra/client-js` sobe para 1.62.0, não "a atual" | O plano mandava "a da linha 1.86"; o `package.json` do 1.62.0 depende de core `1.86.0` e do 1.60.0 não há par declarado. Mudança de comportamento: sem repetição de escrita por padrão, e o web já usa `retries: 0` | Voltar a 1.60.0 |
+| 5 | O Automático da memória para o Google por chave usa `google/gemini-3.5-flash-lite`: `AUTO_MODELS` ganha `google` e `CLIPROXY_AUTO_MODELS` some, por ficar igual (`H/model-accounts/auto-memory-model.ts:8-28`) | O padrão do `@mastra/memory` para o Google é `google/gemini-2.5-flash` (`@mastra/memory@1.41.1 dist/src-MUc-jGgr.js:23677`), que o 1.86 aposenta; `isChoosable` o recusa e o Observer e o Reflector cairiam ao modelo da conversa, mais caro. O id barato vivo é o que o CLIProxy já usa (`:17-20`). O builder confere antes o padrão do `@mastra/memory` 1.41.3: se já não for `gemini-2.5-flash`, a decisão cai | Devolver `CLIPROXY_AUTO_MODELS`; o Google por chave volta a cair ao modelo da conversa |
 
 ## U1 Os pacotes sobem e o que a 1.86 força
 
@@ -197,16 +199,19 @@ A referência: as colunas "Referência" da tabela, e a opção em `NOVO/core/dis
 | `apps/server/src/harness/mastra/` (`mastra.ts`, `mastra.test.ts`) | Apaga o laço, acrescenta `recovery` e um caso de teste (o logger) | `hub-mastra.ts` |
 | `apps/server/src/harness/model-accounts/` (`providers.ts`, os testes, o comentário de `served.ts:17`) | Lê os sete nomes, troca ids de exemplo | `queue.ts`, `defaults.ts`, `served.ts` |
 | `apps/server/src/harness/routes/guard.test.ts` | Um caso: rota fora da lista dá 404 | nada |
-| `apps/server/src/agents/**` e `apps/server/src/harness/**` testes que usam ids aposentados | Troca de fixture, sem lógica | os próprios testes |
+| `apps/server/src/harness/model-accounts/auto-memory-model.ts` e o teste | O Google por chave passa a um id vivo (decisão 5, critério 17) | `harness/memory/`, o turno |
+| `packages/hub-api/src/conversations.ts` | Só o comentário da linha 17 | o web e o servidor, sem efeito |
+| `apps/server/src/agents/**` e `apps/server/src/harness/**` testes que usam ids aposentados | Troca de fixture, sem lógica (`apps/web/sweep-defaults-states.ts:12`, com `openai/gpt-5`, tem lista própria de provedores e fica fora do critério 10) | os próprios testes |
 | `apps/server/src/platform/recordings/mastra/reads.jsonl` | Regrava | `recordings.test.ts`, `test-recordings.ts` |
 | Comentários que citam o Mastra 1.83 ou um arquivo antigo (a lista no passo 5) | Atualiza o texto | nada |
 
 ### Os contratos que a unidade cria
 
-Uma forma, nenhum contrato de rota nem de tabela.
+Uma forma nova (a opção `recovery`); a decisão 5 só troca um valor, sem contrato novo.
 
 - `new Mastra({ ..., recovery: { workflows: 'off' } })` em `H/mastra/mastra.ts`, com o motivo no comentário
   (a opção e a razão: `NOVO/core/dist/mastra/index.d.ts:417-445`).
+
 ### As skills e a leitura
 
 `docs/reference/stack.md`, linhas de `@mastra/core`, `@mastra/pg`, `@mastra/observability` e
@@ -238,11 +243,11 @@ Para TypeScript, `pstack:typescript-best-practices`. Lê o guia de [testing](../
      ficarem, o builder para: o critério 6 ficaria sem teste que falha); trazer o laço de volta: `rg
      __setLogger` acusa.
    - **Pronto quando:** o caso novo de `mastra.test.ts` e os dois de `scheduler.test.ts` passam.
-3. **A lista de modelos e os testes que ela quebra.** Critérios: 8, 9, 10.
-   - **Arquivos:** muda `providers.ts`, `providers.test.ts`, `model-start.test.ts`, `model-defaults.test.ts`, `queue.test.ts` e os testes
+3. **A lista de modelos e os testes que ela quebra.** Critérios: 8, 9, 10, 17.
+   - **Arquivos:** muda `providers.ts`, `providers.test.ts`, `auto-memory-model.ts` e o teste, `model-start.test.ts`, `model-defaults.test.ts`, `queue.test.ts` e os testes
      que o `rg` dos ids aposentados achar.
    - **Referência a seguir:** as linhas da lista de modelos e de `NOT_CHAT`.
-   - **O que sai:** nada.
+   - **O que sai:** `CLIPROXY_AUTO_MODELS`.
    - **O que entra:** os sete nomes (`edenai/cohere/command-a-translate-08-2025`, `stepfun-step-plan/stepaudio-2.5-chat`,
      `stepfun/stepaudio-2.5-chat`, `stepfun-ai/stepaudio-2.5-chat`, `stepping-stone/allenai/olmOCR-2-7B`,
      `nano-gpt/hyperresearch/ousia-1`, `humain/humain-m3-research-preview`) cada um lido: de áudio, OCR,
@@ -250,13 +255,18 @@ Para TypeScript, `pstack:typescript-best-practices`. Lê o guia de [testing](../
      aposentados saem por ids vivos (`anthropic/claude-sonnet-5-5`, `anthropic/claude-opus-5-5`,
      `openai/gpt-5.6-luna`, `google/gemini-3.5-flash-lite`, os quatro listados e vivos nos dois registros);
      fica um caso deliberado com `anthropic/claude-sonnet-4-5`, o do critério 8 (retirado, não se oferece). Nenhum
-     padrão guardado nem semente de produção usa id aposentado (conferido no `main`). O comentário de `served.ts:17` e o de
+     padrão guardado nem semente de produção usa id aposentado (conferido no `main`); o que sobra é o padrão da
+     biblioteca para a memória do Google, na decisão 5 (`auto-memory-model.ts`, que muda com o teste). O comentário de `served.ts:17` e o de
      `packages/hub-api/src/conversations.ts:17`, que chamam `claude-sonnet-4-5` de modelo que o registro "ainda
      oferece", passam a um id vivo.
-   - **Testes:** `providers.test.ts` (a lista, `HINTS_NOT_CHAT`), `model-start.test.ts:30` e `model-defaults.test.ts:46` (a escolha salva é
-     pulada; o aposentado não vira padrão), `queue.test.ts` (a troca dá `MODEL_UNKNOWN`).
+   - **Testes:** `providers.test.ts` (a lista, `HINTS_NOT_CHAT`); `model-start.test.ts:30` (o aposentado não vira
+     padrão nem começa conversa); casos novos pela porta pública (T5): em `model-defaults.test.ts`, a escolha
+     salva com `anthropic/claude-sonnet-4-5` plantada por SQL e a conversa nova no próximo degrau; em
+     `model-fallback.test.ts`, a troca da conversa para esse id dá 422 `MODEL_UNKNOWN`; em
+     `auto-memory-model.test.ts`, o Google por chave dá `gemini-3.5-flash-lite` (critério 17).
    - **Mutações à mão:** tirar `NOT_CHAT` de um nome novo: `HINTS_NOT_CHAT` fica vermelho; fazer
-     `chatModelsOf` ignorar `deprecatedModels`: o caso do critério 8 fica vermelho.
+     `chatModelsOf` ignorar `deprecatedModels`: o caso do critério 8 fica vermelho; tirar `google` de
+     `AUTO_MODELS`: o caso do critério 17 fica vermelho.
    - **Pronto quando:** os testes de `model-accounts/` tocados passam.
 4. **A gravação e as rotas.** Critérios: 11, 12, 13, 14, 15.
    - **Arquivos:** regrava `reads.jsonl`; muda `guard.test.ts`.
