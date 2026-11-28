@@ -490,10 +490,6 @@
       "name": "o papel de outra empresa não vale aqui: trocar, convidar, mudar e apagar dão ROLE_NOT_FOUND, e o papel de lá fica"
     },
     {
-      "file": "apps/server/src/hub/identity/roles-memory.test.ts",
-      "name": "a memória da empresa"
-    },
-    {
       "file": "apps/server/src/hub/identity/session.test.ts",
       "name": "prazo total"
     },
