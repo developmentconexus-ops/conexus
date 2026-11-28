@@ -14,7 +14,7 @@ import { failuresOf } from '../routes/test-parts.ts'
 import { GROQ_MODEL } from './test-defaults.ts'
 
 const FIRST = 'anthropic/claude-sonnet-4-6'
-const SECOND = 'google/gemini-2.5-flash'
+const SECOND = 'google/gemini-3.5-flash-lite'
 
 /** Ana owns the company, Bruno administers it, Carla is a member. */
 async function company(t: Parameters<typeof companyOn>[0]) {
@@ -64,7 +64,12 @@ test('troca automática: começa desligada; dono e administrador gravam na revis
 
 test('troca automática: modelo fora do registro dá 422 MODEL_UNKNOWN e nada muda', async (t) => {
   const { hub, ana, read, url } = await company(t)
-  for (const chain of [['nenhum/x'], [FIRST, 'anthropic/claude-nenhum'], ['claude-sonnet-4-6']]) {
+  for (const chain of [
+    ['nenhum/x'],
+    [FIRST, 'anthropic/claude-nenhum'],
+    ['claude-sonnet-4-6'],
+    [FIRST, 'anthropic/claude-sonnet-4-5'],
+  ]) {
     const refused = await call(hub, ana, 'PUT', url, { enabled: true, chain, revision: 0 })
     assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'MODEL_UNKNOWN'], `${chain}`)
   }

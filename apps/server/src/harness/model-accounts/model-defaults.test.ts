@@ -5,7 +5,8 @@ import { call, codeOf, plantCompany } from '../../hub/identity/test-hub.ts'
 import { MODEL } from '../routes/test-conversation.ts'
 import { company, connect, created, GROQ_MODEL, pairOf, patch, startOf } from './test-defaults.ts'
 
-const GPT = 'openai/gpt-5'
+const GPT = 'openai/gpt-5.6-luna'
+const PRO = 'openai/gpt-5.2-pro'
 const GROQ = GROQ_MODEL
 
 test('uma conversa nova começa no padrão da pessoa, senão no da empresa, e copia o par ao nascer', async (t) => {
@@ -98,6 +99,19 @@ test('o padrão sem conta usável é pulado: pausada, no limite, de outra pessoa
   assert.equal(await startOf(hub, carla, accounts), null)
 })
 
+test('um padrão guardado com um modelo que o Mastra aposentou é pulado: a conversa nova nasce no próximo degrau', async (t) => {
+  const { hub, carla, conversations } = await company(t)
+  // `PUT` refuses the retired model, so the row is planted as a default saved before the retirement.
+  await hub.test.asOwner(
+    `insert into builder.person_model_default (company_id, person_id, model, effort) select company_id, user_id, 'anthropic/claude-sonnet-4-5', 'high' from auth.member where user_id = '${carla.id}'`,
+  )
+  const born = await created(hub, carla, conversations)
+  assert.deepEqual(await pairOf(hub, carla, conversations, born.id), {
+    model: MODEL,
+    effort: 'off',
+  })
+})
+
 test('a conversa com modelo pedido: o nível do padrão da pessoa nesse modelo, depois o da empresa, senão Desligado', async (t) => {
   const { hub, ana, carla, conversations, accounts, mine } = await company(t)
   await connect(hub, ana, accounts, 'openai')
@@ -114,7 +128,7 @@ test('a conversa com modelo pedido: o nível do padrão da pessoa nesse modelo, 
   assert.deepEqual(await ask(carla, MODEL), { model: MODEL, effort: 'off' })
   assert.deepEqual(await ask(ana, MODEL), { model: MODEL, effort: 'off' })
   // A model with no account the person may use, and one off the registry.
-  assert.deepEqual(await ask(carla, 'google/gemini-2.5-pro'), [422, 'MODEL_NO_ACCOUNT'])
+  assert.deepEqual(await ask(carla, 'google/gemini-3.6-flash'), [422, 'MODEL_NO_ACCOUNT'])
   assert.deepEqual(await ask(carla, 'nenhum/x'), [422, 'MODEL_UNKNOWN'])
 })
 
@@ -130,15 +144,15 @@ test('o nível guardado que o modelo não aceita desce ao mais alto aceito abaix
     const { id } = await created(hub, carla, conversations, { model })
     return pairOf(hub, carla, conversations, id)
   }
-  // Groq's model takes no level at all; GPT-5 takes low, medium and high, and cannot be off.
+  // Groq's model takes no level at all; GPT-5.2 Pro takes medium, high and xhigh, and cannot be off.
   assert.deepEqual(await keep(GROQ, 'high'), { model: GROQ, effort: 'off' })
-  assert.deepEqual(await keep(GPT, 'max'), { model: GPT, effort: 'high' })
-  assert.deepEqual(await keep(GPT, 'off'), { model: GPT, effort: 'low' })
-  assert.deepEqual(await keep(GPT, 'xhigh'), { model: GPT, effort: 'high' })
+  assert.deepEqual(await keep(PRO, 'max'), { model: PRO, effort: 'xhigh' })
+  assert.deepEqual(await keep(PRO, 'off'), { model: PRO, effort: 'medium' })
+  assert.deepEqual(await keep(PRO, 'low'), { model: PRO, effort: 'medium' })
   // The same rule when the default itself starts a conversation.
   await hub.test.asOwner(`update builder.person_model_default set effort = 'max'`)
   const { id } = await created(hub, carla, conversations)
-  assert.deepEqual(await pairOf(hub, carla, conversations, id), { model: GPT, effort: 'high' })
+  assert.deepEqual(await pairOf(hub, carla, conversations, id), { model: PRO, effort: 'xhigh' })
 })
 
 test('o modelo inicial: sem padrão a empresa só com chave OpenAI abre em GPT-5.6 Luna; com Claude e OpenAI, no Claude; só com Gemini, no Gemini', async (t) => {

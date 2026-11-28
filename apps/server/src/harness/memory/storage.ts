@@ -12,8 +12,8 @@ const MAX_AGE = `${RETENTION_DAYS}d`
  * writes them (data D1). The traces, logs and metrics are Mastra's v-next observability domain on
  * the same pool, in day tables that `prune()` drops past `MAX_AGE` (decision 0068), routed by the
  * composite store as Mastra's observability guide does; `PostgresStoreVNext` would do the same but
- * prints a raw warning on a shared pool (`@mastra/pg` 1.35.0 `dist/index.js:27620-27669`). The
- * clock's fire history is the `schedules` domain's `triggers` policy (`dist/index.js:23087`); the
+ * prints a raw warning on a shared pool (`@mastra/pg` 1.38.0 `dist/index.js:29911`). The
+ * clock's fire history is the `schedules` domain's `triggers` policy (`dist/index.js:23906`); the
  * `workflowSnapshot` policy stays off, since it keeps no workflow apart and would drop the
  * Assistant's automation runs that the Hub reads: `retention.ts` drops the copy's runs by name.
  */

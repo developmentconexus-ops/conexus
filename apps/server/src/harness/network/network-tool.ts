@@ -206,7 +206,7 @@ export function requestNetworkTool(deps: Deps) {
     resumeSchema: NetworkAnswer,
     outputSchema: NetworkResult,
     execute: async (args, { requestContext, agent }) => {
-      // A resume skips the input schema (`@mastra/core@1.83.0` `tool-3X7mHzgh.js:880`).
+      // A resume skips the input schema (`@mastra/core@1.86.0` `tool-Z3bykc1m.js:1066-1070`).
       const request = NetworkAsked.parse(args)
       if (requestContext === undefined || agent?.suspend === undefined) {
         throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'NETWORK_WITHOUT_RUN' } })

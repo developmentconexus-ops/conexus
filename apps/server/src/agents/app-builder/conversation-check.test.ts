@@ -127,14 +127,16 @@ test('conexus_check que conferiu devolve o BuilderCheck, sem erro; a máquina ou
   hub.builder.knobs.seeing = { ok: false, error: 'CONFER_PLATFORM_FAILED' }
   checking(hub.builder.folder, [FAILED, 'platform'])
   const { url, events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
-  const [failed, ...unchecked] = checkCalls(partsOf(events))
+  // Mastra 1.86 starts the three calls of one step together: which of them reaches the machine first, and so gets the failed report, is not the order they were asked in.
+  const calls = checkCalls(partsOf(events))
+  const [failed, ...rest] = calls.filter((call) => call.isError !== true)
+  const unchecked = calls.filter((call) => call.isError === true)
+  assert.equal(rest.length, 0, 'one call conferred')
   assert.equal(failed?.state, 'result')
-  assert.notEqual(failed?.isError, true)
   assert.deepEqual(Checked.parse(failed?.result), {
     kind: 'MACHINE_FAILED',
     machine: { ok: false, steps: FAILED.steps.map(({ name, state }) => ({ name, state })) },
   })
-  const [machine, browser] = unchecked
   assert.equal(unchecked.length, 2, 'the machine that failed and the browser that did')
   for (const call of unchecked) {
     assert.equal(call.state, 'result')
@@ -143,12 +145,13 @@ test('conexus_check que conferiu devolve o BuilderCheck, sem erro; a máquina ou
   }
   assert.equal(hub.builder.knobs.conferred.browsed, 2, 'the third call and the end reached it')
   const stored = checkCalls((await answeredOf(hub, ana, url)).flatMap((message) => message.parts))
-  assert.deepEqual(
-    stored.map((call) => call.state),
-    ['result', 'output-error', 'output-error'],
-  )
-  for (const call of [machine, browser]) {
-    const kept = stored.find((each) => each.toolCallId === call?.toolCallId)
+  assert.deepEqual(stored.map((call) => call.state).sort(), [
+    'output-error',
+    'output-error',
+    'result',
+  ])
+  for (const call of unchecked) {
+    const kept = stored.find((each) => each.toolCallId === call.toolCallId)
     assert.equal(kept?.errorText, 'CHECK_PLATFORM_FAILED')
   }
 })

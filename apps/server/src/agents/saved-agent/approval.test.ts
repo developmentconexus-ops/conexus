@@ -10,6 +10,7 @@ import {
 import { tool } from '../../harness/routes/test-questions.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
+import { until } from '../../platform/test-until.ts'
 import { said } from '../assistant/test-assistant.ts'
 import {
   drafted,
@@ -93,7 +94,11 @@ test('a escrita espera, o resto não: com yolo desligado, cada ferramenta do age
   const asked = askedOf(events)
   assert.deepEqual(asked.args, ASKED)
   assert.equal(on.calls.length, 2, 'the run stopped at the write, the model not asked again')
-  assert.equal(pendingOf(stream)[asked.toolCallId]?.toolName, WRITE)
+  // Mastra 1.86 sends the display state that holds the wait a moment after the approval event.
+  await until(
+    () => pendingOf(stream)[asked.toolCallId]?.toolName === WRITE,
+    'the display state holds the write waiting',
+  )
   assert.deepEqual(on.fake.orders(), [], 'nothing reached the Sankhya')
 })
 

@@ -14,7 +14,7 @@ type FileTool =
 /**
  * A file tool's call as Mastra makes it: the workspace's `beforeToolCall` hook runs first, with the
  * tool's name, and wakes the machine; then the machine's own file API answers (`wrapWithToolHooks`,
- * `@mastra/core` 1.83.0 `dist/workspace-BAqspXXH.js:8852-8863`).
+ * `@mastra/core` 1.86.0 `dist/workspace-DY2Nxiyi.js:9150-9168`).
  */
 export function fileTools(workspace: Workspace) {
   async function onTool<T>(

@@ -36,7 +36,7 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   for (const account of [groq, google]) {
     assert.equal((await post(hub, ana, accounts, account)).statusCode, 201)
   }
-  for (const model of [GROQ_MODEL, 'google/gemini-2.5-flash', undefined]) {
+  for (const model of [GROQ_MODEL, 'google/gemini-3.5-flash-lite', undefined]) {
     const url = `${conversations}/${await started(hub, ana, conversations, { model })}`
     const stream = await streamOf(hub, ana, url)
     t.after(() => stream.close())

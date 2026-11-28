@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { call, codeOf } from '../../hub/identity/test-hub.ts'
 import { company, connect, created } from './test-defaults.ts'
 
-const GPT = 'openai/gpt-5'
+const GPT = 'openai/gpt-5.6-luna'
 
 test('o início da empresa vem da mesma ordem, sem o degrau da pessoa: o padrão pulado cai no modelo inicial', async (t) => {
   const { hub, ana, accounts, base } = await company(t)
@@ -30,7 +30,7 @@ test('o início da empresa vem da mesma ordem, sem o degrau da pessoa: o padrão
 test('um modelo que o seletor não oferece não vira padrão nem começa conversa: de imagem ou aposentado é MODEL_UNKNOWN', async (t) => {
   const { hub, ana, carla, conversations, accounts, mine, base } = await company(t)
   await connect(hub, ana, accounts, 'openai')
-  for (const model of ['openai/gpt-image-1', 'openai/o1']) {
+  for (const model of ['openai/gpt-image-1', 'openai/o1', 'anthropic/claude-sonnet-4-5']) {
     const body = { model, effort: 'off' }
     for (const url of [mine, `${base}/default-model`]) {
       const refused = await call(hub, carla, 'PUT', url, body)

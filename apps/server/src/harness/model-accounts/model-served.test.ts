@@ -7,8 +7,8 @@ import { opened } from './openai/test-sign-in.ts'
 import { company, connect, created, GROQ_MODEL, pairOf, patch } from './test-defaults.ts'
 
 const SONNET_NEW = 'anthropic/claude-sonnet-5-5'
-const SONNET_OLD = 'anthropic/claude-sonnet-4-5'
-const GPT = 'openai/gpt-5'
+const SONNET_OLD = 'anthropic/claude-sonnet-4-6'
+const GPT = 'openai/gpt-5.6-luna'
 const GROQ = GROQ_MODEL
 
 /** The models the pickers offer the company, read from the Hub. */
@@ -45,10 +45,10 @@ test('uma conta que atende ao modelo vale ao lado de uma que não atende: o iní
   const { hub, ana, carla, conversations, accounts, base } = await company(t)
   await hub.test.asOwner(`delete from builder.model_account`)
   await connect(hub, ana, accounts, 'anthropic', 'company', ['claude-sonnet-5-5'])
-  await hub.test.asOwner(`update builder.model_account set label = 'Sem o 4.5'`)
-  await connect(hub, ana, accounts, 'anthropic', 'company', ['claude-sonnet-4-5'])
+  await hub.test.asOwner(`update builder.model_account set label = 'Sem o 4.6'`)
+  await connect(hub, ana, accounts, 'anthropic', 'company', ['claude-sonnet-4-6'])
   await hub.test.asOwner(
-    `update builder.model_account set label = 'Com o 4.5' where label = 'anthropic'`,
+    `update builder.model_account set label = 'Com o 4.6' where label = 'anthropic'`,
   )
   const chosen = await call(hub, ana, 'PUT', `${base}/default-model`, {
     model: SONNET_OLD,
@@ -60,7 +60,7 @@ test('uma conta que atende ao modelo vale ao lado de uma que não atende: o iní
     model: SONNET_OLD,
     effort: 'off',
     from: 'company',
-    account: 'Com o 4.5',
+    account: 'Com o 4.6',
   })
   const made = await created(hub, carla, conversations)
   assert.deepEqual(await pairOf(hub, carla, conversations, made.id), {
@@ -68,7 +68,7 @@ test('uma conta que atende ao modelo vale ao lado de uma que não atende: o iní
     effort: 'off',
   })
   // The only account that served it leaves: the default is skipped, the starter takes over.
-  await hub.test.asOwner(`delete from builder.model_account where label = 'Com o 4.5'`)
+  await hub.test.asOwner(`delete from builder.model_account where label = 'Com o 4.6'`)
   const after = Object((await call(hub, carla, 'GET', accounts)).json())
   assert.deepEqual([after.defaults.start.model, after.defaults.start.from], [SONNET_NEW, 'starter'])
 })
@@ -84,26 +84,20 @@ test('a lista que não veio na ligação deixa o modelo do registro; a lista em 
   assert.ok((await offered(hub, ana, accounts)).includes(SONNET_OLD))
   await hub.test.asOwner(`delete from builder.model_account`)
   hub.test.lists.pageSize = 2
-  const ids = [
-    'claude-sonnet-5-5',
-    'claude-opus-4-5-20251101',
-    'claude-haiku-4-5-20251001',
-    'x',
-    'y',
-  ]
+  const ids = ['claude-sonnet-5-5', 'claude-opus-4-7', 'claude-haiku-4-5-20251001', 'x', 'y']
   await connect(hub, ana, accounts, 'anthropic', 'company', ids)
   const [paged] = await hub.test.asOwner(`select served_models from builder.model_account`)
   assert.deepEqual(Object(paged).served_models, ids)
   await connect(hub, ana, accounts, 'openai', 'company', [
-    'gpt-5',
+    'gpt-5.6-luna',
     'gpt-image-1',
     'text-embedding-3',
   ])
-  await connect(hub, ana, accounts, 'google', 'company', ['gemini-2.5-pro'])
+  await connect(hub, ana, accounts, 'google', 'company', ['gemini-3.6-flash'])
   const models = await offered(hub, ana, accounts)
   assert.deepEqual(
     models.filter((id: string) => !id.startsWith('anthropic/')),
-    ['google/gemini-2.5-pro', 'openai/gpt-5'],
+    ['google/gemini-3.6-flash', 'openai/gpt-5.6-luna'],
   )
 })
 

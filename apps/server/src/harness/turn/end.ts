@@ -303,7 +303,7 @@ async function settleRuns(
 
 /**
  * Every Mastra run of every conversation, from the session Mastra makes for it: its end saved by
- * the controller's `finish` (`onBeforeAgentEnd`, core `agent-controller-BhkzVgCi.js:5061-5085`), and its
+ * the controller's `finish` (`onBeforeAgentEnd`, core 1.86.0 `agent-controller-D5EKeS1H.js:5103-5106`), and its
  * line in the log at `agent_end` (security S41). At a stop signal `settle` refuses new turns and
  * waits for the runs in flight to end, up to its bound (founder E1); `drain` then stops what is
  * left as Parar does, so each saves what it wrote, with `HUB_UPDATED` after a `settle`, and waits for their ends

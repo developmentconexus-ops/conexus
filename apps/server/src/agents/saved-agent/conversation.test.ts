@@ -61,7 +61,7 @@ test('abrir: a conversa com o publicado e a de teste com o rascunho nascem no mo
 
   const gpt = await publishedAgent(on.hub, on.ana, on.agents, {
     instructions: 'Responda.',
-    model: 'openai/gpt-5',
+    model: 'openai/gpt-5.6-luna',
   })
   const refused = await post(
     on.hub,
