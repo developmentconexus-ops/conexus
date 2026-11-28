@@ -49,7 +49,7 @@ type AssistantRead =
   | Spent
 
 /** A write's input and the fields of it that only whoever configures the tool sets. */
-export type WriteShape = Readonly<{ input: z.ZodObject; fixed: readonly string[] }>
+type WriteShape = Readonly<{ input: z.ZodObject; fixed: readonly string[] }>
 
 export type AssistantConnectors = {
   /** What the place offers (company: usable; Projeto: usable and released to it), each with chosen; [] for a person who may not ask, a removed one included. */

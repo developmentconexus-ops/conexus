@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
-import { Preview } from '../../../../../hub/apps/preview/preview.tsx'
-import { Source } from '../../../../../hub/apps/source/source.tsx'
+import { Preview } from '../../../../../hub/apps/public-preview.tsx'
+import { Source } from '../../../../../hub/apps/public-source.tsx'
 import {
   Lens,
   ProjectArea,

@@ -269,20 +269,6 @@ export async function versionNumbersOf(
   )
 }
 
-/** The published version of each of `projectIds` that has one, in one query (step 24.1's overview). */
-export async function publishedVersionsOf(
-  tx: ReadTx,
-  projectIds: readonly ProjectId[],
-): Promise<ReadonlyMap<ProjectId, number>> {
-  if (projectIds.length === 0) return new Map()
-  const rows = await tx
-    .select({ projectId: app.projectId, number: appVersion.number })
-    .from(app)
-    .innerJoin(appVersion, eq(appVersion.id, app.publishedVersionId))
-    .where(inArray(app.projectId, [...projectIds]))
-  return new Map(rows.map((row) => [ProjectIdSchema.parse(row.projectId), row.number]))
-}
-
 /**
  * The roles the published version declares, with their labels, read from its manifest (step 18,
  * D): what "Quem usa o app" offers and the Hub accepts. None before the first Publicar, and none in

@@ -31,14 +31,9 @@ import type { SendDeps } from './send.ts'
 import { publishedRolesOf } from './versions.ts'
 
 /** What a Projeto's page reads of its app: the Prévia's and the published version (step 17). */
-export { publishedVersionsOf, versionNumbersOf } from './versions.ts'
+export { versionNumbersOf } from './versions.ts'
 
 export type Apps = ReturnType<typeof createApps>
-export type { AppRead, SqlStatement } from '../../platform/company-postgres.ts'
-export type { AppCheck } from './app-check.ts'
-export type { AppTablesRead } from './app-tables.ts'
-export type { BuilderData } from './builder-data.ts'
-export type { Conference } from './conference.ts'
 export type { ConnectorCall } from './handoff.ts'
 export type { CloseRequests, PublishDeps, PublishInput, Ungranted } from './live.ts'
 /**

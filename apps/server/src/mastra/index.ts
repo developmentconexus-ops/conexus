@@ -18,7 +18,7 @@ const MESSAGES_KEPT = 500
 const MISSES_BEFORE_DELETE = 5
 
 /** Mastra's scheduler, its publish failures (after its own retries) in the central log under a code of ours. */
-export function schedulerOf(log: FailureLog, tickMs: number | undefined) {
+function schedulerOf(log: FailureLog, tickMs: number | undefined) {
   const config = {
     ...(tickMs === undefined ? {} : { tickIntervalMs: tickMs }),
     missesBeforeDelete: MISSES_BEFORE_DELETE,

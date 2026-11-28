@@ -12,11 +12,6 @@ export const listRow =
 /** A row of a block: the list row with a hairline under it. */
 export const blockRow = `${listRow} border-b border-line`
 
-export const choiceRow = cn(
-  listRow,
-  'shrink-0 gap-sm rounded-control text-left text-text hover:bg-surface-3',
-)
-
 /**
  * A block of Início (web W29): a header row of 32 with the title and its way out, then the rows the
  * caller draws with `blockRow`, in a list that is the block's landmark.

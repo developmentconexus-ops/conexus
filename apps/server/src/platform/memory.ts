@@ -9,7 +9,7 @@ const MIB = 1024 * 1024
 const NS_PER_MS = 1_000_000
 
 /** The Hub's heap used, its limit and its resident memory, in MiB (`HUB_MEMORY`). */
-export function logMemory(log: FailureLog, fields: Record<string, Scalar> = {}): void {
+function logMemory(log: FailureLog, fields: Record<string, Scalar> = {}): void {
   const heap = getHeapStatistics()
   log.info(
     {

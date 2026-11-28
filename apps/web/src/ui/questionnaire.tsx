@@ -87,35 +87,6 @@ export function QuestionnaireChoice({
   )
 }
 
-export function QuestionnaireInput({
-  className,
-  ...props
-}: ComponentProps<typeof QuestionnairePrimitive.Input>) {
-  return (
-    <QuestionnairePrimitive.Input
-      data-slot="questionnaire-input"
-      className={cn(
-        'h-9 w-full min-w-0 rounded-control border border-transparent bg-raised px-md shadow-1 text-base text-text placeholder:text-text-2 focus-visible:outline-transparent focus-visible:focus-field md:text-body aria-invalid:border-danger',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
-export function QuestionnaireError({
-  className,
-  ...props
-}: ComponentProps<typeof QuestionnairePrimitive.Error>) {
-  return (
-    <QuestionnairePrimitive.Error
-      data-slot="questionnaire-error"
-      className={cn('text-danger-text text-fact', className)}
-      {...props}
-    />
-  )
-}
-
 /** The actions under the item: back on the left, then forward or send on the right. */
 export function QuestionnaireActions({ className, ...props }: ComponentProps<'div'>) {
   return (
@@ -128,32 +99,6 @@ export function QuestionnaireActions({ className, ...props }: ComponentProps<'di
 }
 
 const ACTION = 'data-hidden:hidden md:h-7 md:px-2.5'
-
-export function QuestionnairePrevious({
-  className,
-  ...props
-}: ComponentProps<typeof QuestionnairePrimitive.Previous>) {
-  return (
-    <QuestionnairePrimitive.Previous
-      data-slot="questionnaire-previous"
-      className={cn(buttonVariants({ variant: 'ghost' }), ACTION, 'me-auto', className)}
-      {...props}
-    />
-  )
-}
-
-export function QuestionnaireNext({
-  className,
-  ...props
-}: ComponentProps<typeof QuestionnairePrimitive.Next>) {
-  return (
-    <QuestionnairePrimitive.Next
-      data-slot="questionnaire-next"
-      className={cn(buttonVariants({ variant: 'primary' }), ACTION, className)}
-      {...props}
-    />
-  )
-}
 
 export function QuestionnaireSubmit({
   className,

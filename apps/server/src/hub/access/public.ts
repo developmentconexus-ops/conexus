@@ -10,7 +10,7 @@ import { operationLeaf } from './reach.ts'
 import type { AccessView } from './view.ts'
 import { viewOf } from './view.ts'
 
-export type { AccessSources, Choice, Consumer, ConsumerContext, Place } from './model.ts'
+export type { AccessSources, Consumer, ConsumerContext, Place } from './model.ts'
 export { chosenIn } from './model.ts'
 export { Principal, principalFor } from './principal.ts'
 export { operationLeaf } from './reach.ts'

@@ -76,7 +76,7 @@ export async function hubWindow(
 }
 
 /** A page of the same person, in the same browser: it shares the session and the address. */
-export async function anotherPage(context: BrowserContext, problems: string[]): Promise<Page> {
+async function anotherPage(context: BrowserContext, problems: string[]): Promise<Page> {
   const page = await context.newPage()
   watchConsole(page, problems)
   return page

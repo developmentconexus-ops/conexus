@@ -1,7 +1,6 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { readProjectFile, readProjectSource } from '@conexus/hub-api'
-import type { QueryClient } from '@tanstack/react-query'
-import { hubQuery, hubQueryPrefix } from '../../../platform/hub.ts'
+import { hubQuery } from '../../../platform/hub.ts'
 
 export function sourceQuery(companyId: CompanyId, projectId: ProjectId) {
   return hubQuery(readProjectSource, { params: { companyId, projectId } })
@@ -18,10 +17,3 @@ export function fileQuery(input: {
   return hubQuery(readProjectFile, { params, query: { commit, path } })
 }
 
-/** The Código tab reads again: a version was saved. */
-export function sourceChanged(
-  queryClient: QueryClient,
-  ids: { companyId: CompanyId; projectId: ProjectId },
-) {
-  return queryClient.invalidateQueries({ queryKey: hubQueryPrefix(readProjectSource, ids) })
-}

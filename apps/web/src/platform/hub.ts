@@ -11,7 +11,6 @@ import {
   FAILURES,
   Problem,
   phraseOf,
-  READER_ZONE_HEADER,
 } from '@conexus/hub-api'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import { mutationOptions } from '@tanstack/react-query'
@@ -80,12 +79,12 @@ async function bodyOf(response: Response): Promise<unknown> {
  * A Hub Problem whose failure row `settles` says what the Hub did, which can be a change that
  * stands, such as an invitation whose e-mail failed; any other leaves the outcome unknown.
  */
-export async function failureOf(response: Response): Promise<HubFailure> {
+async function failureOf(response: Response): Promise<HubFailure> {
   return failureOfProblem(await bodyOf(response))
 }
 
 /** The failure a Problem body says, for a library client that read the Hub's answer itself. */
-export function failureOfProblem(body: unknown): HubFailure {
+function failureOfProblem(body: unknown): HubFailure {
   const problem = Problem.safeParse(body)
   if (!problem.success) return new HubFailure('INTERNAL_UNEXPECTED', { cause: problem.error })
   const { code } = problem.data
@@ -119,16 +118,6 @@ async function hubFetch(
   }).catch((cause: unknown) => {
     throw new HubFailure('INTERNAL_UNEXPECTED', { cause })
   })
-}
-
-/**
- * The fetch a library client that calls the Hub receives (web W9), Mastra's `MastraClient` for the
- * Builder's session: same origin, with cookies, and no deadline, since its stream stays open.
- */
-export function hubClientFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const headers = new Headers(init?.headers)
-  headers.set(READER_ZONE_HEADER, Intl.DateTimeFormat().resolvedOptions().timeZone)
-  return fetch(input, { ...init, headers, credentials: 'same-origin' })
 }
 
 type Part = 'params' | 'query' | 'body'

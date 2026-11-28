@@ -32,18 +32,13 @@ import type { Deps } from './rows.ts'
 import { connectorIn } from './rows.ts'
 import { createToolDoor } from './tool-door.ts'
 
-export type { Connector, Native, Operation } from '@conexus/connectors'
+export type { Connector } from '@conexus/connectors'
 export {
   AccountRef,
   CONNECTORS,
-  deniesAccess,
-  toolNameOf,
   treatedColumnType,
 } from '@conexus/connectors'
-export type { ApprovalDeps, WriteAuthorOf, WriteTarget } from './approval.ts'
-export { mayApprove, mayLeaveAlone, mustAsk } from './approval.ts'
-export type { WriteShape } from './assistant-port.ts'
-export { CONNECTOR_CALLS_PER_TURN, TURNS_KEPT } from './builder-port.ts'
+export { CONNECTOR_CALLS_PER_TURN } from './builder-port.ts'
 export { connectorEntryOf, subjectsOf } from './catalog-subjects.ts'
 export type {
   CopyColumn,
@@ -51,16 +46,12 @@ export type {
   CopySource,
   CopyTable,
 } from './copy-source.ts'
-/** The cut of what a read sends the model: the agents' app reads cut the same way (code C26). */
-export { shaped } from './cut.ts'
-export type { KitRead } from './kit-reads.ts'
-export { fixedFieldsOf, operationLabel, roleKit } from './role-kit.ts'
+export { operationLabel, roleKit } from './role-kit.ts'
 export { TurnKey } from './scope.ts'
 export type { LiveToolCall } from './tool-door.ts'
 export { openText, uncertainText } from './write.ts'
-export type { WriteRequest, Written } from './write-record.ts'
+export type { WriteRequest } from './write-record.ts'
 export { markOf } from './write-record.ts'
-export type { Returned } from './wrote.ts'
 
 /**
  * What tests change: a shorter deadline, the clock a write and a cursor are dated by (production's
