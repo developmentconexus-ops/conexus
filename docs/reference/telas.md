@@ -273,7 +273,7 @@ A moldura: os grupos de hoje são dois, `Você` e o nome da empresa (`ui/setting
 **Decidido.** E2 (b): a escolha vai para um "Avançado" em Modelos, com o padrão "Automático".
 
 - **Para que serve.** Escolher os modelos que resumem e condensam as conversas longas, o que decide custo e qualidade. G1 pelo custo; infraestrutura.
-- **Conteúdo obrigatório.** "Observador" com a frase da regra; "Modelo do observador"; "Refletor" e "Modelo do refletor"; opções "Automático (o mais barato da conta)", "Segue o modelo da conversa" ou um modelo das contas da empresa (`harness/memory/settings.tsx`).
+- **Conteúdo obrigatório.** "Observador" com a frase da regra; "Modelo do observador"; "Refletor" e "Modelo do refletor"; opções "Automático (o mais barato da conta)", "Segue o modelo da conversa" ou um modelo das contas da empresa (`harness/observational-memory/settings.tsx`).
 - **Ações.** Escolher cada modelo, quem gerencia. Os outros veem desligado com a frase.
 - **Ação principal.** Não há uma só (dois seletores).
 - **Estados.** Os dois em Automático; com escolha; desligado; "Não foi possível confirmar se o modelo foi salvo…". Salva ao escolher.

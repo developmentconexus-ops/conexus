@@ -4,15 +4,14 @@ import { biomeLint, removePlanted } from './test-rules.ts'
 
 after(removePlanted)
 
-test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos e nos testes', () => {
+test('P0: o Biome recusa setTimeout e setInterval em harness/, aceita nos donos, nos testes e fora dele', () => {
   const clock =
     'export function wait() {\n  setTimeout(() => {}, 1)\n  setInterval(() => {}, 1)\n}\n'
-  const runs = 'apps/server/src/agents/app-builder/runs'
   const run = biomeLint({
-    [`${runs}/other.ts`]: clock,
-    'apps/server/src/harness/machine/wait.ts': clock,
-    [`${runs}/copy-retry.ts`]: clock,
-    [`${runs}/runs.test.ts`]: clock,
+    'apps/server/src/harness/a/other.ts': clock,
+    'apps/server/src/harness/b/wait.ts': clock,
+    'apps/server/src/harness/model-accounts/google/calls.ts': clock,
+    'apps/server/src/harness/a/other.test.ts': clock,
     'apps/server/src/hub/a/timer.ts': clock,
   })
   const flagged = new Set(
@@ -22,18 +21,17 @@ test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos 
   )
   assert.deepEqual(
     [...flagged].sort(),
-    [`${runs}/other.ts`, 'apps/server/src/harness/machine/wait.ts'],
+    ['apps/server/src/harness/a/other.ts', 'apps/server/src/harness/b/wait.ts'],
     run.output,
   )
 })
 
-test('P0: o Biome recusa o relógio importado de node:timers em builder/, aceita nos donos e nos testes', () => {
+test('P0: o Biome recusa o relógio importado de node:timers em harness/, aceita nos testes e fora dele', () => {
   const clock =
     "import { setTimeout } from 'node:timers/promises'\nimport { setInterval } from 'node:timers'\nexport async function wait() {\n  await setTimeout(1)\n  return setInterval\n}\n"
-  const runs = 'apps/server/src/agents/app-builder/runs'
   const run = biomeLint({
-    'apps/server/src/agents/app-builder/wait.ts': clock,
-    [`${runs}/runs.test.ts`]: clock,
+    'apps/server/src/harness/a/wait.ts': clock,
+    'apps/server/src/harness/a/wait.test.ts': clock,
     'apps/server/src/hub/a/timer.ts': clock,
   })
   const flagged = [
@@ -41,10 +39,7 @@ test('P0: o Biome recusa o relógio importado de node:timers em builder/, aceita
   ].map(([, file, line]) => `${file}:${line}`)
   assert.deepEqual(
     flagged.sort(),
-    [
-      'apps/server/src/agents/app-builder/wait.ts:1',
-      'apps/server/src/agents/app-builder/wait.ts:2',
-    ],
+    ['apps/server/src/harness/a/wait.ts:1', 'apps/server/src/harness/a/wait.ts:2'],
     run.output,
   )
 })

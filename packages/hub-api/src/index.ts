@@ -1,7 +1,6 @@
 export * from './address.ts'
 export { NamedAgent, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
 export * from './agent-ids.ts'
-export * from './agents.ts'
 export {
   AppAccessInvitation,
   AppAccessList,
@@ -52,8 +51,6 @@ export {
   recordAppRead,
   VersionFileInput,
 } from './apps.ts'
-export * from './assistant.ts'
-export * from './automation-api.ts'
 export { CAPACITY } from './capacity.ts'
 export {
   acceptInvitation,
@@ -81,8 +78,9 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
+export * from './assistant.ts'
+export * from './automation-api.ts'
 export * from './company-data.ts'
-export * from './company-memory.ts'
 export * from './company-roles.ts'
 export {
   CONEXUS_PARTS,
@@ -131,7 +129,6 @@ export {
   testConnection,
   unlinkConnection,
 } from './connectors.ts'
-export * from './construtor.ts'
 export {
   BUILDER_CONTROLLER,
   CONVERSATION_ROUTES,
@@ -149,7 +146,6 @@ export {
 } from './conversations.ts'
 export * from './data-reads.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
-export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'
 export {
   COOKIE_PREFIX,
@@ -168,9 +164,9 @@ export {
 export * from './lake-copies.ts'
 export { ClientLake, createClientLake, deleteClientLake, getClientLake } from './lakes.ts'
 export * from './library-ids.ts'
-export * from './machine.ts'
 export { MEMBER_PROFILE_MAX, setMemberProfile } from './member-profile.ts'
 export { Member } from './members.ts'
+export * from './machine.ts'
 export * from './model-account-sign-ins.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
@@ -220,7 +216,6 @@ export {
   setObservationalMemoryModel,
 } from './observational-memory.ts'
 export * from './ontology.ts'
-export * from './open-writes.ts'
 export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,
@@ -244,8 +239,7 @@ export {
   OwnerInvitation,
   registerClient,
 } from './operations.ts'
-export { DIAGRAM_FRAME, PAGES, REDIRECT_PATH } from './pages.ts'
-export * from './profile-memory.ts'
+export { PAGES, REDIRECT_PATH } from './pages.ts'
 export {
   APP_CONNECTOR_REPLY_BYTES,
   callAppConnector,

@@ -120,12 +120,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "apps/web/src/ui/**",
-        "apps/web/src/hub/**",
-        "apps/web/src/harness/**",
-        "apps/web/src/agents/**"
-      ],
+      "includes": ["apps/web/src/ui/**", "apps/web/src/hub/**", "apps/web/src/harness/**"],
       "linter": {
         "rules": {
           "nursery": {
@@ -183,9 +178,7 @@
     },
     {
       "includes": [
-        "apps/server/src/agents/**",
         "apps/server/src/harness/**",
-        "!apps/server/src/agents/app-builder/runs/copy-retry.ts",
         "!apps/server/src/harness/model-accounts/google/calls.ts",
         "!apps/server/src/harness/model-accounts/google/google.ts",
         "!apps/server/src/harness/model-accounts/subscription-store.ts",
@@ -202,8 +195,8 @@
                   "vitest": "Only screen files use Vitest (decision 0034).",
                   "msw": "Only screen files use MSW (decision 0034).",
                   "@testing-library/react": "Only screen files use Testing Library (decision 0034).",
-                  "node:timers": "A clock has one owner (decision 0051): the copy retry in agents/app-builder/runs/.",
-                  "node:timers/promises": "A clock has one owner (decision 0051): the copy retry in agents/app-builder/runs/."
+                  "node:timers": "A clock has one owner (decision 0051): Mastra's scheduler, for the lake's copy clock.",
+                  "node:timers/promises": "A clock has one owner (decision 0051): Mastra's scheduler, for the lake's copy clock."
                 },
                 "patterns": [
                   {
@@ -217,8 +210,8 @@
               "level": "error",
               "options": {
                 "deniedGlobals": {
-                  "setTimeout": "A clock has one owner (decision 0051): the copy retry in agents/app-builder/runs/.",
-                  "setInterval": "A clock has one owner (decision 0051): the copy retry in agents/app-builder/runs/."
+                  "setTimeout": "A clock has one owner (decision 0051): Mastra's scheduler, for the lake's copy clock.",
+                  "setInterval": "A clock has one owner (decision 0051): Mastra's scheduler, for the lake's copy clock."
                 }
               }
             }
@@ -234,20 +227,6 @@
         "apps/web/src/platform/test-hub-versions.tsx",
         "apps/web/src/harness/model-accounts/test-hub.tsx",
         "apps/web/src/harness/model-accounts/test-writes.tsx",
-        "apps/web/src/agents/assistant/test-hub.tsx",
-        "apps/web/src/agents/saved-agent/test-hub.tsx",
-        "apps/web/src/agents/saved-agent/test-hub-construtor.tsx",
-        "apps/web/src/agents/saved-agent/test-hub-tools.tsx",
-        "apps/web/src/agents/saved-agent/test-approval.tsx",
-        "apps/web/src/agents/assistant/test-model.tsx",
-        "apps/web/src/agents/assistant/test-changes.tsx",
-        "apps/web/src/agents/assistant/test-propose.tsx",
-        "apps/web/src/agents/assistant/automations/test-hub.tsx",
-        "apps/web/src/harness/room/test-hub.tsx",
-        "apps/web/src/harness/room/test-rename.tsx",
-        "apps/web/src/harness/room/test-render.tsx",
-        "apps/web/src/harness/room/test-start.tsx",
-        "apps/web/src/harness/room/test-stream.tsx",
         "apps/web/src/hub/identity/test-hub.tsx",
         "apps/web/src/hub/identity/test-people.tsx",
         "apps/web/src/hub/identity/test-roles.tsx",
@@ -320,7 +299,6 @@
       "includes": [
         "**/*.test.ts",
         "**/*.test.tsx",
-        "!apps/server/src/harness/routes/conversation-stream.test.ts",
         "!apps/server/src/hub/connectors/limits.test.ts",
         "!scripts/test-reporter.test.ts"
       ],

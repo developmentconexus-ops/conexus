@@ -1,16 +1,5 @@
 {
   "files": [
-    "apps/server/src/agents/saved-agent/approval-refused.test.ts",
-    "apps/server/src/harness/tools/app-data/access.test.ts",
-    "apps/server/src/agents/assistant/run-scope.test.ts",
-    "apps/server/src/harness/tools/company/conformance.test.ts",
-    "apps/server/src/harness/tools/connectors/connector-tools-scope.test.ts",
-    "apps/server/src/agents/agent-builder/run-scope.test.ts",
-    "apps/server/src/agents/app-builder/connector-access.test.ts",
-    "apps/server/src/agents/app-builder/conversation-refusal.test.ts",
-    "apps/server/src/agents/app-builder/closure.test.ts",
-    "apps/server/src/harness/tools/data/tools-refusals.test.ts",
-    "apps/server/src/harness/tools/data/tools.test.ts",
     "apps/server/src/harness/model-accounts/openai/sign-in-refusals.test.ts",
     "apps/server/src/hub/access/conformance.test.ts",
     "apps/server/src/hub/access/principal.test.ts",
@@ -38,7 +27,6 @@
     "apps/server/src/platform/isolation-versions.test.ts",
     "apps/server/src/platform/isolation.test.ts",
     "apps/server/src/platform/secret.test.ts",
-    "apps/web/src/agents/assistant/refusals.test.tsx",
     "apps/web/src/hub/apps/app-refused.test.tsx",
     "apps/web/src/hub/projects/access.test.tsx",
     "apps/web/src/hub/projects/project-integrations-revoke.test.tsx",
@@ -142,368 +130,16 @@
       "name": "sem o Access ou com outro público"
     },
     {
-      "file": "apps/server/src/agents/saved-agent/app-data.test.ts",
-      "name": "não grava"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/app-data.test.ts",
-      "name": "não grava: o login de leitura só tem SELECT"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/code-tool.test.ts",
-      "name": "a ferramenta salva sobe ao gravar"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/conversation-routes.test.ts",
-      "name": "as escritas da conversa: listWrites traz cada escrita com o estado, a marca, se uma pessoa aprovou e a mensagem do sistema da recusa, sem os campos; Faz sozinho não conta como aprovada; um envio sem resposta vem UNCERTAIN, com a marca; outra pessoa recebe CONVERSATION_NOT_FOUND \\(38\\)"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/developer.test.ts",
-      "name": "o desenvolvedor"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/machine.test.ts",
-      "name": "o arquivo: um caminho fora da pasta \\(por um link\\) é recusado com SHOW_REFUSED; a rota entrega os bytes ao dono e dá 404 a outra pessoa, ao membro e a conversa que não existe \\(15\\)"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/registry.test.ts",
-      "name": "roda sozinho: o agente registrado recusa uma execução de outro Projeto da mesma empresa"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/release.test.ts",
-      "name": "a empresa: removê-la leva os agentes e as ferramentas dela, e nada de outra empresa"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/release.test.ts",
-      "name": "as chaves: a política da empresa não lê o agente de outra; companies_with_agents só executa por hub_runtime e só dá as empresas com um agente publicado"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/release.test.ts",
-      "name": "outro Projeto: apagar pelo endereço do Projeto A o agente do Projeto B dá AGENT_NOT_FOUND sem efeito; a conversa da Carla fica e o agente responde"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/routes.test.ts",
-      "name": "a lista da empresa: sem projectId traz os agentes de todos os Projetos, com projectId só os dele; lastRunAt nulo sem execução; o membro e um Projeto de outra empresa dão NOT_FOUND"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/routes.test.ts",
-      "name": "as recusas"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/routes.test.ts",
-      "name": "o rascunho"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/assistant-memory-cliproxy.test.ts",
-      "name": "com o observador respondendo"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/assistant-overview.test.ts",
-      "name": "a visão da empresa com 51 Projetos: 50 pelo nome e moreProjects; o app publicado com a versão que as pessoas usam; o Projeto de outra empresa nunca \\(F21, F22\\)"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/company-memory-propose.test.ts",
-      "name": "não tem ferramenta de gravação do Knowledge"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/company-memory-propose.test.ts",
-      "name": "os dois têm a proposta"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/company-memory-routes.test.ts",
-      "name": "as rotas: outra empresa não acha a página nem a nota, e quem não é membro não lista"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/company-memory.test.ts",
-      "name": "não passam de empresa: a conversa de outra empresa não recebe as instruções nem enxerga a memória desta"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/delete.test.ts",
-      "name": "apagar: a própria conversa dá 204, some da lista e da leitura, e a de outra pessoa ou repetida dá CONVERSATION_NOT_FOUND \\(1, 3\\)"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/file.test.ts",
-      "name": "a máquina perdida, FILE_GONE"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/file.test.ts",
-      "name": "acima do teto"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/file.test.ts",
-      "name": "nosniff e CSP sandbox"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/file.test.ts",
-      "name": "o arquivo de uma máquina de outro molde baixa"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/file.test.ts",
-      "name": "o arquivo: de outra pessoa, do membro ou de conversa que não existe, CONVERSATION_NOT_FOUND; fora da pasta ou inexistente, FILE_NOT_FOUND \\(20\\)"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/file.test.ts",
-      "name": "o dono baixa os bytes"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/files-machine.test.ts",
-      "name": "a gravação recusada: o turno falha e o arquivo não vaza"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/files-machine.test.ts",
-      "name": "a máquina fora: o turno falha e o arquivo não vaza"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/machine.test.ts",
-      "name": "a leitura grande"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/machine.test.ts",
-      "name": "a marca"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/machine.test.ts",
-      "name": "a máquina de outro molde é retomada com os arquivos \\(17\\)"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/machine.test.ts",
-      "name": "cada leitura do turno"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/machine.test.ts",
-      "name": "o download cancelado"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/machine.test.ts",
-      "name": "o fim do Hub"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/member.test.ts",
-      "name": "o membro conversa"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/member.test.ts",
-      "name": "o membro não recebe propor automação"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/member.test.ts",
-      "name": "o passe do membro"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/note-save.test.ts",
-      "name": "a rodada de automação"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/note-save.test.ts",
-      "name": "o membro"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/recall.test.ts",
-      "name": "não lê a de outro"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/release.test.ts",
-      "name": "pela pessoa, pelo Projeto e pela empresa"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/release.test.ts",
-      "name": "remover a empresa apaga"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/routes.test.ts",
-      "name": "criar: com o modelo padrão"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/routes.test.ts",
-      "name": "criar: um modelo sem conta"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/routes.test.ts",
-      "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa ou inexistente, CONVERSATION_NOT_FOUND"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/routes.test.ts",
-      "name": "trocar as ligações"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/show-file.test.ts",
-      "name": "link para fora feito depois"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/automations/developer.test.ts",
-      "name": "o desenvolvedor"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/automations/release.test.ts",
-      "name": "apagar: o banco que falha entre os runs e a linha deixa a linha, a repetição a acha, e os runs de outra automação ficam"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/automations/release.test.ts",
-      "name": "remover a empresa apaga as automações de todas as pessoas dela, e nenhuma de outra empresa"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/automations/routes.test.ts",
-      "name": "as recusas"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/automations/routes.test.ts",
-      "name": "pausar e retomar"
-    },
-    {
-      "file": "apps/server/src/agents/assistant/automations/run.test.ts",
-      "name": "o dono virou membro"
-    },
-    {
-      "file": "apps/server/src/harness/tools/connectors/connector-tools.test.ts",
-      "name": "a ligação de um sistema com a leitura de outro: a ferramenta recusa dizendo de quem é cada uma, fica no registro, e nenhuma porta é chamada \\(F-A\\)"
-    },
-    {
-      "file": "apps/server/src/agents/agent-builder/construtor.test.ts",
-      "name": "testar: roda uma pergunta contra o rascunho, sem conversa guardada; rascunho inválido e agente de outro Projeto voltam recusados"
-    },
-    {
-      "file": "apps/server/src/agents/agent-builder/routes.test.ts",
-      "name": "abrir e listar: 201, a mesma chave acha a mesma conversa, a lista é só da pessoa e do Projeto, e a chave com outro Projeto dá IDEMPOTENCY_CONFLICT"
-    },
-    {
-      "file": "apps/server/src/agents/agent-builder/routes.test.ts",
-      "name": "o guarda: as seis rotas servem o controlador construtor ao dono enquanto ele gerencia agentes; a de outra pessoa, a de outro controlador e a de quem virou membro dão CONVERSATION_NOT_FOUND"
-    },
-    {
-      "file": "apps/server/src/agents/agent-builder/routes.test.ts",
-      "name": "o modelo: a conversa de um Projeto não troca de modelo pela URL de outro Projeto da mesma pessoa"
-    },
-    {
-      "file": "apps/server/src/agents/agent-builder/routes.test.ts",
-      "name": "o modelo: sem conta, desconhecido ou com esforço que o modelo não tem, recusa e nada muda; de outra pessoa"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/builder.eval.test.ts",
-      "name": "o portão do Builder: uma senha colada"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/conversations.test.ts",
-      "name": "a conversa de outra pessoa ou de outra empresa: o mesmo 404 em toda rota; Diego não recebe evento de Ana; nenhuma rota do Mastra"
-    },
-    {
-      "file": "apps/server/src/harness/routes/guard.test.ts",
-      "name": "a resposta de aprovação: outra pessoa, ou a mesma por outro controlador, recebe CONVERSATION_NOT_FOUND; alwaysAllowCategory ou um requestContext dão REQUEST_MALFORMED; um toolCallId que não é um portão vivo da sessão responde not_pending; nada roda \\(7\\)"
-    },
-    {
-      "file": "apps/server/src/harness/routes/guard.test.ts",
-      "name": "o Assistente: as rotas do Mastra"
-    },
-    {
-      "file": "apps/server/src/harness/routes/guard.test.ts",
-      "name": "os controladores novos: as seis rotas servem o controlador agents ao dono da conversa enquanto ele gerencia agentes; a de outra pessoa, a de outro controlador e a de quem virou membro dão CONVERSATION_NOT_FOUND"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/git/source.test.ts",
-      "name": "a aba Código lê o main"
-    },
-    {
-      "file": "apps/server/src/harness/machine/conversation-lane.test.ts",
-      "name": "o download achado pelo id religa pelo id e não mata a de outro modelo; o limite é MAX_BYTES \\(S\\)"
-    },
-    {
-      "file": "apps/server/src/harness/machine/conversation-machines.test.ts",
-      "name": "com `replace`, a de outro molde é morta"
-    },
-    {
-      "file": "apps/server/src/harness/machine/conversation-machines.test.ts",
-      "name": "com `resume`, a de outro molde é retomada e nada é morto"
-    },
-    {
-      "file": "apps/server/src/harness/machine/e2b-api.test.ts",
-      "name": "máquina: depois de um Release, mata só as da conversa de outro template ou sem template, e guarda a do template do Hub"
-    },
-    {
-      "file": "apps/server/src/harness/machine/locate.test.ts",
-      "name": "o caminho cai na pasta"
-    },
-    {
-      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
-      "name": "achada pelo id"
-    },
-    {
-      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
-      "name": "lista de domínios"
-    },
-    {
-      "file": "apps/server/src/harness/machine/machine-e2b.test.ts",
-      "name": "lista de endereços"
-    },
-    {
-      "file": "apps/server/src/harness/machine/machine.test.ts",
-      "name": "máquina: a pausada de um template anterior ao Release não é retomada; volta nova, do template do Hub, copiada do main"
-    },
-    {
-      "file": "apps/server/src/harness/machine/machine.test.ts",
-      "name": "máquina: só a máquina de nome igual ao desta conversa é achada; a do Projeto, a de outra instalação e a de outra conversa não"
-    },
-    {
       "file": "apps/server/src/harness/model-accounts/claude/claude.test.ts",
       "name": "troca recusada: 422 e nada gravado, e a entrada acaba; fornecedor fora: 502; tarde ou de outro: 410"
-    },
-    {
-      "file": "apps/server/src/harness/model-accounts/google/flat-unions.test.ts",
-      "name": "sem união"
     },
     {
       "file": "apps/server/src/harness/model-accounts/model-accounts-order.test.ts",
       "name": "ordenar uma fila com todos os seus ids grava; velha, incompleta ou de outro fornecedor dá 409"
     },
     {
-      "file": "apps/server/src/harness/model-accounts/model-defaults.test.ts",
-      "name": "o padrão sem conta usável é pulado: pausada, no limite, de outra pessoa; nenhum degrau usável é 422 e nada nasce"
-    },
-    {
       "file": "apps/server/src/harness/model-accounts/openai/sign-in.test.ts",
       "name": "a entrada de outra empresa: a espera diz que venceu, sem chamar a OpenAI"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/runs/preview-send.test.ts",
-      "name": "admissão no envio: a empresa marcada para apagar"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/runs/preview-send.test.ts",
-      "name": "admissão relida"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/runs/preview-send.test.ts",
-      "name": "pasta que não bate com o manifesto"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/runs/preview-send.test.ts",
-      "name": "tirar a pessoa depois de guardada a versão"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/runs/preview-send.test.ts",
-      "name": "um envio de cada vez: com a trava viva de outro envio, o do Builder falha APP_VERSION_SENDING \\(34\\)"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/runs/runs-removal.test.ts",
-      "name": "tirar a pessoa no meio do turno dela: a execução dela solta o Projeto, e a próxima conversa de outra pessoa não é RUN_BUSY"
-    },
-    {
-      "file": "apps/server/src/agents/app-builder/runs/runs.test.ts",
-      "name": "execução aberta: a mensagem de outro no Projeto é RUN_BUSY; em outro Projeto passa"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/tools/code-removal.test.ts",
-      "name": "um rascunho que a escolhe enquanto os Workers saem"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/tools/routes.test.ts",
-      "name": "apagar: o agente de outro Projeto que usa a ferramenta vem com o Projeto dele, na lista e na recusa"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/tools/routes.test.ts",
-      "name": "apagar: sem uso, 204; usada por um rascunho ou por uma versão publicada, TOOL_IN_USE com os nomes e nada muda; de outra empresa ou de uma ligação que o Projeto não recebeu, TOOL_NOT_FOUND"
-    },
-    {
-      "file": "apps/server/src/agents/saved-agent/tools/routes.test.ts",
-      "name": "gravar"
     },
     {
       "file": "apps/server/src/hub/apps/app-access-journey.test.ts",
@@ -1094,44 +730,8 @@
       "name": "find devolve só o final exato"
     },
     {
-      "file": "apps/web/diagram.layout.test.ts",
-      "name": "uma mensagem forjada de outra janela ao quadro não tem resposta"
-    },
-    {
-      "file": "apps/web/diagram.layout.test.ts",
-      "name": "uma mensagem forjada de outra janela à página é recusada"
-    },
-    {
       "file": "apps/web/frame.layout.test.ts",
       "name": "a faixa da caixa: "
-    },
-    {
-      "file": "apps/web/src/agents/saved-agent/agent-page.test.tsx",
-      "name": "um agente apagado ou de outro Projeto dá a página de não encontrado"
-    },
-    {
-      "file": "apps/web/src/agents/agent-builder/construtor-chat.test.tsx",
-      "name": "uma conversa com o Construtor de outra pessoa dá não encontrado"
-    },
-    {
-      "file": "apps/web/src/agents/assistant/conversation.test.tsx",
-      "name": "uma conversa que não existe, ou que é de outra pessoa, não é encontrada"
-    },
-    {
-      "file": "apps/web/src/agents/assistant/automations/proposal.test.tsx",
-      "name": "a resposta cortada não diz que criou: o cartão pede outro toque, com a mesma chave"
-    },
-    {
-      "file": "apps/web/src/agents/app-builder/panel.test.tsx",
-      "name": "a conversa de outra pessoa abre como \"não encontrado\", sem rastro dela"
-    },
-    {
-      "file": "apps/web/src/harness/room/start-failures.test.tsx",
-      "name": "a conversa cortada depois do Projeto \\("
-    },
-    {
-      "file": "apps/web/src/agents/app-builder/preview/preview.test.tsx",
-      "name": "entrada: uma mensagem de outra origem, de outra janela ou que não é a entrada é ignorada"
     },
     {
       "file": "apps/web/src/hub/connectors/integrations-states.test.tsx",
@@ -1172,10 +772,6 @@
     {
       "file": "apps/web/src/hub/identity/sign-in-form.test.tsx",
       "name": "entrar a caminho de outra página leva o foco ao título dela, não ao corpo \\(#32-4\\)"
-    },
-    {
-      "file": "apps/web/workbench.layout.test.ts",
-      "name": "uma pasta dentro de outra aberta fecha sozinha: a seta e o ícone seguem o estado, no clique e no teclado"
     },
     {
       "file": "packages/connectors/src/kernel/kernel.test.ts",
@@ -1338,32 +934,8 @@
       "name": "todo trabalho no runner do servidor passa pelo ambiente production do GitHub"
     },
     {
-      "file": "tests/e2e/builder-writes.test.ts",
-      "name": "o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 na aba Código; outra empresa não vê"
-    },
-    {
-      "file": "tests/e2e/conversation.test.ts",
-      "name": "o roteiro da primeira conversa: resposta com páginas e título, recusa, pausa, troca automática e outra pessoa"
-    },
-    {
       "file": "tests/e2e/remove-person.test.ts",
       "name": "o roteiro de tirar uma pessoa: o último dono não sai, tirar, a Central convida e rebaixa, sair, esqueci a senha e a senha vazada"
-    },
-    {
-      "file": "apps/server/src/harness/spec/run.test.ts",
-      "name": "uma marca que falta ou tem outro tipo é recusada, e a chave de outro tipo de conversa não vale"
-    },
-    {
-      "file": "apps/server/src/harness/spec/run.test.ts",
-      "name": "uma marca de outra empresa ou de outra pessoa é lida pelo esquema e recusada pela comparação com o dono"
-    },
-    {
-      "file": "apps/server/src/harness/routes/guard.test.ts",
-      "name": "a troca de modelo: um corpo sem thinkingLevel"
-    },
-    {
-      "file": "apps/server/src/harness/routes/rename.test.ts",
-      "name": "renomear: um título vazio"
     },
     {
       "file": "apps/web/src/hub/connectors/link-window-send.test.tsx",
@@ -1408,6 +980,10 @@
     {
       "file": "apps/server/src/harness/network/network-routes.test.ts",
       "name": "o dono rebaixado durante o pedido não liga a internet toda"
+    },
+    {
+      "file": "apps/web/src/hub/apps/preview/preview.test.tsx",
+      "name": "entrada: uma mensagem de outra origem, de outra janela ou que não é a entrada é ignorada"
     }
   ]
 }

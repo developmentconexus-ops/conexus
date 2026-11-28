@@ -49,7 +49,6 @@ function helmetOptions(appsDomain: AppsDomain) {
         fontSrc: ["'self'"],
         manifestSrc: ["'self'"],
         connectSrc: ["'self'"],
-        // 'self' is the conversation's drawing frame, the one page the Hub frames from itself (S24).
         frameSrc: ["'self'", `https://*.${appsDomain}`],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
