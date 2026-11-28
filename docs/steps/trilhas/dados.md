@@ -20,12 +20,19 @@ Depois de `D1`, a trilha segue o método leve da fila do molde (delivery L27).
 
 ## O cartão de hoje
 
-A primeira cópia chega ao lago, a etapa 2 do lago, fechou em 2026-11-26, com as provas na v0.24.133 e a
+O primeiro modelo vira tabela tratada, a `T1` do tratamento do lago, fechou em 2026-11-27, na
+v0.24.137, e a linha de uso está no [arquivo de
+aprovação](../../approvals/o-primeiro-modelo-vira-tabela-tratada.md). Depois de cada cópia o Conexus
+grava as quatro tabelas tratadas do Sankhya e os modelos de Negócio ligados, e a página Dados mostra
+as três camadas, de onde cada tabela vem e quem a lê. O cartão está no histórico do `main`, no commit
+`9e1f7ca2`, o último que o mudou.
+
+Antes dela, A primeira cópia chega ao lago, a etapa 2 do lago, fechou em 2026-11-26, com as provas na v0.24.133 e a
 v0.24.134 no ar, e a linha de fechamento está no [arquivo de aprovação](../../approvals/a-primeira-copia-chega-ao-lago.md). A
 pessoa liga um sistema numa janela só, escolhe as tabelas e quando copiar, a cópia chega ao lago da
 empresa, e a página Dados a mostra. O cartão está no histórico do `main`, no commit `50aae548`, o
-último que o mudou. A trilha está sem cartão em `docs/steps/` até o cartão seguinte entrar: o do
-aviso de cópia parada vem primeiro.
+último que o mudou. A trilha está sem cartão em `docs/steps/` até o cartão seguinte entrar: pela
+ordem de 2026-11-26 (abaixo), o de A passada inteira agendada.
 
 As etapas anteriores fecharam: o lago da empresa nasce e some, a etapa 1 do lago, em 2026-11-23, na
 v0.24.110 ([aprovação](../../approvals/o-lago-da-empresa-nasce-e-some.md)); a pergunta respondida
@@ -284,7 +291,7 @@ As respostas da entrevista, que o cartão da etapa 2 segue:
   ([0074](../../decisions/0074-python-for-extraction-in-apps-extraction.md)).
 - `infra/aws/`, a plataforma em CDK e o modelo da pilha de cada empresa
   ([0073](../../decisions/0073-platform-by-cdk-one-stack-per-company.md)).
-- `apps/server/src/hub/connectors/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/ontology/`, `apps/server/src/hub/data/` e `apps/server/src/hub/lake/`, o lago de cada empresa.
+- `apps/server/src/hub/connectors/`, `apps/server/src/hub/copies/`, `apps/server/src/hub/ontology/`, `apps/server/src/hub/data/`, `apps/server/src/hub/lake/` e `apps/server/src/hub/treatment/`, o lago de cada empresa e o tratamento dele.
 - `apps/server/src/harness/copy-clock/` e `apps/server/src/platform/copy-sql.ts`.
 - As telas de Integrações, Dados (que toma o lugar de Cópias, resposta E1a) e Conhecimento.
 - O contrato de acesso, com o teste de conformidade dele.

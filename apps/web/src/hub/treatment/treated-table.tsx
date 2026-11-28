@@ -130,8 +130,8 @@ function Tabbed(props: {
   const [first] = props.names
   return (
     <Tabs compact defaultValue={first}>
-      <div className="overflow-x-auto border-b border-line">
-        <TabsList>
+      <div className="overflow-x-auto">
+        <TabsList className="min-w-full border-b border-line">
           {props.names.map((name) => (
             <TabsTrigger key={name} value={name}>
               {TABS[name]}

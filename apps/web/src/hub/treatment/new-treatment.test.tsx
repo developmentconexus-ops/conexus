@@ -65,6 +65,28 @@ test('Novo tratamento envia o nome, a descrição e o SQL, e abre a proposta à 
   ])
 })
 
+test.each([
+  ['Novo tratamento', { path: BUSINESS }, 'Nome'],
+  ['Propor mudança', withBound(), 'O que conta como esta tabela'],
+])('%s abre com o foco no primeiro campo, não em Fechar', async (label, options, first) => {
+  openTreatment(server, options)
+  const form = await openForm(label)
+
+  await waitFor(() =>
+    expect(document.activeElement).toBe(form.getByRole('textbox', { name: first })),
+  )
+})
+
+test('aberto com o dedo, o foco fica na janela, sem abrir o teclado num campo', async () => {
+  openTreatment(server, { path: BUSINESS })
+  const opener = await screen.findByRole('button', { name: 'Novo tratamento' })
+  fireEvent.pointerDown(opener, { pointerType: 'touch' })
+  fireEvent.click(opener, { detail: 1 })
+  const dialog = await screen.findByRole('dialog', { name: 'Novo tratamento' })
+
+  await waitFor(() => expect(document.activeElement).toBe(dialog))
+})
+
 test('um nome que não é de tabela é recusado no campo, sem pedir nada ao Hub', async () => {
   const { sent } = openTreatment(server, { path: BUSINESS })
   const form = await openForm()
@@ -89,35 +111,31 @@ test('sem SQL, o campo pede o SELECT', async () => {
 const ON_THE_SQL = [
   [
     'TREATMENT_SQL_INVALID',
-    'O SQL tem um erro de escrita.',
     { position: { line: 2, column: 5 } },
-    'Linha 2, coluna 5.',
+    'O SQL tem um erro de escrita. Linha 2, coluna 5.',
   ],
-  ['TREATMENT_SQL_NOT_A_QUERY', 'Escreva um só comando, que comece com SELECT ou WITH.', {}, ''],
-  ['TREATMENT_SQL_TEMPLATE', 'Escreva só SQL, sem {{, {% ou {#.', {}, ''],
+  ['TREATMENT_SQL_NOT_A_QUERY', {}, 'Escreva um só comando, que comece com SELECT ou WITH.'],
+  ['TREATMENT_SQL_TEMPLATE', {}, 'Escreva só SQL, sem {{, {% ou {#.'],
   [
     'TREATMENT_INPUT_UNQUALIFIED',
-    'Escreva cada tabela com a área na frente: current, tratado ou negocio.',
     { table: 'sankhya_notas' },
-    'sankhya_notas',
+    'Escreva cada tabela com a área na frente: current, tratado ou negocio. Tabela: sankhya_notas.',
   ],
   [
     'TREATMENT_INPUT_UNKNOWN',
-    'A empresa não tem uma das tabelas que o SQL lê.',
     { table: 'current.sankhya_notax' },
-    'current.sankhya_notax',
+    'A empresa não tem uma das tabelas que o SQL lê. Tabela: current.sankhya_notax.',
   ],
   [
     'TREATMENT_INPUT_CYCLE',
-    'Este tratamento leria a própria tabela, direto ou por outro tratamento.',
-    {},
-    '',
+    { table: 'negocio.venda' },
+    'Este tratamento leria a própria tabela, direto ou por outro tratamento. Tabela: negocio.venda.',
   ],
 ] as const
 
 test.each(ON_THE_SQL)(
   'a recusa %s aparece no campo do SQL, com o texto da tela, e o que foi digitado fica',
-  async (code, phrase, extra, named) => {
+  async (code, extra, said) => {
     openTreatment(server, { path: BUSINESS, answers: { propose: () => refused(code, extra) } })
     const form = await openForm()
     fill(form, TYPED)
@@ -127,8 +145,7 @@ test.each(ON_THE_SQL)(
     const sql = form.getByRole('textbox', { name: 'SQL' })
     await waitFor(() => expect(sql.getAttribute('aria-invalid')).toBe('true'))
     const described = document.getElementById(sql.getAttribute('aria-describedby') ?? '')
-    expect(described?.textContent).toContain(phrase)
-    expect(described?.textContent).toContain(named)
+    expect(described?.textContent).toBe(said)
     expect(form.getByRole('textbox', { name: 'Nome' })).toHaveProperty('value', 'venda')
     expect(sql).toHaveProperty('value', SQL)
     expect(form.getByRole('textbox', { name: 'Nome' }).getAttribute('aria-invalid')).toBeNull()

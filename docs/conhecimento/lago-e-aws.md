@@ -18,8 +18,9 @@ em [Extração Singer](extracao-singer.md). As etapas estão na [Trilha Dados](.
   só acrescenta, e o Athena refaz a camada atual.
 - [0063](../decisions/0063-copy-models-proof.md), aceito em 2026-11-10: os modelos de cópia provados no Sankhya do fundador, só contando.
 - Aprovações: [o-lago-da-empresa-nasce-e-some](../approvals/o-lago-da-empresa-nasce-e-some.md), com
-  as decisões F, G e H do Lago 1, e
-  [a-primeira-copia-chega-ao-lago](../approvals/a-primeira-copia-chega-ao-lago.md).
+  as decisões F, G e H do Lago 1,
+  [a-primeira-copia-chega-ao-lago](../approvals/a-primeira-copia-chega-ao-lago.md) e a
+  [`T1`](../approvals/o-primeiro-modelo-vira-tabela-tratada.md).
 - A bruta guarda a linha só até entrar na atual; a NF-e fica sem histórico (fundador,
   2026-11-24).
 
@@ -81,6 +82,7 @@ Uma linha por estudo, da data mais nova para a mais velha. "Virou" é o registro
 
 | Data | Estudo | Estado | Virou | Em uma frase |
 | --- | --- | --- | --- | --- |
+| 2026-11-25 | `conexus-lago-tratamento-estudo` | decidido | [`T1`](../approvals/o-primeiro-modelo-vira-tabela-tratada.md) | O dbt-athena trata; a versão espera o sim. |
 | 2026-11-22 | `conexus-lago1-sobra-pelo-diario` | decidido | PR 1255; emenda de o-lago-da-empresa-nasce-e-some.md | Depósito ausente responde 403, não NotFound; pela opção d o Hub lê o diário da pilha e só procura o depósito quando ele não diz apagado. |
 | 2026-11-22 | `conexus-lago1-g-referencias` | decidido | [o-lago-da-empresa-nasce-e-some](../approvals/o-lago-da-empresa-nasce-e-some.md) (decisão G) | A G (a) é a forma convergente: 14 de 15 referências guardam um registro por cliente fora da nuvem, escrito só pelo plano de controle. |
 | 2026-11-22 | `conexus-lago1-fix-orcamento` | superado, por conexus-lago1-fix-orcamento-2 | - | Primeira tentativa de tirar o nome fixo do orçamento; parou com trabalho parcial, refeita no conserto seguinte. |

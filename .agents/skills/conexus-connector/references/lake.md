@@ -53,6 +53,15 @@ arrives as exact text and becomes `decimal(38, 9)`; a value that does not fit fa
 hands the task a `CopyTaskSpec` (the connector, the account, the opened credential, the tables) and
 reads a `CopyTaskResult`.
 
+## The treated table (step `T1`)
+
+A table may declare `treated` (`kernel/tables-treated.ts`): the table's description and its columns,
+each a source `column`, a new name `as` and a `cast`. The kit writes the one `SELECT`, from
+`"current"."<lake name>"`, with no filter and no join. A treated column carries no description of its
+own: it shows the copied column's. The treatment run builds the table in the `tratado` area after a
+copy; a table with no `treated` shows nothing in Tratado. The step's card is in `main`'s history at
+commit `9e1f7ca2`.
+
 ## What a connector author does for the lake
 
 - Declare `list` on every read that pages, with `changed` when the provider filters by a change
