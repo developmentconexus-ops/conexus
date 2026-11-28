@@ -2,7 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import { http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { conversationsNone, hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 import type { View } from './test-hub.tsx'
 import {
@@ -21,7 +21,7 @@ function open(view: View) {
   openView(server, view)
 }
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
+beforeEach(() => server.use(versionsRead({ versions: [] })))
 
 test('uma ligação ainda não testada não tem Liberar: a linha diz para testar e leva à ligação', async () => {
   const nova = line('Loja 1', { state: 'NEW', access: NOT_RELEASED_NOT_WORKING })

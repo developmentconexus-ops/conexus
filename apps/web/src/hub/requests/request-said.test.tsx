@@ -7,13 +7,7 @@ import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
-import {
-  conversationsNone,
-  hubServer,
-  PEDIDOS,
-  projectsRead,
-  refusal,
-} from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import {
   decisionPath,
   requestView,
@@ -26,7 +20,7 @@ const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 const VERSIONS = `${PROJECT}/about?part=versions`
 const DECIDED = 'Este pedido já foi decidido.'
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [versionView(5)] })))
+beforeEach(() => server.use(versionsRead({ versions: [versionView(5)] })))
 
 /** The Projeto as its owner reads it: version 5 ready and unpublished, Bruno's request open. */
 function open(path = PROJECT) {

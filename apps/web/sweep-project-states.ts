@@ -61,25 +61,6 @@ async function openDeletion(page: Page) {
   await waitFor(page, 'Isto não se desfaz.')
 }
 
-/**
- * The kit's folder holds 50 files, so the phone's Sheet has to scroll to the last (criterion 23).
- * Kept out of the sweep: its Tab walk stops at 40 and this list has more rows than that.
- */
-export const LONG_TREE: State = {
-  name: 'Projeto, Código com a lista longa',
-  path: CODE,
-  replies: withVersion([
-    'src/router.tsx',
-    ...Array.from({ length: 50 }, (_, at) => `src/components/ui/peca-${at + 1}.tsx`),
-  ]),
-  settle: async (page) => {
-    await openFiles(page)
-    await page.getByRole('treeitem', { name: 'components', exact: true }).click()
-    await page.getByRole('treeitem', { name: 'ui', exact: true }).click()
-    await page.getByRole('treeitem', { name: 'peca-50.tsx' }).waitFor({ state: 'attached' })
-  },
-}
-
 export const PROJECT_STATES: State[] = [
   {
     name: 'Todos os projetos, vazio',
@@ -95,7 +76,7 @@ export const PROJECT_STATES: State[] = [
   },
   {
     name: 'criar Projeto, nome repetido',
-    path: `${HOME}/welcome/build`,
+    path: PROJECTS,
     replies: {
       ...NOBODY,
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_TAKEN'),
@@ -104,7 +85,7 @@ export const PROJECT_STATES: State[] = [
   },
   {
     name: 'criar Projeto, banco em preparo',
-    path: `${HOME}/welcome/build`,
+    path: PROJECTS,
     replies: {
       ...NOBODY,
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('COMPANY_DATABASE_PREPARING'),

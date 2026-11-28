@@ -29,7 +29,7 @@ import {
   PEDIDOS_PREVIA,
   passes,
 } from './test-handoff.ts'
-import { folder, readyForVersions, send } from './test-versions.ts'
+import { folder, send } from './test-versions.ts'
 
 const ROLES = [
   { name: 'vendedor', label: 'Vendedor' },
@@ -48,7 +48,6 @@ async function appCompany(t: TestContext) {
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')
   const bruno = await memberOn(hub, companyId, BRUNO, 'member')
-  await readyForVersions(t, hub, ana, companyId)
   const projects = `/api/companies/${companyId}/projects`
   async function projectNamed(name: string) {
     const made = await post(hub, ana, projects, { name })

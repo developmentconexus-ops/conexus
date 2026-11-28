@@ -10,7 +10,6 @@ import { defineOperation } from './operation.ts'
  * never chose reads `'auto'`.
  */
 const ObservationalMemoryChoice = z.union([z.literal('auto'), ModelId]).nullable()
-type ObservationalMemoryChoice = z.infer<typeof ObservationalMemoryChoice>
 
 export const ObservationalMemoryModels = z.object({
   observer: ObservationalMemoryChoice,

@@ -13,8 +13,8 @@ import { problemOf } from './src/platform/fixtures.ts'
 
 // The widths come from the browser's layout of the built screens; jsdom computes none.
 const ORIGIN = 'https://hub.test'
-/** The pages built for the tests: the screens, the chat pieces' page, and the diagram's page and frame. */
-const BUILT = ['index', 'pieces', 'diagram', 'diagram-frame']
+/** The pages built for the tests: the screens and the pieces' page. */
+const BUILT = ['index', 'pieces']
 const TYPES: Record<string, string> = {
   '.css': 'text/css',
   '.js': 'text/javascript',
@@ -27,8 +27,6 @@ const APP_STYLE =
   'body{font:16px system-ui;margin:0;padding:24px;background:#fffdf8;color:#222}h1{margin:0 0 12px}'
 
 export const DESKTOP = { width: 1366, height: 900 }
-/** The 1280 px desktop the founder uses */
-export const LAPTOP = { width: 1280, height: 800 }
 export const PHONE = { width: 390, height: 844 }
 export const SMALL_PHONE = { width: 320, height: 640 }
 // A 390px phone at 200% zoom lays out 195 CSS pixels (design V18).
@@ -326,25 +324,5 @@ export function reachOf(locator: Locator): Promise<{
       left: reach((step) => [box.left - 1 - step, mid.y]),
       right: reach((step) => [box.right + step, mid.y]),
     }
-  })
-}
-
-/** Under a finger, what lands on points inside the element's drawn box instead of it: a neighbour's touch area over it. */
-export function stolenBy(locator: Locator): Promise<string[]> {
-  return locator.evaluate((element) => {
-    const box = element.getBoundingClientRect()
-    const thieves = new Set<string>()
-    for (let column = 1; column < 8; column += 1)
-      for (let row = 1; row < 8; row += 1) {
-        const hit = document.elementFromPoint(
-          box.left + (box.width * column) / 8,
-          box.top + (box.height * row) / 8,
-        )
-        if (hit === null || !element.contains(hit)) {
-          const owner = hit?.closest('button, a')
-          thieves.add(owner?.getAttribute('aria-label') ?? hit?.tagName ?? 'nothing')
-        }
-      }
-    return [...thieves]
   })
 }

@@ -5,7 +5,6 @@ import {
   getCompany,
   getProject,
   listCompanies,
-  listConversations,
   listInvitations,
   listMembers,
   listModelAccounts,
@@ -220,30 +219,11 @@ export function hubServer() {
     http.get('*/api/companies/:companyId/connections', () =>
       HttpResponse.json({ connectors: [], connections: [], mayManage: true }),
     ),
-    http.get('*/api/companies/:companyId/assistant/connections', () =>
-      HttpResponse.json({ connections: [] }),
-    ),
-    http.get('*/api/companies/:companyId/assistant/conversations', () =>
-      HttpResponse.json({ conversations: [], next: { kind: 'END' } }),
-    ),
-    http.get('*/api/companies/:companyId/assistant/profile-memory', () =>
-      HttpResponse.json({ text: null }),
-    ),
-    http.get('*/api/companies/:companyId/projects/:projectId/conversations', () =>
-      HttpResponse.json(
-        listConversations.success.body.parse({ conversations: [], next: { kind: 'END' } }),
-      ),
-    ),
   )
   beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
   afterEach(() => server.resetHandlers())
   afterAll(() => server.close())
   return server
-}
-
-/** The elements that are not inside the named block of Início, which reads the same list on its own. */
-export function outsideBlock(found: HTMLElement[], block: string): HTMLElement[] {
-  return found.filter((one) => one.closest(`section[aria-label="${block}"]`) === null)
 }
 
 /** The Hub's refusal for a failure code, as the server sends it. */
@@ -284,12 +264,6 @@ export const PEDIDOS = ProjectSummary.parse({
   appVersion: null,
   publishedVersion: null,
 })
-
-/** The Projeto's panel asks for the person's conversations; for a test that has none to speak of. */
-export const conversationsNone = http.get(
-  `*/api/companies/${COMPANY.id}/projects/:projectId/conversations`,
-  () => HttpResponse.json({ conversations: [], next: { kind: 'END' } }),
-)
 
 /** What the Hub shows of Empresa Teste's Projects; a test changes it between reads. */
 export type ProjectsView = {

@@ -58,7 +58,7 @@ export function dayGroupOf(instant: string, now: Date): DayGroup {
 }
 
 /** How long ago, short enough for a row's end: "5 min", "2 h", "ontem", "3 d", then the day and month. */
-export function ageOf(instant: string, now: Date): string {
+function ageOf(instant: string, now: Date): string {
   const days = daysBetween(instant, now)
   if (days <= 0) {
     const minutes = Math.max(0, Math.floor((now.getTime() - new Date(instant).getTime()) / 60_000))

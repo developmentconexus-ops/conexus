@@ -100,7 +100,7 @@ function RawNote({ companyId }: { companyId: CompanyId }) {
   return <p className={NOTE}>{linked ? NO_TABLE_COPIED : NO_SYSTEM}</p>
 }
 
-/** The tree of Dados in the frame's `nav`, in place of the conversations: Copiado, Tratado, Negócio, Apps. */
+/** The tree of Dados in the frame's `nav`: Copiado, Tratado, Negócio, Apps. */
 export function DataTree({ companyId }: { companyId: CompanyId }) {
   const may = useMay()
   return (

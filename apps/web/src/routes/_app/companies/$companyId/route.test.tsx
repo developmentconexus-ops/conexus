@@ -52,9 +52,7 @@ async function sidebar() {
   const list = nav.querySelector<HTMLElement>('[data-sidebar="sidebar"]')
   if (column === null || list === null) throw new Error('the sidebar has no rail or no list')
   const within_ = { rail: within(column), list: within(list) }
-  await within_.list.findAllByRole('link', {
-    name: /Nova conversa|Projeto 1|Construir|Todos os projetos/,
-  })
+  await within_.rail.findByRole('link', { name: 'Início' })
   return within_
 }
 
@@ -64,7 +62,7 @@ function linkNames(scope: BoundFunctions<typeof queries>) {
     .map((link) => link.getAttribute('aria-label') ?? link.textContent)
 }
 
-test('o membro: o trilho tem Início, Projetos, Integrações, Dados, Configurações e a conta; a lista é a da dona, Nova conversa e as conversas, sem Projetos recentes (critérios 3, 5 e 9)', async () => {
+test('o membro: o trilho tem Início, Projetos, Integrações, Dados, Configurações e a conta; a lista é a da dona, sem Projetos recentes (critérios 3, 5 e 9)', async () => {
   open(HOME)
   const { rail, list } = await sidebar()
   expect(linkNames(rail)).toEqual(['Início', 'Projetos', 'Integrações', 'Dados', 'Configurações'])
@@ -74,45 +72,36 @@ test('o membro: o trilho tem Início, Projetos, Integrações, Dados, Configura�
     `${HOME}/settings`,
   )
   expect(list.getByText('Empresa Teste')).toBeTruthy()
-  expect(list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
   expect(list.queryByText('Projetos recentes')).toBeNull()
   expect(screen.getByRole('main')).toBeTruthy()
 })
 
-test('o desenvolvedor: o trilho tem Automações, Agentes e Dados depois de Integrações, como a dona', async () => {
+test('o desenvolvedor: o trilho tem Dados depois de Integrações, como a dona', async () => {
   open(HOME, PROJECTS, 'developer')
   const developer = await sidebar()
   expect(linkNames(developer.rail)).toEqual([
     'Início',
     'Projetos',
     'Integrações',
-    'Automações',
-    'Agentes',
     'Dados',
     'Configurações',
   ])
-  expect(developer.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
 })
 
-test('o trilho da dona tem Automações, Agentes e Dados logo depois de Integrações; a lista é Nova conversa e Conversas; o membro não vê Automações nem Agentes, e vê Dados', async () => {
+test('o trilho da dona tem Dados logo depois de Integrações, e o membro também vê Dados', async () => {
   open(HOME, PROJECTS, 'owner')
   const owner = await sidebar()
   expect(linkNames(owner.rail)).toEqual([
     'Início',
     'Projetos',
     'Integrações',
-    'Automações',
-    'Agentes',
     'Dados',
     'Configurações',
   ])
-  expect(owner.list.getByRole('link', { name: 'Nova conversa' })).toBeTruthy()
   expect(owner.list.queryByText('Projetos recentes')).toBeNull()
   cleanup()
   open(HOME)
   const member = await sidebar()
-  expect(member.rail.queryByRole('link', { name: 'Automações' })).toBeNull()
-  expect(member.rail.queryByRole('link', { name: 'Agentes' })).toBeNull()
   expect(member.rail.getByRole('link', { name: 'Dados' })).toBeTruthy()
 })
 

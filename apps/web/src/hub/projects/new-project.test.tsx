@@ -6,7 +6,6 @@ import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import {
-  conversationsNone,
   hubServer,
   PEDIDOS,
   PEDIDOS_ADDRESS,
@@ -29,7 +28,6 @@ const NOVO = ProjectSummary.parse({
 function hub(answer?: () => Response | Promise<Response>) {
   const sent: unknown[] = []
   server.use(
-    conversationsNone,
     ...projectsRead({
       projects: [PEDIDOS, NOVO],
       databaseReady: true,

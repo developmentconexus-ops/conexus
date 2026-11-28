@@ -141,10 +141,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 `hub/treatment` treats the copies;
 `harness/copy-clock` says when ([the Sync](explanation/sync.md)).
 `hub/ontology` has only tables and a contract. `hub/notifications` sends bell and e-mails,
-`hub/operations` keeps the Central's clients, `hub/status` each start's version. `harness/tools/app-data`
-reads an app's data for the Builder and for the agents of `agents/saved-agent`;
-`agents/agent-builder` edits an agent's draft ([agents](explanation/agents-and-automations.md)).
-`harness/mastra` builds the `Mastra` and prunes its traces daily. The Hub image carries CLIProxyAPI,
+`hub/operations` keeps the Central's clients, `hub/status` each start's version. `mastra/` builds the `Mastra` and prunes its traces daily. The Hub image carries CLIProxyAPI,
 the Google sign-in binary [0049]. Packages: [app](explanation/app-package.md),
 [connectors](how-to/add-a-connector.md).
 

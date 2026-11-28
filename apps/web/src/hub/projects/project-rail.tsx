@@ -1,18 +1,9 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import type { LinkProps } from '@tanstack/react-router'
-import { getRouteApi, useMatches, useNavigate } from '@tanstack/react-router'
+import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
-import {
-  BotIcon,
-  DatabaseIcon,
-  HammerIcon,
-  InfoIcon,
-  MessagesSquareIcon,
-  PlugIcon,
-  TimerIcon,
-  UsersIcon,
-} from 'lucide-react'
+import { DatabaseIcon, HammerIcon, InfoIcon, PlugIcon, UsersIcon } from 'lucide-react'
 import { FrameLink } from '../../ui/frame.tsx'
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem } from '../../ui/sidebar.tsx'
 import { SidebarSwitch } from '../../ui/sidebar-selector.tsx'
@@ -22,9 +13,6 @@ import { projectQuery } from './queries.ts'
 import { PROJECT_FALLBACK } from './text.ts'
 
 const company = getRouteApi('/_app/companies/$companyId')
-
-/** The route Construir and its conversations live under: the other pages of the Projeto sit beside it, not below. */
-const BUILD_ROUTE = '/_app/companies/$companyId/projects/$projectId'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -74,12 +62,12 @@ type RailItem = {
   to: LinkProps['to']
   label: string
   icon: LucideIcon
-  needs?: 'manageAgents' | 'manageAutomations' | 'viewAppData'
-  holdsConversations?: true
+  needs?: 'viewAppData'
+  exact?: true
 }
 
 const RAIL: readonly {
-  group: 'O app' | 'Agentes' | 'Dados' | 'O Projeto'
+  group: 'O app' | 'Dados' | 'O Projeto'
   items: readonly RailItem[]
 }[] = [
   {
@@ -89,29 +77,7 @@ const RAIL: readonly {
         to: '/companies/$companyId/projects/$projectId',
         label: 'Construir',
         icon: HammerIcon,
-        holdsConversations: true,
-      },
-    ],
-  },
-  {
-    group: 'Agentes',
-    items: [
-      {
-        to: '/companies/$companyId/projects/$projectId/assistant',
-        label: 'Conversas',
-        icon: MessagesSquareIcon,
-      },
-      {
-        to: '/companies/$companyId/projects/$projectId/agents',
-        label: 'Agentes',
-        icon: BotIcon,
-        needs: 'manageAgents',
-      },
-      {
-        to: '/companies/$companyId/projects/$projectId/automations',
-        label: 'Automações',
-        icon: TimerIcon,
-        needs: 'manageAutomations',
+        exact: true,
       },
     ],
   },
@@ -147,14 +113,10 @@ const RAIL: readonly {
 /**
  * The entries of the Projeto's list, beside the rail that carries the way back to the company. Each
  * later entry is added by its step, never as "em breve" (web W31). The address of Construir is the
- * Projeto's own, with its conversations below it: it is the current place while the route it lives
- * under is among the matches.
+ * Projeto's own, so it is current only on that exact address.
  */
 export function ProjectRailNav(scope: Scope) {
   const { may } = company.useRouteContext()
-  const building = useMatches({
-    select: (matches) => matches.some((match) => match.routeId === BUILD_ROUTE),
-  })
   return (
     <>
       {RAIL.map(({ group, items }) => {
@@ -170,8 +132,7 @@ export function ProjectRailNav(scope: Scope) {
                   params={scope}
                   icon={item.icon}
                   label={item.label}
-                  activeOptions={item.holdsConversations && { exact: true }}
-                  current={item.holdsConversations && building}
+                  activeOptions={item.exact && { exact: true }}
                 />
               ))}
             </SidebarMenu>

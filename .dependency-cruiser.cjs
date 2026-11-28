@@ -1,6 +1,6 @@
 // The import law of code C3 to C8, data D19, testing T5 and web W1, W4 to W7, W13. Every rule below names
 // the guide rule it enforces; scripts/rules.test.ts plants one bad file per rule.
-// A subject is one folder of hub/, harness/ or agents/ on the server, and one folder of hub/, harness/ or agents/ on the web. Revalidate by 2027-04-13.
+// A subject is one folder of hub/ or harness/ on the server, and one folder of hub/ or harness/ on the web. Revalidate by 2027-04-13.
 const { readdirSync } = require('node:fs')
 const { join } = require('node:path')
 const SERVER = '^apps/server/src'
@@ -8,21 +8,21 @@ const WEB = '^apps/web/src'
 // The helpers a web test shares are the files named test-*, in any folder of the web: they drive a subject's inside, and a test of another subject reads them (T5).
 const WEB_TEST_HELPER = `${WEB}/.*/test-[^/]+\\.tsx?$`
 // The door of a subject is the public.ts at its root, or a public-<name>.tsx there (Node strips no types from .tsx, so public.ts cannot re-export one); a file deeper in is the inside (C4).
-const PUBLIC_DOOR = '(^|/)(hub|harness|agents)/[^/]+/public(-[a-z]+\\.tsx|\\.ts)$'
+const PUBLIC_DOOR =
+  '(^|/)(hub|harness)/[^/]+/public(-[a-z]+\\.tsx|\\.ts)$|^apps/server/src/mastra/index\\.ts$'
 // The door of a subject's tables: only a tables.ts (a foreign key) imports it (C8).
-const TABLE_DOOR = '(^|/)(hub|harness|agents)/[^/]+/public-tables\\.ts$'
+const TABLE_DOOR = '(^|/)(hub|harness)/[^/]+/public-tables\\.ts$'
 // The helpers a test shares are the files named test-*.ts, in any folder of the server (T5).
 const TEST_HELPER = `${SERVER}/.*/test-[^/]+\\.ts$`
 const MASTRA_EE = 'node_modules/@mastra/(core/dist/(agent-builder|auth)/ee|editor)'
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-mastra-database)\\.ts$`
-// The access contract (founder's decision 2A, 2026-11-14): the agents and the apps reach the data
-// only through packages/hub-api/src/company-data.ts. Data is the data track's code; the agents and
-// the apps are the conversations, their tool adapters and the app packages.
+// The access contract (founder's decision 2A, 2026-11-14): the apps reach the data
+// only through packages/hub-api/src/company-data.ts. Data is the data track's code; the apps are
+// the app packages and the model accounts' memory.
 const DATA = `^(${SERVER}/hub/(connectors|copies|ontology|data)/|packages/connectors/)`
-const AGENTS_AND_APPS = `^(${SERVER}/(agents/(assistant|agent-builder|saved-agent|app-builder/(?!runs/|git/))|harness/(spec|turn|memory|prompt|routes|tools)/)|packages/app(-contract)?/)`
+const AGENTS_AND_APPS = `^(${SERVER}/harness/memory/|packages/app(-contract)?/)`
 // C56: each SDK of a provider only in its adapter.
 const ADAPTERS = require('./.dependency-cruiser-adapters.cjs')
-const WEB_DIRECTION = require('./.dependency-cruiser-web.cjs')
 // The connectors the kit holds: each folder of packages/connectors/src but the kernel.
 const CONNECTORS = readdirSync(join(__dirname, 'packages/connectors/src'), { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && entry.name !== 'kernel')
@@ -43,9 +43,9 @@ module.exports = {
     },
     {
       name: 'no-loose-file-in-a-subject',
-      comment: 'C6: a file in hub/, harness/ or agents/ belongs to a subject folder.',
+      comment: 'C6: a file in hub/ or harness/ belongs to a subject folder.',
       severity: 'error',
-      from: { path: `${SERVER}/(hub|harness|agents)/[^/]+\\.tsx?$` },
+      from: { path: `${SERVER}/(hub|harness)/[^/]+\\.tsx?$` },
       to: {},
     },
     {
@@ -54,29 +54,18 @@ module.exports = {
         'C4, W4: another subject is reached only through its public.ts. A server test is held by T5 below, which also lets it use the test Hub.',
       severity: 'error',
       from: {
-        path: `^apps/(server|web)/src/(hub|harness|agents)/([^/]+)/`,
+        path: `^apps/(server|web)/src/(hub|harness)/([^/]+)/`,
         pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER, WEB_TEST_HELPER],
       },
       to: {
-        path: `^apps/$1/src/(hub|harness|agents)/[^/]+/`,
+        path: `^apps/$1/src/(hub|harness)/[^/]+/`,
         pathNot: [`^apps/$1/src/$2/$3/`, PUBLIC_DOOR, TABLE_DOOR, WEB_TEST_HELPER],
       },
     },
     {
-      name: 'conversations-do-not-import-the-assistant',
-      comment:
-        'C4: what the conversations share lives in harness/spec/; the agents and the Construtor never import the Assistant. Their tests borrow its test doubles.',
-      severity: 'error',
-      from: {
-        path: `${SERVER}/agents/(saved-agent|agent-builder)/`,
-        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_HELPER],
-      },
-      to: { path: `${SERVER}/agents/assistant/` },
-    },
-    {
       name: 'agents-and-apps-reach-data-only-through-the-contract',
       comment:
-        'Decision 2A: the agents and the apps import nothing of the data but the access contract in @conexus/hub-api; CONTRACT_MIGRATION lists the files still to move. Their tests drive the test Hub (T5).',
+        'Decision 2A: the apps import nothing of the data but the access contract in @conexus/hub-api; CONTRACT_MIGRATION lists the files still to move. Their tests drive the test Hub (T5).',
       severity: 'error',
       from: {
         path: AGENTS_AND_APPS,
@@ -117,7 +106,7 @@ module.exports = {
         'C4: main.ts, conversations-of.ts and first-person-arguments.ts, at the root of the server, reach a subject only through its public.ts.',
       severity: 'error',
       from: { path: `${SERVER}/[^/]+\\.tsx?$`, pathNot: `${SERVER}/.*\\.test\\.tsx?$` },
-      to: { path: `${SERVER}/(hub|harness|agents)/`, pathNot: PUBLIC_DOOR },
+      to: { path: `${SERVER}/(hub|harness)/`, pathNot: PUBLIC_DOOR },
     },
     {
       name: 'table-door-only-for-foreign-keys-and-schema',
@@ -128,22 +117,18 @@ module.exports = {
       to: { path: TABLE_DOOR },
     },
     {
-      name: 'hub-does-not-import-harness-or-agents',
-      comment: 'C4, W4: the Hub imports neither harness/ nor agents/; main.ts hands it over.',
+      name: 'hub-does-not-import-harness',
+      comment: 'C4, W4: the Hub does not import harness/; main.ts hands it over.',
       severity: 'error',
       from: { path: '^apps/(server|web)/src/hub/' },
-      to: { path: '^apps/$1/src/(harness|agents)/' },
+      to: { path: '^apps/$1/src/harness/' },
     },
     {
       name: 'platform-does-not-import-subject',
       comment: 'C7: platform/ holds no subject and imports none.',
       severity: 'error',
       from: { path: `${SERVER}/platform/` },
-      // The test ports hand every test Hub the Builder's doubles (T14), as they hand it Neon's.
-      to: {
-        path: `${SERVER}/(hub|harness|agents)/`,
-        pathNot: `${SERVER}/agents/app-builder/runs/test-runs\\.ts$`,
-      },
+      to: { path: `${SERVER}/(hub|harness)/` },
     },
     {
       name: 'program-imports-program-by-name',
@@ -186,15 +171,23 @@ module.exports = {
     },
     ...ADAPTERS,
     {
-      name: 'mastra-only-in-harness-and-agents',
+      name: 'mastra-only-in-harness-and-its-folder',
       comment:
-        'W7, decision 0033: @mastra/* is imported only inside harness/ and agents/ on the server and inside harness/ on the web.',
+        'W7, decision 0033: @mastra/* is imported only inside harness/ and mastra/ on the server and inside harness/ on the web.',
       severity: 'error',
       from: {
         path: '^apps/(server|web)/src/',
-        pathNot: '^apps/(server/src/(harness|agents)|web/src/harness)/',
+        pathNot: '^apps/(server/src/(harness|mastra)|web/src/harness)/',
       },
       to: { path: '(^|node_modules/)@mastra/' },
+    },
+    {
+      name: 'mastra-only-through-index',
+      comment:
+        "C4: the server's mastra/ folder is reached only through its index.ts, the entry Mastra documents (founder, 2026-11-29). Its own files and the test helpers read the inside.",
+      severity: 'error',
+      from: { path: '^apps/', pathNot: [`${SERVER}/mastra/`, TEST_HELPER] },
+      to: { path: `${SERVER}/mastra/`, pathNot: `${SERVER}/mastra/index\\.ts$` },
     },
     {
       name: 'no-mastra-ee',
@@ -271,10 +264,10 @@ module.exports = {
     {
       name: 'web-tree-shape',
       comment:
-        'W1: apps/web/src holds main.tsx, the generated routeTree.gen.ts and the folders routes, hub, harness, agents, ui, platform, brand.',
+        'W1: apps/web/src holds main.tsx, the generated routeTree.gen.ts and the folders routes, hub, harness, ui, platform, brand.',
       severity: 'error',
       from: {
-        path: `${WEB}/(?!(main\\.tsx|routeTree\\.gen\\.ts|routes/|hub/|harness/|agents/|ui/|platform/|brand/))`,
+        path: `${WEB}/(?!(main\\.tsx|routeTree\\.gen\\.ts|routes/|hub/|harness/|ui/|platform/|brand/))`,
       },
       to: {},
     },
@@ -283,23 +276,14 @@ module.exports = {
       comment: 'W5, W13: ui/, platform/ and brand/ import no subject and no route.',
       severity: 'error',
       from: { path: `${WEB}/(ui|platform|brand)/` },
-      to: { path: `${WEB}/(hub|harness|agents|routes)/` },
-    },
-    ...WEB_DIRECTION(WEB_TEST_HELPER),
-    {
-      name: 'ui-ai-takes-ready-data',
-      comment:
-        "Criterion 21 of the front-end foundation card: a piece of ui/ai/ takes ready data, never the Hub's contract.",
-      severity: 'error',
-      from: { path: `${WEB}/ui/ai/` },
-      to: { path: '(^|node_modules/|/)@conexus/hub-api(/|$)|^packages/hub-api/' },
+      to: { path: `${WEB}/(hub|harness|routes)/` },
     },
     {
       name: 'routes-reach-subject-through-public',
       comment: 'W6: routes/ reaches a subject only through its public.ts.',
       severity: 'error',
       from: { path: `${WEB}/routes/` },
-      to: { path: `${WEB}/(hub|harness|agents)/`, pathNot: PUBLIC_DOOR },
+      to: { path: `${WEB}/(hub|harness)/`, pathNot: PUBLIC_DOOR },
     },
   ],
   options: {
@@ -311,7 +295,7 @@ module.exports = {
       conditionNames: ['import', 'node', 'default', 'types'],
       mainFields: ['module', 'main', 'types'],
     },
-    // Packages stay out of the graph except Mastra's, each a leaf (doNotFollow), so mastra-only-in-harness-and-agents and no-mastra-ee see an import that resolves.
+    // Packages stay out of the graph except Mastra's, each a leaf (doNotFollow), so mastra-only-in-harness-and-its-folder and no-mastra-ee see an import that resolves.
     // .lab/ is a builder's scratch folder, listed in .gitignore: git does not hold it, so it stays out here too (check-suppressions reads git's list).
     exclude: { path: '^(?!.*node_modules/@mastra/).*(^|/)(node_modules|dist|coverage)/|^\\.lab/' },
   },

@@ -129,7 +129,6 @@ test('no Projeto o trilho fica e a lista é a do Projeto, com 328px; Ctrl+B reco
   await atRest(page)
   await nav.getByRole('link', { name: 'Início' }).click()
   await page.getByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }).waitFor()
-  await nav.getByRole('link', { name: 'Nova conversa' }).waitFor()
   await atRest(page)
   assert.deepEqual(
     { opened, collapsed, tip, after: await widthOf(nav) },
@@ -161,7 +160,7 @@ for (const state of DEFAULT_STATES) {
   })
 }
 
-test('a gaveta tem o trilho e a lista juntos: Início, Projetos, Configurações, o sino e a conta, e a empresa e Nova conversa', async () => {
+test('a gaveta tem o trilho e a lista juntos: Início, Projetos, Configurações, o sino e a conta, e a empresa', async () => {
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('button', { name: 'Abrir navegação' }).click()
   const drawer = page.getByRole('dialog', { name: 'Navegação' })
@@ -169,14 +168,13 @@ test('a gaveta tem o trilho e a lista juntos: Início, Projetos, Configurações
   const names = await Promise.all(
     [
       drawer.getByText('Empresa Teste'),
-      drawer.getByRole('link', { name: 'Nova conversa' }),
       drawer.getByRole('link', { name: 'Projetos' }),
       drawer.getByRole('link', { name: 'Configurações' }),
       drawer.getByRole('button', { name: 'Notificações' }),
       drawer.getByRole('button', { name: 'Conta de Ana Lima' }),
     ].map((one) => one.isVisible()),
   )
-  assert.deepEqual(names, [true, true, true, true, true, true])
+  assert.deepEqual(names, [true, true, true, true, true])
   await page.close()
 })
 

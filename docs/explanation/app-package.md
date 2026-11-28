@@ -3,8 +3,8 @@
 `packages/app` (`@conexus/app`) is everything the Builder writes an app with. It has four parts:
 the skills that teach the Builder, the starter every app begins from, the SDK the app's code
 imports, and the check that decides whether a version may reach the app's address. This page
-explains how each part works and how they meet during a Builder turn
-([the Builder turn](builder-turn.md)). The platform side of the same contract, which the
+explains how each part works. The old Builder's turn, which ran them on a machine, left the
+repository in the removal of the old harness; the package stays for the harness that replaces it. The platform side of the same contract, which the
 dispatcher and the Hub read, lives in `packages/app-contract`
 ([the app contract and the dispatcher](app-contract-and-dispatcher.md)).
 
@@ -20,12 +20,12 @@ the server side; `createApi`, `can` and `readCaller` are the screen side
 
 The same contract code runs in three places. The check validates the manifest with it on the
 machine, the Hub validates it again when it receives the version
-(`apps/server/src/harness/machine/pack.ts`), and `serveApp` is both the probe the check runs and
+(`versionFiles` in `packages/app-contract`), and `serveApp` is both the probe the check runs and
 the entry of the deployed Worker. An app never supplies its own Worker entry: the check writes
 `export default serveApp({ operations, handlers, roles })` for it
 (`packages/app/src/check/build.ts`).
 
-## The skills reach the Builder inline
+## The skills
 
 `packages/app/skills/` holds five skills:
 
@@ -40,12 +40,9 @@ the entry of the deployed Worker. An app never supplies its own Worker entry: th
 - `conexus-data` is the server side: operations in Zod, handlers, roles, connectors, failures
   and migrations.
 
-The skills never land on the machine's disk. `readSkills()` reads each folder from the server's
-own copy of the package (`packages/app/src/skills.ts`). The server validates each with Mastra's
-`validateSkillContent`, builds it with `createSkill` and passes the list as the Builder agent's
-`skills` option, together with the skills of the connectors the Project was granted
-(`apps/server/src/agents/app-builder/instructions.ts`, `builder.ts`). The model reads them
-through Mastra's skill tools when it needs them. A test type-checks every example file in
+`readSkills()` reads each folder from the server's own copy of the package
+(`packages/app/src/skills.ts`). No agent loads them now; the harness that replaces the Builder
+will. A test type-checks every example file in
 `references/` against the starter, by the path its first line names
 (`packages/app/src/skills.test.ts`), so an example that drifts from the kit fails CI.
 
@@ -58,13 +55,9 @@ vazio". It has no `shared/`, no `server/` and no generated client. Two details e
 content security policy: `main.tsx` tells Base UI not to write style elements, and
 `vite.config.ts` sets `assetsInlineLimit: 0` because the policy allows no `data:` address.
 
-The Project's Git repository is made when first needed: the first machine seed or the first save
-calls `repository.ensure()`, which commits the starter's files as "Start the app" on `main` of a
-new bare repository on the server's disk (`apps/server/src/agents/app-builder/git/repository.ts`,
-`apps/server/src/agents/app-builder/runs/ports.ts`). Version numbers count commits after that one, so the
-starter is version 0. A new machine checks out a bundle of `main` into `/home/user/app`; a machine
-that kept unsaved work merges it onto `main` instead
-(`apps/server/src/harness/machine/scripts.ts`). The E2B template runs `npm ci`
+The starter's files were committed as "Start the app" in a Git repository per Project, and a version's number counted the commits after that one, so the starter was version 0; that repository left with the old Builder.
+
+The E2B template runs `npm ci`
 on the starter's lockfile once at template build time, so a machine's npm cache already holds the
 starter's packages and an install fetches only what the app added (`infra/e2b/template.ts`).
 
@@ -103,26 +96,16 @@ operation, touches data or looks at a real screen.
 
 ## How the check gates a version
 
-Two callers reach the check, both through `Runs.check`
-(`apps/server/src/agents/app-builder/runs/runs.ts`). The `conexus_check` tool lets the model check whenever
-it wants. The end-of-turn judge is a Mastra `isTaskComplete` scorer, `conexusCheck`
-(`apps/server/src/agents/app-builder/processors.ts`). When the model stops, the judge runs the
-check if the app folder changed. A failing report goes back to the model as the scorer's reason
-and the model continues, up to four rounds. On the last round a failure is recorded as
-`APP_CHECK_FAILED`. A platform failure ends the turn as `unchecked` without spending a round.
-
-Every turn that changed the app is saved to Git, whatever the check said. Only a version whose
-check state is `passed` goes further (`passed()` in `runs.ts`). For that version `packIn` reads
-the version folder off the machine, refusing symbolic links and anything over `APP_LIMITS`, and
-the Hub rebuilds it as a `VersionFolder` of the manifest and base64 files
-(`apps/server/src/harness/machine/pack.ts`). A failed or unchecked version stays in Git and makes
-no app version. What happens to the folder next is in [the Hub side of an app](hub-apps.md).
+The check ran on the Builder's machine, at the model's request and at the end of its turn, and
+only a version whose report was `passed` went further. That machinery left the repository in removal of the old harness. What reaches the Hub is a `VersionFolder` of the manifest and base64 files, which the Hub
+validates again through `hub.apps.sendFromBuilder`. What happens to the folder next is in
+[the Hub side of an app](hub-apps.md).
 
 A version therefore carries no source and no `node_modules`: only `manifest.json` (with the
 migrations inline, read from the `migrations` export of `server/handlers.ts`), the minified
 `worker.js`, and the built screens under `assets/`.
 
 `scripts/app-pack.ts` is a second packer for hand-written test apps in `tests/apps/`. The
-end-to-end tests and the publish workflow use it; the Builder never does. It bundles with the
+end-to-end tests and the publish workflow use it. It bundles with the
 same Wrangler dry run and checks the same `versionFiles` and `APP_LIMITS`, so a test version has
-the shape of a Builder version.
+the shape of a version a machine would send.

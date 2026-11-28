@@ -171,8 +171,7 @@ follows no redirect, redacts secrets from the reply and turns it into the kit's 
 An app reaches reads only. The types offer no write. Publishing refuses a version that declares
 an operation that is not a read (`ungranted()` in the Hub's grants). Every call checks again. The
 app speaks as its version, held to its manifest, not as the person calling; the role check
-happened at publish. Writes exist only for Project agents, behind approval
-([agents and automations](agents-and-automations.md)).
+happened at publish. Writes exist only for Project agents, behind approval.
 
 ## The outbound wall
 

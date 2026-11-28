@@ -33,8 +33,8 @@ Em `apps/web/src`, fora dos testes.
 
 | O quê | Hoje | Onde |
 | --- | --- | --- |
-| Arquivos com alguma classe de movimento | 19 | `ui/` (13), `agents/app-builder/` (3), `brand/mark.tsx`, `harness/model-accounts/sign-in-form.tsx`, `hub/copies/data-tree.tsx` |
-| Durações usadas | 150 ms, 200 ms, 300 ms (uma vez), 0 | `ui/dialog.tsx`, `ui/sheet.tsx`, `ui/drawer.tsx`, `ui/sidebar.tsx`, `harness/room/memory-status.tsx` |
+| Arquivos com alguma classe de movimento | 16 | `ui/` (13), `brand/mark.tsx`, `harness/model-accounts/sign-in-form.tsx`, `hub/copies/data-tree.tsx` |
+| Durações usadas | 150 ms, 200 ms, 300 ms (uma vez), 0 | `ui/dialog.tsx`, `ui/sheet.tsx`, `ui/drawer.tsx`, `ui/sidebar.tsx` |
 | Curvas nas peças | três diferentes: `ease-out` (gaveta), `ease-in-out` (painel), `ease-linear` (largura da barra); o resto usa a curva padrão do navegador | `ui/drawer.tsx`, `ui/sheet.tsx`, `ui/sidebar.tsx` |
 | Curvas como token | duas, só para o trabalho em andamento: `--ease-fit` e `--ease-arrive` | `apps/web/src/brand/tokens.css` |
 | Menu, popover, seletor, dica, abas, botão | nenhuma transição: abrem e mudam de cor na hora | `ui/popover.tsx`, `ui/dropdown-menu.tsx`, `ui/select.tsx`, `ui/tooltip.tsx`, `ui/tabs.tsx`, `ui/button.tsx` |

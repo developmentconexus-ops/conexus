@@ -1,4 +1,4 @@
-import { DIAGRAM_FRAME, PAGES } from '@conexus/hub-api'
+import { PAGES } from '@conexus/hub-api'
 import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
 
@@ -44,18 +44,6 @@ export function installPages(app: FastifyInstance): void {
       handler: (_request, reply) => reply.sendFile(file),
     })
   }
-  // The drawing frame is a sandbox of an opaque origin: its policy replaces the Hub's for this one
-  // page, and framing it from the Hub's own page is allowed (security S24).
-  app.route({
-    method: ['GET', 'HEAD'],
-    url: DIAGRAM_FRAME.path,
-    config,
-    handler: (_request, reply) =>
-      reply
-        .header('Content-Security-Policy', DIAGRAM_FRAME.policy)
-        .header('X-Frame-Options', 'SAMEORIGIN')
-        .sendFile('diagram-frame.html', { maxAge: 0 }),
-  })
   app.route({
     method: ['GET', 'HEAD'],
     url: '/assets/*',

@@ -35,8 +35,8 @@ Cada página de assunto tem estas seções:
 | [Extração Singer](extracao-singer.md) | Taps, targets, Meltano, o adaptador do kit, o dinheiro exato e a primeira cópia | [Trilha Dados](../steps/trilhas/dados.md) |
 | [Credenciais](credenciais.md) | O login de cada sistema, o selo, a renovação e como a credencial chega à cópia | [security](../guides/security.md), [seal keys](../how-to/seal-keys.md) |
 | [Catálogo e Ontologia](catalogo-e-ontologia.md) | O catálogo, a descoberta, a Ontologia, o Brain e o Knowledge | [data](../guides/data.md) |
-| [Agentes e harness](agentes-e-harness.md) | O Assistente, os agentes do Projeto, a ficha, as ferramentas, a escrita, os gatilhos, o rastreio e as evals | [harness](../explanation/harness.md), [agentes](../explanation/agents-and-automations.md) |
-| [Builder](builder.md) | Como o Builder constrói, a máquina, o navegador e a conferência do fim do turno | [turno](../explanation/builder-turn.md), [prompt](../reference/builder-prompt.md) |
+| [Agentes e harness](agentes-e-harness.md) | O Assistente, os agentes do Projeto, a ficha, as ferramentas, a escrita, os gatilhos, o rastreio e as evals | |
+| [Builder](builder.md) | Como o Builder constrói, a máquina, o navegador e a conferência do fim do turno | |
 | [Prévia e apps](previa-e-apps.md) | A Prévia, o app publicado, o cookie e o endereço | [app](../explanation/app-package.md), [contrato](../explanation/app-contract-and-dispatcher.md) |
 | [Desenho e movimento](desenho-e-movimento.md) | A direção visual do Hub, os tokens, o movimento das peças e a trilha Redesenho | [design](../guides/design.md), [movimento](../reference/movimento.md) |
 | [Autenticação e papéis](autenticacao-e-papeis.md) | O login do Hub, os papéis, quem lê o quê, o Registro e os dados pessoais | [security](../guides/security.md) |

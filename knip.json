@@ -4,18 +4,38 @@
     ".": {
       "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"],
       "ignoreBinaries": ["openssl"],
-      "ignoreDependencies": ["jscpd", "agent-browser"]
+      "ignoreDependencies": [
+        "jscpd",
+        "agent-browser",
+        "@mastra/core",
+        "@mastra/memory",
+        "@mastra/pg"
+      ]
     },
     "apps/server": {
       "entry": ["src/**/*.check.ts"],
-      "ignoreBinaries": ["setpriv", "mkfifo"],
-      "ignoreDependencies": ["@stryker-mutator/command-runner"]
+      "ignoreBinaries": ["setpriv"],
+      "ignoreDependencies": [
+        "@stryker-mutator/command-runner",
+        "@conexus/app",
+        "@mastra/e2b",
+        "@mastra/fastify",
+        "@mastra/server",
+        "e2b",
+        "@mastra/evals"
+      ],
+      "ignoreIssues": {
+        "src/harness/model-accounts/**": ["exports", "types"]
+      }
     },
     "apps/web": {
-      "entry": [
-        "src/ui/pieces-fixture.tsx",
-        "src/harness/room/diagram-fixture.tsx",
-        "src/harness/room/diagram-frame.ts"
+      "entry": ["src/ui/pieces-fixture.tsx"],
+      "ignoreDependencies": [
+        "@mastra/client-js",
+        "mermaid",
+        "react-markdown",
+        "remark-gfm",
+        "remend"
       ]
     },
     "packages/connectors": {

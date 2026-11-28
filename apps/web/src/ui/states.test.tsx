@@ -95,11 +95,13 @@ test('erro: na área, com a barra, o título da página e "Tentar de novo" lê o
   let failing = true
   serve()
   server.use(
-    http.get(`*/api/companies/${COMPANY.id}/model-accounts`, () =>
-      failing ? refusal('REQUEST_MALFORMED') : undefined,
+    http.get(PROJECTS_PATH, () =>
+      failing
+        ? refusal('REQUEST_MALFORMED')
+        : HttpResponse.json({ projects: [], next: { kind: 'END' }, databaseReady: true }),
     ),
   )
-  openCompany(HOME)
+  openCompany(`${HOME}/projects`)
   const alert = await screen.findByRole('alert')
   expect(within(screen.getByRole('main')).getByText(alert.textContent ?? '')).toBeTruthy()
   expect(screen.getByRole('navigation', { name: 'Navegação' })).toBeTruthy()
@@ -107,9 +109,7 @@ test('erro: na área, com a barra, o título da página e "Tentar de novo" lê o
   expect(screen.getByRole('heading', { name: 'Não foi possível abrir esta página' })).toBeTruthy()
   failing = false
   fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-  expect(
-    await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
-  ).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Todos os projetos' })).toBeTruthy()
 })
 
 test('não encontrado dentro da moldura: na área, com "Voltar ao início", sem um main dentro do outro (critério 9)', async () => {

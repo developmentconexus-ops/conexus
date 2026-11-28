@@ -1,5 +1,4 @@
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
-import { testBuilderPorts } from '../agents/app-builder/runs/test-runs.ts'
 import { createAws } from './aws.ts'
 import type { CompanyPostgres } from './company-postgres.ts'
 import { createCompanyPostgres } from './company-postgres.ts'
@@ -72,8 +71,6 @@ type Doubles = {
   neon: ReturnType<typeof fakeNeon>
   cloudflare: ReturnType<typeof fakeCloudflare>
   postgres: ReturnType<typeof heldCompanyPostgres>
-  /** The saved tools' namespace (step 24.4); one of its own when the test does not look at it. */
-  tools?: ReturnType<typeof fakeCloudflare>
   /** The companies' lakes in AWS; one of its own when the test does not look at it. */
   aws?: ReturnType<typeof fakeAws>
 }
@@ -86,7 +83,6 @@ export function testAppPorts(
     cloudflare: fakeCloudflare(),
     postgres: heldCompanyPostgres(config),
   },
-  machineFolder?: string,
 ) {
   const copyAws = createAws({ config, log: silent })
   const memoryAws = fakeAws()
@@ -98,8 +94,6 @@ export function testAppPorts(
     copyQueue: copyAws.queue,
     companyPostgres: doubles.postgres.companyPostgres,
     cloudflare: doubles.cloudflare.cloudflare,
-    cloudflareTools: (doubles.tools ?? fakeCloudflare()).cloudflare,
-    ...testBuilderPorts(config, machineFolder),
     log: silent,
   }
 }

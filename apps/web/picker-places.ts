@@ -1,8 +1,8 @@
-import { AgentListed, listAgents, listProjects } from '@conexus/hub-api'
+import { listProjects } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
 import type { Replies, Reply } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
-import { companies, PROJECT_ID, PROJECT_NAME, startsOn } from './sweep-replies.ts'
+import { companies, PROJECT_ID, PROJECT_NAME } from './sweep-replies.ts'
 
 const COMPANY_ID = '0'.repeat(32)
 export const PROJECTS = `/api/companies/${COMPANY_ID}/projects`
@@ -46,8 +46,8 @@ export type Place = {
   path: string
   /** The name of the trigger and of its list. */
   label: string
-  /** A fixed item of the place, chosen in the browser, that stays when the Hub fails; Novo agente has none. */
-  fixed: string | undefined
+  /** A fixed item of the place, chosen in the browser, that stays when the Hub fails. */
+  fixed: string
   /** On a phone the trigger sits in the navigation drawer, opened first. */
   drawer: boolean
   /** An option to choose and the address it leads to; none when the choice stays in the trigger. */
@@ -57,60 +57,7 @@ export type Place = {
 
 const COMPANY = companies([{ name: 'Empresa Teste', role: 'owner' }], false)
 
-const AGENTS: Replies = {
-  [`GET /api/companies/${COMPANY_ID}/agents`]: ok(listAgents, {
-    agents: [
-      AgentListed.parse({
-        id: `${'1'.repeat(8)}-aaaa-4aaa-8aaa-${'1'.repeat(12)}`,
-        projectId: PROJECT_ID,
-        name: 'Conferente de metas',
-        description: 'Compara as vendas de ontem com as metas.',
-        state: { kind: 'DRAFT' },
-        updatedAt: NOW,
-        lastRunAt: null,
-        tools: 1,
-      }),
-    ],
-  }),
-}
-
 export const PLACES: readonly Place[] = [
-  {
-    name: 'o filtro de Agentes',
-    path: `/companies/${COMPANY_ID}/agents`,
-    label: 'Projeto',
-    fixed: 'Todos os Projetos',
-    drawer: false,
-    pick: { option: PROJECT_NAME, address: /projectId=r{32}/ },
-    replies: (projects) => ({ ...COMPANY, ...AGENTS, ...projects }),
-  },
-  {
-    name: 'Novo agente',
-    path: `/companies/${COMPANY_ID}/agents`,
-    label: 'Novo agente',
-    fixed: undefined,
-    drawer: false,
-    pick: { option: PROJECT_NAME, address: /projects\/r{32}\/agents$/ },
-    replies: (projects) => ({ ...COMPANY, ...AGENTS, ...projects }),
-  },
-  {
-    name: 'o filtro de conversas',
-    path: `/companies/${COMPANY_ID}?place=HOME`,
-    label: 'Filtrar conversas',
-    fixed: 'Todas',
-    drawer: true,
-    pick: { option: PROJECT_NAME, address: /place=r{32}/ },
-    replies: (projects) => ({ ...COMPANY, ...startsOn(COMPANY_ID), ...projects }),
-  },
-  {
-    name: 'a pasta da conversa',
-    path: `/companies/${COMPANY_ID}`,
-    label: 'Projeto da conversa',
-    fixed: 'Sem Projeto',
-    drawer: false,
-    pick: { option: PROJECT_NAME, address: undefined },
-    replies: (projects) => ({ ...COMPANY, ...startsOn(COMPANY_ID), ...projects }),
-  },
   {
     name: 'a barra do Projeto',
     path: `/companies/${COMPANY_ID}/projects/${PROJECT_ID}`,

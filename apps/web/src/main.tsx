@@ -1,13 +1,11 @@
 import './platform/jitless.ts'
 import './brand/tokens.css'
 import { CSPProvider } from '@base-ui/react/csp-provider'
-import type { ConversationId } from '@conexus/hub-api'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { RouterHistory } from '@tanstack/react-router'
 import { createRouter, RouterProvider, useRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import type { AssistantHandOff, ModelRefusal } from './harness/room/public.ts'
 import { sessionQuery } from './hub/identity/public.ts'
 import { createCache } from './platform/cache.ts'
 import { HubFailure } from './platform/hub.ts'
@@ -32,25 +30,13 @@ declare module '@tanstack/react-router' {
     place?: string
     /** A section of Configurações' index, in its group and order (web W32). */
     section?: SectionMeta
-    /** A step of the owner's first entry, which its frame shows as "Passo n de 4" (web W33). */
-    step?: 1 | 2 | 3 | 4
-    /** The page bounds its own height, as a conversation does: the frame is the compact one. */
-    bounded?: true
+    /** A step of the owner's first entry, which its frame shows as "Passo n de 3" (web W33). */
+    step?: 1 | 2 | 3
   }
 }
 declare module '@tanstack/history' {
   /** What a navigation carries (TanStack Router `navigate({ state })`). */
   interface HistoryState {
-    /**
-     * Início's request for the conversation to send now, the words only (Factory
-     * `promptHandoffState`), addressed to that conversation: another conversation's screen still
-     * mounted while the navigation loads leaves it alone.
-     */
-    handoff?: { conversationId: ConversationId; content: string }
-    /** The Assistant's proposal the Builder's conversation asks the Hub to send once it follows the stream. */
-    assistantHandOff?: AssistantHandOff
-    /** The Projeto was created and the Hub refused the model of its conversation. */
-    refused?: ModelRefusal
     /** The list's own controls (search, filter, tabs) change the address and leave the phone's drawer open (design V56). */
     keepDrawer?: true
   }

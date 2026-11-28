@@ -1,7 +1,6 @@
 export * from './address.ts'
 export { NamedAgent, ProblemAgents, ProblemField, ProblemReason } from './agent-failures.ts'
 export * from './agent-ids.ts'
-export * from './agents.ts'
 export {
   AppAccessInvitation,
   AppAccessList,
@@ -82,7 +81,6 @@ export {
   renewInvitation,
 } from './companies.ts'
 export * from './company-data.ts'
-export * from './company-memory.ts'
 export * from './company-roles.ts'
 export {
   CONEXUS_PARTS,
@@ -131,7 +129,6 @@ export {
   testConnection,
   unlinkConnection,
 } from './connectors.ts'
-export * from './construtor.ts'
 export {
   BUILDER_CONTROLLER,
   CONVERSATION_ROUTES,
@@ -149,7 +146,6 @@ export {
 } from './conversations.ts'
 export * from './data-reads.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
-export * from './handoff.ts'
 export { getHealth, Health } from './health.ts'
 export {
   COOKIE_PREFIX,
@@ -220,7 +216,6 @@ export {
   setObservationalMemoryModel,
 } from './observational-memory.ts'
 export * from './ontology.ts'
-export * from './open-writes.ts'
 export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,
@@ -244,8 +239,7 @@ export {
   OwnerInvitation,
   registerClient,
 } from './operations.ts'
-export { DIAGRAM_FRAME, PAGES, REDIRECT_PATH } from './pages.ts'
-export * from './profile-memory.ts'
+export { PAGES, REDIRECT_PATH } from './pages.ts'
 export {
   APP_CONNECTOR_REPLY_BYTES,
   callAppConnector,

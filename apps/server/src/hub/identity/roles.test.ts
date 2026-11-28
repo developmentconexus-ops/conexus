@@ -143,8 +143,6 @@ test('criar um papel: dono ou administrador cria Atendente, a lista o traz, e a 
   })
   const project = await post(w.hub, w.bruno, `${w.base}/projects`, { name: 'Vendas' })
   assert.equal(project.statusCode, 201)
-  const assistant = await call(w.hub, w.bruno, 'GET', `${w.base}/assistant/connections`)
-  assert.equal(assistant.statusCode, 200)
   const projectId = Object(project.json()).project.id
   const publishing = await post(w.hub, w.bruno, `${w.base}/projects/${projectId}/publish-request`, {
     number: 1,

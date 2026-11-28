@@ -94,7 +94,7 @@ choice of test tools.
   more than the model hid the Assistant's `propose_automation` asking for ids it never saw. [review]
 - **T26.** A test that feeds our code a shape a library emits (Mastra's controller events, stored
   messages, tool results; vibesdk's preview events) **must** load it with `nativeRecording(scenario)`
-  (`test-recordings.ts`) from a recording that `npm run record` (`scripts/record.ts`) made from the
+  (`test-recordings.ts`) from a recording made from the
   installed library in `apps/server/src/platform/recordings/mastra/<scenario>.jsonl`, its first line
   naming library, version, source and date, and carrying invented content only (security S40). A
   literal of such a shape in a test is refused. Singer and Meltano shapes follow it:

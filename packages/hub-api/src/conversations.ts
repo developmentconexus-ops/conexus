@@ -95,8 +95,8 @@ export const listConversations = defineOperation({
 })
 
 /** What a request to start a conversation may choose, and what refuses it: the Builder's and the Construtor's. */
-export const StartChoice = z.object({ model: ModelId.optional(), effort: Effort.optional() })
-export const START_FAILURES = [
+const StartChoice = z.object({ model: ModelId.optional(), effort: Effort.optional() })
+const START_FAILURES = [
   ...READ_FAILURES,
   'IDEMPOTENCY_CONFLICT',
   'MODEL_UNKNOWN',

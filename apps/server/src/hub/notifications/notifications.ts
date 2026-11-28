@@ -37,7 +37,7 @@ export type AutomationRan = {
 }
 
 /** What the Hub tells a person when an automation's run ends (step 24.2). */
-export type Notify = {
+type Notify = {
   /** One notification per run; mails the owner only for a new one fired by the schedule, or a pause. */
   automationRan(ran: AutomationRan): Promise<void>
 }

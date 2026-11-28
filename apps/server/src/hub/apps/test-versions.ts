@@ -1,16 +1,10 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
-import type { CheckReport } from '@conexus/app/check'
-import { STEP_NAMES } from '@conexus/app/check'
-import { AppVersion, PreviewData } from '@conexus/hub-api'
+import { Manifest } from '@conexus/app-contract'
+import { AppVersion, CompanyId, PersonId, PreviewData, ProjectId, RunId } from '@conexus/hub-api'
 import { z } from 'zod'
-import type { Anthropic, Reply } from '../../platform/test-anthropic.ts'
-import { plantAnthropic } from '../../platform/test-anthropic.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
   ANA_OWNER,
@@ -29,112 +23,15 @@ import { folder, MIGRATION } from './test-version-folder.ts'
 export type { Folder }
 export { folder, MIGRATION }
 
-const PASSED: CheckReport = {
-  ok: true,
-  steps: STEP_NAMES.map((name) => ({ name, state: 'passed', problems: [] })),
-}
-const FAILED: CheckReport = {
-  ok: false,
-  steps: STEP_NAMES.map((name, at) => {
-    if (at === 0) {
-      const problem = { file: 'server/handlers.ts', line: 1, column: 1, code: 'TS2322' }
-      return { name, state: 'failed', problems: [{ ...problem, message: 'Type mismatch.' }] }
-    }
-    return { name, state: 'skipped', problems: [] }
-  }),
-}
-
 /**
- * What the end of the turn's check does each time: passes and leaves the version where the
- * template's check leaves it (`node_modules/.conexus/version`), passes and leaves a link there in
- * its place, fails, or cannot run (exit 2).
- */
-export type Checked = 'passed' | 'linked' | 'failed' | 'platform'
-
-/**
- * The machine's check program of the test Hub (`testBuilderPorts`), counting its calls again: the
- * n-th call does the n-th of `plan`, and passes past it, leaving `version`.
- */
-export function checking(machineFolder: string, plan: readonly Checked[], version: Folder) {
-  const built = join(machineFolder, 'built-version')
-  rmSync(built, { recursive: true, force: true })
-  for (const file of version.files) {
-    const path = join(built, file.path)
-    mkdirSync(dirname(path), { recursive: true })
-    writeFileSync(path, Buffer.from(file.base64, 'base64'))
-  }
-  writeFileSync(join(built, 'manifest.json'), JSON.stringify(version.manifest))
-  writeFileSync(join(machineFolder, 'check-plan'), plan.join('\n'))
-  writeFileSync(join(machineFolder, 'check-passed.json'), JSON.stringify(PASSED))
-  writeFileSync(join(machineFolder, 'check-failed.json'), JSON.stringify(FAILED))
-  const count = join(machineFolder, 'check-count')
-  rmSync(count, { force: true })
-  const program = join(machineFolder, 'check')
-  writeFileSync(
-    program,
-    [
-      '#!/bin/sh',
-      // Called as `check --root <app folder>`.
-      'out="$2/node_modules/.conexus/version"',
-      `n=$(( $(cat '${count}' 2>/dev/null || echo 0) + 1 ))`,
-      `echo $n > '${count}'`,
-      `step=$(sed -n "\${n}p" '${machineFolder}/check-plan')`,
-      '[ "$step" = platform ] && exit 2',
-      `[ "$step" = failed ] && exec cat '${machineFolder}/check-failed.json'`,
-      'rm -rf "$out" && mkdir -p "$(dirname "$out")"',
-      `if [ "$step" = linked ]; then ln -s '${built}' "$out"; else cp -r '${built}' "$out"; fi`,
-      `cat '${machineFolder}/check-passed.json'`,
-    ].join('\n'),
-  )
-  chmodSync(program, 0o755)
-  return { calls: () => (existsSync(count) ? Number(readFileSync(count, 'utf8')) : 0) }
-}
-
-/** How a send asks the Builder for a version: each ask is new, so each turn saves one. */
-export const ASK = 'Guarde uma versão nova: '
-
-/**
- * A model that writes the asked text to a file when a send asks, and answers after: every send's
- * turn changes the app, so it saves a version.
- */
-export function versionWriting(): Anthropic['answer'] {
-  return (sent): Reply => {
-    if (!sent.stream) return { kind: 'text', text: 'Título' }
-    const last = sent.texts.at(-1) ?? ''
-    if (!last.startsWith(ASK)) return { kind: 'text', text: 'Pronto.' }
-    const input = { path: 'versao.ts', content: `${last}\n` }
-    return {
-      kind: 'blocks',
-      blocks: [{ type: 'tool_use', name: 'mastra_workspace_write_file', input }],
-    }
-  }
-}
-
-const MODEL = { model: 'anthropic/claude-sonnet-4-6', effort: 'off' }
-
-/**
- * The company's Builder ready to save versions, as its owner sets it: an Anthropic key and the
- * default model, the model a `versionWriting` double.
- */
-export async function readyForVersions(t: TestContext, hub: Hub, owner: Person, companyId: string) {
-  plantAnthropic(t, versionWriting())
-  const company = `/api/companies/${companyId}`
-  const account = { owner: 'company', provider: 'anthropic', label: 'Time 1', key: 'sk-ant-v-1' }
-  assert.equal((await post(hub, owner, `${company}/model-accounts`, account)).statusCode, 201)
-  assert.equal((await call(hub, owner, 'PUT', `${company}/default-model`, MODEL)).statusCode, 200)
-}
-
-/**
- * Empresa A with Ana its owner, Bruno a member, its Builder ready, and the Projeto Pedidos, whose
- * company database is one of the test server, as Neon would give it: a Builder turn there saves a
- * version and sends it to the app.
+ * Empresa A with Ana its owner, Bruno a member, and the Projeto Pedidos, whose
+ * company database is one of the test server, as Neon would give it: a send there saves a version and reaches the app.
  */
 export async function companyForVersions(t: TestContext) {
   const hub = await hubWithLog(t)
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')
   const bruno = await memberOn(hub, companyId, BRUNO, 'member')
-  await readyForVersions(t, hub, ana, companyId)
   const projects = `/api/companies/${companyId}/projects`
   const made = await post(hub, ana, projects, { name: 'Pedidos' })
   const projectId = String(Object(made.json()).project.id)
@@ -146,87 +43,51 @@ export async function companyForVersions(t: TestContext) {
   return { t, hub, ana, bruno, companyId, projectId, owner, projects, versions }
 }
 
-/** Where a send goes: a Projeto of a company whose Builder is ready (`readyForVersions`). */
+/** Where a send goes: a Projeto of a company. */
 type Subject = { t: TestContext; hub: Hub; projects: string; projectId: string }
 
-const Frame = z.looseObject({ type: z.string() })
-const Part = z.looseObject({ type: z.string(), data: z.unknown().optional() })
-
-/** The conversation's stream, Mastra's own route, until its run ends (`agent_end`). */
-async function turnOn(hub: Hub, person: Person, conversationId: string) {
-  const response = await hub.app.inject({
-    method: 'GET',
-    url: `/api/builder/agent-controller/builder/sessions/${conversationId}/stream`,
-    headers: { origin: TEST_ORIGIN, cookie: person.cookie },
-    payloadAsStream: true,
-  })
-  assert.equal(response.statusCode, 200)
-  const stream = response.stream()
-  // The messages it started, each whole: ours is told again with the same id as the end adds to it.
-  // `raw` is the parts as the stream said them, before the contract's parse drops what it does not know.
-  const ended = Promise.withResolvers<{ parts: z.infer<typeof Part>[]; raw: string }[]>()
-  const told: { parts: z.infer<typeof Part>[]; raw: string }[] = []
-  let buffered = ''
-  stream.on('data', (chunk: Buffer) => {
-    buffered += chunk.toString('utf8')
-    const frames = buffered.split('\n\n')
-    buffered = frames.pop() ?? ''
-    for (const frame of frames.filter((each) => each.startsWith('data: '))) {
-      const event = Frame.parse(JSON.parse(frame.slice(6)))
-      if (event.type === 'message_start') {
-        const raw = Object(Object(event.message).content).parts
-        told.push({ parts: z.array(Part).parse(raw), raw: JSON.stringify(raw) })
-      }
-      if (event.type === 'agent_end') ended.resolve(told)
-    }
-  })
-  stream.on('close', () => ended.reject(new Error('the stream closed before agent_end')))
-  return { ended: ended.promise, close: () => stream.destroy() }
-}
-
-/** What a send's turn said: the version it saved and whether, and how, it reached the app. */
+/** What a send said: the version it saved and whether, and how, it reached the app. */
 export type Turned = {
   number: number | undefined
   preview: PreviewData | undefined
-  /** The version's message as the stream said it, to search for what must never be in it. */
+  /** The preview as the Hub tells it, to search for what must never be in it. */
   raw: string
 }
 
+/** The companies' id in the Projetos' URL the subject names (`/api/companies/<id>/projects`). */
+function companyOf(projects: string): CompanyId {
+  return CompanyId.parse(projects.split('/')[3])
+}
+
+/** The turns each Projeto has sent: the Builder's own count of its versions, which a prune does not reset. */
+const sent = new Map<string, number>()
+
 /**
- * Sends a version as the person, the Builder's way: a turn on a new conversation of the Projeto,
- * whose check `plan` leaves `version` for the end of the turn to send.
+ * Sends a version as the person, through the apps' door a Builder turn's end calls
+ * (`sendFromBuilder`), as the next number of the Projeto.
  */
 export async function send(
   subject: Subject,
   person: Person,
   version: Folder = folder(),
-  options: { projectId?: string; plan?: readonly Checked[] } = {},
+  options: { projectId?: string } = {},
 ): Promise<Turned> {
   const { hub } = subject
-  checking(hub.builder.folder, options.plan ?? [], version)
-  const conversations = `${subject.projects}/${options.projectId ?? subject.projectId}/conversations`
-  const made = await post(hub, person, conversations, {}, randomUUID())
-  assert.equal(made.statusCode, 201, made.body)
-  const conversationId = String(Object(made.json()).conversation.id)
-  const turn = await turnOn(hub, person, conversationId)
-  subject.t.after(turn.close)
-  const messages = `/api/builder/agent-controller/builder/sessions/${conversationId}/messages`
-  const asked = await post(hub, person, messages, { message: `${ASK}${randomUUID()}` })
-  assert.equal(asked.statusCode, 200, asked.body)
-  // The version's message as last told: the Prévia `sending` at the save, replaced by the end.
-  const { parts, raw } = (await turn.ended).findLast((each) =>
-    each.parts.some((part) => part.type === 'data-conexus-version'),
-  ) ?? { parts: [], raw: '[]' }
-  function data(type: string) {
-    return parts.flatMap((part) => (part.type === type ? [part.data] : []))
-  }
-  const [saved] = data('data-conexus-version')
-  const [preview] = data('data-conexus-preview')
-  return {
-    number: saved === undefined ? undefined : z.object({ number: z.int() }).parse(saved).number,
-    preview: preview === undefined ? undefined : PreviewData.parse(preview),
-    raw,
-  }
+  const projectId = ProjectId.parse(options.projectId ?? subject.projectId)
+  const number = (sent.get(projectId) ?? 0) + 1
+  sent.set(projectId, number)
+  const result = await hub.apps.sendFromBuilder({
+    ...{ companyId: companyOf(subject.projects), projectId, personId: PersonId.parse(person.id) },
+    ...{
+      runId: RunId.parse(randomUUID()),
+      number,
+      folder: { manifest: Manifest.parse(version.manifest), files: version.files },
+    },
+  })
+  // As the stream said it: JSON drops the keys that are `undefined`.
+  const raw = JSON.stringify(result)
+  const preview = result === undefined ? undefined : PreviewData.parse(JSON.parse(raw))
+  return { number: preview === undefined ? undefined : number, preview, raw }
 }
 
 /** The Projeto's versions as its owner lists them on the Versões tab, newest first. */

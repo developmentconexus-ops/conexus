@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
-import { AGENT_PATH, agentReplies, COMPANY_ID, rolesReplies } from './sweep-roles.ts'
+import { COMPANY_ID, rolesReplies } from './sweep-roles.ts'
 
-// Papéis, Pessoas e o agente (Papéis da empresa, U3), in a real browser at 1366 and 390 px, in both
+// Papéis e Pessoas (Papéis da empresa, U3), in a real browser at 1366 and 390 px, in both
 // themes: no sideways scroll, and the control each screen is for within reach.
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
@@ -14,20 +14,9 @@ after(async () => {
 
 const SETTINGS = `/companies/${COMPANY_ID}/settings`
 const SCREENS = [
-  { name: 'a lista de papéis', path: `${SETTINGS}/roles`, wait: 'Novo papel', agent: false },
-  {
-    name: 'um papel aberto',
-    path: `${SETTINGS}/roles?role=atendente`,
-    wait: 'Salvar',
-    agent: false,
-  },
-  { name: 'o papel novo', path: `${SETTINGS}/roles?new=true`, wait: 'Criar papel', agent: false },
-  {
-    name: 'o agente com a ligação selecionada',
-    path: AGENT_PATH,
-    wait: 'Marcar todas as leituras de Matriz',
-    agent: true,
-  },
+  { name: 'a lista de papéis', path: `${SETTINGS}/roles`, wait: 'Novo papel' },
+  { name: 'um papel aberto', path: `${SETTINGS}/roles?role=atendente`, wait: 'Salvar' },
+  { name: 'o papel novo', path: `${SETTINGS}/roles?new=true`, wait: 'Criar papel' },
 ]
 
 for (const viewport of [DESKTOP, PHONE])
@@ -37,7 +26,7 @@ for (const viewport of [DESKTOP, PHONE])
         const page = await harness.open(screen.path, {
           viewport,
           scheme,
-          replies: screen.agent ? agentReplies(true) : rolesReplies(),
+          replies: rolesReplies(),
         })
         await page
           .getByRole('button', { name: screen.wait })

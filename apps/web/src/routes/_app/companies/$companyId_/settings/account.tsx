@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { UserRoundIcon } from 'lucide-react'
-import { ProfileMemory } from '../../../../../agents/assistant/public.ts'
 import { MyAccount, MyProfile } from '../../../../../hub/identity/public.ts'
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/account')({
@@ -11,7 +10,7 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/accou
       icon: UserRoundIcon,
       summary: 'Seu nome, seu e-mail, seu cargo e sua área.',
       order: 10,
-      keywords: ['nome', 'e-mail', 'cargo', 'área', 'memória', 'Conexus'],
+      keywords: ['nome', 'e-mail', 'cargo', 'área'],
     },
   },
   component: Account,
@@ -22,7 +21,6 @@ function Account() {
     <div className="flex flex-col gap-2xl">
       <MyAccount />
       <MyProfile />
-      <ProfileMemory />
     </div>
   )
 }

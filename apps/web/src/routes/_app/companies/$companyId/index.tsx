@@ -1,12 +1,8 @@
-import { listAssistantConversations } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod'
-import { AssistantDay, AssistantHome } from '../../../../agents/assistant/public.ts'
 import { accountsQuery } from '../../../../harness/model-accounts/public.ts'
-import { readStart } from '../../../../harness/room/public.ts'
 import { PreparationCard } from '../../../../hub/identity/public.ts'
-import { Home } from '../../../../hub/projects/public.ts'
+import { Home, ProjectsBlock } from '../../../../hub/projects/public.ts'
 import { greetingOf } from '../../../../platform/dates.ts'
 
 /** What the company still needs, for whoever invites people (an owner or an administrator). */
@@ -24,22 +20,12 @@ function HomePage() {
     <Home
       aside={mayInvite ? <Preparation /> : undefined}
       title={greetingOf(new Date(), person.name)}
-      start={<AssistantHome companyId={companyId} />}
-      below={<AssistantDay companyId={companyId} />}
+      start={<ProjectsBlock companyId={companyId} creates />}
     />
   )
 }
 
 export const Route = createFileRoute('/_app/companies/$companyId/')({
   staticData: { place: 'Início' },
-  validateSearch: z
-    .object({
-      conversations: listAssistantConversations.input.query.shape.page,
-      q: z.string().optional(),
-      place: z.string().optional(),
-      tab: z.literal('projects').optional(),
-    })
-    .catch({}),
-  loader: ({ context, params }) => readStart(context.queryClient, params.companyId),
   component: HomePage,
 })

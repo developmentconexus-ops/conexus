@@ -6,7 +6,6 @@ import { INTEGRATIONS_STATES } from './sweep-integrations-states.ts'
 import type { State } from './sweep-kit.ts'
 import { PROJECT_INTEGRATIONS_STATES } from './sweep-project-integrations-states.ts'
 import { PROJECT_STATES } from './sweep-project-states.ts'
-import { companies } from './sweep-replies.ts'
 
 // The pages of the frame beside Início, in a real browser: each page's column is centred in the sheet (`main`), not hugging its left edge.
 const harness = createHarness(import.meta.dirname)
@@ -22,13 +21,6 @@ function state(states: State[], name: string): State {
   return found
 }
 
-const AUTOMATIONS: State = {
-  name: 'Automações da empresa',
-  path: `/companies/${'0'.repeat(32)}/automations`,
-  replies: companies([{ name: 'Empresa Teste', role: 'owner' }], false),
-  settle: (page) => page.getByRole('heading', { name: 'Automações' }).waitFor(),
-}
-
 const PAGES: State[] = [
   state(PROJECT_STATES, 'Todos os projetos, com um Projeto'),
   state(INTEGRATIONS_STATES, 'Integrações com duas ligações do Sankhya'),
@@ -39,7 +31,6 @@ const PAGES: State[] = [
   ),
   state(PROJECT_STATES, 'Projeto, Sobre do dono'),
   state(APP_STATES, 'Quem usa o app, quem gerencia'),
-  AUTOMATIONS,
 ]
 
 for (const width of [1366, 1490, 1600, 1862, 1920])

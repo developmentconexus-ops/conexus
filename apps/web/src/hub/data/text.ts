@@ -1,10 +1,4 @@
-import type {
-  AgentId,
-  ConnectionId,
-  DataReadAgent,
-  DataReadEntry,
-  DataReadResult,
-} from '@conexus/hub-api'
+import type { ConnectionId, DataReadAgent, DataReadEntry, DataReadResult } from '@conexus/hub-api'
 import { resultOf } from '@conexus/hub-api'
 import { clockOf, dayAndHour, dayGroupOf } from '../../platform/dates.ts'
 
@@ -16,9 +10,6 @@ export const AGENT_WORD: Record<DataReadAgent, string> = {
   AGENT: 'Agentes',
   APP: 'App',
 }
-
-/** A saved agent the company no longer has (spec part 4, 9.3). */
-const AGENT_GONE = 'Agente apagado'
 
 /** The four words of a read's outcome (founder, P3 (a)). */
 export const RESULT_WORD: Record<DataReadResult, string> = {
@@ -69,7 +60,6 @@ export const TEXT = {
   from: 'De',
   to: 'Até',
   cut: 'As 5.000 leituras mais novas.',
-  openConversation: 'Abrir a conversa',
 } as const
 
 /** The filters' menu on a phone, with how many are on. */
@@ -79,14 +69,12 @@ export function filtersLabel(on: number): string {
 
 /** The names a row shows that the Registro keeps only as ids: the screen reads them from their owners. */
 export type ReadNames = Readonly<{
-  agent: (id: AgentId) => string | undefined
   connection: (id: ConnectionId) => string | undefined
 }>
 
-/** Which agent read: its word, or a saved agent's own name. */
-export function agentOf(read: DataReadEntry, names: ReadNames): string {
-  if (read.agent !== 'AGENT') return AGENT_WORD[read.agent]
-  return (read.agentId === null ? undefined : names.agent(read.agentId)) ?? AGENT_GONE
+/** Which agent read, in its word. */
+export function agentOf(read: DataReadEntry): string {
+  return AGENT_WORD[read.agent]
 }
 
 /** What was read: the tables, a live read's connection and operation, or a query that named none. */

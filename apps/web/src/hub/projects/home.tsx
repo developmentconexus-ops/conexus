@@ -3,15 +3,10 @@ import { PageTitle } from '../../ui/list.tsx'
 
 /**
  * A company's Início (web W29), on one axis (design V59): `aside` first, for what the company still
- * needs, then the greeting `title` centred over `start`, the box that starts a Projeto or a
- * conversation, and `below`, the blocks the person's role reads.
+ * needs, then the greeting `title` centred over `start`, the block that lists the Projetos and
+ * starts one.
  */
-export function Home(props: {
-  aside?: ReactNode
-  title: string
-  start: ReactNode
-  below?: ReactNode
-}) {
+export function Home(props: { aside?: ReactNode; title: string; start: ReactNode }) {
   return (
     <div className="axis flex flex-col gap-3xl pb-2xl">
       {props.aside}
@@ -21,7 +16,6 @@ export function Home(props: {
         </PageTitle>
         {props.start}
       </section>
-      {props.below}
     </div>
   )
 }

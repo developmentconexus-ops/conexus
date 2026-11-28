@@ -1,6 +1,6 @@
 import type { Page } from 'playwright-core'
 import type { State } from './sweep-kit.ts'
-import { AGENT_PATH, agentReplies, COMPANY_ID, rolesReplies } from './sweep-roles.ts'
+import { COMPANY_ID, rolesReplies } from './sweep-roles.ts'
 
 const SETTINGS = `/companies/${COMPANY_ID}/settings`
 
@@ -30,11 +30,5 @@ export const ROLES_STATES: State[] = [
     path: `${SETTINGS}/roles?new=true`,
     replies: rolesReplies(),
     settle: reached('Criar papel'),
-  },
-  {
-    name: 'O agente com a ligação selecionada',
-    path: AGENT_PATH,
-    replies: agentReplies(true),
-    settle: reached('Marcar todas as leituras de Matriz'),
   },
 ]

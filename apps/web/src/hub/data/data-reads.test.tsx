@@ -3,7 +3,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, refusal } from '../../platform/test-hub.tsx'
-import { BRUNO, MATRIZ, openReads, RESUMO, read, readsHub, server, THREAD } from './test-hub.tsx'
+import { BRUNO, MATRIZ, openReads, read, readsHub, server, THREAD } from './test-hub.tsx'
 
 // Configurações, Registro de dados (`p4-04` a `p4-06`): only an owner or an administrator (D1 (a)).
 
@@ -58,7 +58,7 @@ test('a lista e o filtro no endereço', async () => {
       outcome: 'NOT_IN_ROLE',
       rows: null,
     }),
-    read({ agent: 'AGENT', agentId: RESUMO, outcome: 'QUERY_REFUSED', rows: null }),
+    read({ agent: 'AGENT', agentId: null, outcome: 'QUERY_REFUSED', rows: null }),
     read({ agent: 'AGENT', agentId: gone, project: { id: PEDIDOS.id, name: null } }),
     read({
       ...{ agent: 'CONSTRUTOR', verb: 'LIVE', tables: [], connection: MATRIZ },
@@ -91,8 +91,8 @@ test('a lista e o filtro no endereço', async () => {
     ['Bruno Reis', 'Conexus em Conversasno Projeto Pedidos', 'sankhya_vendas', 'Lida', '1'],
     ['Bruno Reis', 'Conexus em Conversas', 'sankhya_clientes', 'Não encontrada', '–'],
     ['Bruno Reis', 'Conexus em Construir', 'Consulta', 'Recusada', '–'],
-    ['Bruno Reis', 'Resumo semanal', 'sankhya_vendas', 'Recusada', '–'],
-    ['Bruno Reis', 'Agente apagadonum Projeto apagado', 'sankhya_vendas', 'Lida', '1'],
+    ['Bruno Reis', 'Agentes', 'sankhya_vendas', 'Recusada', '–'],
+    ['Bruno Reis', 'Agentesnum Projeto apagado', 'sankhya_vendas', 'Lida', '1'],
     ['Bruno Reis', 'Conexus em Agentes', 'Matriz · lerPedidos', 'Não lida', '–'],
     ['Bruno Reis', 'App', 'Consulta', 'Recusada', '–'],
     ['Bruno Reis', 'App', 'Consulta', 'Não lida', '–'],
@@ -150,16 +150,12 @@ test('a linha aberta', async () => {
     'Tempo',
   ])
   expect(open.getByText('no Início')).toBeTruthy()
-  expect(open.getByRole('link', { name: 'Abrir a conversa' }).getAttribute('href')).toBe(
-    `/companies/${COMPANY.id}/conversations/${THREAD}`,
-  )
   expect(open.getByRole('button', { name: 'Copiar a consulta' })).toBeTruthy()
   expect(open.getByText('40 ms')).toBeTruthy()
   first.unmount()
   const { unmount } = openReads(`?read=${theirs.id}`)
   const other = within(await screen.findByRole('dialog'))
   expect(other.getByText('no Projeto Pedidos')).toBeTruthy()
-  expect(other.queryByRole('link', { name: 'Abrir a conversa' })).toBeNull()
   expect(other.queryByRole('button', { name: 'Copiar a consulta' })).toBeNull()
   fireEvent.click(other.getByRole('button', { name: 'Fechar' }))
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())

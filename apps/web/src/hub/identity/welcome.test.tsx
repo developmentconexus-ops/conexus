@@ -13,11 +13,11 @@ function save(nickname: string) {
   fireEvent.click(screen.getByRole('button', { name: 'Salvar e continuar' }))
 }
 
-test('dono, empresa sem apelido: todo endereço dela leva ao Passo 1 de 4, Sua empresa', async () => {
+test('dono, empresa sem apelido: todo endereço dela leva ao Passo 1 de 3, Sua empresa', async () => {
   server.use(...companyHub(companyView()).handlers)
   const router = openAt(`${COMPANY_PATH}/projects`)
   expect(await screen.findByRole('heading', { name: 'Sua empresa' })).toBeTruthy()
-  expect(screen.getByText('Passo 1 de 4')).toBeTruthy()
+  expect(screen.getByText('Passo 1 de 3')).toBeTruthy()
   expect(router.state.location.pathname).toBe(`${WELCOME}/company`)
   expect(screen.queryByRole('navigation', { name: 'Navegação' })).toBeNull()
 })
@@ -78,14 +78,14 @@ for (const [code, phrase] of [
   })
 }
 
-test('Passo 1: salvar manda o apelido e abre o Passo 2 de 4', async () => {
+test('Passo 1: salvar manda o apelido e abre o Passo 2 de 3', async () => {
   const hub = companyHub(companyView())
   server.use(...hub.handlers)
   const router = openAt(COMPANY_PATH)
   await screen.findByLabelText('Apelido')
   save('empresa-a')
   expect(await screen.findByRole('heading', { name: 'Ligue uma conta de modelo' })).toBeTruthy()
-  expect(screen.getByText('Passo 2 de 4')).toBeTruthy()
+  expect(screen.getByText('Passo 2 de 3')).toBeTruthy()
   expect(hub.nicknames).toEqual([{ nickname: 'empresa-a' }])
   expect(router.state.location.pathname).toBe(`${WELCOME}/model-account`)
 })

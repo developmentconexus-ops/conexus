@@ -127,15 +127,13 @@ for (const place of PLACES) {
       .getByRole('alert')
       .filter({ hasText: sentenceOfCode('DATABASE_UNAVAILABLE') })
       .waitFor()
-    if (place.fixed !== undefined) {
-      const fixed = list.getByRole('option', { name: place.fixed, exact: true })
-      await fixed.waitFor()
-      assert.equal(await fixed.getAttribute('aria-disabled'), null)
-      await fixed.click()
-      // A pointer resting on a link for the 75 ms the list takes to leave would preload it.
-      await page.mouse.move(0, 0)
-      await list.waitFor({ state: 'hidden' })
-    }
+    const fixed = list.getByRole('option', { name: place.fixed, exact: true })
+    await fixed.waitFor()
+    assert.equal(await fixed.getAttribute('aria-disabled'), null)
+    await fixed.click()
+    // A pointer resting on a link for the 75 ms the list takes to leave would preload it.
+    await page.mouse.move(0, 0)
+    await list.waitFor({ state: 'hidden' })
     await page.close()
   })
 

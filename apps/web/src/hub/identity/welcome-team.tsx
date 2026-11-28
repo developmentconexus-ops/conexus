@@ -8,7 +8,7 @@ import { companyQuery } from './queries.ts'
 const route = getRouteApi('/_app/companies/$companyId_/welcome/team')
 
 /**
- * Step 3, "Convide sua equipe": the invitation form with step 4's refusals; "Fazer depois" moves on,
+ * Step 3, "Convide sua equipe": the invitation form with its refusals; "Fazer depois" moves on,
  * and once the company has a team the step says "Continuar" instead, beside the form's own primary
  * button.
  */
@@ -21,7 +21,7 @@ export function WelcomeTeam() {
       <InviteForm companyId={companyId} roles={mayInviteAs} />
       <div className="flex justify-end">
         <Link
-          to="/companies/$companyId/welcome/build"
+          to="/companies/$companyId"
           params={{ companyId }}
           className={buttonVariants({ variant: invited ? 'default' : 'ghost' })}
         >

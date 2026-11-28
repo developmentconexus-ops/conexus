@@ -1,79 +1,10 @@
-import type { CompanyId, DataReadEntry, PersonId } from '@conexus/hub-api'
-import { Link } from '@tanstack/react-router'
+import type { DataReadEntry } from '@conexus/hub-api'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { Button, buttonVariants } from '../../ui/button.tsx'
+import { Button } from '../../ui/button.tsx'
 import { QueryBlock } from '../copies/public.ts'
 import type { ReadNames } from './text.ts'
-import { agentOf, placeOf, resultWord, TEXT, whatOf, whenOf } from './text.ts'
-
-type Opened = { read: DataReadEntry; companyId: CompanyId; viewer: PersonId }
-
-/** The conversation's page, when the screens have one for the read's agent and place. */
-function conversationLink({ read, companyId }: Opened): ReactNode {
-  const { threadId: conversationId, project } = read
-  const className = buttonVariants()
-  if (conversationId === null) return null
-  if (project === null) {
-    if (read.agent !== 'ASSISTANT') return null
-    const to = '/companies/$companyId/conversations/$conversationId'
-    return (
-      <Link className={className} to={to} params={{ companyId, conversationId }}>
-        {TEXT.openConversation}
-      </Link>
-    )
-  }
-  // A Projeto deleted since took its conversations with it.
-  if (project.name === null) return null
-  const params = { companyId, projectId: project.id, conversationId }
-  switch (read.agent) {
-    case 'ASSISTANT':
-      return (
-        <Link
-          className={className}
-          to="/companies/$companyId/projects/$projectId/assistant/$conversationId"
-          params={params}
-        >
-          {TEXT.openConversation}
-        </Link>
-      )
-    case 'BUILDER':
-      return (
-        <Link
-          className={className}
-          to="/companies/$companyId/projects/$projectId/conversations/$conversationId"
-          params={params}
-        >
-          {TEXT.openConversation}
-        </Link>
-      )
-    case 'CONSTRUTOR':
-      return (
-        <Link
-          className={className}
-          to="/companies/$companyId/projects/$projectId/agents/agent-builder/$conversationId"
-          params={params}
-        >
-          {TEXT.openConversation}
-        </Link>
-      )
-    case 'AGENT':
-      if (read.agentId === null) return null
-      return (
-        <Link
-          className={className}
-          to="/companies/$companyId/projects/$projectId/agents/$agentId/$conversationId"
-          params={{ ...params, agentId: read.agentId }}
-        >
-          {TEXT.openConversation}
-        </Link>
-      )
-    case 'APP':
-      return null
-    default:
-      return read.agent satisfies never
-  }
-}
+import { agentOf, placeOf, resultWord, whatOf, whenOf } from './text.ts'
 
 type Copied = 'IDLE' | 'DONE' | 'FAILED'
 
@@ -122,24 +53,16 @@ export function readTitle(read: DataReadEntry, now: Date): string {
 
 /**
  * One read opened (`p4-05`): who, the agent, the conversation, the tables or the operation (none for a
- * query that named no table), the query, the outcome, the rows and the time; nothing it read. **Abrir a conversa** only for the viewer's own
- * read, since a conversation opens only for its person (decision E4 (a)).
+ * query that named no table), the query, the outcome, the rows and the time; nothing it read.
  */
-export function ReadDetail(props: Opened & { names: ReadNames }) {
-  const { read, names, viewer } = props
+export function ReadDetail(props: { read: DataReadEntry; names: ReadNames }) {
+  const { read, names } = props
   const live = read.verb === 'LIVE'
   return (
     <dl className="flex flex-col gap-lg">
       <Fact term="Quem">{read.person.name}</Fact>
-      <Fact term="Agente">{agentOf(read, names)}</Fact>
-      {read.threadId !== null && (
-        <Fact term="Conversa">
-          <span className="flex flex-col items-start gap-sm">
-            <span>{placeOf(read.project)}</span>
-            {read.person.id === viewer && conversationLink(props)}
-          </span>
-        </Fact>
-      )}
+      <Fact term="Agente">{agentOf(read)}</Fact>
+      {read.threadId !== null && <Fact term="Conversa">{placeOf(read.project)}</Fact>}
       {read.threadId === null && read.project !== null && (
         <Fact term="Projeto">{placeOf(read.project)}</Fact>
       )}

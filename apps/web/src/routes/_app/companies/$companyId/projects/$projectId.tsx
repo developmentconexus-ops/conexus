@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
-import { Preview, Source, Workbench } from '../../../../../agents/app-builder/public.ts'
+import { Preview } from '../../../../../hub/apps/public-preview.tsx'
+import { Source } from '../../../../../hub/apps/public-source.tsx'
 import {
   Lens,
   ProjectArea,
@@ -10,6 +11,8 @@ import {
   View,
 } from '../../../../../hub/projects/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
+import { PhoneTopContent } from '../../../../../ui/frame.tsx'
+import { PageTitle } from '../../../../../ui/list.tsx'
 
 // The tab and the Prévia's view are in the address (web W18); a value that is not one of ours is the
 // default. The address before step 20 kept Sobre, Versões and Quem usa o app under `?lens=project`
@@ -54,17 +57,18 @@ function ProjectPage() {
   const { companyId, projectId } = Route.useParams()
   const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
   return (
-    <Workbench
-      title={project.name}
-      area={
-        <ProjectArea
-          preview={(project, reloads, reload) => (
-            <Preview project={project} reloads={reloads} onReload={reload} />
-          )}
-          code={<Source />}
-        />
-      }
-      panel={<Outlet />}
-    />
+    <div className="h-full min-h-0">
+      <PhoneTopContent>
+        <PageTitle className="min-w-0 flex-1 truncate md:hidden" title={project.name}>
+          {project.name}
+        </PageTitle>
+      </PhoneTopContent>
+      <ProjectArea
+        preview={(project, reloads, reload) => (
+          <Preview project={project} reloads={reloads} onReload={reload} />
+        )}
+        code={<Source />}
+      />
+    </div>
   )
 }

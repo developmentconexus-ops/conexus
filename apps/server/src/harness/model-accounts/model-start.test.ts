@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call, codeOf } from '../../hub/identity/test-hub.ts'
-import { company, connect, created } from './test-defaults.ts'
+import { company, connect } from './test-defaults.ts'
 
 const GPT = 'openai/gpt-5.6-luna'
 
@@ -27,8 +27,8 @@ test('o início da empresa vem da mesma ordem, sem o degrau da pessoa: o padrão
   assert.equal(await companyStart(), null)
 })
 
-test('um modelo que o seletor não oferece não vira padrão nem começa conversa: de imagem ou aposentado é MODEL_UNKNOWN', async (t) => {
-  const { hub, ana, carla, conversations, accounts, mine, base } = await company(t)
+test('um modelo que o seletor não oferece não vira padrão de imagem ou aposentado é MODEL_UNKNOWN', async (t) => {
+  const { hub, ana, carla, accounts, mine, base } = await company(t)
   await connect(hub, ana, accounts, 'openai')
   for (const model of ['openai/gpt-image-1', 'openai/o1', 'anthropic/claude-sonnet-4-5']) {
     const body = { model, effort: 'off' }
@@ -39,7 +39,5 @@ test('um modelo que o seletor não oferece não vira padrão nem começa convers
         [url === mine ? 422 : 404, url === mine ? 'MODEL_UNKNOWN' : 'NOT_FOUND'],
       )
     }
-    const asked = await created(hub, carla, conversations, { model })
-    assert.deepEqual([asked.made.statusCode, codeOf(asked.made)], [422, 'MODEL_UNKNOWN'])
   }
 })

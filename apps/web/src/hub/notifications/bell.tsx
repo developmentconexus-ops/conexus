@@ -1,5 +1,4 @@
 import type { CompanyId, NotificationRow } from '@conexus/hub-api'
-import { automationPath, conversationPath, phraseOf } from '@conexus/hub-api'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { BellIcon } from 'lucide-react'
@@ -25,7 +24,6 @@ function polled(companyId: CompanyId) {
 }
 
 const NO_NOTIFICATIONS = 'Nenhuma notificação.'
-const PAUSED_BY_OWNER = 'não roda mais: você não cria mais automações'
 
 function unreadText(count: number): string {
   return count === 1 ? '1 não lida' : `${count} não lidas`
@@ -42,7 +40,14 @@ export function unreadNote(count: number): string | undefined {
   return count === 1 ? '1 notificação não lida' : `${count} notificações não lidas`
 }
 
+type Opened = Extract<NotificationRow, { kind: 'REQUEST_OPENED' }>
 type Decided = Extract<NotificationRow, { kind: 'REQUEST_DECIDED' }>
+type Request = Opened | Decided
+
+/** The notifications about a publish request; the kinds of the old automations have no screen any more. */
+function isRequest(notification: NotificationRow): notification is Request {
+  return notification.kind === 'REQUEST_OPENED' || notification.kind === 'REQUEST_DECIDED'
+}
 
 /** What the asker reads of their request's end; without a name once the person who decided left. */
 function decidedText(notification: Decided): string {
@@ -63,38 +68,13 @@ function decidedText(notification: Decided): string {
 }
 
 /** What a notification says, in the words of the state matrix. */
-function textOf(notification: NotificationRow): string {
-  switch (notification.kind) {
-    case 'AUTOMATION_DONE':
-      return `Automação ${notification.automation.name}: pronta`
-    case 'AUTOMATION_FAILED':
-      return `${notification.automation.name} falhou: ${phraseOf(notification.code)}`
-    case 'AUTOMATION_PAUSED':
-      return `${notification.automation.name} ${PAUSED_BY_OWNER}`
-    case 'REQUEST_OPENED':
-      return `${notification.requestedBy.name} pede para publicar a versão ${notification.number} de ${notification.projectName}.`
-    case 'REQUEST_DECIDED':
-      return decidedText(notification)
-  }
+function textOf(notification: Request): string {
+  return notification.kind === 'REQUEST_OPENED'
+    ? `${notification.requestedBy.name} pede para publicar a versão ${notification.number} de ${notification.projectName}.`
+    : decidedText(notification)
 }
 
-/** Where a notification opens: a run's conversation, or, without one, its automation's page; a request's Projeto area. */
-function pathOf(
-  companyId: CompanyId,
-  notification: Exclude<NotificationRow, { kind: 'AUTOMATION_PAUSED' }>,
-): string {
-  switch (notification.kind) {
-    case 'REQUEST_OPENED':
-    case 'REQUEST_DECIDED':
-      return `/companies/${companyId}/projects/${notification.projectId}`
-    default:
-      return notification.conversationId === null
-        ? automationPath(companyId, notification.projectId, notification.automation.id)
-        : conversationPath(companyId, notification.projectId, notification.conversationId)
-  }
-}
-
-function Item(props: { companyId: CompanyId; notification: NotificationRow; onTap: () => void }) {
+function Item(props: { companyId: CompanyId; notification: Request; onTap: () => void }) {
   const { companyId, notification } = props
   const link = {
     onClick: props.onTap,
@@ -119,15 +99,13 @@ function Item(props: { companyId: CompanyId; notification: NotificationRow; onTa
   )
   return (
     <li>
-      {notification.kind === 'AUTOMATION_PAUSED' ? (
-        <Link to="/companies/$companyId" params={{ companyId }} {...link}>
-          {content}
-        </Link>
-      ) : (
-        <Link to={pathOf(companyId, notification)} {...link}>
-          {content}
-        </Link>
-      )}
+      <Link
+        to="/companies/$companyId/projects/$projectId"
+        params={{ companyId, projectId: notification.projectId }}
+        {...link}
+      >
+        {content}
+      </Link>
     </li>
   )
 }
@@ -139,7 +117,8 @@ function Panel(props: { companyId: CompanyId; onTap: () => void }) {
   if (read.isPending) return <Skeleton className="h-16 w-full" />
   if (read.isError)
     return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
-  const { notifications, unread } = read.data
+  const { unread } = read.data
+  const notifications = read.data.notifications.filter(isRequest)
   return (
     <>
       {unread > 0 && (

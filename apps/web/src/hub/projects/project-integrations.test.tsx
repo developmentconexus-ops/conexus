@@ -3,7 +3,7 @@ import { http } from 'msw'
 import { beforeEach, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { sentenceOfCode } from '../../platform/hub.ts'
-import { conversationsNone, hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, refusal } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 import type { View } from './test-hub.tsx'
 import {
@@ -22,7 +22,7 @@ function open(view: View) {
   openView(server, view)
 }
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
+beforeEach(() => server.use(versionsRead({ versions: [] })))
 
 test('a dona libera a ligação certa e a linha passa a ler', async () => {
   const loja = line('Loja 2')

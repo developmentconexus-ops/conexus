@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { getSession } from '@conexus/hub-api'
-import type { Page } from 'playwright-core'
-import { atRest } from './at-rest.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, focusDrawn, ok, PHONE, presses } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { CARD_STATES } from './sweep-card-states.ts'
-import { central, companies, OWNER, projectsPage, startsOn } from './sweep-replies.ts'
+import { central, companies, OWNER, projectsPage } from './sweep-replies.ts'
 
 const SIGNED_OUT: Replies = {
   'GET /api/sessions/current': ok(getSession, { state: 'SIGNED_OUT' }),
@@ -58,20 +55,17 @@ test('o contorno não vai ao título focado pelo programa', async () => {
   await page.close()
 })
 
-// The owner's sidebar: the rail from the top (places, Configurações, the bell, the account) and then the list. On a phone the drawer holds the same, and the bell is in it.
+// The owner's sidebar: the rail from the top (places, Configurações, the bell, the account) and then the list, empty in Início. On a phone the drawer holds the same, and the bell is in it.
 const RAIL_STOPS = [
   'Início',
   'Projetos',
   'Integrações',
-  'Automações',
-  'Agentes',
   'Dados',
   'Configurações',
   'Notificações',
   'Conta de Ana Lima',
 ]
-const LIST_STOPS = ['Nova conversa']
-const NAV = [...RAIL_STOPS, ...LIST_STOPS]
+const NAV = RAIL_STOPS
 const RAIL = NAV.map((name) => `${name} solid 2px`)
 const DRAWER = RAIL
 
@@ -127,30 +121,6 @@ test('na gaveta, Estado do Hub é um link: seguido, muda o endereço, fecha a ga
   await page.close()
 })
 
-function fillOf(page: Page) {
-  return page
-    .getByRole('button', { name: 'Enviar' })
-    .evaluate((one) => getComputedStyle(one).backgroundImage)
-}
-
-test('o dourado: o enviar é o ipê aceso, parado e sob o mouse', async () => {
-  const page = await open('/', DESKTOP, { ...HOUSE, ...startsOn('0'.repeat(32)) })
-  const box = page.getByRole('textbox', { name: 'Mensagem para o Conexus' })
-  await box.fill('Como foram as vendas?')
-  await page.waitForFunction(
-    () =>
-      document.querySelector<HTMLButtonElement>('button[aria-label=Enviar]')?.disabled === false,
-  )
-  const rest = await fillOf(page)
-  assert.equal(rest, 'linear-gradient(135deg, rgb(245, 171, 14), rgb(255, 212, 69))')
-  await page.getByRole('button', { name: 'Enviar' }).hover()
-  await atRest(page)
-  const hovered = await fillOf(page)
-  assert.match(hovered, /^linear-gradient\(135deg, /)
-  assert.notEqual(hovered, rest, 'the lit send does not answer the pointer')
-  await page.close()
-})
-
 // The outline, and the edge a field shows instead (design V28).
 const FOCUS = {
   light: { outline: 'rgb(29, 29, 29)', edge: 'rgb(176, 122, 12)' },
@@ -198,32 +168,6 @@ test('o deslizante focado pelo teclado desenha o contorno do tema na alça', asy
     assert.equal(style, `solid 2px ${FOCUS[band].outline}`, band)
   }
   await page.close()
-})
-
-// Step 13.3, U9 (criterion 28): the free answer of a question is the `Textarea` of `ui/`: focus on its own edge (V28), and it grows with its lines (#272).
-test('a resposta livre: o foco na própria borda e a caixa cresce em várias linhas, em 1366 e 390', async () => {
-  const [state] = CARD_STATES
-  if (!state) throw new Error('the card sweep has no state')
-  for (const viewport of [DESKTOP, PHONE]) {
-    const page = await open(state.path, viewport, state.replies)
-    await state.settle(page)
-    const other = page.getByRole('textbox', { name: 'Outra resposta' })
-    await other.scrollIntoViewIfNeeded()
-    await other.focus()
-    assert.match(
-      await focusDrawn(page),
-      /halo$/,
-      `focus is not on the field's edge at ${viewport.width}`,
-    )
-    const one = await other.evaluate((el) => el.getBoundingClientRect().height)
-    await other.fill('Linha 1\nLinha 2\nLinha 3\nLinha 4')
-    const four = await other.evaluate((el) => el.getBoundingClientRect().height)
-    assert.ok(
-      four > one + 20,
-      `the field kept ${one}px with four lines (${four}px) at ${viewport.width}`,
-    )
-    await page.close()
-  }
 })
 
 // Step 13.3, U9: the Card around a Project's link must not clip the link's 2px outline (design V28).
