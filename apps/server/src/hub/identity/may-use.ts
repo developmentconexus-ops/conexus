@@ -89,7 +89,7 @@ export function createMayUse(auth: Auth, database: Database, roles: RoleSet) {
   ) {
     return hasPermission(
       { options, ...asked },
-      // @ts-expect-error: better-auth 1.7.8 types the context parameter with an options type no configured auth's context matches (invariant); the function reads only context.adapter and context.logger.
+      // @ts-expect-error: better-auth 1.7.28 types the context parameter with an options type no configured auth's context matches (invariant); the function reads only context.adapter and context.logger.
       { context },
     )
   }

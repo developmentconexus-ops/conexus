@@ -71,7 +71,7 @@ export function createPasswordRecovery(deps: {
       }),
     /**
      * Whether a password link is found and unexpired, read and never spent: the native order of
-     * `/reset-password` (api/routes/password.mjs:155-160), so a made-up token costs no outside call.
+     * `/reset-password` (api/routes/password.mjs:155-161), so a made-up token costs no outside call.
      */
     linkIsLive: (token: string): Promise<boolean> =>
       libraryInstallation(async () => {

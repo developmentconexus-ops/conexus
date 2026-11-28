@@ -67,7 +67,7 @@
     "@types/node": "24.19.2",
     "agent-browser": "0.43.0",
     "ai": "6.0.309",
-    "better-auth": "1.7.8",
+    "better-auth": "1.7.28",
     "dependency-cruiser": "18.4.0",
     "e2b": "2.63.0",
     "jscpd": "5.4.2",

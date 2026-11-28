@@ -93,6 +93,7 @@ export function createIdentity(deps: {
     sendMail,
   })
   return Object.freeze({
+    auth,
     readSession,
     firstPerson: createFirstPerson({ auth, database, publicOrigin: config.publicOrigin }),
     // What the Operations Central reaches identity through (code C4), in the caller's transaction.
