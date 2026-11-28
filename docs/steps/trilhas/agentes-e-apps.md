@@ -46,15 +46,15 @@ no histórico do `main`, no commit `eb0d2ea1`, o último que o mudou.
 
 A etapa 1 do harness, "Uma ficha por agente", entrou no `main` e no ar (v0.24.111 a v0.24.116): o
 Builder, o Assistente, o Construtor e o agente publicado nascem cada um de uma ficha e de uma
-montagem só, e o pedido de cada um ao modelo ficou igual, byte a byte. O desenho está na
-[explicação do harness](../../explanation/harness.md), e o que a Plataforma mantém à mão, em
+montagem só, e o pedido de cada um ao modelo ficou igual, byte a byte. O desenho saiu do `main` com o harness
+antigo (remoção do harness antigo), e o que a Plataforma mantém à mão, em
 [boundaries](../../reference/boundaries.md). O cartão foi apagado com o fechamento; está no
 histórico do `main`.
 
 A etapa 2 do harness, "Uma sala e os nomes certos", fechou: o uso na nuvem foi em 2026-11-25, na
 v0.24.130, e a linha de fechamento está no
 [arquivo de aprovação](../../approvals/uma-sala-e-os-nomes-certos.md). As quatro conversas usam uma
-sala só, e o desenho está na [explicação do harness](../../explanation/harness.md). O cartão está no
+sala só. O cartão está no
 histórico do `main`, no commit `20c184c0`, o último que o mudou.
 
 `A1`, "O Builder vê o que construiu", fechou em 2026-11-24: o fundador fez o roteiro na nuvem, na

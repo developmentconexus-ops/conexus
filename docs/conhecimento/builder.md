@@ -1,8 +1,8 @@
 # Builder
 
 Como o Builder constrói um app: o turno, a máquina E2B, o navegador que vê o app e a conferência do
-fim do turno. O desenho está em [turno](../explanation/builder-turn.md) e no
-[prompt](../reference/builder-prompt.md); a Prévia e o app publicado estão em [Prévia e apps](previa-e-apps.md).
+fim do turno. O código do turno saiu do `main` na remoção do harness antigo; o que está
+aqui é o histórico do que se decidiu. A Prévia e o app publicado estão em [Prévia e apps](previa-e-apps.md).
 
 ## Decidido
 

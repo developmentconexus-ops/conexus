@@ -1,8 +1,8 @@
 # Agentes e harness
 
 O Assistente, o Supervisor, os agentes do Projeto, a ficha de cada agente, as ferramentas, a escrita
-com aprovação, os gatilhos, o rastreio e as evals. O desenho está em [harness](../explanation/harness.md)
-e em [agentes e automações](../explanation/agents-and-automations.md); o Builder tem página própria,
+com aprovação, os gatilhos, o rastreio e as evals. O código dessa frente saiu do `main` na
+remoção do harness antigo; o que está aqui é o histórico do que se decidiu. O Builder tem página própria,
 [Builder](builder.md).
 
 ## Decidido

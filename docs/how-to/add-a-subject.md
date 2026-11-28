@@ -33,11 +33,8 @@ write those.
 8. **The wiring.** `apps/server/src/main.ts` makes the subject and hands its door to the others. A job
    or a workflow is registered in `apps/server/src/conversations-of.ts` (`workflows`, `releaseFirst`).
    dependency-cruiser refuses a wiring that goes around the doors.
-9. **The Builder's part.** `apps/server/src/agents/<agent>/` or `apps/server/src/harness/<subject>/`, the only places `@mastra/*` may be
-   imported (`mastra-only-in-harness-and-agents`). The tools are bound in `agents/app-builder/builder.ts`,
-   `agents/assistant/assistant.ts` and, for the Builder's closed list, `CLOSED_TOOLS` in
-   `packages/hub-api/src/tools.ts`, with their text in the
-   prompt. The prompt tests and the recorded-model tests prove them.
+9. **The agents' part.** `apps/server/src/mastra/` and `apps/server/src/harness/<subject>/`, the only places `@mastra/*` may be
+   imported. The agents of the new harness are not built yet; a subject that reaches them waits for its card.
 10. **The screens.** `apps/web/src/hub/<subject>/`, its routes in `apps/web/src/routes/`, its lines in
     [the screens list](../reference/screens.md) and its layout tests. `web-tree-shape` refuses a folder
     in the wrong place, and `conexus-qa` walks the screens.

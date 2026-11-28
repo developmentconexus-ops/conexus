@@ -21,7 +21,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   `public.ts`), and the Hub **must not** import the Builder. The rule holds for the files at the
   root of the server too. The contract (`@conexus/hub-api`) is the common vocabulary of the programs
   and the subjects: the Hub may use its types, the Builder's included, without that counting as
-  importing the Builder. [dependency-cruiser]
+  importing the Builder. The one exception is `apps/server/src/mastra/`, whose door is `index.ts`
+  (founder, 2026-11-29). [dependency-cruiser]
 - **C5.** Between programs, code **must** import by package name, such as `@conexus/hub-api`, never
   by path. [dependency-cruiser]
 - **C6.** There **must not** be an import cycle, or a file loose in `hub/`, `harness/` or `agents/` outside
@@ -224,7 +225,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   word, and the test world never names a table after that word. Failure: the data tools taught
   `sync.sankhya_vendas`, the model copied it where the live copy is `vendas`, and its first query
   failed, while the test world used the same name and saw nothing.
-  [`harness/tools/data/order.test.ts`, review]
+  [review]
 - **C81.** Every list of data or of connections that the Assistant, the Builder or an agent reads **must**
   come from the access door, `hub/access` (`principalFor`, then `AccessView.list`), and a new
   consumer is a new scenario of its conformance test, never a filter of its own beside the door.
