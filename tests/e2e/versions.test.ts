@@ -5,7 +5,6 @@ import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../apps/server/src/platform/te
 import { visitApp } from './apps-edge.ts'
 import type { Scenario } from './apps-journey.ts'
 import {
-  builderSends,
   CARLA,
   GREEN,
   openApp,
@@ -15,13 +14,13 @@ import {
   RECADO,
   recados,
   scenario,
+  sendPacked,
 } from './apps-journey.ts'
 import { openProject, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 
-// Step 9's journey, with the Builder as the one who sends since step 14.1: the owner's Builder
-// turns send Recados, the Projeto's Versões in Chromium list them under the conversation's numbers,
-// a recado is written through the real dispatcher, a second version goes, the first is put back and
-// the Projeto is deleted. Cloudflare's API and Neon's are faked at their HTTP doors; the app's `db`
+// Step 9's journey: the owner sends Recados through the apps' door, the Projeto's Versões in
+// Chromium list them by number, a recado is written through the real dispatcher, a second version
+// goes, the first is put back and the Projeto is deleted. Cloudflare's API and Neon's are faked at their HTTP doors; the app's `db`
 // runs on the test server with the login the Hub made. The app's visits carry their cookies by
 // hand, as step 8's journey does: a browser route is never called for a redirect's next request
 // (testing T5, T6, T14).
@@ -34,7 +33,7 @@ async function firstVersion(s: Scenario, pedidos: string) {
       'Nenhuma versão ainda. Cada versão que o Conexus monta aparece aqui, e o app abre no endereço depois do primeiro Publicar.',
     )
     .waitFor()
-  await builderSends(s, pedidos, 'recados-1')
+  await sendPacked(s, pedidos, 'recados-1')
   await page.goto(`${pedidos}/about?part=versions`)
   await page.getByText('Versão 1 · Na Prévia').waitFor()
   await s.member.page.goto(`${TEST_ORIGIN}/`)
@@ -96,7 +95,7 @@ async function deletePedidos(page: Page, pedidos: string) {
   await page.getByText('Projeto apagado.').waitFor()
 }
 
-test('o roteiro de Enviar um app: o Builder envia, gravar, segunda versão, voltar e apagar o Projeto', async (t) => {
+test('o roteiro de Enviar um app: enviar, gravar, segunda versão, voltar e apagar o Projeto', async (t) => {
   const s = await scenario(t)
   const { page } = s.owner
   const pedidos = await pedidosOf(s)
@@ -109,7 +108,7 @@ test('o roteiro de Enviar um app: o Builder envia, gravar, segunda versão, volt
   assert.equal(written.status, 200)
   assert.deepEqual(await recados(pedidos.door, app), [RECADO])
   // 3. Recados 2: another colour, and the recado is there.
-  await builderSends(s, pedidos.url, 'recados-2')
+  await sendPacked(s, pedidos.url, 'recados-2')
   await page.goto(`${pedidos.url}/about?part=versions`)
   await page.getByText('Versão 2 · Na Prévia').waitFor()
   await publishVersion(s, pedidos.url, 2)

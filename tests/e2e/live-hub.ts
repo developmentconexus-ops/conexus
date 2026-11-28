@@ -13,16 +13,12 @@ import {
 } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
-import { testBuilderPorts } from '../../apps/server/src/agents/app-builder/runs/test-runs.ts'
 import { roleKit } from '../../apps/server/src/hub/connectors/public.ts'
 import { createIdentity } from '../../apps/server/src/hub/identity/public.ts'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
 import { createEdgeHub, createHub, subjectsOf } from '../../apps/server/src/main.ts'
 import { createAws, subjectPortsOf } from '../../apps/server/src/platform/aws.ts'
-import {
-  createCloudflareApps,
-  createCloudflareTools,
-} from '../../apps/server/src/platform/cloudflare.ts'
+import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
 import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
 import type { Config } from '../../apps/server/src/platform/config.ts'
 import { ConnectorApps } from '../../apps/server/src/platform/config-connectors.ts'
@@ -95,16 +91,14 @@ function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
 /**
  * The Hub in this process, on the CI database, serving the built screens on its public port and the
  * dispatcher's calls on its edge port; `names` are its public origin and apps' domain, when a
- * browser reaches it by the names the dispatcher is built with. `machineFolder` is the test
- * machine's folder, where a journey puts the check program the machine runs. `doubledConference`
- * swaps the Hub's own conference, which needs Cloudflare, for the test double.
+ * browser reaches it by the names the dispatcher is built with. `apps` is the Hub's apps door, where
+ * a journey sends a packed version as the Builder's turn did.
  */
 export async function liveHub(
   t: TestContext,
   mailUrl: string,
   cloudflareUrl?: string,
   names: Partial<Pick<Config, 'publicOrigin' | 'appsDomain'>> = {},
-  doubledConference = false,
 ) {
   assert.ok(existsSync(join(WEB_ROOT, 'index.html')), 'the screens are not built: run npm run e2e')
   // Hooks run in the order they were added: the Hub closes before its databases end.
@@ -137,11 +131,7 @@ export async function liveHub(
     ...{ database: database.database, config, sendMail },
     ...{ log: silent, kit: roleKit() },
   })
-  const { machinesOf, conversationMachine, repository, copy, folder, confer } =
-    testBuilderPorts(config)
   const subjects = subjectsOf({
-    ...{ machinesOf, conversationMachine, repository, copy },
-    confer: doubledConference ? confer : undefined,
     database: database.database,
     mastraPool: database.mastraPool,
     ...{ config, identity, sendMail },
@@ -152,7 +142,6 @@ export async function liveHub(
       appLoginKey: config.appLoginKey,
     }),
     cloudflare: createCloudflareApps({ config, log: silent }),
-    cloudflareTools: createCloudflareTools({ config, log: silent }),
     log: silent,
   })
   const { apps, conversations, connectors } = subjects
@@ -170,7 +159,7 @@ export async function liveHub(
     sankhya,
     mercadoLivre,
     config,
-    machineFolder: folder,
+    apps,
   }
 }
 

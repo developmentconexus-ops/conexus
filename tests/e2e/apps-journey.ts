@@ -1,17 +1,14 @@
 // The apps' journeys of steps 9 and 10 share their scenario: the real Hub, Empresa A with Ana its
-// owner and Carla a member, its Builder ready, Pedidos with its company database on the test
-// server, and the steps of a Builder turn that sends a packed app and of opening the app (testing
-// T5, T6, T14). Anthropic is a double that writes what it is asked, and the machine's check program
-// is the one thing faked beyond the providers: it passes and leaves the packed app as the version.
+// owner and Carla a member, Pedidos with its company database on the test server, and the steps of
+// sending a packed app through the Hub's apps door and of opening the app (testing T5, T6, T14).
 import assert from 'node:assert/strict'
-import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
-import type { CheckReport } from '@conexus/app/check'
-import { STEP_NAMES } from '@conexus/app/check'
+import { Manifest, mediaTypeOf } from '@conexus/app-contract'
+import { CompanyId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
 import type { BrowserContext } from 'playwright-core'
-import { ASK, versionWriting } from '../../apps/server/src/hub/apps/test-versions.ts'
-import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
 import { createCompanyDatabase } from '../../apps/server/src/platform/test-company-postgres.ts'
 import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import {
@@ -23,8 +20,7 @@ import {
   namespace,
   visitApp,
 } from './apps-edge.ts'
-import { ask, chooseDefaultModel, KEYS, transcriptOf } from './conversation-journey.ts'
-import { hubWindow, openConversation } from './hub-window.ts'
+import { hubWindow } from './hub-window.ts'
 import {
   createProject,
   firstEntry,
@@ -35,7 +31,6 @@ import {
   plantCompany,
   signIn,
 } from './live-hub.ts'
-import { linkKey } from './model-accounts-journey.ts'
 
 const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
@@ -48,16 +43,16 @@ export const RECADO = 'Ligar para o fornecedor'
 
 /** The real Hub, Empresa A with Ana its owner and Carla a member, and a browser window for each. */
 export async function scenario(t: TestContext) {
-  plantAnthropic(t, versionWriting())
   const cloudflare = await cloudflareServer(t)
   const closers: (() => Promise<void>)[] = []
   t.after(async () => {
     for (const close of closers) await close()
   })
   const hub = await liveHub(t, 'http://127.0.0.1:9/unused', cloudflare.url)
+  const anaId = await personWithPassword(hub.database, ANA)
   const companyId = await plantCompany(
     hub.database,
-    await personWithPassword(hub.database, ANA),
+    anaId,
     await personWithPassword(hub.database, CARLA),
   )
   const problems: string[] = []
@@ -67,25 +62,18 @@ export async function scenario(t: TestContext) {
   }
   const owner = await window(OWNER_IP)
   const member = await window('203.0.113.10')
-  return { t, hub, cloudflare, companyId, owner, member, problems }
+  return { t, hub, cloudflare, anaId, companyId, owner, member, problems }
 }
 
 export type Scenario = Awaited<ReturnType<typeof scenario>>
 export type Door = Parameters<typeof visitApp>[0]
 
-/**
- * Ana links Anthropic and picks the default model, then creates Pedidos; its company database is
- * then one on the test server, which `db` reaches.
- */
+/** Ana creates Pedidos; its company database is then one on the test server, which `db` reaches. */
 export async function pedidosOf(s: Scenario) {
   const { page } = s.owner
   await page.goto(`${TEST_ORIGIN}/`)
   await signIn(page, ANA.email, PASSWORD)
   await firstEntry(page)
-  await page.goto(`${TEST_ORIGIN}/companies/${s.companyId}/settings/model-accounts`)
-  await linkKey(page, 'Time 1', KEYS.first)
-  await page.getByText('Time 1', { exact: true }).first().waitFor()
-  await chooseDefaultModel(page, s.companyId)
   await page.goto(`${TEST_ORIGIN}/companies/${s.companyId}`)
   await createProject(page, 'Pedidos')
   await page.getByTestId('area').getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
@@ -110,46 +98,43 @@ export async function pedidosOf(s: Scenario) {
   return { url, door, companyDatabase }
 }
 
-const PASSED: CheckReport = {
-  ok: true,
-  steps: STEP_NAMES.map((name) => ({ name, state: 'passed', problems: [] })),
+function filesOf(folder: string): string[] {
+  return readdirSync(folder, { recursive: true, encoding: 'utf8' })
+    .filter((path) => statSync(join(folder, path)).isFile())
+    .map((path) => path.split('\\').join('/'))
 }
 
 /**
- * Ana asks the Builder for a version on a new conversation of Pedidos; the machine's check passes
- * and leaves the packed `folder` where the template's check leaves the version, and the end of the
- * turn sends it. Returns once the conversation says whether it reached the app.
+ * Sends the packed app `folder` (`npm run app:pack`) to Pedidos as Ana, the next number of the
+ * Projeto, through the apps' door a Builder turn's end called. Returns once the Prévia has it.
  */
-export async function builderSends(s: Scenario, pedidos: string, folder: string) {
-  await builderAsked(s, pedidos, folder)
-  await transcriptOf(s.owner.page)
-    .getByText(/^Prévia (pronta\.|não atualizada: )/)
-    .waitFor()
-}
-
-/** Ana's request of `builderSends`, with the machine's check set up; returns once the turn is asked. */
-export async function builderAsked(s: Scenario, pedidos: string, folder: string) {
-  const machine = s.hub.machineFolder
-  mkdirSync(machine, { recursive: true })
-  writeFileSync(join(machine, 'check-passed.json'), JSON.stringify(PASSED))
-  const program = join(machine, 'check')
-  writeFileSync(
-    program,
-    [
-      '#!/bin/sh',
-      // Called as `check --root <app folder>`.
-      'out="$2/node_modules/.conexus/version"',
-      'rm -rf "$out" && mkdir -p "$(dirname "$out")"',
-      `cp -r '${join(FOLDERS, folder)}' "$out"`,
-      `cat '${machine}/check-passed.json'`,
-    ].join('\n'),
+export async function sendPacked(s: Scenario, pedidos: string, folder: string) {
+  const [, companyId, projectId] =
+    new URL(pedidos).pathname.match(/companies\/(\w+)\/projects\/(\w+)/) ?? []
+  const root = join(FOLDERS, folder)
+  const manifest = Manifest.parse(JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8')))
+  const files = filesOf(root)
+    .filter((path) => path !== 'manifest.json')
+    .map((path) => ({
+      path,
+      mediaType: mediaTypeOf(path),
+      base64: readFileSync(join(root, path)).toString('base64'),
+    }))
+  const [last] = await s.hub.database.asOwner(
+    'select coalesce(max(number), 0) as number from apps.app_version where project_id = $1',
+    [projectId],
   )
-  chmodSync(program, 0o755)
-  const { page } = s.owner
-  await page.goto(pedidos)
-  await page.getByRole('combobox', { name: 'Conversas' }).waitFor()
-  await openConversation(page, () => page.getByRole('button', { name: 'Nova conversa' }).click())
-  await ask(page, `${ASK}${folder} ${Date.now()}`)
+  const number = Number(last?.number) + 1
+  const sent = await s.hub.apps.sendFromBuilder({
+    companyId: CompanyId.parse(companyId),
+    projectId: ProjectId.parse(projectId),
+    personId: PersonId.parse(s.anaId),
+    runId: RunId.parse(randomUUID()),
+    number,
+    folder: { manifest, files },
+  })
+  assert.equal(sent?.state, 'ready', JSON.stringify(sent))
+  return number
 }
 
 /** The Hub's handoff, asked as the browser that holds Ana's Hub session would ask it. */
