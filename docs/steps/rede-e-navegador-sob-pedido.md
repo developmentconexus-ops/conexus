@@ -2,6 +2,11 @@
 
 Trilho: harness
 
+**Congelada em 2026-11-28, sem o G4.** O fundador decidiu congelar a etapa sem o fechamento ("2. Fechar"), porque o código dela vai ser apagado quando os agentes passarem para o
+`conexus-harness` (o texto está no [roteiro](../roadmap.md)). O G1, o G1b e o G2 (U1, U7, U2 e U3)
+entraram no `main`. O G3 (U4 e U5) e o G4 (U6) não serão construídos aqui. Nenhuma unidade deste cartão
+começa de novo, e o resto do texto abaixo fica como o fundador o aprovou.
+
 Etapa 3 do harness, na ordem que o fundador fixou em 2026-11-25 ("Confirmo"): a etapa 2 ("Uma sala
 e os nomes certos"), esta, o `A2` (que precisa dela para ler o site da empresa) e o `A3`. O pedido
 dele, em 2026-11-25: "a e2b a gente via ter que poder liberar navegador e itnernet para automações,

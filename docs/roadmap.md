@@ -64,24 +64,26 @@ Brain estão na [trilha Dados](steps/trilhas/dados.md).
 | Marco | O que a pessoa vê | Pronto quando |
 | --- | --- | --- |
 | `A1`. O Builder vê o que construiu | Menos apps "prontos" que não funcionam | Um teste planta um defeito visível e o Builder o corrige sem ninguém avisar. A conferência falha quando uma tela não está ligada. O estudo curto que compara máquina e Worker de verdade está feito antes |
-| `A2`. Apps com identidade | Dois apps de empresas diferentes não se confundem. Os apps da mesma empresa parecem da mesma casa | O mesmo pedido em duas empresas de teste com identidades diferentes gera `styles.css` diferentes. Você distingue os dois em capturas lado a lado. O plano mostra a direção de design antes de construir |
-| `A3`. O plano que trava e fecha | O Builder não escreve antes de você aprovar, e não diz "pronto" com item em aberto | Um teste em que o modelo tenta escrever antes da aprovação e o controlador recusa. Cada pedido numerado do plano aparece conferido no fim. O juiz de fim de turno roda nos quatro agentes e as frases saem dos prompts |
-| `A4`. O segundo olhar | Uma revisão antes da entrega, feita por quem não construiu | Outra sessão revisa a versão exata, no máximo três voltas. Você julga se os dois apps de teste melhoraram com ela. Se não melhorarem, sai |
-| `A5`. As capacidades 4, 6 e 7 | Como a página da [trilha](steps/trilhas/agentes-e-apps.md) descreve | As condições que cada cartão já traz |
-| `A6`. O Assistente | Depois dos marcos acima | O estudo dele reaproveita `A3` e o contrato de `D2` |
 
-A etapa 1 do harness, `A1` e a etapa 2 ("Uma sala e os nomes certos") fecharam; seguem `A2` e
-`A3`. Mais na
+**Agentes: o conexus-harness.** A parte agêntica inteira do Conexus vive no repositório `conexus-harness`. Ele é
+construído do jeito certo, pelas referências do Mastra. Ele publica no npm um pacote com uma classe,
+`ConexusHarness`, no padrão do `MastraFactory`: `new ConexusHarness(config)`, `await prepare()`, o `new Mastra` no
+host e `await finalize()`. O host passa a fábrica da máquina E2B por app, o login, o modelo e as ferramentas do Hub
+(o `publish` pela porta MCP). O banco, a observabilidade e o logger ficam no `new Mastra` do host. O Mastra Studio é
+só uma entrada de teste dentro do repositório. Ele valida cada agente com o ciclo completo antes de ele subir: pedir
+um app, planejar, aprovar, construir na E2B, abrir o link, publicar e abrir. O Conexus instala o pacote numa versão
+fixa e escreve as três linhas no seu servidor Fastify. O código de agentes que o Conexus tem hoje é apagado, não
+adaptado. Ordem: Construtor validado no Studio; subida do `@mastra/core` do Conexus para a linha do pacote;
+Construtor plugado no Conexus enquanto o Assistente é validado no Studio; Assistente plugado.
+
+A etapa 1 do harness, `A1` e a etapa 2 ("Uma sala e os nomes certos") fecharam. A etapa 3, "A rede e o navegador
+sob pedido", está congelada sem o fechamento, porque o código dela vai ser apagado. Mais na
 [trilha Agentes e Apps](steps/trilhas/agentes-e-apps.md).
-
-`A2` é a Capacidade 5 mais a direção de design de cada app. Os Fluxos 1 a 5 viram marcos: pesquisa e
-plano em `A3`, código e teste em `A1`, revisão em `A4`.
 
 **Trilha Redesenho:** [`R1` a `R6`](steps/trilhas/redesenho.md).
 
-**O que brilha primeiro.** `D1`, `D2` e `A2`: ligar um sistema em um clique, perguntar sobre o dado
-copiado e receber um app com a cara da empresa. `A1` vem junto, porque sem ele o `A2` entrega apps
-bonitos e quebrados.
+**O que brilha primeiro.** `D1`, `D2` e o Construtor do harness: ligar um sistema em um clique,
+perguntar sobre o dado copiado e receber um app construído e conferido.
 
 **O que não se faz agora.** O que nunca se faz está na [VISION.md](../VISION.md). Mais de um estudo
 aberto por trilha. O auto-router. Subagentes forçados, pesquisa em três frentes e auditor do plano como

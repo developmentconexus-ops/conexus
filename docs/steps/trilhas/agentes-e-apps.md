@@ -28,7 +28,7 @@ vendedor; o gestor vê tudo de cada vendedor; o vendedor entra e vê os seus dad
 desempenho, clientes e sugestões. Nada de app de brinquedo. O mapa sai: "Deixa quieto sobre o Mapa".
 
 - **Capacidade 4. As pessoas do app e o vendedor.** Entra como vendedor de teste, ligado ao vendedor do ERP, e vê só o seu.
-- **Capacidade 5. O design da empresa**, que é `A2`. Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela. O plano de cada app traz também a direção de design dele.
+- **Capacidade 5. O design da empresa.** Abre a identidade de design da empresa em DESIGN.md (cores, fontes, formas; as cores dos gráficos saem dela), e a skill de design do Builder faz um app novo nascer com ela. O plano de cada app traz também a direção de design dele.
 - **Capacidade 6. O agente dentro do app.** Conversa, na tela de um app, com o agente do Projeto no Hub.
 - **Capacidade 7. Avisos e lembretes do CRM.** Recebe no CRM os avisos e lembretes de um dia de uso.
 
@@ -64,8 +64,13 @@ Worker de conferência, abre a tela num navegador dentro da máquina e recebe o 
 está na [arquitetura](../../architecture.md). O cartão está no histórico do `main`, no commit
 `936c7adc`, o último que o mudou.
 
-A ordem depois dela é a da decisão A do fundador, de 2026-11-22: a etapa 2 do harness ("Uma sala e
-os nomes certos"), `A2` e `A3`. Antes fecharam Um escopo e a fábrica de ferramentas, em 2026-11-17
+Em 2026-11-28, o fundador decidiu que a parte agêntica inteira passa para o repositório
+`conexus-harness`, construído sobre as peças nativas do Mastra, e que o código de agentes que o
+Conexus tem hoje é apagado, não adaptado; o texto está no [roteiro](../../roadmap.md). Os cartões
+antigos do harness que esperavam aprovação foram fechados como substituídos. A etapa 3,
+"A rede e o navegador sob pedido", ficou congelada sem o fechamento, porque o código dela vai ser
+apagado; o [arquivo de aprovação](../../approvals/rede-e-navegador-sob-pedido.md) guarda as palavras
+dele. Antes fecharam Um escopo e a fábrica de ferramentas, em 2026-11-17
 ([aprovação](../../approvals/um-escopo-e-a-fabrica-de-ferramentas.md)), e a fundação do front-end,
 em 2026-11-22 ([aprovação](../../approvals/fundacao-do-front-end.md)). A ordem dos marcos não muda.
 
@@ -108,9 +113,9 @@ contrato.
 A auditoria de 2026-11-14 deixou seis passos abertos. Cada um entra num marco desta trilha; os
 passos 3 e 8 fecharam com a etapa 2 do harness.
 
-- **Passo 3, fechado.** A sala única de conversa na web (`apps/web/src/harness/room/`) serve os quatro agentes: cada cartão desenhado pelo resultado de uma ferramenta sai de uma linha do registro por ferramenta, e cada agente diz o que é seu. `A3` põe o plano na conversa.
-- **Passo 4.** As regras de prompt trocadas por mecanismo do Mastra entram em `A3`, onde o juiz de fim de turno roda nos quatro agentes e as frases saem dos prompts.
-- **Passo 5.** O modo de plano nativo é o próprio `A3`, com o teste em que o controlador recusa a escrita antes da aprovação.
-- **Passo 6.** Do dono do conhecimento da empresa, o significado vai para `D4`, na trilha Dados. A memória do Projeto no Knowledge vai com o item 5 da lista do Brain, na página da [trilha Dados](dados.md), e `A3` fica sem ela.
+- **Passo 3, fechado.** A sala única de conversa na web (`apps/web/src/harness/room/`) serve os quatro agentes: cada cartão desenhado pelo resultado de uma ferramenta sai de uma linha do registro por ferramenta, e cada agente diz o que é seu. O plano na conversa fica com o `conexus-harness`.
+- **Passo 4.** As regras de prompt trocadas por mecanismo do Mastra ficam com o `conexus-harness`, que usa as peças nativas do Mastra.
+- **Passo 5.** O modo de plano nativo do Mastra (`build` e `plan`) vem no `conexus-harness`.
+- **Passo 6.** Do dono do conhecimento da empresa, o significado vai para `D4`, na trilha Dados. A memória do Projeto no Knowledge vai com o item 5 da lista do Brain, na página da [trilha Dados](dados.md), e o `conexus-harness` fica sem ela.
 - **Passo 7.** As correções de stack andam ao lado de `A1`, cada uma num pull request. O convite com senha mexe em segurança e pede cartão.
 - **Passo 8, fechado.** As pastas dizem o que cada uma é (`harness/` e `agents/<agente>/`, no servidor e na web). Na tela, quem responde nas conversas da plataforma é o Conexus, o agente da empresa responde com o próprio nome, e o menu do Projeto tem quatro grupos (O app, Agentes, Dados, O Projeto). Nenhum id guardado mudou, porque o id de cada agente e as marcas das conversas estão gravados nas conversas.
