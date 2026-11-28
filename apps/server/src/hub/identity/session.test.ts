@@ -5,7 +5,6 @@ import { silent, testConfig, WRITE_HEADERS } from '../../platform/test-database.
 import { createAuth } from './public.ts'
 import type { Hub } from './test-hub.ts'
 import {
-  ageTo,
   ANA_ACCOUNT,
   hubWithAna,
   problem,
@@ -16,6 +15,7 @@ import {
   signOut,
   TEST_ROLES,
 } from './test-hub.ts'
+import { ageTo } from './test-session-age.ts'
 
 const SIGNED_OUT = JSON.stringify({ state: 'SIGNED_OUT' })
 

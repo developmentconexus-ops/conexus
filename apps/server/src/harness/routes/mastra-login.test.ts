@@ -3,7 +3,8 @@ import { test } from 'node:test'
 import { MastraAuthBetterAuth } from '@mastra/auth-better-auth'
 import { createIdentity } from '../../hub/identity/public.ts'
 import type { Hub } from '../../hub/identity/test-hub.ts'
-import { ageTo, ANA_ACCOUNT, hubWithAna, signedIn, TEST_KIT } from '../../hub/identity/test-hub.ts'
+import { ANA_ACCOUNT, hubWithAna, signedIn, TEST_KIT } from '../../hub/identity/test-hub.ts'
+import { ageTo } from '../../hub/identity/test-session-age.ts'
 import { silent, unreachableDatabase } from '../../platform/test-database.ts'
 import { testMail } from '../../platform/test-mail.ts'
 
@@ -72,14 +73,15 @@ test('login do Mastra: prazo total, usada a cada 25 min abre até 8 h menos 1 s;
 test('login do Mastra: banco fora, ninguém e sem lançar', async (t) => {
   const hub = await hubWithAna(t)
   const cookie = await signedIn(hub)
-  const identityOn = (database: Parameters<typeof createIdentity>[0]['database']) =>
-    createIdentity({
+  function identityOn(database: Parameters<typeof createIdentity>[0]['database']) {
+    return createIdentity({
       kit: TEST_KIT,
       database,
       config: hub.config,
       log: silent,
       sendMail: testMail(hub.config),
     })
+  }
   const live = identityOn(hub.test.database)
   assert.equal((await who(mastraLogin(live.auth), cookie))?.user.id, ANA_ACCOUNT.id)
   const down = identityOn(await unreachableDatabase(t))

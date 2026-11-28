@@ -110,7 +110,7 @@ async function hubServing(
     app,
     edge,
     test,
-    config,
+    ...{ config, auth: identity.auth },
     // The companies' lakes in AWS are of memory too (card o-lago-da-empresa-nasce-e-some).
     ...{ neon, aws, cloudflare },
     /** The saved tools' namespace of memory (step 24.4). */
@@ -129,7 +129,6 @@ async function hubServing(
     conversationMachines: ports.conversationMachines,
     ...{ connectors: subjects.connectors, access: subjects.access, apps },
     ...{ lakeRuns: subjects.lakeRuns, lakeClock: subjects.lakeClock },
-    auth: identity.auth,
     ...{ identity: identity.ports, agents: subjects.agents, data: subjects.data, sendMail },
     ...{ notify: subjects.notifications.notify, treatment: subjects.treatment },
     mastra: conversations.mastra,
@@ -185,18 +184,6 @@ export async function hubWithAna(t: TestContext): Promise<Hub> {
     [ANA_ACCOUNT.id, await hashPassword(PASSWORD)],
   )
   return hub
-}
-
-export async function ageTo(hub: Hub, seconds: number) {
-  await hub.test.asOwner(
-    `update auth.session set created_at = created_at - make_interval(secs => shift),
-      updated_at = updated_at - make_interval(secs => shift),
-      expires_at = expires_at - make_interval(secs => shift)
-    from (select id, $1 - extract(epoch from statement_timestamp() - created_at) as shift
-      from auth.session) as span
-    where span.id = session.id`,
-    [seconds],
-  )
 }
 
 export function signIn(hub: Hub, body: unknown, headers: Record<string, string> = {}) {
