@@ -1,78 +1,74 @@
 ---
 name: conexus-build
-description: "Builds one unit of an approved Conexus step card as one commit of the step's pull request: deletes before adding, brings old code only as the card's transplant measure says, builds each reference table row as its verdict says, tests through the server's public door, runs the result and reports what ran and what was not proved. Also fixes a defect. Use when instructions name a step card and a unit, or a defect to fix."
+description: Builds one unit of an approved Conexus step card as one commit of the step's pull request, or fixes a defect. Use when instructions name a step card and a unit, or a defect to fix.
 ---
 
 # Build
 
-## When to use
+The card says what to build; this skill says how to work. The session that wrote the card never
+builds it.
 
-To build one unit of the step in construction, or the next ([delivery L1](../../../docs/guides/delivery.md)), from its approved card, or to fix a defect; never by
-the session that wrote the card.
+## The goal
 
-## What it receives
+One commit per unit ([delivery L9](../../../docs/guides/delivery.md)) in which every criterion is
+green by a test that fails without the change, every reference row is used as its verdict says
+([code C75](../../../docs/guides/code.md)), and `main` ends no more complex than the card requires.
+CI is the full gate (L15); locally, prove only what the unit touches.
 
-The card (`docs/steps/` or its pull request) and the unit.
+## Before code
 
-It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
-unit's guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
-`typescript-best-practices` before writing code; [bring](references/bring.md) for brought code,
-[bug](references/bug.md) for a defect, [`conexus-connector`](../conexus-connector/SKILL.md) for
-connectors, [brief](references/brief.md) for the session's brief.
+- Read the unit's section of the card and load the skills it names, pstack `poteto-mode` and
+  `typescript-best-practices`.
+- Before using a reference row, open its `file:line` at the installed version. A shape a library
+  emits comes from a `npm run record` recording
+  ([testing T26](../../../docs/guides/testing.md)), never typed.
+- Brought code follows [bring](references/bring.md), a defect [bug](references/bug.md), a screen
+  [screen](references/screen.md), a connector [`conexus-connector`](../conexus-connector/SKILL.md).
 
-## Steps
+## How to work
 
-1. Read the unit's criteria, reference table rows and section, whose order of the work
-   gives each step's files, reference, code, tests, hand mutations and done line; a group's last
-   unit adds its checkpoint.
-2. Every type, contract and value the unit needs exists on `main` or comes from this
-   unit; if not, stop.
-2a. Build each of the unit's reference table rows as its verdict says
-   ([code C75](../../../docs/guides/code.md)): a nativo row uses the named API, an embrulhado row
-   adds only its line. A screen first finds its pieces in `ui/` and the showcase
-   ([design V62](../../../docs/guides/design.md)). Fix a defect at its root cause: name the first wrong state, fix there,
-   sweep its class.
-3. Delete before adding: remove what the card removes and move every caller. No shim, parallel
-   old path or temporary shape.
-4. Bring old code only as the card's transplant measure says: into the named file, refactored as
-   listed, carrying only the old decisions listed. Past the study rule's measure
-   ([`conexus-study`](../conexus-study/SKILL.md)), stop.
-5. Test through the server's public door, negative cases included, with provider doubles per
-   [T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
-6. Run the result: the server, the route, the migration on a disposable database, and a
-   changed screen looked at per [T23](../../../docs/guides/testing.md), through a
-   verification skill when one exists ([screen](references/screen.md)). A state fix reruns
-   A→B→A, a layout fix the card's failure states. A remendo row keeps the card's proof beside its
-   [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop` and `no-comments`,
-   hand-mutate key lines
-   ([T27](../../../docs/guides/testing.md)); C70 and C73 decide what leaves.
-7. One commit per unit, kept on merge. Before its push, `npm run check:local -- --unit U<k>
-   <test files>` passes ([delivery L29](../../../docs/guides/delivery.md)) and the section's proofs
-   are green.
+- Delete before adding. What the card removes leaves with every caller; no shim, parallel path or
+  temporary shape.
+- Native first. A nativo row uses the named API as is, an embrulhado row adds only its line, and a
+  remendo row keeps the card's proof beside its [boundaries](../../../docs/reference/boundaries.md)
+  entry. A screen starts from `ui/` and the showcase ([design V62](../../../docs/guides/design.md)).
+- Write each criterion's test first, through the public door (T5) with negative cases (T10) and
+  recorded doubles (T24, T29), and see it fail for the reason the criterion names.
+- For each guard or branch the unit adds, break it once and watch its test go red (T27). A
+  survivor gets a test, or leaves as dead code. Do it inside the test loop, not as a later pass.
+- Comment only a reason the code cannot show (C70).
+- Run only the test files the unit touches; a long server set runs in the background while you
+  keep working.
 
-## What it produces
+## Guardrails
 
-The commit and a report: what I ran, saw and did not prove; each table row with its file; the line
-counts of each brought part; every criterion with its test, none red; each declared file outside
-the card's folders ([delivery L7](../../../docs/guides/delivery.md)); the screenshots seen, by state,
-width and theme, or "no screen touched". A failing criterion is never handed to the review; fix it.
+- Never invent a product rule, value or boundary to turn a test green, and never weaken a test,
+  assertion or authority to pass (T17). A test or criterion you believe is wrong is a stop.
+- Touch nothing outside the card's folders unless L7 allows it and the report declares it, and
+  nothing the unit does not need.
+- Do not run what CI owns: full suites, the full typecheck, Stryker, `processo` gates.
+- Never sit in a loop waiting on your own background job; work beside it or end the turn.
 
 ## Stop and ask
 
-- A decision is missing, a criterion cannot turn green without changing the card, or a guide and
-  the card contradict each other.
-- The unit changes what a person sees, or the scope, beyond the card ([delivery
-  L7](../../../docs/guides/delivery.md)).
-- The unit outgrows the card's estimate.
-- The code needs a file, shape, behaviour or table row the unit's section does not name, or a
-  ruling arrives that the card does not carry: stop; the card takes it as a delta first.
-- A test needs a library shape no recording holds: stop; record it with `npm run record`, load it with
-  `nativeRecording` (T26), never type it.
+Stop coding and report the evidence when a decision is missing, a criterion cannot turn green
+without changing the card, a guide and the card contradict each other, the unit changes what a
+person sees or outgrows the card's estimate (L7), or the code needs a file, shape, behaviour or row
+the section does not name.
 
-Stop means no more code: report evidence.
+## Before the push
 
-## When it closes
+`npm run check:local -- --unit U<k> --card <card> [test files]` passes on the commit (L29). It is
+your one typecheck; name only tests not yet green since your last edit, and run it in the background.
+The section's proofs are green and a changed screen was looked at in the states it changes (T23).
 
-Step 7 holds. In the fix round build one front ([delivery
-L9](../../../docs/guides/delivery.md)): each finding's cause and its class (L11), one commit to the
-same branch, the PR body's counts remeasured there.
+## The report
+
+What ran, with each result, and what was not proved; each criterion with its test, each row with
+its file; each mutation in one line; brought line counts; files outside the card's folders; the
+screens seen by state, width and theme, or "no screen touched". A red criterion is fixed, never
+handed to the review.
+
+## The fix round
+
+One front per finding's cause, its class swept (L11), one commit to the same branch.

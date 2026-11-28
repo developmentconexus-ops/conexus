@@ -12,7 +12,8 @@ these steps win.
    ([delivery L6](../../../../docs/guides/delivery.md)) in the same pull request.
 3. Write the test that fails because of the defect, through the public door, and see it fail.
 4. Fix the cause, not the symptom: no guard that silences a crash, no retry over a race.
-5. See the test pass, then search for the same cause elsewhere and list each place.
+5. See the test pass, then search for the same cause elsewhere and list each place. A state fix
+   reruns A→B→A; a layout fix reruns the card's failure states.
 6. Report: the symptom, the cause, why the fix removes it, what stops it returning, the reference
    rows, and the other places found.
 
