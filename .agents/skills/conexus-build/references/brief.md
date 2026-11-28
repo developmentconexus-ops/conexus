@@ -13,21 +13,15 @@ from the instruction.
    the base commit and the branch. Done: each of the unit's criteria green by its test, `npm run
    check:local` passed (step 7), the group's checkpoint run. The card's "Pronto quando" block is the done line
    when the card has one; the brief points to it and writes none of its own.
-2. **The state file.** The builder creates `criteria.json` first, beside the task's notes and
-   outside the repository ([delivery L21](../../../../docs/guides/delivery.md)): one item per
-   criterion, with its number, test, state (`nao_iniciado`, `verde` or `vermelho`) and proof, and
-   the reference rows opened. It keeps the file current, with short progress notes beside it.
-3. **The verification it may run.** `npm run check:local` on each commit before its push
+2. **The verification it may run.** `npm run check:local` on each commit before its push
    (step 7) and the checkpoint's batch, one heavy process at a time.
-4. **The named stops.** Criterion against criterion, criterion against the code, a shape outside
+3. **The named stops.** Criterion against criterion, criterion against the code, a shape outside
    the contract, and a reference the builder could not open are each a `needs-decision` with the
    evidence ("Stop and ask"), never a choice made in the code. The stops to avoid: announcing the
    next step without doing it, and offering an alternative "se preferir".
-5. **The house rules by pointer.** "The method is the repository's; this brief does not repeat it":
+4. **The house rules by pointer.** "The method is the repository's; this brief does not repeat it":
    `AGENTS.md`, this skill, the card and pstack `poteto-mode`. A rule the brief restates drifts
    from its guide.
-6. **Open the reference before using it.** Before using a reference table row, the builder opens
-   its reference at the cited `file:line` and records it in `criteria.json`.
 
 ## The references
 
