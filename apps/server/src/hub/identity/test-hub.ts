@@ -64,7 +64,7 @@ async function hubServing(
   tuning: HubTuning = {},
 ) {
   // Registered before the database's own cleanup, so it runs first (node:test runs them in order):
-  // the Builder's turns drain and end their streams while the server closes, as at shutdown.
+  // the Hub's background work drains while the server closes, as at shutdown.
   // A turn parked on a card never drains, and production cuts the drain at its shutdown deadline,
   // so this close gets a deadline too: past it the database's cleanup still runs, and the last
   // hook fails the test (a hook that throws skips the hooks after it, and the file never exits).
@@ -80,10 +80,9 @@ async function hubServing(
   const sendMail = testMail(config)
   const identity = testIdentity({ database: test.database, config, sendMail })
   const cloudflare = fakeCloudflare()
-  const tools = fakeCloudflare()
   const aws = { ...fakeAws(), ...(tuning.aws === undefined ? {} : { aws: tuning.aws }) }
   const postgres = heldCompanyPostgres(config)
-  const ports = testAppPorts(config, { neon, cloudflare, postgres, tools, aws })
+  const ports = testAppPorts(config, { neon, cloudflare, postgres, aws })
   const subjects = subjectsOf({
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity, sendMail },
     ...{ ...ports, log, ...tuning.outside?.(config, log) },
@@ -91,7 +90,7 @@ async function hubServing(
     pruneBudgetMs: TEST_PRUNE_BUDGET_MS,
     appDataDeadlineMs: TEST_CALL_DEADLINE_MS,
   })
-  const { projects, apps, conversations, runs } = subjects
+  const { projects, apps, conversations } = subjects
   const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })
   await conversations.start()
   // Once, whichever comes first: a test that waits for the Hub's background work, or the test's end.
@@ -113,26 +112,14 @@ async function hubServing(
     config,
     // The companies' lakes in AWS are of memory too (card o-lago-da-empresa-nasce-e-some).
     ...{ neon, aws, cloudflare },
-    /** The saved tools' namespace of memory (step 24.4). */
-    tools,
     postgres,
     projects,
-    runs,
-    builder: {
-      repository: ports.repository,
-      bucket: ports.bucket,
-      control: ports.control,
-      knobs: ports.knobs,
-      killed: ports.killed,
-      folder: ports.folder,
-    },
-    conversationMachines: ports.conversationMachines,
     ...{ connectors: subjects.connectors, access: subjects.access, apps },
     ...{ lakeRuns: subjects.lakeRuns, lakeClock: subjects.lakeClock },
-    ...{ identity: identity.ports, agents: subjects.agents, data: subjects.data, sendMail },
+    ...{ identity: identity.ports, data: subjects.data, sendMail },
     ...{ notify: subjects.notifications.notify, treatment: subjects.treatment },
     mastra: conversations.mastra,
-    settle: (bound: AbortSignal) => conversations.settle(bound),
+    settle: () => conversations.settle(),
     repair: apps.repair,
     readUnserved: subjects.modelAccounts.readUnserved,
     close,

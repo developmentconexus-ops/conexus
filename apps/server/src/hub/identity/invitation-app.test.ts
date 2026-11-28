@@ -6,7 +6,7 @@ import { appHostOf, HostLabel } from '@conexus/hub-api'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { browser, frameHandoff, PEDIDOS, PEDIDOS_PREVIA } from '../apps/test-handoff.ts'
-import { folder, readyForVersions, send } from '../apps/test-versions.ts'
+import { folder, send } from '../apps/test-versions.ts'
 import type { Hub, Person } from './test-hub.ts'
 import {
   ANA_OWNER,
@@ -34,7 +34,6 @@ async function appCompany(t: TestContext) {
   const { mail } = hub
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')
-  await readyForVersions(t, hub, ana, companyId)
   const projects = `/api/companies/${companyId}/projects`
   async function projectNamed(name: string) {
     const made = await post(hub, ana, projects, { name })

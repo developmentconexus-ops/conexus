@@ -1,139 +1,18 @@
-import type { CompanyData } from '@conexus/hub-api'
-import type { FastifyInstance } from 'fastify'
-import { createConstrutor, tablesWithColumnNamesOf } from './agents/agent-builder/public.ts'
-import type { Runs } from './agents/app-builder/public.ts'
-import { createBuilderConversations } from './agents/app-builder/public.ts'
-import type { HandOffDoors } from './agents/assistant/public.ts'
-import {
-  AUTOMATION_TURN_MS,
-  AUTOMATION_WORKFLOW,
-  automationRun,
-  automationsOf,
-  createAssistant,
-  speakersOf,
-} from './agents/assistant/public.ts'
-import { agentsAlive } from './agents/saved-agent/public.ts'
 import type { LakeClock } from './harness/copy-clock/public.ts'
 import { copyClockWorkflow, createLakeClock } from './harness/copy-clock/public.ts'
-import type { ConversationMachine, MachineTuning } from './harness/machine/public.ts'
-import { COPY_WORKFLOW, createHubMastra } from './harness/mastra/public.ts'
-import { createMastraStorage } from './harness/memory/public.ts'
 import type { openGoogleCalls } from './harness/model-accounts/public.ts'
-import { isChoosable } from './harness/model-accounts/public.ts'
-import type { NetworkStore } from './harness/network/public.ts'
-import type { AppDataPort } from './harness/tools/public.ts'
-import type { Access, Principal } from './hub/access/public.ts'
-import type { Apps, BuilderData } from './hub/apps/public.ts'
-import { publishedVersionsOf } from './hub/apps/public.ts'
-import type { Connectors } from './hub/connectors/public.ts'
 import type { LakeRuns } from './hub/copies/public.ts'
-import type { DataContext } from './hub/data/public.ts'
-import type { IdentityPorts } from './hub/identity/public.ts'
-import type { Notify } from './hub/notifications/public.ts'
-import type { ProjectPorts } from './hub/projects/public.ts'
-import { liveProjectIdsOf, liveProjectOf, liveProjectsOf } from './hub/projects/public.ts'
-import type { CloudflareApps } from './platform/cloudflare.ts'
+import { COPY_WORKFLOW, createMastra, createMastraStorage, storageOf } from './mastra/index.ts'
 import type { Config } from './platform/config.ts'
-import type { Database, MastraPool } from './platform/database.ts'
-import type { EdgeTools } from './platform/edge-tools.ts'
+import type { MastraPool } from './platform/database.ts'
 import type { FailureLog } from './platform/failure.ts'
-import type { SealKeys } from './platform/seal.ts'
 
-/** The connectors' assistant door, reached when a route or a turn calls it. */
-function doorOf(connectors: () => Connectors): Connectors['assistant'] {
-  return {
-    connections: (scope) => connectors().assistant.connections(scope),
-    listing: (scope) => connectors().assistant.listing(scope),
-    read: (scope, call) => connectors().assistant.read(scope, call),
-    write: (request) => connectors().assistant.write(request),
-    notes: (scope, connectionId) => connectors().assistant.notes(scope, connectionId),
-    notebooks: (scope) => connectors().assistant.notebooks(scope),
-    saveNote: (scope, call) => connectors().assistant.saveNote(scope, call),
-    operationOf: (scope, target) => connectors().assistant.operationOf(scope, target),
-    writeOf: (scope, target) => connectors().assistant.writeOf(scope, target),
-    openWrites: (key) => connectors().assistant.openWrites(key),
-    writes: (key) => connectors().assistant.writes(key),
-    kitReads: (scope) => connectors().assistant.kitReads(scope),
-  }
-}
-
-/** The connectors' Builder door, reached when a turn calls it. */
-function builderDoorOf(connectors: () => Connectors) {
-  return {
-    granted: (ids: Parameters<Connectors['builder']['granted']>[0]) =>
-      connectors().builder.granted(ids),
-    read: (
-      ids: Parameters<Connectors['builder']['read']>[0],
-      a: Parameters<Connectors['builder']['read']>[1],
-    ) => connectors().builder.read(ids, a),
-    notes: (
-      ids: Parameters<Connectors['builder']['notes']>[0],
-      connectionId: Parameters<Connectors['builder']['notes']>[1],
-    ) => connectors().builder.notes(ids, connectionId),
-    saveNote: (
-      ids: Parameters<Connectors['builder']['saveNote']>[0],
-      a: Parameters<Connectors['builder']['saveNote']>[1],
-    ) => connectors().builder.saveNote(ids, a),
-  }
-}
-
-/** The saved tools' live calls (step 24.4): reached when an agent's turn calls one. */
-function toolCallsOf(connectors: () => Connectors): Connectors['tools'] {
-  return { open: (call) => connectors().tools.open(call) }
-}
-
-function speakersIn({ database, identity }: Pick<ConversationsDeps, 'database' | 'identity'>) {
-  return (scope: Parameters<typeof speakersOf>[1]) =>
-    speakersOf({ database, identity, projects: { liveProjectOf } }, scope)
-}
-
-/** The apps' door as the agents and the Construtor read the app's data (step 24.3): reached when called. */
-function appDataOf(
-  apps: () => Pick<Apps, 'hasAppData' | 'readAppData' | 'appTables'>,
-): AppDataPort {
-  return {
-    hasApp: (input) => apps().hasAppData(input),
-    tables: (input) => apps().appTables(input),
-    read: (input) => apps().readAppData(input),
-  }
-}
-
-/** The apps' door as the Builder reads and checks its Projeto's data (Capacidade 3): reached when a turn calls it. */
-function builderDataOf(apps: () => Pick<Apps, 'builderData'>): BuilderData {
-  return {
-    access: (ids) => apps().builderData.access(ids),
-    read: (ids, statement, signal, thread) =>
-      apps().builderData.read(ids, statement, signal, thread),
-    check: (ids, statement, signal) => apps().builderData.check(ids, statement, signal),
-  }
-}
-
-function builderDoorsOf(
-  deps: Pick<ConversationsDeps, 'connectors' | 'apps' | 'network' | 'database' | 'identity'>,
-) {
-  return {
-    connectors: builderDoorOf(deps.connectors),
-    data: builderDataOf(deps.apps),
-    network: deps.network.store,
-    speakersOf: speakersIn(deps),
-  }
-}
-
-/** The Assistant's hand-off doors (step 24.3.2), each reached when the person touches it. */
-function handOffsOf(
-  deps: {
-    projects: () => Pick<ProjectPorts, 'createProject'>
-    connectors: () => Connectors
-  },
-  builder: HandOffDoors['builder'],
-  updating: () => boolean,
-): HandOffDoors {
-  return {
-    createProject: (input) => deps.projects().createProject(input),
-    grants: deps.connectors().grants,
-    builder,
-    updating,
-  }
+type ConversationsDeps = {
+  google: ReturnType<typeof openGoogleCalls>
+  mastraPool: MastraPool
+  automationClock: Config['automationClock']
+  lakeRuns: () => LakeRuns
+  log: FailureLog
 }
 
 function lakeClockRun(deps: Pick<ConversationsDeps, 'lakeRuns' | 'log'>) {
@@ -148,122 +27,40 @@ async function lakeStart(lakeRuns: LakeRuns, clock: LakeClock) {
   await lakeRuns.queue.start()
 }
 
-/** The provider's machines, the tests' tuning of them and the domains they reach, which every agent with machines takes. */
-function machineOf(deps: Pick<ConversationsDeps, 'machine' | 'machineTuning' | 'network'>) {
-  return { machine: deps.machine, machineTuning: deps.machineTuning, network: deps.network.store }
-}
-
-type ConversationsDeps = {
-  database: Database
-  identity: IdentityPorts
-  sealKeys: SealKeys
-  google: ReturnType<typeof openGoogleCalls>
-  mastraPool: MastraPool
-  runs: Runs
-  machine: ConversationMachine
-  /** The tests' folder and start deadline for the Assistant's machines; E2B's when absent. */
-  machineTuning?: MachineTuning
-  network: { store: NetworkStore }
-  connectors: () => Connectors
-  /** The saved tools' namespace and their host on the edge (step 24.4, U3). */
-  tools: { cloudflare: CloudflareApps; edge: EdgeTools }
-  /** The Projects are made after the conversations; a hand-off creates one when it is touched. */
-  projects: () => Pick<ProjectPorts, 'createProject'>
-  /** The apps are made after the agents; an agent reads its app's data when a turn calls it. */
-  apps: () => Apps
-  /** The company-data door is made after the conversations; each agent binds it to its own scope when a turn calls it. */
-  companyData: (principal: Principal, context: DataContext) => CompanyData
-  /** The access door is made after the conversations; a list of what a place offers comes long after. */
-  access: Pick<Access, 'viewOf'>
-  notify: Notify
-  automationClock: Config['automationClock']
-  lakeRuns: () => LakeRuns
-  log: FailureLog
-}
-
 /**
- * The Builder's conversations, the Assistant beside them (step 24.1, U2, `H1`), its automations
- * (step 24.2) and a Projeto's agents with their conversations (step 24.3): one Mastra store on the pool of Mastra's own login (0010) and one account queue,
- * shared by both controllers. The connectors are made after the apps whose door they read, and a
- * turn comes long after: each door is reached when called. The automations' run is made before the
- * one `Mastra` it is registered on, and the automations after it, on its schedules; a run and a
- * removal come long after both. The Construtor (step 24.3, U4) builds the agents through their
- * service and lists the automations made below.
+ * The Hub's one `Mastra` on the pool of Mastra's own login (0010), which runs the lake's copy
+ * clock and the retention of Mastra's tables. Its tables are made once at `prepare`, its workers
+ * start after every subject is made, and a removal releases the lake clock's schedules.
  */
 export function conversationsOf(deps: ConversationsDeps) {
-  const { database, identity, log } = deps
-  const storage = createMastraStorage(deps.mastraPool)
-  const queue = {
-    database,
-    identity,
-    sealKeys: deps.sealKeys,
-    googleCalls: deps.google.googleCalls,
+  const { log } = deps
+  const mastra = createMastra({
+    storage: createMastraStorage(deps.mastraPool),
     log,
-  }
-  const door = doorOf(deps.connectors)
-  const assistant = createAssistant({
-    ...{ storage, database, identity, queue, log, companyData: deps.companyData },
-    ...machineOf(deps),
-    ...{ connectors: door, access: deps.access },
-    projects: { liveProjectOf, liveProjectsOf, publishedVersionsOf },
-    handOffs: () => handOffsOf(deps, builder.handOffs, hub.updating),
+    workflows: { [COPY_WORKFLOW]: lakeClockRun(deps) },
+    schedulerTickMs: deps.automationClock?.schedulerTickMs,
   })
-  // A Projeto's agents and the company's tools (step 24.3), each published one alive on the one
-  // `Mastra`, made below: the connectors' door is reached when a route or a turn calls it.
-  const appData = appDataOf(deps.apps)
-  const agents = agentsAlive({
-    ...{ storage, database, identity, queue, liveProjectOf, liveProjectIdsOf, isChoosable, log },
-    ...{ ...machineOf(deps), ...deps.tools, connectors: door, calls: toolCallsOf(deps.connectors) },
-    speakersOf: speakersIn(deps),
-    ...{ appData, companyData: deps.companyData, access: deps.access },
-    mastra: () => hub.mastra,
-  })
-  const construtor = createConstrutor({
-    ...{ storage, database, identity, queue, liveProjectOf, log, agents, connectors: door },
-    ...{ access: deps.access, appTables: tablesWithColumnNamesOf(appData) },
-    speakersOf: speakersIn(deps),
-    ...{ automations: () => automations, ...machineOf(deps) },
-  })
-  const clock = deps.automationClock
-  const run = automationRun({
-    ...{ assistant, notify: deps.notify, log },
-    updating: () => hub.updating(),
-    turnMs: clock?.turnMs ?? AUTOMATION_TURN_MS,
-  })
-  const builder = createBuilderConversations({
-    ...{ database, identity, projects: { liveProjectOf }, log },
-    ...{ storage, queue, runs: deps.runs, companyData: deps.companyData, access: deps.access },
-    ...builderDoorsOf(deps),
-  })
-  // The order of removal: the automations, the agents, then the Builder's conversations, the
-  // Assistant's, the agents' and the Construtor's; the Builder's part closes first, as it owns the runs.
-  const hub = createHubMastra({
-    ...{ storage, queue, log, parts: [builder.part, assistant.part, agents.part, construtor.part] },
-    workflows: { [AUTOMATION_WORKFLOW]: run, [COPY_WORKFLOW]: lakeClockRun(deps) },
-    schedulerTickMs: clock?.schedulerTickMs,
-    releaseFirst: [
-      (scope) => automations.release(scope),
-      async (scope) => {
-        await agents.release(scope)
-      },
-      (scope) => lakeClock.release(scope),
-    ],
-    startFirst: [() => lakeStart(deps.lakeRuns(), lakeClock)],
-    closeLast: [() => deps.google.stop(), () => deps.lakeRuns().queue.stop()],
-  })
+  const lakeClock = createLakeClock({ mastra, log })
   const conversations = Object.freeze({
-    ...hub,
-    routes: (app: FastifyInstance) => {
-      hub.routes(app)
-      builder.routes(app)
-      construtor.routes(app)
+    mastra,
+    release: (scope: Parameters<typeof lakeClock.release>[0]) => lakeClock.release(scope),
+    async prepare(): Promise<void> {
+      await storageOf(mastra).init()
+      log.info({}, 'MASTRA_STORAGE_READY')
+    },
+    async start(): Promise<void> {
+      await lakeStart(deps.lakeRuns(), lakeClock)
+      await mastra.startWorkers()
+      log.info({}, 'MASTRA_WORKERS_STARTED')
+    },
+    async settle(): Promise<void> {
+      await mastra.getWorker('scheduler')?.stop()
+    },
+    async close(): Promise<void> {
+      await mastra.shutdown()
+      await deps.google.stop()
+      await deps.lakeRuns().queue.stop()
     },
   })
-  const automations = automationsOf({
-    ...{ mastra: hub.mastra, assistant, log, bootedAt: Date.now() },
-    access: deps.access,
-    updating: hub.updating,
-  })
-  const lakeClock = createLakeClock({ mastra: hub.mastra, log })
-  return { conversations, assistant, automations, agents, lakeClock }
+  return { conversations, lakeClock }
 }

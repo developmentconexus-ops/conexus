@@ -1,4 +1,4 @@
-import type { ConnectionId, LakeInterval } from '@conexus/hub-api'
+import type { CompanyId, ConnectionId, LakeInterval, PersonId, ProjectId } from '@conexus/hub-api'
 import {
   CompanyId as CompanyIdSchema,
   ConnectionId as ConnectionIdSchema,
@@ -10,12 +10,14 @@ import type { ScheduledCopy } from '../../hub/copies/public.ts'
 import { COPY_TIMEZONE } from '../../hub/copies/public.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { COPY_WORKFLOW } from '../mastra/public.ts'
-import type { ReleaseScope } from '../spec/public.ts'
+import { COPY_WORKFLOW } from '../../mastra/index.ts'
 
 export { COPY_TIMEZONE }
 
 type Clocked = Exclude<LakeInterval, 'MANUAL'>
+
+/** What a release names: a company, and maybe one of its Projetos or one of its people. */
+type ReleaseScope = { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }
 
 const STEPS = {
   '15m': { minutes: 15 },

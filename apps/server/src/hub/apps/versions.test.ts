@@ -54,30 +54,6 @@ test('versões: o membro lista (200), com a marca da Prévia e a da publicada', 
   )
 })
 
-test('envio: a pasta fora do contrato ou acima do teto não passa do empacotamento da conferência: nada sobe e nada se guarda', async (t) => {
-  const subject = await companyForVersions(t)
-  const { hub, ana } = subject
-  const base = folder()
-  const [, , style] = base.files
-  if (style === undefined) throw new Error('folder')
-  const many = Array.from({ length: 1001 }, (_, at) => ({ ...style, path: `assets/${at}.css` }))
-  const refused = [
-    { ...base, manifest: { ...base.manifest, contract: 2 } },
-    { ...base, files: [...base.files, { ...style, path: 'assets/extra.css' }] },
-    {
-      ...base,
-      manifest: { ...base.manifest, assets: many.map(({ path }) => path.slice(7)) },
-      files: [...base.files.slice(0, 1), ...many],
-    },
-  ]
-  for (const version of refused) {
-    const { preview } = await send(subject, ana, version)
-    assert.equal(preview, undefined)
-  }
-  assert.deepEqual(await hub.test.asOwner('select id from apps.app_version'), [])
-  assert.deepEqual(hub.cloudflare.calls, [])
-})
-
 test('envio: Neon ou Cloudflare fora "falhou"; código que não inicia e migração que falha, nada aplicado', async (t) => {
   const subject = await companyForVersions(t)
   const { hub, ana, owner, projectId } = subject

@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { APP_SESSION_HEADER } from '@conexus/hub-api'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
 import { browser, handoff, PEDIDOS } from '../apps/test-handoff.ts'
-import { folder, readyForVersions, send } from '../apps/test-versions.ts'
+import { folder, send } from '../apps/test-versions.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
   ANA_OWNER,
@@ -37,7 +37,6 @@ async function appCompany(t: TestContext) {
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')
   const bruno = await memberOn(hub, companyId, BRUNO, 'member')
-  await readyForVersions(t, hub, ana, companyId)
   const projects = `/api/companies/${companyId}/projects`
   async function projectNamed(name: string) {
     const made = await post(hub, ana, projects, { name })

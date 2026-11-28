@@ -1,18 +1,9 @@
 import { join } from 'node:path'
 import { getStatus } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import type {
-  BuilderConfer,
-  GitCopy,
-  MachinesOf,
-  RepositoryOf,
-} from './agents/app-builder/public.ts'
-import { builderPortsOf, createRuns, repositoriesIn } from './agents/app-builder/public.ts'
 import { centralOf } from './central-of.ts'
 import { runFirstPerson, runMigrate } from './commands.ts'
 import { conversationsOf } from './conversations-of.ts'
-import type { ConversationMachine, MachineTuning } from './harness/machine/public.ts'
-import { conversationMachineOf } from './harness/machine/public.ts'
 import {
   createModelAccounts,
   openGoogleCalls,
@@ -39,7 +30,7 @@ import { createTreatment } from './hub/treatment/public.ts'
 import type { CopyQueue, CopyTasks, LakeStacks, LakeTables } from './platform/aws.ts'
 import { createAws, subjectPortsOf } from './platform/aws.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
-import { createCloudflareApps, createCloudflareTools } from './platform/cloudflare.ts'
+import { createCloudflareApps } from './platform/cloudflare.ts'
 import type { CompanyPostgres } from './platform/company-postgres.ts'
 import { createCompanyPostgres, neonTransport } from './platform/company-postgres.ts'
 import type { Config } from './platform/config.ts'
@@ -53,7 +44,6 @@ import {
   openMastraPool,
 } from './platform/database.ts'
 import { createEdgeServer } from './platform/edge-server.ts'
-import { createEdgeTools } from './platform/edge-tools.ts'
 import type { FailureLog } from './platform/failure.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
@@ -75,7 +65,7 @@ const SHUTDOWN_LOGOUT_MS = 5_000
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: Omit<Subjects, 'runs' | 'data' | 'access' | 'lakeRuns' | 'lakeClock'> & {
+  deps: Omit<Subjects, 'data' | 'access' | 'lakeRuns' | 'lakeClock'> & {
     status: Status
     identity: Identity
     webRoot?: string
@@ -92,8 +82,8 @@ export async function createHub(
     apps: deps.projects.appInvitations,
   })
   for (const part of [
-    ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.conversations],
-    ...[deps.assistant, deps.automations, deps.agents, deps.notifications, deps.connectors],
+    ...[deps.operations, deps.projects, deps.apps, deps.modelAccounts, deps.notifications],
+    ...[deps.connectors],
     ...[deps.requests, deps.dataReads, deps.lakes, deps.lakeCopies, deps.network, deps.treatment],
   ]) {
     part.routes(app)
@@ -132,17 +122,7 @@ type SubjectDeps = {
   copyStopWait?: StartClock
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
-  /** The saved tools' namespace (step 24.4); the Hub calls their host through `createEdgeTools`. */
-  cloudflareTools: CloudflareApps
   mastraPool: MastraPool
-  machinesOf: MachinesOf
-  conversationMachine: ConversationMachine
-  /** The tests' folder and start deadline for the conversations' machines (`test-runs.ts`). */
-  machineTuning?: MachineTuning
-  /** The tests' double of the conference the check's browser opens (`test-runs.ts`); the apps' by default. */
-  confer?: BuilderConfer
-  repository: RepositoryOf
-  copy: GitCopy
   log: FailureLog
   tuning?: ConnectorTuning
   /** The tests' budget for a send's prune (`test-hub.ts`); production's by default. */
@@ -159,34 +139,15 @@ type SubjectDeps = {
  * conversations reach Mastra's database only through the pool of Mastra's own login (0010).
  */
 export function subjectsOf(deps: SubjectDeps) {
-  const { database, config, log, neon, repository, copy } = deps
+  const { database, config, log, neon } = deps
   const identity = deps.identity.ports
   const { appsDomain, sealKeys } = config
   const appRemoval = createAppRemoval(deps)
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
   const network = createNetwork({ database, identity, log })
-  const machines = deps.machinesOf(network.store.opened)
-  network.store.onRemoved((companyId) => void machines.narrow(companyId))
-  const runs = createRuns({
-    ...{ database, log, machines, repository, copy, network: network.store },
-    repositories: () => repositoriesIn(config.gitRoot),
-    // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
-    send: (version) => apps.sendFromBuilder(version),
-    confer: deps.confer ?? {
-      open: (input) => apps.confer.open(input),
-      end: (input) => apps.confer.end(input),
-    },
-  })
   const notifications = notificationsOf({ ...deps, identity, publicOrigin: config.publicOrigin })
-  const { conversations, assistant, automations, agents, lakeClock } = conversationsOf({
-    ...{ database, identity, sealKeys, google, log, runs, mastraPool: deps.mastraPool, network },
-    ...{ machine: deps.conversationMachine, machineTuning: deps.machineTuning },
-    tools: { cloudflare: deps.cloudflareTools, edge: createEdgeTools({ config, log }) },
-    ...{ connectors: () => connectors, apps: () => apps, projects: () => projects.ports },
-    // The data and the access door are made below, after the connectors they read; a turn comes long after.
-    companyData: (principal, context) => data(principal, context),
-    access: { viewOf: (principal) => access.viewOf(principal) },
-    ...{ notify: notifications.notify, automationClock: config.automationClock },
+  const { conversations, lakeClock } = conversationsOf({
+    ...{ google, log, mastraPool: deps.mastraPool, automationClock: config.automationClock },
     lakeRuns: () => lakeRuns,
   })
   const projects = createProjects({
@@ -231,8 +192,8 @@ export function subjectsOf(deps: SubjectDeps) {
     connectors: () => connectors,
   })
   return {
-    ...{ runs, projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
-    ...{ conversations, assistant, automations, agents, notifications, connectors, data },
+    ...{ projects, operations, lakes, apps, modelAccounts, requests, access, dataReads },
+    ...{ conversations, notifications, connectors, data },
     ...{ lakeRuns, lakeClock, lakeCopies, network, treatment },
   }
 }
@@ -262,21 +223,18 @@ async function runServer(): Promise<void> {
       appLoginKey: config.appLoginKey,
     })
     const cloudflare = createCloudflareApps({ config, log })
-    const cloudflareTools = createCloudflareTools({ config, log })
     const subjects = subjectsOf({
       ...{ database, config, identity, sendMail },
-      ...{ neon, companyPostgres, cloudflare, cloudflareTools, mastraPool, log },
+      ...{ neon, companyPostgres, cloudflare, mastraPool, log },
       ...subjectPortsOf(aws),
-      ...builderPortsOf({ config, log }),
-      conversationMachine: conversationMachineOf(config),
     })
-    const { projects, apps, conversations, modelAccounts, runs, connectors } = subjects
+    const { projects, apps, conversations, modelAccounts, connectors } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
     await conversations.start()
     const edge = await createEdgeHub(config, { apps, connectors })
     const grace = shutDownOnSignal(app, edge, {
-      settle: (bound) => conversations.settle(bound),
+      settle: () => conversations.settle(),
       drain: () => conversations.close(),
       // Every live provider token is logged out before the database closes.
       release: () =>
@@ -293,12 +251,6 @@ async function runServer(): Promise<void> {
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void subjects.treatment.sweepAll()
-      // The copies the bucket did not take before the stop are tried again.
-      void runs
-        .resumeCopies()
-        .catch((error: unknown) =>
-          logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error })),
-        )
       void projects
         .nameDatabases()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))

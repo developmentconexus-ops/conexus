@@ -3,7 +3,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
 import { opened } from '../apps/test-conference.ts'
-import { readyForVersions, send } from '../apps/test-versions.ts'
+import { send } from '../apps/test-versions.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
   ANA,
@@ -221,7 +221,6 @@ test('com apps: os Workers saem antes do banco no Neon; Cloudflare fora deixa DE
     'select id from projects.project where company_id = $1',
     [a.companyId],
   )
-  await readyForVersions(t, hub, davi, a.companyId)
   const pedidos = { t, hub, projects: `/api/companies/${a.companyId}/projects` }
   const sent = await send({ ...pedidos, projectId: String(project?.id) }, davi)
   assert.equal(sent.preview?.state, 'ready')
@@ -249,7 +248,6 @@ test('com apps: um envio com a trava deixa DELETING; ele vê a marca e para, e a
     'select id from projects.project where company_id = $1',
     [a.companyId],
   )
-  await readyForVersions(t, hub, davi, a.companyId)
   const pedidos = { t, hub, projects: `/api/companies/${a.companyId}/projects` }
   const held = hub.cloudflare.holdUpload()
   const sending = send({ ...pedidos, projectId: String(project?.id) }, davi)

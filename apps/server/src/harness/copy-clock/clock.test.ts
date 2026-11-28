@@ -4,7 +4,7 @@ import { CompanyId, ConnectionId } from '@conexus/hub-api'
 import { lakeRunOn } from '../../hub/copies/test-lake-run.ts'
 import { silent } from '../../platform/test-database.ts'
 import { until } from '../../platform/test-until.ts'
-import { COPY_WORKFLOW } from '../mastra/public.ts'
+import { COPY_WORKFLOW } from '../../mastra/index.ts'
 import { COPY_TIMEZONE, createLakeClock, cronOf } from './public.ts'
 
 const AT_10_07 = new Date('2026-11-24T13:07:00Z')
