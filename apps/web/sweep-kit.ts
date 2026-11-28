@@ -17,7 +17,7 @@ export async function waitFor(page: Page, text: string | RegExp) {
 
 /** The "Novo projeto" dialog: the name of a Projeto, which the Hub refuses with `sentence`. */
 export async function createRefused(page: Page, sentence: string, name = 'Pedidos') {
-  await page.getByRole('button', { name: 'Novo projeto' }).click()
+  await page.getByRole('button', { name: 'Novo projeto' }).first().click()
   await page.getByLabel('Nome do projeto').fill(name)
   await page.getByRole('button', { name: 'Criar projeto', exact: true }).click()
   await waitFor(page, sentence)
