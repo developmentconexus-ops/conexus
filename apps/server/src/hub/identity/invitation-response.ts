@@ -144,8 +144,8 @@ type Acceptance = {
 
 /**
  * Accepts an app's invitation: the row and the `accepted` in one transaction (D22), never the
- * library's acceptance, which would make the person a member (better-auth 1.7.8
- * crud-invites.mjs:322). The Hub checks the deadline the library's acceptance would (`:268`), and
+ * library's acceptance, which would make the person a member (better-auth 1.7.28
+ * crud-invites.mjs:329). The Hub checks the deadline the library's acceptance would (`:272`), and
  * a Projeto deleted or marked since gives nothing. A repeat finds the row and gives the same app.
  */
 async function acceptedApp(

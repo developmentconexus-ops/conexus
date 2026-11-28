@@ -41,7 +41,7 @@ export type ProjectApps = {
  * Cancels the open invitations to the company's apps for an address, all of them or one Projeto's,
  * through the plugin's adapter, and answers their Projetos. A company invitation replaces them, a
  * member using every app (E1), and the plugin would refuse it while any is open
- * (better-auth 1.7.8 crud-invites.mjs:128-132).
+ * (better-auth 1.7.28 crud-invites.mjs:131-135).
  */
 export async function cancelAppInvitations(
   auth: Auth,

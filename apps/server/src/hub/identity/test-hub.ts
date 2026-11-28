@@ -110,7 +110,7 @@ async function hubServing(
     app,
     edge,
     test,
-    config,
+    ...{ config, auth: identity.auth },
     // The companies' lakes in AWS are of memory too (card o-lago-da-empresa-nasce-e-some).
     ...{ neon, aws, cloudflare },
     /** The saved tools' namespace of memory (step 24.4). */

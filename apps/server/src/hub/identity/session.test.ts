@@ -15,6 +15,7 @@ import {
   signOut,
   TEST_ROLES,
 } from './test-hub.ts'
+import { ageTo } from './test-session-age.ts'
 
 const SIGNED_OUT = JSON.stringify({ state: 'SIGNED_OUT' })
 
@@ -58,22 +59,6 @@ test('prazo ocioso: sem uso há mais de 1800 s, ninguém; usada depois de 60 s, 
   await hub.test.asOwner(`update auth.session set expires_at = now() - interval '1 second'`)
   await signedOutRead(hub, cookie)
 })
-
-/**
- * The clock moves until the session is `seconds` old: every time the library wrote moves back by the
- * same span. The age is set, not added to, so the real time the test spends never counts.
- */
-async function ageTo(hub: Hub, seconds: number) {
-  await hub.test.asOwner(
-    `update auth.session set created_at = created_at - make_interval(secs => shift),
-      updated_at = updated_at - make_interval(secs => shift),
-      expires_at = expires_at - make_interval(secs => shift)
-    from (select id, $1 - extract(epoch from statement_timestamp() - created_at) as shift
-      from auth.session) as span
-    where span.id = session.id`,
-    [seconds],
-  )
-}
 
 test('prazo total: usada a cada 25 min, aberta até 8 h e ninguém depois; a linha some', async (t) => {
   const hub = await hubWithAna(t)
@@ -148,7 +133,7 @@ test('sair falha: com o DELETE recusado pelo banco, 503, cookie mantido e sessã
   assert.equal(JSON.parse((await read(hub, cookie)).body).state, 'SIGNED_IN')
 })
 
-// Every endpoint of better-auth 1.7.8 (auth.api), with its methods; none is routed.
+// Every endpoint of better-auth 1.7.28 (auth.api), with its methods; none is routed.
 const LIBRARY_PATHS: [string, readonly ('GET' | 'POST')[]][] = [
   ['/sign-in/social', ['POST']],
   ['/callback/google', ['GET', 'POST']],

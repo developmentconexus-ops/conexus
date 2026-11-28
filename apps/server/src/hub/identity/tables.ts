@@ -16,7 +16,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { RUNTIME_LOGIN, SCOPE_ROLES, scoped } from '../../platform/database.ts'
 
-// The models of @better-auth/core 1.7.8 (db/get-tables) and of its organization() and admin()
+// The models of @better-auth/core 1.7.28 (db/get-tables) and of its organization() and admin()
 // plugins: object keys are the library's field names.
 export const auth = pgSchema('auth')
 
