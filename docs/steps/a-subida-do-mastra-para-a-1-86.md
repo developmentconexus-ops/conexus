@@ -14,7 +14,8 @@ o builder refaz com `npm install`), `ANTIGO/` = o mesmo na 1.83.0.
 
 **No fim desta etapa** o Hub no ar roda sobre o motor Mastra 1.86, com tudo o que você usa igual: as
 conversas, as cópias do lago e a lista de modelos. A única diferença que você vê é a lista de modelos: perde os
-que o Mastra agora chama de aposentados e ganha os modelos e provedores novos do registro.
+que o Mastra agora chama de aposentados e ganha os modelos e provedores novos do registro. Ninguém está num
+modelo aposentado (você, 2026-11-29), então nada responde por um deles.
 
 **O roteiro de uso.** Na nuvem, sem terminal.
 
@@ -22,11 +23,9 @@ que o Mastra agora chama de aposentados e ganha os modelos e provedores novos do
 2. Abra Configurações, Contas de modelo: a lista segue funcionando. Modelos como `claude-sonnet-4-5` e
    `gpt-4o` já não aparecem para escolher, porque o Mastra 1.86 os marcou como aposentados; os modelos
    iniciais (`claude-sonnet-5-5`, `gpt-5.6-luna`) continuam, e aparecem modelos e provedores novos.
-3. Abra uma conversa do Construtor que já estava num modelo aposentado (por exemplo `claude-sonnet-4-5`) e
-   mande uma mensagem: a resposta chega, com o modelo da conversa (a decisão A abaixo).
-4. Abra uma cópia do lago que estava agendada antes da subida: o horário está lá e a próxima rodada roda
+3. Abra uma cópia do lago que estava agendada antes da subida: o horário está lá e a próxima rodada roda
    no horário, sem você mexer em nada.
-5. Abra uma conversa nova do Assistente e peça uma leitura de dados: ela responde como antes.
+4. Abra uma conversa nova do Assistente e peça uma leitura de dados: ela responde como antes.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página. No fim: faz o roteiro, diz o que
 viu.
@@ -39,7 +38,10 @@ não muda o que ele faz, só troca o motor por baixo, no passo que a ordem do ro
 Mastra (U3), o Construtor novo e apagar o antigo, e qualquer escolha entre Fastify e Hono ou sobre o
 `resourceId`, que têm estudos abertos. Também fica de fora tirar a peça `NEVER_ASKS`, que o 1.86 absorveu
 em parte, mas cuja troca pede categorias de permissão que o Hub não tem e um ensaio em Postgres (a dívida
-abaixo).
+abaixo). A cópia do lago, o `createLakeClock`, é agendamento de ETL e sai do agendador do Mastra na trilha
+Connect (fundador, 2026-11-29: o agendamento fica à parte do Mastra, o cron do Mastra é para a parte
+agêntica); a U1 só prova que a cópia agendada de hoje segue disparando depois da subida, por isso a prova do
+diário fica.
 
 **Esta etapa não é só trocar versões.** O plano dizia "só versões". A conferência mostrou quatro coisas que o
 1.86 força, e elas entram aqui para a subida não deixar o Hub num estado pior:
@@ -50,11 +52,11 @@ abaixo).
   mantém isso com a configuração nativa do Mastra, que desliga o laço.
 - **Lista de modelos.** O registro do 1.86 marca 83 modelos a mais como aposentados (entre eles
   `claude-sonnet-4-5`, `claude-opus-4-5`, `gpt-5`, `gpt-4o`, `gemini-2.5-flash`) e acrescenta cerca de
-  1.600 nomes e provedores novos que só pedem a chave. A regra do Hub esconde os aposentados do
-  seletor, e a mesma lista decide hoje qual conta atende um turno: uma conversa, um agente salvo ou
-  uma automação que já estava num modelo aposentado deixaria de achar conta e terminaria com o aviso
-  de que as contas acabaram (`served.ts:182-185`, `queue.ts:73-78`, `processors.ts:122-138`). A
-  decisão A abaixo é sobre isso.
+  1.600 nomes e provedores novos que só pedem a chave. A regra do Hub que esconde os aposentados do seletor
+  já existe e não muda. Não há conversa, agente salvo nem automação num modelo aposentado (fundador,
+  2026-11-29), então nenhuma lista de compatibilidade entra: os aposentados somem da lista e fim. Conferido
+  no `main`: nenhum padrão guardado nem semente do repositório aponta para um id aposentado; só dois
+  comentários o citam (`served.ts:17`, `packages/hub-api/src/conversations.ts:17`), que passam a um id vivo.
 - **Um laço que o Mastra absorveu.** O laço `__setLogger` por domínio do store (`H/mastra/mastra.ts:62-65`)
   tinha "revise na subida" escrito; o 1.86 faz isso sozinho. Ele sai.
 - **Testes e gravação.** Cerca de vinte testes usam como exemplo modelos que o 1.86 aposenta; sete nomes
@@ -75,33 +77,21 @@ em cinco perguntas, uma por vez; cada resposta foi conferida nos pacotes:
   `autoRestartActiveRuns: false` por fluxo; um passo interrompido roda de novo.
 - Modelos aposentados: o roteador ainda aceita um id aposentado; a lista é só dica para seletores.
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** Nenhuma. A decisão que havia (conversa num modelo aposentado) saiu: você
+disse que não existe.
 
-**A. Uma conversa, agente salvo ou automação que já estava num modelo que o Mastra aposentou.** Exemplo: a
-conversa de uma pessoa está em `claude-sonnet-4-5`, que sai da lista em 1.86.
-
-- **A (recomendado).** Ela segue respondendo, e o modelo só deixa de aparecer para escolher e para ser
-  padrão. É o que o Mastra diz de um modelo aposentado: "ainda servido, com data para sair". Custa dez
-  linhas: a lista de "o que se escolhe" e a de "o que atende um turno" passam a ser duas, cada uma com um
-  dono. Um id que saiu do registro de vez (não só aposentado) segue recusado, como hoje.
-- **B.** A conversa para com um erro claro e a pessoa escolhe outro modelo. Mais simples, e a pessoa
-  perde a continuidade no dia da subida.
-
-Veredito: A é nativo (o roteador aceita o id aposentado; `deprecatedModels` é só dica de seletor, conferido
-no `dist`). Como nativo: o seletor esconde, o turno atende.
-
-As outras quatro coisas acima são decisões técnicas reversíveis do firstmate (delivery L6), na tabela mais
-abaixo, cada uma com a evidência e como desfazer.
+As quatro coisas acima são decisões técnicas reversíveis do firstmate (delivery L6), na tabela mais abaixo,
+cada uma com a evidência e como desfazer.
 
 ## As unidades
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 | U1 | Os nove pacotes na 1.86, o que ela força no código (a recuperação, o laço, a regra do modelo aposentado), os testes e a gravação ajustados, a prova do diário | `package.json` da raiz, `apps/server/`, `apps/web/`, `packages/app/` | [testing](../guides/testing.md) | nada |
+| G1 | U1 | Os nove pacotes na 1.86, o que ela força no código (a recuperação, o laço, os ids aposentados dos exemplos), os testes e a gravação ajustados, a prova do diário | `package.json` da raiz, `apps/server/`, `apps/web/`, `packages/app/` | [testing](../guides/testing.md) | nada |
 | G1 | U2 | O registro: a tabela da stack, as entradas de `boundaries`, a explicação do harness | `docs/reference/`, `docs/explanation/` | [delivery](../guides/delivery.md) | U1 |
 
 **Orçamento de código alterado.** U1: cerca de 40 linhas de código de produção (apagar o laço, uma opção,
-os nomes de modelo, os pins, a lista "o que atende"), mais testes e arquivos gerados que não contam. U2:
+os nomes de modelo, os pins), mais testes e arquivos gerados que não contam. U2:
 nenhuma linha de código. Total da etapa: cerca de 40 linhas.
 
 ## Os critérios de aceite
@@ -116,7 +106,6 @@ nenhuma linha de código. Total da etapa: cerca de 40 linhas.
 | 6 | U1 | Nenhum run deixado "rodando" por um Hub antigo é reiniciado pelo novo, e o banco fica quieto sem uso (data D27). Recusa: o run plantado volta a executar um passo, o provedor dublê recebe chamada, ou o pool do Mastra lê a agenda depois da partida | `agents/assistant/automations/scheduler.test.ts` (a agenda só tem a limpeza e o pool chega a zero, `:50`; o processo que morreu aparece `FAILED`/`INTERRUPTED`, `:138`), com a opção `recovery` tirada de mutação, mais a prova da seção "Como se prova" | must |
 | 7 | U1 | O log de um domínio do store chega ao `HubLogger` sem o laço. Recusa: `rg "__setLogger" apps/server/src` vazio, e a falha plantada num domínio aparece no registro central | `H/mastra/mastra.test.ts` (caso novo, com o store do Hub) | must |
 | 8 | U1 | Um modelo que o registro 1.86 aposentou (`anthropic/claude-sonnet-4-5`) não é oferecido, uma escolha salva com ele é pulada para o próximo passo da cadeia, e a troca da conversa ou a escolha de padrão para ele dá `MODEL_UNKNOWN`. Recusa: o seletor o lista, ou a conversa nasce nele | `harness/model-accounts/providers.test.ts`, `model-start.test.ts:30`, `model-defaults.test.ts:46`, `queue.test.ts` (troca) | must |
-| 17 | U1 | Uma conversa, um agente salvo ou uma automação que já estava num modelo aposentado segue respondendo (decisão A): o provedor dublê recebe a chamada com o id dele. Recusa: um id que saiu do registro de vez segue recusado, e um modelo aposentado não vira escolha nem padrão novo | `harness/model-accounts/model-served.test.ts` e `queue.test.ts` (casos novos, o turno numa conta que serve o modelo aposentado), `turn.test.ts` | must |
 | 9 | U1 | Os sete nomes novos do registro estão lidos: cada um é de modelo de conversa (e fica na lista) ou entra em `NOT_CHAT`. Recusa: um nome novo sem leitura faz `providers.test.ts` falhar | `H/model-accounts/providers.test.ts` (`HINTS_NOT_CHAT`, `CHAT_FAMILIES`) | must |
 | 10 | U1 | Nenhum teste usa como exemplo "um modelo que conversa" um id que o 1.86 aposenta, exceto o caso deliberado do critério 8. Recusa: um teste verde só por ter o id aposentado como fixture | os testes tocados do servidor verdes; `rg` dos ids aposentados nos testes só acha os do critério 8 | must |
 | 11 | U1 | A gravação `reads.jsonl` carrega a versão 1.86.0 no cabeçalho e os leitores dela passam. Recusa: cabeçalho antigo | `apps/server/src/platform/recordings.test.ts` (caso `reads`) | must |
@@ -132,7 +121,7 @@ Nenhuma tela muda: a lista de modelos é a tela de hoje com outras linhas.
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| A lista de modelos e as conversas | como hoje | como hoje | como hoje | como hoje | como hoje | como hoje | a conversa, o agente salvo ou a automação num modelo aposentado segue respondendo, e o modelo não se oferece (critérios 8, 17) |
+| A lista de modelos e as conversas | como hoje | como hoje | como hoje | como hoje | como hoje | como hoje | como hoje; o modelo aposentado não se oferece (critério 8) |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -145,7 +134,6 @@ Nenhuma tela muda: a lista de modelos é a tela de hoje com outras linhas.
 | `storage.init()` do `@mastra/pg` 1.38.0 acrescenta a coluna `first_seq` (`NOVO/pg/dist/index.js:27102-27106`, `ifNotExists`) | dois Hubs no mesmo boot: o `ifNotExists` torna a segunda chamada inócua | banco recusa o `ALTER`: o boot para com o erro do banco, como hoje com qualquer migração do Mastra | banco fora: `MASTRA_STORAGE_READY` não sai e o Hub não sobe, como hoje | `MASTRA_STORAGE_READY` | 5 |
 | O laço de recuperação de runs do `startWorkers()` (`NOVO/core/dist/mastra-CqBmnzjM.js:3121-3175,3430-3465`) | só um Hub lidera (lease no banco); com o laço desligado, nenhum | n/a (nada reinicia) | banco fora: o laço desligado não toca o banco | `MASTRA_WORKERS_STARTED` | 6 |
 | A reconciliação do relógio do lago grava de novo a linha da agenda de cada cópia na partida (`harness/copy-clock/clock.ts:120-134`) | dois Hubs na partida: a mesma linha, a última vence, como hoje | a gravação recusada deixa a linha antiga, que o próximo tique relê | banco fora: o Hub não sobe | `MASTRA_WORKERS_STARTED` | 5 |
-| A escolha da conta de um turno num modelo aposentado (`harness/model-accounts/queue.ts:222-229`, só leitura) | n/a (leitura) | n/a | banco fora: o turno termina com `MODEL_ACCOUNT_UNAVAILABLE`, como hoje | o aviso do turno | 17 |
 | O `MastraStorageExporter` termina o span com retentativa (`NOVO/observability/dist/index.js:68271-68460,69041-69120`) | n/a (um exportador por processo) | span preso é solto na retentativa; sem erro para quem chama | banco fora: o span fica no buffer e se perde no desligamento, como hoje | nada novo | 5 |
 
 ## A tabela de referência
@@ -160,7 +148,7 @@ a prateleira `mastra-1.86` ainda não existe e está em "Parar se". Todo `arquiv
 | O diário de execução e a agenda entre as versões | U1 | "A subida não pode perder a cópia agendada" (plano do Hub, prova do diário) | o relógio do lago `harness/copy-clock/`, a retenção `harness/mastra/retention.ts` | `@mastra/core@1.86.0` `constants-BmdTvEYN.js:3863,4132` (as tabelas de snapshot e de agendas) e `@mastra/pg@1.38.0` `index.js:27102-27106` | As duas tabelas têm a mesma forma que na 1.83.0 (`constants-B_0KNiQG.js:3834,4103`, `diff` vazio); `init()` só acrescenta a coluna `first_seq` com `ifNotExists`, na tabela que o armazenamento v2 usa | nativo | | não precisa | nenhum |
 | A recuperação de runs parados | U1 | nada registrado | `harness/mastra/mastra.ts:41` (o `new Mastra`), `harness/mastra/hub-mastra.ts:124` (`startWorkers`) | `@mastra/core@1.86.0` `mastra/index.d.ts:417-445,466-480`, `mastra-CqBmnzjM.js:3121-3175,3430-3465` | `startWorkers()` liga um laço que reinicia runs `RUNNING` do motor `default` cujo lease venceu; `recovery: { workflows: 'off' }` o desliga; no 1.83.0 nada recuperava (`@mastra/server@1.83.0` `workflows-B-QJ0Tnv.js:890`, chamada só do servidor do Mastra) | nativo | | firstmate, decisão 1: apagar a opção | nenhum |
 | O laço `__setLogger` por domínio | U1 | nada registrado | `harness/mastra/mastra.ts:62-65` | `@mastra/core@1.86.0` `filesystem-versioned-BL1ojJLo.js:295-309`, `mastra-CqBmnzjM.js:1421,5114,5166` | O construtor do `Mastra` chama `setLogger`, que repassa o logger a `parentDefault`, `parentEditor` e a cada domínio de `stores`; 20 de 20 domínios, executado com `InMemoryStore` | nativo | | firstmate, decisão 2: devolver o laço | nenhum |
-| O que o seletor oferece e o que atende um turno | U1 | Decisão 0027: o registro lido em memória, offline; a decisão A desta etapa (a lista "o que se escolhe" esconde os aposentados, a de "o que atende" não) | `harness/model-accounts/providers.ts:30-35,86-102`, `served.ts:182-185`, `queue.ts:73-78` | `@mastra/core@1.86.0` `netlify-DUPSTzi6.js:43070`, `provider-registry-BeB8RQO8.js` (dados) | `deprecatedModels` é só montado pelo gateway, nenhum roteador o lê; a IA do Mastra: "só uma dica para seletores" | embrulhado (a regra do Hub sobre o registro, agora com dois donos: `chatModelsOf` para o que se escolhe e `servedModelsOf` para o que atende) | | o fundador, decisão A; firstmate, decisão 3: voltar os ids | nenhum |
+| O que o seletor oferece | U1 | Decisão 0027: o registro lido em memória, offline; fundador 2026-11-29: nenhuma conversa, agente salvo ou automação está num modelo aposentado, sem lista de compatibilidade | `harness/model-accounts/providers.ts:30-35,86-102` | `@mastra/core@1.86.0` `netlify-DUPSTzi6.js:43070`, `provider-registry-BeB8RQO8.js` (dados) | `deprecatedModels` é só montado pelo gateway, nenhum roteador o lê; a IA do Mastra: "só uma dica para seletores" | embrulhado (a regra do Hub sobre o registro, sem mudança de código: `chatModelsOf` já esconde os aposentados) | | firstmate, decisão 3: voltar os ids | nenhum |
 | `NOT_CHAT`, a leitura do nome do modelo | U1 | nada registrado | `harness/model-accounts/providers.ts:18-30` | `@mastra/core@1.86.0` `llm/model/capability-file.d.ts:1-8` | As capacidades são anexo, temperatura, saída estruturada e raciocínio; nada diz o que o modelo gera | remendo | `boundaries.md`, "the store's domains log, and a model's output is read from its name", relida em `@mastra/core` 1.86.0: sem mudança | não precisa | nenhum |
 | O stream `slim` e `paced` | U1, U2 | Decisão 0050 | `harness/routes/stream.ts` | `@mastra/server@1.86.0` `agent-controller-CzKnfKkw.js:765-914` | O handler ganhou fila e fecha o stream com 5.000 quadros ou 60 s parado, mas `paced` lê sem parar e o teto em bytes do Hub segue o único em vigor | remendo | `boundaries.md`, "the stream sends the screen what it reads", relida em `@mastra/server` 1.86.0; U2 corrige a frase do adaptador | não precisa | nenhum |
 | A lista fixa de rotas do Mastra | U1 | Decisão 0050 | `harness/routes/guard.ts:35-45` | `@mastra/server@1.86.0` `server-adapter-h8YRQXAC.js` | 440 rotas contra 439, a nova `GET /memory/working-memory` fora da lista; as nove da lista têm os mesmos esquemas (`toJSONSchema` igual) | remendo | `boundaries.md`, "session routes behind the Hub's guard", relida em `@mastra/server` 1.86.0 e `@mastra/fastify` 1.5.30 (`dist` idêntico): sem mudança | não precisa | nenhum |
@@ -198,7 +186,7 @@ Opus só se a prova do critério 5 ou 6 falhar de um jeito que o cartão não pr
 As linhas de U1 da tabela de referência (os pins, o diário, a recuperação, o laço do logger, a lista de modelos, `NOT_CHAT`, a lista fixa de rotas, a gravação, o `client-js` e os quatro pacotes sem mudança). O que ler na base:
 `H/mastra/mastra.ts:33-67` (o `new Mastra` e o laço), `H/mastra/hub-mastra.ts:118-128` (`start`),
 `H/mastra/mastra.test.ts`, `H/model-accounts/providers.ts:18-35,86-102` e `providers.test.ts:97-139`,
-`H/routes/guard.ts:35-45`, `H/model-accounts/served.ts:182-185`, `H/model-accounts/queue.ts:73-78`, `apps/server/src/platform/recordings.test.ts:171`, `scripts/record.ts:98-102`.
+`H/routes/guard.ts:35-45`, `apps/server/src/platform/recordings.test.ts:171`, `scripts/record.ts:98-102`.
 A referência: as colunas "Referência" da tabela, e a opção em `NOVO/core/dist/mastra/index.d.ts:417-445`.
 
 ### O raio da mudança
@@ -207,7 +195,7 @@ A referência: as colunas "Referência" da tabela, e a opção em `NOVO/core/dis
 | --- | --- | --- |
 | `package.json`, `apps/server/package.json`, `apps/web/package.json`, `packages/app/package.json`, `package-lock.json` | Muda os pins | todo o repositório |
 | `apps/server/src/harness/mastra/` (`mastra.ts`, `mastra.test.ts`) | Apaga o laço, acrescenta `recovery` e um caso de teste (o logger) | `hub-mastra.ts` |
-| `apps/server/src/harness/model-accounts/` (`providers.ts`, `served.ts`, os testes) | Lê os sete nomes, cria `servedModelsOf`/`isServed` (decisão A), troca ids de exemplo | `queue.ts`, `defaults.ts`, `served.ts` |
+| `apps/server/src/harness/model-accounts/` (`providers.ts`, os testes, o comentário de `served.ts:17`) | Lê os sete nomes, troca ids de exemplo | `queue.ts`, `defaults.ts`, `served.ts` |
 | `apps/server/src/harness/routes/guard.test.ts` | Um caso: rota fora da lista dá 404 | nada |
 | `apps/server/src/agents/**` e `apps/server/src/harness/**` testes que usam ids aposentados | Troca de fixture, sem lógica | os próprios testes |
 | `apps/server/src/platform/recordings/mastra/reads.jsonl` | Regrava | `recordings.test.ts`, `test-recordings.ts` |
@@ -215,19 +203,10 @@ A referência: as colunas "Referência" da tabela, e a opção em `NOVO/core/dis
 
 ### Os contratos que a unidade cria
 
-Duas formas, nenhum contrato de rota nem de tabela.
+Uma forma, nenhum contrato de rota nem de tabela.
 
 - `new Mastra({ ..., recovery: { workflows: 'off' } })` em `H/mastra/mastra.ts`, com o motivo no comentário
   (a opção e a razão: `NOVO/core/dist/mastra/index.d.ts:417-445`).
-- Em `H/model-accounts/providers.ts` (code C26, um dono por fato): `servedModelsOf(config: ProviderConfig):
-  string[]` devolve os modelos de conversa do provedor **com** os aposentados, e `chatModelsOf` passa a ser
-  `servedModelsOf` menos `deprecatedModels`; `export function isServed(model: string): boolean` diz se
-  o registro serve o id (de conversa, aposentado ou não). `isListed` e `isChoosable` seguem como o que
-  se escolhe. `servesModel` em `served.ts:182-185` troca `isListed` por `isServed` nos dois ramos; no ramo do
-  `google_cliproxy`, que hoje parte de `isChoosable` (`providers.ts:96-102`, que também olha as famílias do
-  registro), as famílias passam a sair de `servedModelsOf`. Mais nada muda no turno. Se o ramo do Google
-  exigir mais que isso, o builder para e pergunta ("Parar se").
-
 ### As skills e a leitura
 
 `docs/reference/stack.md`, linhas de `@mastra/core`, `@mastra/pg`, `@mastra/observability` e
@@ -259,25 +238,25 @@ Para TypeScript, `pstack:typescript-best-practices`. Lê o guia de [testing](../
      ficarem, o builder para: o critério 6 ficaria sem teste que falha); trazer o laço de volta: `rg
      __setLogger` acusa.
    - **Pronto quando:** o caso novo de `mastra.test.ts` e os dois de `scheduler.test.ts` passam.
-3. **A lista de modelos, o que atende um turno e os testes que ela quebra.** Critérios: 8, 9, 10, 17.
-   - **Arquivos:** muda `providers.ts`, `providers.test.ts`, `served.ts`, `model-served.test.ts`, `model-start.test.ts`, `model-defaults.test.ts`, `queue.test.ts` e os testes
+3. **A lista de modelos e os testes que ela quebra.** Critérios: 8, 9, 10.
+   - **Arquivos:** muda `providers.ts`, `providers.test.ts`, `model-start.test.ts`, `model-defaults.test.ts`, `queue.test.ts` e os testes
      que o `rg` dos ids aposentados achar.
    - **Referência a seguir:** as linhas da lista de modelos e de `NOT_CHAT`.
    - **O que sai:** nada.
-   - **O que entra:** `servedModelsOf` e `isServed` (a seção dos contratos); `servesModel` passa a usar `isServed`; os sete nomes (`edenai/cohere/command-a-translate-08-2025`, `stepfun-step-plan/stepaudio-2.5-chat`,
+   - **O que entra:** os sete nomes (`edenai/cohere/command-a-translate-08-2025`, `stepfun-step-plan/stepaudio-2.5-chat`,
      `stepfun/stepaudio-2.5-chat`, `stepfun-ai/stepaudio-2.5-chat`, `stepping-stone/allenai/olmOCR-2-7B`,
      `nano-gpt/hyperresearch/ousia-1`, `humain/humain-m3-research-preview`) cada um lido: de áudio, OCR,
      pesquisa ou tradução entra em `NOT_CHAT`; de conversa, em `CHAT_FAMILIES`. Nos testes, os ids
      aposentados saem por ids vivos (`anthropic/claude-sonnet-5-5`, `anthropic/claude-opus-5-5`,
      `openai/gpt-5.6-luna`, `google/gemini-3.5-flash-lite`, os quatro listados e vivos nos dois registros);
-     fica um caso deliberado com `anthropic/claude-sonnet-4-5`. O comentário de `served.ts:17` e o de
+     fica um caso deliberado com `anthropic/claude-sonnet-4-5`, o do critério 8 (retirado, não se oferece). Nenhum
+     padrão guardado nem semente de produção usa id aposentado (conferido no `main`). O comentário de `served.ts:17` e o de
      `packages/hub-api/src/conversations.ts:17`, que chamam `claude-sonnet-4-5` de modelo que o registro "ainda
      oferece", passam a um id vivo.
    - **Testes:** `providers.test.ts` (a lista, `HINTS_NOT_CHAT`), `model-start.test.ts:30` e `model-defaults.test.ts:46` (a escolha salva é
      pulada; o aposentado não vira padrão), `queue.test.ts` (a troca dá `MODEL_UNKNOWN`).
    - **Mutações à mão:** tirar `NOT_CHAT` de um nome novo: `HINTS_NOT_CHAT` fica vermelho; fazer
-     `chatModelsOf` ignorar `deprecatedModels`: o caso do critério 8 fica vermelho; fazer `servesModel` voltar
-     a `isListed`: o caso do critério 17 fica vermelho.
+     `chatModelsOf` ignorar `deprecatedModels`: o caso do critério 8 fica vermelho.
    - **Pronto quando:** os testes de `model-accounts/` tocados passam.
 4. **A gravação e as rotas.** Critérios: 11, 12, 13, 14, 15.
    - **Arquivos:** regrava `reads.jsonl`; muda `guard.test.ts`.
@@ -303,7 +282,6 @@ Para TypeScript, `pstack:typescript-best-practices`. Lê o guia de [testing](../
 - **Critério 6 (recuperação).** Os dois testes de `scheduler.test.ts` (`:50`, `:138`), com a opção tirada: ficam vermelhos. Mais, à mão, no mesmo banco com o Hub parado: plante uma linha `running` num snapshot de automação de teste, sem lease, com `updatedAt` de uma hora atrás; suba o Hub da branch e espere dois minutos (2 s de graça mais um ciclo de 60 s): a linha continua como está e o dublê de provedor não recebeu chamada. Sem a opção, o run é reiniciado e o dublê recebe a chamada.
 - **Critério 7.** `mastra.test.ts` planta uma falha de domínio (um `console.warn` do domínio de
   armazenamento, ou o erro de um método de domínio) e confere que entra no `HubLogger`.
-- **Critério 17.** `model-served.test.ts` e `queue.test.ts`: uma conta que serve `anthropic/claude-sonnet-4-5` atende o turno da conversa que já estava nele (o dublê recebe a chamada com o id), e o mesmo id não aparece em `GET /api/model-providers` nem vira padrão.
 - **Critérios 3, 4, 8 a 15.** Os testes nomeados, rodados só os tocados (a suíte inteira é da CI, L15).
 
 ### Parar se
@@ -313,8 +291,6 @@ Para TypeScript, `pstack:typescript-best-practices`. Lê o guia de [testing](../
   disparar uma cópia com o dublê local, ele mostra o que achou e pergunta, em vez de trocar a prova.
 - `scheduler.test.ts:50` ou `:138` continua verde com a opção `recovery` tirada: o critério 6 ficaria sem
   prova, e o builder pergunta antes de confiar só na prova à mão.
-- `servedModelsOf` faz algum teste de `model-accounts` que hoje recusa um id sumido do registro passar a
-  aceitá-lo: o builder para (a regra é: aposentado serve, sumido segue recusado).
 - `reads.jsonl` regravado traz eventos que `test-recorded.ts` da web ou `test-events.ts` recusam: o builder
   mostra o diff e pergunta, porque pode ser mudança de contrato de evento.
 - Um teste de `model-accounts` precisa de dois ids diferentes do mesmo provedor e só há um vivo na lista:
