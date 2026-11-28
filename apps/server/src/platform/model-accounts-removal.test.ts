@@ -29,9 +29,9 @@ const SEED = `
   insert into builder.model_account_assignee(account_id, company_id, person_id) values ('${TIME_2}', '${A}', 'person-a');
   insert into builder.model_account_sign_in(id, company_id, person_id, owner, kind, label, sealed, key_id, expires_at) values
     (gen_random_uuid(), '${A}', 'person-a', 'me', 'claude_subscription', 'Assinatura', '\\x04', 'k1', now() + interval '10 minutes');
-  insert into builder.company_model(company_id, model, effort) values ('${A}', 'anthropic/claude-sonnet-4-5', 'high');
+  insert into builder.company_model(company_id, model, effort) values ('${A}', 'anthropic/claude-sonnet-5-5', 'high');
   insert into builder.person_model_default(company_id, person_id, model, effort) values
-    ('${A}', 'person-a', 'openai/gpt-5', 'low'), ('${A}', 'person-d', 'openai/gpt-5', 'medium');
+    ('${A}', 'person-a', 'openai/gpt-5.6-luna', 'low'), ('${A}', 'person-d', 'openai/gpt-5.6-luna', 'medium');
   insert into builder.company_account_kind(company_id, kind) values ('${A}', 'claude_subscription');`
 
 const COUNTS = `select

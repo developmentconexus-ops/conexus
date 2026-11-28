@@ -119,7 +119,7 @@ test('uma execução que toma o Projeto não herda a recusa que ficou sem ser li
   assert.equal(refusals.read(CONVERSATION), undefined)
 })
 
-test('o evento error do controlador, na 1.83.0, traz finishReason tripwire e não traz processorId: o registro é de quem recusa', {
+test('o evento error do controlador, na 1.86.0, traz finishReason tripwire e não traz processorId: o registro é de quem recusa', {
   timeout: 60_000,
 }, async (t) => {
   const held = holding(t)

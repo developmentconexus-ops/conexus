@@ -18,7 +18,7 @@ test('as ferramentas de web do provedor com argumentos', async (t) => {
   assert.equal(fetch?.type, 'web_fetch_20250910')
   assert.deepEqual(fetch?.citations, { enabled: true })
 
-  const openai = toolsOf(ModelId.parse('openai/gpt-5'))
+  const openai = toolsOf(ModelId.parse('openai/gpt-5.6-luna'))
   assert.equal(Object(openai.web_search).id, 'openai.web_search')
   assert.deepEqual(Object(Object(openai.web_search).args).userLocation, BR_LOCATION)
   assert.equal(typeof Object(openai.web_fetch).execute, 'function', 'the fetch is Mastra’s')
@@ -29,7 +29,7 @@ test('as ferramentas de web do provedor com argumentos', async (t) => {
 })
 
 test('o Google segue a prova', () => {
-  const google = toolsOf(ModelId.parse('google/gemini-2.5-pro'))
+  const google = toolsOf(ModelId.parse('google/gemini-3.6-flash'))
   assert.deepEqual(
     Object.keys(google),
     ['web_fetch'],

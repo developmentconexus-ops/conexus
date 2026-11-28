@@ -14,7 +14,7 @@ export const BUILDER_CONTROLLER = 'builder'
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
 
-/** A model of the router's registry, such as `anthropic/claude-sonnet-4-5` (decision 0049). */
+/** A model of the router's registry, such as `anthropic/claude-sonnet-5-5` (decision 0049). */
 export const ModelId = z.string().min(1).max(200).brand('ModelId')
 export type ModelId = z.infer<typeof ModelId>
 

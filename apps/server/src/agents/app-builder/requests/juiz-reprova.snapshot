@@ -1065,7 +1065,7 @@
           "- Commands run in a shell, so pipes, redirects, and chaining (&&, ||, ;) all work.",
           "- Always quote file paths that contain spaces (e.g., cd \"/path/with spaces\").",
           "- Use the timeout parameter (in seconds) to limit execution time. Behavior when omitted depends on the sandbox provider.",
-          "- Optionally use cwd to override the working directory. Commands run from the sandbox's configured workingDirectory (or the provider default) if omitted.",
+          "- Optionally use cwd to override the working directory. Commands run from the workspace directory if omitted, the same root relative file paths resolve against; a relative cwd is resolved against that directory.",
           "",
           "Set background: true to run long-running commands (dev servers, watchers) without blocking. You'll get a PID to track the process. On a background command, timeout stops the process after that many seconds: leave it out for dev servers and anything else that should keep running."
         ],
@@ -1127,7 +1127,7 @@
         "description": [
           "Get the current output (stdout, stderr) and status of a background process by its PID.",
           "",
-          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output."
+          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output. Pass waitSeconds to wait for it to finish first."
         ],
         "input_schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1141,9 +1141,12 @@
               "description": "Number of lines to return, similar to tail -n. Positive or negative returns last N lines from end. Defaults to 200. Use 0 for no limit.",
               "type": "integer"
             },
-            "wait": {
-              "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
-              "type": "boolean"
+            "waitSeconds": {
+              "description": [
+                "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                "constraints: greater than or equal to 1, lower than or equal to 300"
+              ],
+              "type": "integer"
             }
           },
           "required": [
@@ -2356,7 +2359,7 @@
           "- Commands run in a shell, so pipes, redirects, and chaining (&&, ||, ;) all work.",
           "- Always quote file paths that contain spaces (e.g., cd \"/path/with spaces\").",
           "- Use the timeout parameter (in seconds) to limit execution time. Behavior when omitted depends on the sandbox provider.",
-          "- Optionally use cwd to override the working directory. Commands run from the sandbox's configured workingDirectory (or the provider default) if omitted.",
+          "- Optionally use cwd to override the working directory. Commands run from the workspace directory if omitted, the same root relative file paths resolve against; a relative cwd is resolved against that directory.",
           "",
           "Set background: true to run long-running commands (dev servers, watchers) without blocking. You'll get a PID to track the process. On a background command, timeout stops the process after that many seconds: leave it out for dev servers and anything else that should keep running."
         ],
@@ -2418,7 +2421,7 @@
         "description": [
           "Get the current output (stdout, stderr) and status of a background process by its PID.",
           "",
-          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output."
+          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output. Pass waitSeconds to wait for it to finish first."
         ],
         "input_schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2432,9 +2435,12 @@
               "description": "Number of lines to return, similar to tail -n. Positive or negative returns last N lines from end. Defaults to 200. Use 0 for no limit.",
               "type": "integer"
             },
-            "wait": {
-              "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
-              "type": "boolean"
+            "waitSeconds": {
+              "description": [
+                "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                "constraints: greater than or equal to 1, lower than or equal to 300"
+              ],
+              "type": "integer"
             }
           },
           "required": [
@@ -3671,7 +3677,7 @@
           "- Commands run in a shell, so pipes, redirects, and chaining (&&, ||, ;) all work.",
           "- Always quote file paths that contain spaces (e.g., cd \"/path/with spaces\").",
           "- Use the timeout parameter (in seconds) to limit execution time. Behavior when omitted depends on the sandbox provider.",
-          "- Optionally use cwd to override the working directory. Commands run from the sandbox's configured workingDirectory (or the provider default) if omitted.",
+          "- Optionally use cwd to override the working directory. Commands run from the workspace directory if omitted, the same root relative file paths resolve against; a relative cwd is resolved against that directory.",
           "",
           "Set background: true to run long-running commands (dev servers, watchers) without blocking. You'll get a PID to track the process. On a background command, timeout stops the process after that many seconds: leave it out for dev servers and anything else that should keep running."
         ],
@@ -3733,7 +3739,7 @@
         "description": [
           "Get the current output (stdout, stderr) and status of a background process by its PID.",
           "",
-          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output."
+          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output. Pass waitSeconds to wait for it to finish first."
         ],
         "input_schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
@@ -3747,9 +3753,12 @@
               "description": "Number of lines to return, similar to tail -n. Positive or negative returns last N lines from end. Defaults to 200. Use 0 for no limit.",
               "type": "integer"
             },
-            "wait": {
-              "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
-              "type": "boolean"
+            "waitSeconds": {
+              "description": [
+                "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                "constraints: greater than or equal to 1, lower than or equal to 300"
+              ],
+              "type": "integer"
             }
           },
           "required": [
@@ -5008,7 +5017,7 @@
           "- Commands run in a shell, so pipes, redirects, and chaining (&&, ||, ;) all work.",
           "- Always quote file paths that contain spaces (e.g., cd \"/path/with spaces\").",
           "- Use the timeout parameter (in seconds) to limit execution time. Behavior when omitted depends on the sandbox provider.",
-          "- Optionally use cwd to override the working directory. Commands run from the sandbox's configured workingDirectory (or the provider default) if omitted.",
+          "- Optionally use cwd to override the working directory. Commands run from the workspace directory if omitted, the same root relative file paths resolve against; a relative cwd is resolved against that directory.",
           "",
           "Set background: true to run long-running commands (dev servers, watchers) without blocking. You'll get a PID to track the process. On a background command, timeout stops the process after that many seconds: leave it out for dev servers and anything else that should keep running."
         ],
@@ -5070,7 +5079,7 @@
         "description": [
           "Get the current output (stdout, stderr) and status of a background process by its PID.",
           "",
-          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output."
+          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output. Pass waitSeconds to wait for it to finish first."
         ],
         "input_schema": {
           "$schema": "http://json-schema.org/draft-07/schema#",
@@ -5084,9 +5093,12 @@
               "description": "Number of lines to return, similar to tail -n. Positive or negative returns last N lines from end. Defaults to 200. Use 0 for no limit.",
               "type": "integer"
             },
-            "wait": {
-              "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
-              "type": "boolean"
+            "waitSeconds": {
+              "description": [
+                "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                "constraints: greater than or equal to 1, lower than or equal to 300"
+              ],
+              "type": "integer"
             }
           },
           "required": [

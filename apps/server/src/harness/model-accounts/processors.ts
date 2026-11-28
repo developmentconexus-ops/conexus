@@ -321,11 +321,7 @@ async function modelOf(
   const choice =
     call === 'title' ? null : turn.memoryModels[call === 'observer' ? 'observer' : 'reflector']
   const main = turn.modelId(requestContext)
-  const kind =
-    choice === 'auto' && providerOf(main) === 'google'
-      ? (await accountOf(deps, turn, { requestContext }))?.kind
-      : undefined
-  const chosen = choice === 'auto' ? autoMemoryModel(main, kind) : choice
+  const chosen = choice === 'auto' ? autoMemoryModel(main) : choice
   const account =
     (chosen === null || chosen === main
       ? undefined

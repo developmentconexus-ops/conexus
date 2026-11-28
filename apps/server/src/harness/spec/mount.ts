@@ -89,7 +89,7 @@ export function NEVER_ASKS() {
 
 /**
  * The tools of a ficha whose write asks: each tool whose `requireApproval` is not a function
- * (`createTool` sets `false` when none is given, `NM/tool-3X7mHzgh.js:858`) as a copy with
+ * (`createTool` sets `false` when none is given, `@mastra/core` 1.86.0 `tool-Z3bykc1m.js:1048`) as a copy with
  * `NEVER_ASKS`; a tool whose rule is a function as it is (only a function beats the session,
  * `C/loop/workflows/agentic-execution/tool-approval-verdict.ts:85-93`); the given objects unchanged.
  * The copy keeps the tool's prototype, so it stays the same kind of tool; the given object is not touched,

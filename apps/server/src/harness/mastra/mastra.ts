@@ -38,30 +38,30 @@ export function createMastra(deps: {
   workflows: Readonly<Record<string, AnyWorkflow>>
   schedulerTickMs: number | undefined
 }): Mastra {
-  const mastra = new Mastra({
+  return new Mastra({
     logger: new HubLogger(deps.log),
     storage: deps.storage,
     agentControllers: { ...deps.controllers },
     workflows: { ...deps.workflows },
     scheduler: schedulerOf(deps.log, deps.schedulerTickMs),
+    // `startWorkers()` starts a loop that restarts the runs a dead process left RUNNING, which
+    // re-issues their paid model calls and reads the schedule table every minute (D27); the Hub
+    // restarts nothing (`@mastra/core` 1.86.0 `mastra/index.d.ts:417-445`).
+    recovery: { workflows: 'off' },
     observability: new Observability({
       configs: {
         default: {
           serviceName: 'conexus-hub',
           exporters: [new MastraStorageExporter()],
           // One row per streamed chunk says nothing a step does not; Mastra's own platform exporter
-          // drops them too (`@mastra/observability` 1.24.0, `MastraPlatformExporter`).
+          // drops them too (`@mastra/observability` 1.24.3, `MastraPlatformExporter`).
           excludeSpanTypes: [SpanType.MODEL_CHUNK],
-          // Mastra keeps the first 50 items of a list (`dist/index.js:455-460`): a long conversation's
-          // step would lose its newest messages, the ones a provider refusal is about.
+          // Mastra keeps the first 50 items of a list (`@mastra/observability` 1.24.3
+          // `dist/index.js:454-465`): a long conversation's step would lose its newest messages,
+          // the ones a provider refusal is about.
           serializationOptions: { maxArrayLength: MESSAGES_KEPT },
         },
       },
     }),
   })
-  // Mastra 1.83.0 gives its logger to the store but not to the store's domains, which log their own
-  // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
-  for (const domain of Object.values(deps.storage.stores ?? {}))
-    domain?.__setLogger(mastra.getLogger())
-  return mastra
 }

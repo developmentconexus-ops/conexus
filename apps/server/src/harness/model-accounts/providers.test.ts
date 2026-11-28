@@ -63,12 +63,12 @@ test('cada modelo com os níveis de raciocínio que aceita; sem dado de raciocí
       .find(({ id }) => id === provider)
       ?.models.find(({ id }) => id === `${provider}/${model}`)?.efforts
   }
-  assert.deepEqual(effortsOf('anthropic', 'claude-sonnet-4-5'), [
-    'off',
+  assert.deepEqual(effortsOf('anthropic', 'claude-sonnet-5-5'), [
     'low',
     'medium',
     'high',
     'xhigh',
+    'max',
   ])
   assert.deepEqual(effortsOf('anthropic', 'claude-opus-4-7'), [
     'off',
@@ -78,9 +78,13 @@ test('cada modelo com os níveis de raciocínio que aceita; sem dado de raciocí
     'xhigh',
     'max',
   ])
-  assert.deepEqual(effortsOf('openai', 'gpt-5'), ['low', 'medium', 'high'])
-  assert.deepEqual(effortsOf('google', 'gemini-2.5-pro'), ['low', 'medium', 'high'])
-  assert.deepEqual(effortsOf('openai', 'gpt-4o'), ['off'], 'listed without reasoning controls')
+  assert.deepEqual(effortsOf('openai', 'gpt-5.4'), ['off', 'low', 'medium', 'high', 'xhigh'])
+  assert.deepEqual(effortsOf('google', 'gemini-3.1-pro-preview'), ['low', 'medium', 'high'])
+  assert.deepEqual(
+    effortsOf('google', 'gemma-4-31b-it'),
+    ['off'],
+    'listed without reasoning controls',
+  )
   const openrouter = providers.find(({ id }) => id === 'openrouter')
   assert.deepEqual(new Set(openrouter?.models.flatMap(({ efforts }) => efforts)), new Set(['off']))
 })
@@ -94,14 +98,15 @@ test('o seletor lista só os modelos que conversam: sem os aposentados pelo Mast
   )
   const ids = new Set(providers.flatMap(({ models }) => models.map(({ id }) => id)))
   for (const present of [
-    'anthropic/claude-opus-4-5',
-    'anthropic/claude-opus-4-5-20251101',
-    'openai/gpt-5',
-    'openai/o3',
-    'google/gemini-2.5-pro',
+    'anthropic/claude-opus-5-5',
+    'anthropic/claude-sonnet-5-5',
+    'openai/gpt-5.6-luna',
+    'openai/gpt-5.4',
+    'google/gemini-3.6-flash',
   ])
     assert.ok(ids.has(present), `${present} chats`)
   for (const absent of [
+    'anthropic/claude-sonnet-4-5',
     'openai/gpt-4',
     'openai/o1',
     'openai/gpt-image-1',
@@ -125,13 +130,13 @@ test('o seletor lista só os modelos que conversam: sem os aposentados pelo Mast
     assert.ok(!ids.has(absent), `${absent} is retired or cannot chat`)
 })
 
-// Mastra 1.82.0 has no field for what a model outputs, so every name of every key provider that
+// Mastra 1.86.0 has no field for what a model outputs, so every name of every key provider that
 // hints at media, speech, embeddings, ranking, guarding or live talk is either left out or one of
 // the chat families read here by hand; a new such name in a Mastra upgrade fails until it is read.
 const HINTS_NOT_CHAT =
   /image|imagen|imagine|video|veo|sora|seedance|seedream|kling|wan|flux|sdxl|diffusion|recraft|ideogram|music|lyria|audio|speech|voice|tts|orpheus|eleven|voxtral|whisper|transcri|asr|stt|embed|bge|e5-|rerank|guard|moderat|detector|ocr|realtime|live|search|research|computer-use|omni|translate/i
 const CHAT_FAMILIES =
-  /vision|omni|inkling|hermes|nousresearch|sonar-pro-search|gpt-(4o(-mini)?|5)-search(-api)?|relace-search|diffusiongemma|musica|riva-translate/i
+  /vision|omni|inkling|hermes|nousresearch|sonar-pro-search|gpt-(4o(-mini)?|5)-search(-api)?|relace-search|diffusiongemma|musica|riva-translate|humain-m3-research-preview/i
 
 test('em todo fornecedor por chave, um nome que sugere mídia, voz, embedding ou tempo real fica fora, ou é uma família de conversa lida', async (t) => {
   const { ANA_OWNER, call, hubOn, personOn } = await import('../../hub/identity/test-hub.ts')

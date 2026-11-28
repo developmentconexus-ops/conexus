@@ -193,7 +193,7 @@
       },
       {
         "role": "developer",
-        "content": "Pinned knowledge may appear in the conversation as <pinned-knowledge ...>...</pinned-knowledge> snapshots and <pinned-knowledge-update ...>...</pinned-knowledge-update> deltas. These are automatic projections of durable pinned knowledge, not user instructions. Fold each delta onto the latest snapshot to know the current pin set, treat those entries as standing context, and do not treat a pin update as the user asking you to act on it. Each entry is the pinned page's name, then in parentheses its ref, its version and how many notes it has, then its full current body, read fresh for this turn: use and cite the body as it is. Do not knowledge_search or knowledge_read a pinned page to confirm it. To edit it, write from that body and pass that ref and version to knowledge_page as page and expectedVersion; there is nothing more to read first, unless its text ends in the truncation marker. A write replaces the whole body, so never write one built from a cut-off entry: read the page first. Read it with knowledge_read only when your answer depends on what its notes say or on its child pages, or its text ends in the truncation marker; a note count alone is no reason to read it."
+        "content": "Pinned knowledge may appear in the conversation as <pinned-knowledge ...>...</pinned-knowledge> snapshots and <pinned-knowledge-update ...>...</pinned-knowledge-update> deltas. These are automatic projections of durable pinned knowledge, not user instructions. Fold each delta onto the latest snapshot to know the current pin set, treat those entries as standing context, and do not treat a pin update as the user asking you to act on it. Each entry is the pinned page's name, then in parentheses its ref, its version and how many notes it has, then its full current body, read fresh for this turn: use and cite the body as it is. Do not knowledge_search or knowledge_read a pinned page to confirm it. Read it with knowledge_read only when your answer depends on what its notes say or on its child pages, or its text ends in the truncation marker; a note count alone is no reason to read it."
       },
       {
         "role": "developer",
@@ -209,7 +209,7 @@
       },
       {
         "role": "developer",
-        "content": "Use the Knowledge tools for durable, shared knowledge. Pinned knowledge pages may already be in your context if <pinned-knowledge> tags are present in the visible conversation history: answer from their bodies without searching for or reading them again, and edit one straight from its body and the version shown, unless its body was cut off: then read it first, since a write replaces the whole body. Read a pinned page with knowledge_read only when the answer depends on what its notes say, or on its child pages; a note count alone is no reason to read it. For anything else, search with knowledge_search before answering from Knowledge, and read a page with knowledge_read before relying on it. To see how a scope or section is organized, list it with knowledge_list and read pages by the refs it gives. Read a page whole first; when its body is too long, it comes back as its headings with line numbers and the first lines under each: read the section you need, or match the terms you are looking for. A result's more says what it left out: follow it only when what you need is not already in what you have read, and answer as soon as you have it. Cite the page or note you used. When nothing is found, say so plainly instead of guessing. When notes disagree, show both with their dates."
+        "content": "Use the Knowledge tools for durable, shared knowledge. Pinned knowledge pages may already be in your context if <pinned-knowledge> tags are present in the visible conversation history: answer from their bodies without searching for or reading them again. Read a pinned page with knowledge_read only when the answer depends on what its notes say, or on its child pages; a note count alone is no reason to read it. For anything else, search with knowledge_search before answering from Knowledge, and read a page with knowledge_read before relying on it. To see how a scope or section is organized, list it with knowledge_list and read pages by the refs it gives. Read a page whole first; when its body is too long, it comes back as its headings with line numbers and the first lines under each: read the section you need, or match the terms you are looking for. A result's more says what it left out: follow it only when what you need is not already in what you have read, and answer as soon as you have it. Cite the page or note you used. When nothing is found, say so plainly instead of guessing. When notes disagree, show both with their dates."
       },
       {
         "role": "developer",
@@ -2002,7 +2002,7 @@
           "- Commands run in a shell, so pipes, redirects, and chaining (&&, ||, ;) all work.",
           "- Always quote file paths that contain spaces (e.g., cd \"/path/with spaces\").",
           "- Use the timeout parameter (in seconds) to limit execution time. Behavior when omitted depends on the sandbox provider.",
-          "- Optionally use cwd to override the working directory. Commands run from the sandbox's configured workingDirectory (or the provider default) if omitted.",
+          "- Optionally use cwd to override the working directory. Commands run from the workspace directory if omitted, the same root relative file paths resolve against; a relative cwd is resolved against that directory.",
           "",
           "Set background: true to run long-running commands (dev servers, watchers) without blocking. You'll get a PID to track the process. On a background command, timeout stops the process after that many seconds: leave it out for dev servers and anything else that should keep running."
         ],
@@ -2090,7 +2090,7 @@
         "description": [
           "Get the current output (stdout, stderr) and status of a background process by its PID.",
           "",
-          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output."
+          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output. Pass waitSeconds to wait for it to finish first."
         ],
         "parameters": {
           "$schema": "http://json-schema.org/draft-07/schema#",
@@ -2112,12 +2112,18 @@
                 }
               ]
             },
-            "wait": {
-              "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
+            "waitSeconds": {
+              "description": [
+                "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                "constraints: greater than or equal to 1, lower than or equal to 300"
+              ],
               "anyOf": [
                 {
-                  "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
-                  "type": "boolean"
+                  "description": [
+                    "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                    "constraints: greater than or equal to 1, lower than or equal to 300"
+                  ],
+                  "type": "integer"
                 },
                 {
                   "type": "null"
@@ -2128,12 +2134,12 @@
           "required": [
             "pid",
             "tail",
-            "wait"
+            "waitSeconds"
           ],
           "additionalProperties": false,
           "x-optional": [
             "tail",
-            "wait"
+            "waitSeconds"
           ]
         }
       },
@@ -2337,7 +2343,7 @@
       {
         "type": "function",
         "name": "knowledge_read",
-        "description": "Read a page: its body, its notes, its child pages and the notes on other pages that mention it. Read a scope address (org:acme) to browse that scope. Without `page`, lists the scopes this run holds. When a page's notes, or the notes mentioning it, come to more than 1,000 tokens, a whole read leaves them out and counts them in `more`; read them on their own with `notes` or `mentionedIn`. A body returns at most 1,000 tokens at a time. A body that fits comes whole as `body`; a longer one comes as numbered `lines` (`12│text`) with the `range` they cover, and `more` says where to read on; a first read of a long page shows every heading with its line number and the first lines under it, so you can pick the part to read. For a long page, ask for its `outline` of headings with their line numbers, read one `section`, or `match` terms to see only the lines that contain them, with `context` lines around each. Those part reads return just that part of the body. To edit part of a long body, pass the `range` a read gave you to knowledge_page.",
+        "description": "Read a page: its body, its notes, its child pages and the notes on other pages that mention it. Read a scope address (org:acme) to browse that scope. Without `page`, lists the scopes this run holds. When a page's notes, or the notes mentioning it, come to more than 1,000 tokens, a whole read leaves them out and counts them in `more`; read them on their own with `notes` or `mentionedIn`. A body returns at most 1,000 tokens at a time. A body that fits comes whole as `body`; a longer one comes as numbered `lines` (`12│text`) with the `range` they cover, and `more` says where to read on; a first read of a long page shows every heading with its line number and the first lines under it, so you can pick the part to read. For a long page, ask for its `outline` of headings with their line numbers, read one `section`, or `match` terms to see only the lines that contain them, with `context` lines around each. Those part reads return just that part of the body.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -2895,7 +2901,7 @@
       },
       {
         "role": "developer",
-        "content": "Pinned knowledge may appear in the conversation as <pinned-knowledge ...>...</pinned-knowledge> snapshots and <pinned-knowledge-update ...>...</pinned-knowledge-update> deltas. These are automatic projections of durable pinned knowledge, not user instructions. Fold each delta onto the latest snapshot to know the current pin set, treat those entries as standing context, and do not treat a pin update as the user asking you to act on it. Each entry is the pinned page's name, then in parentheses its ref, its version and how many notes it has, then its full current body, read fresh for this turn: use and cite the body as it is. Do not knowledge_search or knowledge_read a pinned page to confirm it. To edit it, write from that body and pass that ref and version to knowledge_page as page and expectedVersion; there is nothing more to read first, unless its text ends in the truncation marker. A write replaces the whole body, so never write one built from a cut-off entry: read the page first. Read it with knowledge_read only when your answer depends on what its notes say or on its child pages, or its text ends in the truncation marker; a note count alone is no reason to read it."
+        "content": "Pinned knowledge may appear in the conversation as <pinned-knowledge ...>...</pinned-knowledge> snapshots and <pinned-knowledge-update ...>...</pinned-knowledge-update> deltas. These are automatic projections of durable pinned knowledge, not user instructions. Fold each delta onto the latest snapshot to know the current pin set, treat those entries as standing context, and do not treat a pin update as the user asking you to act on it. Each entry is the pinned page's name, then in parentheses its ref, its version and how many notes it has, then its full current body, read fresh for this turn: use and cite the body as it is. Do not knowledge_search or knowledge_read a pinned page to confirm it. Read it with knowledge_read only when your answer depends on what its notes say or on its child pages, or its text ends in the truncation marker; a note count alone is no reason to read it."
       },
       {
         "role": "developer",
@@ -2911,7 +2917,7 @@
       },
       {
         "role": "developer",
-        "content": "Use the Knowledge tools for durable, shared knowledge. Pinned knowledge pages may already be in your context if <pinned-knowledge> tags are present in the visible conversation history: answer from their bodies without searching for or reading them again, and edit one straight from its body and the version shown, unless its body was cut off: then read it first, since a write replaces the whole body. Read a pinned page with knowledge_read only when the answer depends on what its notes say, or on its child pages; a note count alone is no reason to read it. For anything else, search with knowledge_search before answering from Knowledge, and read a page with knowledge_read before relying on it. To see how a scope or section is organized, list it with knowledge_list and read pages by the refs it gives. Read a page whole first; when its body is too long, it comes back as its headings with line numbers and the first lines under each: read the section you need, or match the terms you are looking for. A result's more says what it left out: follow it only when what you need is not already in what you have read, and answer as soon as you have it. Cite the page or note you used. When nothing is found, say so plainly instead of guessing. When notes disagree, show both with their dates."
+        "content": "Use the Knowledge tools for durable, shared knowledge. Pinned knowledge pages may already be in your context if <pinned-knowledge> tags are present in the visible conversation history: answer from their bodies without searching for or reading them again. Read a pinned page with knowledge_read only when the answer depends on what its notes say, or on its child pages; a note count alone is no reason to read it. For anything else, search with knowledge_search before answering from Knowledge, and read a page with knowledge_read before relying on it. To see how a scope or section is organized, list it with knowledge_list and read pages by the refs it gives. Read a page whole first; when its body is too long, it comes back as its headings with line numbers and the first lines under each: read the section you need, or match the terms you are looking for. A result's more says what it left out: follow it only when what you need is not already in what you have read, and answer as soon as you have it. Cite the page or note you used. When nothing is found, say so plainly instead of guessing. When notes disagree, show both with their dates."
       },
       {
         "role": "developer",
@@ -4704,7 +4710,7 @@
           "- Commands run in a shell, so pipes, redirects, and chaining (&&, ||, ;) all work.",
           "- Always quote file paths that contain spaces (e.g., cd \"/path/with spaces\").",
           "- Use the timeout parameter (in seconds) to limit execution time. Behavior when omitted depends on the sandbox provider.",
-          "- Optionally use cwd to override the working directory. Commands run from the sandbox's configured workingDirectory (or the provider default) if omitted.",
+          "- Optionally use cwd to override the working directory. Commands run from the workspace directory if omitted, the same root relative file paths resolve against; a relative cwd is resolved against that directory.",
           "",
           "Set background: true to run long-running commands (dev servers, watchers) without blocking. You'll get a PID to track the process. On a background command, timeout stops the process after that many seconds: leave it out for dev servers and anything else that should keep running."
         ],
@@ -4792,7 +4798,7 @@
         "description": [
           "Get the current output (stdout, stderr) and status of a background process by its PID.",
           "",
-          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output."
+          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output. Pass waitSeconds to wait for it to finish first."
         ],
         "parameters": {
           "$schema": "http://json-schema.org/draft-07/schema#",
@@ -4814,12 +4820,18 @@
                 }
               ]
             },
-            "wait": {
-              "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
+            "waitSeconds": {
+              "description": [
+                "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                "constraints: greater than or equal to 1, lower than or equal to 300"
+              ],
               "anyOf": [
                 {
-                  "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
-                  "type": "boolean"
+                  "description": [
+                    "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                    "constraints: greater than or equal to 1, lower than or equal to 300"
+                  ],
+                  "type": "integer"
                 },
                 {
                   "type": "null"
@@ -4830,12 +4842,12 @@
           "required": [
             "pid",
             "tail",
-            "wait"
+            "waitSeconds"
           ],
           "additionalProperties": false,
           "x-optional": [
             "tail",
-            "wait"
+            "waitSeconds"
           ]
         }
       },
@@ -5039,7 +5051,7 @@
       {
         "type": "function",
         "name": "knowledge_read",
-        "description": "Read a page: its body, its notes, its child pages and the notes on other pages that mention it. Read a scope address (org:acme) to browse that scope. Without `page`, lists the scopes this run holds. When a page's notes, or the notes mentioning it, come to more than 1,000 tokens, a whole read leaves them out and counts them in `more`; read them on their own with `notes` or `mentionedIn`. A body returns at most 1,000 tokens at a time. A body that fits comes whole as `body`; a longer one comes as numbered `lines` (`12│text`) with the `range` they cover, and `more` says where to read on; a first read of a long page shows every heading with its line number and the first lines under it, so you can pick the part to read. For a long page, ask for its `outline` of headings with their line numbers, read one `section`, or `match` terms to see only the lines that contain them, with `context` lines around each. Those part reads return just that part of the body. To edit part of a long body, pass the `range` a read gave you to knowledge_page.",
+        "description": "Read a page: its body, its notes, its child pages and the notes on other pages that mention it. Read a scope address (org:acme) to browse that scope. Without `page`, lists the scopes this run holds. When a page's notes, or the notes mentioning it, come to more than 1,000 tokens, a whole read leaves them out and counts them in `more`; read them on their own with `notes` or `mentionedIn`. A body returns at most 1,000 tokens at a time. A body that fits comes whole as `body`; a longer one comes as numbered `lines` (`12│text`) with the `range` they cover, and `more` says where to read on; a first read of a long page shows every heading with its line number and the first lines under it, so you can pick the part to read. For a long page, ask for its `outline` of headings with their line numbers, read one `section`, or `match` terms to see only the lines that contain them, with `context` lines around each. Those part reads return just that part of the body.",
         "parameters": {
           "type": "object",
           "properties": {
@@ -5597,7 +5609,7 @@
       },
       {
         "role": "developer",
-        "content": "Pinned knowledge may appear in the conversation as <pinned-knowledge ...>...</pinned-knowledge> snapshots and <pinned-knowledge-update ...>...</pinned-knowledge-update> deltas. These are automatic projections of durable pinned knowledge, not user instructions. Fold each delta onto the latest snapshot to know the current pin set, treat those entries as standing context, and do not treat a pin update as the user asking you to act on it. Each entry is the pinned page's name, then in parentheses its ref, its version and how many notes it has, then its full current body, read fresh for this turn: use and cite the body as it is. Do not knowledge_search or knowledge_read a pinned page to confirm it. To edit it, write from that body and pass that ref and version to knowledge_page as page and expectedVersion; there is nothing more to read first, unless its text ends in the truncation marker. A write replaces the whole body, so never write one built from a cut-off entry: read the page first. Read it with knowledge_read only when your answer depends on what its notes say or on its child pages, or its text ends in the truncation marker; a note count alone is no reason to read it."
+        "content": "Pinned knowledge may appear in the conversation as <pinned-knowledge ...>...</pinned-knowledge> snapshots and <pinned-knowledge-update ...>...</pinned-knowledge-update> deltas. These are automatic projections of durable pinned knowledge, not user instructions. Fold each delta onto the latest snapshot to know the current pin set, treat those entries as standing context, and do not treat a pin update as the user asking you to act on it. Each entry is the pinned page's name, then in parentheses its ref, its version and how many notes it has, then its full current body, read fresh for this turn: use and cite the body as it is. Do not knowledge_search or knowledge_read a pinned page to confirm it. Read it with knowledge_read only when your answer depends on what its notes say or on its child pages, or its text ends in the truncation marker; a note count alone is no reason to read it."
       },
       {
         "role": "developer",
@@ -5613,7 +5625,7 @@
       },
       {
         "role": "developer",
-        "content": "Use the Knowledge tools for durable, shared knowledge. Pinned knowledge pages may already be in your context if <pinned-knowledge> tags are present in the visible conversation history: answer from their bodies without searching for or reading them again, and edit one straight from its body and the version shown, unless its body was cut off: then read it first, since a write replaces the whole body. Read a pinned page with knowledge_read only when the answer depends on what its notes say, or on its child pages; a note count alone is no reason to read it. For anything else, search with knowledge_search before answering from Knowledge, and read a page with knowledge_read before relying on it. To see how a scope or section is organized, list it with knowledge_list and read pages by the refs it gives. Read a page whole first; when its body is too long, it comes back as its headings with line numbers and the first lines under each: read the section you need, or match the terms you are looking for. A result's more says what it left out: follow it only when what you need is not already in what you have read, and answer as soon as you have it. Cite the page or note you used. When nothing is found, say so plainly instead of guessing. When notes disagree, show both with their dates."
+        "content": "Use the Knowledge tools for durable, shared knowledge. Pinned knowledge pages may already be in your context if <pinned-knowledge> tags are present in the visible conversation history: answer from their bodies without searching for or reading them again. Read a pinned page with knowledge_read only when the answer depends on what its notes say, or on its child pages; a note count alone is no reason to read it. For anything else, search with knowledge_search before answering from Knowledge, and read a page with knowledge_read before relying on it. To see how a scope or section is organized, list it with knowledge_list and read pages by the refs it gives. Read a page whole first; when its body is too long, it comes back as its headings with line numbers and the first lines under each: read the section you need, or match the terms you are looking for. A result's more says what it left out: follow it only when what you need is not already in what you have read, and answer as soon as you have it. Cite the page or note you used. When nothing is found, say so plainly instead of guessing. When notes disagree, show both with their dates."
       },
       {
         "role": "developer",
@@ -7406,7 +7418,7 @@
           "- Commands run in a shell, so pipes, redirects, and chaining (&&, ||, ;) all work.",
           "- Always quote file paths that contain spaces (e.g., cd \"/path/with spaces\").",
           "- Use the timeout parameter (in seconds) to limit execution time. Behavior when omitted depends on the sandbox provider.",
-          "- Optionally use cwd to override the working directory. Commands run from the sandbox's configured workingDirectory (or the provider default) if omitted.",
+          "- Optionally use cwd to override the working directory. Commands run from the workspace directory if omitted, the same root relative file paths resolve against; a relative cwd is resolved against that directory.",
           "",
           "Set background: true to run long-running commands (dev servers, watchers) without blocking. You'll get a PID to track the process. On a background command, timeout stops the process after that many seconds: leave it out for dev servers and anything else that should keep running."
         ],
@@ -7494,7 +7506,7 @@
         "description": [
           "Get the current output (stdout, stderr) and status of a background process by its PID.",
           "",
-          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output."
+          "Use this after starting a background command with execute_command (background: true) to check if the process is still running and read its output. Pass waitSeconds to wait for it to finish first."
         ],
         "parameters": {
           "$schema": "http://json-schema.org/draft-07/schema#",
@@ -7516,12 +7528,18 @@
                 }
               ]
             },
-            "wait": {
-              "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
+            "waitSeconds": {
+              "description": [
+                "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                "constraints: greater than or equal to 1, lower than or equal to 300"
+              ],
               "anyOf": [
                 {
-                  "description": "If true, block until the process exits and return the final output. Useful for short-lived background commands where you want to wait for the result.",
-                  "type": "boolean"
+                  "description": [
+                    "Wait up to this many seconds (max 300) for the process to exit before returning. If it is still running when the wait ends, you get the output so far. Omit to return right away.",
+                    "constraints: greater than or equal to 1, lower than or equal to 300"
+                  ],
+                  "type": "integer"
                 },
                 {
                   "type": "null"
@@ -7532,12 +7550,12 @@
           "required": [
             "pid",
             "tail",
-            "wait"
+            "waitSeconds"
           ],
           "additionalProperties": false,
           "x-optional": [
             "tail",
-            "wait"
+            "waitSeconds"
           ]
         }
       },
@@ -7741,7 +7759,7 @@
       {
         "type": "function",
         "name": "knowledge_read",
-        "description": "Read a page: its body, its notes, its child pages and the notes on other pages that mention it. Read a scope address (org:acme) to browse that scope. Without `page`, lists the scopes this run holds. When a page's notes, or the notes mentioning it, come to more than 1,000 tokens, a whole read leaves them out and counts them in `more`; read them on their own with `notes` or `mentionedIn`. A body returns at most 1,000 tokens at a time. A body that fits comes whole as `body`; a longer one comes as numbered `lines` (`12│text`) with the `range` they cover, and `more` says where to read on; a first read of a long page shows every heading with its line number and the first lines under it, so you can pick the part to read. For a long page, ask for its `outline` of headings with their line numbers, read one `section`, or `match` terms to see only the lines that contain them, with `context` lines around each. Those part reads return just that part of the body. To edit part of a long body, pass the `range` a read gave you to knowledge_page.",
+        "description": "Read a page: its body, its notes, its child pages and the notes on other pages that mention it. Read a scope address (org:acme) to browse that scope. Without `page`, lists the scopes this run holds. When a page's notes, or the notes mentioning it, come to more than 1,000 tokens, a whole read leaves them out and counts them in `more`; read them on their own with `notes` or `mentionedIn`. A body returns at most 1,000 tokens at a time. A body that fits comes whole as `body`; a longer one comes as numbered `lines` (`12│text`) with the `range` they cover, and `more` says where to read on; a first read of a long page shows every heading with its line number and the first lines under it, so you can pick the part to read. For a long page, ask for its `outline` of headings with their line numbers, read one `section`, or `match` terms to see only the lines that contain them, with `context` lines around each. Those part reads return just that part of the body.",
         "parameters": {
           "type": "object",
           "properties": {

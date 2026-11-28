@@ -274,10 +274,10 @@ test('modelo padrão da empresa: dono e administrador gravam modelo e nível; me
   const sonnet = { model: 'anthropic/claude-sonnet-4-6', effort: 'high' }
   const set = await call(hub, ana, 'PUT', url, sonnet)
   assert.deepEqual([set.statusCode, set.json()], [200, { defaultModel: sonnet }])
-  const flash = { model: 'google/gemini-2.5-flash', effort: 'low' }
+  const flash = { model: 'google/gemini-3.5-flash-lite', effort: 'low' }
   assert.equal((await call(hub, bruno, 'PUT', url, flash)).statusCode, 200)
   assert.equal((await call(hub, bruno, 'PUT', url, flash)).statusCode, 200)
-  const gpt = { model: 'openai/gpt-4o-mini', effort: 'off' }
+  const gpt = { model: 'openai/gpt-5.4-mini', effort: 'off' }
   assert.equal((await call(hub, carla, 'PUT', url, gpt)).statusCode, 404)
   // The admission comes before the model's check: a member learns nothing from a wrong model.
   assert.equal(
@@ -288,7 +288,8 @@ test('modelo padrão da empresa: dono e administrador gravam modelo e nível; me
     [{ model: 'anthropic/claude-nenhum', effort: 'off' }, 'MODEL_UNKNOWN'],
     [{ model: 'claude-sonnet-4-6', effort: 'off' }, 'MODEL_UNKNOWN'],
     [{ model: 'nenhum/x', effort: 'off' }, 'MODEL_UNKNOWN'],
-    [{ model: 'google/gemini-2.5-flash', effort: 'max' }, 'EFFORT_UNSUPPORTED'],
+    [{ model: 'anthropic/claude-sonnet-4-5', effort: 'off' }, 'MODEL_UNKNOWN'],
+    [{ model: 'google/gemini-3.5-flash-lite', effort: 'max' }, 'EFFORT_UNSUPPORTED'],
     [gpt, 'MODEL_NO_ACCOUNT'],
   ]
   for (const [body, code] of refusals) {

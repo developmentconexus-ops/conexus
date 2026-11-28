@@ -10,6 +10,6 @@ test('a tela e o servidor leem o fornecedor de um modelo igual, em todo modelo d
   assert.ok(ids.length > 1000)
   for (const id of [...ids, 'claude', '/claude', 'anthropic/', '', '/', 'a/b/c'])
     assert.equal(providerOfModel(id), parseModelString(id).provider, id)
-  assert.equal(providerOfModel('anthropic/claude-sonnet-4-5'), 'anthropic')
-  assert.equal(providerOfModel('openrouter/anthropic/claude-sonnet-4-5'), 'openrouter')
+  assert.equal(providerOfModel('anthropic/claude-sonnet-4-6'), 'anthropic')
+  assert.equal(providerOfModel('openrouter/anthropic/claude-sonnet-4-6'), 'openrouter')
 })

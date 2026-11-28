@@ -14,7 +14,7 @@ import { modelAccount } from './tables.ts'
 
 // The models each provider says a credential can call, read when the credential changes (card
 // 12.3, review 1b): the router's registry is one global catalog and knows no entitlement, so
-// Anthropic's key lists no `claude-sonnet-4-5` that the registry still offers. A Claude subscription
+// Anthropic's key lists no `claude-sonnet-4-6` that the registry still offers. A Claude subscription
 // has no list to read: `/v1/models` answers its bearer 404, and Mastra Code offers it the registry's
 // Anthropic models whole, leaving a model it does not serve to the call's 404 (`mastracode/sdk/src/index.ts:1444-1450`,
 // `onboarding/packs.ts:70-80`, commit 6a465f9d); here the queue reads that 404 as `missing`.

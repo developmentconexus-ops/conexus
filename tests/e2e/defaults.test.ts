@@ -14,7 +14,7 @@ import {
 import { changeState, enter, linkKey, pickModel } from './model-accounts-journey.ts'
 
 // Step 12.3's script in Chromium, on a real Hub: Empresa A with a Claude key and an OpenAI key of
-// the company. The owner sets GPT 5 · Médio for the company; Ana, a member, starts there, chooses
+// the company. The owner sets GPT 5.5 · Médio for the company; Ana, a member, starts there, chooses
 // Claude Sonnet and Alto for herself, loses her Claude account when the owner pauses it, and goes
 // back to the company's. No provider is called: a conversation's start is read, never answered.
 const OWNER = { name: 'Davi Costa', email: 'davi@example.test', role: 'admin' }
@@ -42,22 +42,28 @@ async function newConversationChoice(page: Page, companyId: string, expected: st
   await choice.filter({ hasText: expected }).waitFor()
 }
 
-/** Step 1: the owner chooses GPT 5 and Médio in Padrões da empresa and saves it. */
+/** Step 1: the owner chooses GPT 5.5 and Médio in Padrões da empresa and saves it. */
 async function companyDefault(owner: Page, companyId: string) {
   await owner.goto(`${TEST_ORIGIN}/companies/${companyId}/settings/defaults`)
   await owner.getByText('A empresa ainda não tem padrão', { exact: false }).waitFor()
-  await pickModel(owner, owner, 'Modelo e raciocínio', 'OpenAI', 'gpt-5')
+  await pickModel(owner, owner, 'Modelo e raciocínio', 'OpenAI', 'gpt-5.5')
   await owner.getByRole('combobox', { name: 'Modelo e raciocínio' }).click()
   const slider = owner.getByRole('slider', { name: 'Raciocínio' })
   await slider.waitFor()
   await slider.press('Home')
-  await slider.press('ArrowRight')
+  for (
+    let step = 0;
+    step < 6 && (await slider.getAttribute('aria-valuetext')) !== 'Médio';
+    step++
+  ) {
+    await slider.press('ArrowRight')
+  }
   assert.equal(await slider.getAttribute('aria-valuetext'), 'Médio')
   await owner.keyboard.press('Escape')
   await owner.getByRole('button', { name: 'Salvar padrão' }).click()
   await owner
     .getByText(
-      'Com as contas da empresa, uma conversa nova começa em: GPT 5 · Médio — padrão da empresa',
+      'Com as contas da empresa, uma conversa nova começa em: GPT 5.5 · Médio — padrão da empresa',
     )
     .waitFor()
 }
@@ -65,7 +71,7 @@ async function companyDefault(owner: Page, companyId: string) {
 /** Steps 3 to 5, Ana's side: her own default, the order line, the lost account, and the way back. */
 async function ownDefault(ana: Page, owner: Page, companyId: string, base: string) {
   await ana.goto(`${base}/my-defaults`)
-  await ana.getByText(START('GPT 5 · Médio — padrão da empresa')).waitFor()
+  await ana.getByText(START('GPT 5.5 · Médio — padrão da empresa')).waitFor()
   await ana.getByText('Você segue o padrão da empresa.').waitFor()
   assert.equal(await ana.getByRole('button', { name: 'Usar o da empresa' }).count(), 0)
   await pickModel(ana, ana, 'Modelo e raciocínio', 'Anthropic', 'sonnet')
@@ -92,12 +98,12 @@ async function ownDefault(ana: Page, owner: Page, companyId: string, base: strin
       'Você não tem conta disponível para Anthropic agora: as conversas novas começam no padrão da empresa.',
     )
     .waitFor()
-  await newConversationChoice(ana, companyId, /GPT 5\s*Médio/)
+  await newConversationChoice(ana, companyId, /GPT 5\.5\s*Médio/)
   await changeState(owner, 'Claude da empresa', 'Retomar')
 
   await ana.goto(`${base}/my-defaults`)
   await ana.getByRole('button', { name: 'Usar o da empresa' }).click()
-  await ana.getByText(START('GPT 5 · Médio — padrão da empresa')).waitFor()
+  await ana.getByText(START('GPT 5.5 · Médio — padrão da empresa')).waitFor()
 }
 
 test('o roteiro dos padrões: o dono escolhe os da empresa, Ana os dela, e a conta pausada leva de volta ao da empresa', async (t) => {
@@ -140,14 +146,14 @@ async function script(window: (ip: string, who: string) => Promise<Page>, compan
   await anaPage.goto(`${base}/defaults`)
   await anaPage.getByText('Só o dono ou um administrador muda os padrões da empresa.').waitFor()
   assert.equal(await anaPage.getByRole('button', { name: 'Salvar padrão' }).count(), 0)
-  await newConversationChoice(anaPage, companyId, /GPT 5\s*Médio/)
+  await newConversationChoice(anaPage, companyId, /GPT 5\.5\s*Médio/)
   await ownDefault(anaPage, ownerPage, companyId, base)
 
   // Step 5, the narrow screen and the dark theme: nothing scrolls sideways.
   await anaPage.setViewportSize({ width: 390, height: 844 })
   await anaPage.emulateMedia({ colorScheme: 'dark' })
   await anaPage.goto(`${base}/my-defaults`)
-  await anaPage.getByText(START('GPT 5 · Médio — padrão da empresa')).waitFor()
+  await anaPage.getByText(START('GPT 5.5 · Médio — padrão da empresa')).waitFor()
   const width = await anaPage.evaluate(() => [document.documentElement.scrollWidth, innerWidth])
   assert.ok((width[0] ?? 0) <= (width[1] ?? 0))
 }

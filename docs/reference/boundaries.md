@@ -995,7 +995,7 @@ changes, reread the line it names.
   secrets rule reaches the model and that the gate fails without it, not that a real model obeys.
   Revisit when `runEvals` takes tool mocks, or the Builder's agent can be a target.
 
-## Mastra 1.83.0: the Builder's end of the turn, open tasks (step 14.2)
+## Mastra 1.86.0: the Builder's end of the turn, open tasks (step 14.2)
 
 - **The end of the turn is Mastra's `isTaskComplete`.** `agents/app-builder/builder.ts` gives the Builder's
   `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`agents/app-builder/processors.ts`
@@ -1009,7 +1009,7 @@ changes, reread the line it names.
   Mastra's own `goal` judges completion with a model, not the list (`agent/goal/scorer.ts:14-28`), so
   it does not serve. Proof: `conversation-check.test.ts`, criterion 15 of step 14.2.
 
-## Mastra 1.83.0: a tool call the model streamed unparseable (defect after v0.20.8)
+## Mastra 1.86.0: a tool call the model streamed unparseable (defect after v0.20.8)
 
 - **Library line.** Mastra's in-process loop persists a tool call whose JSON it cannot parse with
   `args: undefined` (after `tryRepairJson`, which does not repair truncation), and replays it with
@@ -1033,7 +1033,7 @@ changes, reread the line it names.
   with tasks open, through the public door) fails without the check. Not done:
   `toolStreaming: false` (changes card streaming for every call and leaves other providers exposed).
 
-## Mastra 1.83.0 and @mastra/fastify 1.5.27: session routes behind the Hub's guard (step 14.2)
+## Mastra 1.86.0 and @mastra/fastify 1.5.30: session routes behind the Hub's guard (step 14.2)
 
 - **A fixed list, one guard.** `harness/routes/guard.ts` registers nine of Mastra's own
   agent-controller routes (a session's state, stream, message, Parar, a card's answer, a write's approval, transcript,
@@ -1044,16 +1044,16 @@ changes, reread the line it names.
   Hub's index (S10), refuses a browser `requestContext` with 400, and sets the message's author.
   Proof: `conversation-routes.test.ts`, criteria 3, 30 and 31 of step 14.2.
 - **The change of model is Mastra's own route.** `POST …/sessions/:sessionId/model`
-  (`@mastra/server` 1.83.0 `agent-controller.js:869-890`, the Factory UI's `switchModel`) behind the
+  (`@mastra/server` 1.86.0 `agent-controller.js:869-890`, the Factory UI's `switchModel`) behind the
   same guard, which is stricter than Mastra's body: it asks the effort too, refuses a field more,
   asks the account (`conversationModel`) and the effort the model offers (`effortsOf`), and writes the
   agent's log line (from its ficha) only after Mastra's `{ ok: true }`; an agent whose ficha says the
   model is the version's (a saved agent) is a 404. Proof: `guard.test.ts` ("a troca de modelo…"),
   `lines.test.ts`.
 - **Renomear is Mastra's own route too.** `PUT …/sessions/:sessionId/threads/:threadId`
-  (`@mastra/server` 1.83.0 `agent-controller.js:1244-1269`, `session.renameThread`), whose body is
+  (`@mastra/server` 1.86.0 `agent-controller.js:1244-1269`, `session.renameThread`), whose body is
   any `{ title }`: the guard trims and checks it (`RenameBody`, one to `CONVERSATION_TITLE_MAX`
-  characters) and puts the trimmed body in `request.body`, which `@mastra/fastify` 1.5.27 reads
+  characters) and puts the trimmed body in `request.body`, which `@mastra/fastify` 1.5.30 reads
   (`dist/index.js:198`). A `threadId` that is not the session's is a 404 (Mastra would switch the
   session's active thread). Mastra's `rename` pins the title (`titlePinned`) against the memory's own
   and keeps the thread's other metadata, so the marks that say whose a conversation is stay. The
@@ -1069,9 +1069,9 @@ changes, reread the line it names.
   `onSessionDeleted`. Proof: `conversation-stream.test.ts`. Revisit when Mastra's server ends its
   streams on shutdown.
 
-## Mastra 1.83.0: the stream sends the screen what it reads (memory, pace)
+## Mastra 1.86.0: the stream sends the screen what it reads (memory, pace)
 
-- **Library line.** `@mastra/core` 1.83.0 `agent-controller/session.ts` sends the session's whole
+- **Library line.** `@mastra/core` 1.86.0 `agent-controller/session.ts` sends the session's whole
   display state after every event (the turn's message and every tool's input and result), which grows
   with the square of a turn's length. The stream route's `displayState: false` (`@mastra/server`
   1.80.0, PR #28527) cuts all of it, and the screen reads a part (`isRunning`, `pendingSuspensions`,
@@ -1092,9 +1092,9 @@ changes, reread the line it names.
   the order of events for a slow page and passes with Mastra's own adapter too, so it proves neither.
 - **Revisit when** Mastra lets a stream send a subset of the display state, beyond `displayState: false`.
 
-## Mastra 1.83.0: the turn's place in the queue of model accounts (Uma ficha por agente)
+## Mastra 1.86.0: the turn's place in the queue of model accounts (Uma ficha por agente)
 
-- **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`) has no queue of model accounts and no
+- **Library line.** `@mastra/core` 1.86.0 (`d60ba71b`) has no queue of model accounts and no
   several accounts for one person. Mastra Code reads one credential per organization and keeps no
   line (`mastracode/sdk/src/index.ts:1413-1416`, `resolveTenantSessionModel`); neither it nor the
   Factory has the piece (searched in both).
@@ -1110,9 +1110,9 @@ changes, reread the line it names.
   each agent, which hold the same bytes before and after the join.
 - **Revisit when** Mastra gains an account queue or several credentials for one person.
 
-## Mastra 1.83.0: the Project's lock as the Builder's `take` (Uma ficha por agente)
+## Mastra 1.86.0: the Project's lock as the Builder's `take` (Uma ficha por agente)
 
-- **Library line.** `@mastra/core` 1.83.0 locks by conversation only (`threadLock`,
+- **Library line.** `@mastra/core` 1.86.0 locks by conversation only (`threadLock`,
   `@mastra/core/dist/agent-controller/types.d.ts:316-325`): two conversations
   of one Project run at the same time.
 - **Hand-made piece.** `projectTurn` in `apps/server/src/agents/app-builder/turn-of.ts`, the
@@ -1126,11 +1126,11 @@ changes, reread the line it names.
   refusing a lock that is taken.
 - **Revisit when** Mastra can lock by a key other than the conversation.
 
-## Mastra 1.83.0: the Builder's refused turn kept beside the run (Uma sala e os nomes certos)
+## Mastra 1.86.0: the Builder's refused turn kept beside the run (Uma sala e os nomes certos)
 
 - **Library line.** A processor's `abort` ends the run with `finishReason: 'tripwire'`. The agent
   controller folds the processor's id and reason into the text of its `error` event and passes no
-  `processorId` (`@mastra/core` 1.83.0 `dist/agent-controller-BhkzVgCi.js:1186-1197`, emitted at
+  `processorId` (`@mastra/core` 1.86.0 `dist/agent-controller-BhkzVgCi.js:1186-1197`, emitted at
   `:738-746`), so nothing typed carries the code or the name of whose run holds the Project.
 - **Hand-made piece.** `createRefusals` in `apps/server/src/agents/app-builder/turn-of.ts`, a map
   by conversation in the Hub's memory. `projectTurn` clears it, then records `RUN_BUSY` with the
@@ -1138,15 +1138,15 @@ changes, reread the line it names.
   `harness/turn/end.ts` takes it only for an `error` event with `finishReason: 'tripwire'`.
 - **Why.** [Code C52](../guides/code.md): a failure is told by its code, never read from its text.
   A restart loses the map, and the refusal is only of a live turn.
-- **Proof.** `turn.test.ts`, "o evento error do controlador, na 1.83.0, traz finishReason tripwire
+- **Proof.** `turn.test.ts`, "o evento error do controlador, na 1.86.0, traz finishReason tripwire
   e não traz processorId…", which fails when an upgrade passes the field;
   `conversation-turns.test.ts`, a second conversation of the Project ending `RUN_BUSY` with the
   name.
 - **Revisit when** Mastra's `error` event carries the processor's id or a typed payload.
 
-## Mastra 1.83.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
+## Mastra 1.86.0: a read never asks, by its own rule, not the session's `allow` (step 24.5)
 
-- **Library line.** `@mastra/core` 1.83.0 (`d60ba71b`): the session's native "never ask" is the `allow`
+- **Library line.** `@mastra/core` 1.86.0 (`d60ba71b`): the session's native "never ask" is the `allow`
   policy, which suspends the call and approves it at once
   (`packages/core/src/agent-controller/session.ts:4808-4829`, `:5019-5030` and `:6638-6642`). With `@mastra/pg`
   1.36.0 the approval loses the resume race (Mastra #27831, closed there without a fix; the cause is
@@ -1164,9 +1164,9 @@ changes, reread the line it names.
   swaps the rule for `allow` against Postgres, and nothing else protects it.
 - **Revisit when** Mastra fixes the approval race, or `allow` stops suspending.
 
-## Mastra 1.83.0: a step's answer without the body of its request
+## Mastra 1.86.0: a step's answer without the body of its request
 
-- **Library line.** `@mastra/core` 1.83.0 keeps every step's output, `request.body` included, until
+- **Library line.** `@mastra/core` 1.86.0 keeps every step's output, `request.body` included, until
   the session's next run (`MastraModelOutput` `#bufferedSteps[].request`, `dist/stream-Coth7KQ4.js:6999`;
   it joins equal requests only when it serializes, `:4730-4760`), so a conversation's last
   turn holds every prompt it sent. Nothing of ours or Mastra's reads the body back. The AI SDK's
@@ -1180,30 +1180,25 @@ changes, reread the line it names.
 - **Proof.** `prompt-cache.test.ts` "cada passo do modelo da conta volta sem o corpo do pedido…".
 - **Revisit when** Mastra passes an include option to its loop, or stops keeping the request.
 
-## Mastra 1.83.0: the store's domains log, and a model's output is read from its name
+## Mastra 1.86.0: a model's output is read from its name
 
-- **Library line.** `Mastra` gives its logger to the store, but `MastraCompositeStore` does not pass
-  it on to the store's domains (the class at `dist/filesystem-versioned-CeCxYq38.js:250` has no
-  `__setLogger` of its own), and each domain logs its own failures. The provider registry says of a model only
-  `attachment`, `temperature`, `structuredOutput` and `reasoning` (`dist/capabilities/*.json`),
+- **Library line.** The provider registry says of a model only `attachment`, `temperature`,
+  `structuredOutput` and `reasoning` (`@mastra/core` 1.86.0 `dist/llm/model/capability-file.d.ts:1-8`),
   nothing of what the model outputs.
-- **Hand-made piece.** `apps/server/src/harness/mastra/mastra.ts` gives each domain the Hub's logger
-  by the same `__setLogger`. `NOT_CHAT` in `apps/server/src/harness/model-accounts/providers.ts`
-  leaves out a model whose name says it draws, films, speaks, hears, embeds, ranks, guards, reads
-  scans or talks live.
-- **Why.** A domain's failure would log nowhere the Hub reads; the model picker would list models
-  that cannot hold a conversation.
+- **Hand-made piece.** `NOT_CHAT` in `apps/server/src/harness/model-accounts/providers.ts` leaves out
+  a model whose name says it draws, films, speaks, hears, embeds, ranks, guards, reads scans or talks
+  live.
+- **Why.** The model picker would list models that cannot hold a conversation.
 - **Proof.** `providers.test.ts` "em todo fornecedor por chave, um nome que sugere mídia…" fails when
-  a new such name enters the registry unread. No test fails without the logger line.
-- **Revisit when** the composite store passes its logger to its domains, or the registry says what a
-  model outputs.
+  a new such name enters the registry unread.
+- **Revisit when** the registry says what a model outputs.
 
 ## e2b 2.63.0: the version folder read without following a link (step 14.1)
 
 - **Library line.** `e2b@2.63.0` `files.read(path)` reads by path and
   follows a link: `FilesystemReadOpts` has no `nofollow` (`dist/index.d.ts:5794-5807`). `files.list` (`:5972`)
   shows a link's `symlinkTarget`, but a link swapped in between the list and the read still passes.
-  Mastra 1.83.0 `WorkspaceFilesystem.readFile` has the same shape.
+  Mastra 1.86.0 `WorkspaceFilesystem.readFile` has the same shape.
 - **Hand-made piece.** `packIn` in `apps/server/src/harness/machine/pack.ts` runs one Node program
   on the machine, while the run still holds it. The program opens every folder and file of
   `node_modules/.conexus/version` with `O_NOFOLLOW` through `/proc/self/fd`, refuses a link or a
@@ -1491,9 +1486,9 @@ reference tool checks a read against its documentation.
   declared table does so today.
 - **Revisit when** the kit can be read from Python, or Meltano changes how it calls a tap.
 
-## Mastra 1.83.0: a conversation's changing state lives in a Hub table (step 24.1)
+## Mastra 1.86.0: a conversation's changing state lives in a Hub table (step 24.1)
 
-- **Library line.** At `@mastra/pg` version 1.36.0 and `@mastra/memory` version 1.41.1 (the lockfile's),
+- **Library line.** At `@mastra/pg` version 1.38.0 and `@mastra/memory` version 1.41.3 (the lockfile's),
   `@mastra/pg` `updateThread` (`dist/index.js:12411-12446`) now locks the thread row while it reads
   and merges the metadata it is given (pg #29150). Observational memory still writes the thread title
   through `patchThread` with the full metadata it read earlier, outside that lock
@@ -1509,9 +1504,9 @@ reference tool checks a read against its documentation.
 - **Proof.** `instructions.test.ts` "trocar a escolha enquanto o Mastra grava o título": the next
   turn reads only the new choice, and the title stays.
 
-## Mastra 1.83.0: the list of conversations narrowed by title and place (step 24.3.3)
+## Mastra 1.86.0: the list of conversations narrowed by title and place (step 24.3.3)
 
-- **Library line.** At `@mastra/core` version 1.83.0 and `@mastra/pg` version 1.36.0 (the lockfile's),
+- **Library line.** At `@mastra/core` version 1.86.0 and `@mastra/pg` version 1.38.0 (the lockfile's),
   `listThreads` filters by `resourceId` and by metadata equality only (`@mastra/core` `dist/storage/types.d.ts:183-209`;
   `@mastra/pg` `dist/index.js:12169-12260`, a `@>` containment). It has no title search, no "the key is
   missing" and no "any value of the key".
@@ -1560,9 +1555,9 @@ reference tool checks a read against its documentation.
 - **Revisit when** the proxy lists `gemini-2.5-flash`, or the `google_cliproxy` path leaves the product.
   Then delete the constant, the `kind` argument, the test and this entry.
 
-## Mastra 1.83.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
+## Mastra 1.86.0: the sign-in kinds an operator opens to a company (Assinatura ChatGPT)
 
-- **Library line.** None. At `@mastra/core` 1.83.0 the model router reaches every provider of
+- **Library line.** None. At `@mastra/core` 1.86.0 the model router reaches every provider of
   `dist/provider-registry.json`, and Mastra Code's `auth/storage.ts` (`@mastra/code-sdk` 1.18.0)
   keeps one person's credentials. Neither has a switch per company for a kind of sign-in, and the
   Codex CLI has no company at all.
@@ -1580,9 +1575,9 @@ reference tool checks a read against its documentation.
   OpenAI"; `openai/sign-in.test.ts` "tipo desligado no meio".
 - **Revisit when** Mastra or an auth library ships a per-tenant switch of providers or sign-in kinds.
 
-## Mastra 1.83.0: the company's memory through one file (Alinhamento do Assistente)
+## Mastra 1.86.0: the company's memory through one file (Alinhamento do Assistente)
 
-- **Library line.** `Knowledge` is experimental in `@mastra/core` 1.83.0: the API can change without
+- **Library line.** `Knowledge` is experimental in `@mastra/core` 1.86.0: the API can change without
   notice, its storage has no migration (`KNOWLEDGE_STORAGE_SCHEMA_VERSION` 4,
   `dist/knowledge/`), a new Mastra that changes the format asks to drop its tables, and
   `knowledgeMemoryScopes` (`dist/evented-execution-4C5qBV8d.js:20944`) makes every run an editor of its
@@ -1605,12 +1600,12 @@ reference tool checks a read against its documentation.
 - **Revisit when** Mastra takes `Knowledge` out of experimental, or adds a migration or a way to
   rewrite the pinned text.
 
-## Mastra 1.83.0: the research helper's account, tools and numbered files (Alinhamento do Assistente)
+## Mastra 1.86.0: the research helper's account, tools and numbered files (Alinhamento do Assistente)
 
 - **Library line.** `AgentController` runs a subagent as a new `Agent` with no processors; its model
   comes only from the synchronous `resolveSubagentModel`, its context is a new object with an empty
   `resourceId`, and the controller's tools are copied from the main agent's
-  (`@mastra/core@1.83.0` `dist/agent-controller-BhkzVgCi.js:9120`, `resolveSubagentModel`). Mastra's own
+  (`@mastra/core@1.86.0` `dist/agent-controller-BhkzVgCi.js:9120`, `resolveSubagentModel`). Mastra's own
   `subagent` tool takes `forked` and `modelId` from the model; `forked: true` runs the main agent
   itself. No tool file is numbered by the library: the name `reads/<turn>-<n>.json` is ours.
 - **Hand-made piece.** `apps/server/src/agents/assistant/research.ts`: the one type `pesquisar`
@@ -1632,7 +1627,7 @@ reference tool checks a read against its documentation.
 
 ## The ceiling of 50 reads per answer (Alinhamento do Assistente)
 
-- **Library line.** Nothing in `@mastra/core` 1.83.0 counts a turn's calls to a system outside the
+- **Library line.** Nothing in `@mastra/core` 1.86.0 counts a turn's calls to a system outside the
   model: `stopWhen` sees only the model's loop, and no reference has such a ceiling.
 - **Hand-made piece.** `CONNECTOR_CALLS_PER_TURN` and `createSpending` (`hub/connectors/builder-port.ts`):
   a synchronous counter by key (a run for the Builder, a turn for the Assistant), the oldest key
@@ -1642,13 +1637,13 @@ reference tool checks a read against its documentation.
 - **Proof.** `hub/connectors/tool-door.test.ts` "50 por turno" and `assistant-port-note.test.ts`; the
   helper's share in `agents/assistant/research.test.ts` "a porta, as 50 e o arquivo".
 
-## @aws-sdk/client-ecs, client-ssm and client-sqs 3.1175.0, Mastra 1.83.0: the lake copy's start and its end (A primeira cópia chega ao lago)
+## @aws-sdk/client-ecs, client-ssm and client-sqs 3.1175.0, Mastra 1.86.0: the lake copy's start and its end (A primeira cópia chega ao lago)
 
 ### The start: one door, `iniciarRodada`, with a start line of its own
 
 - **Library line.** `@aws-sdk/client-ecs` 3.1175.0 `dist-types/models/models_1.d.ts:3243-3343`
   (`RunTask`, its `clientToken` and `overrides`) and `:2858`. The library runs a task; it keeps no schedule, no run record and no pace.
-  `@mastra/core` 1.83.0 `mastra.schedules` keeps a cron per workflow id, and runs the workflow's step.
+  `@mastra/core` 1.86.0 `mastra.schedules` keeps a cron per workflow id, and runs the workflow's step.
   The eight systems the study of the clock read keep the schedule in their own control plane, not in
   a cloud scheduler. SSM `PutParameter` answers at most 3 writes a second by default (the study of
   the start).

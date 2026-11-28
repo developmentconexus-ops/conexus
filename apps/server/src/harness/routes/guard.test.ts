@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { SERVER_ROUTES } from '@mastra/server/server-adapter'
 import { assisting, created } from '../../agents/assistant/test-assistant.ts'
 import { agentsOn, publishedAgent, talkedTo } from '../../agents/saved-agent/test-agents.ts'
 import { approving, askedOf, launched, untilAsked } from '../../agents/saved-agent/test-approval.ts'
@@ -48,6 +49,35 @@ test('o Assistente: as rotas do Mastra com a chave assistant respondem só ao do
   assert.equal(codeOf(deleting), 'CONVERSATION_NOT_FOUND')
   const asked = await post(on.hub, carla, `${sessionUrl(hers)}/messages`, { message: 'Oi' })
   assert.equal(codeOf(asked), 'CONVERSATION_NOT_FOUND')
+})
+
+test('a lista fixa: a memória de trabalho e os sinais de agente, que o Mastra 1.86 traz, não são montados e dão 404 a quem tem sessão', async (t) => {
+  const on = await assisting(t)
+  const session = sessionUrl(
+    `${on.conversations}/${await started(on.hub, on.ana, on.conversations)}`,
+  )
+  const outside = SERVER_ROUTES.filter(({ path }) => /working-memory|signals/.test(path))
+  assert.ok(
+    outside.some(({ path }) => path === '/memory/working-memory'),
+    'the installed server has the working memory route',
+  )
+  for (const { method, path } of outside)
+    assert.equal(
+      on.hub.app.hasRoute({ method, url: `/api/builder${path}` }),
+      false,
+      `${method} ${path} is not mounted`,
+    )
+  for (const [method, path] of [
+    ['GET', '/api/builder/memory/working-memory?agentId=x&threadId=y'],
+    ['POST', '/api/builder/agents/x/signals'],
+    ['POST', `${session}/signals`],
+  ] as const) {
+    const asked =
+      method === 'GET'
+        ? await call(on.hub, on.ana, 'GET', path)
+        : await post(on.hub, on.ana, path, {})
+    assert.equal(asked.statusCode, 404, `${method} ${path}`)
+  }
 })
 
 test('os controladores novos: as seis rotas servem o controlador agents ao dono da conversa enquanto ele gerencia agentes; a de outra pessoa, a de outro controlador e a de quem virou membro dão CONVERSATION_NOT_FOUND', async (t) => {

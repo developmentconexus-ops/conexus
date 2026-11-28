@@ -50,10 +50,10 @@ export type Part = {
  * controllers and workflows (`new Mastra({ agentControllers, workflows })`), and the order to
  * start, stop and remove is ours, since `mastra.shutdown` hands the thread runs back aborted, their
  * partial response unsaved, and waits for no controller's end
- * (`NM:mastra-B51eYkgX.js:5440-5451,5744-5754`). Each module is registered in one place, as n8n's
- * module manifest (`packages/cli/src/modules/modules.manifest.ts:6-17` at `2e855356`) and
- * activepieces' `app.ts` (`packages/server/api/src/app/app.ts:236-250` at `f34c43cd`) do. `parts`
- * is in the order of removal and of `close`.
+ * (`@mastra/core` 1.86.0 `mastra-CqBmnzjM.js:6209-6235,5885-5900`). Each module is registered in
+ * one place, as n8n's module manifest (`packages/cli/src/modules/modules.manifest.ts:6-17` at
+ * `2e855356`) and activepieces' `app.ts` (`packages/server/api/src/app/app.ts:236-250` at
+ * `f34c43cd`) do. `parts` is in the order of removal and of `close`.
  */
 export function createHubMastra(deps: {
   storage: MastraCompositeStore
@@ -116,7 +116,7 @@ export function createHubMastra(deps: {
     /**
      * Mastra's workers, after every subject is made: the orchestration that runs the workflows,
      * and the scheduler, which starts since the retention workflow always leaves a schedule row
-     * (`NM:mastra-D4MXu5BN.js:4424-4439,5135-5150`).
+     * (`@mastra/core` 1.86.0 `mastra-CqBmnzjM.js:4941-4956,5680-5700`).
      */
     async start(): Promise<void> {
       for (const each of parts) await each.beforeWorkers?.()
