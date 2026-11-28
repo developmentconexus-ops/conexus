@@ -56,7 +56,7 @@ As trilhas andam juntas, cada uma na ordem dos seus marcos, com a página em
 
 `D2` passa pelo lago em sete etapas, por capacidade de todo conector (2026-11-21: "G1 b"), mais a 3a, dos
 arquivos, e o XML lido em linhas; depois vêm os conectores por classe e a porta
-de fora. A 1 e a 2 fecharam; seguem o aviso de cópia parada e a 3. As etapas, os onze de `D3` e o
+de fora. A 1, a 2 e a `T1` fecharam. As etapas, a ordem delas, os onze de `D3` e o
 Brain estão na [trilha Dados](steps/trilhas/dados.md).
 
 **Trilha Agentes e Apps.**

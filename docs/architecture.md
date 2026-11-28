@@ -138,6 +138,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 [adding a subject](how-to/add-a-subject.md).
 
 **Other subjects.** `hub/copies` runs the copies to the lake [0070]: rounds, the end by a queue, the sweep;
+`hub/treatment` treats the copies;
 `harness/copy-clock` says when ([the Sync](explanation/sync.md)).
 `hub/ontology` has only tables and a contract. `hub/notifications` sends bell and e-mails,
 `hub/operations` keeps the Central's clients, `hub/status` each start's version. `harness/tools/app-data`

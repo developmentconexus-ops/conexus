@@ -99,6 +99,10 @@ function stoppedByText(name: string, at: string): string {
   return `Parada por ${name} às ${clockOf(at)}`
 }
 
+export function tableSentence(table: string): string {
+  return ` Tabela: ${table}.`
+}
+
 export function proposalLine(number: number): string {
   return `Proposta: v${number}, à espera do sim`
 }
