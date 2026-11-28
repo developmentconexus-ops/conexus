@@ -10,7 +10,9 @@ Os estudos ficam fora do repositório (delivery L21). `EST:N` é a linha `N` do 
 `conexus-lago3-estudo` (2026-11-25, o desenho da leitura). `DC:N` é a linha `N` do relatório
 `conexus-data-context-arquitetura` (2026-11-27, a porta, os repositórios e o primeiro passo). `NK/<pasta>:N`
 é a linha `N` de um estudo da Nekt ou do Databricks em `conexus-estudos/estudos/`; `TN:N` é a linha `N`
-do relatório do teste da Nekt que rodamos (`conexus-referencias-testes-nekt`).
+do relatório do teste da Nekt que rodamos (`conexus-referencias-testes-nekt`). `LL:N` é a linha `N` do
+relatório `conexus-lago-leitores-areas-estudo` (2026-11-27, quem lê o lago e quais áreas o agente lê, o
+estudo das decisões 1 e 2 desta página).
 
 Cada linha do `main` citada foi lida em `beea44cef`. As versões:
 
@@ -25,7 +27,8 @@ Cada linha do `main` citada foi lida em `beea44cef`. As versões:
 
 **Antes da construção.**
 
-1. **A palavra do fundador sobre as decisões desta página** (delivery L6).
+1. **A palavra do fundador sobre esta página** (delivery L6). As três decisões dela já foram dadas, em
+   2026-11-27 (a seção "As decisões suas nesta etapa").
 2. **A U1, a prova no laboratório.** O G1 e o G2 não começam antes dela: o que ela medir fixa as
    concessões da U2 e as gravações que os testes da U3 leem.
 3. **A etapa `T1` fecha antes** (delivery L1 e L5): o fechamento dela está no pull request
@@ -62,8 +65,8 @@ Cloudflare pela mesma função do botão Publicar.
    publicada, como se você tivesse apertado Publicar.
 
 **O que você faz, e quando.** Antes: aprova esta página e o nome novo do Registro de dados,
-**"Agente de fora (MCP)"**, dá a palavra do gasto da U1 (decisão 3) e
-convida uma pessoa Membro na empresa de teste. Depois do G1: apaga e cria de novo o lago da empresa de
+**"Agente de fora (MCP)"**, e convida uma pessoa Membro na empresa de teste. As três decisões da página
+você já deu. Depois do G1: apaga e cria de novo o lago da empresa de
 teste na Central e marca as tabelas, porque a receita do lago muda (a mesma regra da sua decisão 2 b da
 `T1`; a atualização no lugar é a issue 1424). No fim: faz o roteiro e diz o que viu. O merge do G1 é
 palavra sua, porque ele dá ao Hub uma permissão nova na AWS.
@@ -122,33 +125,59 @@ Nada cruza a visão.
   Studio e usa a mesma ferramenta `publish`; aqui a prova é um agente de teste com uma pasta de exemplo.
 - **Criar um Projeto pela porta**: o Projeto nasce no Hub, como hoje.
 
-**As decisões suas nesta etapa.**
+**As decisões suas nesta etapa.** Você as deu em 2026-11-27. Na primeira leitura, aprovou a 3 e
+mandou estudar a 1 e a 2: "1. Estude, foi decisão mal feita, valide melhor e me traga a proposta de
+acordo com códigos de referencia, orientações e documentação cloudflare. Quero fontes / 2. Como a Nekt
+faz e databricks, tenha certeza do que fazer, leia não assuma nada de memoria, nem por apenas ler uma
+seção. / 3. Aprovado". Depois do estudo (`LL`), respondeu "Decisão 1: A / 2: A".
 
-1. **Como Dono e Administrador leem toda tabela, inclusive a que nasce amanhã.** A 0078 diz um papel
-   leitor por empresa com a etiqueta de quem lê, e uma concessão por tabela com uma condição sobre a
-   etiqueta da sessão de quem lê (o `Condition` do `GrantPermissions`, medido 16 de 16, `EST:120`). O
-   CloudFormation não escreve essa condição: o recurso tem principal, recurso e permissões
-   (`aws-cdk-lib@2.278.0 aws-lakeformation/lib/lakeformation.generated.d.ts:1387-1411`), e o
-   `lfTagPolicy` dele (`:1073,1267`) escolhe tabelas pelas etiquetas delas, com o principal fixo, sem
-   olhar a etiqueta da sessão. Então a concessão da 0078 só nasce por uma chamada de quem administra o
-   lago.
-   - **(a)** A pilha de cada empresa ganha um segundo leitor, só para Dono e Administrador, com leitura
-     de toda tabela das áreas que o agente lê, concedida pela própria pilha, como o papel do tratamento
-     já tem hoje (`infra/aws/lib/treater.ts:138-139`). O Hub só ganha a permissão de entrar nos dois
-     leitores. É o plano B que a 0078 já escreve ("one IAM role per reader"), usado só para os dois
-     papéis que leem tudo. **Recomendo (a)**: nativo, sem poder novo de conceder.
-   - **(b)** Um leitor só, como a 0078 escreve, e o Hub passa a conceder no Lake Formation como
-     administrador do lago (a T3 do estudo, `EST:230-240`). É a peça que Quem lê vai precisar, mas dá ao
-     Hub o poder de conceder em qualquer catálogo da conta, e precisa das provas P1 e P2 do estudo.
-     Remendo até as provas.
-2. **Quais áreas o agente lê.** O lago tem `raw`, `current`, `tratado` e `negocio`.
-   - **(a)** `current`, `tratado` e `negocio`: a cópia como está na fonte, as tabelas tratadas e a sua
-     Venda. Exemplo: "quanto vendemos em outubro" lê `negocio.venda`. **Recomendo (a)**: é o que a Nekt
-     faz, uma camada por área com a permissão de cada uma
-     (`NK/conexus-nekt-rea/report.md:201-202`), e a `T1` já deixou o Assistente para o Lago 3.
-   - **(b)** Só `current`, como o estudo recomendava antes da `T1` (`EST:71-75`).
-3. **O gasto da U1.** A prova roda na conta de laboratório, com dado gerado, teto de US$ 1. Uma
-   consulta custa cerca de US$ 0,00005 em us-east-2 (`EST:288`). **Recomendo (a) sim.**
+1. **Como Dono e Administrador leem toda tabela, inclusive a que nasce amanhã: (a).**
+   - **O que estava mal feito.** A 0078 usa a concessão por tabela, com a condição sobre a etiqueta da
+     sessão de quem lê (medida 16 de 16, `EST:120`), para dois casos diferentes: "um papel lê esta
+     tabela" e "um papel lê a área inteira, inclusive o que nascer depois". Ela também deixa implícito
+     quem concede. O CloudFormation não escreve essa condição: o recurso tem principal, recurso e
+     permissões (`aws-cdk-lib@2.278.0 aws-lakeformation/lib/lakeformation.generated.d.ts:1387-1411`). E
+     a AWS não deixa delegar uma concessão por atributo: "Grantable permissions are not available with
+     ABAC" (`LL:17-24,157-163`).
+   - **A escolha.** Duas formas de leitura, cada uma com o dono certo (`LL:26-33`). Quem lê uma área
+     inteira, hoje Dono e Administrador, entra num segundo leitor por empresa. Esse leitor recebe da
+     pilha da empresa `SELECT` e `DESCRIBE` em `TableWildcard` de `current`, `tratado` e `negocio`, como
+     o papel do tratamento já recebe (`infra/aws/lib/treater.ts:138-139`). O Hub não ganha poder de
+     conceder: só entra nos dois leitores. Quem lê só tabelas marcadas segue a concessão por tabela da
+     0078, e quem faz essas concessões fica para a etapa Quem lê, que traz a primeira delas. A 0078
+     ganha a emenda das duas formas (U2).
+   - **As fontes.** O CloudFormation escreve a concessão com `TableWildcard`
+     (aws-resource-lakeformation-principalpermissions); "A wildcard object representing every table under
+     a database" (API_TableWildcard); com curinga, um nome de tabela que apareceu depois da concessão foi
+     lido na primeira consulta, 5 de 5, no estudo da `T1` (`LL:135`). A Nekt e o Databricks dão a mesma
+     forma: a concessão na camada ou no schema cobre o que nascer dentro dele, "A grant on a Layer also
+     covers Folders, Tables, and Volumes created there later" e "automatically applies to all current
+     and future child objects" (`LL:237-238,274-277`). O exemplo SaaS mais próximo da AWS, um agente de
+     dados com Athena e Lake Formation, também tem um papel IAM por tipo de leitura, a concessão escrita
+     pela pilha e o servidor sem poder de conceder (`LL:167-178`).
+   - **O que ficou de fora.** A etiqueta do Lake Formation (LF-Tag) no banco não traz nada a mais para
+     Dono e Administrador, e a associação dela num banco de `s3tablescatalog` pelo CloudFormation não está
+     documentada (`LL:44-49`). Um leitor só, com o Hub concedendo como administrador do lago, daria ao Hub
+     o poder de conceder em todo catálogo da conta (`LL:50-52,162-163`).
+   - **O que a U1 mede.** Nenhuma frase oficial diz que o `TableWildcard` cobre a tabela criada depois, e
+     a medida da `T1` usou o papel que criou a tabela (`LL:313-317,325-328`). O critério 1 mede o caso
+     desta etapa: o leitor de tudo lê uma tabela que o tratamento criou depois da pilha.
+2. **Quais áreas o agente lê: (a), `current`, `tratado` e `negocio`, sem `raw`.**
+   - **A escolha.** O agente lê como a pessoa (0078), então as áreas que ele lê são as que o papel da
+     pessoa lê. Para Dono e Administrador, são as três que o leitor de tudo recebe. Exemplo: "quanto
+     vendemos em outubro" lê `negocio.venda`. A `raw` fica de fora, porque é a camada de máquina da cópia
+     (`LL:68-73`).
+   - **As fontes.** Nenhuma das duas referências escolhe camadas para o agente: a permissão de quem
+     pergunta decide. Na Nekt, a camada é "both a **storage boundary** and a **permission boundary**", a
+     de cima é "Business-ready data for analytics, AI agents, and Destinations", e o servidor MCP mostra
+     as camadas que o dono do token vê (`LL:234-252`). No Databricks, a bronze "Is intended for
+     consumption by workloads that enrich data for silver tables, not for access by analysts and data
+     scientists", e a gold "is designed for business users"; o Genie e o servidor MCP de SQL leem com as
+     permissões do Unity Catalog de quem pergunta (`LL:258-273`).
+   - **O que ficou de fora.** Só `current` vai contra as duas referências. As quatro áreas dobrariam o
+     que o agente vê, e a `raw` só tem histórico ligado numa tabela (`LL:74-78`, `EST:71-75`).
+3. **O gasto da U1: sim.** A prova roda na conta de laboratório, com dado gerado, teto de US$ 1. Uma
+   consulta custa cerca de US$ 0,00005 em us-east-2 (`EST:288`).
 
 ## As unidades
 
@@ -241,9 +270,9 @@ são da porta e vêm do estudo Data & Context (`DC:101-110`) e dos estudos da Ne
 | # | Peça | O que o fundador já decidiu | Hoje no `main` (`beea44cef`) | Referência (situação) | Veredito | Prova, se não for nativo | Unidade e arquivo novo |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | O Hub entra no leitor da empresa | 0078 | o leitor e a confiança prontos (`infra/aws/lib/lake.ts:115-179`); o Hub sem `sts:AssumeRole` nele (`infra/aws/lib/hub.ts:64-133`); o comentário "none does before step 3" (`lake.ts:110-114`) | STS com etiquetas, mesma, medido 33 de 33 (`EST:119`); SBT `token-vending-machine.js:58-66` | nativo | — | U2 `infra/aws/lib/hub.ts`; U3 `apps/server/src/platform/aws.ts` |
-| 2 | Dono e Administrador leem toda tabela | b2; decisão 1 | nenhum | `CfnPrincipalPermissions` com `tableWildcard`, como o papel do tratamento (`treater.ts:138-139`), lido e em uso desde a `T1` | nativo, se 1 (a) | U1, critério 1 | U2 `infra/aws/lib/lake.ts` (o leitor de tudo) |
+| 2 | Dono e Administrador leem toda tabela | b2; decisão 1 | nenhum | `CfnPrincipalPermissions` com `tableWildcard`, como o papel do tratamento (`treater.ts:138-139`), em uso desde a `T1`; um nome que apareceu depois do curinga foi lido na primeira consulta, 5 de 5, pelo papel que o criou (`LL:135,313-317`); Nekt e Databricks concedem no recipiente, que cobre o que nascer nele (`LL:237-238,274-277`) | nativo (decisão 1 (a)) | U1, critério 1: outro papel lê a tabela criada depois | U2 `infra/aws/lib/lake.ts` (o leitor de tudo) |
 | 3 | A concessão por tabela e papel | 0078; b2 | nenhuma | LF com condição de etiqueta, medido 16 de 16 (`EST:120`) | nativo | — | fica de fora: Quem lê |
-| 4 | Quem concede no Lake Formation | 0078 | só o papel de serviço do CloudFormation (`infra/aws/lib/platform.ts:229-237`) | `EST:122` | embrulhado | — | fica de fora com a decisão 1 (a) |
+| 4 | Quem concede no Lake Formation | 0078 | só o papel de serviço do CloudFormation (`infra/aws/lib/platform.ts:229-237`) | `EST:122`; a concessão por atributo não se delega (`LL:157-163`) | embrulhado | — | fica de fora com a decisão 1 (a): quem concede por tabela é decidido na etapa Quem lê (`LL:206-214`) |
 | 5 | A reconciliação das marcas | 0078 | nenhuma | Crossplane (`EST:123`) | embrulhado | — | fica de fora: Quem lê |
 | 6 | O catálogo (Descrever) | dados.md, o catálogo montado de cada cópia; 1 B | `catalogOf` só com sistemas (`apps/server/src/hub/data/catalog.ts:7-19`); `lake_table` com nome, rótulo e colunas (`apps/server/src/hub/copies/tables.ts:137-175`) | Glue `GetTables` filtrado pelo Lake Formation, como o `information_schema` medido (`EST:126`, `fase1b:169`); Nekt `list_tables` (`TN:383`) | nativo | U1, critério 2 | U3 `platform/aws.ts`; U4 `apps/server/src/hub/data/lake-source.ts` |
 | 7 | A consulta (Ler, `QUERY`) | 0079 | `ReadRequest.QUERY` com até 4.000 caracteres e nada que o sirva (`packages/hub-api/src/company-data.ts:40-52,150`) | Athena v3, plano e consulta em paralelo, medido (`EST:125`) | nativo | — | U3 `platform/aws.ts`; U4 `lake-source.ts` |
@@ -257,7 +286,7 @@ são da porta e vêm do estudo Data & Context (`DC:101-110`) e dos estudos da Ne
 | 15 | O reuso de resultado | — | — | "not supported for Lake Formation governed tables" (`EST:133`) | nativo | — | fica de fora: não existe para nós |
 | 16 | Fontes, a linha recusada, Quem lê e Amostra | tela A; B1 | `apps/web/src/harness/room/sources.ts` | `EST:134-136` | nativo | — | fica de fora: nenhuma tela do Hub |
 | 17 | O placar com modelo de verdade | C80, T30 | `apps/server/src/agents/assistant/assistant.scorecard.test.ts` | — | nativo | — | fica de fora: o modelo do Studio é a prova (critério 25) |
-| 18 | As áreas lidas | decisão 2 | `lake.ts:53-68` cria as quatro | Nekt `list_layers` (`NK/conexus-nekt-rea/report.md:201-202`) | nativo | — | U2, U4 |
+| 18 | As áreas lidas | decisão 2 | `lake.ts:53-68` cria as quatro | a camada como fronteira de permissão, na Nekt (`LL:234-252`); a bronze reservada a quem trata dado, no Databricks (`LL:258-262`) | nativo (decisão 2 (a)) | — | U2, U4 |
 | 19 | O papel da pessoa no leitor | 0078: "a person's role" | `roleOf` lê o nome guardado em `member.role` (`apps/server/src/hub/identity/admission.ts:312-324`); `READS_ALL` (`packages/hub-api/src/roles.ts:8`) | — | nativo (o dono de hoje) | — | U3, U4 |
 | 20 | A porta MCP | `D2` a | nenhuma | `MCPServer.startHTTP`, Streamable HTTP sem estado, com `req` e `res` do Node e o corpo em `req.body` (`@mastra/mcp@2.11.0 dist/index.js:25259-25277`; `dist/docs/references/reference-tools-mcp-server.md:397-446`); Nekt `mcp.nekt.com/mcp` (`NK/conexus-nekt-structure-study/notes/round3-nekt.md:52-53`); Databricks `/api/2.0/mcp/sql` (`round3-databricks.md:41-43`) | nativo | — | U5 `apps/server/src/harness/mcp/mcp.ts` |
 | 21 | A porta no Fastify | — | `ConversationServer` do `@mastra/fastify` (`apps/server/src/harness/routes/stream.ts:163`) | `reply.hijack()` (`fastify@5.12.5 docs/Reference/Reply.md:637-645`); o exemplo do `startHTTP` num servidor Node (`reference-tools-mcp-server.md:427-443`) | nativo | — | U5 `mcp.ts` |
@@ -370,7 +399,7 @@ da empresa no papel de serviço) e `infra/aws/test/lake-reader.test.ts:66-80`, q
 | `infra/aws/lib/lake.ts`, `names.ts`, `hub.ts`, `platform.ts` | Muda | `infra/aws/bin/`, os testes |
 | `infra/aws/lake.template.json` | Muda (gerado) | `apps/server/src/platform/config-aws.ts` |
 | `apps/server/src/platform/config-aws.ts` | Muda: o sha-256 anterior em `TREATABLE_BEFORE` (`:94`) | o Hub |
-| `docs/decisions/0078-how-the-lake-knows-who-reads.md` | Muda: a linha "Amended" | — |
+| `docs/decisions/0078-how-the-lake-knows-who-reads.md` | Muda: a emenda das duas formas de leitura | — |
 
 ### Os contratos que a unidade cria
 
@@ -401,9 +430,18 @@ da empresa no papel de serviço) e `infra/aws/test/lake-reader.test.ts:66-80`, q
 3. **O Hub entra nos dois.** Critério: 5.
    - **Arquivos:** muda `hub.ts`; o comentário de `lake.ts:110-114` passa a dizer o que a política faz.
    - **Testes:** `lake-reader.test.ts:66`, o modelo do passo vira a política real.
-4. **A receita nova.** Critério: 6. Gera `lake.template.json`, põe o sha-256 anterior em
-   `TREATABLE_BEFORE`, e a linha da 0078: "Amended 2026-11-27: the two roles that read every table enter
-   a second reader, granted by table wildcard in the stack (decision 1 of the step card)".
+4. **A receita nova.** Critério: 6. Gera `lake.template.json` e põe o sha-256 anterior em
+   `TREATABLE_BEFORE`.
+5. **A emenda da 0078** (decisão 1 (a), `LL:206-217`). A 0078 ganha este texto, com a data da decisão:
+
+   > Amended 2026-11-27. Two ways to read. A role that reads a whole area (today Owner and Admin) reads
+   > through a second reader role per company, granted every table of each read area by table wildcard
+   > in the company's stack; a grant on the container covers the tables created in it later. A role
+   > that reads marked tables reads through the tagged reader with a grant per table conditioned on the
+   > session tag. Who makes those per-table grants is decided with the step that brings the first one.
+
+   O plano B da 0078 ("one IAM role per reader") deixa de ser a saída geral: fica só para os papéis que
+   leem uma área inteira, onde vira a regra.
 
 ### Como se prova
 
