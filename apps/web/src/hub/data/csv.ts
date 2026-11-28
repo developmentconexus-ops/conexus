@@ -51,7 +51,7 @@ export function readsCsv(reads: readonly DataReadEntry[], names: ReadNames): str
   const lines = reads.map((read) => [
     localStamp(read.at),
     read.person.name,
-    agentOf(read, names),
+    agentOf(read),
     placeOf(read.project),
     whatOf(read, names),
     resultWord(read.outcome),

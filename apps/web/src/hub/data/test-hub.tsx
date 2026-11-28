@@ -1,11 +1,5 @@
 import type { DataReadEntry } from '@conexus/hub-api'
-import {
-  AgentListed,
-  DataReadEntry as Entry,
-  getCompany,
-  listConnections,
-  listMembers,
-} from '@conexus/hub-api'
+import { DataReadEntry as Entry, getCompany, listConnections, listMembers } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { render } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -19,7 +13,6 @@ export const server = hubServer()
 
 const BASE = `*/api/companies/${COMPANY.id}`
 export const BRUNO = { personId: 'person-bruno', name: 'Bruno Reis', email: 'bruno@example.test' }
-export const RESUMO = '77777777-7777-4777-8777-777777777777'
 /** The Matriz, the company's one connection: what a live read's row names. */
 export const MATRIZ = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const LINKED = listConnections.success.body.shape.connections.element.parse({
@@ -58,7 +51,7 @@ type View = {
   asked?: string[]
 }
 
-/** The Hub of the Registro: Ana in Empresa Teste as `as`, Bruno a member, the Resumo semanal agent, the Matriz. */
+/** The Hub of the Registro: Ana in Empresa Teste as `as`, Bruno a member, the Matriz. */
 export function readsHub(view: View) {
   server.use(
     sessionRead(() => ANA),
@@ -82,17 +75,6 @@ export function readsHub(view: View) {
           next: { kind: 'END' },
         }),
       ),
-    ),
-    http.get(`${BASE}/agents`, () =>
-      HttpResponse.json({
-        agents: [
-          AgentListed.parse({
-            ...{ id: RESUMO, projectId: PEDIDOS.id, name: 'Resumo semanal', description: '' },
-            ...{ state: { kind: 'DRAFT' }, updatedAt: '2026-11-02T10:00:00.000Z' },
-            ...{ lastRunAt: null, tools: 0 },
-          }),
-        ],
-      }),
     ),
     http.get(`${BASE}/connections`, () =>
       HttpResponse.json(

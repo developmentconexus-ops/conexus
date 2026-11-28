@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { listAssistantConversations } from '@conexus/hub-api'
+import { createProject } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import { atRest } from './at-rest.ts'
-import { BUILD, start, starting } from './first-start.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { DESKTOP, ok, PHONE } from './layout-harness.ts'
 import { atHome, harness, runsOf, slowed } from './motion-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { OWNER, PROJECT_ID, PROJECT_NAME, projectsPage, startsOn } from './sweep-replies.ts'
 
 // The change of screen, in a real browser: when the sheet fades and when it changes at once (design V26).
 before(() => harness.start())
@@ -83,30 +83,6 @@ test('uma segunda navegação por código, antes de a primeira aparecer, vale de
   await page.close()
 })
 
-test('a troca depois de uma ação esmaece a folha', async () => {
-  const page = await harness.open(BUILD, {
-    viewport: DESKTOP,
-    replies: starting(Promise.resolve()),
-  })
-  await slowed(page)
-  const faded = page.waitForFunction(
-    () =>
-      location.pathname.includes('/conversations/') &&
-      document
-        .getAnimations()
-        .some(
-          (one) =>
-            one.effect instanceof KeyframeEffect &&
-            one.effect.pseudoElement === '::view-transition-new(sheet)' &&
-            one.effect.getTiming().duration === 160,
-        ),
-  )
-  await start(page)
-  await faded
-  assert.deepEqual(page.problems, [])
-  await page.close()
-})
-
 test('com a gaveta aberta a troca é de uma vez', async () => {
   const home = await counted(PHONE)
   await home.page.getByRole('button', { name: 'Abrir navegação' }).click()
@@ -131,7 +107,7 @@ test('com a gaveta aberta a troca é de uma vez', async () => {
 test('com a janela aberta a troca é de uma vez', async () => {
   const page = await harness.open(`/companies/${COMPANY.id}`, {
     viewport: DESKTOP,
-    replies: starting(Promise.resolve()),
+    replies: { ...OWNER, ...projectsPage(COMPANY.id), ...startsOn(COMPANY.id), ...CREATED },
   })
   const transitions = await counting(page)
   await page
@@ -149,20 +125,21 @@ test('com a janela aberta a troca é de uma vez', async () => {
   await page.close()
 })
 
-/** One conversation, so that the sidebar draws its list with the search and the tabs. */
-const ONE_CONVERSATION: Replies = {
-  [`GET /api/companies/${COMPANY.id}/assistant/conversations`]: ok(listAssistantConversations, {
-    conversations: [
-      {
-        id: '33333333-3333-4333-8333-333333333333',
-        title: 'Vendas da semana',
-        createdAt: '2026-10-19T12:00:00.000Z',
-        updatedAt: '2026-10-19T12:00:00.000Z',
-        project: null,
-        automation: null,
-      },
-    ],
-    next: { kind: 'END' },
+/** The Hub's answer to the dialog's **Criar projeto**. */
+const CREATED: Replies = {
+  [`POST /api/companies/${COMPANY.id}/projects`]: ok(createProject, {
+    project: {
+      id: PROJECT_ID,
+      name: PROJECT_NAME,
+      createdAt: '2026-10-27T12:00:00.000Z',
+      mayDelete: true,
+      mayPublish: true,
+      publishRequest: null,
+      address: 'pedidos--empresa-teste.apps.example.test',
+      previewAddress: 'pedidos--empresa-teste--previa.apps.example.test',
+      appVersion: null,
+      publishedVersion: null,
+    },
   }),
 }
 
@@ -185,9 +162,8 @@ async function counting(page: Page) {
 
 /** Início again from a fresh load, counting the view transitions the page starts. */
 async function counted(viewport: Viewport = DESKTOP) {
-  const home = await atHome(ONE_CONVERSATION, viewport)
+  const home = await atHome({}, viewport)
   const transitions = await counting(home.page)
-  const nav = home.page.getByRole('navigation', { name: 'Navegação' })
   /** The control: after what must not fade, a change of area starts the first transition. */
   async function onlyTheAreaChangeFades() {
     const before = await transitions()
@@ -200,7 +176,6 @@ async function counted(viewport: Viewport = DESKTOP) {
   return {
     page: home.page,
     integrations: home.integrations,
-    nav,
     transitions,
     onlyTheAreaChangeFades,
   }
@@ -209,28 +184,5 @@ async function counted(viewport: Viewport = DESKTOP) {
 test('a carga da página não esmaece a folha', async () => {
   const home = await counted()
   assert.equal(await home.transitions(), 0, "the page's load fades the sheet")
-  await home.onlyTheAreaChangeFades()
-})
-
-test('a letra na busca da barra não esmaece a folha', async () => {
-  const home = await counted()
-  const loaded = await home.transitions()
-  await home.nav.getByRole('button', { name: /Buscar/ }).click()
-  await home.nav.getByRole('searchbox').pressSequentially('ven')
-  await home.page.waitForURL(/q=ven/)
-  await atRest(home.page)
-  assert.equal(await home.transitions(), loaded, 'a letter of the search fades the sheet')
-  await home.onlyTheAreaChangeFades()
-})
-
-test('a aba da barra não esmaece a folha', async () => {
-  const home = await counted()
-  const loaded = await home.transitions()
-  const tab = home.nav.getByRole('tab', { name: 'Projetos' })
-  await tab.click()
-  await home.page.waitForURL(/tab=projects/)
-  await home.nav.getByRole('tab', { name: 'Projetos', selected: true }).waitFor()
-  await atRest(home.page)
-  assert.equal(await home.transitions(), loaded, "the sidebar's tab fades the sheet")
   await home.onlyTheAreaChangeFades()
 })

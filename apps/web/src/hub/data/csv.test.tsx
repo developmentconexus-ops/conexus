@@ -15,7 +15,7 @@ function read(fields: Partial<z.input<typeof Entry>>): DataReadEntry {
   })
 }
 
-const NAMES = { agent: () => undefined, connection: () => undefined }
+const NAMES = { connection: () => undefined }
 
 function cellsOf(text: string) {
   return text.replace(/^﻿/, '').split('\r\n')

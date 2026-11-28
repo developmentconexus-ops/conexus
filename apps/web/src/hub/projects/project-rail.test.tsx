@@ -3,13 +3,13 @@ import { render, screen, within } from '@testing-library/react'
 import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { conversationsNone, hubServer, PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
+beforeEach(() => server.use(versionsRead({ versions: [] })))
 
 async function groups(role: string): Promise<[string, string[]][]> {
   server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, role }))
@@ -27,19 +27,17 @@ async function groups(role: string): Promise<[string, string[]][]> {
   ])
 }
 
-test('o dono vê quatro grupos com título, os oito itens na ordem do mapa', async () => {
+test('o dono vê três grupos com título, os cinco itens na ordem do mapa', async () => {
   expect(await groups('owner')).toEqual([
     ['O app', ['Construir']],
-    ['Agentes', ['Conversas', 'Agentes', 'Automações']],
     ['Dados', ['Integrações', 'Dados']],
     ['O Projeto', ['Quem usa o app', 'Sobre']],
   ])
 })
 
-test('o membro vê "Agentes" só com Conversas e "Dados" só com Integrações, e nenhum título sem item', async () => {
+test('o membro vê "Dados" só com Integrações, e nenhum título sem item', async () => {
   expect(await groups('member')).toEqual([
     ['O app', ['Construir']],
-    ['Agentes', ['Conversas']],
     ['Dados', ['Integrações']],
     ['O Projeto', ['Quem usa o app', 'Sobre']],
   ])

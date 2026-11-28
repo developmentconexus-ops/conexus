@@ -1,14 +1,13 @@
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { conversationsNone, hubServer, PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
-beforeEach(() => server.use(conversationsNone))
 afterEach(() => vi.restoreAllMocks())
 
 for (const lens of ['code']) {

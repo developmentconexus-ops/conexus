@@ -6,13 +6,7 @@ import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
-import {
-  conversationsNone,
-  hubServer,
-  PEDIDOS,
-  projectsRead,
-  refusal,
-} from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import {
   cancelPath,
   decisionPath,
@@ -24,7 +18,7 @@ import {
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [versionView(5)] })))
+beforeEach(() => server.use(versionsRead({ versions: [versionView(5)] })))
 
 /** The Projeto as `role` reads it, version 5 ready and unpublished, with Bruno's request open. */
 function open(role: string, fields: Partial<ProjectsView> = {}) {

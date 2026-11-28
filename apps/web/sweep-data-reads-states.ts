@@ -1,5 +1,5 @@
 import type { DataReadEntry } from '@conexus/hub-api'
-import { ASSISTANT_CONTROLLER, listDataReads, readAssistantConversation } from '@conexus/hub-api'
+import { listDataReads } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
 import type { z } from 'zod'
 import type { Replies } from './layout-harness.ts'
@@ -7,7 +7,6 @@ import { failure, ok } from './layout-harness.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { companies, PROJECT_ID } from './sweep-replies.ts'
-import { sessionReplies } from './sweep-session.ts'
 
 const COMPANY_ID = '0'.repeat(32)
 const API = `/api/companies/${COMPANY_ID}`
@@ -15,17 +14,6 @@ const PATH = `/companies/${COMPANY_ID}/settings/data-reads`
 const OPEN = '12121212-1212-4212-8212-121212121212'
 const THREAD = '13131313-1313-4313-8313-131313131313'
 
-/** What **Abrir a conversa** preloads on focus: the person's own conversation with the Assistant in Início. */
-const CONVERSATION: Replies = {
-  [`GET ${API}/assistant/conversations/${THREAD}`]: ok(readAssistantConversation, {
-    conversation: {
-      ...{ id: THREAD, title: 'Vendas da semana', projectId: null, automation: null },
-      ...{ createdAt: '2026-10-19T12:00:00.000Z', updatedAt: '2026-10-19T12:00:00.000Z' },
-      connections: [],
-    },
-  }),
-  ...sessionReplies(THREAD, { messages: [], controller: ASSISTANT_CONTROLLER }),
-}
 const LONG_QUERY = `select date_trunc('day', data_negociacao) as dia, sum(valor_total) as total from sync.sankhya_vendas_com_um_nome_comprido where data_negociacao >= now() - interval '30 days' group by 1 order by 1`
 
 /** Reads of every kind: a long query, a refusal, a live read, an app's query in a Projeto. */
@@ -116,7 +104,7 @@ export const DATA_READS_STATES: State[] = [
   {
     name: 'Registro de dados, a linha aberta',
     path: `${PATH}?read=${OPEN}`,
-    replies: { ...replies(LISTED), ...CONVERSATION },
+    replies: replies(LISTED),
     settle: reached('Copiar a consulta'),
   },
   {

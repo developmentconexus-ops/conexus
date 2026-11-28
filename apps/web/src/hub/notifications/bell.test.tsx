@@ -1,37 +1,29 @@
 import type { NotificationRow } from '@conexus/hub-api'
-import { AutomationId, ConversationId, listNotifications, NotificationId } from '@conexus/hub-api'
+import { listNotifications, NotificationId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { beforeEach, expect, test, vi } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import {
-  conversationsNone,
-  hubServer,
-  PEDIDOS,
-  projectsRead,
-  refusal,
-} from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 
 // O sino: o número de não lidas, o painel e o que tocar faz (step 24.2, criterion 21).
 const server = hubServer()
 const FRAME = `/companies/${COMPANY.id}/projects`
 const ROW = listNotifications.success.body.shape.notifications.element
-const AUTOMATION = AutomationId.parse(
-  'schedule_conexus-automation-11111111-1111-4111-8111-111111111111',
-)
-const CONVERSATION = ConversationId.parse('66666666-6666-4666-8666-666666666666')
+const OPENED = /Bruno pede para publicar a versão 5 de Encomendas\./
 
 function notification(n: number, fields: Record<string, unknown> = {}): NotificationRow {
   return ROW.parse({
-    kind: 'AUTOMATION_DONE',
+    kind: 'REQUEST_OPENED',
     id: NotificationId.parse(`00000000-0000-4000-8000-${String(n).padStart(12, '0')}`),
     createdAt: '2026-11-01T10:00:00.000Z',
     read: false,
-    automation: { id: AUTOMATION, name: 'Resumo de vendas' },
-    projectId: null,
-    conversationId: CONVERSATION,
+    projectId: PEDIDOS.id,
+    projectName: 'Encomendas',
+    number: 5,
+    requestedBy: { name: 'Bruno' },
     ...fields,
   })
 }
@@ -68,8 +60,6 @@ function bell(rows: NotificationRow[], options: { failRead?: boolean } = {}) {
   return { conexus, sent, reads: () => reads }
 }
 
-beforeEach(() => server.use(conversationsNone))
-
 test('sem aviso, o sino não tem número e o painel diz que não há notificação', async () => {
   bell([])
   const trigger = await screen.findByRole('button', { name: 'Notificações' })
@@ -77,25 +67,18 @@ test('sem aviso, o sino não tem número e o painel diz que não há notificaç�
   expect(await screen.findByText('Nenhuma notificação.')).toBeTruthy()
 })
 
-test('o sino mostra o número de não lidas; o painel lista, e tocar numa abre a conversa e a marca lida', async () => {
-  const rows = [
-    notification(1),
-    notification(2, { kind: 'AUTOMATION_FAILED', code: 'MODEL_NO_ACCOUNT', conversationId: null }),
-    notification(3, { read: true }),
-  ]
+test('o sino mostra o número de não lidas; o painel lista, e tocar numa abre a área do Projeto e a marca lida', async () => {
+  const rows = [notification(1), notification(2), notification(3, { read: true })]
   const { conexus, sent } = bell(rows)
   fireEvent.click(await screen.findByRole('button', { name: 'Notificações: 2 não lidas' }))
   const panel = await screen.findByRole('dialog')
-  expect(within(panel).getByText(/Resumo de vendas falhou: /)).toBeTruthy()
-  expect(within(panel).getAllByText(/Automação Resumo de vendas: pronta/)).toHaveLength(2)
-  const [first] = within(panel).getAllByRole('link', {
-    name: /Automação Resumo de vendas: pronta/,
-  })
+  expect(within(panel).getAllByText(OPENED)).toHaveLength(3)
+  const [first] = within(panel).getAllByRole('link', { name: OPENED })
   if (first === undefined) throw new Error('the unread notification has no link')
   fireEvent.click(first)
   await waitFor(() =>
     expect(conexus.router.state.location.pathname).toBe(
-      `/companies/${COMPANY.id}/conversations/${CONVERSATION}`,
+      `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`,
     ),
   )
   await waitFor(() => expect(sent).toEqual([{ body: { ids: [rows[0]?.id] } }]))
@@ -108,20 +91,6 @@ test('Marcar todas como lidas zera o número', async () => {
   fireEvent.click(await screen.findByRole('button', { name: 'Marcar todas como lidas' }))
   expect(await screen.findByRole('button', { name: 'Notificações' })).toBeTruthy()
   expect(sent).toEqual([{ body: { all: true } }])
-})
-
-test('a pausa abre o Início, e a falha sem conversa abre a página da automação', async () => {
-  const { conexus } = bell([
-    notification(1, { kind: 'AUTOMATION_PAUSED', conversationId: undefined }),
-    notification(2, { kind: 'AUTOMATION_FAILED', code: 'INTERRUPTED', conversationId: null }),
-  ])
-  fireEvent.click(await screen.findByRole('button', { name: 'Notificações: 2 não lidas' }))
-  const links = await screen.findAllByRole('link', { name: /Resumo de vendas/ })
-  expect(links.map((one) => one.getAttribute('href'))).toEqual([
-    `/companies/${COMPANY.id}`,
-    `/companies/${COMPANY.id}/automations/${AUTOMATION}`,
-  ])
-  expect(conexus.router.state.location.pathname).toBe(FRAME)
 })
 
 function request(n: number, fields: Record<string, unknown>): NotificationRow {
@@ -223,9 +192,7 @@ test('o número de não lidas aparece no sino, à vista, e some quando tudo foi 
 test('sem não lidas o painel não oferece Marcar todas como lidas', async () => {
   bell([notification(1, { read: true })])
   fireEvent.click(await screen.findByRole('button', { name: 'Notificações' }))
-  expect(
-    await screen.findByRole('link', { name: /Automação Resumo de vendas: pronta/ }),
-  ).toBeTruthy()
+  expect(await screen.findByRole('link', { name: OPENED })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Marcar todas como lidas' })).toBeNull()
 })
 
@@ -251,18 +218,6 @@ test('o sino fica no pé do trilho, acima da conta, no computador e na gaveta do
     expect(screen.getAllByRole('button', { name: /^Notificações/ })).toHaveLength(1)
     expect(phone.closest('[data-mobile="true"]')).not.toBeNull()
   })
-})
-
-test('uma notificação de uma conversa que o Hub não tem mais abre "Esta conversa não existe mais."', async () => {
-  server.use(
-    http.get('*/api/companies/:companyId/assistant/conversations/:conversationId', () =>
-      refusal('CONVERSATION_NOT_FOUND'),
-    ),
-  )
-  bell([notification(1)])
-  fireEvent.click(await screen.findByRole('button', { name: 'Notificações: 1 não lida' }))
-  fireEvent.click(await screen.findByRole('link', { name: /Automação Resumo de vendas: pronta/ }))
-  expect(await screen.findByText('Esta conversa não existe mais.')).toBeTruthy()
 })
 
 test('com a janela escondida o número não é lido de novo', async () => {

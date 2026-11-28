@@ -18,6 +18,7 @@ import { mayOf } from '../../platform/test-may.ts'
 
 const server = hubServer()
 
+const GREETING = /^(Bom dia|Boa tarde|Boa noite)/
 const FIRST = { id: 'a'.repeat(32), name: 'Empresa Teste' }
 const SECOND = { id: 'b'.repeat(32), name: 'Outra Empresa' }
 
@@ -190,18 +191,17 @@ test('o operador sem empresa vai à Central (critério 2)', async () => {
   expect(router.state.location.pathname).toBe('/operations/clients')
 })
 
-test('depois de entrar, o foco vai à caixa (#32-4)', async () => {
+test('depois de entrar, o foco vai ao título do Início (#32-4)', async () => {
   hub(listed(FIRST), { signedIn: false })
-  startable()
   open()
   fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
   const form = screen.getByRole('button', { name: 'Entrar' }).closest('form')
   if (form === null) throw new Error('the sign-in form is missing')
   fireEvent.submit(form)
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
-  await waitFor(() => expect(document.activeElement).toBe(box))
-  expect(box.tabIndex).toBe(0)
+  const title = await screen.findByRole('heading', { name: GREETING })
+  await waitFor(() => expect(document.activeElement).toBe(title))
+  expect(title.tabIndex).toBe(-1)
 })
 
 test('numa página sem campo, o título recebe o foco (#32-4)', async () => {
@@ -225,10 +225,9 @@ test('numa página só com caixa de marcar ou opção, o título recebe o foco (
   )
 })
 
-test('com o carregamento da página preso, a caixa que aparece depois recebe o foco', async () => {
+test('com o carregamento da página preso, o título que aparece depois recebe o foco', async () => {
   const state = { signedIn: false }
   hub(listed(FIRST), state)
-  startable()
   const held = Promise.withResolvers<void>()
   server.use(
     http.get('*/api/companies', async () => {
@@ -243,8 +242,8 @@ test('com o carregamento da página preso, a caixa que aparece depois recebe o f
   await waitFor(() => expect(state.signedIn).toBe(true))
   expect(screen.queryByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ })).toBeNull()
   held.resolve()
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
-  await waitFor(() => expect(document.activeElement).toBe(box))
+  const title = await screen.findByRole('heading', { name: GREETING })
+  await waitFor(() => expect(document.activeElement).toBe(title))
 })
 
 async function signInFromLogin() {
@@ -263,13 +262,12 @@ test('depois de entrar, abre a página pedida, não a primeira empresa', async (
   expect(router.state.location.pathname).toBe(`/companies/${SECOND.id}`)
 })
 
-test('depois do foco na caixa, uma nova renderização não o puxa de volta', async () => {
+test('depois do foco no título, uma nova renderização não o puxa de volta', async () => {
   hub(listed(FIRST), { signedIn: false })
-  startable()
   const router = open()
   await signInFromLogin()
-  const box = await screen.findByRole('textbox', { name: 'Mensagem para o Conexus' })
-  await waitFor(() => expect(document.activeElement).toBe(box))
+  const title = await screen.findByRole('heading', { name: GREETING })
+  await waitFor(() => expect(document.activeElement).toBe(title))
   const account = screen.getByRole('button', { name: /Ana/ })
   account.focus()
   await router.invalidate()

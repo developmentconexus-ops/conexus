@@ -5,13 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import {
-  conversationsNone,
-  hubServer,
-  PEDIDOS,
-  projectsRead,
-  refusal,
-} from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const PROJECTS = `/companies/${COMPANY.id}/projects`
@@ -39,7 +33,6 @@ test('vazio: "Nenhum projeto ainda" na página Todos os projetos', async () => {
 
 test('cada cartão: o nome, "Criado em" e o link para o Projeto', async () => {
   hub([PEDIDOS])
-  server.use(conversationsNone)
   const router = open()
   await screen.findByRole('heading', { name: 'Todos os projetos' })
   const link = await main().findByRole('link', { name: /Pedidos/ })
@@ -112,7 +105,6 @@ test('cada cartão diz o estado do app em palavras, e "Novo projeto" no alto abr
     ],
     'admin',
   )
-  server.use(conversationsNone)
   open()
   await screen.findByRole('heading', { name: 'Todos os projetos' })
   expect(
@@ -127,7 +119,6 @@ test('cada cartão diz o estado do app em palavras, e "Novo projeto" no alto abr
 
 test('sem Projeto, a coluna do vazio tem "Novo projeto" e o caminho para o Início (13)', async () => {
   hub([], 'admin')
-  server.use(conversationsNone)
   open()
   await screen.findByRole('heading', { name: 'Todos os projetos' })
   expect(await main().findByText('Nenhum projeto ainda')).toBeTruthy()

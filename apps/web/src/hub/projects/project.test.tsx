@@ -2,11 +2,10 @@ import { deleteProject } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { beforeEach, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import {
-  conversationsNone,
   hubServer,
   PEDIDOS,
   PEDIDOS_ADDRESS,
@@ -21,8 +20,6 @@ const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 const ABOUT = `${PROJECT}/about`
 const UNCONFIRMED = 'Não confirmamos a exclusão. Veja a lista.'
-
-beforeEach(() => server.use(conversationsNone))
 
 /** The Hub with Pedidos; the delete is answered by `answer`, and a 204 takes Pedidos out. */
 function hub(answer: () => Response | Promise<Response>, mayDelete = true) {

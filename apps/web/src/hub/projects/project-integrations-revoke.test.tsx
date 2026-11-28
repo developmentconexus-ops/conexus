@@ -6,13 +6,7 @@ import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { unconfirmedText } from '../../platform/hub.ts'
-import {
-  conversationsNone,
-  hubServer,
-  PEDIDOS,
-  projectsRead,
-  refusal,
-} from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 
 // Tirar in a Projeto's Integrações: it asks first, as Apagar does, and says what stops working.
@@ -40,7 +34,6 @@ function opened(revoked: () => Response) {
   let access: object = READS
   const deletes: string[] = []
   server.use(
-    conversationsNone,
     versionsRead({ versions: [] }),
     http.get(`${API}/projects/${PEDIDOS.id}/connections`, () =>
       HttpResponse.json(

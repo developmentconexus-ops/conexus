@@ -3,7 +3,7 @@ import { BrainIcon } from 'lucide-react'
 import {
   ObservationalMemorySettings,
   observationalMemoryModelsQuery,
-} from '../../../../../harness/memory/public.ts'
+} from '../../../../../harness/observational-memory/public.ts'
 import { accountsQuery } from '../../../../../harness/model-accounts/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 

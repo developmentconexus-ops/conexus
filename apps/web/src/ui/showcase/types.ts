@@ -8,7 +8,6 @@ export type ShowcaseGroup =
   | 'Retorno'
   | 'Sobreposições'
   | 'Conversa'
-  | 'IA'
 
 type PreviewState =
   | 'default'

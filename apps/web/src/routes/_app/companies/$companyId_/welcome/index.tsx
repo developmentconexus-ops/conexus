@@ -30,6 +30,6 @@ export const Route = createFileRoute('/_app/companies/$companyId_/welcome/')({
     if (!done.team) {
       throw redirect({ to: '/companies/$companyId/welcome/team', params, replace: true })
     }
-    throw redirect({ to: '/companies/$companyId/welcome/build', params, replace: true })
+    throw redirect({ to: '/companies/$companyId', params, replace: true })
   },
 })

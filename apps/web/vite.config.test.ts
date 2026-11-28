@@ -115,30 +115,3 @@ test('o Shiki só chega por import dinâmico', async (t) => {
     'the Shiki is in no dynamic import',
   )
 })
-
-function mentionsMermaid(key: string): boolean {
-  return /mermaid/.test(key)
-}
-
-test('mermaid fica num pedaço próprio, que só o quadro de desenho carrega', async (t) => {
-  const outDir = mkdtempSync(join(tmpdir(), 'conexus-web-mermaid-'))
-  t.after(() => rmSync(outDir, { recursive: true, force: true }))
-  await build({ root: import.meta.dirname, logLevel: 'silent', build: { outDir, manifest: true } })
-  const manifest: Record<string, Chunk> = JSON.parse(
-    readFileSync(join(outDir, '.vite', 'manifest.json'), 'utf8'),
-  )
-  assert.ok(existsSync(join(outDir, 'diagram-frame.html')), 'the build has no drawing frame page')
-  const screens = [...loadedFirst(manifest, 'index.html')]
-  const reachable = [...screens, ...screens.flatMap((key) => manifest[key]?.dynamicImports ?? [])]
-  assert.deepEqual(reachable.filter(mentionsMermaid), [], 'the screens never load mermaid')
-  for (const key of screens) {
-    const code = readFileSync(join(outDir, manifest[key]?.file ?? ''), 'utf8')
-    assert.ok(!code.includes('mermaidAPI'), `${key} holds mermaid`)
-  }
-  const frame = manifest['diagram-frame.html']
-  assert.ok(frame?.dynamicImports?.some(mentionsMermaid), 'the drawing frame loads mermaid')
-  const core = [...loadedFirst(manifest, 'diagram-frame.html')].some((key) =>
-    readFileSync(join(outDir, manifest[key]?.file ?? ''), 'utf8').includes('mermaidAPI'),
-  )
-  assert.ok(core, 'the frame holds the mermaid core')
-})

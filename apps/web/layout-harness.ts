@@ -13,8 +13,8 @@ import { problemOf } from './src/platform/fixtures.ts'
 
 // The widths come from the browser's layout of the built screens; jsdom computes none.
 const ORIGIN = 'https://hub.test'
-/** The pages built for the tests: the screens, the chat pieces' page, and the diagram's page and frame. */
-const BUILT = ['index', 'pieces', 'diagram', 'diagram-frame']
+/** The pages built for the tests: the screens and the pieces' page. */
+const BUILT = ['index', 'pieces']
 const TYPES: Record<string, string> = {
   '.css': 'text/css',
   '.js': 'text/javascript',

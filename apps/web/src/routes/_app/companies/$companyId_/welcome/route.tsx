@@ -2,11 +2,8 @@ import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router'
 import { companyEntry, enterWelcome, SignOutButton } from '../../../../../hub/identity/public.ts'
 import { WelcomeFrame } from '../../../../../ui/welcome-frame.tsx'
 
-// Each step goes back to the one before it; step 2 has none, as step 1 does not open again.
-const BACK = {
-  3: '/companies/$companyId/welcome/model-account',
-  4: '/companies/$companyId/welcome/team',
-} as const
+// Step 3 goes back to step 2; step 2 has no way back, as step 1 does not open again.
+const BACK = '/companies/$companyId/welcome/model-account'
 
 /**
  * The steps' frame around a step that opened, with the step and title from its route (web W33). A
@@ -21,7 +18,7 @@ function Steps() {
     },
   })
   if (step?.step === undefined || step.place === undefined) return <Outlet />
-  const back = step.step === 3 || step.step === 4 ? BACK[step.step] : undefined
+  const back = step.step === 3 ? BACK : undefined
   return (
     <WelcomeFrame
       step={step.step}

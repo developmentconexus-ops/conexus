@@ -6,23 +6,22 @@ import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { connection, LIST, openData } from './test-hub.tsx'
 import { CATALOG } from './test-sources.ts'
 
-// The tree of Dados in the frame, in place of the conversations (Requisito 1).
+// The tree of Dados in the frame's list (Requisito 1).
 const server = hubServer()
 
 async function tree() {
   return within(await screen.findByRole('navigation', { name: 'Dados' }))
 }
 
-test('a árvore: no lugar Dados ela toma o lugar das conversas', async () => {
+test('a árvore: no lugar Dados ela está na lista da barra', async () => {
   openData(server, {}, LIST)
   const nav = await tree()
-  expect(nav.queryByRole('link', { name: 'Nova conversa' })).toBeNull()
-  expect(screen.queryByRole('link', { name: 'Nova conversa' })).toBeNull()
+  expect(nav.getByRole('link', { name: 'Negócio' })).toBeTruthy()
 })
 
-test('a árvore: fora de Dados, as conversas ficam', async () => {
+test('a árvore: fora de Dados, ela não aparece', async () => {
   openData(server, {}, `/companies/${COMPANY.id}`)
-  expect(await screen.findByRole('link', { name: 'Nova conversa' })).toBeTruthy()
+  expect(await screen.findByRole('link', { name: 'Início' })).toBeTruthy()
   expect(screen.queryByRole('navigation', { name: 'Dados' })).toBeNull()
 })
 
@@ -34,7 +33,6 @@ test('a árvore: o membro em Dados vê Copiado sem tabela do papel e não vê Ap
   expect(nav.getByRole('link', { name: 'Copiado 0' })).toBeTruthy()
   expect(nav.getByText('Seu papel ainda não lê nenhuma tabela.')).toBeTruthy()
   expect(nav.queryByRole('link', { name: 'Apps' })).toBeNull()
-  expect(screen.queryByRole('link', { name: 'Nova conversa' })).toBeNull()
 })
 
 test('a árvore: Copiado 0, Tratado, Negócio, Apps, e nenhuma tabela nem sistema aberto', async () => {

@@ -2,16 +2,10 @@ import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { beforeEach, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import {
-  conversationsNone,
-  hubServer,
-  PEDIDOS,
-  projectsRead,
-  refusal,
-} from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import {
   accessRead,
   accessView,
@@ -21,7 +15,6 @@ import {
 } from '../../platform/test-hub-access.tsx'
 
 const server = hubServer()
-beforeEach(() => server.use(conversationsNone))
 const ACCESS = `/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/access`
 const ADDRESS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}/access`
 

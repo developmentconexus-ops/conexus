@@ -1,10 +1,9 @@
-import type { AgentId, ConnectionId } from '@conexus/hub-api'
+import type { ConnectionId } from '@conexus/hub-api'
 import { listDataReads } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, getRouteApi, notFound, useRouter } from '@tanstack/react-router'
 import { ScrollTextIcon } from 'lucide-react'
 import { z } from 'zod'
-import { agentsQuery } from '../../../../../agents/saved-agent/public.ts'
 import { connectionsQuery } from '../../../../../hub/connectors/public.ts'
 import {
   DATA_READS_TEXT,
@@ -52,7 +51,6 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/data-
       Promise.all([
         queryClient.ensureQueryData(dataReadsQuery(companyId, shown, page)),
         queryClient.ensureQueryData(everyMemberQuery(companyId)),
-        queryClient.ensureQueryData(agentsQuery(companyId, undefined)),
         queryClient.ensureQueryData(connectionsQuery(companyId)),
       ]),
     )
@@ -75,14 +73,12 @@ function DataReadsFailure({ reset }: { reset: () => void }) {
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/data-reads')
 
-/** The people, the saved agents' and the connections' names come from their owners here, so the Registro imports none of them. */
+/** The people's and the connections' names come from their owners here, so the Registro imports none of them. */
 function DataReadsPage() {
   const { companyId } = route.useParams()
   const { person } = route.useRouteContext()
   const members = useSuspenseQuery(everyMemberQuery(companyId)).data
-  const { agents } = useSuspenseQuery(agentsQuery(companyId, undefined)).data
   const { connections } = useSuspenseQuery(connectionsQuery(companyId)).data
-  const agentNames = new Map<AgentId, string>(agents.map((agent) => [agent.id, agent.name]))
   const connectionNames = new Map<ConnectionId, string>(
     connections.map((connection) => [connection.id, connection.name]),
   )
@@ -92,7 +88,6 @@ function DataReadsPage() {
         people: members.map((member) => ({ id: member.personId, name: member.name })),
         tables: [],
         names: {
-          agent: (id) => agentNames.get(id),
           connection: (id) => connectionNames.get(id),
         },
         viewer: person.id,

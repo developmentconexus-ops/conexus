@@ -220,7 +220,7 @@ test('o membro convidado aceita e cai no Início, sem passos nem cartão; a empr
     await screen.findByRole('heading', { name: /^(Bom dia|Boa tarde|Boa noite)/ }),
   ).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}`)
-  expect(screen.queryByText(/Passo \d de 4/)).toBeNull()
+  expect(screen.queryByText(/Passo \d de 3/)).toBeNull()
   expect(screen.queryByText('Termine de preparar a empresa')).toBeNull()
   expect(localStorage.getItem(`conexus-remembered:${DAVI.id}:companies`)).toBe(COMPANY.id)
 })

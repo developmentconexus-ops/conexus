@@ -164,7 +164,7 @@ function ReadRow(props: { read: DataReadEntry; names: ReadNames; phone: boolean;
       {whenOf(read.at, now)}
     </Link>
   )
-  const agent = agentOf(read, names)
+  const agent = agentOf(read)
   const place = read.project === null ? null : placeOf(read.project)
   const rows = read.rows === null ? '–' : read.rows.toLocaleString('pt-BR')
   const result = <span title={read.outcome}>{resultWord(read.outcome)}</span>
@@ -225,14 +225,7 @@ function OpenRead(props: {
         closeLabel="Fechar"
         title={read === undefined ? TEXT.notFound : readTitle(read, props.now)}
       >
-        {read !== undefined && (
-          <ReadDetail
-            read={read}
-            companyId={props.companyId}
-            viewer={props.lists.viewer}
-            names={props.lists.names}
-          />
-        )}
+        {read !== undefined && <ReadDetail read={read} names={props.lists.names} />}
       </SheetContent>
     </Sheet>
   )

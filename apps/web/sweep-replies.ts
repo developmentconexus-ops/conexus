@@ -7,12 +7,9 @@ import {
   getProject,
   getSession,
   getStatus,
-  listAssistantConnections,
-  listAssistantConversations,
   listClients,
   listCompanies,
   listCompanyAppAccess,
-  listConversations,
   listInvitations,
   listMembers,
   listModelAccounts,
@@ -26,7 +23,6 @@ import { ANA, COMPANY } from './src/platform/fixtures.ts'
 import { mayOf } from './src/platform/test-may.ts'
 import { modelAccountsPage } from './sweep-model-accounts.ts'
 import { projectPreloadsPage } from './sweep-project-preloads.ts'
-import { railListsPage } from './sweep-rail-lists.ts'
 import { settingsLists } from './sweep-role-list.ts'
 
 export const INVITATION = 'i'.repeat(32)
@@ -117,17 +113,8 @@ function companyPage(role: string, mayInviteAs: string[], id = COMPANY.id, name 
   return {
     ...SIGNED_IN,
     ...projectsPage(id),
-    ...railListsPage(id),
     ...modelAccountsPage(id, MANAGES.has(role)),
     ...settingsLists(id, MANAGES.has(role)),
-    // Início of the owner and the administrators asks the Assistant: the connections it offers and its conversations.
-    [`GET /api/companies/${id}/assistant/connections`]: ok(listAssistantConnections, {
-      connections: [],
-    }),
-    [`GET /api/companies/${id}/assistant/conversations`]: ok(listAssistantConversations, {
-      conversations: [],
-      next: { kind: 'END' },
-    }),
     // The frame's bell reads the person's notifications on every page.
     [`GET /api/companies/${id}/notifications`]: ok(listNotifications, {
       notifications: [],
@@ -203,7 +190,7 @@ const PROJECT = {
 
 /**
  * A company's Projects, as a person of `mayDelete` sees them; no Project, no database yet, when
- * `empty`. A Project opens on its conversations, so it has the list, empty.
+ * `empty`.
  */
 export function projectsPage(
   id: string,
@@ -230,10 +217,6 @@ export function projectsPage(
         appVersion: view.appVersion ?? null,
         publishedVersion: view.publishedVersion ?? null,
       },
-    }),
-    [`GET /api/companies/${id}/projects/${PROJECT.id}/conversations`]: ok(listConversations, {
-      conversations: [],
-      next: { kind: 'END' },
     }),
     ...projectPreloadsPage(id, PROJECT.id),
   }

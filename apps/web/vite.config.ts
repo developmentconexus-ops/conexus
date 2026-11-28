@@ -21,12 +21,7 @@ export default defineConfig({
     // The Hub's CSP allows no data: URI, so nothing is inlined.
     assetsInlineLimit: 0,
     rolldownOptions: {
-      // The drawing frame is a page of its own: the diagram library loads only there, never in the
-      // screens' entry (security S24).
-      input: {
-        index: join(import.meta.dirname, 'index.html'),
-        'diagram-frame': join(import.meta.dirname, 'diagram-frame.html'),
-      },
+      input: { index: join(import.meta.dirname, 'index.html') },
       output: {
         // Zod decides to compile when a schema is built, and the chunk that holds Zod runs before the
         // entry's body; jitless.ts rides in that chunk so it runs before any schema (web W27).

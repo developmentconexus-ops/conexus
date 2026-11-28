@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator } from 'playwright-core'
 import { atRest } from './at-rest.ts'
-import { CONVERSATIONS, OPENED, onlyList, owner } from './frame-replies.ts'
+import { owner } from './frame-replies.ts'
 import { createHarness, DESKTOP, PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { ASSISTANT_PATH, ASSISTANT_REPLIES } from './sweep-assistant-states.ts'
 import { DEFAULT_STATES } from './sweep-defaults-states.ts'
+import { PROJECT_ID } from './sweep-replies.ts'
 
 // The frame in a real browser (design V5, V19): the graphite round the sheet, the sheet
 // inset in it, and the current place of the sidebar.
@@ -44,13 +44,13 @@ const IPE = [255, 215, 102]
 
 for (const scheme of ['light', 'dark'] as const) {
   test(`a folha encaixada na moldura, no tema ${scheme}`, async () => {
-    const page = await harness.open(`/companies/${COMPANY.id}`, {
+    const page = await harness.open(`/companies/${COMPANY.id}/projects/${PROJECT_ID}`, {
       viewport: DESKTOP,
-      replies: owner(CONVERSATIONS),
+      replies: owner(),
       scheme,
     })
     const nav = page.getByRole('navigation', { name: 'Navegação' })
-    const label = nav.getByRole('heading', { name: 'Conversas' })
+    const label = nav.getByText('O app', { exact: true })
     await label.waitFor()
     await atRest(page)
     const frame = page.locator('[data-slot=sidebar-wrapper]')
@@ -87,7 +87,7 @@ for (const scheme of ['light', 'dark'] as const) {
 test('a folha encaixada na moldura: a 768 px tem a margem e o canto, a 390 px ocupa a tela sem rolagem lateral', async () => {
   const tablet = await harness.open(`/companies/${COMPANY.id}`, {
     viewport: { width: 768, height: 900 },
-    replies: owner([]),
+    replies: owner(),
   })
   const inset = tablet.locator('[data-slot=sidebar-inset]')
   await tablet.getByRole('navigation', { name: 'Navegação' }).waitFor()
@@ -103,7 +103,7 @@ test('a folha encaixada na moldura: a 768 px tem a margem e o canto, a 390 px oc
 
   const phone = await harness.open(`/companies/${COMPANY.id}`, {
     viewport: PHONE,
-    replies: owner([]),
+    replies: owner(),
   })
   const sheet = phone.locator('[data-slot=sidebar-inset]')
   await phone.getByRole('button', { name: /Abrir navegação/ }).waitFor()
@@ -123,7 +123,7 @@ for (const scheme of ['light', 'dark'] as const) {
   test(`o item atual acende o ícone, com a barra aberta e recolhida, no tema ${scheme}`, async () => {
     const page = await harness.open(`/companies/${COMPANY.id}`, {
       viewport: DESKTOP,
-      replies: owner(CONVERSATIONS),
+      replies: owner(),
       scheme,
     })
     const nav = page.getByRole('navigation', { name: 'Navegação' })
@@ -151,25 +151,6 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.keyboard.press('Control+b')
     }
     await page.close()
-
-    const opened = await harness.open(ASSISTANT_PATH, {
-      viewport: DESKTOP,
-      replies: {
-        ...ASSISTANT_REPLIES,
-        ...onlyList(owner([{ id: OPENED, title: 'Vendas da semana' }])),
-      },
-      scheme,
-    })
-    const row = opened
-      .getByRole('navigation', { name: 'Navegação' })
-      .locator('[data-sidebar=sidebar]')
-      .getByRole('link', { name: /Vendas da semana/ })
-    await row.waitFor()
-    await atRest(opened)
-    assert.equal(await row.getAttribute('aria-current'), 'page')
-    assert.deepEqual(await channelsOf(row, 'backgroundColor'), GRAPHITE[scheme].current)
-    assert.equal(await row.evaluate(tickDrawn), false, 'the current conversation draws a tick')
-    await opened.close()
   })
 }
 

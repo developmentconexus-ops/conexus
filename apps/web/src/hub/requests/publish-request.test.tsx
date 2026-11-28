@@ -6,13 +6,7 @@ import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
-import {
-  conversationsNone,
-  hubServer,
-  PEDIDOS,
-  projectsRead,
-  refusal,
-} from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import {
   cancelPath,
   PUBLISH_REQUEST_PATH,
@@ -26,7 +20,7 @@ const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 const VERSIONS = `${PROJECT}/about?part=versions`
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [versionView(5)] })))
+beforeEach(() => server.use(versionsRead({ versions: [versionView(5)] })))
 
 /** Bruno, a member who does not publish: version 5 is ready and version 3 is on the air. */
 function bruno(fields: Partial<ProjectsView> = {}) {

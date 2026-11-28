@@ -3,7 +3,6 @@ import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
 import { KIT_SANKHYA as SANKHYA } from './src/platform/test-kit.ts'
 import { connectionsPage } from './sweep-connections.ts'
-import { memoryPages } from './sweep-memory.ts'
 import { networkPage } from './sweep-network.ts'
 
 const EVERY = SANKHYA.subjects.flatMap((subject) => subject.operations)
@@ -71,15 +70,14 @@ function dataReadsPage(id: string, mayManage: boolean): Replies {
 }
 
 /**
- * What the company's settings read: the connections, the roles and the Registro they preload on focus, and the
- * memories Minha conta and Memória da empresa show, each from its own page's replies.
+ * What the company's settings read: the connections, the roles and the Registro they preload on focus,
+ * each from its own page's replies.
  */
 export function settingsLists(id: string, mayManage: boolean): Replies {
   return {
     ...connectionsPage(id, mayManage),
     ...rolesPage(id, mayManage),
     ...dataReadsPage(id, mayManage),
-    ...memoryPages(id, mayManage),
     ...networkPage(id),
   }
 }

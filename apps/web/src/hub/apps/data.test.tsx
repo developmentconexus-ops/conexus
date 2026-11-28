@@ -2,11 +2,11 @@ import { AppTables as TablesShape } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { delay } from 'msw'
 import { beforeEach, expect, test, vi } from 'vitest'
-import { conversationsNone, refusal } from '../../platform/test-hub.tsx'
+import { refusal } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 import { asked, LONG, open, PROJECT, rowsOf, server, TABLES } from './test-data.tsx'
 
-beforeEach(() => server.use(conversationsNone, versionsRead({ versions: [] })))
+beforeEach(() => server.use(versionsRead({ versions: [] })))
 
 test('Dados: o menu e quem não vê', async () => {
   open(`${PROJECT}/data`, { tables: () => TABLES, rows: rowsOf }, 'developer')

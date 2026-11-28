@@ -58,7 +58,7 @@ export function FrameLink(
   props: Pick<LinkProps, 'to' | 'params' | 'search' | 'activeOptions'> & {
     icon?: LucideIcon
     label: string
-    /** The place is current though the address is a deeper one (Início holds the Assistant's conversations). */
+    /** The place is current though the address says otherwise. */
     current?: boolean
   },
 ) {
