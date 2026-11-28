@@ -9,7 +9,7 @@ import { RETENTION_WORKFLOW, retentionOf } from './workflows/retention.ts'
 
 export { HubLogger } from './logger.ts'
 export { createMastraStorage, RETENTION_DAYS } from './storage.ts'
-export { COPY_WORKFLOW, retentionOf, storageOf } from './workflows/retention.ts'
+export { COPY_WORKFLOW, RETENTION_WORKFLOW, retentionOf, storageOf } from './workflows/retention.ts'
 
 /** The messages of a step the trace keeps whole. */
 const MESSAGES_KEPT = 500
@@ -18,7 +18,7 @@ const MESSAGES_KEPT = 500
 const MISSES_BEFORE_DELETE = 5
 
 /** Mastra's scheduler, its publish failures (after its own retries) in the central log under a code of ours. */
-function schedulerOf(log: FailureLog, tickMs: number | undefined) {
+export function schedulerOf(log: FailureLog, tickMs: number | undefined) {
   const config = {
     ...(tickMs === undefined ? {} : { tickIntervalMs: tickMs }),
     missesBeforeDelete: MISSES_BEFORE_DELETE,
