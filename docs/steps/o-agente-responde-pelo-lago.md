@@ -31,9 +31,9 @@ Cada linha do `main` citada foi lida em `beea44cef`. As versões:
    2026-11-27 (a seção "As decisões suas nesta etapa").
 2. **A U1, a prova no laboratório.** O G1 e o G2 não começam antes dela: o que ela medir fixa as
    concessões da U2 e as gravações que os testes da U3 leem.
-3. **A etapa `T1` fecha antes** (delivery L1 e L5): o fechamento dela está no pull request
-   https://github.com/developmentconexus-ops/conexus/pull/1513. Nenhuma unidade deste cartão toca os
-   arquivos dos consertos da `T1`.
+3. **A etapa `T1` fechou** (delivery L1 e L5) com o pull request
+   https://github.com/developmentconexus-ops/conexus/pull/1513, em 2026-11-28. Nenhuma unidade deste
+   cartão toca os arquivos dos consertos da `T1`.
 
 ## A página do fundador
 
@@ -192,8 +192,7 @@ seção. / 3. Aprovado". Depois do estudo (`LL`), respondeu "Decisão 1: A / 2: 
 | G3 | U6 O Assistente no `conexus-studio` | O agente com o `MCPClient`, as instruções sem nome de tabela, o `.env.example` | `conexus-studio`: `src/mastra/agents/assistant/` | — | U5 publicada |
 
 O G1 é um pull request só dele, com a palavra de merge do fundador (permissão nova na AWS, F11). O G2
-é um pull request de quatro unidades. O G3 é um pull request no `conexus-studio`, depois do G2 no ar. Este
-cartão espera num pull request em rascunho até a `T1` sair de `docs/steps/` (delivery L5).
+é um pull request de quatro unidades. O G3 é um pull request no `conexus-studio`, depois do G2 no ar.
 
 **Orçamento de código alterado.** U2: 180. U3: 350. U4: 500. U5: 280. U7: 160. U6: 160. Total da etapa: cerca de
 1.630 linhas, abaixo da delivery L2.
