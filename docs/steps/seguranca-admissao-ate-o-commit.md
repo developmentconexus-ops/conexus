@@ -27,10 +27,10 @@ servidor valer o mesmo papel até a gravação. Não cruza nenhuma linha.
 estudo de pacotes): é ela que obriga o papel `hub_invitation` a ler `auth.account`; trocá-la é
 mudança de login, com cartão próprio. Os outros achados do estudo (A3 a A10, B1, B3 a B8, E1 a E4,
 E9). As admissões do operador (`admitOperator`), que já agem na mesma transação. As árvores que a
-D0 (https://github.com/developmentconexus-ops/conexus/pull/1523) apaga (`agents/**` e
+limpeza do harness antigo (https://github.com/developmentconexus-ops/conexus/pull/1523) apaga (`agents/**` e
 `harness/{machine,routes,spec,tools,turn,prompt}`): três delas têm o mesmo defeito
 (`agents/agent-builder/routes.ts:29`, `agents/saved-agent/conversation-routes.ts:46`,
-`harness/spec/admission.ts:19`) e saem com a D0. A etapa se constrói depois que a D0 entra.
+`harness/spec/admission.ts:19`) e saem com ela. A etapa se constrói depois que essa limpeza entra.
 
 **As decisões suas nesta etapa.**
 
@@ -67,12 +67,12 @@ até o commit" (\`docs/steps/seguranca-admissao-ate-o-commit.md\`) aprovado em A
 
 | Grupo | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| G1 | U1 | `commandAs`/`readAs` na identidade; as seis rotas com o defeito passam a admitir na transação que grava | `apps/server/src/hub/identity`, `hub/copies`, `hub/treatment`, `hub/connectors`, `harness/model-accounts`, `platform` | segurança | D0 em `main` |
+| G1 | U1 | `commandAs`/`readAs` na identidade; as seis rotas com o defeito passam a admitir na transação que grava | `apps/server/src/hub/identity`, `hub/copies`, `hub/treatment`, `hub/connectors`, `harness/model-accounts`, `platform` | segurança | a limpeza do harness antigo em `main` |
 | G1 | U2 | Toda outra rota de empresa que escreve passa a `commandAs`; as 12 cópias de `scopeOf` saem; `admitMember` deixa a porta da identidade | as mesmas, `harness/network`, `hub/projects`, `hub/requests`, `hub/apps`, `hub/data`, `hub/notifications` | segurança | U1 |
 | G1 | U3 | Regra por linha nas sete tabelas sem ela; o convite vê só a conta e o código da pessoa convidada | `apps/server/src/hub/identity`, `hub/apps`, `hub/status`, `platform`, `apps/server/drizzle` | dados | — |
 
 **Orçamento de código alterado.** U1: ~200. U2: ~300 (inferido de 22 arquivos com
-`admitMember` fora da D0 e 12 `scopeOf`). U3: ~60 mais a migração gerada. Total: ~560. Um pull
+`admitMember` fora da limpeza do harness antigo e 12 `scopeOf`). U3: ~60 mais a migração gerada. Total: ~560. Um pull
 request (delivery L9). Com A (b), a U3 sai deste cartão.
 
 ## Os critérios de aceite
@@ -109,13 +109,13 @@ Nenhuma tela. Nenhum campo de contrato muda.
 
 ## A tabela de referência
 
-| Peça | Arquivo do `main` (8ddbdd453) | Como a referência faz | Veredito | Unidade, arquivo novo |
-| --- | --- | --- | --- | --- |
-| Admitir e escrever numa só transação | `hub/copies/lake-routes.ts:33-47,60-73`; `hub/treatment/routes.ts:33-35,55-57`; `hub/connectors/connections.ts:307-309`; `harness/model-accounts/sign-ins.ts:142-144` (admissão que confirma sozinha) | O próprio Hub: `hub/projects/projects.ts:244-300`, `hub/copies/lake-copy.ts:217-224` admitem na transação que escreve; PostgreSQL 17 `SELECT ... FOR SHARE` vale até o fim da transação (manual, "Explicit Locking", row-level locks) | nativo | U1, `hub/identity/admission.ts` |
-| Uma porta de admissão que devolve a transação | 12 `scopeOf` (lista em B2 do estudo) e os invólucros `admit`/`admitted` por assunto | Fastify: o pedido decora o trabalho, sem estado global (`fastify-best-practices`, `rules/database.md`, transação por pedido); o Hub já tem o `Scope` em `platform/database.ts:65-69` | nativo | U1, U2 |
-| `locks: true` | `hub/identity/admission.ts:105,118,312-327` | — (a tabela fica como está) | nativo | U1 |
-| Regra por linha do convite em `auth.account` e `auth.verification` | `database-grants.sql:226,284`; `hub/identity/tables.ts:142-174` sem política | Drizzle `pgPolicy` (`drizzle-orm` `pg-core/policies`), como `auth.session` em `hub/identity/tables.ts:128-138`; `better-auth@1.7.28` grava `value = user.id` no código de redefinição (`dist/api/routes/password.mjs:75-78`) | nativo | U3, `hub/identity/tables.ts` |
-| RLS nas cinco tabelas só do runtime | `hub/apps/tables.ts:35,67,85`; `hub/status/tables.ts:7`; `hub/identity/tables.ts:177` | `pgPolicy('runtime_all', { to: RUNTIME_LOGIN, using: OPEN })`, como `hub/identity/tables.ts:69,128` | nativo | U3 |
+| Peça | Arquivo do `main` (8ddbdd453) | Referência | Veredito | Prova | Unidade, arquivo novo |
+| --- | --- | --- | --- | --- | --- |
+| Admitir e escrever numa só transação | `hub/copies/lake-routes.ts:33-47,60-73`; `hub/treatment/routes.ts:33-35,55-57`; `hub/connectors/connections.ts:307-309`; `harness/model-accounts/sign-ins.ts:142-144` (admissão que confirma sozinha) | O próprio Hub: `hub/projects/projects.ts:244-300`, `hub/copies/lake-copy.ts:217-224` admitem na transação que escreve; PostgreSQL: `SELECT ... FOR SHARE` vale até o fim da transação (manual, "Explicit Locking", row-level locks) | nativo | critérios 1 a 5, vermelhos hoje | U1, `hub/identity/admission.ts` |
+| Uma porta de admissão que devolve a transação | 12 `scopeOf` (lista em B2 do estudo) e os invólucros `admit`/`admitted` por assunto | O Hub já tem o `Scope` em `platform/database.ts:65-69` e a prova `MemberProof` que a regra S7 pede; falta só a função que os junta à transação | nativo | critério 6, `npm run check` | U1, U2 |
+| `locks: true` | `hub/identity/admission.ts:105,118,312-327` | — (a tabela fica como está) | nativo | critérios 1 a 5 | U1 |
+| Regra por linha do convite em `auth.account` e `auth.verification` | `database-grants.sql:226,284`; `hub/identity/tables.ts:142-174` sem política | Drizzle `pgPolicy` (`drizzle-orm` `pg-core/policies`), como `auth.session` em `hub/identity/tables.ts:128-138`; `better-auth@1.7.28` grava `value = user.id` no código de redefinição (`dist/api/routes/password.mjs:75-78`) | nativo | critérios 9 e 10 | U3, `hub/identity/tables.ts` |
+| RLS nas cinco tabelas só do runtime | `hub/apps/tables.ts:35,67,85`; `hub/status/tables.ts:7`; `hub/identity/tables.ts:177` | `pgPolicy('runtime_all', { to: RUNTIME_LOGIN, using: OPEN })`, como `hub/identity/tables.ts:69,128` | nativo | critério 8 | U3 |
 
 **A medida do transplante.** Nada vem do repositório antigo.
 
@@ -131,7 +131,7 @@ admissão que grava: não toca dado da empresa, fica.
 
 ## U1 A admissão até o commit
 
-**Base e modelo.** `main` depois da D0. Opus: concorrência entre módulos.
+**Base e modelo.** `main` depois da limpeza do harness antigo. Opus: concorrência entre módulos.
 
 ### As linhas da tabela
 
@@ -208,7 +208,7 @@ A segunda linha.
 
 ### O raio da mudança
 
-Os 22 arquivos fora da D0 que chamam `admitMember` (`git grep -l admitMember apps/server/src`),
+Os 22 arquivos fora da limpeza do harness antigo que chamam `admitMember` (`git grep -l admitMember apps/server/src`),
 e os 12 `scopeOf` da linha B2 do estudo.
 
 ### Os contratos que a unidade cria
