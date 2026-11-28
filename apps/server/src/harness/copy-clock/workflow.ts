@@ -3,9 +3,9 @@ import { createStep, createWorkflow } from '@mastra/core/workflows'
 import { z } from 'zod'
 import type { CompanyScope, StartAnswer } from '../../hub/copies/public.ts'
 import { companyScope } from '../../hub/copies/public.ts'
+import { COPY_WORKFLOW } from '../../mastra/index.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { COPY_WORKFLOW } from '../../mastra/index.ts'
 import { ClockInput, clockIdOf } from './clock.ts'
 
 const Fired = z.object({

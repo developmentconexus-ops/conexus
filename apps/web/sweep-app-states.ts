@@ -16,7 +16,6 @@ import {
   projectsPage,
   SIGNED_IN,
   SIGNED_OUT,
-  startsOn,
 } from './sweep-replies.ts'
 
 const STEP_ONE = `/companies/${COMPANY.id}/welcome/company`
@@ -97,11 +96,10 @@ export const APP_STATES: State[] = [
   },
   {
     name: 'criar Projeto, nome sem endereço',
-    path: `/companies/${COMPANY.id}/welcome/build`,
+    path: `/companies/${COMPANY.id}/projects`,
     replies: {
       ...OWNER,
       ...projectsPage(COMPANY.id, { empty: true }),
-      ...startsOn(COMPANY.id),
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_NO_ADDRESS'),
     },
     settle: (page) =>

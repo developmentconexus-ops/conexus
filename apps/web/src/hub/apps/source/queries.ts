@@ -16,4 +16,3 @@ export function fileQuery(input: {
   const { commit, path, ...params } = input
   return hubQuery(readProjectFile, { params, query: { commit, path } })
 }
-

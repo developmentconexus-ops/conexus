@@ -69,14 +69,12 @@ async function welcome(page: Page) {
   await page.getByText('Passo 2 de 4').waitFor()
   await page.getByRole('link', { name: 'Fazer depois', exact: true }).click()
   await page.getByRole('heading', { name: 'Convide sua equipe', exact: true }).waitFor()
-  await page.getByText('Passo 3 de 4').waitFor()
+  await page.getByText('Passo 3 de 3').waitFor()
   await page.getByLabel('E-mail').fill(GUEST)
   await page.getByRole('combobox', { name: 'Papel' }).click()
   await page.getByRole('option', { name: 'Membro', exact: true }).click()
   await page.getByRole('button', { name: 'Enviar convite', exact: true }).click()
   await page.getByText(`Convite enviado para ${GUEST}.`).waitFor()
-  await page.getByRole('link', { name: 'Continuar', exact: true }).click()
-  await page.getByText('Passo 4 de 4').waitFor()
   await leaveWelcome(page)
 }
 

@@ -51,6 +51,8 @@ export {
   recordAppRead,
   VersionFileInput,
 } from './apps.ts'
+export * from './assistant.ts'
+export * from './automation-api.ts'
 export { CAPACITY } from './capacity.ts'
 export {
   acceptInvitation,
@@ -78,8 +80,6 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
-export * from './assistant.ts'
-export * from './automation-api.ts'
 export * from './company-data.ts'
 export * from './company-roles.ts'
 export {
@@ -164,9 +164,9 @@ export {
 export * from './lake-copies.ts'
 export { ClientLake, createClientLake, deleteClientLake, getClientLake } from './lakes.ts'
 export * from './library-ids.ts'
+export * from './machine.ts'
 export { MEMBER_PROFILE_MAX, setMemberProfile } from './member-profile.ts'
 export { Member } from './members.ts'
-export * from './machine.ts'
 export * from './model-account-sign-ins.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,

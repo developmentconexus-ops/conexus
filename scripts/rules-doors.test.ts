@@ -80,9 +80,7 @@ test('dependency-cruiser aceita a raiz, o tables.ts, a porta .tsx, o ajudante te
 })
 
 /** The files that still reach the data directly today: the list only shrinks, and a name that leaves leaves here in the same commit. */
-const MIGRATION_TODAY = ([] as string[])
-  .map((file) => `^apps/server/src/${file}\\.ts$`)
-  .concat('^packages/app/src/connectors\\.ts$')
+const MIGRATION_TODAY: string[] = ['^packages/app/src/connectors\\.ts$']
 
 function grown(listed: readonly string[]): string[] {
   return listed.filter((one) => !MIGRATION_TODAY.includes(one))

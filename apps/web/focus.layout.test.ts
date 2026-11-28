@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { getSession } from '@conexus/hub-api'
-import { atRest } from './at-rest.ts'
 import type { Replies, Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, focusDrawn, ok, PHONE, presses } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'

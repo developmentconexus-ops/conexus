@@ -236,19 +236,16 @@ async function moveOn(page: Page) {
   await done.or(page.getByRole('link', { name: 'Fazer depois', exact: true })).click()
 }
 
-/** Welcome steps 2 to 4 as the company stands: each step's way on, then "Ir para o início sem pedir nada". */
+/** Welcome steps 2 and 3 as the company stands: each step's way on, the last one opens Início. */
 async function finishWelcome(page: Page) {
   await moveOn(page)
   await page.getByRole('heading', { name: 'Convide sua equipe', exact: true }).waitFor()
-  await moveOn(page)
   await leaveWelcome(page)
 }
 
-/** Welcome step 4: "Ir para o início sem pedir nada". */
+/** Welcome step 3's way on: "Continuar" or "Fazer depois" opens Início. */
 export async function leaveWelcome(page: Page) {
-  const title = page.getByRole('heading', { name: 'O que vamos construir primeiro?', exact: true })
-  await title.waitFor()
-  await page.getByRole('link', { name: 'Ir para o início sem pedir nada', exact: true }).click()
+  await moveOn(page)
   await waitForHome(page)
 }
 

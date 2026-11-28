@@ -6,7 +6,7 @@ import { HttpResponse, http } from 'msw'
 import type { z } from 'zod'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, memberView, PEDIDOS, sessionRead } from '../../platform/test-hub.tsx'
+import { hubServer, memberView, sessionRead } from '../../platform/test-hub.tsx'
 import { mayOf } from '../../platform/test-may.ts'
 
 export const server = hubServer()

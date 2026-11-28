@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
+import { Manifest } from '@conexus/app-contract'
 import { AppVersion, CompanyId, PersonId, PreviewData, ProjectId, RunId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
@@ -17,7 +18,6 @@ import {
 } from '../identity/test-hub.ts'
 
 import type { Folder } from './test-version-folder.ts'
-import type { VersionFolder } from './versions.ts'
 import { folder, MIGRATION } from './test-version-folder.ts'
 
 export type { Folder }
@@ -78,7 +78,11 @@ export async function send(
   const number = z.coerce.number().parse(last?.number) + 1
   const sent = await hub.apps.sendFromBuilder({
     ...{ companyId: companyOf(subject.projects), projectId, personId: PersonId.parse(person.id) },
-    ...{ runId: RunId.parse(randomUUID()), number, folder: version as VersionFolder },
+    ...{
+      runId: RunId.parse(randomUUID()),
+      number,
+      folder: { manifest: Manifest.parse(version.manifest), files: version.files },
+    },
   })
   // As the stream said it: JSON drops the keys that are `undefined`.
   const raw = JSON.stringify(sent)

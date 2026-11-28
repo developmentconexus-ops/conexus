@@ -8,9 +8,9 @@ import type { Mastra } from '@mastra/core/mastra'
 import { z } from 'zod'
 import type { ScheduledCopy } from '../../hub/copies/public.ts'
 import { COPY_TIMEZONE } from '../../hub/copies/public.ts'
+import { COPY_WORKFLOW } from '../../mastra/index.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { COPY_WORKFLOW } from '../../mastra/index.ts'
 
 export { COPY_TIMEZONE }
 

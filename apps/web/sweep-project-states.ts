@@ -76,7 +76,7 @@ export const PROJECT_STATES: State[] = [
   },
   {
     name: 'criar Projeto, nome repetido',
-    path: `${HOME}/welcome/build`,
+    path: PROJECTS,
     replies: {
       ...NOBODY,
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_TAKEN'),
@@ -85,7 +85,7 @@ export const PROJECT_STATES: State[] = [
   },
   {
     name: 'criar Projeto, banco em preparo',
-    path: `${HOME}/welcome/build`,
+    path: PROJECTS,
     replies: {
       ...NOBODY,
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('COMPANY_DATABASE_PREPARING'),

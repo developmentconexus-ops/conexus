@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { QueryBlock } from '../copies/public.ts'
 import type { ReadNames } from './text.ts'
-import { agentOf, placeOf, resultWord, TEXT, whatOf, whenOf } from './text.ts'
+import { agentOf, placeOf, resultWord, whatOf, whenOf } from './text.ts'
 
 type Copied = 'IDLE' | 'DONE' | 'FAILED'
 
